@@ -2131,7 +2131,7 @@ chapter_bc_training_coaching_en_analyse:
         - "Eerste 7 dagen zijn vast (committed), twee weken daarna voorlopig; herstelwijzigingen passen alleen voorlopige dagen aan — dit onderscheid is in de UI-belofte nog niet expliciet."
 
     proposed_promise:
-      text: "Sparki plant drie weken vooruit: de komende week staat vast, de twee weken daarna zijn een voorlopige vooruitblik die meegroeit met jouw herstel, gezondheid en agenda. Elke training past binnen wat voor jouw ervaring en beschikbare tijd realistisch is — Sparki propt nooit meer in je week dan er past, en bij ziekte of blessure verdwijnt elke trainingsdruk. De getallen (duur, zwaarte, rust) komen altijd uit vaste, controleerbare regels; taal en uitleg mogen van de AI komen, de cijfers nooit."
+      text: "Sparki plant drie weken vooruit: de komende week staat vast, de twee weken daarna zijn een voorlopige vooruitblik die meegroeit met jouw herstel, gezondheid en agenda. Elke training past binnen wat voor jouw ervaring en beschikbare tijd realistisch is — Sparki propt nooit meer in je week dan er past. Bij een harde medische of acute blokkade verdwijnt elke trainingsdruk; bij een niet-acute klacht of in een herstelfase plant Sparki alleen aangepaste belasting volgens vooraf vastgelegde veiligheidscriteria, en terugkeer na ziekte of blessure gaat trapsgewijs en criteriagestuurd — nooit automatisch volledig normaal. De getallen (duur, zwaarte, rust) komen altijd uit vaste, controleerbare regels; taal en uitleg mogen van de AI komen, de cijfers nooit."
       proposed_by: replit
       rationale: "Een coach-loos plan is Sparki's kernbelofte richting zelfstandige renners. De wereldmarkt-lat (TrainerRoad/JOIN-achtige adaptieve plannen) is: adaptief én voorspelbaar veilig. Determinisme van de cijfers is de bestaansreden van het vertrouwen — dat moet aantoonbaar blijven."
       rene_approved: false
@@ -2152,7 +2152,7 @@ chapter_bc_training_coaching_en_analyse:
           license_status: "Wetenschappelijke kennis vrij toepasbaar als onderbouwing; geen tekstovername."
           limitations:
             - "ACWR is omstreden als voorspeller; bruikbaar als waarschuwingssignaal, niet als bewezen blessurevoorspelling."
-          applicability: "Onderbouwt de risk-factoren en de keuze dat een spike (ATL/CTL > ~1,5) het plan dempt in plaats van doorduwt."
+          applicability: "Onderbouwt de risk-factoren en de keuze dat een spike (ATL/CTL > ~1,5) het plan dempt in plaats van doorduwt. Nadrukkelijk: deze verhouding is GEEN bewezen blessure- of ziektevoorspeller — zij mag alleen dienen als voorzichtig waarschuwingssignaal, altijd gecombineerd met meerdere gegevens, nooit zelfstandig voor diagnose, harde medische conclusie of automatische escalatie, en altijd met expliciete benoeming van onzekerheid en beperkingen."
       sources_in_use:
         - "Eigen plan-engine — leidend."
         - "Trainingsleer-standaarden — als onderbouwing van caps/risk-factoren, niet als letterlijke formule."
@@ -2163,8 +2163,8 @@ chapter_bc_training_coaching_en_analyse:
         - "Onbekend of het actieve pad leefagenda-events ooit gaat consumeren of dat het oude pad wordt uitgefaseerd (architectuurkeuze open)."
 
     replit_definition:
-      objective_quality_standard: "Elk gegenereerd plan: 0 sessies boven het cap voor die DayKind×ervaring; weekminuten ≤ target×fase/risk-factor (onderfillen mag, overfillen nooit); bij ziek/geblesseerd 0 trainingsprikkels; alle cijfers herleidbaar tot deterministische regels (AI-uitval verandert geen enkel getal)."
-      recommended_default: "Committed week vast houden, voorlopige weken automatisch mee laten bewegen met herstel/gezondheid (huidig gedrag); onrealistische weekdoelen eerlijk onderfillen met uitleg, nooit oplossen met onhaalbare sessies. Besluitniveau (advies/voorstel/automatisch): automatische aanpassing bestaat uitsluitend op voorlopige plandagen; elke wijziging aan de vaste (committed) week is een voorstel dat de sporter toepast; al het overige is advies."
+      objective_quality_standard: "Elk gegenereerd plan: 0 sessies boven het cap voor die DayKind×ervaring; weekminuten ≤ target×fase/risk-factor (onderfillen mag, overfillen nooit); bij een harde medische of acute blokkade 0 trainingsprikkels, bij een niet-acute klacht of herstelfase uitsluitend aangepaste belasting binnen vooraf vastgelegde veiligheidscriteria, en terugkeer altijd trapsgewijs (nooit automatisch volledig normaal); bij duidelijke gezondheidsrisico's weegt veiligheid zwaarder dan de wens van sporter of coach; alle cijfers herleidbaar tot deterministische regels (AI-uitval verandert geen enkel getal)."
+      recommended_default: "Committed week vast houden, voorlopige weken automatisch mee laten bewegen met herstel/gezondheid (huidig gedrag); onrealistische weekdoelen: kort het conflict benoemen en daarna eerlijk veilig onderfillen, nooit oplossen met onhaalbare sessies (Besluit René 30-07-2026). Besluitniveau (advies/voorstel/automatisch): automatische aanpassing op voorlopige plandagen; de vaste (committed) week alleen automatisch bij een duidelijke veiligheidsreden (BOUWOPGAVE — bestaat nog niet), anders als voorstel dat de sporter toepast; handmatige wijzigingen blijven binnen harde veiligheidsgrenzen, waarbij een ervaren volwassene niet-kritieke adviezen mag overrulen maar nooit een harde gezondheidsblokkade (BOUWOPGAVE: caps-validatie op het wijzig-pad); al het overige is advies."
       technical_limits:
         - "Leefagenda stuurt alleen het oude generatorpad; het actieve pad kent availableDays maar geen event-mapping."
         - "Wijzig-pad (PUT) valideert niet tegen de plan-caps."
@@ -2179,23 +2179,27 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Hoeveel mag Sparki zonder jouw bevestiging aan het plan veranderen: alleen de voorlopige weken automatisch bijstellen (huidig), óók de vaste week bij duidelijke signalen, of nooit iets zonder akkoord?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Voorlopige weken mogen automatisch worden aangepast. De vaste week alleen automatisch bij een duidelijke veiligheidsreden; anders als voorstel. Overkoepelend (besluit 20): zonder reactie van de sporter mag Sparki alleen voorlopige planning en niet-kritieke keuzes automatisch veilig aanpassen — definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten niet; bij harde veiligheid mag Sparki wél blokkeren, met uitleg. BOUWOPGAVE: automatische vaste-week-aanpassing bij een duidelijke veiligheidsreden bestaat nog niet in code."
         - question: "Als jouw weekdoel niet realistisch past (te veel uren voor je ervaring/beschikbare dagen): wil je dat Sparki stil minder inplant met uitleg (huidig), of het gesprek aangaat vóór het plan er staat?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Sparki benoemt kort het conflict en plant daarna veilig minder in. Geen langdurige dialoog nodig."
         - question: "Moet een handmatige wijziging door jou aan een training aan dezelfde veiligheidsgrenzen gebonden zijn als het plan zelf (bijv. max-duur per sessie), of mag jij als gebruiker alles overrulen?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) Handmatige wijzigingen blijven binnen harde veiligheidsgrenzen. Een ervaren volwassene mag niet-kritieke adviezen overrulen, maar nooit een harde gezondheidsblokkade. BOUWOPGAVE: het wijzig-pad (PUT) valideert nu niet tegen de plan-caps (accepteert tot 1440 min/1000 TSS) — die validatie moet gebouwd worden."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Bij gemeld ziek of geblesseerd bevat het plan geen enkele trainingsprikkel — geen enkele sessie, hoe licht ook."
+        - rule: "Bij een harde medische of acute blokkade (gemeld ziek met actieve klachten, acute blessure, 'niet trainen') bevat het plan geen enkele trainingsprikkel — geen enkele sessie, hoe licht ook. Bij een niet-acute klacht of herstel-/re-integratiefase mag uitsluitend aangepaste belasting bestaan volgens vooraf vastgelegde veiligheidscriteria; terugkeer verloopt trapsgewijs en criteriagestuurd en wordt nooit automatisch volledig normaal. Bij duidelijke gezondheidsrisico's weegt veiligheid zwaarder dan de wens van sporter of coach."
           rule_type: hard_blockage
           measurement_level: per_dag
           aggregate_justification: ""
           counterexamples:
-            - case: "Atleet meldt ziek op maandag; het gegenereerde/doorgerolde plan bevat woensdag een 'lichte hersteltraining' van 30 min — overtreding, ook al is de rest van de week rust."
+            - case: "Atleet meldt ziek met actieve klachten op maandag; het gegenereerde/doorgerolde plan bevat woensdag een 'lichte hersteltraining' van 30 min — overtreding: bij een harde blokkade is élke prikkel te veel."
               proof_stage: designed
-              proof_method: "Redenering: de engine blokkeert bij sick/injured alle trainingsdruk in het skeleton; per_dag omdat élke dag afzonderlijk vrij van prikkels moet zijn — één sessie in een verder lege week mag nooit wegvallen tegen het geheel. Latere executed-stap: engine-test met ziek-status asserteert 0 workouts."
+              proof_method: "Redenering: de engine blokkeert bij sick/injured alle trainingsdruk in het skeleton; per_dag omdat élke dag afzonderlijk vrij van prikkels moet zijn. Latere executed-stap: engine-test met ziek-status asserteert 0 workouts. BOUWOPGAVE: de huidige code kent alleen de binaire blokkade — het onderscheid niet-acute klacht/herstelfase met aangepaste belasting volgens vastgelegde veiligheidscriteria en een trapsgewijze, criteriagestuurde terugkeer bestaat nog niet en moet gebouwd worden."
+              proof_result: not_yet_tested
+            - case: "Atleet zit in een herstelfase na ziekte; het plan springt in één keer terug naar het volledige normale weekvolume zonder trapsgewijze opbouw of criteria — overtreding: terugkeer mag nooit automatisch volledig normaal zijn."
+              proof_stage: designed
+              proof_method: "Redenering: de resume-gate vereist een bewuste herstelcheck, maar een criteriagestuurde opbouwfase ná de check ontbreekt in de plan-engine (bouwopgave); de latere executed-stap toetst dat de eerste week na herstel aantoonbaar gedempt is en pas bij voldoen aan criteria normaliseert."
               proof_result: not_yet_tested
         - rule: "Geen enkele geplande sessie mag boven het sessieplafond voor die trainingssoort en dat ervaringsniveau uitkomen."
           rule_type: hard_blockage
@@ -2296,7 +2300,7 @@ chapter_bc_training_coaching_en_analyse:
 
     replit_definition:
       objective_quality_standard: "Koppelen kan alleen aan een eigen sessie van exact dezelfde datum; elk oordeel is reproduceerbaar uit dezelfde inputs; een pijn-/moe-feedback levert nooit een voorstel met hogere duur of TSS; coach-trainingen worden nooit automatisch inhoudelijk gewijzigd."
-      recommended_default: "Voorstel-flow (mens beslist) voor alles wat de committed week raakt; automatische bijstelling alleen op voorlopige plandagen (huidig gedrag). Besluitniveau (advies/voorstel/automatisch): feedback leidt altijd tot een voorstel, nooit tot automatische aanpassing van een training; het uitvoeringsoordeel bij koppelen is een automatische registratie die niets aan het plan wijzigt."
+      recommended_default: "Voorstel-flow (mens beslist) voor alles wat de committed week raakt; automatische bijstelling alleen op voorlopige plandagen (huidig gedrag). 'Te licht' leidt pas na tweemaal of een duidelijk patroon tot een verzwaringsvoorstel (Besluit René 30-07-2026; BOUWOPGAVE — nu al bij één melding); een toegepaste wijziging blijft zichtbaar als 'aangepast t.o.v. origineel' inclusief reden, nooit stille vervanging (Besluit René 30-07-2026). Besluitniveau (advies/voorstel/automatisch): feedback leidt altijd tot een voorstel, nooit tot automatische aanpassing van een training; het uitvoeringsoordeel bij koppelen is een automatische registratie die niets aan het plan wijzigt."
       technical_limits:
         - "Race-safety van koppelen+oordeel is niet gegarandeerd zonder transactie."
       assumptions:
@@ -2310,10 +2314,10 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Als je 'te licht' meldt: mag Sparki dan direct de eerstvolgende soortgelijke training verzwaren als voorstel, of wil je dat het eerst een patroon ziet (bijv. 2× te licht) voordat het iets voorstelt?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Na één uitzonderlijke melding 'te licht' alleen registreren. Na tweemaal of een duidelijk patroon een verzwaringsvoorstel tonen. BOUWOPGAVE: de huidige regels doen al bij één 'te licht'-melding een verzwaringsvoorstel — de patroondrempel (≥2 of duidelijk patroon) moet gebouwd worden."
         - question: "Wil je dat een toegepast aanpassingsvoorstel zichtbaar blijft als 'aangepast t.o.v. origineel' (met het origineel ernaast), of mag het origineel stil vervangen worden?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) Een toegepaste wijziging blijft zichtbaar als 'aangepast ten opzichte van origineel', inclusief reden. Geen stille vervanging. BOUWOPGAVE voor zover de UI het origineel + de reden nu niet naast de toegepaste wijziging toont."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -2416,7 +2420,7 @@ chapter_bc_training_coaching_en_analyse:
 
     replit_definition:
       objective_quality_standard: "0 observaties op basis van één datapunt (behalve declared health-facts); confidence nooit 100%; 0 humor op medische/veiligheids-/privacymomenten; 0 gefabriceerde data in enige coachtekst; alle AI-verkeer door de ene gateway (consent → minor → redactie)."
-      recommended_default: "Huidige bewijsdrempels handhaven (≥2 signalen of ≥3-daagse trend); rotatie alleen binnen gelijke ernst; urgent nooit weggedraaid. Besluitniveau (advies/voorstel/automatisch): coaching geeft advies en concrete voorstellen; de enige automatische handeling is de bijstelling van voorlopige plandagen (contract in TRAIN_PLAN_001) — alle andere autonomie is een openstaande kalibratievraag aan René."
+      recommended_default: "Bewijsdrempels (≥2 signalen of ≥3-daagse trend) blijven de norm voor conclusies; daaronder mag een voorzichtig signaal met expliciet lage zekerheid, nooit een stevige conclusie (Besluit René 30-07-2026; BOUWOPGAVE). Toon: prestatie persoonlijk en rustig; gezondheid/veiligheid helder en direct zonder paniektaal (Besluit René 30-07-2026). Rotatie alleen binnen gelijke ernst; urgent nooit weggedraaid. Besluitniveau (advies/voorstel/automatisch): coaching geeft advies en concrete voorstellen; automatisch alleen de bijstelling van voorlopige plandagen en — bij een harde veiligheidsstatus — het activeren van een herstelweek (BOUWOPGAVE); een herstelweek zonder harde veiligheidsstatus is altijd een duidelijk voorstel; definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten worden nooit zonder reactie aangepast, al mag Sparki bij harde veiligheid blokkeren met uitleg."
       technical_limits:
         - "De LLM kan verwoorden maar heeft geen kanaal om besluiten of getallen te wijzigen — die scheiding is architectureel en moet zo blijven."
       assumptions:
@@ -2431,12 +2435,12 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Vind je de bewijsdrempel goed staan (pas iets zeggen bij 2+ signalen of een 3-daagse trend), of mag Sparki eerder iets voorzichtigs zeggen zolang het de onzekerheid erbij noemt?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Vóór de normale bewijsdrempel mag Sparki een voorzichtig signaal tonen met expliciet lage zekerheid. Geen stevige conclusie. BOUWOPGAVE: de engine blokkeert nu álles onder de drempel — een aparte klasse 'voorzichtig signaal, lage zekerheid' moet gebouwd worden."
         - question: "Hoe moet een waarschuwing voelen: neutraal-zakelijk ('je belasting stijgt snel'), of persoonlijk-dringend ('ik zou morgen echt rust nemen') — en verschilt dat tussen gezondheid en prestatie?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Prestatieboodschappen zijn persoonlijk en rustig. Gezondheids- en veiligheidswaarschuwingen zijn helder en direct, zonder paniektaal."
         - question: "Wanneer mag Sparki zelfstandig handelen zonder eerst te vragen: nooit, alleen voorlopige plandagen bijstellen (huidig), of ook bijv. een herstelweek activeren bij duidelijke overbelastingssignalen?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) Voorlopige dagen mogen automatisch worden aangepast. Een herstelweek alleen automatisch bij een harde veiligheidsstatus; anders als duidelijk voorstel. Overkoepelend (besluit 20): zonder reactie past Sparki alleen voorlopige planning en niet-kritieke keuzes automatisch veilig aan; definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten nooit; bij harde veiligheid mag Sparki blokkeren, met uitleg. BOUWOPGAVE: automatische herstelweek bij harde veiligheidsstatus bestaat nog niet."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -2538,7 +2542,7 @@ chapter_bc_training_coaching_en_analyse:
 
     replit_definition:
       objective_quality_standard: "0 gezondheids-/readinessvelden zichtbaar bij sharing=none; schrijfacties uitsluitend met directe koppeling; 0 automatische wijzigingen aan coach-workouts; elk voorstel exact één besluit (tweede besluit ⇒ 409); geen coach-notitie over de sporter die de sporter niet kan zien (verwijderrecht owner-only)."
-      recommended_default: "Fail-closed op elk leespad (ook toekomstige); adoptie van advies-plannen maakt de rijen atleet-eigendom met source=coach en dedupe op datum+bron. Besluitniveau (advies/voorstel/automatisch): Sparki adviseert de coach en routeert atleet-feedback als voorstel; toepassen kan uitsluitend door een expliciet coachbesluit — automatische aanpassing van coach-trainingen bestaat niet."
+      recommended_default: "Fail-closed op elk leespad (ook toekomstige); adoptie van advies-plannen maakt de rijen atleet-eigendom met source=coach en dedupe op datum+bron. Coachinput die plan, advies of besluit beïnvloedt is sporter-zichtbaar; een privékladblok mag, mits het aantoonbaar geen verborgen inhoudelijke sturing kan veroorzaken (Besluit René 30-07-2026; BOUWOPGAVE). Besluitniveau (advies/voorstel/automatisch): de trainer is leidend bij normale trainingskeuzes; Sparki adviseert en routeert atleet-feedback als voorstel; toepassen kan uitsluitend door een expliciet coachbesluit — automatische aanpassing van coach-trainingen bestaat niet, maar bij een harde gezondheids- of veiligheidsblokkade mag Sparki de uitvoering blokkeren met duidelijke uitleg (Besluit René 30-07-2026; BOUWOPGAVE)."
       technical_limits:
         - "Open-voorstel-uniciteit is nog geen DB-contract op elk voorstel-type."
       assumptions:
@@ -2552,10 +2556,10 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Coachnotities: moet álles wat een coach over een sporter vastlegt voor de sporter zichtbaar zijn (huidige lijn), of wil je een écht privé kladblok voor de coach toestaan?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Coachinput die plan, advies of besluit beïnvloedt is zichtbaar voor de sporter. Een privékladblok mag bestaan, maar mag geen verborgen inhoudelijke sturing veroorzaken. BOUWOPGAVE: een écht privékladblok (met de waarborg dat het geen sturing kan voeden) bestaat nog niet — de huidige coachcontext is volledig sporter-transparant."
         - question: "Wie is leidend als coach en Sparki botsen (coach plant zwaar, Sparki ziet overbelastingssignalen): coach beslist en Sparki mag alleen adviseren (huidig), of mag Sparki bij duidelijke gezondheidssignalen de coach-training blokkeren?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) De trainer is leidend bij normale trainingskeuzes. Bij een harde gezondheids- of veiligheidsblokkade mag Sparki uitvoering blokkeren en moet het duidelijk uitleggen waarom. BOUWOPGAVE: een blokkade-mechanisme op coach-trainingen bij harde gezondheids-/veiligheidsstatus bestaat nog niet (nu alleen advies)."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -2624,7 +2628,7 @@ chapter_bc_training_coaching_en_analyse:
         - "Dagen zonder TSS tellen als nul in het EWMA-model; ontbrekende data drukt de fitheid dus omlaag in plaats van als onbekend te gelden — een bewuste maar niet-gekalibreerde keuze."
         - "Afgeleide TSS en FTP-floor hangen aan de kwaliteit van vermogen+FTP-op-datum; een verkeerde FTP werkt stil door in alle belastingcijfers."
         - "Radar-normalisaties (CTL/80, W/kg 2,0–5,5, 12 sessies/28d) zijn productschalen, geen individuele normen."
-        - "ACWR-achtige risicosignalen (spike >1,5) zijn heuristiek; de wetenschappelijke basis is omstreden als voorspeller."
+        - "ACWR-achtige risicosignalen (spike >1,5) zijn heuristiek en geen bewezen blessure- of ziektevoorspeller; alleen bruikbaar als voorzichtig waarschuwingssignaal in combinatie met meerdere gegevens, nooit zelfstandig voor diagnose of automatische escalatie, en altijd met de onzekerheid erbij benoemd."
 
     proposed_promise:
       text: "Het Lab rekent overal met hetzelfde belastingsmodel — je fitheid, vermoeidheid en vorm zijn op elke pagina dezelfde getallen. Alles wat berekend is, is herleidbaar: je ziet waar een getal vandaan komt. En wat niet berekend kán worden, blijft eerlijk leeg met de reden erbij — Sparki vult nooit een gok in waar een meting hoort."
@@ -2658,7 +2662,7 @@ chapter_bc_training_coaching_en_analyse:
 
     replit_definition:
       objective_quality_standard: "Alle belastingscijfers in de app komen uit één berekening (geen tweede implementatie); elke afgeleide waarde draagt een herleidingstrace; elke niet-berekenbare as/waarde is null met reden; implausibele inputs (bv. onmogelijk vermogen) worden afgewezen, nooit verwerkt."
-      recommended_default: "Huidig model handhaven (EWMA 42/7, IF uit TSS, Coggan-zones) omdat het aansluit op wat renners elders kennen; het extern anker (vergelijking met intervals.icu op eigen data) toevoegen als bewijs. Besluitniveau (advies/voorstel/automatisch): het Lab is uitsluitend interpretatie en advies; het doet geen voorstellen en past nooit iets automatisch aan — zijn cijfers voeden wél de plan-/coachlagen, die hun eigen besluitregels hebben."
+      recommended_default: "Huidig model handhaven (EWMA 42/7, IF uit TSS, Coggan-zones) omdat het aansluit op wat renners elders kennen; het extern anker (vergelijking met intervals.icu op eigen data) toevoegen als bewijs. Presentatie: waarde + betrouwbaarheidslabel + waar zinvol een bandbreedte, mobiel compact met detail achter doorklikken (Besluit René 30-07-2026; BOUWOPGAVE). Bij een registratiegat eerst melden dat registratie ontbreekt en actief vragen of een activiteit mist, in plaats van fitheid stil te laten dalen (Besluit René 30-07-2026; BOUWOPGAVE). Besluitniveau (advies/voorstel/automatisch): het Lab is uitsluitend interpretatie en advies; het doet geen voorstellen en past nooit iets automatisch aan — zijn cijfers voeden wél de plan-/coachlagen, die hun eigen besluitregels hebben."
       technical_limits:
         - "Individuele tijdconstanten worden niet ondersteund."
         - "Model is machteloos tegen verkeerde input-TSS (garbage in)."
@@ -2673,10 +2677,10 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Hoeveel onzekerheid wil je zien: alleen het getal (rustig), getal + betrouwbaarheidslabel (huidige databetrouwbaarheid hoog/beperkt/laag), of ook bandbreedtes op projecties?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Toon waarde, betrouwbaarheidslabel en waar zinvol een bandbreedte. Op mobiel compact, met detail achter doorklikken. BOUWOPGAVE: bandbreedtes op projecties en de compacte mobiele weergave met doorklik-detail bestaan nog niet overal."
         - question: "Als je een week niets registreert terwijl je wél getraind hebt (vakantie, andere fiets): wil je dat Sparki je fitheid gewoon laat dalen (huidig), of dat het je actief vraagt of er ongeregistreerde training was?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) Laat fitheid niet automatisch dalen alsof zeker niet is getraind. Meld eerst dat registratie ontbreekt en vraag actief of een activiteit mist. BOUWOPGAVE: dit is nieuw gewenst gedrag — het model telt lege dagen nu als nul-TSS zonder navraag."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -2748,7 +2752,7 @@ chapter_bc_training_coaching_en_analyse:
         - "Sensorafwijking-signaal (RHR +10% bij ≥5 metingen) is expliciet géén diagnose — de grens tussen signaal en medische suggestie moet in copy bewaakt blijven."
 
     proposed_promise:
-      text: "Meld je ziek of geblesseerd, dan gaat bij Sparki alles opzij: geen trainingsdruk, geen plan dat doordramt. Beter melden gaat bewust via een korte herstelcheck — zolang je lichaam 'nee' zegt, houdt Sparki de rem erop. Sparki stelt nooit een diagnose en doet nooit alsof: het signaleert alleen wat jouw eigen metingen en meldingen laten zien, en vraagt per dag alleen wat het nog niet weet."
+      text: "Bij een harde medische of acute blokkade gaat bij Sparki alles opzij: geen trainingsdruk, geen plan dat doordramt. Bij een niet-acute klacht of in een herstelfase blijft alleen aangepaste belasting over, binnen vooraf vastgelegde veiligheidscriteria. Beter melden gaat bewust via een korte herstelcheck, en daarna bouwt Sparki trapsgewijs en criteriagestuurd op — nooit in één keer automatisch terug naar volledig normaal. Bij duidelijke gezondheidsrisico's weegt veiligheid zwaarder dan wat sporter of coach op dat moment wil. Sparki stelt nooit een diagnose en doet nooit alsof: het signaleert alleen wat jouw eigen metingen en meldingen laten zien, en vraagt per dag alleen wat het nog niet weet."
       proposed_by: replit
       rationale: "Gezondheid is de enige plek waar een fout advies echt schade doet; raises-only + resume-gate is daarom bewust asymmetrisch (makkelijk ziek melden, bewust beter melden). Dit is ook juridisch de veilige lijn: signaleren, nooit diagnosticeren."
       rene_approved: false
@@ -2779,7 +2783,7 @@ chapter_bc_training_coaching_en_analyse:
 
     replit_definition:
       objective_quality_standard: "Statusverzwaring kan altijd en direct; statusverlichting uitsluitend via de herstelcheck (409 bij 'niet trainen'); bij actieve status ziek/geblesseerd 0 trainingsprikkels waar dan ook; dagelijkse check-in vraagt alleen ontbrekende velden; 0 medische diagnose- of behandeltaal in enige copy."
-      recommended_default: "Zelfrapportage-eerst houden en wearable-data (zodra beschikbaar) alleen als extra signaal, nooit als automatische statuswijziging. Besluitniveau (advies/voorstel/automatisch): een ziek-/blessuremelding werkt automatisch door als rem op plan en Vandaag (veiligheidshandeling); statusverlichting is altijd een expliciete keuze van de sporter via de herstelcheck; al het overige (opbouwadvies, signalen) is advies."
+      recommended_default: "Zelfrapportage-eerst houden en wearable-data (zodra beschikbaar) alleen als extra signaal, nooit als automatische statuswijziging. Na 'beter melden' een bewaakte, trapsgewijze hervatting op basis van klachten, belasting en reactie — geen universeel vast aantal dagen en nooit automatisch volledig normaal (Besluit René 30-07-2026; BOUWOPGAVE). Bij afwijkende metingen eerst direct vragen wat er speelt; bij duidelijke risico-indicatoren tegelijk het dagadvies voorzichtig verlagen; bij één zwakke afwijking alleen informeren (Besluit René 30-07-2026; BOUWOPGAVE). Besluitniveau (advies/voorstel/automatisch): een ziek-/blessuremelding werkt automatisch door als rem op plan en Vandaag (veiligheidshandeling); statusverlichting is altijd een expliciete keuze van de sporter via de herstelcheck; al het overige (opbouwadvies, signalen) is advies."
       technical_limits:
         - "Zonder wearable-ingest geen objectieve vroegsignalering; RHR/HRV alleen als de atleet ze aanlevert."
       assumptions:
@@ -2794,23 +2798,23 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Hoe streng mag de rem zijn na 'beter melden': direct weer normaal trainen als jij dat zegt, of altijd eerst een lichte opbouwperiode die Sparki bewaakt (en zo ja, hoeveel dagen voelt redelijk)?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Na 'beter melden' niet automatisch volledig normaal. Gebruik een bewaakte, trapsgewijze hervatting op basis van klachten, belasting en reactie. Geen universeel vast aantal dagen. BOUWOPGAVE: een criteriagestuurde opbouwfase ná de herstelcheck bestaat nog niet in de plan-engine."
         - question: "Als jouw metingen (rusthartslag) afwijken maar jij je goed voelt: wil je dat Sparki alleen informeert, ook het dagadvies verlaagt, of het je op de man af vraagt?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) Bij afwijkende metingen eerst direct vragen wat er speelt. Bij duidelijke risico-indicatoren tegelijk het dagadvies voorzichtig verlagen; bij één zwakke afwijking alleen informeren. BOUWOPGAVE: deze gestaffelde reactie (vragen / vragen+verlagen / alleen informeren) bestaat nog niet als vastgelegd mechanisme."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Bij actieve status ziek of geblesseerd bestaat er nergens in het product een trainingsprikkel of prestatie-aansporing voor die dag."
+        - rule: "Bij een harde medische of acute blokkade (actieve status ziek/geblesseerd met klachten of 'niet trainen') bestaat er nergens in het product een trainingsprikkel of prestatie-aansporing voor die dag; bij een niet-acute klacht of herstel-/re-integratiefase bestaat uitsluitend aangepaste belasting volgens vooraf vastgelegde veiligheidscriteria, en bij duidelijke gezondheidsrisico's weegt veiligheid zwaarder dan de wens van sporter of coach."
           rule_type: hard_blockage
           measurement_level: per_dag
           aggregate_justification: ""
           counterexamples:
             - case: "Ziek gemeld; het plan is leeg maar Vandaag toont nog 'tijd voor een korte duurrit?' uit een andere bron — overtreding: de regel geldt productbreed, niet alleen in het plan."
               proof_stage: designed
-              proof_method: "Redenering: day-type zet health altijd bovenaan en de plan-engine blokkeert prikkels; de productbrede claim (élke bron) vergt een geïntegreerde test over plan + Vandaag + nudges tegelijk — dat is de latere executed-stap."
+              proof_method: "Redenering: day-type zet health altijd bovenaan en de plan-engine blokkeert prikkels; de productbrede claim (élke bron) vergt een geïntegreerde test over plan + Vandaag + nudges tegelijk — dat is de latere executed-stap. BOUWOPGAVE: het onderscheid harde blokkade vs. niet-acute klacht/herstelfase met aangepaste belasting volgens veiligheidscriteria bestaat nog niet in code (nu binair)."
               proof_result: not_yet_tested
-        - rule: "Gezondheidsstatus kan alleen verlicht worden via de herstelcheck; elk ander pad dat de status verlaagt is een defect."
+        - rule: "Gezondheidsstatus kan alleen verlicht worden via de herstelcheck, en terugkeer na ziekte of blessure is daarna trapsgewijs en criteriagestuurd — nooit automatisch volledig normaal; elk ander pad dat de status verlaagt of de belasting in één keer normaliseert is een defect."
           rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
@@ -2899,7 +2903,7 @@ chapter_bc_training_coaching_en_analyse:
 
     replit_definition:
       objective_quality_standard: "Grafieken tonen uitsluitend opgenomen kanalen; datagaten worden nooit visueel doorverbonden alsof er gemeten is; 0 met terugwerkende kracht gegenereerde grafieken of records; elke schatting draagt een zichtbaar label."
-      recommended_default: "Gaten tonen als onderbreking (connectNulls uit); oude sessies houden de eerlijke melding 'alleen samenvatting beschikbaar'. Besluitniveau (advies/voorstel/automatisch): grafieken zijn pure weergave en interpretatie; geen voorstellen, geen automatische aanpassingen."
+      recommended_default: "Gaten tonen als onderbreking (connectNulls uit); oude sessies houden de eerlijke melding 'alleen samenvatting beschikbaar'. Standaard een compacte kernweergave (vermogen/hartslag) met de rest onder 'Meer details'; desktop mag uitgebreider zijn dan mobiel (Besluit René 30-07-2026; BOUWOPGAVE). Vergelijken alleen wanneer contextverschillen zichtbaar gemaakt kunnen worden, anders weigeren met uitleg (Besluit René 30-07-2026; BOUWOPGAVE). Besluitniveau (advies/voorstel/automatisch): grafieken zijn pure weergave en interpretatie; geen voorstellen, geen automatische aanpassingen."
       technical_limits:
         - "Korte ritten (<15–20 bruikbare punten) krijgen geen analyses — bewust."
       assumptions:
@@ -2914,10 +2918,10 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Hoeveel grafieken wil je standaard zien bij een rit: alles wat er is (huidig), of een compacte kern (vermogen/hartslag) met de rest achter 'meer'?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Gebruik een compacte kernweergave. Toon de rest onder 'Meer details'. Desktop mag uitgebreider zijn dan mobiel. BOUWOPGAVE: de huidige weergave toont alles; kern + 'Meer details' met desktop/mobiel-onderscheid moet gebouwd worden."
         - question: "Sessies vergelijken weigert nu streng bij ongelijke context (ander type training, groot duurverschil). Goed zo, of wil je tóch kunnen vergelijken met een duidelijke disclaimer?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) Geen misleidende vergelijking. Alleen vergelijken wanneer contextverschillen zichtbaar gemaakt kunnen worden; anders weigeren en uitleggen waarom. BOUWOPGAVE: het 'contextverschillen zichtbaar maken'-pad (vergelijken mét zichtbare verschillen) bestaat nog niet — nu alleen strenge weigering."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -3019,7 +3023,7 @@ chapter_bc_training_coaching_en_analyse:
 
     replit_definition:
       objective_quality_standard: "Score/patroon alleen bij ≥4 geplande trainingen in 28 dagen (anders null zonder verzinsel); patronen ≥2 echte voorvallen; confidence ≤0,9; debrief bevat uitsluitend feiten uit plan-vs-uitvoering; 0 diagnose-/etikettaal; reflecties zijn opt-in, owner-only en per training."
-      recommended_default: "Gedragsspiegel-positie handhaven; mentale signalen laag-frequent en nooit als urgentie-kaart tenzij gecombineerd met gezondheidssignalen. Besluitniveau (advies/voorstel/automatisch): mentale signalen zijn uitsluitend advies (spiegel + technieken); nooit voorstellen tot planwijziging en nooit automatische aanpassing."
+      recommended_default: "Gedragsspiegel-positie handhaven; mentale signalen laag-frequent en nooit als urgentie-kaart tenzij gecombineerd met gezondheidssignalen. Benoemen: neutraal beschrijven en voorzichtig duiden, altijd als mogelijkheid, nooit als diagnose (Besluit René 30-07-2026). Jeugd: gedempt en veiligheidsgericht, geen verborgen profilering, gevoelige escalatie alleen via passende ouder-/trainer-/professionele route (Besluit René 30-07-2026; BOUWOPGAVE). Chat weegt standaard niet mee; alleen na afzonderlijke, expliciete en intrekbare toestemming voor een omschreven doel (Besluit René 30-07-2026). Besluitniveau (advies/voorstel/automatisch): mentale signalen zijn uitsluitend advies (spiegel + technieken); nooit voorstellen tot planwijziging en nooit automatische aanpassing."
       technical_limits:
         - "Geen signaal zonder gedragsverandering; dat is de bewuste prijs van de niet-invasieve aanpak."
       assumptions:
@@ -3033,12 +3037,12 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Hoe direct mag Sparki mentale patronen benoemen: alleen neutraal beschrijven ('je verschuift intervaltrainingen vaak'), of ook duiden ('het lijkt erop dat je tegen intervallen opziet')?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Neutraal beschrijven en voorzichtig duiden, altijd als mogelijkheid en nooit als diagnose."
         - question: "Voor jonge renners (Dylan's leeftijdsgroep): wil je mentale signalen daar volledig aan, gedempt (alleen beschrijvend, nooit duidend), of uit totdat een ouder/trainer meekijkt?"
-          answer_rene: ""
+          answer_rene: "(Besluit René 30-07-2026) Voor jeugd gedempt en veiligheidsgericht. Geen verborgen psychologische profilering. Gevoelige escalatie alleen via een passende ouder-, trainer- of professionele route. BOUWOPGAVE: er is nu geen leeftijdsbranch in de mentale routes; de gedempte jeugdmodus en de escalatieroute moeten gebouwd worden."
         - question: "Moet de eerdere visie 'chatgesprekken wegen mee in de mentale beoordeling' er ooit komen (met expliciete toestemming), of schrappen we die definitief?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "(Besluit René 30-07-2026) Chatgesprekken standaard niet meewegen. Alleen na afzonderlijke, expliciete en intrekbare toestemming voor een duidelijk omschreven doel."
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
