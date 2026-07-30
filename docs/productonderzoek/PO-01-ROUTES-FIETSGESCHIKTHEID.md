@@ -93,3 +93,14 @@ René koos ervoor direct de betaalde GraphHopper-API te onderzoeken (secret `GRA
 - Geschiktheidspoort in de best-of-N-kandidaatselectie: onverhard aandeel >5% op racefiets weegt zwaar; de early-exit accepteert alleen kandidaten zonder geschiktheidsstraf.
 
 **Openstaand voor Product Proof (≥9,0):** onafhankelijke proof op meerdere startpunten/fietstypen, kosten-/limietbewaking GH-abonnement, en de vraag hoe `missing` wegdek richting de renner wordt gecommuniceerd.
+
+---
+
+## Acceptatiegrenzen (30 juli 2026, vastgesteld door René — bindend per doctrine art. 10)
+
+Voor de belofte "routes die écht geschikt zijn voor je gekozen fiets":
+
+1. **Racefiets: 0% aantoonbaar onverhard.** Elke meter gemeten los gravel/onverhard/bospad/singletrack is onacceptabel (smalle banden, materiaalrisico). "Beter dan de alternatieven" is geen norm; de norm is nul.
+2. **Fietsverbod = route afkeuren.** Een route met echt fietsverbod (bicycle=no) wordt nooit aangeboden — "je kunt niet verder, dan heb je niks aan deze route". Doorrijdbare barrières (poortje, fietssluis) zijn géén verbod en worden apart en eerlijk benoemd (taak #430).
+3. **Onbekend wegdek is een risico, geen vrijbrief.** ~28% onbekend betekent dat bijna 1/3 van de route zandpad kán zijn. Generatie moet onbekend wegdek actief mijden; het resterende onbekende aandeel wordt eerlijk getoond en structureel verkleind met de BGT-overheidswegenkaart (taak #428).
+4. **Toetsing:** de Product Proof beoordeelt tegen déze grenzen, op echte schermen en echte routes, met de gebruikersbril ("wat zou René hiervan zeggen?"). Verwachtingsverschillen worden al testend vóór "gereed" gedicht (René test mee).

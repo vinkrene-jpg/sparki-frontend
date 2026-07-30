@@ -252,21 +252,6 @@ function turnDensityPenalty(result: RouteResult): number {
 // toegangsstraf: road_access is auto-toegang en zou fietspaden benadelen.
 // Providers zonder meting (ORS) krijgen geen straf — daar blijft de
 // Overpass-verificatie achteraf de enige poort.
-export function suitabilityPenalty(
-  result: RouteResult,
-  profile: LoopRequest["profile"],
-): number {
-  const paved = result.pavedFraction;
-  if (paved == null) return 0;
-  let penalty = 0;
-  if (profile === "cycling-road") {
-    const unpavedShare = 1 - paved;
-    // >5% onverhard op een racefietsroute is een echte misser; daaronder
-    // lineair. Onbekend wegdek telt niet mee (pavedFraction is dan al null).
-    penalty += Math.min(unpavedShare / 0.05, 1.5) * 1.2;
-  }
-  return penalty;
-}
 
 export async function generateVariedLoop(
   provider: RoutingProvider,
@@ -371,15 +356,18 @@ export async function generateVariedLoop(
         );
       }
     }
-    // Racefiets (cycling-road): het verharde aandeel komt van de routebron
-    // zélf (GraphHopper surface-details) en weegt zwaar — een lus met 10%
-    // onverhard hoort het vrijwel altijd te verliezen van een gladde lus.
-    // Zonder meting (ORS, te veel onbekend wegdek) telt dit niet mee: nooit
-    // gokken, alleen echte data rangschikken.
-    const surfaceMiss =
+    // Racefiets (cycling-road): acceptatiegrens René (PO-01, doctrine art. 10)
+    // is NUL aantoonbaar onverhard — niet "zo min mogelijk". Elke gemeten
+    // onverharde meter geeft daarom meteen een straf die vrijwel elke andere
+    // kwaliteitsafweging verslaat (basisstraf + oplopend), zodat een schone
+    // kandidaat praktisch altijd wint. Zonder meting (ORS, te veel onbekend
+    // wegdek) telt dit niet mee: nooit gokken, alleen echte data rangschikken.
+    const unpavedShare =
       req.profile === "cycling-road" && result.pavedFraction != null
         ? 1 - result.pavedFraction
         : 0;
+    const surfacePenalty =
+      unpavedShare > 0 ? 3 + Math.min(unpavedShare / 0.05, 1) * 3 : 0;
     // "Bij twijfel vermijden" (hertest Hengelo): een racefietskandidaat met
     // veel wegvakken zonder wegdek-tag is een gok. Weeg het ONBEKENDE aandeel
     // mee (lichter dan aantoonbaar onverhard) zodat een gemeten-verharde lus
@@ -391,10 +379,12 @@ export async function generateVariedLoop(
         : 0;
     const score =
       overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9 +
-      // unknownMiss LICHTER dan surfaceMiss: aantoonbaar onverhard is altijd
-      // erger dan onbekend (anders wint een gemeten-gravel-lus van een
-      // grotendeels ongetagde maar waarschijnlijk-asfalt-lus).
-      ascentMiss * 1.0 + surfaceMiss * 6.0 + unknownMiss * 1.0;
+      // unknownMiss LICHTER dan surfacePenalty: aantoonbaar onverhard is
+      // altijd erger dan onbekend (anders wint een gemeten-gravel-lus van een
+      // grotendeels ongetagde maar waarschijnlijk-asfalt-lus). Wel zwaarder
+      // dan andere kwaliteitswensen: onbekend wegdek is een risico, geen
+      // vrijbrief (acceptatiegrens PO-01 §3).
+      ascentMiss * 1.0 + surfacePenalty + unknownMiss * 2.0;
     pool.push({ result, score });
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
@@ -410,10 +400,11 @@ export async function generateVariedLoop(
       drift < 0.15 &&
       elevation < 0.35 &&
       // Racefiets: pas vroeg stoppen als de lus volgens de routebron zelf
-      // (vrijwel) volledig verhard is; zonder meting blijft de oude regel.
+      // VOLLEDIG verhard is (acceptatiegrens: 0% aantoonbaar onverhard) én
+      // het wegdek grotendeels bekend is; zonder meting blijft de oude regel.
       (req.profile !== "cycling-road" ||
         result.pavedFraction == null ||
-        (result.pavedFraction >= 0.98 &&
+        (result.pavedFraction >= 0.999 &&
           (result.surfaceKnownFraction == null ||
             result.surfaceKnownFraction >= 0.9)))
     )

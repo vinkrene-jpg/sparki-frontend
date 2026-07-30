@@ -1,4 +1,4 @@
-# SPARKI PRODUCT PROOF DOCTRINE v1.0
+# SPARKI PRODUCT PROOF DOCTRINE v1.1
 
 Deze doctrine vervangt featuregedreven ontwikkeling.
 
@@ -156,3 +156,23 @@ Het onderzoek beschrijft minimaal:
 Pas na goedkeuring van dit Productonderzoek mag de implementatie starten.
 
 Sparki wordt nooit aangepast aan de beperkingen van de huidige implementatie zonder eerst te bewijzen dat een betere oplossing redelijkerwijs niet haalbaar is.
+
+----------------------------------------
+10. ACCEPTATIEGRENZEN ZIJN PRODUCTKEUZES (v1.1)
+----------------------------------------
+
+Een belofte is pas compleet met een expliciete ACCEPTATIEGRENS: hoeveel afwijking nog acceptabel is, in gewone taal.
+
+Voorbeeld: niet "geschikt voor de racefiets", maar "0% onverhard; een route met fietsverbod wordt nooit aangeboden".
+
+Regels:
+
+1. Acceptatiegrenzen worden door de producteigenaar goedgekeurd VOORDAT er gebouwd wordt. Ze staan in het productonderzoek. Bouwen tegen een norm die de producteigenaar niet heeft gezien is verboden.
+
+2. Bij twijfel tijdens de bouw (een drempel, tolerantie of afweging die niet in de goedgekeurde norm staat): kies voorlopig de STRENGSTE eerlijke variant én registreer de keuze als open keuze, zodat de producteigenaar hem ziet. Nooit stilzwijgend "goed genoeg".
+
+3. De onafhankelijke Product Proof toetst tegen de goedgekeurde acceptatiegrenzen, niet tegen "werkt het technisch" of "beter dan eerst". Een resultaat binnen de techniek maar buiten de grens scoort onvoldoende.
+
+4. Gebruikersbril als vast toetsmoment: elke proof beantwoordt expliciet de vraag "wat zou de producteigenaar als gebruiker hiervan zeggen?" — op basis van echte schermen en echte routes/data, niet op basis van logregels.
+
+5. Het gat wordt al testend vooraf gedicht: bij elke belofte wordt vóór "gereed" minimaal één echt gebruiksmoment samen met de producteigenaar getest (of klaargezet om te testen), zodat verwachtingsverschillen zichtbaar worden vóórdat de module gereed heet.
