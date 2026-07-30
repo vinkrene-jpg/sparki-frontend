@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { candidateEnvironmentOf } from "../lib/candidate-environment";
-import { bgtUnpavedShare } from "../lib/bgt-verharding";
+import { controlUnpavedShare } from "../lib/surface-control";
 import { routeObstaclesOf } from "../lib/route-remarks";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
@@ -394,9 +394,9 @@ router.post("/voorstellen/:id/aanpassen", requireAuth, async (req, res) => {
           // woonwijken en stoplichten zoveel mogelijk (interactief pad:
           // kort tijdbudget, nooit wachten op trage bronnen).
           environmentOf: candidateEnvironmentOf(false, { budgetMs: 2000 }),
-          // BGT-controlelaag (alleen Nederland): racefietskandidaten die
+          // Officiële-kaart-controlelaag (BGT alleen Nederland, GRB alleen Vlaanderen): racefietskandidaten die
           // volgens de overheidswegenkaart onverhard blijken, verliezen.
-          unpavedShareOf: bgtUnpavedShare,
+          unpavedShareOf: controlUnpavedShare,
           // Obstakel-poort (kort tijdbudget, interactief): trap/fietsverbod/
           // afgesloten poort = harde afkeur; minste poorten wint.
           obstaclesOf: routeObstaclesOf({ budgetMs: 2500 }),

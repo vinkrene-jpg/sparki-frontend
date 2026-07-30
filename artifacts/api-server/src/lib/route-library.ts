@@ -25,7 +25,7 @@ import {
   type RoutingProfile,
 } from "./routing";
 import { candidateEnvironmentOf } from "./candidate-environment";
-import { bgtUnpavedShare } from "./bgt-verharding";
+import { controlUnpavedShare } from "./surface-control";
 import { routeObstaclesOf } from "./route-remarks";
 import { summarizeTrack } from "./gpx-parse";
 import { logger } from "./logger";
@@ -250,9 +250,9 @@ export async function generateStarterSet(
               // Vaste eis: ook bibliotheekroutes mijden dorpskernen,
               // woonwijken en stoplichten zoveel mogelijk.
               environmentOf: candidateEnvironmentOf(false),
-              // BGT-controlelaag (alleen Nederland): racefietskandidaten die
+              // Officiële-kaart-controlelaag (BGT alleen Nederland, GRB alleen Vlaanderen): racefietskandidaten die
               // volgens de overheidswegenkaart onverhard blijken, verliezen.
-              unpavedShareOf: bgtUnpavedShare,
+              unpavedShareOf: controlUnpavedShare,
               // Obstakel-poort: trap/fietsverbod/afgesloten poort = harde
               // afkeur; minste poorten wint (grenzen René 30-07-2026).
               obstaclesOf: routeObstaclesOf(),

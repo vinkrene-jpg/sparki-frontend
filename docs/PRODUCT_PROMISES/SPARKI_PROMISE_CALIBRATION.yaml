@@ -6,7 +6,6 @@
 # racefiets; trap/fietsverbod/afgesloten poort = absolute weigering (nooit aanbieden);
 # onbekend wegdek actief mijden; wereldmarkt-lat: elk onderdeel ≥9/10 t.o.v. de beste
 # marktspeler (Komoot voor routes).
-
 chapter_d_routes_en_navigatie:
 
   - id: ROUTES_GENERATOR_001
@@ -76,11 +75,12 @@ chapter_d_routes_en_navigatie:
             - "alleen Vlaanderen biedt een BGT-waardig verhardingsattribuut per wegvak; DE alleen binair, FR/Wallonië alleen wegtype-proxy, Brussel niets — een 0%-belofte op BGT-niveau kan buiten NL alleen in Vlaanderen"
             - "DE = 16 leveringen (of basemap.de-bundel) met per-Land bronvermelding; integratie bewerkelijk"
             - "overige EU-landen (buiten BE/DE/FR) nog niet licentie-getoetst"
-          applicability: "KANDIDAAT voor de EU-uitrol, volgorde-advies PO-04: 1) Vlaanderen (GRB, bijna 1-op-1 BGT-patroon), 2) Duitsland (binair, eerlijk-zwakkere claim), 3) Frankrijk (geen sterkere claim mogelijk, copy blijft 'minder zeker over wegdek'). Wallonië en Brussel: juridisch open maar zonder wegdekattribuut — géén activeringskandidaat, eerlijk-zwakkere belofte blijft daar gelden. Tot activering is de belofte buiten NL zwakker (alleen OSM+GH)."
+          applicability: "Vlaanderen GEACTIVEERD (30-07-2026, taak #470): GRB Wegsegment als controlelaag in lib/grb-verharding.ts — zelfde patroon als de BGT (tegelcache, plafond, eerlijk null), maar punt-op-lijn-matching op de lijngeometrie; Vlaanderen-omtrek-filter met Brussel als gat; verplichte naamvermelding 'Bron: Grootschalig Referentie Bestand Vlaanderen, Digitaal Vlaanderen' in grbSource() en in elke GRB-melding. De buitenland-copy 'minder zeker over wegdek' vervalt daarmee alleen voor Vlaanderen. Resterende kandidaten, volgorde-advies PO-04: 2) Duitsland (binair, eerlijk-zwakkere claim), 3) Frankrijk (geen sterkere claim mogelijk, copy blijft 'minder zeker over wegdek'). Wallonië en Brussel: juridisch open maar zonder wegdekattribuut — géén activeringskandidaat, eerlijk-zwakkere belofte blijft daar gelden. Buiten NL+Vlaanderen blijft de belofte zwakker (alleen OSM+GH)."
       sources_in_use:
         - "GraphHopper Directions API — motor + eerste wegdekmeting (enige motor met custom models binnen bereik)"
         - "OpenStreetMap/Overpass — onafhankelijke verificatiepoort (obstakels, verbod, wegdek)"
         - "BGT/PDOK — NL-controlelaag voor onbekend wegdek"
+        - "GRB/Digitaal Vlaanderen — Vlaanderen-controlelaag voor onbekend wegdek (Wegsegment VERH+MORF, lijngeometrie; naamvermelding verplicht; sinds 30-07-2026, taak #470)"
       privacy_status: unknown
       missing_information:
         - "Kosten-/limietbewaking GraphHopper-abonnement (verbruik per dag, plafondgedrag) is niet ingericht."
@@ -99,7 +99,7 @@ chapter_d_routes_en_navigatie:
         - "OSM-wegen zonder surface-tag zijn in NL meestal asfalt (woonstraten) — daarom straf 0.4 en geen uitsluiting."
       unknowns:
         - "Slaagkans van de generator in gravel-rijke regio's (Veluwe/heuvelland) onder de absolute poort: hoe vaak 'geen route gevonden'?"
-        - "Gedrag/kwaliteit buiten NL zonder BGT-laag."
+        - "Gedrag/kwaliteit buiten NL en Vlaanderen zonder officiële-kaart-controlelaag (BGT/GRB)."
       evidence_method:
         - "Geautomatiseerde suitability-proof over meerdere startpunten/fietstypen tegen René's grenzen (bestaat; her-runnen na motor-fix — taken #437/#442 leveren de afkeurpoort-bewijzen)."
         - "Tegenvoorbeeld-tests per afkeurregel (zie acceptance_contract)."

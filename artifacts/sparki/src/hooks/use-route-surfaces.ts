@@ -39,9 +39,10 @@ export type RouteSurfacesAnalysis = {
   // Aantoonbaar fietsverbod (harde afkeur) vs. mildere access-beperking.
   forbiddenKm: number
   restrictedKm: number
-  // BGT-controlelaag (alleen Nederland): hoeveel OSM-onbekende meetpunten de
-  // officiële overheidswegenkaart alsnog een verharding kon geven. null =
-  // niet geraadpleegd (buiten NL, geen onbekend, of bron faalde).
+  // Officiële-kaart-controlelaag (BGT in Nederland, GRB in Vlaanderen):
+  // hoeveel OSM-onbekende meetpunten de officiële overheidswegenkaart alsnog
+  // een verharding kon geven. null = niet geraadpleegd (buiten NL/Vlaanderen,
+  // geen onbekend, of bron faalde). source draagt de verplichte bronvermelding.
   bgt?: {
     checkedSamples: number
     resolvedSamples: number

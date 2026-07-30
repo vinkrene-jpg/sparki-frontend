@@ -141,6 +141,7 @@
     "test:route-suitability": "node ./scripts/run-test.mjs route-suitability",
     "test:route-surfaces": "node ./scripts/run-test.mjs route-surfaces",
     "test:bgt-verharding": "node ./scripts/run-test.mjs bgt-verharding",
+    "test:grb-verharding": "node ./scripts/run-test.mjs grb-verharding",
     "test:race-export": "node ./scripts/run-test.mjs race-export",
     "test:fueling": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs fueling",
     "test:afvaldoel-doorvoering": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs afvaldoel-doorvoering",

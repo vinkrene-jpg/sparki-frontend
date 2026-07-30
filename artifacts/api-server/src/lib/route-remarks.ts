@@ -13,6 +13,7 @@
 import type { RoutePathPoint } from "@workspace/db";
 import { samplePath } from "./route-insight";
 import { bgtVerdictsForPoints, type BgtPointVerdict } from "./bgt-verharding";
+import { grbVerdictsForPoints, type GrbPointVerdict } from "./grb-verharding";
 
 export type RouteRemarkKind =
   | "veerpont"
@@ -650,10 +651,11 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
     .sort((a, b) => a.routeKm - b.routeKm)
     .slice(0, 60);
 
-  // BGT-controlelaag (alleen Nederland, taak #428): wegvakken die volgens de
-  // officiële overheidswegenkaart half verhard/onverhard zijn maar waar OSM
-  // zwijgt, krijgen alsnog een eerlijke melding. Een BGT-fout laat de
-  // OSM-meldingen ongemoeid (extra laag, nooit een blokkade).
+  // Officiële-kaart-controlelaag (BGT in Nederland, GRB in Vlaanderen, taken
+  // #428/#470): wegvakken die volgens de officiële overheidswegenkaart niet
+  // volledig verhard zijn maar waar OSM zwijgt, krijgen alsnog een eerlijke
+  // melding. Een bron-fout laat de OSM-meldingen ongemoeid (extra laag, nooit
+  // een blokkade).
   try {
     const samples = routeSampleIdx.map((gi) => ({
       point: geometry[gi]!,
@@ -664,16 +666,24 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
       samples.map((s) => s.point),
       { maxTiles: 30 },
     );
+    let controlRemarks: RouteRemark[] = [];
     if (verdicts) {
-      const bgtRemarks = buildBgtRemarks(samples, verdicts, out);
-      if (bgtRemarks.length > 0) {
-        out = [...out, ...bgtRemarks]
-          .sort((a, b) => a.routeKm - b.routeKm)
-          .slice(0, 60);
-      }
+      controlRemarks = buildBgtRemarks(samples, verdicts, out);
+    } else {
+      // Vlaanderen: GRB Wegsegment (verplichte bronvermelding in de melding).
+      const grbVerdicts = await grbVerdictsForPoints(
+        samples.map((s) => s.point),
+        { maxTiles: 30 },
+      );
+      if (grbVerdicts) controlRemarks = buildGrbRemarks(samples, grbVerdicts, out);
+    }
+    if (controlRemarks.length > 0) {
+      out = [...out, ...controlRemarks]
+        .sort((a, b) => a.routeKm - b.routeKm)
+        .slice(0, 60);
     }
   } catch {
-    // eerlijk: BGT-laag valt weg, OSM-meldingen blijven staan
+    // eerlijk: controlelaag valt weg, OSM-meldingen blijven staan
   }
 
   CACHE.set(cacheKey, { at: Date.now(), data: out });
@@ -693,13 +703,84 @@ export function buildBgtRemarks(
   verdicts: (BgtPointVerdict | null)[],
   existing: RouteRemark[],
 ): RouteRemark[] {
+  return buildControlRemarks(
+    samples,
+    verdicts.map((v) =>
+      v ? { verdict: v.verdict, omschrijving: v.fysiekVoorkomen } : null,
+    ),
+    existing,
+    {
+      idPrefix: "bgt",
+      halfLabel: "Halfverhard wegdek (BGT)",
+      unpavedLabel: "Onverhard wegdek (BGT)",
+      detail: (omschrijving) =>
+        `Volgens de officiële overheidswegenkaart (BGT, alleen Nederland) is dit wegvak ${omschrijving}. ` +
+        "OpenStreetMap kent hier geen wegdek; de BGT vult dat gat.",
+      evidence: (omschrijving) => `BGT: fysiek_voorkomen=${omschrijving} (PDOK)`,
+    },
+  );
+}
+
+/**
+ * Idem voor het Vlaamse GRB (lijngeometrie). De detailtekst draagt de
+ * VERPLICHTE bronvermelding "Bron: Grootschalig Referentie Bestand
+ * Vlaanderen, Digitaal Vlaanderen".
+ */
+export function buildGrbRemarks(
+  samples: { point: RoutePathPoint; km: number; idx: number }[],
+  verdicts: (GrbPointVerdict | null)[],
+  existing: RouteRemark[],
+): RouteRemark[] {
+  return buildControlRemarks(
+    samples,
+    verdicts.map((v) =>
+      v
+        ? {
+            verdict: v.verdict,
+            omschrijving: v.lblMorf ? `${v.lblVerh} (${v.lblMorf})` : v.lblVerh,
+          }
+        : null,
+    ),
+    existing,
+    {
+      idPrefix: "grb",
+      halfLabel: "Losse verharding (GRB)",
+      unpavedLabel: "Onverhard wegdek (GRB)",
+      detail: (omschrijving) =>
+        `Volgens de officiële Vlaamse wegenkaart is dit een ${omschrijving}. ` +
+        "OpenStreetMap kent hier geen wegdek; het GRB vult dat gat. " +
+        "Bron: Grootschalig Referentie Bestand Vlaanderen, Digitaal Vlaanderen.",
+      evidence: (omschrijving) =>
+        `GRB: ${omschrijving} (Digitaal Vlaanderen)`,
+    },
+  );
+}
+
+type ControlVerdict = {
+  verdict: "verhard" | "half_verhard" | "onverhard";
+  omschrijving: string;
+};
+
+function buildControlRemarks(
+  samples: { point: RoutePathPoint; km: number; idx: number }[],
+  verdicts: (ControlVerdict | null)[],
+  existing: RouteRemark[],
+  copy: {
+    idPrefix: string;
+    halfLabel: string;
+    unpavedLabel: string;
+    detail: (omschrijving: string) => string;
+    evidence: (omschrijving: string) => string;
+  },
+): RouteRemark[] {
   type Seg = {
     fromKm: number;
     toKm: number;
     idx: number;
     lat: number;
     lon: number;
-    fysiek: string;
+    omschrijving: string;
+    half: boolean;
     count: number;
   };
   const segs: Seg[] = [];
@@ -720,7 +801,8 @@ export function buildBgtRemarks(
           idx: s.idx,
           lat: s.point[0],
           lon: s.point[1],
-          fysiek: v.fysiekVoorkomen,
+          omschrijving: v.omschrijving,
+          half: v.verdict === "half_verhard",
           count: 1,
         };
       }
@@ -746,14 +828,11 @@ export function buildBgtRemarks(
       return seg.fromKm <= rTo && seg.toKm >= rFrom;
     });
     if (overlapped) continue;
-    const half = seg.fysiek.trim().toLowerCase().startsWith("half");
     out.push({
-      id: `bgt/${seg.idx}`,
+      id: `${copy.idPrefix}/${seg.idx}`,
       kind: "onverhard",
-      label: half ? "Halfverhard wegdek (BGT)" : "Onverhard wegdek (BGT)",
-      detail:
-        `Volgens de officiële overheidswegenkaart (BGT, alleen Nederland) is dit wegvak ${seg.fysiek}. ` +
-        "OpenStreetMap kent hier geen wegdek; de BGT vult dat gat.",
+      label: seg.half ? copy.halfLabel : copy.unpavedLabel,
+      detail: copy.detail(seg.omschrijving),
       lat: seg.lat,
       lon: seg.lon,
       routeKm: Math.round(seg.fromKm * 10) / 10,
@@ -761,7 +840,7 @@ export function buildBgtRemarks(
         seg.toKm - seg.fromKm >= 0.2 ? Math.round(seg.toKm * 10) / 10 : null,
       offRouteM: 0,
       uncertain: false,
-      evidence: `BGT: fysiek_voorkomen=${seg.fysiek} (PDOK)`,
+      evidence: copy.evidence(seg.omschrijving),
     });
   }
   return out;

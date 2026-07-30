@@ -267,7 +267,8 @@ export async function generateVariedLoop(
     // het dichtst bij dit doel ligt. Alleen rangschikken van echte
     // ORS-kandidaten — het doel wordt nooit "gemaakt" of gegarandeerd.
     targetAscentM?: number | null;
-    // BGT-controlelaag (alleen Nederland, taak #428): aandeel (0..1) van een
+    // Officiële-kaart-controlelaag (BGT NL / GRB Vlaanderen, taken #428/#470):
+    // aandeel (0..1) van een
     // kandidaatpad dat volgens de officiële overheidswegenkaart half verhard
     // of onverhard is. null = geen oordeel (buiten NL / bron faalde / te dunne
     // dekking) — dan weegt dit simpelweg niet mee. Alleen racefiets
@@ -518,7 +519,7 @@ export async function generateVariedLoop(
 
   pool.sort((a, b) => a.score - b.score);
 
-  // BGT-controlelaag (racefiets, alleen Nederland): leg de beste kandidaten
+  // Officiële-kaart-controlelaag (racefiets, BGT NL / GRB Vlaanderen): leg de beste kandidaten
   // way-voor-way naast de officiële overheidswegenkaart. Een kandidaat die
   // daar half verhard/onverhard blijkt, verliest — zelfde gewicht als de
   // provider-wegdekpoort (>5% is een echte misser). Zonder oordeel (null)

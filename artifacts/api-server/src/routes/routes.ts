@@ -44,7 +44,7 @@ import {
 } from "@workspace/db";
 import { applyLocationPrivacy } from "../lib/world-social/location";
 import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
-import { bgtUnpavedShare } from "../lib/bgt-verharding";
+import { controlUnpavedShare } from "../lib/surface-control";
 import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
 import { aiMessage } from "../lib/ai/gateway";
@@ -2630,11 +2630,11 @@ async function buildLoopCandidate(
         }),
         preferUninterrupted: wantsUninterrupted,
         targetAscentM: ctx.targetElevationGainM ?? null,
-        // BGT-controlelaag (alleen Nederland): racefietskandidaten worden
+        // Officiële-kaart-controlelaag (BGT alleen Nederland, GRB alleen Vlaanderen): racefietskandidaten worden
         // way-voor-way naast de officiële overheidswegenkaart gelegd; een
         // kandidaat die daar onverhard blijkt, verliest. Buiten NL of bij een
         // bronfout weegt dit eerlijk niet mee.
-        unpavedShareOf: bgtUnpavedShare,
+        unpavedShareOf: controlUnpavedShare,
         // Onverhard-voorkeur (gravel/MTB, taak #440): rangschikt echte
         // kandidaten op hun gemeten onverhard-aandeel — voorkeur, geen
         // garantie. Racefiets: altijd null (harde 0%-grens).

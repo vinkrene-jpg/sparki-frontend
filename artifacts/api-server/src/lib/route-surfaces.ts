@@ -18,6 +18,11 @@ import {
   bgtVerdictsForPoints,
   type BgtPointVerdict,
 } from "./bgt-verharding";
+import {
+  grbSource,
+  grbVerdictsForPoints,
+  type GrbPointVerdict,
+} from "./grb-verharding";
 
 export type SurfaceKind =
   | "asfalt"
@@ -71,13 +76,15 @@ export type RouteSurfacesAnalysis = {
   // Kilometers met een mildere toegangsbeperking (access=no/private zonder
   // fiets-uitzondering) — mogelijk niet openbaar, mogelijk een uitzondering.
   restrictedKm: number;
-  // BGT-controlelaag (alleen Nederland): hoeveel OSM-onbekende meetpunten de
-  // officiële overheidswegenkaart alsnog een verharding kon geven. null =
-  // niet geraadpleegd (buiten NL, geen onbekend, of bron faalde).
+  // Officiële-kaart-controlelaag (BGT in Nederland, GRB in Vlaanderen):
+  // hoeveel OSM-onbekende meetpunten de officiële overheidswegenkaart alsnog
+  // een verharding kon geven. null = niet geraadpleegd (buiten NL/Vlaanderen,
+  // geen onbekend, of bron faalde). De source draagt de VERPLICHTE
+  // bronvermelding (GRB: naamvermelding Digitaal Vlaanderen).
   bgt?: {
-    checkedSamples: number; // OSM-onbekende meetpunten die aan de BGT zijn voorgelegd
-    resolvedSamples: number; // waarvan de BGT een aantoonbaar oordeel gaf
-    source: ReturnType<typeof bgtSource>;
+    checkedSamples: number; // OSM-onbekende meetpunten die zijn voorgelegd
+    resolvedSamples: number; // waarvan de kaart een aantoonbaar oordeel gaf
+    source: { name: string; license: string; url: string; note: string };
   } | null;
 };
 
@@ -404,6 +411,23 @@ export function bgtVerdictToSurface(
 }
 
 /**
+ * GRB-oordeel (Vlaanderen) → ondergrond-categorie. Het GRB kent alleen
+ * vaste/losse verharding (geen materiaalsoort): vaste verharding = asfalt/
+ * klinkers — we tonen asfalt als beste benadering met het letterlijke label
+ * als bewijs; losse verharding ≈ compact gravel; aardeweg = onverhard.
+ */
+export function grbVerdictToSurface(
+  v: GrbPointVerdict,
+): { kind: SurfaceKind; evidence: string } {
+  const evidence =
+    `GRB: ${v.lblVerh}` +
+    (v.lblMorf ? ` (${v.lblMorf})` : "") +
+    ` — Digitaal Vlaanderen, alleen Vlaanderen`;
+  if (v.verdict === "onverhard") return { kind: "onverhard", evidence };
+  if (v.verdict === "half_verhard") return { kind: "compact_gravel", evidence };
+  return { kind: "asfalt", evidence };
+}
+/**
  * Puur + testbaar: leg de OSM-onbekende meetpunten naast BGT-oordelen en
  * overschrijf alleen die punten. Retourneert hoeveel punten een oordeel kregen.
  */
@@ -412,22 +436,17 @@ export function applyBgtToAssignment(
   unknownOrdinals: number[],
   verdicts: (BgtPointVerdict | null)[],
 ): number {
-  let resolved = 0;
-  for (let i = 0; i < unknownOrdinals.length; i++) {
-    const v = verdicts[i];
-    if (!v) continue;
-    const ord = unknownOrdinals[i]!;
-    if (a.kinds[ord] !== "onbekend") continue; // alleen het eerlijke gat vullen
-    const mapped = bgtVerdictToSurface(v);
-    a.kinds[ord] = mapped.kind;
-    a.evidences[ord] = mapped.evidence;
-    resolved += 1;
-  }
-  return resolved;
+  return applyControlToAssignment(a, unknownOrdinals, verdicts, bgtVerdictToSurface);
 }
 
-// ── Geschiktheid per fietstype (deterministisch en uitlegbaar) ──────────────
-
+/** Idem voor GRB-oordelen (Vlaanderen). */
+export function applyGrbToAssignment(
+  a: SurfaceSampleAssignment,
+  unknownOrdinals: number[],
+  verdicts: (GrbPointVerdict | null)[],
+): number {
+  return applyControlToAssignment(a, unknownOrdinals, verdicts, grbVerdictToSurface);
+}
 export type BikeType = "racefiets" | "gravelbike" | "mountainbike";
 export type SuitabilityVerdict =
   | "goed"
@@ -750,9 +769,12 @@ async function measureRouteSurfaces(
 
   const assignment = assignSurfaceSamples(geometry, elements);
 
-  // BGT-controlelaag (alleen Nederland): leg de OSM-onbekende meetpunten naast
-  // de officiële overheidswegenkaart. Alleen het eerlijke gat wordt gevuld —
-  // OSM-oordelen blijven staan. Faalt de bron, dan blijft het gat eerlijk.
+  // Officiële-kaart-controlelaag (BGT in Nederland, GRB in Vlaanderen): leg de
+  // OSM-onbekende meetpunten naast de officiële overheidswegenkaart. Alleen
+  // het eerlijke gat wordt gevuld — OSM-oordelen blijven staan. Faalt de bron
+  // of ligt de route buiten beide regio's, dan blijft het gat eerlijk. NB: de
+  // regiochecks bepalen zelf of de route in NL resp. Vlaanderen ligt, dus
+  // hooguit één laag levert oordelen.
   let bgtMeta: RouteSurfacesAnalysis["bgt"] = null;
   const unknownOrdinals: number[] = [];
   for (let i = 0; i < assignment.kinds.length; i++) {
@@ -772,6 +794,20 @@ async function measureRouteSurfaces(
         resolvedSamples: resolved,
         source: bgtSource(),
       };
+    } else {
+      // Vlaanderen (GRB Wegsegment, lijngeometrie) — verplichte bronvermelding
+      // Digitaal Vlaanderen zit in grbSource().
+      const grbVerdicts = await grbVerdictsForPoints(unknownPoints, {
+        maxTiles: 40,
+      }).catch(() => null);
+      if (grbVerdicts) {
+        const resolved = applyGrbToAssignment(assignment, unknownOrdinals, grbVerdicts);
+        bgtMeta = {
+          checkedSamples: unknownOrdinals.length,
+          resolvedSamples: resolved,
+          source: grbSource(),
+        };
+      }
     }
   }
 
@@ -839,7 +875,9 @@ export function compareSurfaceSources(
         ? `; wegdek bekend voor ${fmtNl(engine.knownPct)}% van de afstand.`
         : "."),
     `Dit scherm: meet live op actuele OpenStreetMap-tags` +
-      (analysis.bgt ? ` plus de officiële BGT-wegenkaart (alleen Nederland)` : "") +
+      (analysis.bgt
+        ? ` plus de officiële overheidswegenkaart (${analysis.bgt.source.name})`
+        : "") +
       `. Nu gemeten: ${fmtNl(verhardPct)}% verhard, ${fmtNl(onverhardPct)}% (half)onverhard, ${fmtNl(onbekendPct)}% onbekend.`,
   ];
 
@@ -884,4 +922,24 @@ export function surfacesSource() {
     url: "https://www.openstreetmap.org/copyright",
     note: "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke.",
   } as const;
+}
+
+function applyControlToAssignment<V>(
+  a: SurfaceSampleAssignment,
+  unknownOrdinals: number[],
+  verdicts: (V | null)[],
+  toSurface: (v: V) => { kind: SurfaceKind; evidence: string },
+): number {
+  let resolved = 0;
+  for (let i = 0; i < unknownOrdinals.length; i++) {
+    const v = verdicts[i];
+    if (!v) continue;
+    const ord = unknownOrdinals[i]!;
+    if (a.kinds[ord] !== "onbekend") continue; // alleen het eerlijke gat vullen
+    const mapped = toSurface(v);
+    a.kinds[ord] = mapped.kind;
+    a.evidences[ord] = mapped.evidence;
+    resolved += 1;
+  }
+  return resolved;
 }

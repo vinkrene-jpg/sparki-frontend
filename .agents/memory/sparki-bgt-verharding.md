@@ -19,5 +19,8 @@ Rol: CONTROLELAAG, geen routemotor-vervanging. Drie consumenten:
 - NL-check is een ruwe omtrek-polygoon, GEEN bbox — een NL-bbox omvat Vlaanderen/Ruhrgebied (Brussel viel er eerst "binnen").
 - `bgtUnpavedShare` weigert eerlijk (null) onder 40% puntdekking — anders stuurt een dun oordeel de selectie.
 
+## GRB-laag (alleen Vlaanderen, eerste EU-land)
+`lib/grb-verharding.ts` spiegelt het BGT-patroon voor Vlaanderen (GRB Wegsegment, geo.api.vlaanderen.be): zelfde tegelcache/plafond/honest-null, maar LIJN-geometrie ⇒ punt-op-lijn (dichtstbijzijnd segment ≤20 m wint, nooit "eerste rij"). Mapping: vaste verharding=verhard; losse=half_verhard behalve MORF aardeweg=onverhard; "zowel vaste en losse"=half_verhard; nvt/onbekend=null. Vlaanderen-omtrek met Brussel als GAT in de ring (Wallonië/Brussel niet getoetst). Licentie eist naamvermelding "Bron: Grootschalig Referentie Bestand Vlaanderen, Digitaal Vlaanderen" — zit in grbSource() én in elke GRB-melding; nooit strippen. Consumenten gaan via `lib/surface-control.ts` (controlUnpavedShare kiest BGT of GRB op regio) en dezelfde generieke apply/remark-helpers — een volgend land haakt daar in, geen vierde codepad.
+
 **Why:** hertest Hengelo (30-07-2026): OSM kent ~16% van sommige routes geen wegdek; BGT is landsdekkend en door gemeentes onderhouden.
 **How to apply:** elke nieuwe wegdek-consument hergebruikt `lib/bgt-verharding.ts` (tegelcache) en labelt eerlijk "alleen Nederland".

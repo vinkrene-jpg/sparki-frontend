@@ -32,7 +32,7 @@ import {
 } from "./routing";
 import { getRouteEnvironment } from "./route-insight";
 import { routeObstaclesOf } from "./route-remarks";
-import { bgtUnpavedShare } from "./bgt-verharding";
+import { controlUnpavedShare } from "./surface-control";
 import { summarizeTrack } from "./gpx-parse";
 import { seedFor } from "./route-library";
 import { logger } from "./logger";
@@ -231,9 +231,9 @@ async function replacePoorRoute(routeId: number): Promise<
         scenery: opts.scenery,
         environmentOf: opts.scenery ? getRouteEnvironment : undefined,
         preferUninterrupted: opts.preferUninterrupted,
-        // BGT-controlelaag (alleen Nederland): racefietsvarianten die volgens
+        // Officiële-kaart-controlelaag (BGT alleen Nederland, GRB alleen Vlaanderen): racefietsvarianten die volgens
         // de overheidswegenkaart onverhard blijken, verliezen.
-        unpavedShareOf: bgtUnpavedShare,
+        unpavedShareOf: controlUnpavedShare,
         // Obstakel-poort: trap/fietsverbod/afgesloten poort = harde afkeur;
         // minste poorten wint (grenzen René 30-07-2026).
         obstaclesOf: routeObstaclesOf(),
