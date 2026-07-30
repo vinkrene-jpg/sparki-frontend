@@ -1589,9 +1589,9 @@ chapter_a_start_profiel_en_doelen:
         - "Gap-fill biedt bij een fetch-fout expliciet 'toch doorgaan met schattingen'; de gebruiker kan afronden zonder te weten welke data ontbreekt."
 
     proposed_promise:
-      text: "Binnen een paar minuten kun je echt beginnen: Sparki vraagt alleen wat nodig is, in een volgorde die zich aanpast aan jouw antwoorden. Wat je niet weet of niet wilt invullen mag je overslaan — Sparki vult dat eerlijk in als schatting en zegt er ook bij dát het een schatting is. Een koppeling (zoals Strava) is een aanbod, geen verplichting: ook zonder koppeling land je met een werkend startprofiel en een eerste plan."
+      text: "Binnen een paar minuten kun je echt beginnen: Sparki kiest en ordent zijn startvragen uit een vaste, zorgvuldig samengestelde set — het stelt niet méér vragen dan nodig, maar verzint er ook geen nieuwe bij. Wat je niet weet of niet wilt invullen mag je overslaan — Sparki vult dat eerlijk in als schatting en zegt er ook bij dát het een schatting is. Een koppeling (zoals Strava) is een aanbod, geen verplichting. Land je zonder koppeling en met vrijwel alles overgeslagen, dan start je met een proefweek met beperkt advies — géén volledig persoonlijk trainingsplan op schattingen; dat bouwt Sparki pas zodra er echte gegevens of bevestigde waarden zijn."
       proposed_by: replit
-      rationale: "De eerste vijf minuten bepalen of iemand blijft. De wereldmarkt-lat (Strava/Whoop/TrainerRoad-onboardings) is: kort, overslaanbaar, en nooit een dood einde. Sparki's bestaande engine kan dit dragen; het bewijs moet de belofte 'schatting is zichtbaar een schatting' en 'geen dood einde' hard maken."
+      rationale: "De eerste vijf minuten bepalen of iemand blijft. De wereldmarkt-lat (Strava/Whoop/TrainerRoad-onboardings) is: kort, overslaanbaar, en nooit een dood einde. Aangescherpt na review René 30-07-2026: (1) 'past zich aan' mocht niet suggereren dat Sparki intelligent doorvraagt — het selecteert en ordent uit een vaste catalogus; (2) een volledig plan zonder echte gegevens is vervangen door een proefweek met beperkt advies. Let op: de proefweek is NIEUW gewenst gedrag — het huidige product bouwt wél een volledig plan op schattingen; dit is dus een bouwopgave vóór deze belofte bewezen kan worden."
       rene_approved: false
 
     external_intelligence:
@@ -1628,7 +1628,7 @@ chapter_a_start_profiel_en_doelen:
 
     replit_definition:
       objective_quality_standard: "Elke doorloop eindigt in een geldig profiel + expliciete estimated-markering per geschat veld; 0 onzin-antwoorden die als profielwaarde landen; 0 dode eindes (elke stap heeft overslaan of doorgaan); een afgebroken doorloop is op hetzelfde apparaat altijd hervatbaar."
-      recommended_default: "Kernpad ≤ 5 verplichte beslismomenten (quick-start-niveau); alles daarna optioneel/gefaseerd na de landing. Koppeling aanbieden vóór handmatige invoer, maar nooit blokkeren. Geschatte waarden overal zichtbaar labelen totdat de gebruiker of een meting ze bevestigt."
+      recommended_default: "Kernpad maximaal 4 verplichte beslismomenten (besluit René 30-07-2026); daarna progressief, maximaal één aanvullende onboardingvraag per dag/login. Koppeling aanbieden vóór handmatige invoer, maar nooit blokkeren. Zonder koppeling en met vrijwel alles overgeslagen: proefweek met beperkt advies in plaats van een volledig plan op schattingen. Geschatte waarden zichtbaar labelen op Vandaag en in het plan zodra ze het advies beïnvloeden; in het Sportpaspoort altijd bij de bron."
       technical_limits:
         - "Resume over apparaten heen bestaat niet (sessionStorage-afhankelijkheid rond OAuth)."
         - "Planbouw is synchroon en kan falen; de landing is dan eerlijk gedegradeerd maar zonder automatische herstel-trigger."
@@ -1645,12 +1645,12 @@ chapter_a_start_profiel_en_doelen:
     rene_calibration:
       questions:
         - question: "Hoeveel verplichte vragen/beslismomenten bij de start vind je acceptabel voordat iemand 'binnen' is: maximaal 4 (quick-start), ongeveer 8, of mag het er meer zijn zolang elke vraag overslaanbaar is?"
-          answer_rene: ""
+          answer_rene: "Maximaal 4 beslismomenten voordat iemand binnen is; daarna progressief, maximaal één aanvullende onboardingvraag per dag/login. (Besluit René 30-07-2026)"
         - question: "Als iemand niets koppelt en bijna alles overslaat: wil je dat Sparki dan tóch een volledig plan neerzet op basis van schattingen (huidige gedrag), of eerst een 'proefweek' met beperkter advies totdat er echte data is?"
-          answer_rene: ""
+          answer_rene: "Eerst een proefweek met beperkt advies — géén volledig persoonlijk trainingsplan op schattingen. (Besluit René 30-07-2026)"
         - question: "Moet de schatting-markering ('geschat') prominent zichtbaar blijven op Vandaag en in het plan totdat de waarde bevestigd is, of is een stille markering in het Sportpaspoort genoeg?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "'Geschat' zichtbaar op Vandaag en in het plan wanneer de waarde het advies beïnvloedt; in het Sportpaspoort altijd bij de bron. (Besluit René 30-07-2026)"
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -1770,12 +1770,12 @@ chapter_a_start_profiel_en_doelen:
     rene_calibration:
       questions:
         - question: "Wil je per waarde ook zien hoe ZEKER Sparki is (bijv. 'vrij zeker' / 'onzeker'), of is alleen de herkomst (gemeten/handmatig/berekend/geschat) genoeg?"
-          answer_rene: ""
+          answer_rene: "Ja: naast herkomst ook zekerheid tonen, eenvoudig als hoog / redelijk / laag. (Besluit René 30-07-2026)"
         - question: "Moet 'verouderd' per veld verschillen (gewicht bijv. na 60 dagen, lengte vrijwel nooit, FTP na ~120 dagen), of is één vaste grens van 180 dagen voor alles duidelijker?"
-          answer_rene: ""
+          answer_rene: "Versheid per soort waarde; geen algemene grens van 180 dagen. (Besluit René 30-07-2026)"
         - question: "Als Sparki sterk bewijs heeft dat een waarde niet klopt (bijv. gereden vermogen bewijst een hogere FTP): mag het dan blijven herinneren tot je beslist, of één keer voorstellen en daarna zwijgen?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "Beperkt blijven herinneren totdat de gebruiker beslist — niet bij ieder bezoek; veiligheidsrelevante afwijkingen mogen nooit definitief verdwijnen. (Besluit René 30-07-2026)"
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -1895,12 +1895,12 @@ chapter_a_start_profiel_en_doelen:
     rene_calibration:
       questions:
         - question: "De vaste volgorde is nu: gezondheid → racedag → na-rit → rit → voorstel → voor-training → herstel → balans. Klopt die volgorde met jouw gevoel, of moet iets hoger/lager?"
-          answer_rene: ""
+          answer_rene: "Volgorde bruikbaar: gezondheid → racedag → na-rit → geplande rit/training → voorbereiding → herstel → balans. Aanvulling: een voorstel komt alleen boven een geplande training wanneer er een aantoonbare reden is om die training aan te passen. (Besluit René 30-07-2026)"
         - question: "Wat je negeert pauzeert nu na 3 getoonde dagen een paar dagen. Te snel, te traag, of precies goed — en mag een genegeerd niet-kritiek punt ooit definitief verdwijnen?"
-          answer_rene: ""
+          answer_rene: "Drie getoonde dagen en daarna tijdelijk pauzeren is goed. Een niet-kritiek punt mag na expliciet wegdrukken verdwijnen — nooit stilletjes. (Besluit René 30-07-2026)"
         - question: "Hoeveel mag er naast het leidende moment meerijden: alleen weer bij training/race (huidig), of ook bijvoorbeeld een leskaart of sociaal signaal op rustige dagen?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "Alleen direct relevante context (weer, materiaal- of routewaarschuwing); geen standaard leskaart of sociaal signaal dat de focus vertroebelt. (Besluit René 30-07-2026)"
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
@@ -2028,12 +2028,12 @@ chapter_a_start_profiel_en_doelen:
     rene_calibration:
       questions:
         - question: "Als twee doelen botsen (bijv. afvallen vs. topvorm voor een wedstrijd): wil je dat Sparki stil de veilige keuze maakt, of het conflict expliciet benoemt en jou laat kiezen welk doel deze periode wint?"
-          answer_rene: ""
+          answer_rene: "Doelconflicten altijd benoemen: Sparki geeft de veilige aanbeveling en de gebruiker kiest welk doel tijdelijk leidend is; veiligheidsgrenzen blijven hard. (Besluit René 30-07-2026)"
         - question: "Mogen doelen die Sparki zelf afleidt (uit je wedstrijdkalender of ontwikkelrichting) direct meesturen in het plan, of pas nadat jij ze bevestigd hebt?"
-          answer_rene: ""
+          answer_rene: "Afgeleide doelen mogen pas na bevestiging door de gebruiker het plan gaan sturen. (Besluit René 30-07-2026)"
         - question: "Hoe streng wil je het afvaldoel bewaakt hebben: bij elke stagnatie een gesprek, alleen bij afwijking van de veilige lijn, of pas als jij er zelf om vraagt?"
-          answer_rene: ""
-      completed: false
+          answer_rene: "Alleen bespreken bij afwijking van de veilige lijn of een betekenisvolle langdurige stagnatie; niet bij iedere normale gewichtsschommeling. (Besluit René 30-07-2026)"
+      completed: true
 
     acceptance_contract:
       hard_reject_rules:
