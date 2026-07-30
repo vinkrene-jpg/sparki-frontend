@@ -1,9 +1,18 @@
 ---
 name: Sparki Product Proof Doctrine
-description: Governing development doctrine (v1.0, by René, jul 2026) — promise-driven building replaces feature-driven building.
+description: Governing development doctrine (v1.4, by René, 30 jul 2026) — promise-driven building replaces feature-driven building.
 ---
 
-Bron: `docs/SPARKI_PRODUCT_PROOF_DOCTRINE.md` (door René aangeleverd, 29 jul 2026). Dit VERVANGT featuregedreven ontwikkeling.
+Bron: `docs/SPARKI_PRODUCT_PROOF_DOCTRINE.md` (v1.4, 30 jul 2026; v1.1 in docs/archive/). Dit VERVANGT featuregedreven ontwikkeling.
+
+Aanscherpingen v1.4 t.o.v. v1.1:
+- §4 Hard falen wordt nooit gemiddeld: één verboden segment/ongeautoriseerde lezing/contextlek keurt de individuele uitkomst af.
+- §5 Onbekend ≠ akkoord: veiligheids-/autorisatiekritisch kent drie uitkomsten (geldig/ongeldig/niet-verifieerbaar); alleen aantoonbaar geldig mag vrij. `unverifiable` is geen zachte waarschuwing.
+- §6 Bewijsontwerp vóór implementatie; `designed/not_yet_tested` is eerlijk maar geen bewijs.
+- §8 Bewijsobject = de VERTICALE gebruikersketen: correcte detector + latere fail-open stap = belofte faalt.
+- §12 Poort 5c: onafhankelijke code-/ketenreview op exacte SHA's die óók benoemt wat NIET is uitgevoerd.
+- §13 Poort 6a: iedere testerfout wordt permanent contractkennis (regel+tegenvoorbeeld+meetniveau+regressietest+bewijs+commit).
+- §14: bij fundamenteel falende kernbelofte alleen afgebakend onderzoek/kalibratie, geen productbouw.
 
 Kernregels:
 - Elke module begint met één productbelofte (gebruikerswaarde, geen techniek).
