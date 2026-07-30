@@ -81,6 +81,14 @@ const NEAR_ACCESS_M = 6;
 // route zélf: een grindpad 20 m naast het fietspad rijd je niet. Zelfde
 // strakke eis als toegang, met verfijning tegen de volledige geometrie.
 const NEAR_SURFACE_M = 10;
+// Poorten/hekken zijn puntobstakels: je hebt er alleen last van als je er
+// DOORHEEN moet, dus als de node vrijwel op de routelijn ligt. 30 m ving ook
+// hekjes op opritten en zijpaadjes naast de weg (praktijktest René
+// 30-07-2026, route 265: 7 van de 17 gemelde poorten lagen op 18–25 m van de
+// lijn). 15 m op SEGMENTAFSTAND: routegeometrie is bemonsterd (~44 m tussen
+// punten), dus in bochten kan een echte poort een paar meter naast het
+// rechtgetrokken segment liggen.
+const NEAR_GATE_M = 15;
 
 const SOURCE = {
   name: "OpenStreetMap (via Overpass API)",
@@ -99,6 +107,27 @@ function haversineM(a: RoutePathPoint, b: RoutePathPoint): number {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(la1) * Math.cos(la2) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// Afstand punt ↔ lijnsegment in meters (lokaal equirectangulair vlak — ruim
+// nauwkeurig genoeg op <1 km schaal). Punt-tot-punt-matching onderschat de
+// nabijheid van bemonsterde routegeometrie; voor puntobstakels (poorten) is
+// de echte segmentafstand de eerlijke maat.
+function segmentDistM(p: RoutePathPoint, a: RoutePathPoint, b: RoutePathPoint): number {
+  const R = 6371000;
+  const rad = Math.PI / 180;
+  const lat0 = p[0] * rad;
+  const ax = (a[1] - p[1]) * rad * Math.cos(lat0) * R;
+  const ay = (a[0] - p[0]) * rad * R;
+  const bx = (b[1] - p[1]) * rad * Math.cos(lat0) * R;
+  const by = (b[0] - p[0]) * rad * R;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, (-ax * dx - ay * dy) / len2));
+  const cx = ax + t * dx;
+  const cy = ay + t * dy;
+  return Math.sqrt(cx * cx + cy * cy);
 }
 
 // ── Tag → opmerking (deterministisch, alleen aantoonbare tags) ──────────────
@@ -344,6 +373,8 @@ export type OverpassElement = {
   lon?: number;
   center?: { lat: number; lon: number } | null;
   geometry?: ({ lat: number; lon: number } | null)[];
+  // Alleen aanwezig bij `out body`-ways: node-ids parallel aan geometry.
+  nodes?: number[];
   tags?: Record<string, string>;
 };
 
@@ -397,6 +428,60 @@ export function extractElementPoints(el: OverpassElement): RoutePathPoint[] {
   if (el.center && typeof el.center.lat === "number" && typeof el.center.lon === "number")
     return [[el.center.lat, el.center.lon]];
   return [];
+}
+
+/**
+ * Volgt de route de weg waarop een poortnode staat? Segment-gebaseerd (niet
+ * vertex-geteld): de weggeometrie wordt om de ~5 m verdicht en we eisen
+ * minimaal ~15 m weglengte die (a) binnen 8 m van de routelijn ligt en
+ * (b) verder dan 7,5 m van de poort zelf. Een weg die je écht rijdt valt
+ * vrijwel samen met de routelijn (~0 m op rechte stukken); 20 m was te ruim
+ * en liet parallelle parkeerstroken en naastgelegen privéstraten meetellen
+ * (steekproef route 265: hek in parkeervak-hekwerk, poort op parallelle
+ * calamiteitenstraat). Zo blijft een echte poort op een schaars-genode
+ * 2-punts way staan (de route rijdt de weg vóór en/of ná de poort), terwijl
+ * een oprit/zijpad-stub alleen zijn aansluitpunt bij de weg heeft — te
+ * weinig gevolgde lengte — en dus vervalt.
+ */
+export function gateParentWayFollowsRoute(
+  routeGeometry: RoutePathPoint[],
+  gate: RoutePathPoint,
+  way: Pick<OverpassElement, "geometry">,
+): boolean {
+  const pts = (way.geometry ?? []).filter(
+    (p): p is { lat: number; lon: number } =>
+      p != null && typeof p.lat === "number" && typeof p.lon === "number",
+  );
+  if (pts.length < 2) return false;
+  const NEAR_M = 8;
+  const GATE_EXCLUDE_M = 7.5;
+  const STEP_M = 5;
+  const NEED_M = 15;
+  const minLineDist = (p: RoutePathPoint): number => {
+    let best = Number.POSITIVE_INFINITY;
+    for (let i = 1; i < routeGeometry.length; i++) {
+      const d = segmentDistM(p, routeGeometry[i - 1]!, routeGeometry[i]!);
+      if (d < best) best = d;
+    }
+    return best;
+  };
+  let nearLen = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a: RoutePathPoint = [pts[i - 1]!.lat, pts[i - 1]!.lon];
+    const b: RoutePathPoint = [pts[i]!.lat, pts[i]!.lon];
+    const segLen = haversineM(a, b);
+    const steps = Math.max(1, Math.ceil(segLen / STEP_M));
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      const q: RoutePathPoint = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      if (haversineM(q, gate) <= GATE_EXCLUDE_M) continue;
+      if (minLineDist(q) <= NEAR_M) {
+        nearLen += segLen / steps;
+        if (nearLen >= NEED_M) return true;
+      }
+    }
+  }
+  return false;
 }
 
 // ── Kern: opmerkingen langs een geometrie ───────────────────────────────────
@@ -483,7 +568,8 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
 
     const isAccess = cls.kind === "beperkte_toegang";
     const isSurface = cls.kind === "onverhard" || cls.kind === "slecht_wegdek";
-    const needsRefine = isAccess || isSurface;
+    const isGate = cls.kind === "poort";
+    const needsRefine = isAccess || isSurface || isGate;
     const nearLimit =
       cls.kind === "natuurgebied"
         ? NEAR_AREA_M
@@ -491,7 +577,9 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
           ? NEAR_ACCESS_M
           : isSurface
             ? NEAR_SURFACE_M
-            : NEAR_ROUTE_M;
+            : isGate
+              ? NEAR_GATE_M
+              : NEAR_ROUTE_M;
     // Grofmazige poort op de bemonsterde route; voor toegangsbeperkingen
     // daarna verfijnen op de VOLLEDIGE geometrie rond het dichtstbijzijnde
     // sample (samples liggen op lange routes honderden meters uit elkaar —
@@ -527,6 +615,18 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
             nearestM = d;
             nearestIdx = gi;
           }
+        }
+        if (isGate) {
+          // Puntobstakel: routegeometrie is bemonsterd, dus meet tegen de
+          // SEGMENTEN rond het dichtstbijzijnde punt — anders valt een echte
+          // poort halverwege twee routepunten buiten de boot, of telt een
+          // hekje op een zijpad juist mee via een schuin punt.
+          let segBest = nearestM;
+          for (let gi = Math.max(1, lo); gi <= hi; gi++) {
+            const d = segmentDistM(p, geometry[gi - 1]!, geometry[gi]!);
+            if (d < segBest) segBest = d;
+          }
+          nearestM = segBest;
         }
         if (nearestM > nearLimit) continue;
       }
@@ -611,6 +711,40 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
           r.detail = r.detail
             ? `${r.detail} Mogelijk ligt hier een apart fietspad naast de weg.`
             : "Mogelijk ligt hier een apart fietspad naast de weg.";
+        }
+      }
+    }
+  }
+
+  // Zijpad-controle voor poorten (praktijktest René 30-07-2026, route 265):
+  // een poortnode binnen de afstandsgrens kan alsnog op een oprit of zijpad
+  // staan dat de route alleen RAAKT. Controleer per overgebleven poort of
+  // minstens één weg waar de node deel van uitmaakt daadwerkelijk door de
+  // route wordt gevolgd: ≥2 wegpunten (naast de poortnode zelf) binnen 20 m
+  // van de routelijn. Een oprit heeft alleen zijn aansluitpunt op de weg —
+  // dat is er hooguit één. Mislukt de controle (Overpass-storing), dan
+  // blijven de meldingen staan: liever een overbodige waarschuwing dan een
+  // verzwegen hek.
+  const gateRaws = raws.filter(
+    (r) => r.kind === "poort" && r.id.startsWith("node/"),
+  );
+  if (gateRaws.length > 0) {
+    const nodeIds = gateRaws.map((r) => Number(r.id.slice(5)));
+    const parentEls = await runOverpass(
+      `[out:json][timeout:25];node(id:${nodeIds.join(",")})->.g;way(bn.g);out body geom 400;`,
+    );
+    if (parentEls) {
+      for (let i = raws.length - 1; i >= 0; i--) {
+        const r = raws[i]!;
+        if (r.kind !== "poort" || !r.id.startsWith("node/")) continue;
+        const gateNodeId = Number(r.id.slice(5));
+        const parents = parentEls.filter(
+          (el) => el.type === "way" && (el.nodes ?? []).includes(gateNodeId),
+        );
+        // Geen parent-wegen gevonden (datagat): eerlijk laten staan.
+        if (parents.length === 0) continue;
+        if (!parents.some((el) => gateParentWayFollowsRoute(geometry, [r.lat, r.lon], el))) {
+          raws.splice(i, 1);
         }
       }
     }

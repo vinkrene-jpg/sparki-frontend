@@ -11,6 +11,7 @@ import {
   computeDataRemarks,
   countRouteObstacles,
   extractElementPoints,
+  gateParentWayFollowsRoute,
   remarksSource,
   type OverpassElement,
   type RouteRemark,
@@ -245,6 +246,44 @@ scenario("bronvermelding is OpenStreetMap/ODbL met kanttekening", () => {
   assert(s.license.includes("ODbL"), "licentie mist ODbL");
   assert(s.url.includes("openstreetmap.org/copyright"), "copyright-url mist");
   assert(s.note.length > 10, "eerlijke kanttekening ontbreekt");
+});
+
+// ── Zijpad-controle voor poorten (segment-gebaseerd, geen vertex-telling) ───
+// Route ~noord-zuid langs lon 6.0000 op lat 52.00..52.01 (~1,1 km).
+const ROUTE_NS: [number, number][] = Array.from({ length: 23 }, (_, i) => [
+  52.0 + i * 0.0005,
+  6.0,
+]);
+// ~0.00001° lat ≈ 1,11 m; 0.00001° lon ≈ 0,68 m op lat 52.
+
+scenario("echte poort op schaars-genode 2-punts way blijft staan", () => {
+  // 60 m-wegvak dat exact op de routelijn ligt, poort halverwege.
+  const way = {
+    geometry: [
+      { lat: 52.0040, lon: 6.0 },
+      { lat: 52.00454, lon: 6.0 }, // ~60 m verder langs de route
+    ],
+  };
+  const gate: [number, number] = [52.00427, 6.0]; // midden op de way
+  assert(
+    gateParentWayFollowsRoute(ROUTE_NS, gate, way),
+    "echte on-route poort op 2-punts way werd ten onrechte weggefilterd",
+  );
+});
+
+scenario("poort op oprit-stub (alleen aansluitpunt bij de weg) vervalt", () => {
+  // Oprit haaks op de route: 40 m naar het oosten, poort op ~12 m van de weg.
+  const way = {
+    geometry: [
+      { lat: 52.0040, lon: 6.0 }, // aansluitpunt op de route
+      { lat: 52.0040, lon: 6.00059 }, // ~40 m het erf op
+    ],
+  };
+  const gate: [number, number] = [52.0040, 6.00018]; // ~12 m van de routelijn
+  assert(
+    !gateParentWayFollowsRoute(ROUTE_NS, gate, way),
+    "oprit-poort naast de route werd ten onrechte behouden",
+  );
 });
 
 const failed = results.filter((r) => r.status === "fail");

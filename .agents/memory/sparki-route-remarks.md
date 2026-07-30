@@ -32,3 +32,9 @@ description: OSM/Overpass route-warnings engine and slider↔map elevation profi
 - Toegangssplitsing in route-surfaces: bicycle=no/private ⇒ `forbiddenKm` ⇒ verdict "afgeraden"; access=no/private zonder fiets-uitzondering ⇒ `restrictedKm` ⇒ milde reden + cap "gedeeltelijk".
 **Why:** routeopmerkingen meldden obstakels die je fietsend niet kunt oplossen; melden zonder mijden is oneerlijk, en doorfietsbare poorten benoemen zaait twijfel.
 **How to apply:** nieuwe generatiepaden geven obstaclesOf mee; nieuwe remark-consumenten onderscheiden verbod vs. access; obstakeltellingen alleen uit echte metingen (null = niet meewegen).
+
+## Poort-matching precisie (30-07-2026, route 265 Hengelo)
+- Poorten zijn PUNTobstakels: alleen melden als de node vrijwel op de routelijn ligt. Grens = SEGMENTafstand ≤15 m (routegeometrie is bemonsterd ~44 m; punt-match mist echte poorten tussen twee routepunten én vangt hekjes op zijpaden via schuine punten). De oude punt-match ≤30 m gaf 7/17 valse meldingen (opritten/zijpaden op 18–25 m) en miste tegelijk 6 echte poorten.
+- Extra zijpad-controle: haal parent-ways van elke gemelde poortnode op (Overpass `node(id:…)->.g;way(bn.g);out body geom`) en eis dat ≥1 parent-way door de route wordt gevolgd: ≥15 m verdichte weglengte binnen 8 m van de routelijn, buiten ~7,5 m rond de poort zelf (segment-gebaseerd, GEEN vertex-telling — schaars-genode ways vallen anders vals weg). 20 m volg-tolerantie was te ruim: parallelle parkeerstroken en naastgelegen privéstraten telden mee. Storing of geen parent-ways ⇒ melding laten staan (nooit een hek verzwijgen).
+**Why:** René (veel regio-ervaring) zag 17 poort/privéterrein-meldingen op 36 km — onmogelijk in de praktijk; way-voor-way gemeten bleken het hekken náást de route.
+**How to apply:** elke punt-obstakelmeting (barrier-nodes) in route-remarks/blokkadepoort: segmentafstand + parent-way-volgcontrole, nooit kale nabijheid.

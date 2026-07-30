@@ -1,0 +1,31 @@
+# Poort 5b sanity-check rapport — poortmeldingen alleen voor poorten die je écht passeert
+delivery: "Routeopmerkingen: poorten/hekken worden alleen nog gemeld als de node vrijwel op de routelijn ligt (segmentafstand ≤15 m i.p.v. puntafstand ≤30 m) én de weg waarop de poort staat aantoonbaar door de route wordt gevolgd (zijpad-controle via parent-ways: ≥15 m weglengte binnen 8 m van de routelijn, buiten de poort zelf). Aanleiding: praktijkmelding René 30-07 — 17 poortmeldingen op een 36 km-route, dat kan niet kloppen."
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "artifacts/api-server/src/lib/route-remarks.ts (getRouteRemarks poort-matching + zijpad-controle)"
+  - "Doorwerking: routeopmerkingen web + mobiel, én countRouteObstacles (blokkadepoort bij generatie)"
+  - "Bewijs: analyse-script src/tests/poort-afstand-analyse.ts op echte route 265 (36 km, Hengelo)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Bestaande route-remarks-tests draaien groen na de wijziging (22/22 scenario's, incl. countRouteObstacles-gedeelde regel); typecheck api-server groen"
+        result: "pass"
+      - case: "Overpass-storing bij de nieuwe zijpad-controle laat meldingen STAAN (fail-open richting waarschuwen, nooit een verzwegen hek); poort zonder gevonden parent-ways blijft eerlijk staan"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Voor/na op route 265: vóór 17 poortmeldingen waarvan 7 op 18–25 m van de lijn (opritten/zijpaden — precies René's klacht); ná 6 meldingen, allemaal ≤13 m segmentafstand op wegen waarvan de route de weg aantoonbaar volgt"
+        result: "pass"
+      - case: "De strakkere meting verzwijgt niet: echte poorten die de oude grofmazige punt-match (bemonsterde route, 30 m) juist MISTE worden nu wél gevonden (o.a. lift_gate op 0,0 m van de lijn); een steekproef van twee twijfelgevallen (hek in parkeervak-hekwerk, poort op parallelle calamiteitenstraat) leidde tot het aanscherpen van de volg-tolerantie van 20 m naar 8 m"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Alle overgebleven meldingen dragen echte OSM-evidence (barrier=/access=/bicycle=-tags) en gemeten offRouteM; niets is aangenomen of verzonnen"
+        result: "pass"
+      - case: "Blokkadepoort-bewijsset blijft geldig: de bewezen cases (poorten óp de routeway, 0 m) vallen ruim binnen de nieuwe 15 m-grens en de parent-way is per definitie de gevolgde weg"
+        result: "pass"
+
+# verdict: deliverable alleen als alle results pass zijn; anders blocked.
+verdict: "deliverable"
