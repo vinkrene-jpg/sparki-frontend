@@ -36,6 +36,7 @@ import {
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
+import { racefietsVerification } from "@/lib/racefiets-verification"
 import { ArrowLeft, MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon, Lock } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
@@ -1594,6 +1595,35 @@ function RouteGenerator({
     candidate?.candidateId ?? null,
   )
   const [candSurfaceKind, setCandSurfaceKind] = useState<SurfaceKind | null>(null)
+  // Racefiets-verificatiegate (afkeurregel taak #487): een kandidaat met
+  // onbekend (niet-geverifieerd) wegdek wordt nooit als geschikt
+  // gepresenteerd en kan alleen na een expliciete keuze worden gebruikt.
+  // Bron: het wegdekscherm (na BGT/GRB-aanvulling) zodra geladen, anders de
+  // motor-meting op de kandidaat zelf.
+  const candSchermOnbekendPct = candSurfaces.data?.surfaces
+    ? (candSurfaces.data.surfaces.breakdown.find((b) => b.kind === "onbekend")
+        ?.pct ?? 0)
+    : null
+  const candVerification = candidate
+    ? racefietsVerification(
+        candidate.bikeType,
+        candidate.engineSurface?.knownPct ?? null,
+        candSchermOnbekendPct,
+      )
+    : null
+  const [unknownAccepted, setUnknownAccepted] = useState(false)
+  // De expliciete keuze geldt per kandidaat — een andere route = opnieuw kiezen.
+  useEffect(() => {
+    setUnknownAccepted(false)
+  }, [candidate?.candidateId])
+  const needsUnknownChoice =
+    candVerification?.status === "niet_volledig_geverifieerd" && !unknownAccepted
+  // Onbekende segmenten meteen op de kaart markeren zodra bekend is dat de
+  // route niet volledig geverifieerd is (locatie-eis uit de afkeurregel).
+  useEffect(() => {
+    if (candVerification?.status === "niet_volledig_geverifieerd")
+      setCandSurfaceKind((k) => k ?? "onbekend")
+  }, [candVerification?.status])
   const candSurfaceHighlights =
     candSurfaceKind && candidate && candSurfaces.data?.surfaces
       ? candSurfaces.data.surfaces.segments
@@ -1841,6 +1871,14 @@ function RouteGenerator({
   // Navigeer-knop op een bewaarde routekaart.
   function saveCandidate(navigeer = false) {
     if (!candidate) return
+    // Verificatiegate (taak #487): zonder expliciete keuze wordt een
+    // racefietsroute met onbekend wegdek nooit opgeslagen of gestart.
+    if (needsUnknownChoice) {
+      setError(
+        "Deze route bevat onbekend wegdek en is niet geverifieerd voor de racefiets. Bevestig eerst expliciet dat je hem toch wilt gebruiken.",
+      )
+      return
+    }
     save.mutate(
       { candidate, meetpoints },
       {
@@ -2919,6 +2957,21 @@ function RouteGenerator({
                     {formatDuration(o.durationSec)}
                   </span>
                 </div>
+                {(() => {
+                  // Taak #487: een racefiets-variant met onbekend wegdek
+                  // wordt nooit als geschikt gepresenteerd — eerlijk labelen.
+                  const v = racefietsVerification(
+                    o.bikeType,
+                    o.engineSurface?.knownPct ?? null,
+                    null,
+                  )
+                  return v?.status === "niet_volledig_geverifieerd" ? (
+                    <p className="mt-1.5 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+                      Niet volledig geverifieerd ·{" "}
+                      {String(v.onbekendPct).replace(".", ",")}% onbekend wegdek
+                    </p>
+                  ) : null
+                })()}
                 {o.geometry.length > 1 && (
                   <RouteMap
                     geometry={o.geometry}
@@ -3112,11 +3165,51 @@ function RouteGenerator({
             />
           </label>
 
+          {candVerification?.status === "niet_volledig_geverifieerd" && (
+            <div className="mt-4 rounded-2xl border border-amber-300/35 bg-amber-300/[0.05] px-4 py-3.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber-200/90">
+                Niet volledig geverifieerd voor de racefiets
+              </span>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-white/60">
+                {candVerification.onbekendPct != null
+                  ? `${String(candVerification.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
+                  : "Een deel van het wegdek is onbekend"}
+                {candVerification.bron === "motor"
+                  ? " volgens de routemotor"
+                  : " — ook na controle op de officiële wegenkaart"}
+                . Sparki beveelt deze route daarom niet aan als
+                racefietsroute; de onbekende stukken zijn grijs gemarkeerd op
+                de kaart. Er is geen volledig geverifieerd alternatief
+                gevonden — gebruiken kan alleen als jij daar expliciet voor
+                kiest.
+              </p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-3">
+                <label className="flex cursor-pointer items-center gap-2 text-[12px] text-white/75">
+                  <input
+                    type="checkbox"
+                    checked={unknownAccepted}
+                    onChange={(e) => setUnknownAccepted(e.target.checked)}
+                    className="h-4 w-4 accent-amber-300"
+                  />
+                  Ik kies er bewust voor deze route met onbekend wegdek te
+                  gebruiken
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setCandSurfaceKind("onbekend")}
+                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber-200/80 underline underline-offset-2 transition hover:text-amber-100"
+                >
+                  Toon onbekende stukken
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={() => saveCandidate(true)}
-              disabled={save.isPending}
+              disabled={save.isPending || needsUnknownChoice}
               className="flex min-w-0 flex-1 basis-40 items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
               style={{ background: ACCENT, color: "#040506" }}
             >
@@ -3126,7 +3219,7 @@ function RouteGenerator({
             <button
               type="button"
               onClick={() => saveCandidate(false)}
-              disabled={save.isPending}
+              disabled={save.isPending || needsUnknownChoice}
               className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
             >
               {save.isPending ? "Opslaan…" : "Bewaar route"}

@@ -275,6 +275,22 @@ function turnDensityPenalty(result: RouteResult): number {
 // Providers zonder meting (ORS) krijgen geen straf — daar blijft de
 // Overpass-verificatie achteraf de enige poort.
 
+// Puur + testbaar (taak #487): vaste racefiets-straf voor kandidaten met
+// gemeten onbekend wegdek. Groter dan de opgetelde kwaliteitswensen zodat
+// "eerst een alternatief zonder onbekend wegdek" echt de selectie stuurt;
+// kleiner dan de harde-afkeur-1000 zodat in regio's zonder volledig
+// geverifieerde route nog steeds de beste kandidaat overblijft (die de UI
+// vervolgens alleen na expliciete keuze aanbiedt). null-meting: 0 — nooit
+// gokken, alleen echte data rangschikken.
+export function roadUnknownGatePenalty(
+  profile: string,
+  surfaceKnownFraction: number | null,
+): number {
+  if (profile !== "cycling-road") return 0;
+  if (surfaceKnownFraction == null) return 0;
+  return surfaceKnownFraction >= 0.999 ? 0 : 5;
+}
+
 export async function generateVariedLoop(
   provider: RoutingProvider,
   req: LoopRequest,
@@ -449,6 +465,16 @@ export async function generateVariedLoop(
       req.profile === "cycling-road" && result.surfaceKnownFraction != null
         ? 1 - result.surfaceKnownFraction
         : 0;
+    // Afkeurregel taak #487 (aanscherping René 30-07-2026): op de racefiets
+    // is onbekend wegdek géén zachte tolerantie meer. Eerst wordt een
+    // alternatief ZONDER onbekend wegdek gezocht: een gemeten kandidaat met
+    // ook maar één onbekend vak krijgt een vaste straf die vrijwel elke
+    // kwaliteitsafweging verslaat, zodat een volledig-geverifieerde kandidaat
+    // praktisch altijd wint. Zonder meting telt dit niet mee (nooit gokken).
+    const unknownGate = roadUnknownGatePenalty(
+      req.profile,
+      result.surfaceKnownFraction ?? null,
+    );
     // Onverhard-voorkeur (gravel/MTB, taak #440): afstand tussen het GEMETEN
     // onverhard-aandeel van deze kandidaat en de gewenste voorkeur. Alleen
     // rangschikken van echte metingen — zonder wegdekdata telt dit niet mee
@@ -474,7 +500,7 @@ export async function generateVariedLoop(
       // grotendeels ongetagde maar waarschijnlijk-asfalt-lus). Wel zwaarder
       // dan andere kwaliteitswensen: onbekend wegdek is een risico, geen
       // vrijbrief (acceptatiegrens PO-01 §3).
-      ascentMiss * 1.0 + surfacePenalty + unknownMiss * 2.0 +
+      ascentMiss * 1.0 + surfacePenalty + unknownGate + unknownMiss * 2.0 +
       unpavedMiss * 1.0 + busyPenalty;
     const cand = { result, score };
     pool.push(cand);
@@ -516,12 +542,14 @@ export async function generateVariedLoop(
       elevation < 0.35 &&
       // Racefiets: pas vroeg stoppen als de lus volgens de routebron zelf
       // VOLLEDIG verhard is (acceptatiegrens: 0% aantoonbaar onverhard) én
-      // het wegdek grotendeels bekend is; zonder meting blijft de oude regel.
+      // het wegdek VOLLEDIG bekend is (taak #487: onbekend wegdek is geen
+      // zachte tolerantie — eerst een alternatief zonder onbekend zoeken);
+      // zonder meting blijft de oude regel.
       (req.profile !== "cycling-road" ||
         result.pavedFraction == null ||
         (result.pavedFraction >= 0.999 &&
           (result.surfaceKnownFraction == null ||
-            result.surfaceKnownFraction >= 0.9)))
+            result.surfaceKnownFraction >= 0.999)))
     )
       break;
   }
@@ -533,10 +561,19 @@ export async function generateVariedLoop(
   // tot er één volledig verhard is. Kost alleen extra provider-calls wanneer
   // het netwerk het echt moeilijk maakt; nooit geometrie verzinnen.
   if (req.profile === "cycling-road" && pool.length > 0) {
+    // Taak #487: dezelfde verlenging geldt voor onbekend wegdek — zolang er
+    // geen kandidaat is die (indien gemeten) volledig verhard ÉN volledig
+    // bekend is, blijven we echte extra kandidaten vragen. Nooit geometrie
+    // verzinnen; lukt het niet, dan blijft de beste over en beslist de
+    // renner expliciet in de UI.
+    const fullyVerifiedOrUnmeasured = (result: RouteResult): boolean =>
+      fullyPavedOrUnmeasured(result) &&
+      (result.surfaceKnownFraction == null ||
+        result.surfaceKnownFraction >= 0.999);
     let extra = n;
     while (
       extra < 10 &&
-      !pool.some((c) => fullyPavedOrUnmeasured(c.result))
+      !pool.some((c) => fullyVerifiedOrUnmeasured(c.result))
     ) {
       await addCandidate(extra);
       extra++;

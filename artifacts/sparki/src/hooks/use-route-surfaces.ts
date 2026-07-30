@@ -57,6 +57,9 @@ export type SuitabilityVerdict =
   | "technisch"
   | "afgeraden"
   | "onvoldoende_gegevens"
+  // Racefiets met onbekend (niet-geverifieerd) wegdek: nooit als geschikt
+  // aanbevolen — alleen te gebruiken na expliciete keuze van de renner.
+  | "niet_geverifieerd"
 
 export type BikeSuitability = {
   bike: BikeType

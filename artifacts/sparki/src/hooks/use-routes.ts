@@ -117,6 +117,16 @@ export type RouteCandidate = {
   endName: string | null;
   plannedWorkoutId: number | null;
   targetDistanceKm: number | null;
+  // Wegdekmeting van de routemotor zélf (percentage verhard + percentage
+  // waarvoor het wegdek bekend is). null = de motor leverde geen meting —
+  // er wordt nooit een meting verzonnen. Voor de racefiets stuurt knownPct
+  // de verificatie-gate (taak #487): <100% bekend = niet geverifieerd.
+  engineSurface?: {
+    provider: string;
+    pavedPct: number | null;
+    knownPct: number | null;
+    measuredAt: string;
+  } | null;
   // Eerlijk vermijd-rapport (o.a. drukke N-wegen, taak #462). Afwezig bij
   // oudere responses.
   avoidReport?: AvoidReport;

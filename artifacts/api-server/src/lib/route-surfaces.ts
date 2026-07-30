@@ -453,7 +453,12 @@ export type SuitabilityVerdict =
   | "gedeeltelijk"
   | "technisch"
   | "afgeraden"
-  | "onvoldoende_gegevens";
+  | "onvoldoende_gegevens"
+  // Racefiets-specifiek (afkeurregel René 30-07-2026, taak #487): onbekend
+  // wegdek is niet-verifieerbaar en dus géén zachte tolerantie. Zolang een
+  // onbekend segment niet geverifieerd is, wordt de route NIET als geschikte
+  // racefietsroute aanbevolen — alleen na expliciete keuze van de renner.
+  | "niet_geverifieerd";
 
 export const VERDICT_LABELS: Record<SuitabilityVerdict, string> = {
   goed: "Goed geschikt",
@@ -461,7 +466,27 @@ export const VERDICT_LABELS: Record<SuitabilityVerdict, string> = {
   technisch: "Technisch of risicovol",
   afgeraden: "Niet aanbevolen",
   onvoldoende_gegevens: "Onvoldoende gegevens",
+  niet_geverifieerd: "Niet volledig geverifieerd",
 };
+
+// ── Racefiets-verificatie op de motor-wegdekmeting (taak #487) ──────────────
+// Puur + testbaar: status van een racefietskandidaat op basis van
+// engineSurface.knownPct (0–100). 0% onbekend is de norm; <100% bekend =
+// "niet volledig geverifieerd" (nooit als geschikt aanbevelen zonder
+// expliciete keuze). Zonder meting kan verificatie niet geclaimd worden.
+export type RacefietsVerificationStatus =
+  | "geverifieerd"
+  | "niet_volledig_geverifieerd"
+  | "niet_gemeten";
+
+export function racefietsEngineVerification(
+  knownPct: number | null | undefined,
+): { status: RacefietsVerificationStatus; onbekendPct: number | null } {
+  if (knownPct == null) return { status: "niet_gemeten", onbekendPct: null };
+  const onbekend = Math.round((100 - knownPct) * 10) / 10;
+  if (onbekend <= 0.05) return { status: "geverifieerd", onbekendPct: 0 };
+  return { status: "niet_volledig_geverifieerd", onbekendPct: onbekend };
+}
 
 export type BikeSuitability = {
   bike: BikeType;
@@ -525,6 +550,23 @@ export function computeBikeSuitability(
       reasons.push(`Op ~${analysis.restrictedKm} km is de weg volgens de kaartgegevens mogelijk niet openbaar toegankelijk (bijv. privéterrein); mogelijk geldt een uitzondering — controleer ter plekke.`);
 
     if (bike === "racefiets") {
+      // Afkeurregel (aanscherping René 30-07-2026, taak #487): onbekend
+      // wegdek op de racefiets is niet-verifieerbaar — GEEN zachte
+      // tolerantie. Elk niet-geverifieerd aandeel (>0%, na BGT/GRB-
+      // aanvulling) betekent: nooit als geschikte racefietsroute aanbevelen;
+      // tonen mag alleen na expliciete keuze van de renner. Aantoonbaar
+      // slechter (afgeraden/technisch) blijft de zwaardere afkeur.
+      if (unknown > 0 && offroad <= 3) {
+        out.push({
+          bike,
+          verdict: "niet_geverifieerd",
+          reasons: [
+            `${unknown}% van het wegdek is onbekend en dus niet geverifieerd voor de racefiets — deze route wordt niet als geschikt aanbevolen. Je kunt hem alleen met een expliciete eigen keuze gebruiken; de onbekende stukken staan op de kaart.`,
+            ...reasons.filter((r) => !r.startsWith("Let op:")),
+          ],
+        });
+        continue;
+      }
       if (offroad > 15) {
         verdict = "afgeraden";
         reasons.push(`${Math.round(offroad * 10) / 10}% los gravel/onverhard/bospad/singletrack — te veel voor een racefiets.`);

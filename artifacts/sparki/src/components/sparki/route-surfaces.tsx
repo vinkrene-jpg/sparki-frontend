@@ -47,6 +47,7 @@ const VERDICT_LABELS: Record<SuitabilityVerdict, string> = {
   technisch: "Technisch of risicovol",
   afgeraden: "Niet aanbevolen",
   onvoldoende_gegevens: "Onvoldoende gegevens",
+  niet_geverifieerd: "Niet volledig geverifieerd",
 }
 
 const VERDICT_STYLE: Record<SuitabilityVerdict, string> = {
@@ -55,6 +56,7 @@ const VERDICT_STYLE: Record<SuitabilityVerdict, string> = {
   technisch: "border-orange-400/35 text-orange-300/90",
   afgeraden: "border-red-400/35 text-red-300/90",
   onvoldoende_gegevens: "border-white/20 text-white/55",
+  niet_geverifieerd: "border-amber-300/35 text-amber-200/90",
 }
 
 const BIKE_LABELS: Record<BikeSuitability["bike"], string> = {

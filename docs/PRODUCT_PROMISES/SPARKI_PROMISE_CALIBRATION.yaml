@@ -33,7 +33,7 @@ chapter_d_routes_en_navigatie:
       practice_status: "René test mee in de praktijk (Hengelo/Zwolle-lussen); eerdere praktijktests vonden gravel op 'verharde' routes — aanleiding voor de 30-07-besluiten."
       known_limitations:
         - "GraphHopper custom model kent geen bike_access; fietslegaliteit leunt op het racingbike/bike-profiel zelf plus de Overpass-nameting achteraf."
-        - "25–40% van de NL-routemeters heeft geen OSM-surface-tag; onbekend wordt gemeden (straf ×0.4) maar niet uitgesloten; BGT vult alleen het NL-gat."
+        - "25–40% van de NL-routemeters heeft geen OSM-surface-tag; de motor mijdt onbekend (straf ×0.4 + selectie-gate taak #487) maar kan het niet altijd uitsluiten; BGT vult alleen het NL-gat. Resterend onbekend op de racefiets ⇒ 'niet volledig geverifieerd' + expliciete keuze vereist."
         - "Harde straf (multiply_by 0/0.01) laat de zoektocht exploderen; 0.05 + eerlijke herkansing zonder model is het compromis — de nameting blijft dan de poort."
         - "Overpass-nameting kan falen (mirror-storing); dan is er geen obstakel-/verbodsmeting en geldt fail-open (route wordt niet blind geweigerd)."
         - "ORS blijft terugvalmotor zonder wegdekbesef; alleen relevant als de GH-sleutel wegvalt."
@@ -173,9 +173,9 @@ chapter_d_routes_en_navigatie:
           aggregate_justification: ""
           counterexamples:
             - case: "Racefietslus met 12% onbekend wegdek (knownPct 88) wordt zonder expliciete gebruikerskeuze als 'geschikte racefietsroute' aanbevolen."
-              proof_stage: designed
-              proof_method: "Ontwerp-doorloop: winnaar met knownPct<100 na motor-meting + BGT/GRB-aanvulling krijgt status 'niet volledig geverifieerd' i.p.v. 'geschikt'; aanbeveling als geschikt vereist een expliciete gebruikerskeuze, en de UI toont onbekend-% + kaartlocaties. NB: dit is een AANSCHERPING — de huidige motor mijdt onbekend (×0.4) maar sluit het niet uit; de bouwfase moet dit gedrag nog leveren, daarna volgt de geautomatiseerde tegenvoorbeeld-test."
-              proof_result: not_yet_tested
+              proof_stage: executed
+              proof_method: "Gebouwd (taak #487, 30-07-2026) + geautomatiseerde tegenvoorbeeld-test `pnpm --filter @workspace/api-server run test:route-racefiets-verification` (src/tests/route-racefiets-verification.ts, 7/7 groen): (1) selectie zoekt eerst een alternatief zonder onbekend wegdek (roadUnknownGatePenalty +5 op gemeten onbekend, early-stop en verlengingsronde eisen knownFraction ≥0.999, nooit gokken bij null); (2) computeBikeSuitability geeft racefiets bij >0% onbekend het verdict 'niet_geverifieerd' ('Niet volledig geverifieerd') i.p.v. 'goed/gedeeltelijk' — 12% onbekend ⇒ afgewezen als geschikt; (3) UI (route-panel) blokkeert Bewaar/Navigeer tot een expliciete keuze-checkbox is aangevinkt, per kandidaat opnieuw; (4) onbekend-% (engineSurface.knownPct dan wel scherm-meting ná BGT/GRB) en de onbekende segmenten worden getoond en op de kaart gemarkeerd."
+              proof_result: rejected_as_expected
         - rule: "Retroactief geregistreerd (vondst René 30-07-2026): de onverhard-voorkeur (gravel/MTB) mag nooit een dode knop zijn — bij een ingestelde voorkeur stuurt de routemotor zélf op onverhard wegdek (voorkeursstraf op verhard, schalend met de voorkeur, met vloer — nooit een harde 0), en de racefiets krijgt deze sturing nooit."
           rule_type: hard_blockage
           measurement_level: per_sessie
@@ -196,7 +196,7 @@ chapter_d_routes_en_navigatie:
               proof_result: rejected_as_expected
       tolerances:
         - "Afstandsafwijking lus: doel ±10% (huidige hercorrectie haalt ±5% in de geteste gevallen)."
-        - "Onbekend wegdek racefiets: GEEN zachte tolerantie maar rule_type unverifiable (zie afkeurregel hierboven) — 0% onbekend is de norm; huidig gedrag (actief mijden ×0.4 + eerlijk tonen) is nog niet conform en vergt bouwwerk."
+        - "Onbekend wegdek racefiets: GEEN zachte tolerantie maar rule_type unverifiable (zie afkeurregel hierboven) — 0% onbekend is de norm; conform sinds taak #487 (30-07-2026): selectie zoekt eerst een volledig-geverifieerd alternatief, >0% onbekend ⇒ 'niet volledig geverifieerd' i.p.v. 'geschikt', gebruiken alleen na expliciete keuze, onbekend-% + kaartlocaties getoond."
       unknown_data_policy: "Onbekend is een risico, geen vrijbrief (PO-01 §3): motor mijdt onbekend (×0.4), BGT vult NL-gaten, resterend onbekend aandeel wordt eerlijk getoond; onbekend wordt nooit als verhard geteld of verzwegen."
       approved: false
 
@@ -206,6 +206,7 @@ chapter_d_routes_en_navigatie:
         - "test:route-remarks, test:route-surfaces, test:bgt-verharding (puur, groen 30-07)"
         - "afkeurpoort-bewijstest (taak #442, net gemerged)"
         - "test:gravel-steering (api-server; gedraaid + groen 30-07-2026 — 4/4)"
+        - "test:route-racefiets-verification (api-server; gedraaid + groen 30-07-2026 — 7/7; tegenvoorbeeld 12% onbekend zonder keuze ⇒ afgewezen)"
         - "test:route-map-startfinish (sparki; gedraaid + groen 30-07-2026 — 3/3)"
       independent_checks:
         - "Overpass-nameting is een andere bron dan de motor (GH) — ingebouwde onafhankelijkheid"
