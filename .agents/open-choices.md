@@ -11,9 +11,6 @@ Laatst bijgewerkt: 2026-07-27.
 
 
 
-### Plan-pagina indeling
-1. **Welke indeling wordt het?** — René is er nog mee bezig, komt erop terug (29 jul).
-
 
 
 ### Mogelijk al achterhaald (laag) — schrap gerust
@@ -21,6 +18,9 @@ Laatst bijgewerkt: 2026-07-27.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-30 — Plan-pagina indeling: "Vandaag eerst".** Bovenaan de dagstaat van vandaag
+  (training/rustdag/gat + reden), daaronder de kalender met fase-opbouw, onderaan verbanden
+  en ontwikkeling; mobiel en desktop dezelfde volgorde. Taak #450 aangemaakt (Drafts).
 - **2026-07-29 — "Kies maar iets" (mandaat René) op de resterende formulierpunten:**
   (a) Ontdekken-artikelfoto's → compacte thumbnail rechts in de lijst (gebouwd);
   (b) Core/Ride-achtergrond → huidige cinematische fietsscène blijft;
