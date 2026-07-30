@@ -1720,6 +1720,20 @@ export function RouteGenerator({
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Eerlijke tussenmelding (taak #503): de blokkadepoort wacht bij een vers
+  // gebied blokkerend op de volledige Overpass-meting (~10–30 s eenmalig).
+  // Na een drempel van 3 s tonen we WAT er loopt — geen voortgangsbalk of
+  // verzonnen percentages, alleen eerlijke tekst. Warme aanvragen (~0 ms)
+  // halen de drempel nooit en zien niets extra's.
+  const [slowNotice, setSlowNotice] = useState(false)
+  useEffect(() => {
+    if (!generate.isPending || (mode !== "waypoints" && mode !== "ptp")) {
+      setSlowNotice(false)
+      return
+    }
+    const t = setTimeout(() => setSlowNotice(true), 3000)
+    return () => clearTimeout(t)
+  }, [generate.isPending, mode])
 
   // Wizard: vier duidelijke stappen, daarna een apart resultaatscherm.
   // Zodra er een berekende route (of varianten) is, verdwijnen de stappen en
@@ -2980,6 +2994,18 @@ export function RouteGenerator({
         </div>
       )}
 
+      {/* Eerlijke tussenmelding bij een lang lopende aanvraag (taak #503):
+          de blokkadepoort wacht bij een vers gebied blokkerend op de volledige
+          Overpass-meting — eenmalig ~10–30 s. Geen voortgangsbalk, alleen
+          eerlijke tekst na een drempel van 3 s. */}
+      {slowNotice && generate.isPending && !showResult && (
+        <p className="mt-3 text-[12px] leading-relaxed text-cyan-200/75">
+          Sparki controleert de route op blokkades (fietsverbod, trappen,
+          afgesloten poorten) — bij een nieuw gebied kan dit eenmalig tientallen
+          seconden duren.
+        </p>
+      )}
+
       {/* Resultaatscherm — eigen weergave, los van de stappen */}
       {showResult && (
         <div className="mt-4 flex items-center justify-between">
@@ -3312,6 +3338,14 @@ export function RouteGenerator({
             >
               {generate.isPending ? "Berekenen…" : "Opnieuw genereren"}
             </button>
+            {/* Eerlijke tussenmelding bij lang opnieuw genereren (taak #503) */}
+            {slowNotice && generate.isPending && (
+              <p className="w-full basis-full text-[12px] leading-relaxed text-cyan-200/75">
+                Sparki controleert de route op blokkades (fietsverbod, trappen,
+                afgesloten poorten) — bij een nieuw gebied kan dit eenmalig
+                tientallen seconden duren.
+              </p>
+            )}
             {candidate.geometry.length > 1 && (
               <button
                 type="button"
