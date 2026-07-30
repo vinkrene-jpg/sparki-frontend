@@ -98,10 +98,17 @@ mock.module("@/hooks/use-route-remarks", {
     useRouteRemarksPreview: noopQuery,
   },
 })
+// Wegdekscherm-voorproef (OSM + BGT/GRB): per test instelbaar zodat we de
+// bron-voorrang van lib/racefiets-verification.ts (scherm > motor) vastleggen.
+let surfacesPreviewData: unknown = undefined
 mock.module("@/hooks/use-route-surfaces", {
   namedExports: {
     useRouteSurfaces: noopQuery,
-    useRouteSurfacesPreview: noopQuery,
+    useRouteSurfacesPreview: () => ({
+      data: surfacesPreviewData,
+      isLoading: false,
+      isError: false,
+    }),
   },
 })
 mock.module("@/hooks/use-device-sync", {
@@ -208,7 +215,12 @@ async function click(node: HTMLElement) {
   })
 }
 
-test("verificatiegate: waarschuwing + geblokkeerd opslaan, checkbox ontgrendelt, nieuwe kandidaat reset", async () => {
+// Rendert de bouwer en loopt de wizard door tot en met "Bereken route",
+// zodat er een kandidaat staat. Geeft container + opruimfunctie terug.
+async function renderWithCandidate(): Promise<{
+  el: HTMLDivElement
+  cleanup: () => Promise<void>
+}> {
   const { RouteGenerator } = await import("./route-panel")
   const el = document.createElement("div")
   document.body.appendChild(el)
@@ -226,10 +238,22 @@ test("verificatiegate: waarschuwing + geblokkeerd opslaan, checkbox ontgrendelt,
       }),
     )
   })
-
   // Wizard: stap 1 → 4 (waypoints-modus valideert alleen ≥2 punten).
   for (let i = 0; i < 3; i++) await click(findButton(el, "Verder"))
   await click(findButton(el, "Bereken route"))
+  return {
+    el,
+    cleanup: async () => {
+      await act(async () => root!.unmount())
+      el.remove()
+    },
+  }
+}
+
+test("verificatiegate: waarschuwing + geblokkeerd opslaan, checkbox ontgrendelt, nieuwe kandidaat reset", async () => {
+  surfacesPreviewData = undefined
+  savedCalls.length = 0
+  const { el, cleanup } = await renderWithCandidate()
 
   // 1. Kandidaat racefiets + knownPct 88 ⇒ waarschuwingsblok + blokkade.
   assert.ok(
@@ -284,6 +308,88 @@ test("verificatiegate: waarschuwing + geblokkeerd opslaan, checkbox ontgrendelt,
   )
   assert.ok((el.textContent ?? "").includes(WARNING_TEXT))
 
-  await act(async () => root!.unmount())
-  el.remove()
+  await cleanup()
+})
+
+// Taak #495: de scherm-meting (wegdekscherm = OSM + BGT/GRB-aanvulling) heeft
+// voorrang op de motor-meting. Beide richtingen vastgelegd:
+// a. scherm meldt nog onbekend wegdek ⇒ blokkade blijft, met de eerlijke
+//    "ook na controle op de officiële wegenkaart"-tekst;
+// b. scherm verifieert alles (onbekend 0%) ⇒ gate open zónder checkbox, ook
+//    al zei de motor-meting (knownPct 88) nog "12% onbekend".
+test("verificatiegate: scherm-meting met onbekend wegdek blijft blokkeren (bron scherm)", async () => {
+  surfacesPreviewData = {
+    surfaces: {
+      segments: [],
+      breakdown: [
+        { kind: "asfalt", pct: 91.5 },
+        { kind: "onbekend", pct: 8.5 },
+      ],
+    },
+  }
+  savedCalls.length = 0
+  const { el, cleanup } = await renderWithCandidate()
+
+  assert.ok(
+    (el.textContent ?? "").includes(WARNING_TEXT),
+    "scherm-meting met onbekend wegdek hoort te blijven blokkeren",
+  )
+  // Scherm-bron heeft voorrang: percentage komt uit het scherm (8,5%), niet
+  // uit de motor (12%), en de tekst benoemt de officiële-kaart-controle.
+  assert.ok(
+    (el.textContent ?? "").includes("8,5% van het wegdek is onbekend"),
+    "onbekend-percentage hoort uit de scherm-meting te komen (8,5%)",
+  )
+  assert.ok(
+    (el.textContent ?? "").includes(
+      "ook na controle op de officiële wegenkaart",
+    ),
+    "bron scherm hoort de officiële-kaart-tekst te tonen",
+  )
+  assert.ok(
+    !(el.textContent ?? "").includes("volgens de routemotor"),
+    "bij bron scherm mag de motor-tekst niet verschijnen",
+  )
+  const bewaar = findButton(el, "Bewaar route")
+  assert.equal(bewaar.disabled, true, "Bewaar route moet geblokkeerd blijven")
+  assert.equal(findButton(el, "Bewaar & navigeer").disabled, true)
+  await click(bewaar)
+  assert.equal(savedCalls.length, 0, "opslaan mag niet doorgaan zonder keuze")
+  findGateCheckbox(el) // checkbox hoort er te zijn
+
+  await cleanup()
+})
+
+test("verificatiegate: geverifieerde scherm-meting opent de gate zonder checkbox", async () => {
+  surfacesPreviewData = {
+    surfaces: {
+      segments: [],
+      breakdown: [
+        { kind: "asfalt", pct: 100 },
+        { kind: "onbekend", pct: 0 },
+      ],
+    },
+  }
+  savedCalls.length = 0
+  const { el, cleanup } = await renderWithCandidate()
+
+  assert.ok(
+    !(el.textContent ?? "").includes(WARNING_TEXT),
+    "geverifieerde scherm-meting mag geen waarschuwing tonen (scherm > motor)",
+  )
+  assert.ok(
+    !(el.textContent ?? "").includes(CHOICE_TEXT.slice(0, 30)),
+    "geverifieerde scherm-meting mag geen keuze-checkbox tonen",
+  )
+  const bewaar = findButton(el, "Bewaar route")
+  assert.equal(
+    bewaar.disabled,
+    false,
+    "Bewaar route hoort vrij te zijn bij geverifieerde scherm-meting",
+  )
+  assert.equal(findButton(el, "Bewaar & navigeer").disabled, false)
+  await click(bewaar)
+  assert.equal(savedCalls.length, 1, "opslaan hoort direct te werken")
+
+  await cleanup()
 })
