@@ -1,0 +1,131 @@
+Verwerk de onafhankelijke review van hoofdstuk B+C in één aparte correctiecommit.
+
+SCOPE
+Wijzig uitsluitend:
+
+docs/PRODUCT_PROMISES/SPARKI_PROMISE_CALIBRATION.yaml
+
+Wijzig geen productcode.
+Laat hoofdstukken A, D en H inhoudelijk onaangeraakt.
+Start E, F of G niet.
+
+INHOUDELIJKE CORRECTIES
+
+1. Pas de regel “ziek of geblesseerd = altijd nul trainingsprikkels” aan.
+
+Maak onderscheid tussen:
+
+- harde medische of acute blokkade:
+  geen trainingsprikkel toegestaan;
+- niet-acute klacht of herstel-/re-integratiefase:
+  alleen aangepaste belasting volgens vooraf vastgelegde veiligheidscriteria;
+- terugkeer na ziekte of blessure:
+  trapsgewijs, criteriagestuurd en nooit automatisch volledig normaal.
+
+Leg expliciet vast dat veiligheid bij duidelijke gezondheidsrisico’s zwaarder mag wegen dan de wens van sporter of coach.
+
+2. Pas de formulering rond ATL/CTL > ongeveer 1,5 aan.
+
+Deze verhouding mag niet als bewezen blessure- of ziektevoorspeller worden gepresenteerd.
+
+Leg vast:
+
+- alleen gebruiken als voorzichtig waarschuwingssignaal;
+- altijd combineren met meerdere gegevens;
+- nooit zelfstandig gebruiken voor diagnose, harde medische conclusie of automatische escalatie;
+- onzekerheid en beperkingen expliciet benoemen.
+
+VERWERK DEZE 20 BESLUITEN VAN RENÉ
+
+PLAN
+
+1. Voorlopige weken mogen automatisch worden aangepast. De vaste week alleen automatisch bij een duidelijke veiligheidsreden; anders als voorstel.
+
+2. Bij een onrealistisch weekdoel benoemt Sparki kort het conflict en plant daarna veilig minder in. Geen langdurige dialoog nodig.
+
+3. Handmatige wijzigingen blijven binnen harde veiligheidsgrenzen. Een ervaren volwassene mag niet-kritieke adviezen overrulen, maar nooit een harde gezondheidsblokkade.
+
+UITVOERING
+
+4. Na één uitzonderlijke melding “te licht” alleen registreren. Na tweemaal of een duidelijk patroon een verzwaringsvoorstel tonen.
+
+5. Een toegepaste wijziging blijft zichtbaar als “aangepast ten opzichte van origineel”, inclusief reden. Geen stille vervanging.
+
+COACHING
+
+6. Vóór de normale bewijsdrempel mag Sparki een voorzichtig signaal tonen met expliciet lage zekerheid. Geen stevige conclusie.
+
+7. Prestatieboodschappen zijn persoonlijk en rustig. Gezondheids- en veiligheidswaarschuwingen zijn helder en direct, zonder paniektaal.
+
+8. Voorlopige dagen mogen automatisch worden aangepast. Een herstelweek alleen automatisch bij een harde veiligheidsstatus; anders als duidelijk voorstel.
+
+COACH-COCKPIT
+
+9. Coachinput die plan, advies of besluit beïnvloedt is zichtbaar voor de sporter. Een privékladblok mag bestaan, maar mag geen verborgen inhoudelijke sturing veroorzaken.
+
+10. De trainer is leidend bij normale trainingskeuzes. Bij een harde gezondheids- of veiligheidsblokkade mag Sparki uitvoering blokkeren en moet duidelijk uitleggen waarom.
+
+LAB
+
+11. Toon waarde, betrouwbaarheidslabel en waar zinvol een bandbreedte. Op mobiel compact, met detail achter doorklikken.
+
+12. Laat fitheid niet automatisch dalen alsof zeker niet is getraind. Meld eerst dat registratie ontbreekt en vraag actief of een activiteit mist.
+
+GEZONDHEID EN HERSTEL
+
+13. Na “beter melden” niet automatisch volledig normaal. Gebruik een bewaakte, trapsgewijze hervatting op basis van klachten, belasting en reactie. Geen universeel vast aantal dagen.
+
+14. Bij afwijkende metingen eerst direct vragen wat er speelt. Bij duidelijke risico-indicatoren tegelijk het dagadvies voorzichtig verlagen; bij één zwakke afwijking alleen informeren.
+
+GRAFIEKEN
+
+15. Gebruik een compacte kernweergave. Toon de rest onder “Meer details”. Desktop mag uitgebreider zijn dan mobiel.
+
+16. Geen misleidende vergelijking. Alleen vergelijken wanneer contextverschillen zichtbaar kunnen worden gemaakt; anders weigeren en uitleggen waarom.
+
+MENTALE SIGNALEN
+
+17. Neutraal beschrijven en voorzichtig duiden, altijd als mogelijkheid en nooit als diagnose.
+
+18. Voor jeugd gedempt en veiligheidsgericht. Geen verborgen psychologische profilering. Gevoelige escalatie alleen via passende ouder-, trainer- of professionele route.
+
+19. Chatgesprekken standaard niet meewegen. Alleen na afzonderlijke, expliciete en intrekbare toestemming voor een duidelijk omschreven doel.
+
+20. Zonder reactie mag Sparki alleen voorlopige planning en niet-kritieke keuzes automatisch veilig aanpassen. Definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten niet. Bij harde veiligheid mag Sparki wel blokkeren, met uitleg.
+
+VERWERKING IN HET KALIBRATIEBESTAND
+
+- Vul alle 20 antwoorden in als “Besluit René 30-07-2026”.
+- Zet de relevante rene_calibration-secties op completed: true.
+- Pas proposed_promise, rationale, recommended_default, hard_reject_rules, tolerances, unknown_data_policy en evidence_method aan waar deze besluiten dat vereisen.
+- Behoud overal correcte measurement_level, counterexamples, rule_type, proof_stage en proof_result.
+- Zet niets op executed als er geen echte test is uitgevoerd.
+- Zet product_proof niet op bewezen.
+- Markeer nieuwe gewenste gedragingen expliciet als bouwopgave wanneer de huidige productcode dit nog niet ondersteunt.
+
+CONTROLE
+
+Voer na wijziging uit:
+
+- YAML-lint;
+- de kalibratievalidator;
+- controle dat alleen hoofdstuk B+C inhoudelijk is gewijzigd;
+- controle dat geen productcode is gewijzigd.
+
+COMMIT EN RAPPORTAGE
+
+Maak één aparte correctiecommit en push naar main.
+
+Rapporteer daarna:
+
+1. commit-SHA;
+2. exact gewijzigd bestand;
+3. validator- en lintresultaat;
+4. bevestiging dat alle 20 besluiten zijn verwerkt;
+5. bevestiging dat de twee inhoudelijke correcties zijn verwerkt;
+6. lijst van nieuwe bouwopgaven die hierdoor zijn ontstaan;
+7. bevestiging dat A, D en H onaangeraakt zijn;
+8. bevestiging dat geen productcode is gewijzigd;
+9. bevestiging dat E, F en G niet zijn gestart.
+
+Stop daarna voor onafhankelijke review.
