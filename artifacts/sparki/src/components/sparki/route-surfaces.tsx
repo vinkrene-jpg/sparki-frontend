@@ -289,6 +289,22 @@ export function RouteSurfacesPanel({
                 </>
               )}
 
+              {/* Eerlijke BGT-bronregel: alleen tonen als de officiële
+                  overheidswegenkaart daadwerkelijk is geraadpleegd. */}
+              {surfaces.bgt && (
+                <p className="mt-2.5 text-[10px] leading-relaxed text-white/30">
+                  Extra controle: de officiële overheidswegenkaart (
+                  {surfaces.bgt.source.name}) keek mee bij{" "}
+                  {surfaces.bgt.checkedSamples}{" "}
+                  {surfaces.bgt.checkedSamples === 1
+                    ? "meetpunt"
+                    : "meetpunten"}{" "}
+                  waar OSM de ondergrond niet kende en gaf bij{" "}
+                  {surfaces.bgt.resolvedSamples} daarvan alsnog een oordeel.{" "}
+                  {surfaces.bgt.source.note}
+                </p>
+              )}
+
               <p className="mt-2.5 text-[10px] leading-relaxed text-white/30">
                 Bron: {data.source.name} — {data.source.license}.{" "}
                 {data.source.note}

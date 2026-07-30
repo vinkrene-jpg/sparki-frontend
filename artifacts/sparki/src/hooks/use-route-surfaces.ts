@@ -39,6 +39,14 @@ export type RouteSurfacesAnalysis = {
   // Aantoonbaar fietsverbod (harde afkeur) vs. mildere access-beperking.
   forbiddenKm: number
   restrictedKm: number
+  // BGT-controlelaag (alleen Nederland): hoeveel OSM-onbekende meetpunten de
+  // officiële overheidswegenkaart alsnog een verharding kon geven. null =
+  // niet geraadpleegd (buiten NL, geen onbekend, of bron faalde).
+  bgt?: {
+    checkedSamples: number
+    resolvedSamples: number
+    source: { name: string; license: string; url: string; note: string }
+  } | null
 }
 
 export type BikeType = "racefiets" | "gravelbike" | "mountainbike"
