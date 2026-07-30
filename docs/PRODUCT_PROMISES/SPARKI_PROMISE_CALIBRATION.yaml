@@ -5084,3 +5084,1266 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       type: research_or_build_or_retest
       description: "Na akkoord René (incl. wedstrijddossier-vraag): concept-endpoint op de AI-gateway, verstuur-flow met audit, club-/teamroutecollectie op bestaande shares, met de ai-draft-never-sends-test."
       approved_for_execution: false
+# ============================================================================
+# Addendum hoofdstuk B+C — Analyse-Lab-pagina voor wedstrijdrenners
+# Opgesteld: 2026-07-30 volgens SPARKI_ANALYSE_DATAKAARTEN_UITBREIDING_2026-07-30.
+# Scope: de diepere Lab-laag (bouwt voort op de bestaande Lab-pagina); de
+# hoofdpagina Analyse blijft glanceable. Geen productcode gewijzigd.
+# Codebron-snapshot: 2026-07-30 (main cafb3cc0). Extern onderzoek: 2026-07-30.
+# Eerlijke bevinding vooraf: per-punt vermogens-/hartslagreeksen en powerBests
+# worden ALLEEN bij ingest opgeslagen (sessiestreams/bests-principe, geen
+# backfill) — oudere sessies zonder streams blijven eerlijk leeg; TSS bestaat
+# per sessie (derived bij ingest), echte IF (NP/FTP) en VI bestaan nog niet
+# (alleen een intensiteitsproxy in de analyse-dashboard-lib); CTL/ATL/TSB komt
+# uit één belastingsmodel (computeLoadSeries), week-op-week ramp rate bestaat
+# nog nergens en er is in hoofdstuk B+C nog GEEN vastgelegde hard rule met een
+# concreet maximum voor weektoename — die grens is aan René.
+chapter_bc_addendum_analyse_lab_datakaarten:
+
+  - id: ANALYSE_DATAKAART_PDC_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "Power Duration Curve: beste vermogen per duur over een instelbaar venster, logaritmische duur-as"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_yet_present
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "Er is geen curve-weergave; de Lab-pagina toont nu FTP-historie/-trend, readiness/HRV en sessiebelasting (pages/lab.tsx), geen vermogen-per-duur."
+        - "powerBests (beste gemiddelden over vaste vensters) worden bij ingest berekend uit timestamped samples (gpx-parse.ts) en als JSON op de sessie bewaard — er is geen aparte bests-tabel en geen backfill: sessies die vóór de streams-ingest zijn binnengekomen hebben geen samples en blijven eerlijk buiten de curve."
+        - "De curve kan dus alleen met terugwerkende kracht worden berekend voor sessies die per-punt vermogensdata dragen; hoever dat teruggaat verschilt per renner en per bron (FIT/TCX/GPX met power; Strava-import zonder streams levert geen punten)."
+
+    proposed_promise:
+      text: "De Lab-pagina toont een Power Duration Curve — beste vermogen per duur (o.a. 5s, 15s, 30s, 1, 5, 10, 20, 60, 90 min) op een logaritmische duur-as — berekend uit de eigen echte per-punt vermogensdata over een instelbaar venster; duren zonder echte data blijven zichtbaar leeg met uitleg, nooit gemodelleerd opgevuld zonder label."
+      proposed_by: replit
+      rationale: "Dit is de meest gebruikte grafiek onder wedstrijdrenners (TrainingPeaks/WKO5/intervals.icu): sprint-, anaeroob-, drempel- en duurvermogen in één beeld in plaats van één los FTP-getal."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Coggan/WKO power-duration-methodiek (WKO5 Power Duration Model V2; TrainingPeaks 'The Power Duration Curve: A Deep Dive Into Modeled Power')"
+          coverage: "Definitie mean-maximal power per duur; onderscheid rauwe bests versus gemodelleerde curve; standaard-duurpunten."
+          actuality: "Actueel; WKO5-documentatie geraadpleegd 30-07-2026."
+          license_status: "Methodiek (wiskundige aanpak) vrij toepasbaar; WKO5-modelparameters propriëtair — Sparki bouwt op rauwe mean-maximal bests, niet op het WKO-model."
+          limitations:
+            - "Gemodelleerde extrapolatie (WKO-stijl) buiten scope: Sparki toont alleen echte bests, geen modelvoorspelling."
+          applicability: "Duurpunten en log-as direct toepasbaar op bestaande ingest-samples."
+        - name: "intervals.icu-praktijk (power curve per venster: 42d/84d/seizoen/all-time)"
+          coverage: "Venster-keuzes en vergelijking van meerdere vensters in één grafiek."
+          actuality: "Actueel product, geraadpleegd 30-07-2026."
+          license_status: "Alleen als functioneel referentiebeeld; geen code/content overgenomen."
+          limitations: []
+          applicability: "Bevestigt dat instelbaar venster de norm is."
+      missing_information:
+        - "Welk aandeel van de bestaande sessies per renner daadwerkelijk per-punt vermogensdata draagt (bepaalt hoe 'vol' de curve met terugwerkende kracht is)."
+
+    replit_definition:
+      objective_quality_standard: "Elke curvewaarde is reproduceerbaar het maximum van het voortschrijdend gemiddelde over exact die duur binnen het gekozen venster, berekend uit opgeslagen echte samples; een duurpunt zonder voldoende aaneengesloten data is null met reden, nooit geïnterpoleerd."
+      recommended_default: "Berekening uit dezelfde ingest-samples als de bestaande powerBests; curve-bests per sessie opslaan (uitgebreide duurset) en per venster aggregeren op leesmoment, zodat geen dubbele opslag van reeksen nodig is."
+      technical_limits:
+        - "Geen backfill voor sessies zonder opgeslagen samples — conform het bestaande streams-alleen-bij-ingest-principe; de curve groeit vanaf de eerste ingest met power."
+        - "Strava-ritten zonder gedetailleerde streams leveren geen curvepunten; dat wordt eerlijk getoond als bronbeperking, niet verborgen."
+      assumptions:
+        - "De bestaande sample-collector kan zonder architectuurwijziging worden uitgebreid met extra duurvensters."
+      unknowns:
+        - "Of 90 min als langste duurpunt zinvol is voor de huidige testers (vereist ritten ≥90 min met power)."
+
+    rene_calibration:
+      questions:
+        - "Welk tijdvenster is de standaard: laatste 90 dagen, huidig seizoen, all-time, of instelbaar met welke voorkeuze? (Door jou te beslissen per opdracht.)"
+        - "Mogen er meerdere vensters tegelijk als vergelijkingslijnen in één grafiek (bv. 90 dagen versus all-time), of één venster tegelijk?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "De curve toont uitsluitend waarden die uit echte opgeslagen samples berekend zijn; ontbrekende duren blijven leeg met uitleg — nooit gemodelleerde of geëxtrapoleerde punten zonder expliciet 'model'-label."
+          rule_type: hard_blockage
+          measurement_level: per_duurpunt
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een renner zonder enige 60-minutenrit met power ziet toch een 60-min-waarde op de curve."
+              proof_stage: designed
+              proof_method: "Contracttest: sessieset zonder ≥60-min-aaneengesloten power ⇒ 60-min-punt null met reden in de API-respons."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Geen samples in het venster ⇒ lege curve met eerlijke uitleg (welke bronnen wel/geen per-punt vermogen leveren), geen terugval op FTP-schattingen."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na René's vensterkeuze: duurset uitbreiden in de ingest-collector, lees-aggregatie per venster, curve-endpoint + contracttest op de nooit-modelleren-regel."
+      approved_for_execution: false
+
+  - id: ANALYSE_DATAKAART_PIEKVERMOGENS_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "Piekvermogens/persoonlijke records per vaste duur (5s/1/5/20/60 min) met datum van behalen"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "powerBests per sessie bestaan al (ingest, JSON op de sessie) en er is een records-achtige weergave in de prestatiecijfers (performance-numbers.tsx), maar geen all-time-recordtabel met per record de datum waarop het behaald is."
+        - "Records kunnen alleen bestaan voor duren die de ingest-collector berekent; de exacte huidige duurset moet bij de bouw geverifieerd en zo nodig uitgebreid worden."
+
+    proposed_promise:
+      text: "De Lab-pagina toont per vaste duur (5s, 1, 5, 20, 60 min) het beste ooit behaalde vermogen mét de datum en de rit waarin het behaald werd — altijd herleidbaar naar een echte sessie, nooit een los cijfer zonder herkomst."
+      proposed_by: replit
+      rationale: "Dit zijn de pieken van dezelfde PDC, apart uitgelicht als records — de vertrouwde weergave uit Strava/TrainingPeaks, en het sluit aan op het bestaande herkomstprincipe (elke waarde herleidbaar)."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande Sparki powerBests-ingest + prestatiecijfers-weergave"
+          coverage: "Per-sessie beste gemiddelden over vaste vensters; bestaande recordpresentatie."
+          actuality: "Code van 30-07-2026."
+          license_status: "Eigen code."
+          limitations:
+            - "Geen all-time-aggregatie met datum; geen koppeling record→sessie in de UI."
+          applicability: "Direct herbruikbaar als bron; alleen aggregatie + datering ontbreekt."
+        - name: "Coggan Power Profiling-tabellen (TrainingPeaks)"
+          coverage: "Referentiekader welke duren als 'records' gelden (5s/1/5/20 min klassiek; 60 min aanvullend)."
+          actuality: "Gevestigde methodiek, geraadpleegd 30-07-2026."
+          license_status: "Duurkeuze vrij; de Coggan-vergelijkingstabellen (rangordes) niet overnemen zonder bronvermelding."
+          limitations:
+            - "Rangorde-vergelijking met populatienormen is een aparte, latere keuze — niet in deze kaart."
+          applicability: "Bevestigt de duurset uit de opdracht."
+      missing_information: []
+
+    replit_definition:
+      objective_quality_standard: "Elk record is het maximum van de per-sessie-bests over alle sessies met samples, met sessie-id en datum; verwijderen of hertrimmen van de bronsessie werkt door in het record (geen wees-records)."
+      recommended_default: "Records op leesmoment aggregeren uit de per-sessie-bests (geen aparte recordtabel), zodat correcties in sessies automatisch doorwerken."
+      technical_limits:
+        - "Zelfde ingest-beperking als de PDC: geen samples ⇒ geen record; oude sessies zonder streams tellen niet mee en dat wordt eerlijk gemeld."
+      assumptions: []
+      unknowns:
+        - "Of 60-min-records bij de huidige testers bestaan (lange ritten met power zijn schaars bij sommige bronnen)."
+
+    rene_calibration:
+      questions:
+        - "Wil je naast all-time ook seizoensrecords (beste van dit seizoen) als tweede kolom?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Elk getoond record is herleidbaar naar één echte sessie (id + datum); een record zonder bestaande bronsessie wordt nooit getoond."
+          rule_type: hard_blockage
+          measurement_level: per_record
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Na het verwijderen van de rit waarin het 5s-record werd gereden blijft het oude record zonder bron zichtbaar."
+              proof_stage: designed
+              proof_method: "Contracttest: sessie verwijderen ⇒ recordlijst her-aggregeert en het record valt terug op de eerstvolgende echte sessie of verdwijnt."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Duur zonder enige sessie met voldoende data ⇒ rij toont 'nog geen record' met uitleg, geen schatting."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_or_build_or_retest
+      description: "Duurset in de ingest-collector verifiëren/uitbreiden, leesmoment-aggregatie met sessieverwijzing, recordtabel op de Lab-pagina."
+      approved_for_execution: false
+
+  - id: ANALYSE_DATAKAART_TSS_IF_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "TSS en IF per individuele sessie (naast het geaggregeerde CTL/ATL/TSB-beeld)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "TSS per sessie bestaat al: derived bij ingest uit power+FTP (met provenance) en het CTL/ATL/TSB-beeld komt uit één belastingsmodel (computeLoadSeries in recovery-load.ts)."
+        - "normalizedPower bestaat als veld (o.a. handmatige ingest), maar echte IF (NP/FTP) per sessie wordt nergens berekend; de analyse-dashboard-lib gebruikt een intensiteitsproxy sqrt(TSS/(uur×100)) — wiskundig equivalent áls TSS uit NP is afgeleid, maar niet gelabeld en niet per sessie getoond."
+        - "Sessies zonder power (of zonder FTP op de ritdatum) hebben geen betrouwbare TSS/IF; dat onderscheid is nu niet zichtbaar."
+
+    proposed_promise:
+      text: "Elke sessie toont in het Lab haar eigen TSS en IF, met zichtbare herkomst (uit power+FTP berekend, of eerlijk 'niet beschikbaar' zonder power/FTP) — nooit een geschatte TSS/IF die als gemeten oogt."
+      proposed_by: replit
+      rationale: "Wedstrijdrenners sturen op sessiezwaarte, niet alleen op het weekbeeld; de databasis (TSS derived + NP-veld + FTP-historie) ligt er grotendeels al."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Coggan/TrainingPeaks-definities TSS, NP, IF"
+          coverage: "IF = NP/FTP; TSS = (duur×NP×IF)/(FTP×3600)×100 — de standaard die alle vergelijkbare apps gebruiken."
+          actuality: "Gevestigd; TrainingPeaks-documentatie geraadpleegd 30-07-2026."
+          license_status: "Formules vrij toepasbaar; 'TSS'/'IF' zijn merknamen van TrainingPeaks/Peaksware — naamgebruik in de UI checken of eigen naam kiezen (bestaat al: 'belastingscore')."
+          limitations: []
+          applicability: "Sluit aan op de bestaande derived-TSS-berekening."
+      missing_information:
+        - "Of het merkgebruik van 'TSS/IF' in de UI juridisch vrij is, of dat Sparki de bestaande eigen term 'belastingscore' + 'intensiteit' aanhoudt (aanbeveling: eigen termen, tussen haakjes de bekende afkorting)."
+
+    replit_definition:
+      objective_quality_standard: "IF per sessie = NP/FTP-op-ritdatum uit de FTP-historie (niet de huidige FTP); TSS consistent met de bestaande derived-berekening; beide dragen herkomstlabel en zijn null met reden zonder power of zonder FTP op datum."
+      recommended_default: "NP bij ingest berekenen (30s rolling-average tot de vierde macht) voor sessies met samples; bestaande TSS-selfheal niet dupliceren maar hergebruiken."
+      technical_limits:
+        - "Sessies zonder samples en zonder handmatige NP blijven zonder IF; geen backfill van NP voor oude sessies zonder streams."
+      assumptions:
+        - "FTP-historie is per datum opvraagbaar (bestaat, incl. '[achterhaald]'-filterconventie)."
+      unknowns: []
+
+    rene_calibration:
+      questions:
+        - "Houden we de Nederlandse termen (belastingscore/intensiteit) met TSS/IF tussen haakjes, of de Engelse afkortingen voorop?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "IF wordt nooit getoond voor een sessie zonder echte NP-basis of zonder FTP op de ritdatum; ontbrekend blijft ontbrekend met reden, nooit teruggevallen op de huidige FTP of een geschatte intensiteit zonder label."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een rit uit maart krijgt een IF berekend met de FTP van juli, waardoor de intensiteit te laag oogt."
+              proof_stage: designed
+              proof_method: "Contracttest met FTP-historie-wijziging: IF gebruikt aantoonbaar de FTP-rij die op de ritdatum gold."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Geen power ⇒ TSS/IF-veld toont 'niet beschikbaar (geen vermogensdata)'; geen FTP op datum ⇒ 'niet beschikbaar (geen FTP bekend op ritdatum)'."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_or_build_or_retest
+      description: "NP-berekening bij ingest, IF-afleiding op FTP-op-datum, sessielijst/detail-weergave in het Lab met herkomstlabels."
+      approved_for_execution: false
+
+  - id: ANALYSE_DATAKAART_RAMP_RATE_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "Ramp rate: week-op-week CTL-stijging met zichtbare veiligheidsgrens (overbelastingswaarschuwing)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_yet_present
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "CTL/ATL/TSB per dag bestaat (computeLoadSeries, 42d/7d), maar week-op-week ramp rate wordt nergens berekend of getoond."
+        - "Eerlijke bevinding: in de bestaande hoofdstuk B+C-kalibratie is (nog) geen hard rule met een concreet maximum voor week-op-week-belastingtoename vastgelegd — de verwachte koppeling uit de opdracht bestaat als plan, niet als vastgelegde regel; deze kaart levert de visuele/datakant en verwijst voor de grens naar die nog te kalibreren regel."
+
+    proposed_promise:
+      text: "Het Lab toont hoe snel de belasting (CTL) week-op-week stijgt, met de door René vastgestelde veiligheidsgrens zichtbaar in de grafiek; overschrijding geeft een eerlijke waarschuwing die uitlegt waarom, en de grens zelf komt uit de B+C-kalibratie — nooit een eigen verzonnen getal."
+      proposed_by: replit
+      rationale: "Snelle CTL-stijging is de meest gebruikte overbelastingsindicator in vergelijkbare apps; de datakant is een kleine afleiding van de bestaande belastingsreeks."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Joe Friel — 'The CTL Ramp Rate' (joefrieltraining.com)"
+          coverage: "Praktijkrichtlijn ~5–8 CTL-punten stijging per week als bovengrens voor de meeste renners; context en uitzonderingen."
+          actuality: "Gevestigde coachingrichtlijn; geraadpleegd 30-07-2026."
+          license_status: "Richtwaarde met bronvermelding citeerbaar; geen content overgenomen."
+          limitations:
+            - "Vuistregel uit coachpraktijk, geen gerandomiseerd onderzoek; individuele spreiding groot — daarom grens ter kalibratie aan René, met deze bron als onderbouwing."
+          applicability: "Kandidaat-richtwaarde voor de kalibratiediscussie, niet als eigen besluit."
+        - name: "TrainingPeaks-documentatie seizoensplanning met TSS/CTL"
+          coverage: "Hoe vergelijkbare apps ramp rate tonen en waarschuwen."
+          actuality: "Actueel; geraadpleegd 30-07-2026."
+          license_status: "Functioneel referentiebeeld."
+          limitations: []
+          applicability: "Weergavevorm (waarschuwingszone in de grafiek)."
+      missing_information:
+        - "De definitieve veiligheidsgrens en of die per ervaringsniveau verschilt — expliciet aan René/B+C-kalibratie."
+
+    replit_definition:
+      objective_quality_standard: "Ramp rate = CTL(einde week) − CTL(einde vorige week), berekend uit dezelfde computeLoadSeries-reeks als alle andere belastingsweergaven (SSOT, geen eigen EWMA); weken met onvolledige data worden gemarkeerd."
+      recommended_default: "Grafiek met weekbalken + grenslijn; waarschuwing alleen tonen bij overschrijding op basis van volledige weken."
+      technical_limits:
+        - "Betrouwbaarheid hangt af van TSS-dekking: weken met veel sessies zonder power/TSS onderschatten de ramp rate — dat wordt eerlijk gemarkeerd, niet stilzwijgend gladgestreken."
+      assumptions: []
+      unknowns:
+        - "Of de waarschuwing ook buiten het Lab (bv. coach-observaties) moet doorwerken — buiten scope van dit addendum, wel te noteren voor B+C."
+
+    rene_calibration:
+      questions:
+        - "Welke veiligheidsgrens leggen we vast (Friel-richtlijn ~5–8 CTL-punten/week als startpunt van het gesprek), en verschilt die per ervaringsniveau?"
+        - "Moet overschrijding alleen in het Lab zichtbaar zijn, of ook als coach-signaal elders?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "De getoonde veiligheidsgrens komt uitsluitend uit de door René gekalibreerde B+C-regel; zolang die niet is vastgesteld toont de kaart de ramp rate zónder grens en zonder waarschuwing — nooit een zelfverzonnen grenswaarde."
+          rule_type: hard_blockage
+          measurement_level: per_weergave
+          aggregate_justification: ""
+          counterexamples:
+            - case: "De kaart toont een rode waarschuwing bij 6 CTL-punten/week terwijl René nog geen grens heeft vastgesteld."
+              proof_stage: designed
+              proof_method: "Contracttest: zonder gekalibreerde grenswaarde in de configuratie levert het endpoint ramp-rate-data met grens=null en waarschuwing=null."
+              proof_result: not_yet_tested
+        - rule: "Ramp rate wordt berekend uit dezelfde belastingsreeks als alle andere weergaven (computeLoadSeries); een tweede, afwijkende EWMA-implementatie is een afkeurfout."
+          rule_type: hard_blockage
+          measurement_level: per_implementatie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "De Lab-kaart toont een andere CTL-waarde dan de Analyse-hoofdpagina voor dezelfde week."
+              proof_stage: designed
+              proof_method: "Vergelijkingstest: beide endpoints leveren identieke CTL-waarden voor identieke invoer."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Weken met onvolledige TSS-dekking worden gemarkeerd als 'ondergrens' met uitleg; geen waarschuwingsonderdrukking zonder melding."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_or_build_or_retest
+      description: "Eerst de B+C-grenskalibratie met René afronden; daarna weekafleiding op computeLoadSeries + grafiek met grenszone."
+      approved_for_execution: false
+
+  - id: ANALYSE_DATAKAART_DECOUPLING_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "HR:Power-decoupling en efficiency factor: trend van aerobe conditie over stabiele duurritten"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_yet_present
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "Eén ingestbestand kan power én hartslag per punt dragen (gpx-parse), maar EF of decoupling wordt nergens berekend."
+        - "De berekening vereist sessies waarin beide kanalen gelijktijdig aanwezig zijn én de rit lang en stabiel genoeg is; welk aandeel van de bestaande sessies daaraan voldoet is onbekend."
+
+    proposed_promise:
+      text: "Het Lab toont per geschikte duurrit de efficiency factor (NP gedeeld door gemiddelde hartslag) en de decoupling (eerste versus tweede rithelft), plus de trend over tijd — alleen berekend over ritten die objectief aan de geschiktheidscriteria voldoen, en met het eerlijke label dat de 5%-vuistregel een coachpraktijk-richtlijn is, geen harde wetenschap."
+      proposed_by: replit
+      rationale: "Dit beantwoordt de kernvraag 'word ik aeroob beter?' die één FTP-getal niet beantwoordt; de databasis (per-punt power+HR bij ingest) bestaat al."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "TrainingPeaks Help — 'Aerobic Decoupling (Pw:Hr) and Efficiency Factor (EF)'"
+          coverage: "Definities: EF = NP/gem-HR; decoupling = (EF eerste helft − EF tweede helft)/EF eerste helft; toepassing op lange stabiele duurritten."
+          actuality: "Actueel; geraadpleegd 30-07-2026."
+          license_status: "Definities vrij toepasbaar met bronvermelding."
+          limitations: []
+          applicability: "Directe rekenbasis."
+        - name: "Joe Friel — 'Comparing Output and Input' (~5%-decoupling-vuistregel)"
+          coverage: "De veelgebruikte drempel 'decoupling <5% = goede aerobe basis'."
+          actuality: "Gevestigde coachpraktijk; geraadpleegd 30-07-2026."
+          license_status: "Citeerbaar met bron."
+          limitations:
+            - "Vuistregel, geen gevalideerde wetenschappelijke drempel: hartslag wordt ook beïnvloed door hitte, vocht, cafeïne, hoogte en vermoeidheid — de kaart moet die verstoorders eerlijk benoemen en mag 5% nooit als hard oordeel brengen."
+          applicability: "Referentielijn met consensus-label 'coachpraktijk, omstreden als harde grens'."
+      missing_information:
+        - "Objectieve geschiktheidscriteria voor 'lange, stabiele duurrit' (minimale duur, maximale variabiliteit) — voorstel hieronder, definitieve keuze bij kalibratie."
+
+    replit_definition:
+      objective_quality_standard: "Alleen ritten met beide kanalen ≥ een minimale dekking (bv. ≥90% van de punten), minimale duur (voorstel ≥60 min) en beperkte variabiliteit komen in aanmerking; ongeschikte ritten worden benoemd als 'niet meegeteld' met reden."
+      recommended_default: "EF en decoupling bij ingest berekenen voor geschikte sessies (zelfde alleen-bij-ingest-principe als streams); trendgrafiek op leesmoment."
+      technical_limits:
+        - "Geen backfill: oude sessies zonder samples doen niet mee."
+        - "Bronnen die alleen power of alleen HR leveren vallen af; dat wordt per bron eerlijk gemeld (bronnenregister-principe)."
+      assumptions: []
+      unknowns:
+        - "Hoeveel testers momenteel ritten rijden die aan de criteria voldoen (borstband + powermeter tegelijk)."
+
+    rene_calibration:
+      questions:
+        - "Akkoord met de geschiktheidscriteria (≥60 min, ≥90% dubbele kanaaldekking, beperkte variabiliteit), of andere grenzen?"
+        - "Tonen we de 5%-referentielijn (met vuistregel-label), of alleen de eigen trend zonder normlijn?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Decoupling/EF wordt nooit berekend of getoond voor ritten die niet objectief aan de geschiktheidscriteria voldoen, en de 5%-drempel wordt nooit als hard wetenschappelijk oordeel gepresenteerd — altijd als coachpraktijk-vuistregel met genoemde verstoorders."
+          rule_type: hard_blockage
+          measurement_level: per_rit
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een grillige criteriumtraining van 35 minuten krijgt een decoupling-percentage en telt mee in de trend."
+              proof_stage: designed
+              proof_method: "Contracttest: rit onder de duur-/stabiliteitscriteria ⇒ uitgesloten met reden, komt niet in de trendreeks."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Ritten zonder gelijktijdige power+HR ⇒ niet meegeteld, met per bron de eerlijke uitleg welke data ontbreekt."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_or_build_or_retest
+      description: "Geschiktheidscriteria kalibreren, EF/decoupling-berekening bij ingest, trendkaart in het Lab."
+      approved_for_execution: false
+
+  - id: ANALYSE_DATAKAART_INDIVIDUELE_ZONES_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "Individuele vermogenszones afgeleid van de eigen Power Duration Curve in plaats van generieke FTP-percentages"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_yet_present
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "Eerlijke bevinding: er bestaat in de code nog helemaal geen zonetabel — ook geen generieke FTP-percentage-zones; FTP en FTP-historie bestaan, de workout-builder noemt zones alleen als vrije tekst. 'Vervangen of ernaast' is dus feitelijk 'als eerste zonesysteem invoeren'."
+        - "Individuele zones vereisen een gevulde PDC (kaart 1) als input; zonder voldoende curvepunten is er geen individuele afleiding mogelijk."
+
+    proposed_promise:
+      text: "Sparki leidt vermogenszones af uit de eigen Power Duration Curve van de renner (sprint/anaeroob/VO2max/drempel/tempo/duur) waar de curve voldoende gevuld is, en valt anders eerlijk gelabeld terug op klassieke FTP-percentages — het is altijd zichtbaar op welke basis een zone berust."
+      proposed_by: replit
+      rationale: "Zones uit de eigen data kloppen beter voor renners met een afwijkend profiel (sprinter versus tijdrijder); dit is de WKO5-iLevels-gedachte, toegepast op rauwe eigen bests in plaats van een propriëtair model."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Klassieke Coggan-zones (%FTP, 7 niveaus)"
+          coverage: "De gevestigde standaardtabel; nodig als fallback en vergelijkingsbasis."
+          actuality: "Gevestigd; geraadpleegd 30-07-2026."
+          license_status: "Percentagetabel breed gepubliceerd en met bronvermelding toepasbaar."
+          limitations:
+            - "Eén FTP-anker beschrijft sprint-/anaeroob vermogen slecht."
+          applicability: "Fallback-systeem."
+        - name: "WKO5 iLevels / Power Duration Model V2 (individualized training levels)"
+          coverage: "Methodische onderbouwing dat zones uit de individuele curve afgeleid kunnen worden."
+          actuality: "Actueel; geraadpleegd 30-07-2026."
+          license_status: "Het WKO-model zelf is propriëtair — Sparki neemt het idee (zones uit eigen curve-ankerpunten), niet de modelformules."
+          limitations:
+            - "Zonder het WKO-model moet Sparki eigen, transparante ankerpunten kiezen (bv. beste 5s/1min/5min/20min) — eenvoudiger maar uitlegbaar."
+          applicability: "Richting voor de eigen variant."
+      missing_information:
+        - "Welke ankerpunt-afleiding het beste past bij de bestaande architectuur — voorstel: transparante eigen variant op rauwe bests (geen curvefitting), gekalibreerd met René."
+
+    replit_definition:
+      objective_quality_standard: "Elke zonegrens is een gedocumenteerde, deterministische functie van echte curvepunten of (fallback) van FTP; de basis (individueel/generiek) staat bij elke zone; wisselt de basis, dan is dat zichtbaar in een historielog."
+      recommended_default: "Eigen transparante variant: ankerpunten uit rauwe bests met minimale-datavereisten per zone; fallback naar %FTP per zone waar data ontbreekt (gemengd mag, mits gelabeld)."
+      technical_limits:
+        - "Kwaliteit staat of valt met de PDC-dekking (kaart 1); zones voor sprint/anaeroob vergen recente korte all-out-inspanningen die veel recreanten nooit rijden."
+      assumptions:
+        - "Kaart 1 (PDC) wordt vóór of samen met deze kaart gebouwd."
+      unknowns:
+        - "Of trainingsvoorschriften elders in de app (plan-engine) later op deze zones moeten aansluiten — buiten scope hier, wel een vervolgvraag voor B+C."
+
+    rene_calibration:
+      questions:
+        - "Vervangen individuele zones de (nog in te voeren) generieke FTP-zones, of staan beide naast elkaar? (Jouw beslispunt uit de opdracht; technisch advies: één zichtbaar zonesysteem met gelabelde gemengde basis.)"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een zone die op onvoldoende eigen curvedata berust wordt nooit als 'individueel afgeleid' gepresenteerd; de basis (individueel / generiek %FTP) is per zone altijd zichtbaar en toetsbaar."
+          rule_type: hard_blockage
+          measurement_level: per_zone
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een renner zonder enige sprintdata ziet een 'individuele' sprintzone die stilletjes uit %FTP is berekend."
+              proof_stage: designed
+              proof_method: "Contracttest: zonder kort-duur-bests levert het endpoint die zone met basis='generiek' en uitleg, nooit basis='individueel'."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Onvoldoende curvedata per zone ⇒ gelabelde fallback op %FTP; geen FTP bekend ⇒ geen zones, met eerlijke uitleg."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na René's keuze (vervangen/ernaast): ankerpunt-afleiding uitwerken op de PDC-data, zone-endpoint met basis-labels."
+      approved_for_execution: false
+
+  - id: ANALYSE_DATAKAART_W_PRIME_FRC_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "Onderzoek (niet bouwen): anaerobe werkcapaciteit W'/FRC — haalbaarheid en benodigde data"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_yet_present
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "Niets van het critical-power-model bestaat in de code; dit onderwerp is conform de opdracht alleen onderzocht, niet ontworpen voor bouw."
+
+    proposed_promise:
+      text: "(Nog geen productbelofte — onderzoeksresultaat; bouw pas na een aparte, latere beslissing van René.)"
+      proposed_by: replit
+      rationale: "Opdracht: alleen haalbaarheid en benodigde data onderzoeken."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Skiba et al. — intermittent W'-balansmodel (validatie IJSPP 2014; aanpassing voor elite baanrenners IJSPP 2021)"
+          coverage: "Het standaardmodel voor W'-verbruik/-herstel tijdens wisselende inspanning; veldvalidatie."
+          actuality: "Gepubliceerd, peer-reviewed; geraadpleegd 30-07-2026."
+          license_status: "Wetenschappelijke formules vrij toepasbaar met bronvermelding."
+          limitations:
+            - "Herstelsnelheid van W' is sterk individueel; het model vergt een betrouwbare CP+W'-schatting uit recente maximale inspanningen van meerdere duren."
+          applicability: "Rekenkern indien ooit gebouwd."
+        - name: "Narratieve review critical power/W' voor trainingsvoorschrift (PMC7552657, 2020)"
+          coverage: "Overzicht van bewijs én beperkingen: CP/W'-schattingen hebben forse betrouwbaarheidsintervallen; toepassing op training is in ontwikkeling."
+          actuality: "2020-review; geraadpleegd 30-07-2026."
+          license_status: "Open access."
+          limitations: []
+          applicability: "Onderbouwt het consensus-label 'in ontwikkeling', niet 'gevestigd'."
+        - name: "WKO5 dFRC-documentatie"
+          coverage: "Hoe een commerciële implementatie dit toont (dynamic FRC)."
+          actuality: "Actueel; geraadpleegd 30-07-2026."
+          license_status: "Propriëtair model — alleen functioneel referentiebeeld."
+          limitations: []
+          applicability: "Weergavereferentie."
+      missing_information:
+        - "Of Sparki's testers regelmatig maximale inspanningen van 2–3 verschillende duren rijden (nodig om CP en W' betrouwbaar te schatten) — zonder die tests is elke W'-weergave schijnprecisie."
+
+    replit_definition:
+      objective_quality_standard: "(Onderzoeksconclusie) Haalbaar bij: (1) gevulde PDC met recente maximale inspanningen op ≥2–3 duren tussen ~2 en ~20 min voor de CP/W'-fit; (2) per-punt power-streams (bestaan bij ingest); (3) eerlijke betrouwbaarheidsband op CP en W'. Technisch zwaar is niet de wiskunde maar de datakwaliteitseis en het risico op schijnprecisie."
+      recommended_default: "Niet bouwen in deze ronde (conform opdracht). Als het ooit gebouwd wordt: eerst seizoens-CP/W'-schatting met betrouwbaarheidsband (kaart 7), pas daarna de in-rit W'-balans (punt 8), en alleen voor renners met voldoende recente maximale inspanningen."
+      technical_limits:
+        - "Zonder recente all-out-data geen betrouwbare fit — dan eerlijk 'niet beschikbaar', nooit een W' op oude of submaximale data."
+      assumptions: []
+      unknowns:
+        - "Rekenbelasting van per-seconde W'-balans over lange ritten op de bestaande ingest-pijplijn (alleen relevant bij latere bouw)."
+
+    rene_calibration:
+      questions:
+        - "Wil je dit onderwerp op de langere lijst houden (na de zes kaarten), of voorlopig laten rusten tot testers structureel maximale tests rijden?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules: []
+      tolerances: []
+      unknown_data_policy: "n.v.t. — onderzoeksonderwerp, geen bouw."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: false
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Wachten op René's prioriteitsbesluit; geen bouw in deze ronde."
+      approved_for_execution: false
+
+  - id: ANALYSE_LAB_EXTRA_GRAFIEKEN_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "Aanvullende geavanceerde Lab-grafieken (lagere prioriteit): quadrant analysis, interval-tabel, tijd-in-zone, in-rit W'-balans, variability index, stapelbare ritgrafieken"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_yet_present
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "Geen van deze weergaven bestaat; sessiegrafieken (per-punt reeksen) bestaan wel als fundament voor de rit-gebonden varianten."
+        - "Quadrant analysis vereist cadans per punt (aanwezig waar de bron die levert); interval-detectie bestaat niet; tijd-in-zone vereist eerst een zonesysteem (kaart 6)."
+
+    proposed_promise:
+      text: "Na de zes hoofdkaarten breidt het Lab uit met door racers gewaardeerde verdiepingsgrafieken (quadrant analysis, intervaltabel, tijd-in-zone voor vermogen/hartslag/cadans, variability index, stapelbare ritgrafieken; in-rit W'-balans alleen na een positief kaart-7-besluit) — elk op echte data en elk met dezelfde eerlijkheidsregels als de hoofdkaarten."
+      proposed_by: replit
+      rationale: "WKO5/intervals.icu laten zien dat deze laag bestaat en gewaardeerd wordt; expliciet lagere prioriteit zodat de zes hoofdkaarten eerst bewezen worden."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "WKO5-methodiek (quadrant analysis) en intervals.icu-functionaliteit (intervaldetectie, tijd-in-zone, stapelbare grafieken)"
+          coverage: "Functionele referentie voor alle zes weergaven; VI = NP/gemiddeld vermogen is een gevestigde Coggan-afleiding."
+          actuality: "Actueel; geraadpleegd 30-07-2026."
+          license_status: "Alleen functionele referentie; geen code of modellen overgenomen."
+          limitations: []
+          applicability: "Prioritering en weergavekeuzes in een latere ronde."
+      missing_information:
+        - "Volgorde van deze zes onderling — pas relevant na oplevering van de hoofdkaarten."
+
+    replit_definition:
+      objective_quality_standard: "Zelfde standaard als de hoofdkaarten: alles herleidbaar naar echte samples; intervaldetectie deterministisch en uitlegbaar; VI alleen bij echte NP."
+      recommended_default: "Niet in deze ronde bouwen; per grafiek een eigen mini-kalibratie zodra aan de beurt."
+      technical_limits:
+        - "In-rit W'-balans hangt volledig af van het kaart-7-besluit (CP/W'-fit vereist)."
+      assumptions: []
+      unknowns: []
+
+    rene_calibration:
+      questions:
+        - "Welke van deze zes heeft voor jou de hoogste prioriteit ná de hoofdkaarten?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules: []
+      tolerances: []
+      unknown_data_policy: "Per grafiek vast te stellen bij de eigen kalibratieronde."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Wachten tot de zes hoofdkaarten bewezen zijn; dan prioritering met René."
+      approved_for_execution: false
+
+  - id: SCENARIO_KOOLHYDRAATINNAME_PER_UUR_001
+    module: Training, coaching en analyse (B+C) — wat-als-scenariolaag
+    onderwerp: koolhydraatinname_per_uur
+    status: needs_calibration
+
+    # Pilot-onderwerp van de wat-als-scenariolaag (aanpak zoals bij Routes:
+    # eerst één onderwerp volledig, pas na geslaagde pilot uitbreiden naar
+    # crank-lengte, bandenmaat, lichaamssamenstelling, VO2max-frequentie).
+    # Cross-hoofdstuk: materiaal-scenario's lezen te zijner tijd de garage
+    # (hoofdstuk G) uit; lichaamsprofiel-scenario's vergen de hoofdstuk-H-velden
+    # beenlengte/spiermassa/vetmassa (weegschaal-koppeling = hoofdstuk H;
+    # MEASURED via koppeling, SELF_REPORTED bij handinvoer — nooit hard feit).
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Narratieve review 'High-Carbohydrate Fueling Revolution (≥100 g/h) in the Professional Peloton' — Sports Medicine, 2025 (Springer, s40279-025-02372-6)"
+          coverage: "Bewijs en open vragen rond inname ≥100 g/u in het profpeloton; maagdarmtolerantie, gut training, glucose:fructose-verhoudingen."
+          actuality: "2025, peer-reviewed; geraadpleegd 30-07-2026."
+          consensus_status: in_ontwikkeling
+          effect_range: "Zeer hoge inname (100–120 g/u) toont in de praktijk voordelen bij lange, intensieve inspanning bij getrainde darmen, maar gecontroleerd bewijs voor superioriteit boven ~90 g/u is beperkt — daarom bandbreedte, geen enkel getal."
+          confidence: "middel — praktijk loopt vóór op gecontroleerd onderzoek"
+        - name: "'From Metabolism to Medals: Revisiting Carbohydrate Guidelines for Fuelling Endurance Athletes During Exercise' — Journal of Nutrition, 2026"
+          coverage: "Herziening van de klassieke richtlijnen; contextfactoren (duur, intensiteit, individuele tolerantie)."
+          actuality: "2026, peer-reviewed; geraadpleegd 30-07-2026."
+          consensus_status: in_ontwikkeling
+          effect_range: "Bevestigt duur-afhankelijke opbouw en dat boven ~90 g/u individuele tolerantie de beperkende factor is."
+          confidence: "middel"
+        - name: "Klassieke richtlijn (Jeukendrup e.a.): 30–60 g/u tot ~2u, 60–90 g/u (glucose+fructose) bij >2,5u"
+          coverage: "De gevestigde consensusbasis waar alle nieuwere literatuur op voortbouwt."
+          actuality: "Gevestigd sinds ~2010–2014; geraadpleegd 30-07-2026."
+          consensus_status: gevestigd
+          effect_range: "30–60 g/u (≤2u), 60–90 g/u (>2,5u, meervoudige transporteerbare koolhydraten)."
+          confidence: "hoog"
+      missing_information:
+        - "Kwantitatieve prestatie-effectgrootte (bv. % vermogensbehoud) per innameniveau per duurklasse — de literatuur geeft vooral richtlijnbanden, geen universele effectcurve; de visualisatie moet dat eerlijk als bandbreedte-met-onzekerheid brengen."
+        - "Jeugdrenners: de bestaande fueling-engine-regel (jeugd geen getallen) geldt ook hier — scenario's met getallen zijn 17+."
+
+    visualisatie:
+      type: interactieve_grafiek
+      toont_bandbreedte: true
+      toont_bron_en_consensus_status: true
+      toelichting: "Slider inname (g/u) × ritduur ⇒ verwacht-effect-band met per zone het consensus-label (gevestigd tot ~90 g/u met opbouw; in_ontwikkeling daarboven) en de bronvermelding; koppelt aan de bestaande deterministische fueling-richtwaarden (SSOT) — het scenario legt uit en verkent, het rekent nooit een eigen, afwijkend advies uit."
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Nooit een effect tonen zonder brongebaseerde bandbreedte en consensus-label; nooit plausibel klinkende wetenschap verzinnen — elk getoond effect draagt een echte, gepubliceerde bron met actualiteit en consensus-status."
+          rule_type: hard_blockage
+          measurement_level: per_scenario_weergave
+          aggregate_justification: ""
+          counterexamples:
+            - case: "De grafiek toont '8% meer vermogensbehoud bij 120 g/u' als één getal zonder bron en zonder onzekerheidsband."
+              proof_stage: designed
+              proof_method: "Contracttest: elke effect-payload bevat verplicht bronverwijzing, bandbreedte en consensus_status; ontbreekt één veld ⇒ scenario wordt niet getoond."
+              proof_result: not_yet_tested
+        - rule: "De scenariolaag spreekt de deterministische fueling-engine (SSOT voor richtwaarden) nooit tegen en omzeilt nooit de jeugd- en consent-regels van die engine."
+          rule_type: hard_blockage
+          measurement_level: per_scenario_weergave
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Het scenario adviseert een 16-jarige concrete gram-getallen terwijl de fueling-engine voor jeugd bewust zonder getallen werkt."
+              proof_stage: designed
+              proof_method: "Contracttest: minderjarig profiel ⇒ scenario met getallen geweigerd/zonder-getallen-variant, consistent met de fueling-engine-gate."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Geen gepubliceerde bron voor een gevraagde combinatie ⇒ eerlijk 'hierover is geen bruikbaar onderzoek bekend', nooit een gladde curve doortrekken."
+      approved: false
+
+    rene_calibration:
+      questions:
+        - "Bevestig je koolhydraatinname per uur als eerste pilot-onderwerp, of heeft een ander onderwerp (crank-lengte, bandenmaat, lichaamssamenstelling, VO2max-frequentie) de voorkeur?"
+        - "Mag de scenariolaag ook aan trainers getoond worden (cockpit), of eerst alleen aan de renner zelf?"
+      completed: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na René's pilotbevestiging: interactieve bandbreedte-grafiek op de bestaande fueling-richtwaarden + bronregister; daarna pas een tweede onderwerp."
+      approved_for_execution: false
+
+  - id: ANALYSE_CONTENTPIPELINE_SPORTWETENSCHAP_001
+    module: Training, coaching en analyse (B+C) — addendum datakaarten
+    subject: "Dagelijkse contentpipeline erkende sportwetenschap-bronnen (KnowledgeIsWatt, Fast Talk Labs) — onderzoek, niet bouwen vóór licentie-opheldering"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "Er bestaat al een literatuur-ingest met relevantiewaarborg (o.a. arXiv-queries met woordgrens-filters) en een governed kennisbank (publiceren = transactie+snapshot, gebruik pint versie) — maar geen RSS-/Substack-bron en geen dagelijkse artikel-pijplijn met menselijke beoordeling."
+        - "Licentie-onderzoek KnowledgeIsWatt (30-07-2026): het is een Substack-publicatie (knowledgeiswatt.substack.com, dr. Gabriele Gallo) met 100+ artikelen grotendeels achter een betaalmuur. Substack-publicaties hebben standaard een RSS-feed, maar die bevat voor betaalde posts alleen titel/preview — de volledige inhoud automatisch binnenhalen zonder abonnement of toestemming kan niet en mag niet. Een gratis RSS-deel (previews + eventuele gratis posts) is legitiem te volgen; alles daarbuiten vergt een betaald abonnement (persoonlijk gebruik) of een expliciete partnership/licentie voor hergebruik richting trainers."
+
+    proposed_promise:
+      text: "Sparki volgt erkende sportwetenschap-bronnen structureel en legt nieuwe, geverifieerde artikelen als voorstel voor aan René en/of trainers — nooit automatische verwerking in plannen of scenario's, nooit content achter een betaalmuur binnenhalen zonder licentie, en nooit een artikel 'geverifieerd' noemen zonder de onderliggende gepubliceerde studie te hebben gecheckt."
+      proposed_by: replit
+      rationale: "De wat-als-scenariolaag heeft een doorlopende bronstroom nodig; hetzelfde voorstel-nooit-automatisch-patroon als de sessie-logistiek-AI van hoofdstuk J."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "KnowledgeIsWatt (Substack, dr. Gabriele Gallo — PhD Exercise & Sport Sciences)"
+          coverage: "Wekelijkse reviews van gepubliceerd wieleronderzoek: training, fysiologie, voeding, herstel, aerodynamica."
+          actuality: "Doorlopend actueel; geraadpleegd 30-07-2026."
+          license_status: "Betaald abonnement; RSS geeft alleen previews van betaalde posts. Hergebruik richting derden (trainers) vereist partnership/licentie — te beslissen door René."
+          limitations:
+            - "Secundaire bron: elke claim moet tegen de onderliggende studie gecheckt worden vóór 'geverifieerd'."
+          applicability: "Signaalbron voor nieuwe studies; nooit zelf de citeerbron."
+        - name: "Fast Talk Labs"
+          coverage: "Wetenschappelijk onderbouwd kennisplatform/podcast."
+          actuality: "Doorlopend; geraadpleegd 30-07-2026."
+          license_status: "Deels gratis, deels betaald; zelfde hergebruik-voorbehoud."
+          limitations:
+            - "Podcastvorm maakt bronverificatie arbeidsintensiever."
+          applicability: "Tweede signaalbron."
+      missing_information:
+        - "Antwoord van KnowledgeIsWatt op een partnership-/licentievraag (nog niet gesteld — pas na René's besluit of Sparki dit überhaupt wil)."
+
+    replit_definition:
+      objective_quality_standard: "Een artikel is pas 'geverifieerd' als de onderliggende gepubliceerde studie is gevonden en gecheckt op actualiteit en consensus-status; ongeverifieerde signalen blijven zichtbaar gelabeld 'nog niet geverifieerd'."
+      recommended_default: "Starten met de legitieme gratis laag (RSS-previews + gratis posts als signalen) op de bestaande literatuur-ingest + governed kennisbank; voorstellen-wachtrij voor René/trainers; betaalmuur-content pas na abonnement/licentiebesluit."
+      technical_limits:
+        - "De bestaande relevantiewaarborg (woordgrens-regex) moet per nieuwe bron opnieuw gekalibreerd worden om off-topic instroom te voorkomen."
+      assumptions: []
+      unknowns:
+        - "Of Substack-RSS voor deze publicatie ook gratis posts volledig levert (per publicatie instelbaar door de auteur) — te verifiëren bij de bouw."
+
+    rene_calibration:
+      questions:
+        - "Neemt Sparki een betaald KnowledgeIsWatt-abonnement en/of zoeken we een partnership om content legitiem richting trainers te gebruiken, of blijven we op de gratis signaal-laag? (Jouw beslispunt.)"
+        - "Wie beoordeelt voorstellen: alleen jij, of ook trainers voor hun eigen groep?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Nooit content achter een betaalmuur automatisch binnenhalen of tonen zonder abonnement/licentie, en nooit een artikel als 'geverifieerd' doorzetten zonder gecheckte onderliggende studie; een nieuw artikel wordt altijd als voorstel aan een mens voorgelegd en nooit automatisch verwerkt in een plan of scenario."
+          rule_type: hard_blockage
+          measurement_level: per_artikel
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een KnowledgeIsWatt-samenvatting belandt zonder studieverificatie en zonder menselijke beoordeling als bron in een wat-als-scenario."
+              proof_stage: designed
+              proof_method: "Contracttest: artikel zonder verified-vlag én zonder beoordelingsactie kan niet aan een scenario/kennisbankpublicatie gekoppeld worden."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Onderliggende studie niet vindbaar ⇒ artikel blijft 'niet geverifieerd' en wordt nooit als wetenschappelijke bron gebruikt."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Wachten op René's abonnement-/partnershipbesluit; daarna gratis-laag-pijplijn op de bestaande kennisbank-governance."
+      approved_for_execution: false
+# ============================================================================
+# Nieuw onderwerp — Recreatieve fietser en e-bike
+# Opgesteld: 2026-07-30 volgens SPARKI_KALIBRATIE_OPDRACHT_RECREATIEVE_FIETSER_EBIKE.
+# Stopregel: zolang taak #505 (lusgeneratie fail-closed) niet is opgelost en
+# herbewezen alleen kalibratieonderzoek — geen UI, geen productcode.
+# Productmodel door René vastgesteld (recreant = volwaardige gebruiker; e-bike
+# = fietseigenschap, geen gebruikerstype; vier onafhankelijke assen
+# gebruiker/fiets/ondersteuning/activiteit).
+# Codebron-snapshot: 2026-07-30 (main cafb3cc0).
+# Eerlijke kernbevinding vooraf: Strava's EBikeRide wordt vandaag via de
+# sport-aliasing tot gewoon 'cycling' genormaliseerd (engines/data-hub/
+# sports.ts) en telt — zodra er power+FTP is — gewoon mee in de derived
+# TSS/belasting; er is geen e-bike-vlag op training_sessions (het originele
+# sport_type overleeft alleen in de raw-JSON van connector_activities). De
+# garage kent al een 'stads'-fietstype maar geen ondersteuningsveld; de
+# routeplanner heeft al een verhard toer-/stadsprofiel (cycling-regular) maar
+# geen voorkeuren natuur/water/autoluw; onboarding zet bij Q&A-only ALTIJD een
+# geschatte FTP (150–320 W op ervaring), ook als het doel 'recreatief' is; de
+# coachtaal differentieert op jeugd/trainer/topsporter, niet op recreatief.
+recreatieve_fietser_en_ebike:
+
+  - id: RECREATIEF_EBIKE_EBIKE_RITTEN_001
+    module: Recreatieve fietser en e-bike (nieuw onderwerp)
+    subject: "Dataopslag e-bike-ritten: EBikeRide apart herkenbaar bewaren, nooit stilzwijgend samengevoegd met gewone vermogensritten"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "EBikeRide wordt bij Strava-import herkend maar direct genormaliseerd naar 'cycling' via SPORT_ALIASES (engines/data-hub/sports.ts:43); daarna is de e-bike-herkomst alleen nog terug te vinden in connector_activities.raw."
+        - "Wat er technisch misgaat: deriveTss (lib/derived-load.ts:37-64) rekent voor elke cycling-sessie met power+FTP een TSS — een e-bike-rit met meetbaar (ondersteund) vermogen telt dus zonder label mee in CTL/ATL/TSB en kan zelfs de FTP-vloerafleiding en power-bests vervuilen."
+        - "Er is geen e-bike-vlag/ondersteuningsveld op training_sessions; ook bestandimport (FIT/TCX/GPX) heeft geen e-bike-detectie."
+
+    proposed_promise:
+      text: "Een e-bike-rit blijft in Sparki altijd herkenbaar als e-bike-rit: hij wordt bewaard en getoond met e-bike-label, telt nooit stilzwijgend mee in vermogens-, FTP- of belastingsberekeningen voor gewone ritten, en verdwijnt ook nooit stilletjes — hij blijft een volwaardige, zichtbare rit."
+      proposed_by: replit
+      rationale: "Herkomst-eerlijkheid: ondersteund vermogen is geen eigen vermogen; samenvoegen vervalst FTP, bests en belasting. Tegelijk is de rit zelf waardevol (beweging, duur, route) en blijft hij volwaardig zichtbaar."
+      rene_approved: false
+
+    gebruiker_fiets_model:
+      gebruiker: [recreatief, serieus]
+      fiets: [stadsfiets, toerfiets, gravelbike, racefiets, mtb]
+      ondersteuning: [geen, licht, normaal, sterk]
+      activiteit: [recreatieve_rit, woon_werk, toertocht, training, wedstrijd]
+      assen_onafhankelijk: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Strava API-documentatie sport_type (EBikeRide, EMountainBikeRide)"
+          coverage: "Strava levert het e-bike-onderscheid expliciet mee in sport_type; de detectie is dus gratis bij import."
+          actuality: "Actuele API; code geraadpleegd 30-07-2026."
+          license_status: "Bestaande Strava-koppeling; binnen de huidige API-voorwaarden."
+          limitations:
+            - "Alleen zo betrouwbaar als de gebruiker/het device het in Strava juist labelt."
+          applicability: "Directe bron voor de e-bike-vlag bij import."
+        - name: "Bestaande Sparki-ingestcode (sport-aliasing, deriveTss, dedupe-key)"
+          coverage: "Toont exact waar het label nu verloren gaat en waar een vlag moet landen."
+          actuality: "Code van 30-07-2026."
+          license_status: "Eigen code."
+          limitations:
+            - "Bestandimport (FIT/TCX/GPX) draagt niet altijd een e-bike-kenmerk — dan is de fietskeuze (garage) of handmatige aanduiding de bron."
+          applicability: "Basis voor het datamodel."
+      missing_information:
+        - "Of Garmin/Wahoo-sync e-bike-activiteitstypen doorgeeft in de huidige velden (te verifiëren bij bouw)."
+        - "Hoe bestaande, al geïmporteerde e-bike-ritten met terugwerkende kracht gelabeld kunnen worden (connector_activities.raw bewaart het originele type — herlabeling lijkt mogelijk, omvang te bepalen)."
+
+    replit_definition:
+      objective_quality_standard: "Elke rit draagt een expliciet ondersteuningskenmerk (geen/licht/normaal/sterk, of 'onbekend'); alle afgeleide berekeningen (TSS/belasting, FTP-afleiding, power-bests, records, PDC) sluiten ritten met ondersteuning ≠ geen uit of behandelen ze in een eigen, gelabelde categorie — controleerbaar per berekening."
+      recommended_default: "E-bike-vlag als kolom op training_sessions, gevuld uit (1) provider-sport_type, (2) gekozen fiets uit de garage, (3) handmatige aanduiding; bestaande raw-data herlabelen waar het originele type bewaard is."
+      technical_limits:
+        - "Ritten zonder enige bron voor het kenmerk blijven 'onbekend' — die tellen behoudend (niet mee in FTP/bests) tot de gebruiker het bevestigt; nooit stilzwijgend aannemen dat onbekend = geen ondersteuning bij twijfelachtige bronnen, maar ook geen heksenjacht: default per bron te kalibreren."
+      assumptions:
+        - "De dedupe-sleutel (sport+startbucket) blijft werken; het ondersteuningskenmerk verandert de identiteit van de rit niet."
+      unknowns:
+        - "Volume bestaande e-bike-ritten bij testers (bepaalt of herlabeling een migratie of een handmatige actie is)."
+
+    rene_calibration:
+      questions:
+        - "Tellen e-bike-ritten mee in een eigen, apart belastingsbeeld (bewegingsminuten), of voorlopig helemaal niet in belasting?"
+        - "Wat is de default voor ritten zonder bron voor het kenmerk: 'onbekend, telt behoudend' of per fietskeuze uit de garage aannemen?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "EBikeRide wordt nooit stilzwijgend samengevoegd met een gewone vermogensrit"
+          rule_type: hard_blockage
+          measurement_level: per_rit
+          counterexamples:
+            - case: "een geïmporteerde EBikeRide die zonder label meetelt in de gewone belasting-/vermogensberekening"
+              proof_stage: designed
+              proof_method: "Contracttest: Strava-import met sport_type=EBikeRide ⇒ sessie draagt e-bike-kenmerk, deriveTss slaat hem over (of boekt hem in de aparte categorie), FTP-vloer en power-bests blijven aantoonbaar ongewijzigd."
+              proof_result: not_yet_tested
+        - rule: "Een e-bike-rit verdwijnt ook nooit stilletjes: hij blijft als volwaardige rit zichtbaar in het activiteitenoverzicht met e-bike-label."
+          rule_type: hard_blockage
+          measurement_level: per_rit
+          counterexamples:
+            - case: "de e-bike-rit wordt bij de belastingsfix ook uit de activiteitenlijst gefilterd, waardoor de rit 'kwijt' is"
+              proof_stage: designed
+              proof_method: "Contracttest: sessielijst-endpoint levert de e-bike-rit mét label; alleen afgeleide berekeningen sluiten hem uit."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Ondersteuning onbekend ⇒ rit zichtbaar met 'ondersteuning onbekend', behoudende telling, en een eenvoudige bevestigingsvraag — nooit stil raden."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Wachten op René's kalibratie (belastingsvraag + default) én afronding taak #505; daarna pas bouwontwerp."
+      approved_for_execution: false
+
+  - id: RECREATIEF_EBIKE_FIETS_ONDERSTEUNING_001
+    module: Recreatieve fietser en e-bike (nieuw onderwerp)
+    subject: "Fiets en ondersteuning in de garage: stads-/toerfiets als volwaardig fietstype, elektrische ondersteuning (geen/licht/normaal/sterk) als fietseigenschap"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "garage_bikes kent al de typen race/mtb/gravel/tt/baan/cyclocross/stads/anders (lib/db/src/schema/garage.ts:30-39) — 'stads' bestaat dus, 'toerfiets' niet als eigen type."
+        - "Er is geen veld voor elektrische ondersteuning; alleen het vrije-tekstveld purpose waar iemand 'elektrisch' zou kunnen typen — dat is geen bruikbare basis voor logica."
+        - "Een extra kolom is een gewone, kleine schemamigratie (bestaand drizzle-patroon); technisch laag risico."
+
+    proposed_promise:
+      text: "In de garage is elke fiets volledig te beschrijven zonder aparte e-bike-silo: het fietstype (incl. stads- en toerfiets) en de elektrische ondersteuning (geen/licht/normaal/sterk) zijn twee losse eigenschappen, en elke e-bike-variant van elk type is gewoon dat type mét ondersteuning."
+      proposed_by: replit
+      rationale: "Volgt René's assenmodel exact: ondersteuning is een eigenschap van de fiets, geen identiteit; de garage-infra bestaat al grotendeels."
+      rene_approved: false
+
+    gebruiker_fiets_model:
+      gebruiker: [recreatief, serieus]
+      fiets: [stadsfiets, toerfiets, gravelbike, racefiets, mtb]
+      ondersteuning: [geen, licht, normaal, sterk]
+      activiteit: [recreatieve_rit, woon_werk, toertocht, training, wedstrijd]
+      assen_onafhankelijk: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande garage-/materiaalcode (hoofdstuk G)"
+          coverage: "Typen-enum, purpose-veld, onderhouds- en kennislaag; toont dat uitbreiden een kolom + enum-waarde is."
+          actuality: "Code van 30-07-2026."
+          license_status: "Eigen code."
+          limitations:
+            - "Bestaande fietsen krijgen ondersteuning='geen' als default nodig, met een eenmalige controlevraag voor wie een e-bike heeft."
+          applicability: "Direct: haalbaarheid bevestigd, kleine migratie."
+      missing_information:
+        - "Of 'toerfiets' een eigen enum-waarde wordt of dat 'stads' hernoemd/verbreed wordt naar 'stads/toer' — smaakkeuze voor René."
+
+    replit_definition:
+      objective_quality_standard: "Ondersteuning is een verplicht, expliciet veld per fiets (default 'geen' alleen voor bestaande rijen met eenmalige bevestiging); logica elders (ritlabeling, routeprofiel) leest dit veld en nooit vrije tekst."
+      recommended_default: "Enum-uitbreiding fietstype met 'toer'; nieuwe kolom ondersteuning (geen/licht/normaal/sterk) op garage_bikes; de rit-vlag (zie EBIKE_RITTEN) kan bij handmatige ritten uit de gekozen fiets volgen."
+      technical_limits:
+        - "Ondersteuningsniveau zegt niets over daadwerkelijk motorgebruik in een specifieke rit; het blijft een fietseigenschap, geen ritmeting — accuverbruik e.d. expliciet buiten scope."
+      assumptions: []
+      unknowns:
+        - "Of testers hun e-bikes nu onder 'anders' of 'stads' hebben staan (bepaalt de eenmalige controlevraag-doelgroep)."
+
+    rene_calibration:
+      questions:
+        - "Krijgt 'ondersteuning: sterk' een aparte veiligheidsopmerking (snelheid), ook al blijven speed-pedelecregels buiten deze stap? (Jouw beslispunt.)"
+        - "'Toerfiets' als eigen type naast 'stads', of één gecombineerd 'stads/toer'?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Er ontstaat nergens een apart 'e-bike-gebruikersprofiel' of e-bike-silo: ondersteuning is uitsluitend een fietseigenschap en de vier assen (gebruiker/fiets/ondersteuning/activiteit) blijven onafhankelijk instelbaar."
+          rule_type: hard_blockage
+          measurement_level: per_datamodel
+          counterexamples:
+            - case: "een 'e-bike'-fietstype in de enum, waardoor type en ondersteuning weer vermengd raken"
+              proof_stage: designed
+              proof_method: "Schemareview + contracttest: elk fietstype is combineerbaar met elke ondersteuningswaarde."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Bestaande fietsen zonder bevestigde ondersteuning tonen 'nog niet ingevuld' en krijgen één rustige controlevraag; geen stille default die als feit oogt."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Wachten op René's kalibratie en taak #505; migratieontwerp ligt klaar (enum + kolom)."
+      approved_for_execution: false
+
+  - id: RECREATIEF_EBIKE_ONBOARDING_001
+    module: Recreatieve fietser en e-bike (nieuw onderwerp)
+    subject: "Onboarding: recreatieve fietser als volwaardige keuze, zonder opgedrongen FTP-schatting of prestatietaal"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "developmentGoal kent 'recreatief' al als waarde (routes/athlete.ts:160), dus de doelkeuze bestaat."
+        - "Maar de Q&A-onboarding zet ALTIJD een geschatte FTP via estimateFtp(experience) (lib/onboarding-questions.ts:67-69, 150–320 W), ook bij doel 'recreatief' — precies wat het productmodel verbiedt; de schatting wordt daarna als (gelabeld) cijfer getoond."
+        - "Objectieve afbakening recreatief/serieus bestaat niet expliciet; er zijn wel bruikbare bestaande velden (developmentGoal, experienceLevel)."
+
+    proposed_promise:
+      text: "Wie in de onboarding 'conditie/plezier' (recreatief) kiest, doorloopt een volwaardige intake zonder FTP-schatting, zones of wedstrijdtaal; prestatievelden verschijnen alleen als de gebruiker daar zelf om vraagt, en overstappen naar 'serieus' kan altijd zonder gegevensverlies."
+      proposed_by: replit
+      rationale: "De recreant is een volwaardige gebruiker, geen afgezwakte sporter; de bestaande doel-enum draagt de keuze al, alleen de FTP-dwang en de taal moeten eraf."
+      rene_approved: false
+
+    gebruiker_fiets_model:
+      gebruiker: [recreatief, serieus]
+      fiets: [stadsfiets, toerfiets, gravelbike, racefiets, mtb]
+      ondersteuning: [geen, licht, normaal, sterk]
+      activiteit: [recreatieve_rit, woon_werk, toertocht, training, wedstrijd]
+      assen_onafhankelijk: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande onboarding-V2-engine + athlete_profiles-velden"
+          coverage: "Adaptieve vragencatalogus, developmentGoal/experienceLevel/selfType; toont dat de recreant-tak een catalogus-variant is, geen nieuw systeem."
+          actuality: "Code van 30-07-2026."
+          license_status: "Eigen code."
+          limitations:
+            - "estimateFtp is nu onvoorwaardelijk gekoppeld aan de Q&A-afronding; ontkoppeling per doeltype is de kernwijziging."
+          applicability: "Direct herbruikbaar fundament."
+      missing_information:
+        - "Welke intake-vragen de recreatieve tak wél krijgt (comfort, gewenste ritduur, voorkeuren) — invulling na René's coachtaal-kalibratie."
+
+    replit_definition:
+      objective_quality_standard: "Afbakening objectief en toetsbaar: gebruikerstype 'recreatief' ⇔ developmentGoal='recreatief' (en geen actief wedstrijd-/prestatiedoel); alle FTP-/zone-/wedstrijdelementen zijn per gebruikerstype aantoonbaar afwezig in de recreant-flow, en het type is altijd omkeerbaar zonder dataverlies."
+      recommended_default: "Bestaande developmentGoal als schakel gebruiken (geen nieuw veld); estimateFtp alleen draaien bij niet-recreatieve doelen of op expliciet verzoek; bestaande recreatieve profielen mét opgedrongen geschatte FTP krijgen een eerlijke opruimkeuze."
+      technical_limits:
+        - "Delen van de app (dagadvies, belasting) verwachten nu een FTP; de recreant-flow moet die paden eerlijk zonder FTP laten werken (bestaat deels: engines kunnen met ontbrekende waarden omgaan) — dat is de grootste technische onzekerheid."
+      assumptions: []
+      unknowns:
+        - "Hoeveel bestaande profielen doel 'recreatief' hebben mét een estimated FTP (kandidaten voor de opruimkeuze)."
+
+    rene_calibration:
+      questions:
+        - "Mag een recreatieve gebruiker die zelf om 'mijn cijfers' vraagt alsnog een FTP-schatting krijgen (opt-in), of blijft FTP volledig weg tot er echte meetdata is?"
+        - "Is de afbakening recreatief ⇔ developmentGoal='recreatief' voor jou de juiste, of wil je een aparte, eigen vraag ('hoe wil je Sparki gebruiken?') als schakel?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "geen verplichte FTP-schatting of wedstrijdtaal opgedrongen aan een gebruiker die 'conditie/plezier' als doel koos"
+          rule_type: hard_blockage
+          measurement_level: per_gebruiker
+          counterexamples:
+            - case: "onboarding die alsnog een geschatte FTP toont aan een recreatieve gebruiker zonder dat te vragen"
+              proof_stage: designed
+              proof_method: "Contracttest: onboarding-afronding met developmentGoal='recreatief' ⇒ geen ftp-waarde en geen ftp_history-rij aangemaakt; profiel-endpoint levert ftp=null met reden 'niet van toepassing (recreatief)'."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Ontbrekende prestatiedata is voor de recreant de normale toestand, geen gebrek: schermen tonen dan geen lege prestatievelden maar de recreatieve begeleiding."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Wachten op René's kalibratie (opt-in-vraag + afbakening) en taak #505."
+      approved_for_execution: false
+
+  - id: RECREATIEF_EBIKE_ROUTEPROFIEL_001
+    module: Recreatieve fietser en e-bike (nieuw onderwerp)
+    subject: "Routeprofiel stads-/toerfiets: veilige, comfortabele routes met voorkeuren natuur, water, autoluw, stad vermijden"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "De routeplanner kent racefiets/mtb/gravel (lib/routing/profile-selection.ts:13); er bestaat al een verhard toer-/stadsprofiel als terugvaloptie (cycling-regular, regel 113), maar het is geen zichtbare, kiesbare optie."
+        - "Voorkeuren natuur/water/autoluw/stad-vermijden bestaan niet als routevoorkeur; de bestaande wegdekgeschiktheid en vrije-wens-tekst (buildRationale) sturen de wegkeuze niet op die thema's."
+        - "Stopregel: routegeneratie-werk valt onder taak #505 (lusgeneratie fail-closed) — geen bouw vóór herbewijs."
+
+    proposed_promise:
+      text: "De recreatieve fietser kiest zichtbaar een stads-/toerfietsprofiel en krijgt veilige, comfortabele routes met eerlijke voorkeuren (natuur, water, autoluw, stad vermijden) — voorkeuren die de route echt sturen waar de kaartdata dat kan, en die eerlijk zeggen wanneer het niet kan; nooit een voorkeur als vervuld presenteren die alleen tekst was."
+      proposed_by: replit
+      rationale: "Het onderliggende profiel bestaat al als fallback; de eerlijkheidsregel volgt de bestaande route-wens-doctrine (wens stuurt alleen wat de router echt kan sturen)."
+      rene_approved: false
+
+    gebruiker_fiets_model:
+      gebruiker: [recreatief, serieus]
+      fiets: [stadsfiets, toerfiets, gravelbike, racefiets, mtb]
+      ondersteuning: [geen, licht, normaal, sterk]
+      activiteit: [recreatieve_rit, woon_werk, toertocht, training, wedstrijd]
+      assen_onafhankelijk: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande routeketen (profile-selection, wegdekgeschiktheid, GraphHopper-/ORS-providers, routebibliotheek-poorten)"
+          coverage: "Profielkeuze, verhard-profiel, kwaliteitspoorten; herbruikbaar voor het nieuwe profiel."
+          actuality: "Code van 30-07-2026."
+          license_status: "Eigen code; let op bestaande providervoorwaarden (ORS round-trip max 100 km — ruim voldoende voor recreatieve ritten)."
+          limitations:
+            - "Autoluw/natuur/water vergen provider-parameters of eigen weging (bv. wegklasse-straffen, groen-/waternabijheid uit OSM) — haalbaarheid per voorkeur verschilt en moet per voorkeur eerlijk vastgesteld worden vóór hij als optie verschijnt."
+          applicability: "Fundament; nieuwe voorkeuren zijn een weging-/onderzoeksvraag per stuk."
+      missing_information:
+        - "Per voorkeur (natuur/water/autoluw/stad-vermijden): kan de huidige provider dit echt sturen, of alleen achteraf beoordelen? Dit bepaalt welke voorkeuren als stuurbare optie mogen verschijnen."
+
+    replit_definition:
+      objective_quality_standard: "Een aangeboden voorkeur is aantoonbaar stuurbaar (meetbaar verschil in de gegenereerde route bij aan/uit) of hij wordt niet als voorkeur aangeboden; het stads-/toerprofiel vermijdt onverhard en gebruikt de bestaande kwaliteitspoorten."
+      recommended_default: "Stap 1: bestaande cycling-regular zichtbaar maken als kiesbaar 'stads-/toerfiets'-profiel (klein, hergebruik). Stap 2 (per voorkeur, na haalbaarheidsproef): autoluw via wegklasse-weging als eerste kandidaat — technisch het meest kansrijk; natuur/water daarna."
+      technical_limits:
+        - "Geen bouw vóór afronding en herbewijs van taak #505 (stopregel)."
+        - "E-bike-ondersteuning wijzigt het routeprofiel in deze eerste stap niet (geen accu-/hellingslogica — expliciet buiten scope); hooguit later afstand-comfortgrenzen."
+      assumptions: []
+      unknowns:
+        - "Kwaliteit van OSM-groen-/waterdata in de regio's van de testers voor natuur/water-voorkeuren."
+
+    rene_calibration:
+      questions:
+        - "Welke routevoorkeuren worden standaard aangeboden (natuur/water/autoluw/stad-vermijden — alle vier, of starten met autoluw)? (Jouw beslispunt.)"
+        - "Mag het stads-/toerprofiel al zichtbaar worden zodra taak #505 herbewezen is, of pas samen met de voorkeuren?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een routevoorkeur wordt alleen aangeboden als hij de route aantoonbaar stuurt; een voorkeur die alleen in de uitlegtekst landt maar de wegkeuze niet beïnvloedt wordt nooit als vervuld gepresenteerd."
+          rule_type: hard_blockage
+          measurement_level: per_voorkeur
+          counterexamples:
+            - case: "gebruiker kiest 'autoluw', de route is identiek aan de route zonder die voorkeur, maar de beschrijving zegt 'lekker autoluw'"
+              proof_stage: designed
+              proof_method: "Vergelijkingstest per voorkeur: zelfde vraag met/zonder voorkeur ⇒ meetbaar routeverschil op de wegingsmaat, anders wordt de optie niet getoond."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Waar kaartdata een voorkeur niet kan waarmaken zegt Sparki dat eerlijk ('in dit gebied kan ik autoluw niet garanderen') — conform de bestaande route-eerlijkheidsdoctrine."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Per voorkeur haalbaarheidsonderzoek (stuurbaarheid); bouw pas na René's keuze én herbewijs taak #505."
+      approved_for_execution: false
+
+  - id: RECREATIEF_EBIKE_COACHTAAL_001
+    module: Recreatieve fietser en e-bike (nieuw onderwerp)
+    subject: "Coachtaal voor recreatieve gebruikers: begrijpelijke begeleiding zonder zones, intervallen of wedstrijdduw"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented_partial
+      source_snapshot: 2026-07-30
+      known_limitations:
+        - "De personality-/toonlaag differentieert al op doelgroep (jeugdrenner simpele woordenschat, trainer technisch, topsporter — engines/observation/personality.ts), maar 'recreatief' bestaat daar niet als register: een recreant krijgt nu dezelfde trainingstaal (zones, intervallen, TSB) als een wedstrijdrenner."
+        - "Het jeugd-zonder-getallen-patroon (fueling-engine) bewijst dat doelgroep-gedifferentieerde taal in de bestaande architectuur past."
+
+    proposed_promise:
+      text: "Een recreatieve gebruiker krijgt begeleiding in gewone taal — hoe voelde de rit, lekker buiten, rustig opbouwen — zonder zones, intervallen, TSB of wedstrijdtaal, en wordt nooit richting wedstrijdtraining geduwd; wie zelf om verdieping vraagt, krijgt die stapsgewijs."
+      proposed_by: replit
+      rationale: "Volwaardige gebruiker in eigen register; technisch een uitbreiding van de bestaande deterministische toon-/personality-laag, geen nieuwe engine (volledige recreatieve coachengine is expliciet buiten scope)."
+      rene_approved: false
+
+    gebruiker_fiets_model:
+      gebruiker: [recreatief, serieus]
+      fiets: [stadsfiets, toerfiets, gravelbike, racefiets, mtb]
+      ondersteuning: [geen, licht, normaal, sterk]
+      activiteit: [recreatieve_rit, woon_werk, toertocht, training, wedstrijd]
+      assen_onafhankelijk: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande Voice & Personality-engine + jeugd-register-precedent"
+          coverage: "Deterministische toon-/registerkeuze per doelgroep; bewijs dat een extra register (recreatief) architectuur-passend is."
+          actuality: "Code van 30-07-2026."
+          license_status: "Eigen code."
+          limitations:
+            - "Elke LLM-prompt heeft een eigen taalregel nodig (bestaande les): het recreatief-register moet in ÁLLE prompts en deterministische copy-paden landen, niet alleen in één engine."
+          applicability: "Direct fundament."
+      missing_information:
+        - "Woordenlijst wel/niet en gewenste motiverende toon — expliciet René's beslispunt, niet door Replit in te vullen."
+
+    replit_definition:
+      objective_quality_standard: "Het register is per gebruikerstype deterministisch en toetsbaar: een verboden-termenlijst (zones, intervallen, FTP, TSB, wedstrijd-jargon) is voor recreatieve gebruikers aantoonbaar afwezig in alle coachuitingen, gecontroleerd met een contracttest over de belangrijkste copy-paden."
+      recommended_default: "Recreatief-register toevoegen aan de bestaande personality-laag + per LLM-prompt een registerregel; verdieping alleen op eigen verzoek (stapsgewijs, zoals de bestaande uitleglaag kort-tenzij)."
+      technical_limits:
+        - "Volledige recreatieve coachengine (eigen adviezen, eigen doelen) is expliciet buiten deze eerste stap; dit onderwerp dekt alleen taal/toon van bestaande uitingen."
+      assumptions: []
+      unknowns:
+        - "Hoeveel copy-paden (deterministisch + prompts) er in totaal geraakt worden — inventarisatie bij bouwontwerp."
+
+    rene_calibration:
+      questions:
+        - "Welke woorden mogen wel/niet voor recreanten, en hoeveel motiverende toon wil je? (Jouw beslispunt — graag een korte voorbeeldlijst of een voorbeeldberichtje zoals jij het zou willen lezen.)"
+        - "Mag een recreant die om verdieping vraagt dezelfde volledige analysetaal krijgen als een serieuze gebruiker, of een tussenvorm?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een gebruiker met type recreatief krijgt nooit ongevraagd zones-, intervallen-, FTP- of wedstrijdtaal in coachuitingen, en wordt nooit richting wedstrijdtraining geduwd."
+          rule_type: hard_blockage
+          measurement_level: per_coachuiting
+          counterexamples:
+            - case: "het dagadvies van een recreant zegt 'rij 3x8 min in zone 4 als voorbereiding op je wedstrijd'"
+              proof_stage: designed
+              proof_method: "Contracttest met verboden-termenlijst over dagadvies-, observatie- en chatpaden voor een recreatief profiel."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Waar begeleiding data mist, zegt Sparki dat in gewone taal ('ik weet nog niet zo goed hoe zwaar dit voor je was') — nooit terugvallen op jargon."
+      approved: false
+
+    validation:
+      automated_tests: []
+      practice_test_required: true
+      result: not_tested
+
+    product_proof:
+      score: null
+      status: not_proven
+
+    next_action:
+      type: research_only
+      description: "Wachten op René's woordenlijst-/toonkalibratie; daarna registerontwerp op de bestaande personality-laag."
+      approved_for_execution: false
