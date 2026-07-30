@@ -192,8 +192,13 @@ async function main() {
       // Provenance requires an existing user_profiles row. Use a real one from
       // the DB; if the DB has no users at all, verify the honest 400 on a
       // missing clerkId instead (still proves the handler body is intact).
+      // Andere test-workflows draaien parallel en ruimen hun tijdelijke
+      // test_-gebruikers op; mijd die rijen en probeer meerdere kandidaten,
+      // anders 404't deze check op een net-verwijderde gebruiker (flaky race).
       const { rows } = await pool.query(
-        "SELECT clerk_id FROM user_profiles LIMIT 1",
+        `SELECT clerk_id FROM user_profiles
+          ORDER BY (clerk_id LIKE 'test\\_%') ASC
+          LIMIT 5`,
       );
       if (rows.length === 0) {
         const res = await fetch(`${baseUrl}/api/admin/data-provenance`);
@@ -203,10 +208,29 @@ async function main() {
         );
         return;
       }
-      const clerkId = String(rows[0].clerk_id);
-      const body = await getJson(
-        `/api/admin/data-provenance?clerkId=${encodeURIComponent(clerkId)}`,
-      );
+      let clerkId = "";
+      let body: Record<string, unknown> | null = null;
+      for (const row of rows) {
+        clerkId = String(row.clerk_id);
+        const res = await fetch(
+          `${baseUrl}/api/admin/data-provenance?clerkId=${encodeURIComponent(clerkId)}`,
+        );
+        if (res.status === 404) continue; // gebruiker net verwijderd door parallelle test
+        assert(res.ok, `data-provenance returned ${res.status} for ${clerkId}`);
+        body = (await res.json()) as Record<string, unknown>;
+        break;
+      }
+      if (body === null) {
+        // Álle kandidaten verdwenen tijdens de run (alleen tijdelijke
+        // test-gebruikers aanwezig) — toets dan de eerlijke 400 als bewijs
+        // dat de handler intact is.
+        const res = await fetch(`${baseUrl}/api/admin/data-provenance`);
+        assert(
+          res.status === 400,
+          `data-provenance without clerkId should return 400, got ${res.status}`,
+        );
+        return;
+      }
       const gebruiker = body.gebruiker as Record<string, unknown> | undefined;
       assert(
         gebruiker && gebruiker.clerkId === clerkId,

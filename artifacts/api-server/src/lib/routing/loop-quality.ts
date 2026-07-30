@@ -532,9 +532,10 @@ export async function generateVariedLoop(
         if (o.steps > 0) penalty += 1000;
         if (o.forbidden > 0) penalty += 1000;
         if (o.blockedGates > 0) penalty += 1000;
-        // Racefiets: onverhard/ruw in de remarkslaag is gelijkwaardig aan een
-        // verbod — acceptatiegrens is NUL aantoonbaar onverhard (PO-01 §5.2).
-        if (req.profile === "cycling-road" && o.unpavedSegments > 0) penalty += 1000;
+        // Racefiets én gewone fiets (cycling-regular, taak #441): onverhard/
+        // ruw in de remarkslaag is gelijkwaardig aan een verbod —
+        // acceptatiegrens is NUL aantoonbaar onverhard (PO-01 §5.2).
+        if (o.unpavedSegments > 0) penalty += 1000;
         penalty += Math.min(o.gates, 10) * 0.15;
         if (penalty > 0) {
           fresh[i]!.score += penalty;
@@ -574,8 +575,10 @@ export async function generateVariedLoop(
     if (obs == null) return; // meting mislukt — eerlijk niet gaten, nooit gokken
     const _t_gate = performance.now();
     const hasForbidden = obs.forbidden > 0 || obs.steps > 0;
-    const hasUnpaved =
-      req.profile === "cycling-road" && obs.unpavedSegments > 0;
+    // Onverhard=0-grens geldt voor racefiets (taak #437) ÉN gewone fiets
+    // (cycling-regular, taak #441) — René: 0% onverhard is voor beide van
+    // belang. De vroege return hierboven laat alleen deze profielen door.
+    const hasUnpaved = obs.unpavedSegments > 0;
     console.log(
       `[PERF] hardRejectGate ms=${Math.round(performance.now() - _t_gate)} ` +
         `profile=${req.profile} forbidden=${obs.forbidden} steps=${obs.steps} ` +

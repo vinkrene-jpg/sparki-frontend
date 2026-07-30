@@ -1,8 +1,9 @@
 // Acceptatietest routebelofte tegen RENÉ's bindende acceptatiegrenzen
 // (PO-01 §Acceptatiegrenzen 30-07-2026, doctrine art. 10; taak #436):
 //
-//  1. Racefiets: 0% aantoonbaar onverhard. Elke gemeten onverharde meter
-//     (routebron ÉN onafhankelijke OSM-opmerkingenlaag) = afkeur.
+//  1. Racefiets ÉN gewone fiets (cycling-regular, taak #441): 0% aantoonbaar
+//     onverhard. Elke gemeten onverharde meter (routebron ÉN onafhankelijke
+//     OSM-opmerkingenlaag) = afkeur.
 //  2. Fietsverbod = afkeur. Eén zéker (niet-indicatie) verboden wegvak op
 //     welke route dan ook = afkeur — racefiets én gravel.
 //  3. Onbekend wegdek is een risico: het onbekende aandeel wordt per route
@@ -59,8 +60,10 @@ const STARTS = [
   { name: "Maastricht — heuvels", terrain: "heuvels", lat: 50.85, lon: 5.69 },
 ];
 
-// Profielen onder de belofte: racefiets is de strengste grens (0% onverhard);
-// gravel deelt de verbods- en eerlijkheidsgrens maar mag onverhard.
+// Profielen onder de belofte: racefiets én gewone fiets (cycling-regular)
+// delen de 0%-onverhard-grens (taak #441) plus de verbods- en
+// eerlijkheidsgrens. Het label blijft "gravel" (historische deelruns/bewijs),
+// maar het profiel dekt René's "gewone fiets".
 const ALL_PROFILES = [
   { label: "racefiets", profile: "cycling-road" as const },
   { label: "gravel", profile: "cycling-regular" as const },
@@ -135,10 +138,11 @@ async function main() {
         continue;
       }
 
-      // Grens 1 (bron zelf): racefiets 0% aantoonbaar onverhard volgens de
-      // routebron. pavedFraction is aandeel-van-gemeten; < 1.0 betekent dat de
-      // bron zelf onverharde meters rapporteert.
-      if (p.profile === "cycling-road" && loop.pavedFraction != null && loop.pavedFraction < 0.9995) {
+      // Grens 1 (bron zelf): racefiets én gewone fiets 0% aantoonbaar
+      // onverhard volgens de routebron (taak #441). pavedFraction is
+      // aandeel-van-gemeten; < 1.0 betekent dat de bron zelf onverharde
+      // meters rapporteert.
+      if (loop.pavedFraction != null && loop.pavedFraction < 0.9995) {
         failures.push(
           `${label}: routebron meet ${(100 * (1 - loop.pavedFraction)).toFixed(1)}% onverhard van het gemeten wegdek (grens: 0%)`,
         );
@@ -172,8 +176,9 @@ async function main() {
           `${label}: ${forbidden.length} zéker verboden wegvak(ken) — verbod = afkeur`,
         );
       }
-      // Grens 1 (onafhankelijk): racefiets 0 aantoonbaar onverharde vakken.
-      if (p.profile === "cycling-road" && unpaved.length > 0) {
+      // Grens 1 (onafhankelijk): racefiets én gewone fiets 0 aantoonbaar
+      // onverharde vakken (taak #441).
+      if (unpaved.length > 0) {
         failures.push(
           `${label}: ${unpaved.length} onafhankelijk gemeten onverhard/ruw wegvak(ken) — grens is nul`,
         );
