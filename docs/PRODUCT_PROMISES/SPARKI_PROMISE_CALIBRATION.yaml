@@ -4,7 +4,8 @@
 # Bindende context: Product Proof Doctrine; acceptatiegrenzen René 30-07-2026
 # (PO-01 §Acceptatiegrenzen + Addendum obstakelbesluiten): 0% aantoonbaar onverhard
 # racefiets; trap/fietsverbod/afgesloten poort = absolute weigering (nooit aanbieden);
-# onbekend wegdek actief mijden; wereldmarkt-lat: elk onderdeel ≥9/10 t.o.v. de beste
+# onbekend wegdek: rule_type unverifiable op racefiets (0% norm; niet geverifieerd = niet als
+# geschikt aanbevelen, tonen alleen na expliciete keuze, %+locaties zichtbaar); wereldmarkt-lat: elk onderdeel ≥9/10 t.o.v. de beste
 # marktspeler (Komoot voor routes).
 chapter_d_routes_en_navigatie:
 
@@ -124,6 +125,7 @@ chapter_d_routes_en_navigatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Een racefietsroute met ook maar één aantoonbaar onverharde/halfverharde meter (gravel, compacted, fine_gravel, dirt, zand, gras, kasseien) wordt nooit aangeboden."
+          rule_type: hard_blockage
           measurement_level: per_segment
           aggregate_justification: ""
           counterexamples:
@@ -132,6 +134,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "Logica-doorloop: GH-details geven pavedFraction<0.999 → surfacePenalty ≥3 in de selectie; blijft hij als enige over, dan telt de Overpass-nameting het vak per segment en vuurt de afkeurpoort (#437/#441) — route wordt niet geleverd. Latere geautomatiseerde test: fixture-route met één gravel-way door de poort halen."
               proof_result: not_yet_tested
         - rule: "Een route met een trap, een aantoonbaar fietsverbod (bicycle=no/private) of een afgesloten/privé-poort zonder fiets-uitzondering wordt nooit aangeboden — ook niet als alle alternatieven hetzelfde gebrek hebben (dan faalt de generatie eerlijk)."
+          rule_type: hard_blockage
           measurement_level: per_segment
           aggregate_justification: ""
           counterexamples:
@@ -144,6 +147,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "classifyGatePassage(tags)='afgesloten' → blockedGates>0 → zelfde weigering; unit-test op classifyGatePassage bestaat al (20/20), de poort-tot-weigering-keten volgt in de bouwfase-test."
               proof_result: not_yet_tested
         - rule: "Zonder geslaagde onafhankelijke nameting (Overpass) mag een route nooit als 'gecontroleerd/geschikt' worden gepresenteerd — meting mislukt = eerlijk 'niet gecontroleerd', nooit stilzwijgend groen."
+          rule_type: unverifiable
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -151,9 +155,18 @@ chapter_d_routes_en_navigatie:
               proof_stage: designed
               proof_method: "Redenering: obstaclesOf retourneert null → weigering vuurt niet (fail-open, bewuste keuze) maar het wegdekscherm toont 'onvoldoende gegevens' i.p.v. een verdict. Latere test: null-meting ⇒ response bevat geen geschiktheids-claim."
               proof_result: not_yet_tested
+        - rule: "Onbekend wegdek op de racefiets is niet-verifieerbaar en dus géén zachte tolerantie (aanscherping René 30-07-2026): zolang een onbekend segment niet geverifieerd is, wordt de route niet als geschikte racefietsroute aanbevolen. Gedrag: (1) eerst een alternatief zonder onbekend wegdek zoeken; (2) niet als geschikt aanbevelen zolang onbekend niet geverifieerd is; (3) alleen na expliciete keuze van de gebruiker tonen in regio's waar geen volledig verifieerbare route mogelijk is; (4) percentage én locaties van het onbekende wegdek duidelijk tonen."
+          rule_type: unverifiable
+          measurement_level: per_segment
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Racefietslus met 12% onbekend wegdek (knownPct 88) wordt zonder expliciete gebruikerskeuze als 'geschikte racefietsroute' aanbevolen."
+              proof_stage: designed
+              proof_method: "Ontwerp-doorloop: winnaar met knownPct<100 na motor-meting + BGT/GRB-aanvulling krijgt status 'niet volledig geverifieerd' i.p.v. 'geschikt'; aanbeveling als geschikt vereist een expliciete gebruikerskeuze, en de UI toont onbekend-% + kaartlocaties. NB: dit is een AANSCHERPING — de huidige motor mijdt onbekend (×0.4) maar sluit het niet uit; de bouwfase moet dit gedrag nog leveren, daarna volgt de geautomatiseerde tegenvoorbeeld-test."
+              proof_result: not_yet_tested
       tolerances:
         - "Afstandsafwijking lus: doel ±10% (huidige hercorrectie haalt ±5% in de geteste gevallen)."
-        - "Onbekend wegdek: geen harde grens vastgesteld — kalibratievraag; huidig gedrag is actief mijden + eerlijk tonen."
+        - "Onbekend wegdek racefiets: GEEN zachte tolerantie maar rule_type unverifiable (zie afkeurregel hierboven) — 0% onbekend is de norm; huidig gedrag (actief mijden ×0.4 + eerlijk tonen) is nog niet conform en vergt bouwwerk."
       unknown_data_policy: "Onbekend is een risico, geen vrijbrief (PO-01 §3): motor mijdt onbekend (×0.4), BGT vult NL-gaten, resterend onbekend aandeel wordt eerlijk getoond; onbekend wordt nooit als verhard geteld of verzwegen."
       approved: false
 
@@ -246,6 +259,7 @@ chapter_d_routes_en_navigatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Profiel en hoogtemeters-som mogen nooit uit verschillende reeksen komen of elkaar tegenspreken."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -254,6 +268,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "Redenering: summarizeTrack is de enige export voor route-hm; rauwe ascend prefereren is per memory-regel verboden. Latere test: assert dat route-API-response-hm gelijk is aan thresholdedGainM van dezelfde reeks."
               proof_result: not_yet_tested
         - rule: "Een vlakke route mag nooit honderden valse hoogtemeters tonen (ruissom)."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -348,6 +363,7 @@ chapter_d_routes_en_navigatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Een melding zonder letterlijke bron-tag (evidence) mag nooit getoond worden."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -356,6 +372,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "Redenering: classifyRemarkTags is de enige producent en zet evidence verplicht per tak; unit-test dekt alle takken. Latere contract-test: assert evidence non-empty op elk API-resultaat."
               proof_result: not_yet_tested
         - rule: "Bij een mislukte bronmeting mag nooit 'geen bijzonderheden' worden getoond."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -364,6 +381,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "Redenering: getRouteRemarks retourneert null (≠ lege lijst); client onderscheidt null als 'niet gecontroleerd'. Latere test: gestubde mirror-fout ⇒ null-doorloop tot in de response."
               proof_result: not_yet_tested
         - rule: "Een volgens de kaart doorfietsbare poort wordt nooit gemeld (ruisverbod, besluit René 30-07)."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -471,6 +489,7 @@ chapter_d_routes_en_navigatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Bij aantoonbaar fietsverbod op de route (forbiddenKm > 0) is het geschiktheidsoordeel altijd 'niet aanbevolen' — voor elk fietstype."
+          rule_type: hard_blockage
           measurement_level: per_segment
           aggregate_justification: ""
           counterexamples:
@@ -479,6 +498,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "Logica-doorloop: forbiddenFlags per meetpunt ⇒ forbiddenKm=0.2 ⇒ verdict 'afgeraden' met reden 'fietsen niet toegestaan'; scenario zit in de unit-suite, telt als executed na de eerstvolgende run in de bouwfase."
               proof_result: not_yet_tested
         - rule: "Het scherm mag nooit 'volledig verhard' tonen terwijl de motor-meting van dezelfde route onverhard registreerde (tegenspraakverbod)."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -487,6 +507,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "Ontwerp-redenering uit taak #438 (net gemerged): één uitgelegd beeld met beide metingen. Uitgevoerde toetsing = voorgestelde praktijkbewijs-taak #439."
               proof_result: not_yet_tested
         - rule: "Verdeling met mislukte bronmeting mag nooit als volledige verdeling ogen ('alles bekend')."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -584,6 +605,7 @@ chapter_d_routes_en_navigatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Een renner die aantoonbaar op de route rijdt mag nooit een afwijk-melding krijgen."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -592,6 +614,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "GPX-replay-harnas (test:nav-replay, artifacts/sparki-mobile/lib/nav-replay.test.ts): (1) deterministische op-route rit van ~10 min met realistische GPS-ruis (σ≈4–5 m, uitschieters tot ~25 m), spaarzame routestukken van 80 m én één geïnjecteerde GPS-sprong; assert 0 enter-events en 0 keuzekaarten. (2) Echte praktijkrit Dylan/René (Komoot, 22-07-2026, Klim Eyserbosweg – Dikkebuikseweg rondtocht, 2781 GPS-fixes, lib/nav-replay-fixtures/ride-dylan.gpx): assert 0 enter-events, 0 keuzekaarten, route byte-gelijk."
               proof_result: passed
         - rule: "De opgeslagen route mag tijdens navigatie nooit automatisch worden vervangen of gewijzigd."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -600,6 +623,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "GPX-replay-harnas: route diep bevroren (Object.freeze — elke mutatie zou hard gooien) én JSON-byte-vergelijking vóór/ná de volledige replay van zowel de op-route rit als de afwijkingsrit; geometrie blijft byte-gelijk."
               proof_result: passed
         - rule: "Eén afwijk-episode = maximaal één kaart; genegeerd blijft stil tot de afwijking wezenlijk groeit (geen meldingen-spervuur)."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -703,6 +727,7 @@ chapter_d_routes_en_navigatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Op een wedstrijdroute mag het parcours nooit worden gewijzigd of vervangen, en is terugkeer altijd de eerst aangeboden keuze."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -803,6 +828,7 @@ chapter_d_routes_en_navigatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "De fietsroute mag door volgauto-functionaliteit nooit worden gewijzigd."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -811,6 +837,7 @@ chapter_d_routes_en_navigatie:
               proof_method: "Redenering: volgautoplan is een aparte datalaag; auto-rejoin gebruikt uitsluitend driving-car. Latere test: byte-vergelijking fietsgeometrie vóór/na planning."
               proof_result: not_yet_tested
         - rule: "Een ETA zonder bruikbaar aansluitpunt (carKm null) of zonder recente positie mag nooit als getal worden getoond."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
