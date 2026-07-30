@@ -562,33 +562,33 @@ chapter_d_routes_en_navigatie:
           aggregate_justification: ""
           counterexamples:
             - case: "Spaarzame routegeometrie (punten 80 m uiteen) laat punt-afstand 50 m 'off-route' lijken terwijl de renner op het wegvak rijdt."
-              proof_stage: designed
-              proof_method: "Redenering: segment-projectie (niet punt-afstand) geeft ~0 m afstand op het segment; dit was de kernfix van de match-engine en zit in de unit-suite — executed-status volgt bij de eerstvolgende run/GPX-replay in de bouwfase."
-              proof_result: not_yet_tested
+              proof_stage: executed
+              proof_method: "GPX-replay-harnas (test:nav-replay, artifacts/sparki-mobile/lib/nav-replay.test.ts): deterministische op-route rit van ~10 min met realistische GPS-ruis (σ≈4–5 m, uitschieters tot ~25 m), spaarzame routestukken van 80 m én één geïnjecteerde GPS-sprong door matchToRoute + updateOffRoute gespeeld; assert 0 enter-events en 0 keuzekaarten."
+              proof_result: passed
         - rule: "De opgeslagen route mag tijdens navigatie nooit automatisch worden vervangen of gewijzigd."
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
             - case: "Off-route-episode triggert een reroute die de routegeometrie overschrijft."
-              proof_stage: designed
-              proof_method: "Redenering: detour is client-only overlay; er bestaat geen schrijfpad naar de route vanuit nav. Latere test: state-machine-doorloop asserten dat route-object onaangeroerd blijft."
-              proof_result: not_yet_tested
+              proof_stage: executed
+              proof_method: "GPX-replay-harnas: route diep bevroren (Object.freeze — elke mutatie zou hard gooien) én JSON-byte-vergelijking vóór/ná de volledige replay van zowel de op-route rit als de afwijkingsrit; geometrie blijft byte-gelijk."
+              proof_result: passed
         - rule: "Eén afwijk-episode = maximaal één kaart; genegeerd blijft stil tot de afwijking wezenlijk groeit (geen meldingen-spervuur)."
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
             - case: "Renner kiest bewust een parallelweg van 2 km; systeem zou elke 10 s opnieuw piepen."
-              proof_stage: designed
-              proof_method: "Redenering: dismiss-register + groei-drempel in off-route-choice state machine (puur getest); GPX-replay-scenario volgt."
-              proof_result: not_yet_tested
+              proof_stage: executed
+              proof_method: "GPX-replay-harnas: bewuste afwijking van 500 m geeft precies één episode en één kaart; na 'negeren' blijft het aantoonbaar stil zolang de afwijking niet wezenlijk groeit, en precies één rustige her-melding pas bij ≥2× én ≥+150 m groei. Detectie binnen 10 s na de eerste buiten-corridor-fix ook geassert."
+              proof_result: passed
       tolerances:
         - "Detectie: ≥3 metingen + ≥6 s; corridor dynamisch met hysterese-exit 0,8×."
       unknown_data_policy: "Bij GPS-verlies of te lage nauwkeurigheid: eerlijk 'geen positie'/rauwe marker, nooit een gesnapte positie faken."
       approved: false
 
     validation:
-      automated_tests: ["route-match unit-suite (byte-identiek web/mobiel)", "off-route-choice state-machine-tests", "test-ride-recovery"]
-      independent_checks: ["GPX-replay van echte ritten (te bouwen)"]
+      automated_tests: ["route-match unit-suite (byte-identiek web/mobiel)", "off-route-choice state-machine-tests", "test-ride-recovery", "test-nav-replay (GPX-replay-bewijsharnas, deterministische fixtures)"]
+      independent_checks: ["GPX-replay-harnas gebouwd en groen (nagespeelde ritten met realistische ruis); praktijkritten op echte apparaat-GPS blijven het eindbewijs"]
       practice_test_required: true
       practice_testers: ["Dylan", "René"]
       result: not_tested
@@ -668,9 +668,9 @@ chapter_d_routes_en_navigatie:
           aggregate_justification: ""
           counterexamples:
             - case: "Off-route in wedstrijd; systeem zou 'doorfietsen via nieuwe route' bovenaan zetten."
-              proof_stage: designed
-              proof_method: "Redenering: usageType 'wedstrijd' activeert terugkeer-geprioriteerde optie-volgorde in de off-route state machine (puur getest ontwerp); executed volgt via GPX-replay-scenario in de bouwfase."
-              proof_result: not_yet_tested
+              proof_stage: executed
+              proof_method: "GPX-replay-harnas (test:nav-replay): afwijkingsrit op het parcours triggert de kaart; assert dat 'terug' (naar het parcours) de eerste én enige primaire optie is bij usageType 'wedstrijd', dat 'bestemming' de eerlijke bewaar-kanttekening draagt, en dat de parcoursgeometrie byte-gelijk blijft vóór en ná de rit."
+              proof_result: passed
       tolerances: []
       unknown_data_policy: "Sparki claimt nooit dat het parcoursbestand het officiële/actuele parcours is; die verantwoordelijkheid ligt bij de bron en wordt zo benoemd."
       approved: false
