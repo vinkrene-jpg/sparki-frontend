@@ -774,6 +774,9 @@ export type RouteObstacles = {
   forbidden: number; // aantoonbaar fietsverbod (bicycle=no/private) op de route
   blockedGates: number; // afgesloten poorten / privéterrein (harde afkeur)
   gates: number; // overige poorten/hekken (minste wint)
+  // Aantoonbaar onverharde/ruwe vakken (Overpass, remarkslaag).
+  // Harde afkeur voor racefiets (cycling-road): PO-01 §5.2, taak #437.
+  unpavedSegments: number;
 };
 
 /**
@@ -792,6 +795,7 @@ export async function getRouteObstacles(
     forbidden: 0,
     blockedGates: 0,
     gates: 0,
+    unpavedSegments: 0,
   };
   for (const r of remarks) {
     if (r.kind === "trap") out.steps += 1;
@@ -802,6 +806,9 @@ export async function getRouteObstacles(
     } else if (r.kind === "poort") {
       if (r.label.startsWith("Afgesloten poort")) out.blockedGates += 1;
       else out.gates += 1;
+    } else if (r.kind === "onverhard" || r.kind === "slecht_wegdek") {
+      // Onverhard/ruw wegdek: harde afkeur voor racefiets (PO-01 §5.2, taak #437).
+      out.unpavedSegments += 1;
     }
   }
   return out;

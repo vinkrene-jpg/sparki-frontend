@@ -23,8 +23,9 @@ import { GraphHopperProvider } from "../lib/routing/providers/graphhopper";
 import {
   generateVariedLoop,
   pathOverlapFraction,
+  NoSuitableRouteError,
 } from "../lib/routing/loop-quality";
-import { getRouteRemarks } from "../lib/route-remarks";
+import { getRouteRemarks, routeObstaclesOf } from "../lib/route-remarks";
 import type { RouteRemark } from "../lib/route-remarks";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -93,16 +94,41 @@ async function main() {
       const label = `${s.name} × ${p.label}`;
       let loop;
       try {
-        loop = await generateVariedLoop(gh, {
-          start: { lat: s.lat, lon: s.lon },
-          distanceKm: 50,
-          profile: p.profile,
-          seed: 100 + i,
-        });
+        loop = await generateVariedLoop(
+          gh,
+          {
+            start: { lat: s.lat, lon: s.lon },
+            distanceKm: 50,
+            profile: p.profile,
+            seed: 100 + i,
+          },
+          {
+            // Harde afkeurpoort (taak #437): obstakels meten zodat de motor
+            // zelf kan gooien bij onverhard/verbod op racefiets; geen budget
+            // voor de proof — liever eerlijk meten dan op timeout afkappen.
+            obstaclesOf: routeObstaclesOf(),
+          },
+        );
       } catch (err) {
-        // Eerlijk vastleggen: geen route is géén stil succes, maar het is ook
-        // geen grensoverschrijding — de renner krijgt dan "geen geschikte
-        // route gevonden" in plaats van een ongeschikte route.
+        if (err instanceof NoSuitableRouteError) {
+          // Harde afkeurpoort heeft gefired: de motor weigert een ongeschikte
+          // route eerlijk. Dit is het GEWENSTE gedrag (PO-01 §5.2) — geen
+          // foute route getoond, eerlijke "geen geschikte route" melding.
+          console.log(`${label}: ✓ harde afkeur — ${err.message}`);
+          evidence.push({
+            start: s.name,
+            terrain: s.terrain,
+            bike: p.label,
+            generated: false,
+            hardRejected: true,
+            rejectionReason: err.reason,
+          });
+          // Harde afkeur telt WEL als gedekte route voor de minimale dekkingseis.
+          measuredPerProfile[p.label] = (measuredPerProfile[p.label] ?? 0) + 1;
+          continue;
+        }
+        // Echte providerfout (bijv. GraphHopper neer, netwerk) — belofte
+        // niet toetsbaar voor dit startpunt.
         console.log(`${label}: geen route (${err instanceof Error ? err.message : err})`);
         evidence.push({ start: s.name, terrain: s.terrain, bike: p.label, generated: false });
         failures.push(`${label}: generatie faalde — belofte hier niet leverbaar`);

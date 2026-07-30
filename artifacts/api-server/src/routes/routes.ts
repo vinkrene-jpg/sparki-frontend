@@ -61,6 +61,7 @@ import {
   getRoutingProvider,
   bikeSuitabilityConfigError,
   generateVariedLoop,
+  NoSuitableRouteError,
   selectRoutingProfile,
   profileToSurface,
   profileCruisingSpeedKmh,
@@ -2870,27 +2871,47 @@ router.post("/generate", requireAuth, async (req, res) => {
     // called fresh inside the helper, so ownership is always correct.
     if (mode === "loop" && !viaLoop) {
       const _t_req0 = performance.now();
-      const candidate = await buildLoopCandidate(
-        {
-          clerkId,
-          provider,
-          start: { lat: startLat, lon: startLon },
-          profile,
-          surface,
-          sport,
-          bikeType,
-          workoutTrainingType,
-          linkedWorkoutTitle,
-          elevationPreference: elevationPreference ?? "any",
-          seed,
-          points: loopPointsFor(workoutTrainingType),
-          startName: null,
-          plannedWorkoutId,
-          wish,
-          targetElevationGainM,
-        },
-        targetDistanceKm,
-      );
+      let candidate;
+      try {
+        candidate = await buildLoopCandidate(
+          {
+            clerkId,
+            provider,
+            start: { lat: startLat, lon: startLon },
+            profile,
+            surface,
+            sport,
+            bikeType,
+            workoutTrainingType,
+            linkedWorkoutTitle,
+            elevationPreference: elevationPreference ?? "any",
+            seed,
+            points: loopPointsFor(workoutTrainingType),
+            startName: null,
+            plannedWorkoutId,
+            wish,
+            targetElevationGainM,
+          },
+          targetDistanceKm,
+        );
+      } catch (err) {
+        if (err instanceof NoSuitableRouteError) {
+          // Harde afkeurpoort (PO-01 §5.2, taak #437): eerlijke weigering,
+          // nooit een foute route tonen. De renner krijgt een duidelijke
+          // melding; de klant-kant kan de renner vragen een ander startpunt
+          // of kortere afstand te proberen.
+          console.log(
+            `[generate.loop] harde afkeur: ${err.message} ms=${Math.round(performance.now() - _t_req0)}`,
+          );
+          res.status(422).json({
+            error: err.message,
+            code: "NO_SUITABLE_ROUTE",
+            profile: err.profile,
+          });
+          return;
+        }
+        throw err;
+      }
       console.log(`[PERF] generate.loop TOTAL ms=${Math.round(performance.now()-_t_req0)} distKm=${candidate.distanceKm?.toFixed(1)} mode=loop`);
       res.json({ candidate: { ...candidate, avoidReport } });
       return;

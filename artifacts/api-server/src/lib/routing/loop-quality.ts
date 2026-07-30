@@ -10,11 +10,8 @@
 // only usable one when candidates are scarce).
 
 import type { LoopRequest, RouteResult, RoutingProvider } from "./types";
+import type { RouteObstacles } from "../route-remarks";
 
-// Grid cell for snapping coordinates so we can tell when a route re-uses the
-// same stretch of road. ~0.0006° ≈ 55–65 m in the Netherlands — coarse enough
-// to treat "there and back on the same road" as one shared edge, fine enough
-// not to merge genuinely different parallel roads.
 const CELL_DEG = 0.0006;
 
 // Fail-closed geometrie-check: een pad met niet-finite coördinaten mag NOOIT
@@ -280,15 +277,9 @@ export async function generateVariedLoop(
     // Obstakel-telling (Overpass, gedeelde cache met de routeopmerkingen).
     // Acceptatiegrenzen René (30-07-2026): een kandidaat met een trap, een
     // aantoonbaar fietsverbod of een afgesloten/privé-poort wordt nooit
-    // gekozen zolang er een alternatief is; bij de rest wint de kandidaat met
-    // de minste poorten/hekken. null = geen meting (bron faalde) — weegt dan
-    // eerlijk niet mee, nooit gokken.
-    obstaclesOf?: (path: [number, number][]) => Promise<{
-      steps: number;
-      forbidden: number;
-      blockedGates: number;
-      gates: number;
-    } | null>;
+    // gekozen zolang er een alternatief is; racefiets tevens 0 onverhard
+    // (taak #437). null = geen meting (bron faalde) — eerlijk niet mee.
+    obstaclesOf?: (path: [number, number][]) => Promise<RouteObstacles | null>;
   },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
@@ -506,22 +497,24 @@ export async function generateVariedLoop(
   // Obstakel-poort (fietsprofielen): trap / fietsverbod / afgesloten poort is
   // een harde afkeur (+1000 — zo'n kandidaat wint alleen als ÁLLE kandidaten
   // dit gebrek hebben; de routeopmerkingen blijven het dan eerlijk melden).
-  // Overige poorten/hekken tellen licht mee zodat de kandidaat met de minste
-  // obstakels wint. Alleen echte metingen; een mislukte meting weegt niet mee.
+  // Racefiets (cycling-road): aantoonbaar onverharde/ruwe vakken zijn
+  // EVENEENS een harde afkeur (+1000) — acceptatiegrens René PO-01 §5.2,
+  // taak #437. Overige poorten/hekken tellen licht mee zodat de kandidaat
+  // met de minste obstakels wint. Alleen echte metingen; een mislukte meting
+  // weegt niet mee (nooit gokken).
+  //
+  // Obstakel-resultaten worden gecached (obstaclesMeasured) zodat de harde
+  // afkeurpoort hieronder ze opnieuw kan gebruiken zonder extra Overpass-call.
+  const obstaclesMeasured = new Map<
+    RouteResult,
+    { steps: number; forbidden: number; blockedGates: number; gates: number; unpavedSegments: number } | null
+  >();
   if (
     (req.profile === "cycling-road" || req.profile === "cycling-regular") &&
     opts?.obstaclesOf != null &&
     pool.length > 1
   ) {
-    const measured = new Map<
-      (typeof pool)[number],
-      { steps: number; forbidden: number; blockedGates: number; gates: number } | null
-    >();
-    const hardBlocked = (o: {
-      steps: number;
-      forbidden: number;
-      blockedGates: number;
-    }) => o.steps > 0 || o.forbidden > 0 || o.blockedGates > 0;
+    const measured = new Set<(typeof pool)[number]>();
     const applyPenalties = async (cands: typeof pool) => {
       const fresh = cands.filter((c) => !measured.has(c));
       if (fresh.length === 0) return false;
@@ -530,11 +523,18 @@ export async function generateVariedLoop(
       );
       let adjusted = false;
       for (let i = 0; i < fresh.length; i++) {
-        measured.set(fresh[i]!, obstacles[i] ?? null);
+        measured.add(fresh[i]!);
         const o = obstacles[i];
+        // Cache opslaan ook bij null (meting mislukt = eerlijk niet gewogen).
+        obstaclesMeasured.set(fresh[i]!.result, o ?? null);
         if (o == null) continue;
         let penalty = 0;
-        if (hardBlocked(o)) penalty += 1000;
+        if (o.steps > 0) penalty += 1000;
+        if (o.forbidden > 0) penalty += 1000;
+        if (o.blockedGates > 0) penalty += 1000;
+        // Racefiets: onverhard/ruw in de remarkslaag is gelijkwaardig aan een
+        // verbod — acceptatiegrens is NUL aantoonbaar onverhard (PO-01 §5.2).
+        if (req.profile === "cycling-road" && o.unpavedSegments > 0) penalty += 1000;
         penalty += Math.min(o.gates, 10) * 0.15;
         if (penalty > 0) {
           fresh[i]!.score += penalty;
@@ -554,17 +554,42 @@ export async function generateVariedLoop(
         }
       }
     }
-    // Harde weigering (grens René 30-07-2026): een aantoonbaar geblokkeerde
-    // route (trap, fietsverbod, afgesloten/privé-poort) mag NOOIT worden
-    // aangeboden — ook niet als "minst slechte". Blijkt de winnaar na alle
-    // rondes toch geblokkeerd, dan faalt de generatie eerlijk.
-    const winnerObstacles = measured.get(pool[0]!);
-    if (winnerObstacles != null && hardBlocked(winnerObstacles)) {
-      throw new Error(
-        "Geen route gevonden zonder trap, fietsverbod of afgesloten poort in dit gebied. Probeer een ander startpunt of een andere afstand.",
+  }
+
+  // ── Harde afkeurpoort na selectie (PO-01 §5.2, taak #437) ────────────────
+  // Hulpfunctie: controleer de winnaar op harde grenzen. Gebruikt de gecachede
+  // meting als die beschikbaar is; anders één extra Overpass-call (happens only
+  // when the winner was not in the first 3 measured — rare, ~extra 1-1.5 s).
+  // Gooit NoSuitableRouteError als aan een harde grens wordt voldaan.
+  // Alleen actief als obstaclesOf beschikbaar is; null-meting weegt niet mee.
+  const hardRejectIfNeeded = async (winner: RouteResult): Promise<void> => {
+    if (opts?.obstaclesOf == null) return;
+    if (
+      req.profile !== "cycling-road" &&
+      req.profile !== "cycling-regular"
+    ) return;
+    let obs = obstaclesMeasured.has(winner)
+      ? obstaclesMeasured.get(winner)!
+      : await opts.obstaclesOf(winner.path).catch(() => null);
+    if (obs == null) return; // meting mislukt — eerlijk niet gaten, nooit gokken
+    const _t_gate = performance.now();
+    const hasForbidden = obs.forbidden > 0 || obs.steps > 0;
+    const hasUnpaved =
+      req.profile === "cycling-road" && obs.unpavedSegments > 0;
+    console.log(
+      `[PERF] hardRejectGate ms=${Math.round(performance.now() - _t_gate)} ` +
+        `profile=${req.profile} forbidden=${obs.forbidden} steps=${obs.steps} ` +
+        `unpaved=${obs.unpavedSegments} hasForbidden=${hasForbidden} hasUnpaved=${hasUnpaved}`,
+    );
+    if (hasForbidden || hasUnpaved) {
+      throw new NoSuitableRouteError(
+        req.profile,
+        hasUnpaved
+          ? `aantoonbaar onverhard wegdek (${obs.unpavedSegments} vak${obs.unpavedSegments > 1 ? "ken" : ""})`
+          : `fietsverbod of trap (forbidden=${obs.forbidden} steps=${obs.steps})`,
       );
     }
-  }
+  };
 
   if (wantsCalmRoads && pool.length > 1) {
     // Compare the best few candidates on real map facts. Environment lookups
@@ -608,8 +633,30 @@ export async function generateVariedLoop(
         best = c;
       }
     }
+    await hardRejectIfNeeded(best.result);
     return best.result;
   }
 
+  await hardRejectIfNeeded(pool[0]!.result);
   return pool[0]!.result;
+}
+
+/**
+ * Harde afkeurpoort (PO-01 §5.2, taak #437): de motor heeft na alle
+ * selectiepassen geen kandidaat gevonden die vrij is van aantoonbaar
+ * onverhard wegdek (racefiets) of een zéker fietsverbod/trap. De renner
+ * krijgt een eerlijke "geen geschikte route" melding — nooit een foute route.
+ */
+export class NoSuitableRouteError extends Error {
+  readonly profile: string;
+  readonly reason: string;
+  constructor(profile: string, reason: string) {
+    super(
+      `Geen geschikte route gevonden voor ${profile}: ${reason}. ` +
+        "Probeer een ander startpunt of een kortere afstand.",
+    );
+    this.name = "NoSuitableRouteError";
+    this.profile = profile;
+    this.reason = reason;
+  }
 }
