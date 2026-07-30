@@ -35,6 +35,7 @@
     "test:admin-account-prefill": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/admin-account-prefill.test.tsx",
     "test:admin-page-smoke": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/admin-page-smoke.test.tsx",
     "test:routes-tabs": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/routes-tabs.test.tsx",
+    "test:route-library-gate": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-library-verification-gate.test.tsx",
     "test:design-system": "node ../../scripts/run-tsx-test.mjs --test src/components/ds/design-system.test.tsx",
     "test:plan-wizard": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/plan-wizard.test.tsx",
     "test:core-plan": "node ../../scripts/run-tsx-test.mjs src/lib/core-plan.test.ts",
