@@ -452,9 +452,19 @@ chapter_d_routes_en_navigatie:
 
     rene_calibration:
       questions:
-        - "Klinkers apart blijven tonen (zoals nu) of samenvoegen met 'verhard' zodra jouw klinker-acceptatie is vastgesteld?"
-        - "Vanaf welk percentage onbekend wil je dat het scherm actief afraadt i.p.v. alleen waarschuwt (nu: >40% = geen oordeel)?"
-      completed: false
+        - question: "Klinkers apart blijven tonen (zoals nu) of samenvoegen met 'verhard' zodra jouw klinker-acceptatie is vastgesteld?"
+          answer_rene: "Apart blijven tonen, maar alleen als de gebruiker vooraf heeft aangegeven dit te willen weten (opt-in voorkeur)." # beantwoord 2026-07-30
+        - question: "Vanaf welk percentage onbekend wil je dat het scherm actief afraadt i.p.v. alleen waarschuwt (nu: >40% = geen oordeel)?"
+          answer_rene: >-
+            Aangescherpte belofte (2026-07-30): voor de racefiets wil René 0% onbekend wegdek —
+            een route met één of meer onbekende segmenten mag niet als geschikte racefietsroute
+            worden geadviseerd; Sparki zoekt dan een alternatief of meldt eerlijk dat er geen
+            volledig verifieerbare route is. Dit geldt in Nederland (BGT) én in landen/regio's
+            waar bruikbare kaartbronnen het onbekend-percentage omlaag kunnen brengen (nu al
+            inbouwen; maandelijks controleren of er bronnen bijkomen). In regio's zonder
+            voldoende informatie: het minimale onbekend-percentage eerlijk benoemen en de
+            gebruiker laten beslissen. Algemene afraadgrens buiten racefiets: vanaf ~20% onbekend.
+      completed: true # beantwoord 2026-07-30 — LET OP: 0%-onbekend-racefietseis is een aanscherping van de huidige belofte (nu telt alleen aantoonbaar onverhard); vergt productwerk + bronnenregister-uitbreiding
 
     acceptance_contract:
       hard_reject_rules:
@@ -563,9 +573,11 @@ chapter_d_routes_en_navigatie:
 
     rene_calibration:
       questions:
-        - "Off-route: wil je dat 'terug naar de route' ooit automatisch mag starten (na X sec), of blijft elke herberekening een expliciete keuze van de renner?"
-        - "Hoeveel detectievertraging is acceptabel voor jou: sneller melden (meer kans op ruis) of huidige rustige 6 s?"
-      completed: false
+        - question: "Off-route: wil je dat 'terug naar de route' ooit automatisch mag starten (na X sec), of blijft elke herberekening een expliciete keuze van de renner?"
+          answer_rene: "Automatisch mag: makkelijk te bedienen popup; reageert de renner niet (bv. 30 s), dan automatisch nieuwe route berekenen." # beantwoord 2026-07-30
+        - question: "Hoeveel detectievertraging is acceptabel voor jou: sneller melden (meer kans op ruis) of huidige rustige 6 s?"
+          answer_rene: "Huidige rustige 6 s, maar check ook de gps-signaalkwaliteit: bij zwak signaal terughoudender melden om onnodige afwijk-meldingen te voorkomen als de renner toch op de route blijkt te rijden." # beantwoord 2026-07-30
+      completed: true # beantwoord 2026-07-30
 
     acceptance_contract:
       hard_reject_rules:
@@ -670,8 +682,9 @@ chapter_d_routes_en_navigatie:
 
     rene_calibration:
       questions:
-        - "Moet wedstrijdmodus extra's krijgen (bv. km-tot-finish prominenter, geen niet-kritieke meldingen), of is 'zelfde navigatie, parcours heilig' de juiste scope?"
-      completed: false
+        - question: "Moet wedstrijdmodus extra's krijgen (bv. km-tot-finish prominenter, geen niet-kritieke meldingen), of is 'zelfde navigatie, parcours heilig' de juiste scope?"
+          answer_rene: "Voorlopige keuze: extra's toevoegen (finish-focus, stiltemodus), maar René begrijpt de implicaties nog onvoldoende — uitdiepingsvragen gesteld 2026-07-30, definitief antwoord volgt." # deels beantwoord 2026-07-30
+      completed: false # open: uitdieping wedstrijdmodus loopt
 
     acceptance_contract:
       hard_reject_rules:
@@ -760,8 +773,9 @@ chapter_d_routes_en_navigatie:
 
     rene_calibration:
       questions:
-        - "Is een ruwe geschatte ETA (zonder file-informatie) goed genoeg voor de volgauto-belofte, of wil je verkeersbewuste ETA's (NDW-traject) vóór dit 'gereed' mag heten?"
-      completed: false
+        - question: "Is een ruwe geschatte ETA (zonder file-informatie) goed genoeg voor de volgauto-belofte, of wil je verkeersbewuste ETA's (NDW-traject) vóór dit 'gereed' mag heten?"
+          answer_rene: "Ruwe schatting is goed genoeg mits eerlijk 'geschat' erbij. Maar: René vindt de volgauto-modus nu absoluut onvoldoende uitgebouwd — uitdiepingsvragen gesteld 2026-07-30 om de gewenste scope te bepalen." # deels beantwoord 2026-07-30
+      completed: false # open: uitdieping volgauto-scope loopt
 
     acceptance_contract:
       hard_reject_rules:
