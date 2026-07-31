@@ -75,7 +75,7 @@ async function main() {
     const second = await createFixtures();
     const after = await verifyFixtures();
     assert(second.clubId === clubId, "tweede run maakte een NIEUWE club");
-    assert(before.userCount === after.userCount && after.userCount === 14, `verwacht 14 gebruikers, kreeg ${after.userCount}`);
+    assert(before.userCount === after.userCount && after.userCount === 16, `verwacht 16 gebruikers, kreeg ${after.userCount}`);
     assert(after.clubCount === 1, `verwacht 1 club, kreeg ${after.clubCount}`);
     const teams = await db.select({ id: clubTeamsTable.id }).from(clubTeamsTable).where(eq(clubTeamsTable.clubId, clubId));
     assert(teams.length === 2, `verwacht 2 teams, kreeg ${teams.length}`);
@@ -224,7 +224,7 @@ async function main() {
     assert(parentLinks.length === 0, "ouder-links bleven achter");
     await createFixtures();
     const back = await verifyFixtures();
-    assert(back.userCount === 14 && back.clubCount === 1, "herstel na remove faalde");
+    assert(back.userCount === 16 && back.clubCount === 1, "herstel na remove faalde");
   });
 
   await scenario("10. remove raakt niet-fixture-rijen niet (non-interference)", async () => {
@@ -253,7 +253,7 @@ async function main() {
     const [a, b] = await Promise.all([createFixtures(), createFixtures()]);
     assert(a.clubId === b.clubId, "parallelle runs maakten verschillende clubs");
     const v = await verifyFixtures();
-    assert(v.userCount === 14 && v.clubCount === 1, `na parallelle runs verwacht 14/1, kreeg ${v.userCount}/${v.clubCount}`);
+    assert(v.userCount === 16 && v.clubCount === 1, `na parallelle runs verwacht 16/1, kreeg ${v.userCount}/${v.clubCount}`);
     const teams = await db.select({ id: clubTeamsTable.id }).from(clubTeamsTable).where(eq(clubTeamsTable.clubId, a.clubId));
     assert(teams.length === 2, `verwacht 2 teams na parallelle runs, kreeg ${teams.length}`);
   });

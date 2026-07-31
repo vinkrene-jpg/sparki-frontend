@@ -14,6 +14,8 @@ import {
   Settings2,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { useUserProfile } from "@/contexts/UserContext"
+import { useSelectedChild, effectiveChildId } from "@/lib/parent-selected-child"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { RoleTodaySection } from "@/components/sparki/role-today"
 import {
@@ -319,7 +321,7 @@ function MessagesPanel({ child }: { child: ParentOverviewChild }) {
   )
 }
 
-function PermissionsPanel({ child }: { child: ParentOverviewChild }) {
+export function PermissionsPanel({ child }: { child: ParentOverviewChild }) {
   const update = useUpdateParentPermissions()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(child.access.permissions)
@@ -581,10 +583,19 @@ function ChildCard({
 }
 
 export function ParentHome() {
+  const { profile } = useUserProfile()
   const { data, isLoading } = useParentOverview()
   const endLink = useEndParentLink()
   const [pendingEnd, setPendingEnd] = useState<string | null>(null)
   const children = data?.children ?? []
+  // WP-R1 — kindkiezer: bij meerdere kinderen toont Vandaag het gekozen kind
+  // (gedeelde keuze met Kinderen/Toestemmingen); bij één kind gewoon dat kind.
+  const { selected, setSelected } = useSelectedChild(profile?.clerkId)
+  const effective = effectiveChildId(selected, children.map((c) => c.athleteClerkId))
+  const visible =
+    children.length > 1
+      ? children.filter((c) => c.athleteClerkId === effective)
+      : children
 
   function handleEndLink(c: ParentOverviewChild) {
     const name = c.displayName ?? "deze sporter"
@@ -643,7 +654,36 @@ export function ParentHome() {
           </div>
         ) : (
           <div className="space-y-3">
-            {children.map((c) => (
+            {children.length > 1 && (
+              <div className="flex flex-wrap gap-2" data-testid="kindkiezer">
+                {children.map((c) => {
+                  const active = c.athleteClerkId === effective
+                  return (
+                    <button
+                      key={c.athleteClerkId}
+                      type="button"
+                      onClick={() => setSelected(c.athleteClerkId)}
+                      className="rounded-full border px-3.5 py-1.5 text-[13px] transition-colors"
+                      style={
+                        active
+                          ? {
+                              borderColor: "rgba(120,210,230,0.4)",
+                              color: ACCENT,
+                              background: "rgba(120,210,230,0.10)",
+                            }
+                          : {
+                              borderColor: "rgba(255,255,255,0.10)",
+                              color: "rgba(255,255,255,0.6)",
+                            }
+                      }
+                    >
+                      {c.displayName ?? "Sporter"}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {visible.map((c) => (
               <ChildCard
                 key={c.athleteClerkId}
                 child={c}

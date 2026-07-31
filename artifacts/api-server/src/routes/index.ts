@@ -84,6 +84,7 @@ import attentionRouter from "./attention";
 
 import { killSwitchGuard } from "../lib/kill-switches";
 import { consentGate } from "../middlewares/consentGate";
+import { blockParentSporterWrites } from "../lib/parent-write-block";
 
 const router: IRouter = Router();
 
@@ -94,6 +95,15 @@ router.use(healthRouter);
 router.use(consentGate);
 router.use("/auth", authRouter);
 router.use("/flags", flagsRouter);
+// WP-R1: in de ouderrol zijn sporter-schrijfroutes (training/rit/doel/
+// wedstrijd) server-side geblokkeerd — zie lib/parent-write-block.ts.
+router.use("/athlete", blockParentSporterWrites);
+router.use("/races", blockParentSporterWrites);
+router.use("/goals", blockParentSporterWrites);
+router.use("/training-plan", blockParentSporterWrites);
+// Ritten komen óók binnen via bestandsimports — zelfde blokkade, anders is
+// "geen rit aanmaken als ouder" via een upload alsnog te omzeilen.
+router.use("/activity-imports", blockParentSporterWrites);
 router.use("/athlete", athleteRouter);
 router.use("/races", racePointsRouter);
 router.use("/races", raceExportsRouter);

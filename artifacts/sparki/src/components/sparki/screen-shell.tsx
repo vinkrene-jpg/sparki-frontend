@@ -12,6 +12,8 @@ import {
   Radio,
   User,
   Users,
+  Bell,
+  ShieldCheck,
   Activity,
   Globe,
   HeartPulse,
@@ -81,6 +83,10 @@ const SHELL_MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
   "/activiteiten": IconActiviteiten,
   "/analyse": IconAnalyse,
   "/meer": IconMenu,
+  // WP-R1 ouderomgeving
+  "/kinderen": Users,
+  "/meldingen": Bell,
+  "/toestemmingen": ShieldCheck,
 }
 
 const SHELL_MOBILE_NAV_ITEMS: DsNavItem[] = COMMERCIAL_MOBILE_NAV.map((item) => ({
@@ -88,6 +94,31 @@ const SHELL_MOBILE_NAV_ITEMS: DsNavItem[] = COMMERCIAL_MOBILE_NAV.map((item) => 
   label: item.label,
   icon: SHELL_MOBILE_NAV_ICONS[item.href] ?? IconMenu,
 }))
+
+// WP-R1: de schil is rol-bewust. Sporters houden de commerciële nav; coach en
+// ouder krijgen hun eigen hoofdnavigatie (chapters.ts is de SSOT van de items).
+function shellNavForRole(role: string | null | undefined): {
+  desktop: { href: string; label: string }[]
+  mobiel: DsNavItem[]
+} {
+  const entries =
+    role === "coach"
+      ? COACH_NAV_ENTRIES
+      : role === "parent"
+        ? PARENT_NAV_ENTRIES
+        : null
+  if (!entries) {
+    return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: SHELL_MOBILE_NAV_ITEMS }
+  }
+  return {
+    desktop: entries,
+    mobiel: entries.map((e) => ({
+      href: e.href,
+      label: e.label,
+      icon: SHELL_MOBILE_NAV_ICONS[e.href] ?? IconMenu,
+    })),
+  }
+}
 
 const FOCUS_RING_SHELL =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
@@ -295,6 +326,8 @@ export function ScreenShell({
   // geschiedenis (direct geopend) valt hij terug op het startoverzicht.
   const [pathname, setLocation] = useLocation()
   const navRoots = navRootsForRole(profile?.activeRole)
+  // WP-R1: rol-bewuste hoofdnavigatie (ouder/coach eigen onderbalk + zijbalk).
+  const shellNav = shellNavForRole(profile?.activeRole)
   const showAutoTerug = terug && !navRoots.has(pathname)
   const goBack = () => {
     if (window.history.length > 1) window.history.back()
@@ -318,7 +351,7 @@ export function ScreenShell({
             SPARKI
           </div>
           <nav className="mt-8 flex flex-col gap-0.5 px-3" aria-label="Hoofdmenu">
-            {COMMERCIAL_DESKTOP_NAV.map((item) => {
+            {shellNav.desktop.map((item) => {
               const active =
                 pathname === item.href ||
                 (item.href.length > 1 && pathname.startsWith(item.href))
@@ -474,7 +507,7 @@ export function ScreenShell({
       {!bare && (
         <div className="lg:hidden">
           <DsMobileNav
-            items={SHELL_MOBILE_NAV_ITEMS}
+            items={shellNav.mobiel}
             actiefPad={pathname}
             onNavigeer={(href) => setLocation(href)}
           />

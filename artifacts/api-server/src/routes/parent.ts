@@ -541,6 +541,55 @@ router.put("/athletes/:athleteId/permissions", requireAuth, async (req, res) => 
   }
 });
 
+// GET /api/parent/athletes/:athleteId/trainers — gekoppelde trainer(s) van het
+// kind, uitsluitend zichtbaar binnen de bestaande toestemmingslaag: de
+// categorie "communicatie" moet aan staan (géén nieuw rechtenmodel). Alleen
+// naam + contactadres — nooit trainingsdata van de trainerkant.
+router.get("/athletes/:athleteId/trainers", requireAuth, async (req, res) => {
+  const parentId = getClerkUserId(req)!;
+  const athleteId = String(req.params.athleteId);
+  try {
+    const ctx = await requireParentAccess(parentId, athleteId);
+    if (!ctx) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
+      return;
+    }
+    if (!ctx.access.permissions.communicatie) {
+      // Eerlijk en fail-closed: zonder communicatie-toestemming geen
+      // trainergegevens — wel een verklaring waarom.
+      res.json({ allowed: false, reason: "communicatie_uit", trainers: [] });
+      return;
+    }
+    const links = await db
+      .select({
+        coachClerkId: coachAthleteLinksTable.coachClerkId,
+        displayName: userProfilesTable.displayName,
+        email: userProfilesTable.email,
+      })
+      .from(coachAthleteLinksTable)
+      .innerJoin(
+        userProfilesTable,
+        eq(userProfilesTable.clerkId, coachAthleteLinksTable.coachClerkId),
+      )
+      .where(
+        and(
+          eq(coachAthleteLinksTable.athleteClerkId, athleteId),
+          eq(coachAthleteLinksTable.status, "accepted"),
+        ),
+      );
+    res.json({
+      allowed: true,
+      trainers: links.map((l) => ({
+        displayName: l.displayName ?? "Trainer",
+        email: l.email,
+      })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "parent.trainers.get failed");
+    res.status(500).json({ error: "Kon trainers niet laden" });
+  }
+});
+
 // POST /api/parent/athletes/:athleteId/reports — ziek/blessure/afwezig melden.
 // Altijd mogelijk op een geaccepteerde koppeling (veiligheidsactie). De melding
 // is een signaal — géén diagnose en géén automatische trainingsbeslissing.

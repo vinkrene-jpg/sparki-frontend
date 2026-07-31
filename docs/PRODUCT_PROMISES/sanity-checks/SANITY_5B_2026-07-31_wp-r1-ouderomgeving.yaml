@@ -1,0 +1,35 @@
+# Poort 5b sanity-check rapport — WP-R1 Ouderomgeving
+
+delivery: "WP-R1 Ouderomgeving: eigen ouderonderbalk (Kinderen · Vandaag · Meldingen · Toestemmingen · Meer), ouderstart zonder sporteronboarding, kindkiezer (1 én meerdere kinderen), server-side schrijfblokkade voor ouders (403), trainer-contact via bestaande toestemmingslaag"
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "Ouderonderbalk + zijbalk (mobiel 402×874 en desktop 1440×900, echte kliks via e2e/tests/wp-r1-ouder.mjs)"
+  - "/kinderen — kindoverzicht met kindkiezer en trainerblok"
+  - "/vandaag — ouderweergave met kindkiezer-chips"
+  - "/toestemmingen — rechtenpaneel per gekozen kind"
+  - "/meldingen — verzoeken/meldingen voor de ouder"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Alle vijf oudertabs echt aangeklikt (onderbalk-knoppen op mobiel, zijbalklinks op desktop): elk navigeert naar het juiste pad met de verwachte inhoud (e2e wp-r1-ouder GESLAAGD, screenshots in e2e/evidence/wp-r1-ouder/)"
+        result: "pass"
+      - case: "Kindkiezer 'Kies dit kind' aangeklikt op /kinderen: Vandaag en Toestemmingen volgen daarna het gekozen kind (chip-wissel geverifieerd op beide viewports)"
+        result: "pass"
+      - case: "'Naar Vandaag van dit kind' link op de kindkaart navigeert naar /vandaag met dat kind centraal"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Ouder met precies één kind ziet géén kindkiezer (chips zijn zinloos bij één kind); het enige kind staat direct centraal — apart e2e-scenario met governor-fixture-parent-solo"
+        result: "pass"
+      - case: "Ouder ziet uitsluitend gekoppelde kinderen; schrijfacties (training/rit/doel/wedstrijd aanmaken) zijn server-side geblokkeerd met 403 parent_write_blocked — de UI biedt die acties dus terecht niet aan (test:wp-r1-parent-rights 14/14)"
+        result: "pass"
+      - case: "Trainercontact toont een eerlijke uitleg wanneer de categorie 'communicatie' uitstaat, in plaats van een lege of nep-lijst"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "/kinderen, /vandaag, /meldingen en /toestemmingen gecontroleerd op blijvende laad-/placeholderteksten na volledige laadtijd (screenshots): overal echte inhoud of een eerlijke lege-staat met vervolgactie"
+        result: "pass"
+
+verdict: "deliverable"

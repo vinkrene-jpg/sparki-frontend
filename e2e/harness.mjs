@@ -167,8 +167,11 @@ export class TestRun {
         throw new Error(`VERKEERDE TITEL na "${label}": verwacht "${expectTitle}" in "${title}"`);
     }
     for (const text of expectVisibleText ?? []) {
+      // Meerdere matches mogelijk (bv. verborgen desktop-zijbalk op mobiel):
+      // tel elke ZICHTBARE match, niet alleen de eerste in de DOM.
       const vis = await this.page
         .getByText(text, { exact: false })
+        .locator("visible=true")
         .first()
         .isVisible()
         .catch(() => false);

@@ -30,6 +30,9 @@ import {
   type TodayItem,
 } from "@/hooks/use-today"
 import { TodayDebugPanel } from "@/components/sparki/role-today"
+import { Users, Bell, ShieldCheck } from "lucide-react"
+import { useUserProfile } from "@/contexts/UserContext"
+import { COACH_NAV_ENTRIES, PARENT_NAV_ENTRIES } from "@/lib/chapters"
 import { cn } from "@/lib/utils"
 import {
   DsButton,
@@ -114,6 +117,36 @@ const MOBILE_NAV_ITEMS: DsNavItem[] = COMMERCIAL_MOBILE_NAV.map((item) => ({
   icon: MOBILE_NAV_ICONS[item.href] ?? IconMenu,
 }))
 
+// WP-R1: de schil is rol-bewust — sporters houden de commerciële nav, coach en
+// ouder krijgen hun eigen hoofdnavigatie (chapters.ts is de SSOT van de items).
+const ROLE_NAV_ICONS: Record<string, LucideIcon> = {
+  ...MOBILE_NAV_ICONS,
+  "/kinderen": Users,
+  "/meldingen": Bell,
+  "/toestemmingen": ShieldCheck,
+}
+
+function shellNavForRole(role: string | null | undefined): {
+  desktop: { href: string; label: string }[]
+  mobiel: DsNavItem[]
+} {
+  const entries =
+    role === "coach"
+      ? COACH_NAV_ENTRIES
+      : role === "parent"
+        ? PARENT_NAV_ENTRIES
+        : null
+  if (!entries) return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: MOBILE_NAV_ITEMS }
+  return {
+    desktop: entries,
+    mobiel: entries.map((e) => ({
+      href: e.href,
+      label: e.label,
+      icon: ROLE_NAV_ICONS[e.href] ?? IconMenu,
+    })),
+  }
+}
+
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
 
@@ -148,6 +181,9 @@ export function CommercialShell({
   children: ReactNode
 }) {
   const [, navigate] = useLocation()
+  // WP-R1: rol-bewuste hoofdnavigatie (ouder/coach eigen onderbalk + zijbalk).
+  const { profile } = useUserProfile()
+  const shellNav = shellNavForRole(profile?.activeRole)
   // Prefix-match zodat ook diepere paden (/train/…, /routes/…) het juiste
   // nav-item actief markeren — zelfde gedrag op desktop en mobiel.
   const isActive = (href: string) =>
@@ -186,7 +222,7 @@ export function CommercialShell({
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-app-deep/80 backdrop-blur lg:flex">
         <div className="type-wordmark px-6 pt-7">SPARKI</div>
         <nav className="mt-8 flex flex-col gap-1 px-3" aria-label="Hoofdmenu">
-          {COMMERCIAL_DESKTOP_NAV.map((item) => {
+          {shellNav.desktop.map((item) => {
             const active = isActive(item.href)
             return (
               <Link
@@ -228,7 +264,7 @@ export function CommercialShell({
       {!bare && (
         <div className="lg:hidden">
           <DsMobileNav
-            items={MOBILE_NAV_ITEMS}
+            items={shellNav.mobiel}
             actiefPad={actief}
             onNavigeer={(href) => navigate(href)}
           />
