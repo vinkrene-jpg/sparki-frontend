@@ -150,6 +150,24 @@ export default function RouteListScreen() {
 
       <View style={styles.recordRow}>
         <Pressable
+          onPress={() => router.push("/route-aanvraag" as Href)}
+          style={[
+            styles.ridesBtn,
+            { backgroundColor: c.card, borderColor: c.primary },
+          ]}
+        >
+          <Ionicons name="sparkles-outline" size={20} color={c.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.ridesTitle, { color: c.foreground }]}>
+              Vraag een route aan
+            </Text>
+            <Text style={[styles.ridesSub, { color: c.mutedForeground }]}>
+              Sparki zoekt eerst je bekende routes, daarna nieuwe voorstellen
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={c.mutedForeground} />
+        </Pressable>
+        <Pressable
           onPress={() => router.push("/record")}
           style={[styles.recordBtn, { backgroundColor: c.primary }]}
         >
