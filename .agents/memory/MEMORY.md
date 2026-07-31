@@ -11,10 +11,9 @@
 - [Sparki Bike Fit BF_00](sparki-bike-fit-bf00.md) — CV keuze ISOLATED_PYTHON_WORKER; tasks-vision npm is browser-only (faalt op DOM); gates eisen uitgevoerd bewijs, niet future-tense.
 - [Sparki Strava OAuth + import](sparki-strava-oauth.md) — per-user OAuth; redirect_uri from REPLIT_DOMAINS; ingest via Data Hub ([import](sparki-strava-activity-import.md), [webhooks](sparki-strava-webhook-sync.md)).
 - [Sparki Onboarding V2](sparki-onboarding-v2.md) — adaptive Q&A engine: fixed catalog, nonsense fails honestly w/ skip escape; Q&A-only leaves hours/FTP estimated ([connect step](sparki-onboarding-connect-step.md): mandatory step, connecting optional — honesty).
-- [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones.
-- [Sparki Samen/Circle feed](sparki-circle.md) — /samen unified feed; ScreenShell scene-fallback leaks home-only UI (gate on explicit `section`); feed privacy fail-closed ([team detail](sparki-social-team.md)).
-- [Sparki personal-context memory](sparki-context-memory.md) — deterministic Dutch detection, privacy-gated persist; JSX \u escapes do not work in text/attr strings.
-- [Sparki memory graph](sparki-memory-graph.md) — deterministic cross-domain "verbanden": confidence never 1.0, rules stay silent on weak evidence, persist accounting created+deduped+gated===derived.
+- Toon: [Voice & Personality](sparki-voice-engine.md) deterministic tone/trust/empathy, refuses to fabricate, trust gates tones; [humorniveau](sparki-humor-level.md) één centrale laag, nooit op medisch/veiligheid/privacy/fouten/betalingen.
+- Samen/social: [Circle feed](sparki-circle.md) ScreenShell scene-fallback lekt home-UI (gate op expliciete `section`), feed privacy fail-closed ([team](sparki-social-team.md)); [sociale privacy](sparki-social-privacy.md) visibility-check op ÁLLE ontdekkingspaden, neutrale weigering, blokkeren atomair.
+- Sparki-geheugen: [graph](sparki-memory-graph.md) confidence nooit 1.0, stil bij zwak bewijs, accounting created+deduped+gated===derived; [personal context](sparki-context-memory.md) deterministic NL-detectie, privacy-gated persist; JSX \u-escapes werken niet in text/attr.
 - [Sparki Data Hub](sparki-data-hub.md) — dedupe key=sport+start-bucket (not dur/dist) + neighbour match; activity consent is AND; single runSync path ([file-import](sparki-file-import-source.md): provider "file", content-only externalId, timeless GPX ≠ activity).
 - [Sparki account-readiness gate](sparki-account-readiness.md) — EVERY signed-in surface must render through one AccountGate (profile required), not Clerk auth alone.
 - Ontdekken/news: [in-app reader](sparki-news-reader.md) excerpt+attributie, nooit volledige tekst, lazy refresh ([freshness](sparki-news-freshness.md)); [visual feed](sparki-ontdekken-visual-feed.md) sfeer alleen uit atmosphere-lib, useKnowledge key bevat limit; [Renners reel](sparki-ontdekken-renners.md) dwell-gate ~1.4s.
@@ -24,13 +23,10 @@
 - [Sparki auth/sync email collision](sparki-sync-email-collision.md) — seeded demo row with a real email bricks onboarding (FK 500 → "Profile not found" 404s); sync must verify parent before child insert.
 - [Leaflet traps](leaflet-divicon-xss.md) — divIcon html is an XSS sink (escape at sink + strip server-side); layers before first setView crash bringToFront ([explorer](leaflet-multi-route-explorer.md)).
 - [Post-merge integration breaks](post-merge-integration-breaks.md) — concurrent task-agent merges leave stale cross-task imports/columns; run typecheck + api-server esbuild before publishing; validation gates `typecheck-api` + `admin-smoke` (src/tests/admin-smoke.ts) now guard this.
-- [Sparki interactive schedule](sparki-interactive-schedule.md) — feedback persisted before adjust proposal; proposal intensity maps to workout description; PUT validates LLM fields.
-- [Sparki knowledge base relevance](sparki-knowledge-base.md) — literature ingestion relevance guard must use word-boundary regex (substring "sport" matches "transport"); arXiv queries leak off-topic papers.
-- [Sparki autonomous training](sparki-autonomous-training.md) — coach-less plan engine: deterministic numbers, AI prose-only, real-or-absent ORS routes, coach-gated advisory; vite build needs PORT+BASE_PATH.
+- [Sparki autonomous training](sparki-autonomous-training.md) — deterministic numbers, AI prose-only, real-or-absent routes; vite build needs PORT+BASE_PATH ([coach-adoptie](coach-plan-adoption.md): advisory→planned_workouts source="coach", dedupe date+source, nooit overschrijven).
 - [Sparki engine layer](sparki-engine-layer.md) — api-server engines/<engine> facades; routes import engines not lib helpers; smoke harness; docs/engine-architecture.md.
 - [Dutch-only copy exceptions](dutch-copy-exceptions.md) — accepted English proper nouns; DB values English, labels translate; each LLM prompt needs its OWN Dutch rule ([prompts](llm-prompt-dutch-coverage.md)).
 - [Sparki Admin Health Check engine](sparki-health-check.md) — honesty contract: real probe or GREY, never fake green; probes never throw; isAdmin dev-bypass; wouter Link no nested <a>.
-- [Coach plan adoption](coach-plan-adoption.md) — coach adopts advisory plan_days into athlete-owned planned_workouts (source="coach", planId null); dedupe by date+source, never overwrite.
 - [Sparki general-day concrete advice](sparki-day-advice.md) — no-plan Home day shows one deterministic explainable session (lib/day-advice); readiness SSOT in lib/readiness; TSB guard; race framing base/build only.
 - [Sparki Race Intelligence](sparki-race-intel.md) — never fabricate, cheapest fuel tier first; found/derived/missing ([engine](sparki-race-intel-engine.md), [wizard](sparki-race-wizard.md), [room](sparki-race-room.md), [documentanalyse](sparki-document-analysis.md)).
 - [Sparki Input Center & ACL timing](sparki-input-center.md) — one central composer; object ACL can only be set AFTER bytes exist (presign→PUT→set-ACL-on-persist), never before.
@@ -112,7 +108,6 @@
 - [Sparki Performance Lab](sparki-performance-lab.md) — één belastingsmodel via computeLoadSeries (nooit inline EWMA in routes); radar-assen zonder data zijn null+reden, nooit 0.5.
 - [Sparki gezondheids- & herstelflow](sparki-health-flow.md) — status raises-only; "hersteld" alleen via resume-gate (409 bij niet_trainen); mobile customFetch returns parsed JSON not Response.
 - [Sparki support helpdesk](sparki-support-helpdesk.md) — deterministic answer matrix, minor fail-closed; ticket find-or-create needs advisory-xact-lock; Dutch stems need `\w*` in `\b` regex groups.
-- [Sparki sociale privacy](sparki-social-privacy.md) — profiel-visibility check op ÁLLE ontdekkingspaden (search/verzoek/match), neutrale weigering blocked=hidden=missing, blokkeren atomair.
 - [Sparki ouderomgeving](sparki-parent-environment.md) — één rechtenlaag voor ALLE ouder-routes (ook legacy); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigd nooit boven safety-only.
 - [Sparki routevoorstellen & nav-instellingen](sparki-route-proposals.md) — proposals-router vóór /:id-router; accept in één transactie; nav-defaults via rideOptionsExplicit (rideOptions is nooit null).
 - [Sparki store-distributie](sparki-store-distribution.md) — kanaal-header is PLAFOND op releasegroep (best-effort); 426 nooit tijdens actieve rit (latch+flush); recommended-versie = alleen rustig advies.
@@ -120,12 +115,11 @@
 - [Sparki releasegroepen & uitrol](sparki-release-rollout.md) — auto-stop telt kritieke fouten PER flag (nooit globaal); anonieme meldingen nooit kritiek; 426 heeft latch naast event.
 - [Sparki race flow & advies-typologie](sparki-race-flow.md) — coach-first enforced in compose fn; geannuleerd filtered at every consumer ([punten/export](sparki-race-points.md), [export](sparki-race-export.md): round-trip verify, workout never fabricated).
 - [Sparki World sociale omgeving](sparki-world-social.md) — reference-only shares; openbaar = confirm + volwassen/oudertoestemming (fail-closed); route-privacy is read-time transform; dubbele waardering = 200.
-- [Sparki Kennisbank governance](sparki-kennisbank.md) — governed knowledge layer: publish=tx+snapshot, usage pins version, retracted final; engines must consume content, not just cite.
-- [Sparki plan-uitvoering & adaptieve voorstellen](sparki-plan-execution.md) — execution link race-safe (manual wins), deterministic verdict/adjust rules, LLM words-only.
+- Kennis: [governance](sparki-kennisbank.md) publish=tx+snapshot, usage pins version, engines consumeren content; [relevance guard](sparki-knowledge-base.md) word-boundary regex ("sport"≠"transport"), arXiv lekt off-topic.
+- Plan-aanpassing: [uitvoering](sparki-plan-execution.md) execution link race-safe (manual wins), deterministic verdict/adjust, LLM words-only; [interactief schema](sparki-interactive-schedule.md) feedback vóór voorstel, PUT valideert LLM-velden.
 - [Sparki central AI gateway](sparki-ai-gateway.md) — one aiMessage() port for all model calls: killswitch→consent→minor→redaction→dedupe→metadata-only logs; SDK types need direct @anthropic-ai/sdk dep.
 - [Workout koppellijst honesty](sparki-workout-linklist.md) — DELETE is soft-cancel (status=cancelled) ⇒ pickers must filter; list queries share one invalidation prefix.
 - [Sparki data-trust audit](sparki-data-trust.md) — provenance endpoint uses constant table allowlist (never request-driven sql.raw); 403-gate testbaar via per-call env-flip terwijl IS_DEV gecached blijft.
-- [Sparki centraal humorniveau](sparki-humor-level.md) — één centrale humorlaag, instelling geldt app-breed, nooit inline grappen; humor nooit op medisch/veiligheid/privacy/fouten/betalingen.
 - [Add-training flow split](sparki-add-training-split.md) — chooser-first modal; plan_details whitelist 400s executed keys; contextDate prop useless until a real caller wires it.
 - [Sparki Volgauto](sparki-volgauto.md) — fietsroute blijft intact (aparte laag); server DB-vorm is contract-SSOT, consumers her-declareren niet op gevoel; meetpoint carKm nullable; wissel na 120s, ETA altijd "geschat".
 - [Sparki startup black screen](sparki-startup-black-screen.md) — niets rendert tot clerk-js laadt (Show=null); drie vaste vangnetlagen (splash, root boundary, ClerkStartupGate) nooit verwijderen.
