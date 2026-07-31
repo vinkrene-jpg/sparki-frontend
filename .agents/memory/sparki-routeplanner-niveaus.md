@@ -14,6 +14,13 @@ description: Productbesluit René (30/31-07-2026) over routeplanner-niveaus, abo
 - **Why:** expliciete AskQuestion-beslissing van René; afwijken = productbesluit overrulen.
 - **How to apply:** bij elk routeplanner-UI- of entitlement-werk; Compleet gaat via het entitlement-fundament (AND met flags), niet via feature flags alleen.
 
+# Gebouwd 31-07-2026 (weergavelaag)
+
+- Weergavelaag = puur presentatie: `sparki/lib/planner-view.ts` (enum gratis|go_fietser|go_sport|wedstrijd + feature-map + deterministisch voorstel), keuze in `athlete_profiles.planner_view` (NULL = automatisch) via bestaand PUT-profielpad (enum-whitelist, null wist).
+- **Verborgen optie = niet meesturen:** RouteGenerator gebruikt effectieve waarden (wens, N-wegen, trainingskoppeling) — een optie die de UI niet toont mag de routemotor nooit stiekem sturen. Uitzondering: onverhard-schuif blijft zichtbaar zodra gravel/MTB gekozen is, óók onder het go_sport-niveau (meesturend getal nooit onzichtbaar).
+- "Eigen route"-modus blijft altijd bereikbaar bij route-wijzigen (bestaande waypoints), anders valt bestaande functionaliteit stil weg.
+- #505 en #506 zijn afgerond en bewezen — nooit heropenen of opnieuw bevragen.
+
 # Bewaard één-lijst-contract (gebouwd 31-07-2026)
 
 - /routes?view=bewaard: RouteLibrary is dé (ingeklapte) lijst; de grote RouteCard rendert alleen voor de route in `?route=`/`?nav=`/`?ritopties=`, lijst dan tijdelijk verborgen, terugknop "← Alle routes".

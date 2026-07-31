@@ -87,9 +87,14 @@ Statuswaarden: `besloten` · `in uitvoering` · `bewezen` · `open`.
   wegdek-/routewaarschuwingen, oncontroleerbare-routewaarschuwing en het verbod op
   opslaan/navigeren van niet-goedgekeurde kandidaten gelden op élk niveau.
   Wedstrijd-weergave wordt nu meegebouwd, geen latere losse taak.
-- **Migraties:** weergavekeuze-veld (n.t.b. bij bouw). **Status:** besloten;
-  uitvoering gepland (§15 stap C). Fundament al klaar: Bewaard-tabblad één lijst
-  (Poort 5b 31-07).
+- **Migraties:** `athlete_profiles.planner_view` (tekst, NULL = automatisch;
+  migratie `0006_athlete_planner_view.sql`). **Status:** gebouwd 31-07-2026 —
+  weergavekiezer in de Maken-tab (`planner-view-switcher.tsx`), voorstel-logica
+  in `lib/planner-view.ts` (deterministisch uit profiel), keuze bewaard via
+  `PUT /api/athlete/profile` (enum-whitelist, null = terug naar automatisch).
+  Verborgen opties sturen nooit stiekem mee (effectieve waarden); veiligheid op
+  élk niveau ongemoeid. Fundament: Bewaard-tabblad één lijst (Poort 5b 31-07);
+  #505 en #506 zijn afgerond en bewezen.
 
 ## B7 — Individuele vermogenszones naast FTP-zones
 - **Besluit:** individuele zones náást (niet in plaats van) generieke FTP-zones;

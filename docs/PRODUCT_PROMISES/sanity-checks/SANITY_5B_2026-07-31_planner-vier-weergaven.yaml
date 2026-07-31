@@ -1,0 +1,35 @@
+# Poort 5b sanity-check — Routeplanner: vier weergaveniveaus (besluit B6)
+# Gratis · Go gewone fietser · Go wielrenner/MTB/gravel · Wedstrijd (nooit "Compleet").
+
+delivery: "Routes/Maken: één weergaveniveau-kiezer boven de wizard. Sparki stelt automatisch een weergave voor uit het echte profiel (deterministisch, lib/planner-view.ts); de sporter kan altijd zelf een andere kiezen (bewaard op de server in athlete_profiles.planner_view, migratie 0006) en met één tik terug naar automatisch. De weergave bepaalt alleen welke invoeropties zichtbaar zijn: Gratis = vorm/kaart/afstand/fietstype/samen; Go gewone fietser = + hoogtevoorkeur en N-wegen; Go wielrenner/MTB/gravel = + eigen routebouwer, onverhard-schuif en vrije routewens; Wedstrijd = + trainingstype en trainingskoppeling. Los van het abonnement; veiligheid (blokkadepoort, eindverificatie, wegdek-/routewaarschuwingen) blijft op elk niveau ongewijzigd actief."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/routes?view=maken (echt scherm, dev — kiezer toont 'WEERGAVE Go wielrenner / MTB / gravel · AUTOMATISCH' voor het gravel-profiel van de dev-sporter; screenshot /tmp tijdens bouw, wizard stap 1 volledig werkend eronder)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Weergavekiezer 'wijzig' klapt open naar vier keuzeknoppen + 'Terug naar automatisch'; keuze gaat via bestaande PUT /api/athlete/profile (enum-whitelist gratis|go_fietser|go_sport|wedstrijd, null = automatisch; onbekende waarden genegeerd volgens developmentGoal-patroon) en ververst profiel + dashboard via react-query-invalidatie."
+        result: "pass"
+      - case: "'Eigen route' verdwijnt als modusknop onder go_sport-niveau, maar blijft altijd bereikbaar bij 'route wijzigen' (bestaande punten) — geen bestaande functie die stilletjes dood gaat."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Verborgen opties sturen nooit stiekem mee: trainingskoppeling, vrije wens en N-wegen-vermijding gaan alleen in de aanvraag als de actieve weergave ze toont (effectieve waarden in RouteGenerator). Onverhard-schuif blijft wél zichtbaar zodra gravel/MTB gekozen is, óók in een lagere weergave — een meesturend getal mag nooit onzichtbaar zijn."
+        result: "pass"
+      - case: "Naamgeving: hoogste niveau heet overal 'Wedstrijd', nergens 'Compleet' (abonnementsnaam). Kiezer zegt expliciet dat de weergave los staat van het abonnement en dat veiligheidscontroles op elk niveau actief blijven."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Zonder geladen profiel rendert de kiezer niets (geen verzonnen voorstel); het automatische voorstel is deterministisch uit echte profielvelden (competitieniveau/ervaring ⇒ Wedstrijd; sportieve discipline ⇒ Go sport; profiel aanwezig ⇒ Go fietser; anders Gratis) en wordt als 'voorstel van Sparki' gelabeld."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): bewijs = echt scherm (dev, gravel-profiel toont
+# automatisch Go wielrenner/MTB/gravel) + tsc sparki/api-server/libs groen +
+# routes-tabs-contracttest 12/12. De vier weergaven zijn niet elk apart met een
+# echte klik doorlopen; de gating is puur conditionele rendering op één
+# heeft(feature)-vlag en de bewaar-round-trip volgt het bestaande, geteste
+# profielpad. Veiligheidsblokken (verificatiegate, blokkadepoort-meldingen)
+# zijn bewust niet aangeraakt.
+verdict: "deliverable"

@@ -129,6 +129,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     homeLat,
     homeLon,
     homeLabel,
+    plannerView,
   } = req.body as {
     ftp?: number;
     ftpEstimated?: boolean;
@@ -150,6 +151,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     homeLat?: number | string | null;
     homeLon?: number | string | null;
     homeLabel?: string | null;
+    plannerView?: string | null;
   };
 
   // Whitelisted enum values for the planning inputs (never trust raw input).
@@ -165,6 +167,15 @@ router.put("/profile", requireAuth, async (req, res) => {
     "prof",
     "persoonlijk",
   ];
+  // Routeplanner-weergaveniveau (besluit B6): vaste enum, expliciete null =
+  // terug naar automatisch voorstellen; onbekende waarden worden genegeerd.
+  const PLANNER_VIEWS = ["gratis", "go_fietser", "go_sport", "wedstrijd"];
+  let cleanPlannerView: string | null | undefined;
+  if (plannerView === null) {
+    cleanPlannerView = null;
+  } else if (plannerView != null && PLANNER_VIEWS.includes(plannerView)) {
+    cleanPlannerView = plannerView;
+  }
   const cleanCoaching =
     coachingMode != null && COACHING.includes(coachingMode)
       ? coachingMode
@@ -293,6 +304,9 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(injuryHistory !== undefined && { injuryHistory }),
         ...(trainingPreferences !== undefined && { trainingPreferences }),
         ...(cleanCoaching !== undefined && { coachingMode: cleanCoaching }),
+        ...(cleanPlannerView !== undefined && {
+          plannerView: cleanPlannerView,
+        }),
         ...(homeLat !== undefined &&
           homeLon !== undefined && {
             homeLat: homeValid ? String(latNum) : null,

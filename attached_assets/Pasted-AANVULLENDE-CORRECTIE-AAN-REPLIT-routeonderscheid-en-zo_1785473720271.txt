@@ -1,0 +1,79 @@
+AANVULLENDE CORRECTIE AAN REPLIT — routeonderscheid en zoekgebied
+
+Er zijn twee concrete problemen zichtbaar in de huidige routeplanner.
+
+1. Meerdere routes zijn op de kaart onvoldoende van elkaar te onderscheiden
+
+Wanneer meerdere routevoorstellen tegelijk zichtbaar zijn, moet iedere route direct herkenbaar zijn.
+
+Gebruik niet alleen verschillende kleuren, maar ook verschillende lijnstijlen per fietstype:
+
+- wegroute: doorgetrokken lijn;
+- mountainbikeroute: grove stippellijn;
+- gravelroute: streep-stippellijn;
+- overige routeprofielen: eigen consistente lijnstijl.
+
+Aanvullende eisen:
+
+- iedere afzonderlijke route krijgt ook een eigen kleur;
+- kleur en lijnstijl blijven overal gelijk:
+  - kaart;
+  - routekaart;
+  - legenda;
+  - vergelijkingsweergave;
+  - hoogteprofiel indien meerdere routes worden vergeleken;
+- selectie van een route maakt die route duidelijk prominenter;
+- niet-geselecteerde routes blijven zichtbaar maar rustiger;
+- gebruik niet alleen kleur als onderscheid, vanwege toegankelijkheid;
+- toon een compacte legenda;
+- controleer contrast in lichte en donkere modus;
+- voorkom dat overlappende routes visueel samensmelten.
+
+2. Zoeken op plaatsnaam gebruikt een onjuist of te groot zoekgebied
+
+Wanneer de gebruiker bijvoorbeeld “Hengelo” invult, mogen niet standaard routes worden voorgesteld die tientallen kilometers verderop beginnen.
+
+Onderzoek en herstel:
+
+- welke Hengelo wordt gekozen;
+- hoe plaatsnaam, gemeente, provincie en coördinaten worden opgelost;
+- welke straal nu wordt gebruikt;
+- of routes op routezwaarte of geschiktheid worden gezocht zonder eerst het startgebied te respecteren;
+- of opgeslagen of geïmporteerde routes van buiten de regio onterecht worden meegenomen.
+
+Gewenst gedrag:
+
+- plaatsnaam eerst geocoderen naar een duidelijk startgebied;
+- bij meerdere plaatsen met dezelfde naam de gebruiker laten kiezen;
+- standaard uitsluitend routes tonen die binnen een redelijke straal rond het gekozen startpunt beginnen;
+- zoekstraal laten afhangen van routeafstand en profiel, maar nooit stilzwijgend tientallen kilometers afwijken;
+- toon afstand vanaf gekozen startpunt;
+- geef expliciet aan wanneer geen passende route dichtbij bestaat;
+- bied dan pas opties:
+  - zoekgebied vergroten;
+  - ander startpunt kiezen;
+  - nieuwe route laten genereren.
+
+Voorstel voor standaardgedrag:
+
+- eerst zoeken binnen ongeveer 5 km van het gekozen startpunt;
+- alleen na expliciete verruiming uitbreiden naar 10 km, 20 km of verder;
+- bewaar de gekozen zoekstraal niet automatisch als permanente voorkeur zonder duidelijke instelling.
+
+Test minimaal:
+
+- Hengelo Overijssel;
+- Hengelo Gelderland;
+- plaatsnamen die vaker voorkomen;
+- exacte straat/startpin;
+- gebruiker met eigen routes buiten de gekozen regio;
+- geen passende routes binnen 5 km;
+- routes die 20–50 km verderop beginnen;
+- mobiel en desktop;
+- meerdere routevoorstellen met grote overlap.
+
+Acceptatiecriterium
+
+Een gebruiker moet in één oogopslag kunnen zien welke route weg, gravel of MTB is en welke route geselecteerd is.
+
+Bij invoer van een plaatsnaam moeten de getoonde routes aantoonbaar in of direct rond het gekozen startgebied beginnen, tenzij de gebruiker zelf het zoekgebied verruimt.

@@ -45,6 +45,7 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 
 ## 6. Routes, GPX, course-points, technische gids & wedstrijdmodus — Volledig
 
+- **Plannerweergaven (B6, 31-07):** vier weergaveniveaus Gratis · Go gewone fietser · Go wielrenner/MTB/gravel · **Wedstrijd** (nooit "Compleet") — pure weergavelaag (`lib/planner-view.ts`, `use-planner-view.ts`, `planner-view-switcher.tsx`); automatisch voorstel uit profiel, handmatig aanpasbaar, bewaard in `athlete_profiles.planner_view` (NULL = automatisch, migratie 0006), los van abonnement; verborgen opties sturen nooit stiekem mee, veiligheid (blokkadepoort/verificatie/waarschuwingen) op élk niveau actief.
 - **Routes** (`/routes`, `pages/routes.tsx`): planner + generator (ORS via `lib/routing/providers/ors.ts`; echte routes of eerlijk niets; vrije-tekstwens alleen in rationale), routeketen (delen/versies/soft-delete, `route_shares`/`route_version_usages`), route-paspoort + POI's (Overpass), routevoorstellen (`routes/route-proposals.ts`), GPX-import (web + mobiel `gpx-import.tsx`), gereden rit als route bewaren.
 - **Technische gids:** documentanalyse via Anthropic document block → eerlijk gevonden/ontbreekt + deterministische vervolgvragen; verrijkt races en levert puntvoorstellen (`engines/document-analysis`, tabel `document_analyses`).
 - **Wedstrijdmodus mobiel:** `sparki-mobile/lib/race-mode.ts` — rondeteller via wrap-detectie, finish-cue alleen laatste ronde, POI's/verkeerslicht onderdrukt (11 tests).

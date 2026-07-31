@@ -207,3 +207,11 @@ persoonlijke etalagevenster van Sparki; visuele verbetering alleen is niet
 voldoende — niet als afgerond markeren vóór rollen/profielen aantoonbaar getest
 zijn (WP-T2 rolvarianten, WP-T3 debugweergave + testmatrix §10). Daarna volgen
 §15-C t/m H.
+
+**Bijsturing René 31-07-2026 (2):** #505 én #506 (Bewaard-tabblad één lijst)
+zijn definitief afgerond en bewezen — nooit meer heropenen of opnieuw vragen.
+De vier plannerweergaven (besluit B6: Gratis · Go gewone fietser ·
+Go wielrenner/MTB/gravel · **Wedstrijd** — nooit "Compleet") zijn 31-07 gebouwd
+als pure weergavelaag op de bestaande routemotor: automatisch voorstel uit het
+profiel, handmatig aanpasbaar, bewaard in `athlete_profiles.planner_view`,
+los van abonnement, veiligheid op elk niveau actief.
