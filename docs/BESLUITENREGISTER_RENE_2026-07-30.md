@@ -170,3 +170,15 @@ A rechtenlek (✅ bewezen 31-07) → B dit register + doc-updates → C routepla
 vier weergaven incl. Wedstrijd → D externe coach/planherkomst → E logging
 teamtrainerinzage + clubvoortgang → F zones/PDC/koolhydraat → G ramp-rate-voorstel
 → H overige UX-/documentatiebewijzen.
+
+---
+
+## SPARKI-BESLUIT-2026-009 — Downgrade-gedrag routes (besluit D1, 31-07-2026)
+
+- **Besluit (René, via ABONNEMENT_01/prioriteitsdocument 31-07-2026):** bij een
+  downgrade blijven **alle opgeslagen routes zichtbaar en alleen-lezen** totdat de
+  gebruiker zelf kiest welke drie routes actief blijven. Er verdwijnt niets, er wordt
+  niets automatisch verwijderd of onbereikbaar gemaakt.
+- **Gevolg:** hiermee is de laatste blokkade voor `ROUTE_PAKKET_02c` (opslag, verval
+  en downgrade) vervallen. De keuzeflow zelf wordt gebouwd in `ABONNEMENT_01`
+  (alleen de flow) en `02c` (opslag/verval); beide starten pas na expliciete vrijgave.

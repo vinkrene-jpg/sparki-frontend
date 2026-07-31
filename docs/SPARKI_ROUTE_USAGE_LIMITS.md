@@ -145,7 +145,9 @@ _Nog niet gebouwd._
 
 ## Hoofdstuk 3 — Opslag, verval en downgrade (02c)
 
-_Nog niet gebouwd._
+_Nog niet gebouwd._ Blokkade opgeheven per **SPARKI-BESLUIT-2026-009** (31-07-2026):
+bij downgrade blijven alle routes zichtbaar en alleen-lezen tot de gebruiker er
+drie kiest — er verdwijnt niets.
 
 ## Hoofdstuk 4 — Admin en fair use (02d)
 

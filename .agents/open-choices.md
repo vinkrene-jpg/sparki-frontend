@@ -7,6 +7,17 @@
 
 Laatst bijgewerkt: 2026-07-31.
 
+## Open (wachten op René)
+
+14. **Vrijgave drie voorbereide pakketten (31-07-2026)** — `DATA_TRUST_01` (aangevuld
+    met herstelprotocol/afhankelijkheden uit files_8), `ABONNEMENT_01` en
+    `DOCUMENTEN_COMMUNICATIE_01` staan klaar; geadviseerde volgorde: data-trust →
+    abonnement (na Mirror 02b) → documenten. Geen enkel pakket start zonder
+    expliciete vrijgave. Bijbehorende productpunten die t.z.t. bevestiging vragen:
+    legacy_unrestricted-dry-run (akkoord per account), degraded-gedrag (veiligheids-
+    keuze), geschatte onboarding-FTP tonen als schatting (voorstel), PDF-bibliotheek-
+    keuze (alleen melden vóór bouw).
+
 ## Geparkeerd (48-uurs afbouwsprint, besluit René 31-07-2026)
 
 > Besluit 3 van de sprint: open punten #10, #12 en #13 blokkeren niet en zijn
