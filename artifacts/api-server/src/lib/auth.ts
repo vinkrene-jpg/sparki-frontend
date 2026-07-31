@@ -7,8 +7,12 @@ import { db, userProfilesTable } from "@workspace/db";
 // flag. Keying off NODE_ENV alone is brittle — a misconfigured/staging
 // deployment running with non-production NODE_ENV would otherwise silently grant
 // access as a fallback user. The flag defaults OFF and must be set deliberately.
+// Additionally: any Replit DEPLOYMENT (REPLIT_DEPLOYMENT set) is treated as
+// production-equivalent regardless of NODE_ENV — a misconfigured staging deploy
+// must never expose identity impersonation.
 const IS_DEV =
   process.env.NODE_ENV !== "production" &&
+  !process.env.REPLIT_DEPLOYMENT &&
   process.env.DEV_AUTH_BYPASS === "true";
 
 // In development, requests without a real Clerk session resolve to a dev user so

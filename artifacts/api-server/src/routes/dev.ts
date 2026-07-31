@@ -1,6 +1,13 @@
 import { Router } from "express";
 import { eq, inArray } from "drizzle-orm";
-import { db, userProfilesTable, athleteProfilesTable } from "@workspace/db";
+import {
+  db,
+  userProfilesTable,
+  athleteProfilesTable,
+  clubMembersTable,
+} from "@workspace/db";
+import { isNull, and } from "drizzle-orm";
+import { isAdmin } from "../lib/flags";
 import { resolvePersonality } from "../engines/observation";
 import { PREVIEW_PERSONAS } from "../lib/preview-athletes";
 
@@ -49,6 +56,7 @@ router.get("/preview-athletes", async (req, res) => {
         clerkId: userProfilesTable.clerkId,
         displayName: userProfilesTable.displayName,
         activeRole: userProfilesTable.activeRole,
+        isHeadTester: userProfilesTable.isHeadTester,
         entitlementMode: userProfilesTable.entitlementMode,
         productVariant: userProfilesTable.productVariant,
         birthYear: athleteProfilesTable.birthYear,
@@ -63,6 +71,18 @@ router.get("/preview-athletes", async (req, res) => {
       )
       .where(inArray(userProfilesTable.clerkId, ids));
 
+    // WP-R0: actieve clubrol per identiteit (eerlijk: alleen wat echt in
+    // club_members staat), zodat clubbeheerder/mechanieker/ploegleider — die
+    // app-rol "athlete" hebben — hun échte clubrol in de kiezer tonen.
+    const clubRows = await db
+      .select({
+        clerkId: clubMembersTable.clerkId,
+        role: clubMembersTable.role,
+      })
+      .from(clubMembersTable)
+      .where(and(inArray(clubMembersTable.clerkId, ids), isNull(clubMembersTable.endedAt)));
+    const clubRoleById = new Map(clubRows.map((r) => [r.clerkId, r.role]));
+
     const byId = new Map(rows.map((r) => [r.clerkId, r]));
     const athletes = PREVIEW_PERSONAS.flatMap((p) => {
       const r = byId.get(p.clerkId);
@@ -72,6 +92,11 @@ router.get("/preview-athletes", async (req, res) => {
       // Rol
       if (r.activeRole === "coach") parts.push("coach");
       else if (r.activeRole === "parent") parts.push("ouder");
+      // Clubrol + echte rechten (alleen wat server-side echt geldt)
+      const clubRole = clubRoleById.get(r.clerkId);
+      if (clubRole) parts.push(`club: ${clubRole}`);
+      if (isAdmin(r.clerkId)) parts.push("admin");
+      if (r.isHeadTester) parts.push("hoofdtester");
       // Leeftijd (alleen tonen als bekend; jeugdregels hangen hieraan)
       const age = computeAgeFrom(r.birthDate, r.birthYear);
       if (age != null && r.activeRole === "athlete") parts.push(`${age} jr`);

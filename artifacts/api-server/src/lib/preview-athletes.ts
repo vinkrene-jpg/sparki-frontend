@@ -9,7 +9,11 @@
 // krijgen hier een regel + een spec in de seed zodra de rol echt bestaat in
 // het systeem. We faken geen rollen die de app nog niet kent.
 
-export type PreviewPersonaGroup = "Atleten" | "Abonnement" | "Rol & leeftijd";
+export type PreviewPersonaGroup =
+  | "Atleten"
+  | "Abonnement"
+  | "Rol & leeftijd"
+  | "Rollen (testfixtures)";
 
 export type PreviewPersona = {
   clerkId: string;
@@ -34,6 +38,22 @@ export const PREVIEW_PERSONAS: readonly PreviewPersona[] = [
   { clerkId: "seed_persona_renster", group: "Rol & leeftijd" },
   { clerkId: "seed_persona_coach", group: "Rol & leeftijd" },
   { clerkId: "seed_persona_ouder", group: "Rol & leeftijd" },
+  // WP-R0: rol-testidentiteiten (governor-fixtures, `governor-role-fixtures.ts
+  // create`). Server-side EXACT dezelfde rechten als productie — rollen zonder
+  // werkomgeving tonen eerlijk hun huidige (lege/kapotte) toestand.
+  { clerkId: "governor-fixture-parent", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-trainer-zelfstandig", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-trainer-1", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-trainer-2", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-hoofdtrainer", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-clubbeheerder", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-ploegleider", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-mechanieker", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-admin", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-tester", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-athlete-adult", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-athlete-jeugd", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-athlete-compleet", group: "Rollen (testfixtures)" },
 ] as const;
 
 export const PREVIEW_CLERK_IDS = PREVIEW_PERSONAS.map((p) => p.clerkId);

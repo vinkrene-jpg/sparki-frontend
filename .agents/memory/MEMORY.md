@@ -65,7 +65,6 @@
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
 - Datum-traps: [UTC off-by-one](local-date-utc-trap.md) toISOString().slice(0,10) = UTC-dag, NL-dagen via local getters; [exacte leeftijd](sparki-exact-age.md) altijd computeAge op volledige DOB.
-- [Playwright op NixOS](nix-playwright-chromium.md) — bundled Chromium faalt (libnspr4); Nix-pakket `chromium` + executablePath werkt; .cache/ms-playwright opruimen.
 - [Long-running jobs in this sandbox](sandbox-background-jobs.md) — nohup/setsid bg jobs die at tool-call boundaries; run long one-shot jobs as a console workflow + poll.
 - [Sparki profile-consistency questions](sparki-profile-consistency.md) — notice→ask→confirm→correct; only user-set values questioned, write path re-verifies + compare-and-set, answers suppress ~45d.
 - [FTP floor derivation](sparki-ftp-floor.md) — no power curve stored ⇒ exact FTP underivable; only honest lower bound (45–120min NP, 0.95×20–45min NP), raises estimated FTP only, per-day idempotent history.
@@ -73,7 +72,7 @@
 - [Sparki derived belastingscore](sparki-derived-tss.md) — TSS derived from power+FTP at ingest + boot self-heal; `[achterhaald]` prefix is the ONLY valid format for ftp_history derived rows (other formats bypass the filter); advisory locks need ONE client.
 - [Sparki Doelen-engine](sparki-goals-engine.md) — derived goals never duplicated as rows; dedupe = DB unique index+onConflict (not read-then-insert); per-day checks compare Amsterdam local date.
 - Testpatronen: [scheduled-tasks test](sparki-scheduled-tasks-test.md) seed één verse trace per job; [cross-account isolation](cross-account-isolation.md) clerkId-filter, nutrition DELETE = stille 200 (assert row survives).
-- Deploy/bundle: [bundle anatomy](sparki-bundle-anatomy.md) multi-MB = server-esbuild, echte winst = route-lazy; [liveness bare /api](deploy-liveness-bare-api.md) api-router heeft get("/") nodig of republish flapt.
+- Deploy/bundle: [bundle anatomy](sparki-bundle-anatomy.md) multi-MB = server-esbuild, route-lazy wint; [liveness](deploy-liveness-bare-api.md) get("/") nodig; [8 GiB-limiet](deploy-image-size-limit.md); [history cleanup](git-history-cleanup.md).
 - Test-infra traps: [build race](api-server-test-build-race.md) dist/ strikt sequentieel + semaphore ([storm](test-workflow-boot-storm.md)); [tsx ENOENT](tsx-runner-enoent.md) draai via pnpm run; [pino](pino-worker-transport-flaky.md) sync stream in tests.
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
 - [Sparki Today Orchestrator](sparki-today-orchestrator.md) — engines/today rangschikt Vandaag (urgent>actie>§7>inzicht>rotatie); insight-body nooit state.status (dubbel met CoachBoodschap); WP-T2/T3 open.
@@ -142,9 +141,8 @@
 - [Sparki gedeelde layout-shell](sparki-shared-shell.md) — CommercialShell enige chrome-eigenaar; ScreenShell delegeert, nooit eigen shell/bg ([commerciële schil](sparki-commercial-shell.md): copy via één COMMERCIAL_COPY const, `hidden lg:` dropt mobiel).
 - [Sparki bewijsarchief](sparki-bewijsarchief.md) — evidence files live in bewijsarchief/ + SHA-256 inventory; never modify/delete; public export-zips only removed after byte-identical verified private copy.
 - [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
-- Repo/deploy-hygiëne: [8 GiB-imagelimiet](deploy-image-size-limit.md) export-zips/test-bundels weren; [history cleanup](git-history-cleanup.md) filter-repo verwijdert origin-remote, LFS blijft tot handmatige delete.
 - [Sparki e2e-harness (WP-S1)](sparki-e2e-harness.md) — BINDEND: schermacceptatie alleen via echte browserklik (e2e/), DEV Preview nooit bewijs; isAdmin strikt zonder dev-bypass.
-- Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
+- Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp; [NixOS-chromium](nix-playwright-chromium.md) via Nix-pakket + executablePath.
 - [Sparki Gratis vs Go paywall](sparki-go-paywall.md) — GO_FEATURE_KEYS commercieel-only gate (nooit via flags); UI faalt open; admin.ts bad-merge-corruptie herstel uit parent-commit.
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
 - [Sparki observatie-opschoning](sparki-observation-cleanup.md) — auditbare cleanup-job (status "outdated", nooit delete); draait automatisch 1×/Amsterdamse dag; admin POST /api/admin/observation-cleanup voor on-demand.
@@ -153,7 +151,7 @@
 - [Meer-menu chapters SSOT](sparki-meer-chapters.md) — core-meer dropt ontbrekende chapters STIL via filter(Boolean); /samen-contract bewaakt door test:navigation.
 - Trainerlaag: [werkruimte](sparki-trainer-workspace-wp01.md) hasCoachAccess = link ∪ clubtoewijzing; [tiers](sparki-trainer-access-tiers.md) schrijfacties eisen DIRECTE link; [rechten/privénotities](sparki-trainer-rights-wp01c.md) owner-only; [hoofdtrainer](sparki-hoofdtrainer.md) org-overzicht zonder gezondheidsdata.
 - [Sparki cluborganisatie](sparki-club-organisation.md) — wrapped unique-violation via err.cause; ÉÉN advisory-lock-key voor alle capacity-paden; activeAssignmentWindow op elk leespad.
-- [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures met strikte delete-handtekening + advisory lock; GO↔COMPLETE-besluit open.
+- [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures strikte delete + advisory lock; governor-fixtures zijn óók de WP-R0 rol-testidentiteiten (dev-admin via dev-env SPARKI_ADMIN_IDS; e2e-probes MOETEN x-dev-clerk-id meesturen zoals apiFetch, kale fetch = dev-fallback).
 - [Overpass burst rate-limits](overpass-burst-rate-limits.md) — recursieve kwadrant-splitsing vuurt query-bursts; mirrors 429'en dan — pauze tussen queries + één beleefde retry, eerlijk gat blijft.
 - [Blokkadepoort koude-cache fail-open](sparki-blokkadepoort-fail-open.md) — 1e aanvraag in vers gebied lekt route door locked gate (2500ms budget vs Overpass 10-20s); warm = 422; bewijs eist warme cache.
 - [Ritgeschiedenis-routekandidaten](sparki-ridden-route-candidates.md) — "route candidates" is al de provider-store (naamclash!); ritten-engine apart; save altijd door blokkadepoort; nieuwe tabellen eisen SQL-migratie naast push.

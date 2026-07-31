@@ -189,7 +189,7 @@ router.use("/billing", billingRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== "production" && !process.env.REPLIT_DEPLOYMENT) {
   router.use("/dev", devRouter);
 }
 
