@@ -87,3 +87,16 @@ Voor elk CSV-item zijn UI/API, veld, bron, user-binding, gedrag bij ontbrekende 
 - 6 achtergebleven dev-testaccounts (`test_*`) destijds verwijderd; `dev_qa_athlete` bewust behouden als Development Preview-gebruiker.
 - Drie structurele fouten hersteld: Strava-import zet `ftpEstimated=false` + dedupliceert per dag; fiets-autokoppeling koppelt alleen vanaf registratiedatum + zelfherstel voor historische foutkoppelingen; schattingen tonen "(schatting)" in UI.
 - Waarborgen sindsdien: admin-gegevensbroncontrole, `test:data-trust`-regressietest, admin-opschoning met verplichte droogdraai.
+
+---
+
+## Update 31-07-2026 — audit-/loggingbesluiten René 30-07
+- **Teamtrainerinzage (B4):** individuele data-inzage door een teamtrainer wordt
+  verplicht gelogd (trainer, sporter, datatype, tijdstip, context); ploegleider
+  kan de logging achteraf inzien; geen toegang buiten team/geldige relatie.
+- **VOG (B3):** nooit een kopie/afbeelding opslaan — uitsluitend metadata met
+  auditlog; UI onderscheidt zelf-geregistreerd vs door clubbeheerder gecontroleerd.
+- **Extern plan (B2):** veiligheidswaarschuwing + gebruikersbeslissing worden gelogd.
+- **Berichten-audit (B1):** dev + productie read-only gecontroleerd: 0 berichten
+  van coaches zonder geaccepteerde directe link; niets gewist.
+- Bron: `docs/BESLUITENREGISTER_RENE_2026-07-30.md`.

@@ -156,3 +156,19 @@ Vooruitgang is niet het aantal commits, agents, drafts, documenten of groene tes
 Vooruitgang is:
 
 > Een volledige gebruikersketen die aantoonbaar aan de vastgelegde belofte voldoet en waarbij René in de praktijktest hooguit kleine resterende details vindt.
+
+## 11. Besluiten René 30-07-2026 (aanvullende opdracht) — bindend
+
+De aanvullende opdracht van 30-07-2026 is verwerkt in het canonieke
+`docs/BESLUITENREGISTER_RENE_2026-07-30.md` (B1–B13). Kern voor dit addendum:
+
+- **Oplevervolgorde §15 is bindend** en gaat vóór eerdere prioriteitsvolgordes:
+  A rechtenlek (bewezen 31-07-2026) → B besluiten in docs → C routeplanner vier
+  weergaven incl. **Wedstrijd** (niet "Compleet") → D externe coach/planherkomst →
+  E inzage-/voortgangslogging → F zones/PDC/koolhydraat → G ramp-rate-VOORSTEL →
+  H overige bewijzen.
+- Hoofdstuk J-beperking "assignment-only trainer mag schrijven" is opgeheven en
+  omgekeerd bewezen (besluitenregister B1).
+- Open blijven uitsluitend: KNWU-verificatie (B13), Samen-nav-positie (B10),
+  definitieve ramp-rate-grens (B9). Geen niet-goedgekeurde beleidskeuzes
+  zelfstandig invoeren; waar een voorstel gevraagd is eerst voorstel + akkoord.

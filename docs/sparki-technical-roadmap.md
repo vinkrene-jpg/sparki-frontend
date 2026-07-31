@@ -184,3 +184,15 @@ All new tables key off `clerkId`. Dead `conversations`/`messages` schemas were r
 - Dutch UI maintained; AI is honest (no fabricated metrics).
 - The Sparki cinematic design language (dark blue-black, cyan accent, glass cards,
   Inter Variable) was preserved across all new panels.
+
+---
+
+## Roadmap-update 31-07-2026 — besluiten René 30-07 (bindend, §15)
+
+Volgorde: A rechtenlek assignment-only trainer (✅ bewezen 31-07) → B besluiten
+in canonieke docs (dit register: `docs/BESLUITENREGISTER_RENE_2026-07-30.md`) →
+C routeplanner vier weergaven incl. **Wedstrijd** → D externe coach + plan-upload
++ herkomstsysteem → E logging teamtrainerinzage + clubvoortgang → F individuele
+vermogenszones, instelbaar PDC-venster, koolhydraat-pilot → G ramp-rate-VOORSTEL
+(bouwen pas na akkoord René) → H overige UX-/documentatiebewijzen.
+Open uitsluitend: KNWU-verificatie, Samen-nav-positie, ramp-rate-grens.

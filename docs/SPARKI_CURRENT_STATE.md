@@ -104,3 +104,15 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 ---
 
 **Samenvattend:** 22 gecontroleerde modulegebieden; 19 Volledig, 3 met een eerlijk gecommuniceerde beperking (e-mailbezorging, BLE buiten native build, Garmin/Wahoo-sync voorbereid). Geen placeholders of onbereikbare functies aangetroffen.
+
+---
+
+## Update 31-07-2026 — trainerrechten (besluit B1)
+
+Sectie 3 (coachomgeving) aangescherpt per besluit René 30-07-2026: individuele
+berichten en alle individuele schrijfacties vereisen een directe geaccepteerde
+coach-sporterlink; een club-/teamtoewijzing geeft alleen de vastgelegde
+lees-/begeleidingsrechten. Server-side afgedwongen en bewezen
+(`test:trainer-assignment-messages` 9/9, `test:trainer-assignment-write-contract`
+5/5); coach-startpagina biedt de individuele cockpit niet meer aan voor
+team-toegewezen sporters. Volledig register: `docs/BESLUITENREGISTER_RENE_2026-07-30.md`.

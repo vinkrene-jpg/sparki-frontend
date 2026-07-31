@@ -3959,7 +3959,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       practice_status: "Clubomgeving en trainer-werkruimte draaien in dev en zijn door testers gebruikt; een trainer die tegelijk directe links én clubtoewijzingen heeft is nooit gericht in de praktijk getest."
       known_limitations:
         - "Er is geen expliciet access_context-veld; 'independent' = directe link, 'club/team' = toewijzing. Zolang rechten strikt per relatie worden afgeleid is dat equivalent, maar het onderscheid independent-met-abonnement vs gratis directe link bestaat nog niet: er is geen 'Sparki-trainer-abonnement' in de entitlement-laag (lib/entitlements.ts kent Go-tier/feature keys en club_subscriptions, geen trainer-product)."
-        - "Bestaand afwijkend contract: een assignment-only trainer mag nu coach-berichten schrijven (201) — src/tests/trainer-assignment-write-contract.ts. Dat is ruimer dan het vastgestelde model en moet bij implementatie expliciet worden herbeslist of dichtgezet."
+        - "OPGELOST 31-07-2026 (besluit René 30-07, besluitenregister B1): het oude taak-412-contract (assignment-only trainer mocht berichten schrijven, 201) is omgeklapt en dichtgezet — assignment-only = 403 + nul rijen, bewezen met src/tests/trainer-assignment-write-contract.ts (5/5) én src/tests/trainer-assignment-message-rights.ts (9/9, endpoint-manipulatie + UI-gating + DB-audit dev/prod zonder lek-rijen)."
         - "Multi-context-stapeling (zelfde trainer, zelfde renner via twee wegen) heeft geen eigen test; het no-leak-principe steunt nu op het feit dat elke route zelf de juiste relatie checkt."
 
     proposed_promise:
