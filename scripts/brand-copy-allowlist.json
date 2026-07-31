@@ -29,14 +29,6 @@
     "reason": "Appnaam: gebruik van de app, juridische akkoordvraag."
   },
   {
-    "file": "artifacts/sparki/src/components/sparki/feedback-sheet.tsx",
-    "reason": "Product/organisatie als geheel (feedback over Sparki zelf)."
-  },
-  {
-    "file": "artifacts/sparki/src/pages/tester-welcome.tsx",
-    "reason": "Testersupport: product/organisatie als geheel."
-  },
-  {
     "file": "artifacts/sparki/src/components/sparki/insights-section.tsx",
     "contains": "kennismaking met Sparki",
     "reason": "Product als geheel (onboarding-kennismaking)."
@@ -82,10 +74,6 @@
     "reason": "Databron-/appnaamlabel."
   },
   {
-    "file": "artifacts/api-server/src/engines/reminders/deliver.ts",
-    "reason": "Formele e-mail: appnaam en afzendernaam toegestaan."
-  },
-  {
     "file": "artifacts/api-server/src/lib/ai/gateway.ts",
     "contains": "vraag van Sparki",
     "reason": "Prompt-interne systeeminstructie, geen UI-tekst."
@@ -106,12 +94,58 @@
     "reason": "Standaard bestandsnaam-label bij export (appnaam)."
   },
   {
-    "file": "artifacts/api-server/src/lib/health/checks.ts",
-    "reason": "Admin-healthcheck: beschrijft het systeem/product als geheel."
-  },
-  {
     "file": "artifacts/api-server/src/routes/ai.ts",
     "contains": "Atleetcontext:",
     "reason": "Prompt-interne tekst richting het model, geen UI-tekst."
+  },
+  {
+    "file": "artifacts/sparki/src/components/sparki/feedback-sheet.tsx",
+    "contains": "Wat zou Sparki beter of slimmer kunnen doen",
+    "reason": "Feedback over het product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/components/sparki/feedback-sheet.tsx",
+    "contains": "Help Sparki beter worden",
+    "reason": "Feedback over het product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/tester-welcome.tsx",
+    "contains": "waar Sparki naartoe groeit",
+    "reason": "Testercontext: product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/tester-welcome.tsx",
+    "contains": "Sparki echt op de proef stelt",
+    "reason": "Testercontext: product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/tester-welcome.tsx",
+    "contains": "Sparki scherper te maken",
+    "reason": "Testercontext: product als geheel."
+  },
+  {
+    "file": "artifacts/api-server/src/engines/reminders/deliver.ts",
+    "contains": "Open Sparki om verder te gaan",
+    "reason": "Formele e-mail: appnaam."
+  },
+  {
+    "file": "artifacts/api-server/src/engines/reminders/deliver.ts",
+    "contains": "in Sparki onder Profiel",
+    "reason": "Formele e-mail: appnaam als vindplaats."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/health/checks.ts",
+    "contains": "Controleert of Sparki slimme samenvattingen",
+    "reason": "Admin-healthcheck: systeem als geheel."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/health/checks.ts",
+    "contains": "Sparki en coaches missen de feedback",
+    "reason": "Admin-healthcheck: systeem als geheel."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/health/checks.ts",
+    "contains": "door Sparki gebouwde onderdelen",
+    "reason": "Admin-healthcheck: systeem als geheel."
   }
 ]

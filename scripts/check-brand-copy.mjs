@@ -38,7 +38,6 @@ function isCodeNotCopy(line) {
     t.startsWith("*") ||
     t.startsWith("/*") ||
     t.startsWith("{/*") ||
-    line.includes("/*") ||
     /^import\b/.test(t) ||
     /^export\s+(type|interface)\b/.test(t) ||
     // log-/debugregels zijn geen UI-copy
@@ -61,9 +60,22 @@ function inStringOrJsx(line) {
 }
 
 function allowed(rel, line) {
-  return allowlist.some(
-    (e) => rel.startsWith(e.file) && (!e.contains || line.includes(e.contains)),
-  );
+  // Exacte bestandsmatch; alleen mappen (eindigend op "/") mogen als prefix.
+  return allowlist.some((e) => {
+    const fileMatch = e.file.endsWith("/")
+      ? rel.startsWith(e.file)
+      : rel === e.file;
+    return fileMatch && (!e.contains || line.includes(e.contains));
+  });
+}
+
+// Haal commentaargedeelten weg vóór de controle, zodat verboden copy NA een
+// commentaar op dezelfde regel niet meelift op de commentaarvrijstelling.
+function stripComments(line) {
+  return line
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/\/\*.*?\*\//g, "")
+    .replace(/(^|\s)\/\/(?!\S*:\/\/).*$/, "$1");
 }
 
 function* walk(dir) {
@@ -90,7 +102,8 @@ for (const dir of SCAN_DIRS) {
     if (/\/(tests|scripts|__tests__)\//.test(rel) || /\.test\./.test(rel))
       continue;
     const lines = readFileSync(file, "utf8").split("\n");
-    lines.forEach((line, i) => {
+    lines.forEach((rawLine, i) => {
+      const line = stripComments(rawLine);
       if (!THIRD_PERSON.test(line)) return;
       // Regel is pas fout als er een treffer overblijft nadat toegestane
       // combinaties zijn weggehaald.
