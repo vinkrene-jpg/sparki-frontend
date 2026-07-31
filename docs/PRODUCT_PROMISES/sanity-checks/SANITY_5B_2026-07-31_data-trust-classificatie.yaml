@@ -1,0 +1,34 @@
+# Poort 5b sanity-check — DATA_TRUST_01: centrale classificatie + zeven toestanden
+# Opdracht: attached_assets/files_7_uitgepakt/DATA_TRUST_01_REPLIT_OPDRACHT.md.
+
+delivery: "Centrale server-side data-trust-classificatie (7 klassen als lezing van bestaande herkomstvelden, engines/data-origin/classification.ts) met trust-blok op alle explain-antwoorden; zeven-toestandencontract via GET /api/data-origin/state/:domein (sessies/kalender/belasting) + gedeeld web-component DataStateNotice op Activiteiten, Kalender en Lab; geschatte onboarding-FTP overal '(geschat)' gelabeld (Lab-kop, Analyse-tegel, Sportpaspoort bestond al) en uitgesloten als brondata voor TSS/IF-afleiding en de Vermogen-as van de Performance Radar; admin-gegevensbroncontrole toont testidentiteit + klasse; mappingdocument docs/SPARKI_DATA_TRUST_CLASSIFICATIE.md identiek aan de code."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/activiteiten (echt scherm, dev — echte 40 ritten van het testaccount, geen mock; screenshot sanity-checks/screenshots/data-trust-activiteiten.jpg)"
+  - "/analyse (echt scherm, dev — FTP-tegel eerlijk leeg bij ontbrekende FTP, belastingscijfers uit echt belastingsmodel; screenshot sanity-checks/screenshots/data-trust-analyse.jpg)"
+  - "GET /api/data-origin/state/{sessies,belasting,onzin} live via curl op de draaiende dev-server (200/200/400, toestand 'ok' bij 40 echte sessies)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "DataStateNotice-acties: 'Naar koppelingen' (Activiteiten) navigeert naar /you?focus=connections; 'Opnieuw proberen' bij een falende toestand-query doet een echte refetch (Lab/Kalender). Bij toestand ok rendert het component bewust niets — geen loze banner."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Zeven toestanden zichtbaar onderscheiden i.p.v. één lege doos: geen_data/onvoldoende_data/verouderd/sync_bezig/providerfout server-side bepaald (bindende volgorde, providerfout ook mét bestaande data), rechten (401/403) en technische fout (5xx) via HTTP-status. Kalender is gebruikersgepland: sync-toestanden daar bewust niet van toepassing (gedocumenteerd)."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Geschatte FTP telt nergens meer als echte brondata: TSS/IF blijven null bij ftpEstimated=true (bewezen in test), radar-Vermogen-as leeg met reden 'nog een schatting', labels '(geschat)' in Lab en Analyse. UNKNOWN/TEST_ONLY/MOCK_OR_DEMO gelden nooit als echt (isRealUserData). CSV F01–F18 opnieuw geverifieerd: alle 18 regels accuraat."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): bewijs = test:data-trust 24/24 (incl. mapping,
+# providerfout-mét-data, geschatte-FTP-uitsluiting), typecheck-api + admin-smoke
+# 13/13 groen, live curl-bewijs op de herstartte dev-server en twee echte
+# schermcontroles. De toestanden verouderd/sync_bezig/providerfout zijn via
+# test-seeds bewezen, niet met een echte kapotte provider; screenshots van álle
+# zeven toestanden op desktop+mobiel staan nog open voor de Mirror-toets.
+# Productbesluit gemeld (open-choices 17): zones/plangeneratie/pacing gebruiken
+# de geschatte FTP nog wél — keuze a/b ligt bij René.
+verdict: "deliverable"
