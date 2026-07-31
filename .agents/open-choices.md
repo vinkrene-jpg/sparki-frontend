@@ -291,3 +291,10 @@ Laatst bijgewerkt: 2026-07-31.
   toestemming opslaan/analyseren (privacy-gated, geen fabricatie).
 - **2026-06-28 — V2-dekkingsaudit:** afgerond, opgeleverd als `SPARKI_V1_COVERAGE_AUDIT.md`.
 - [geparkeerd, na release] Lichte look app-breed (wens Dylan/René, 28-7-2026): pas oppakken als de release achter de rug is; aanpakroute (alles licht / instelling / alleen leesschermen) dan opnieuw voorleggen.
+
+15m. **TEAM_ABONNEMENT_01 rolmapping (besloten 31-07-2026, door Replit, te bekrachtigen door René):**
+   de elf gevraagde teamrollen zijn gemapt op het bestaande rolmodel (Eigenaar=owner,
+   Teammanager/Ploegleider=teammanager, Assistent-trainer=assistent, Ouder=parent,
+   Renner=member, Gast=alleen_lezen) met slechts twee additieve rollen: soigneur en medic
+   (least privilege). Aparte "ploegleider"-rolnaam wacht bewust op CLUB_RECHTEN_01/pakket 14
+   om een rollenconflict te voorkomen. Terugdraaien of hernoemen kan daar alsnog.
