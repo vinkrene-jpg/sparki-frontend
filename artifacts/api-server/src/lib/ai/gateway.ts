@@ -22,7 +22,6 @@
 // (expectJsonObject, limitText, UPLOAD_DATA_RULE) zodat call sites hun
 // bestaande contracten behouden en alleen aanscherpen.
 
-import { anthropic } from "@workspace/integrations-anthropic-ai";
 import type Anthropic from "@anthropic-ai/sdk";
 import { db, aiCallLogsTable, athleteProfilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -606,11 +605,15 @@ type Transport = (
   opts: { timeout: number; maxRetries: number },
 ) => Promise<Anthropic.Message>;
 
-let transport: Transport = (params, opts) =>
-  anthropic.messages.create(params, opts) as Promise<Anthropic.Message>;
+const defaultTransport: Transport = async (params, opts) => {
+  const { anthropic } = await import("@workspace/integrations-anthropic-ai");
+  return anthropic.messages.create(params, opts) as Promise<Anthropic.Message>;
+};
+
+let transport: Transport = defaultTransport;
 
 export function __setAiTransportForTests(t: Transport | null): void {
-  transport = t ?? ((params, opts) => anthropic.messages.create(params, opts) as Promise<Anthropic.Message>);
+  transport = t ?? defaultTransport;
 }
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
