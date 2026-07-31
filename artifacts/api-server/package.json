@@ -117,6 +117,7 @@
     "test:entitlements": "node ./scripts/run-test.mjs entitlements",
     "test:ride-story": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ride-story",
     "test:sprint": "node ./scripts/run-test.mjs sprint",
+    "test:sprints-stop": "node ./scripts/run-test.mjs sprints-stop",
     "test:mental": "node ./scripts/run-test.mjs mental",
     "test:today-orchestrator": "node ./scripts/run-test.mjs today-orchestrator",
     "test:terugblik": "node ./scripts/run-test.mjs terugblik",

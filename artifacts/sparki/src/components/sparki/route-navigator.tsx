@@ -43,12 +43,10 @@ import {
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import type { RouteNavCue } from "@/hooks/use-routes"
-import {
-  makeSprintClientKey,
-  useSprintBoards,
-  useSubmitSprint,
-  type SprintBoard,
-} from "@/hooks/use-sprints"
+// Bordjes sprinten is GESTOPT (veiligheidsrisico op openbare weg, besluit
+// 31-07-2026): het volledige spelmechaniek is uit deze actieve navigator
+// verwijderd. De herbruikbare inventaris leeft alleen nog in de bewust
+// niet-geroute /sprinten-pagina en engines/sprint op de server.
 import { usePowerMeter } from "@/hooks/use-power-meter"
 import { useNavSettings, type NavDataField } from "@/hooks/use-nav-settings"
 import { useFriends } from "@/hooks/use-social"
@@ -102,7 +100,6 @@ const ARROW_CASING = "#05121f" // donkere rand onder richtingpijlen
 const ARROW_WHITE = "#ffffff" // pijl zelf
 const DETOUR_LINE = "#fbbf24" // omleidingslijn (amber-400)
 const RIDER_ACCENT = "#38bdf8" // renner-badge (sky-400)
-const SPRINT_YELLOW = "#facc15" // sprintgeel (bordjes-sprint)
 const MARKER_POSITIVE = "#4ade80" // groen markeraccent (green-400)
 const MARKER_NEUTRAL = "#e5e7eb" // lichtgrijs (finishvlag)
 
@@ -414,7 +411,7 @@ export function RouteNavigator({
   // klimprofieltje en het stijgingspercentage ter plekke.
   elevationProfile?: number[] | null
   onClose: () => void
-  // When this is a saved route, sprint boards ("bordjes") are detected for it.
+  // Id van de bewaarde route (null bij een niet-bewaarde kandidaat).
   routeId?: number | null
   // Geplande training met blokken voor deze rit — live getoond als tijdblokken
   // versus zone/wattage, zodat de renner ziet wanneer een interval begint en
@@ -515,8 +512,7 @@ export function RouteNavigator({
   // choice at the start of a ride, so it lives behind a collapsible panel and
   // isn't permanently on screen.
   const [setupOpen, setSetupOpen] = useState(false)
-  // Sprinting for "bordjes" only makes sense in a group ride, so it is opt-in.
-  // De keuze wordt normaal al bij het genereren van de route gemaakt en reist
+  // Samen rijden is opt-in. De keuze wordt normaal al bij het genereren van de route gemaakt en reist
   // mee via de URL (?samen=1&maten=…); de toggle hier blijft als override.
   const [withOthers, setWithOthers] = useState(() =>
     rideOptions
@@ -740,8 +736,6 @@ export function RouteNavigator({
     setRideState("paused")
   }
 
-  // ── Bordjes sprinten ──────────────────────────────────────────────
-  const submitSprint = useSubmitSprint()
   const power = usePowerMeter()
   // Saved wireless parts from the Fietsengarage — shown at ride start so the
   // rider recognises their own sensors. Only kinds the browser can really pair
@@ -768,40 +762,6 @@ export function RouteNavigator({
       }, 400)
     }
   }
-  // GESTOPT (besluit 31-07-2026): Bordjes sprinten is stopgezet wegens
-  // veiligheidsrisico op de openbare weg. De borddetectie wordt bewust NIET
-  // meer opgevraagd (null ⇒ query uit), waardoor het hele sprintspel —
-  // markers, aankondigingen, scoring, overlays — nooit meer activeert. De
-  // onderliggende code is bewaard als herbruikbare inventaris voor een
-  // eventuele latere variant op afgesloten terrein.
-  const boardsQuery = useSprintBoards(null)
-  const boards = boardsQuery.data?.boards ?? []
-
-  const boardMarkersRef = useRef<L.Marker[]>([])
-  // Rolling speed samples (km/h) with timestamps, for gain/peak over a sprint.
-  const speedHistRef = useRef<{ t: number; kmh: number }[]>([])
-  // Boards already dealt with (passed or cancelled) — keyed by km so a board is
-  // never double-counted within one navigation session.
-  const doneBoardsRef = useRef<Set<number>>(new Set())
-  // Board km we've already spoken a cue for, so we announce each sign once.
-  const spokenBoardRef = useRef<number | null>(null)
-  // On the first GPS fix we mark boards already behind us as done (not scored),
-  // so starting mid-route never retro-awards points.
-  const seededBehindRef = useRef(false)
-
-  // Board we're closing in on (within arming range and not yet handled).
-  const [armedBoard, setArmedBoard] = useState<SprintBoard | null>(null)
-  // Finished sprint result shown briefly with the points earned.
-  const [sprintResult, setSprintResult] = useState<{
-    board: SprintBoard
-    peakKmh: number
-    gainKmh: number
-    peakWatts: number | null
-    basePoints: number
-    bonusPoints: number
-    totalPoints: number
-  } | null>(null)
-
   followRef.current = following
 
   const path: LatLon[] = useMemo(
@@ -1991,172 +1951,10 @@ export function RouteNavigator({
     )
   }, [location])
 
-  // Draw sprint boards on the map once, whenever the set changes — only in a
-  // group ride, where sprinting for bordjes is the point.
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    for (const m of boardMarkersRef.current) map.removeLayer(m)
-    boardMarkersRef.current = []
-    if (!withOthers) return
-    for (const b of boards) {
-      const icon = L.divIcon({
-        className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:${SPRINT_YELLOW};color:${MAP_INK};font-weight:800;font-size:12px;border:2px solid ${MAP_INK};box-shadow:0 0 8px rgba(250,204,21,0.7);transform:rotate(var(--map-counter-rot,0deg));"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
-      })
-      const m = L.marker([b.lat, b.lon], { icon })
-        .addTo(map)
-        .bindTooltip(b.placeName, { direction: "top" })
-      boardMarkersRef.current.push(m)
-    }
-    return () => {
-      const mp = mapRef.current
-      if (!mp) return
-      for (const m of boardMarkersRef.current) mp.removeLayer(m)
-      boardMarkersRef.current = []
-    }
-  }, [boards, withOthers])
+  // (Hier stonden de bordjes-sprint-effecten: markers, scoring en
+  // aankondigingen. Verwijderd — bordjes sprinten is gestopt wegens
+  // veiligheidsrisico op de openbare weg, besluit 31-07-2026.)
 
-  // Reconcile sprint state whenever the ride mode flips. Re-seeding forces the
-  // scoring loop to mark every board already behind us as done on its next run,
-  // so switching back to a group ride can never retro-award boards that were
-  // passed while riding solo.
-  useEffect(() => {
-    seededBehindRef.current = false
-    doneBoardsRef.current = new Set()
-    spokenBoardRef.current = null
-    setArmedBoard(null)
-  }, [withOthers])
-
-  // Track speed, arm the next board, and score a sprint when a board is passed.
-  // Only real GPS speed is used; watts are added later when a meter is linked.
-  // Sprinting only runs in a group ride.
-  useEffect(() => {
-    if (!withOthers) {
-      setArmedBoard(null)
-      return
-    }
-    if (!location || !progress) return
-    const now = Date.now()
-    const kmh = location.speedMps != null ? location.speedMps * 3.6 : null
-    if (kmh != null) {
-      const hist = speedHistRef.current
-      hist.push({ t: now, kmh })
-      while (hist.length && now - hist[0]!.t > 40000) hist.shift()
-    }
-    const traveled = progress.traveledKm
-
-    // On the first fix, any board already behind us was NOT sprinted this
-    // session — mark it done so we never retro-award points for starting
-    // mid-route. Only boards we actually cross afterwards can score.
-    if (!seededBehindRef.current) {
-      seededBehindRef.current = true
-      for (const b of boards) {
-        if (traveled >= b.km) doneBoardsRef.current.add(b.km)
-      }
-      return
-    }
-
-    // Score any board we've just passed.
-    for (const b of boards) {
-      if (doneBoardsRef.current.has(b.km)) continue
-      if (traveled >= b.km) {
-        doneBoardsRef.current.add(b.km)
-        const hist = speedHistRef.current
-        const recent = hist.filter((h) => now - h.t <= 12000)
-        const before = hist.filter(
-          (h) => now - h.t > 12000 && now - h.t <= 30000,
-        )
-        const peakKmh = recent.length
-          ? Math.max(...recent.map((h) => h.kmh))
-          : (kmh ?? 0)
-        const baseline = before.length
-          ? Math.min(...before.map((h) => h.kmh))
-          : recent.length
-            ? Math.min(...recent.map((h) => h.kmh))
-            : 0
-        const gainKmh = Math.max(0, peakKmh - baseline)
-        // Real 5-second peak watts from a connected power meter, or null when
-        // no meter is paired — the server awards the watt bonus honestly.
-        const peakWatts5s = power.connected ? power.peakWatts(5) : null
-        const basePoints = 10
-        const speedBonus = Math.min(30, Math.round(gainKmh * 2))
-        setArmedBoard(null)
-        submitSprint.mutate(
-          {
-            routeId,
-            rideType: routeId != null ? "planned" : "free",
-            placeName: b.placeName,
-            km: b.km,
-            speedKmhPeak: Math.round(peakKmh),
-            speedGainKmh: Math.round(gainKmh),
-            peakWatts5s,
-            status: "scored",
-            // Idempotent per sprint-moment: een retry maakt nooit een dubbele rij.
-            clientKey: makeSprintClientKey(routeId, b.placeName, b.km, now),
-          },
-          {
-            onSuccess: (data) => {
-              const r = data.result
-              setSprintResult({
-                board: b,
-                peakKmh: Math.round(peakKmh),
-                gainKmh: Math.round(gainKmh),
-                peakWatts: peakWatts5s != null ? Math.round(peakWatts5s) : null,
-                basePoints: r.basePoints,
-                bonusPoints: r.bonusPoints,
-                totalPoints: r.totalPoints,
-              })
-            },
-          },
-        )
-        // Optimistic view uses the deterministic speed portion; the server
-        // reconciles the true total (incl. watt bonus) via onSuccess above.
-        setSprintResult({
-          board: b,
-          peakKmh: Math.round(peakKmh),
-          gainKmh: Math.round(gainKmh),
-          peakWatts: peakWatts5s != null ? Math.round(peakWatts5s) : null,
-          basePoints,
-          bonusPoints: speedBonus,
-          totalPoints: basePoints + speedBonus,
-        })
-      }
-    }
-
-    // Arm the nearest upcoming board within 300 m so the rider gets a heads-up.
-    const upcoming =
-      boards
-        .filter((b) => !doneBoardsRef.current.has(b.km) && b.km > traveled)
-        .sort((a, b) => a.km - b.km)[0] ?? null
-    const nextArmed =
-      upcoming && (upcoming.km - traveled) * 1000 <= 300 ? upcoming : null
-    setArmedBoard(nextArmed)
-
-    // Say it out loud, once per board — a cheeky heads-up before the sign.
-    if (nextArmed && spokenBoardRef.current !== nextArmed.km) {
-      spokenBoardRef.current = nextArmed.km
-      speakCue(
-        `${nextArmed.placeName} komt eraan. Benen leeg, eer op het spel!`,
-      )
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location, progress, boards])
-
-  // The result popup is a brief celebration — auto-dismiss after ~5s.
-  useEffect(() => {
-    if (!sprintResult) return
-    const id = window.setTimeout(() => setSprintResult(null), 5000)
-    return () => window.clearTimeout(id)
-  }, [sprintResult])
-
-  // Cancel an armed sprint: skip this board, no points, no save.
-  const cancelArmed = () => {
-    if (armedBoard) doneBoardsRef.current.add(armedBoard.km)
-    setArmedBoard(null)
-  }
 
   // ── Live intensiteit, belasting & energie (alleen met échte data) ──
   // Elke seconde één wattsample; genormaliseerd vermogen via 30s-gemiddelden
@@ -2997,7 +2795,7 @@ export function RouteNavigator({
               </p>
             </div>
 
-            {/* Group riding — enables the bordjes-sprint game. */}
+            {/* Group riding — puur informatief (wie rijdt er mee). */}
             <div>
               <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
                 Rij je met anderen?
@@ -3519,73 +3317,7 @@ export function RouteNavigator({
           </div>
         )}
 
-        {armedBoard && !sprintResult && (
-          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-yellow-400/40 bg-map-warn-panel/92 px-3.5 py-3 backdrop-blur-md">
-            <Zap
-              className="h-6 w-6 shrink-0 animate-pulse text-yellow-300"
-              strokeWidth={2}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-semibold text-yellow-200">
-                Bordje {armedBoard.placeName} in zicht!
-              </p>
-              <p className="text-[12px] text-white/55">
-                Zet 'm op scherp — vol gas tot het kombord.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={cancelArmed}
-              className="flex shrink-0 items-center gap-1 rounded-full border border-white/15 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:text-white/85"
-            >
-              <Ban className="h-3.5 w-3.5" strokeWidth={1.75} />
-              Sla over
-            </button>
-          </div>
-        )}
       </div>
-
-      {/* Sprint result — a brief celebration over the map, auto-dismisses. */}
-      {sprintResult && (
-        <div className="pointer-events-none absolute inset-0 z-[95] flex items-center justify-center p-4">
-          <div className="pointer-events-auto w-full max-w-xs rounded-3xl border border-yellow-400/40 bg-map-warn-deep/95 p-5 text-center shadow-2xl backdrop-blur-md">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-400/15">
-              <Trophy className="h-7 w-7 text-yellow-300" strokeWidth={1.75} />
-            </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-yellow-300/70">
-              Bordje gepakt
-            </p>
-            <p className="mt-1 text-[18px] font-semibold text-white">
-              {sprintResult.board.placeName}
-            </p>
-            <div className="mt-4 flex items-end justify-center gap-1">
-              <span className="font-mono text-[44px] font-bold leading-none tabular-nums text-yellow-300">
-                +{sprintResult.totalPoints}
-              </span>
-              <span className="mb-1.5 text-[13px] text-white/50">punten</span>
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-4 text-[12px] text-white/55">
-              <span>{sprintResult.basePoints} basis</span>
-              <span className="text-yellow-300/80">
-                +{sprintResult.bonusPoints} bonus
-              </span>
-            </div>
-            <p className="mt-2 text-[12px] text-white/45">
-              Piek {sprintResult.peakKmh} km/u · +{sprintResult.gainKmh} km/u
-              versnelling
-              {sprintResult.peakWatts != null &&
-                ` · ${sprintResult.peakWatts} W piek`}
-            </p>
-            <button
-              type="button"
-              onClick={() => setSprintResult(null)}
-              className="mt-4 w-full rounded-full bg-yellow-400 px-4 py-2 text-[13px] font-semibold text-map-ink"
-            >
-              Vet, door!
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Bottom: recenter + progress + steps toggle */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-stretch gap-2 p-3">
