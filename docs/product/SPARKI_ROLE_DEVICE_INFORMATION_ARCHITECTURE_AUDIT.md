@@ -8,6 +8,25 @@
 
 ---
 
+## 0. Nulmeting per rol — echte kliktest 31-07-2026 (BINDEND)
+
+Bron: kliktestrapport "Rollen en werkruimtes end-to-end" + verdiepende rolanalyse (31-07-2026). Toegestane statuswoorden (verplicht, uitsluitend): `working` · `partially_working` · `sporter_copy` · `missing_workspace` · `not_testable` · `broken` · `proposal_only`. **Regel: een rol is nooit `working` op grond van alleen een label, startkaart of pagina — zie de harde acceptatieregel in §5.**
+
+| Rol | Status (kliktest) | Kernbevinding |
+|---|---|---|
+| Sporter | `working` | Passend; controlegroep. |
+| Ouder/verzorger | `sporter_copy` | Vrijwel volledige sporterkopie — hoogste risico en **prioriteit 1** (zie §2-B3 hieronder). |
+| Trainer (Coach Bram) | `partially_working` | Echte cockpit bestaat en werkt; hoofdnavigatie toont de volledige persoonlijke sportersbalk ernaast; taalbug "Rol-uitnodiging". |
+| Trainer-subrollen (zelfstandig/club/hoofd) | `not_testable` | Eén testidentiteit; subrol-onderscheid in rechten/zicht onbewezen. |
+| Clubbeheerder | `missing_workspace` / `not_testable` | Geen testidentiteit, geen vindbare workspace; `CLUB_CHAPTER`-menu-config bestaat, bestemming ontbreekt. |
+| Mechanieker | `not_testable` (als rol) | `/mechanieker` is een sporter-materiaalpagina; er bestaat geen mechaniekerrol of -werkruimte (`proposal_only`). |
+| Admin/tester | `partially_working` (geen aparte workspace) | Hoofdtester = vlag op sporteridentiteit; ADMIN-link `broken` (navigeert niet weg van `/`); "undefined"-labels en interne testerlabels ("ONDERBOUWING (TESTER)") lekken in gewone schermen. |
+| Telefoonweergave (alle rollen) | `not_testable` (nog) | Resize in de testomgeving beïnvloedt `window.innerWidth` niet betrouwbaar; telefoonbewijs vereist e2e-viewport (bestaat inmiddels in `e2e/`). |
+
+**Correctie op eerdere tabelstatussen:** waar §1 hieronder "working (suites)" zegt over rol-omgevingen (m.n. Parent-home) geldt: de suites bewijzen de server-rechtenlaag, **niet** de rolomgeving als geheel. Voor rolniveau geldt uitsluitend de tabel hierboven.
+
+---
+
 ## 1. Scherm- en functie-inventaris (web-app `artifacts/sparki`)
 
 Legenda apparaat: ✔ = ontworpen/geschikt, ± = werkt maar niet passend, ✘ = niet aanwezig/ongeschikt.
@@ -36,12 +55,12 @@ Legenda apparaat: ✔ = ontworpen/geschikt, ± = werkt maar niet passend, ✘ = 
 | Coach-home | Trainersoverzicht | `/` (bij activeRole=coach) | trainer | coach | ± | ± | sporterslijst + rolvandaag | rolwissel | eigen desktopwerkruimte | rol coach | `/api/coach*` | partially_working | geen professionele desktop-cockpitindeling (tabellen/bulk) | WP-S7 |
 | Coach-cockpit | Sporter-cockpit | `/coach/athletes/:id/cockpit` | trainer | coach | ✘ | ✔ | analyse & sturing per sporter | deeplink roster | trainerdesktop | directe link + deelniveau (server) | `/api/coach/cockpit*` | working (suites) | alleen via deeplink vindbaar | WP-S7 |
 | Coach-plan | Schema per sporter | `/coach/athletes/:id/plan` | trainer | coach | ✘ | ✔ | plan beheren | deeplink roster | trainerdesktop | directe link (server) | `/api/coach*` | working (suites) | idem | WP-S7 |
-| Parent-home | Ouderoverzicht | `/` (bij activeRole=parent) | ouder/verzorger | parent | ✔ | ✔ | welzijn kind | rolwissel | blijft, opgeschoond | ouderlink + permissies (server) | `/api/parent*` | working (suites) | uitnodigen/beheer onduidelijk geplaatst | WP-S2/S3 |
+| Parent-home | Ouderoverzicht | `/` (bij activeRole=parent) | ouder/verzorger | parent | ✔ | ✔ | welzijn kind | rolwissel | volledig eigen ouderomgeving | ouderlink + permissies (server) | `/api/parent*` | **sporter_copy (kliktest 31-07)** | ouder ziet sporternavigatie, kan eigen training/doel/wedstrijd toevoegen, ziet sporteronboarding; geen kindkiezer, geen Vandaag/planning van het kind | WP-R1 |
 | Uitnodigingen | Uitnodigingen | `/invitations` | coach/ouder/admin | coach/parent | ± | ✔ | links maken/beheren | coach/ouder-nav | per rol in eigen omgeving | rolcheck server-side | `/api/invitations*` | partially_working | **abstracte "rol-uitnodiging"; alleen kale link, geen deelmenu/e-mail/WhatsApp; betekenis verstuurde invites onduidelijk** | WP-S2 |
 | Invite-accept | Uitnodiging accepteren | `/invite/:token` | ontvanger | n.v.t. | ✔ | ✔ | accepteren + juiste onboarding | deeplink | blijft | Clerk-sessie; server valideert token | `/api/invitations/accept` | partially_working | **landing na acceptatie niet rolgericht (ouder → sporteronboarding)** | WP-S2 |
 | Tester-QR | Testtoegang (QR) | `/tester-qr` | admin | admin | ✔ | ✔ | testers onboarden | Profiel→Instellingen→Tester-toegang | ALLEEN admin-omgeving | isAdmin | `/api/invitations*` | working | **interne functie zichtbaar nabij gebruikersinstellingen** | WP-S3 |
 | Welkom tester | Tester-welkom | `/welkom-tester` | hoofdtester | n.v.t. | ✔ | ✔ | welkomstmoment | automatisch | blijft | isHeadTester | — | working | — | — |
-| Admin | Testdashboard/beheer | `/admin` | admin/hoofdtester | n.v.t. | ± | ✔ | systeemstatus, bugs, data | deeplink/Meer(admin) | ALLEEN admin-omgeving | isAdmin/isHeadTester | `/api/admin*` | partially_working | **stond in praktijktest tussen gebruikersfuncties en "werkt niet" op mobiel — mobiele werking onbewezen** | WP-S3 + apart bugonderzoek |
+| Admin | Testdashboard/beheer | `/admin` | admin/hoofdtester | n.v.t. | ± | ✔ | systeemstatus, bugs, data | deeplink/Meer(admin) | ALLEEN admin-omgeving | isAdmin/isHeadTester | `/api/admin*` | **broken (kliktest 31-07: ADMIN-link navigeert niet weg van `/`)** | link defect; interne testerlabels ("ONDERBOUWING (TESTER)", "undefined · rol: athlete") zichtbaar in gewone gebruikersschermen | WP-R6 |
 | Admin-ops | Beheeroperaties | `/admin/ops` | admin | n.v.t. | ✘ | ✔ | onderhoudsacties | deeplink | admin-omgeving | isAdmin | `/api/admin/ops*` | working (suites) | — | — |
 | Connect | Koppelingen | `/connect` | sporter | atleet | ✔ | ✔ | Strava/Garmin/Wahoo | Meer | blijft | AccountGate | `/api/connect*` | working (suites) | — | — |
 | Support | Hulp | `/support` | allen | allen | ✔ | ✔ | hulp & melden | Meer | blijft (WP-S5) | AccountGate | `/api/support*` | working (suites) | — | — |

@@ -113,6 +113,20 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 
 ---
 
+## Update 31-07-2026 — rolomgevingen: nulmeting echte kliktest (BINDEND voor rolstatus)
+
+Kliktest "Rollen en werkruimtes end-to-end" (31-07-2026) toont dat modulestatussen hierboven ("Volledig" per functie) níet gelijkstaan aan werkende **rolomgevingen**. Rolstatus (uitsluitend deze woorden: working / partially_working / sporter_copy / missing_workspace / not_testable / broken / proposal_only):
+
+- **Sporter:** `working` (passend).
+- **Ouder/verzorger:** `sporter_copy` — vrijwel volledige sporterkopie (sporternavigatie, eigen training/doel/wedstrijd toevoegbaar, sporteronboarding zichtbaar; geen kindkiezer/Vandaag-van-kind/kindplanning). De claim "Coach- & ouderomgeving — Volledig" in §3 geldt alleen voor de server-rechtenlaag, niet voor de ouderervaring. Hoogste prioriteit (WP-R1).
+- **Trainer:** `partially_working` — echte cockpit werkt; hoofdnavigatie niet rolgericht; "Rol-uitnodiging" is verboden taal; subrollen (zelfstandig/club/hoofd) `not_testable` (één testidentiteit).
+- **Clubbeheerder:** `missing_workspace` / `not_testable` — geen testidentiteit, geen vindbare workspace.
+- **Mechanieker:** rol bestaat niet (`proposal_only`); `/mechanieker` is een sporter-materiaalpagina en heet in het plan voortaan "Materiaal".
+- **Admin/tester:** geen aparte workspace; ADMIN-link `broken`; interne labels ("ONDERBOUWING (TESTER)", "undefined") lekken in gebruikersschermen.
+- **Telefoonweergave:** nog niet betrouwbaar getest (bewijs voortaan via e2e-viewport).
+
+Herstelplan herzien naar WP-R1 t/m WP-R8: `docs/product/SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md`. Er is niets gebouwd; het plan wacht op goedkeuring van René.
+
 ## Update 31-07-2026 — trainerrechten (besluit B1)
 
 Sectie 3 (coachomgeving) aangescherpt per besluit René 30-07-2026: individuele

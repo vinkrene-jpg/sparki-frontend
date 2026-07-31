@@ -9,7 +9,9 @@ Taakcategorieën per item: **P** primaire taak · **D** dagelijkse taak · **B**
 3. Profiel bevat persoonlijke en accountgerichte gegevens.
 4. Lichaamsgegevens direct vindbaar; gewicht krijgt een expliciete actie **"Nieuw weegmoment"**.
 5. Uitnodigingen staan in de omgeving van de rol die mag uitnodigen.
-6. Interne termen ("rol-uitnodiging", relatie-enums) nooit als primaire gebruikerstaal.
+6. Interne termen nooit als primaire gebruikerstaal: **"Rol-uitnodiging" is verboden gebruikerstaal** (net als relatie-enums als `coach_athlete`).
+7. Een letterlijke `undefined` in gerenderde tekst is altijd een bug; elk rol-/contextlabel heeft een verplichte, bewust gekozen terugvaltekst (bv. "onbekend").
+8. Normale sporters zien nooit test- of adminfuncties; testerextra's alleen expliciet toegestaan én gelabeld.
 
 ## Sporter — telefoon (primair)
 Onderbalk (5): **Vandaag (P) · Trainen (P) · Rijden (P) · Activiteiten (D) · Meer**.
@@ -23,9 +25,14 @@ Zijbalk: Vandaag · Trainen · Rijden · Wedstrijd · Activiteiten · Analyse ·
 ## Jeugdrenner
 Zelfde structuur als sporter; inhoudelijke verschillen (copy, gating) komen uit bestaande jeugdregels, niet uit een ander menu.
 
-## Ouder — telefoon (primair)
-Onderbalk (3–4): **Kind(eren) (P) · Meldingen (D) · Profiel (A)** (+ Hulp in Meer/Profiel).
+## Ouder — telefoon (primair) — herzien 31-07-2026 (nulmeting kliktest)
+Huidige staat is `sporter_copy` en fout: ouder ziet de sporternavigatie, kan eigen training/doel/wedstrijd toevoegen en belandt in sporteronboarding.
+Gewenste onderbalk: **Kind(eren) (P) · Vandaag [van het kind] (P) · Meldingen (D) · Toestemmingen (B) · Profiel/Hulp (A)**.
+Géén Rijden/Wedstrijd/Analyse/Ontdekken; géén sporteronboarding of eigen sporterdashboard — nooit automatisch.
 Uitnodigen ("Nodig de andere ouder uit", "Koppel je kind") staat in de ouderomgeving (regel 5).
+
+## Ouder — desktop
+Kindkiezer vast bovenaan; overzicht per kind; planning bekijken (lezen); meldingen en verzoeken; toestemmingen en privacy; contact met trainer. **Geen eigen sporterfuncties als standaard ouderomgeving.**
 
 ## Trainer — desktop (primair)
 Vaste zijbalk: **Sporters (P) · Planning (P) · Voorstellen (D) · Uitnodigingen (B) · Profiel (A)**.
@@ -39,8 +46,9 @@ Zijbalk: **Teams (P) · Trainers (P) · Toewijzingen (B) · Profiel (A)**. Nooit
 ## Clubbeheerder — desktop (primair)
 Zijbalk: **Overzicht (P) · Leden (B) · Teams (B) · Uitnodigingen (B) · Instellingen (B) · Profiel (A)**. Telefoon: kernacties (accepteren, intrekken, code delen).
 
-## Mechanieker — telefoon (primair, WP-S9)
+## Mechanieker — telefoon (primair, WP-R5; rol bestaat nog niet)
 Minimaal: **Werkplaats (P: materiaalmeldingen) · Fietsen (D) · Profiel (A)**.
+Het bestaande sportersscherm `/mechanieker` heet in het plan voortaan **"Materiaal"** (sporterfunctie voor de eigen fiets) om naamsverwarring met deze clubrol te voorkomen.
 
 ## Admin/tester — gescheiden
 `/admin` is de enige ingang voor T-functies (health, ops, tester-QR, gegevensbeheer). Tester-extra's in gebruikersschermen (zoals de Vandaag-onderbouwing) blijven server-gated (`debugAllowed`) en duidelijk gelabeld "tester".
