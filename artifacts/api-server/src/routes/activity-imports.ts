@@ -21,6 +21,7 @@ import {
   unlinkedImportStatus,
   FILE_PARSER_VERSION,
 } from "../lib/activity-file-ingest";
+import { scanRouteCandidatesForUser } from "../lib/ridden-route-candidates";
 import {
   extractTimedTrackFromGpx,
   extractTimedTrackFromTcx,
@@ -215,6 +216,14 @@ router.post("/", requireAuth, async (req, res) => {
       })
       .returning();
     res.status(201).json({ import: row, parsed: true, sessionId });
+    // Persoonlijke routekandidaten: nieuwe geïmporteerde sessie incrementeel
+    // analyseren (na de respons, fire-and-forget — nooit blokkerend, nooit
+    // een geslaagde import laten mislukken).
+    if (sessionId != null) {
+      scanRouteCandidatesForUser(clerkId).catch((err) =>
+        req.log.warn({ err }, "routekandidaten-scan na import overgeslagen"),
+      );
+    }
   };
 
   try {

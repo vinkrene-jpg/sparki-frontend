@@ -1,0 +1,33 @@
+rapport: Poort 5b — WP-2 Abonnement ≠ plannerweergave
+datum: 2026-07-31
+werkpakket: WP-2 (ROUTEPLANNER_HERONTWERP_WERKPAKKETTEN.md)
+belofte: >
+  Abonnement (Gratis/Go/Compleet) en plannerweergave (Gratis/Go gewone fietser/
+  Go wielrenner-MTB-gravel/Wedstrijd) zijn in code, copy en docs strikt gescheiden:
+  nergens "Wedstrijd" als abonnement, nergens "Compleet" als weergave.
+omgeving: DEV Preview (dev-server, artifacts/sparki + api-server), identiteit dev_qa_athlete (Hoofdtester)
+uitgevoerde_controles:
+  - controle: grep code+docs op "Wedstrijd" als abonnement
+    patronen: [wedstrijd-abonnement, abonnement wedstrijd, wedstrijdabonnement]
+    resultaat: 0 treffers in artifacts/ en docs/ — PASS
+  - controle: grep code op "Compleet"/"Complete" als weergavenaam
+    resultaat: >
+      0 treffers; enige code-treffers zijn correct abonnement-gebruik
+      (planner-view.ts commentaar, governor-role-fixtures Go/COMPLETE tier-trials) — PASS
+  - controle: grep docs op "Compleet" als weergave
+    resultaat: >
+      alleen historisch voorstel in ROUTEPLANNER-UX-AUDIT-2026-07-30.md §4;
+      op 31-07 voorzien van expliciete correctie (definitieve namen + "Compleet is
+      uitsluitend abonnementsnaam") — PASS na correctie
+  - controle: switcher-copy scheidt begrippen expliciet
+    resultaat: planner-view-switcher.tsx toont "De weergave bepaalt alleen welke keuzes je ziet — hij staat los van je abonnement" — PASS
+  - controle: kliktest /routes?view=maken desktop 1440x900
+    resultaat: WEERGAVE-regel toont "Wedstrijd · AUTOMATISCH · wijzig"; nergens "Compleet" als weergave zichtbaar — PASS
+    bewijs: docs/product/evidence/planner-views/wp2-routes-maken-desktop.jpg
+opgeleverd:
+  - docs/product/BEGRIPPENMATRIX_ABONNEMENT_VS_PLANNERWEERGAVE.md (bindend matrixdocument)
+  - correctie in docs/product/ROUTEPLANNER-UX-AUDIT-2026-07-30.md §4
+beperkingen:
+  - geen productcode gewijzigd: de codescheiding bestond al (niveaus-werk 31-07); WP-2 was docs/copy-borging + bewijs
+  - mobiele screenshot niet opnieuw gemaakt; bestaand bewijs planner-vier-weergaven-nacontrole dekt mobiel 402x874
+oordeel: PASS — begrippen gescheiden, grep-schoon, matrixdocument aanwezig

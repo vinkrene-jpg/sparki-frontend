@@ -297,19 +297,29 @@ export const GO_FEATURE_LABELS: Record<GoFeatureKey, string> = {
 };
 
 /**
- * Idempotente seed van de Go-variantrechten: sparki_go krijgt de vier
- * Go-onderdelen; sparki_basic bewust niets (afwezigheid = geen recht,
- * fail-closed). onConflictDoNothing — een latere beheerbeslissing (bijv.
- * enabled=false zetten) wordt nooit overschreven.
+ * Productlijn (bindend besluit): Gratis · Sparki Go · Sparki Compleet.
+ * Sparki Compleet ERFT alle Go-rechten — een Compleet-gebruiker mag nooit naar
+ * Go worden verwezen voor een Go-onderdeel. In de database heet de
+ * Compleet-variant historisch "sparki_pro". "sparki_basic" en
+ * "sparki_performance" zijn oude interne testtiers (géén productaanbod) en
+ * blijven bewust zonder rechten (fail-closed).
+ */
+export const GO_INHERITING_VARIANTS = ["sparki_go", "sparki_pro"] as const;
+
+/**
+ * Idempotente seed van de Go-variantrechten: sparki_go én sparki_pro
+ * (= Sparki Compleet, erft alle Go-rechten) krijgen de vier Go-onderdelen;
+ * interne tiers bewust niets (afwezigheid = geen recht, fail-closed).
+ * onConflictDoNothing — een latere beheerbeslissing (bijv. enabled=false
+ * zetten) wordt nooit overschreven.
  */
 export async function ensureGoVariantGrantSeed(): Promise<void> {
   await db
     .insert(variantFeatureGrantsTable)
     .values(
-      GO_FEATURE_KEYS.map((featureKey) => ({
-        productVariant: "sparki_go",
-        featureKey,
-      })),
+      GO_INHERITING_VARIANTS.flatMap((productVariant) =>
+        GO_FEATURE_KEYS.map((featureKey) => ({ productVariant, featureKey })),
+      ),
     )
     .onConflictDoNothing();
 }

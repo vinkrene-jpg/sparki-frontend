@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import fs from "fs";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 const devPlugins =
@@ -48,7 +49,18 @@ export default defineConfig(({ command }) => {
       .toString()
       .trim();
   } catch {
-    /* eerlijk "onbekend" */
+    // Workflow-omgevingen hebben git niet altijd op PATH — lees dan .git/HEAD
+    // rechtstreeks (zelfde waarheid, geen fabricage). Blijft anders "onbekend".
+    try {
+      const gitDir = path.resolve(import.meta.dirname, "../../.git");
+      const head = fs.readFileSync(path.join(gitDir, "HEAD"), "utf8").trim();
+      const sha = head.startsWith("ref: ")
+        ? fs.readFileSync(path.join(gitDir, head.slice(5)), "utf8").trim()
+        : head;
+      if (/^[0-9a-f]{40}$/.test(sha)) buildSha = sha.slice(0, 8);
+    } catch {
+      /* eerlijk "onbekend" */
+    }
   }
 
   return {

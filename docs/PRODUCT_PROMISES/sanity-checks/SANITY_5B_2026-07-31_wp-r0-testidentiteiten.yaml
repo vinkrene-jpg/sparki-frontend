@@ -1,0 +1,39 @@
+rapport: Poort 5b — WP-R0 vaste testidentiteiten + rolbewuste DEV Preview
+datum: 2026-07-31
+werkpakket: WP-R0 (SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md)
+belofte: >
+  Voor ouder, zelfstandige trainer, clubtrainer, hoofdtrainer, clubbeheerder,
+  mechanieker, admin en tester bestaat een vaste testidentiteit met echte
+  onderlinge relaties; de DEV Preview is rolbewust (startpunt + paginalijst per
+  rol) en de TESTCONTEXT-banner toont identiteit, rol, rechten, omgeving en
+  commit-SHA. Server-side gelden EXACT de productierechten (geen bypass).
+omgeving: DEV Preview (artifacts/sparki + api-server, dev-servers), commit 98644090
+uitgevoerde_controles:
+  - controle: fixtures aanmaken (idempotent, fail-closed productie)
+    resultaat: "create-role-test-fixtures.sh → club 177, teams 251+252, 14 gebruikers — PASS"
+  - controle: e2e per identiteit — echte klik in de kiezer, herlaad, /api/auth/me-identiteits- en rolcontrole
+    resultaat: "9/9 identiteiten juiste clerkId + rol (dev-fallback-valkuil expliciet afgedekt: kale fetch zonder x-dev-clerk-id-header bewees de valkuil, probes spiegelen nu apiFetch) — PASS"
+    bewijs: e2e/evidence/wp-r0-rollen/rapport.json + screenshots
+  - controle: 403-bewijs — /api/admin/status per identiteit
+    resultaat: "8× 403 (alle niet-admins incl. tester/hoofdtrainer/clubbeheerder), 1× 200 (alleen governor-fixture-admin via SPARKI_ADMIN_IDS in development-env) — PASS"
+  - controle: koppelingsrechten
+    resultaat: >
+      ouder ziet exact 1 kind (safety_only); zelfstandige trainer 1 sporter;
+      clubtrainer 2 (link ∪ teamtoewijzing — conform trainerlaag); trainer-2 en
+      hoofdtrainer eerlijk 0 — PASS
+  - controle: TESTCONTEXT-banner per identiteit
+    resultaat: "banner toont DEV PREVIEW @ 98644090 · naam · rol (+ ADMIN / HOOFDTESTER waar echt van toepassing); '@ ONBEKEND' opgelost via .git/HEAD-fallback — PASS"
+  - controle: rolbewuste home + paginalijst
+    resultaat: "coach → trainerstart, ouder → ouderstartpagina (geen sporter-terugval meer), rolbewuste paginalijsten (COACH_VIEWS/PARENT_VIEWS) — PASS"
+opgeleverd:
+  - artifacts/api-server/src/scripts/governor-role-fixtures.ts (trainer-zelfstandig + tester + is_head_tester)
+  - artifacts/api-server/src/lib/preview-athletes.ts + routes/dev.ts (groep "Rollen (testfixtures)", echte clubrol/rechten in kiezer)
+  - artifacts/sparki/src/components/sparki/dev-preview.tsx (rolbewuste views + ParentHome + scrollbaar paneel)
+  - artifacts/sparki/vite.config.ts (commit-SHA-fallback)
+  - e2e/tests/wp-r0-rollen.mjs + e2e/evidence/wp-r0-rollen/
+  - docs/product/WPR0_TESTIDENTITEITEN_RECHTENMATRIX.md (rechtenmatrix)
+beperkingen:
+  - rollen zonder werkomgeving tonen eerlijk hun lege/kapotte toestand (doel van R0; herstel = WP-R1…R8)
+  - e2e in drie deelruns wegens shell-timeout (WP_R0_FILTER), rapport samengevoegd
+  - admin-rechten in dev via SPARKI_ADMIN_IDS=governor-fixture-admin (development-env; productie onaangeraakt)
+oordeel: PASS — alle 9 identiteiten klikbaar, juiste rol/rechten server-side bewezen, 403-bewijs vastgelegd

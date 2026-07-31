@@ -5,6 +5,7 @@ import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
 import { DayHome, type DevCoachOverride } from "@/components/sparki/day-home"
 import { CommercialToday } from "@/components/sparki/commercial-shell"
 import { CoachHome } from "@/components/sparki/coach-home"
+import { ParentHome } from "@/components/sparki/parent-home"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { DayType } from "@/lib/day-type"
 import {
@@ -83,6 +84,27 @@ type DevView = {
   path: string
 }
 
+// WP-R0: rolbewuste paginalijsten. De lijst per rol spiegelt wat die rol in de
+// echte router als startpunt/ingangen heeft — géén sporterlijst voor iedereen.
+// Rollen zonder eigen werkomgeving (ouder, clubrollen) krijgen bewust een korte
+// lijst: hun eerlijke huidige toestand is precies wat getest moet worden.
+const COACH_VIEWS: DevView[] = [
+  { label: "Start (trainer)", path: "/" },
+  { label: "Invites", path: "/invitations" },
+  { label: "Coach Plan", path: "/coach/athletes/demo/plan" },
+  { label: "Coach Cockpit", path: "/coach/athletes/demo/cockpit" },
+  { label: "Samen", path: "/samen" },
+  { label: "Meer", path: "/meer" },
+  { label: "Privacy", path: "/privacy" },
+]
+
+const PARENT_VIEWS: DevView[] = [
+  { label: "Start (ouder)", path: "/" },
+  { label: "Invites", path: "/invitations" },
+  { label: "Meer", path: "/meer" },
+  { label: "Privacy", path: "/privacy" },
+]
+
 const VIEWS: DevView[] = [
   { label: "Landing", path: LANDING_PATH },
   { label: "Onboarding", path: ONBOARDING_PATH },
@@ -110,8 +132,16 @@ const VIEWS: DevView[] = [
   { label: "Welkom-tester", path: "/welkom-tester" },
   { label: "Coach Plan", path: "/coach/athletes/demo/plan" },
   { label: "Coach Cockpit", path: "/coach/athletes/demo/cockpit" },
+  { label: "Club", path: "/club" },
+  { label: "Club-beheer", path: "/club/beheer" },
   { label: "Admin", path: "/admin" },
 ]
+
+function viewsForRole(role: string | undefined): DevView[] {
+  if (role === "coach") return COACH_VIEWS
+  if (role === "parent") return PARENT_VIEWS
+  return VIEWS
+}
 
 function isActive(current: string, path: string): boolean {
   if (path === LANDING_PATH) return current.startsWith(LANDING_PATH)
@@ -279,7 +309,7 @@ function DevPanel({
   }
 
   return (
-    <div className="fixed left-3 top-3 z-[9999] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-cyan-300/20 bg-[#040506]/90 p-3 shadow-[0_0_30px_rgba(120,210,230,0.12)] backdrop-blur-xl">
+    <div className="fixed left-3 top-3 z-[9999] max-h-[calc(100vh-1.5rem)] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-cyan-300/20 bg-[#040506]/90 p-3 shadow-[0_0_30px_rgba(120,210,230,0.12)] backdrop-blur-xl">
       <div className="flex items-center justify-between">
         <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber-200/80">
           {contextLabel}
@@ -298,7 +328,7 @@ function DevPanel({
           Pagina
         </span>
         <div className="mt-1.5 flex flex-wrap gap-1">
-          {VIEWS.map((v) => {
+          {viewsForRole(profile?.activeRole).map((v) => {
             const active = isActive(current, v.path)
             return (
               <button
@@ -555,6 +585,10 @@ export function DevPreview() {
     // (flag off) — only kept as a fallback in the real router, not here.
     if (profile?.activeRole === "coach") {
       page = <CoachHome />
+    } else if (profile?.activeRole === "parent") {
+      // WP-R0: spiegelt RoleHome — een ouder ziet de ouderstartpagina, geen
+      // sporterweergave meer als stille terugval.
+      page = <ParentHome />
     } else {
       page = <CommercialToday />
       showNav = false

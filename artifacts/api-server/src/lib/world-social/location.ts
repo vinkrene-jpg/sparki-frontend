@@ -63,16 +63,34 @@ export interface LocationPrivacyOptions {
   simplify: boolean;
 }
 
+// Eén privacyzone: middelpunt + straal. Het huisadres van de eigenaar is
+// altijd impliciet zo'n zone (750 m); gebruikers kunnen daarnaast eigen zones
+// (werk, andere gevoelige plekken) met eigen straal beheren.
+export type PrivacyZoneCircle = TrackPoint & { radiusM: number };
+
 /**
- * Pas locatieprivacy toe op een track. `home` is het huisadres van de
- * EIGENAAR (null = onbekend; de privacyzone kan dan niet worden toegepast en
- * we vallen fail-closed terug op start/eind verbergen).
+ * Pas locatieprivacy toe op een track. `zones` zijn de privacyzones van de
+ * EIGENAAR — huisadres plus zelf beheerde zones. Een enkel TrackPoint (legacy:
+ * alleen huisadres) wordt behandeld als één zone met de standaardstraal.
+ * Lege lijst/null = onbekend; de privacyzone kan dan niet worden toegepast en
+ * we vallen fail-closed terug op start/eind verbergen.
  */
 export function applyLocationPrivacy(
   raw: TrackPoint[],
   opts: LocationPrivacyOptions,
-  home: TrackPoint | null,
+  zonesInput: PrivacyZoneCircle[] | TrackPoint | null,
 ): TrackPoint[] | null {
+  const zones: PrivacyZoneCircle[] = Array.isArray(zonesInput)
+    ? zonesInput.filter(
+        (z) =>
+          Number.isFinite(z.lat) &&
+          Number.isFinite(z.lon) &&
+          Number.isFinite(z.radiusM) &&
+          z.radiusM > 0,
+      )
+    : zonesInput !== null
+      ? [{ ...zonesInput, radiusM: PRIVACY_ZONE_METERS }]
+      : [];
   let points = raw.filter(
     (p) =>
       Number.isFinite(p.lat) &&
@@ -83,17 +101,12 @@ export function applyLocationPrivacy(
   if (points.length < 2) return null;
 
   const wantZone = opts.privacyZone;
-  const zoneUsable = wantZone && home !== null;
-  // Fail-closed: privacyzone gevraagd maar huisadres onbekend ⇒ dan in elk
-  // geval start/einde verbergen zodat er nooit een exact vertrekpunt lekt.
+  const zoneUsable = wantZone && zones.length > 0;
+  // Fail-closed: privacyzone gevraagd maar geen enkele zone bekend ⇒ dan in
+  // elk geval start/einde verbergen zodat er nooit een exact vertrekpunt lekt.
   const hideEnds = opts.hideStartEnd || (wantZone && !zoneUsable);
 
   if (hideEnds) points = trimEnds(points, TRIM_METERS);
-  if (zoneUsable) {
-    points = points.filter(
-      (p) => haversineMeters(p, home!) > PRIVACY_ZONE_METERS,
-    );
-  }
   if (opts.simplify && points.length > 200) {
     const step = Math.ceil(points.length / 200);
     const kept: TrackPoint[] = [];
@@ -102,5 +115,62 @@ export function applyLocationPrivacy(
     if (kept[kept.length - 1] !== last) kept.push(last);
     points = kept;
   }
+  if (zoneUsable) {
+    // Punten binnen een zone weglaten is niet genoeg: de kaart trekt dan een
+    // rechte lijn van het punt vóór de zone naar het punt erna — dwars door de
+    // beschermde cirkel. Daarom houden we alleen het langste aaneengesloten
+    // stuk over waarvan geen enkel punt in een zone ligt ÉN geen enkel
+    // tussensegment een zonecirkel snijdt. Eerlijk: de rest van de route wordt
+    // dan niet getoond in plaats van een verraderlijke verbindingslijn.
+    points = longestRunOutsideZones(points, zones);
+  }
   return points.length >= MIN_POINTS ? points : null;
+}
+
+// Kleinste afstand (meters) van zonemiddelpunt z tot het segment a–b, via een
+// lokale equirectangulaire projectie rond z (ruim voldoende op zone-schaal).
+export function segmentMinDistanceMeters(
+  a: TrackPoint,
+  b: TrackPoint,
+  z: TrackPoint,
+): number {
+  const mPerDegLat = 111320;
+  const mPerDegLon = 111320 * Math.cos((z.lat * Math.PI) / 180);
+  const ax = (a.lon - z.lon) * mPerDegLon;
+  const ay = (a.lat - z.lat) * mPerDegLat;
+  const bx = (b.lon - z.lon) * mPerDegLon;
+  const by = (b.lat - z.lat) * mPerDegLat;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  const t = lenSq === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lenSq));
+  const px = ax + t * dx;
+  const py = ay + t * dy;
+  return Math.sqrt(px * px + py * py);
+}
+
+function longestRunOutsideZones(
+  points: TrackPoint[],
+  zones: PrivacyZoneCircle[],
+): TrackPoint[] {
+  const inside = (p: TrackPoint) =>
+    zones.some((z) => haversineMeters(p, z) <= z.radiusM);
+  const segmentCrosses = (a: TrackPoint, b: TrackPoint) =>
+    zones.some((z) => segmentMinDistanceMeters(a, b, z) <= z.radiusM);
+  let best: TrackPoint[] = [];
+  let run: TrackPoint[] = [];
+  const flush = () => {
+    if (run.length > best.length) best = run;
+    run = [];
+  };
+  for (const p of points) {
+    if (inside(p)) {
+      flush();
+      continue;
+    }
+    if (run.length > 0 && segmentCrosses(run[run.length - 1]!, p)) flush();
+    run.push(p);
+  }
+  flush();
+  return best;
 }

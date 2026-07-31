@@ -6,9 +6,11 @@ import {
   ArchiveRestore,
   Copy,
   Download,
+  EyeOff,
   GitCompareArrows,
   Globe2,
   MoreVertical,
+  Shield,
   Navigation,
   Pencil,
   Search,
@@ -29,6 +31,11 @@ import {
   useShareRouteWith,
   useUnshareRoute,
   useRouteVergelijk,
+  useGeocode,
+  usePrivacyZones,
+  useCreatePrivacyZone,
+  useDeletePrivacyZone,
+  type PrivacyZone,
   type RouteScope,
   type RouteSort,
   type SparkiRoute,
@@ -195,6 +202,9 @@ export function RouteLibrary() {
   // geverifieerde racefietsroute vraagt eerst een bewuste keuze.
   const [navConfirmId, setNavConfirmId] = useState<number | null>(null)
   const [navConfirmAccepted, setNavConfirmAccepted] = useState(false)
+  // Privacyzones-beheer (taak #513): woning/werk/gevoelige plekken die in elke
+  // gedeelde of getoonde weergave voor anderen worden gemaskeerd.
+  const [zonesOpen, setZonesOpen] = useState(false)
 
   const libScope: RouteScope = scope === "gedeeld" ? "mijn" : scope
   const lib = useRouteLibrary(q, libScope, sort)
@@ -260,7 +270,22 @@ export function RouteLibrary() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => setZonesOpen(!zonesOpen)}
+          aria-expanded={zonesOpen}
+          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] transition-colors ${
+            zonesOpen
+              ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+              : "border-white/[0.08] bg-[#070d16]/[0.82] text-white/65 hover:text-white/90"
+          }`}
+        >
+          <Shield className="h-3.5 w-3.5" />
+          Privacyzones
+        </button>
       </div>
+
+      {zonesOpen && <PrivacyZonesPanel onClose={() => setZonesOpen(false)} />}
 
       {/* Scope-tabs */}
       <div className="flex flex-wrap gap-1.5">
@@ -578,6 +603,20 @@ export function RouteLibrary() {
                           ]
                         : []),
                       {
+                        // Eigenaarskeuze (taak #513): bepaal zelf of Sparki
+                        // deze route voor automatische voorstellen mag
+                        // gebruiken (geldt ook voor geïmporteerde kandidaten).
+                        icon: <EyeOff className="h-3.5 w-3.5" />,
+                        label: r.suggestExclude
+                          ? "Weer voor voorstellen gebruiken"
+                          : "Niet voor voorstellen gebruiken",
+                        onClick: () =>
+                          update.mutate({
+                            id: r.id,
+                            suggestExclude: !r.suggestExclude,
+                          }),
+                      },
+                      {
                         icon: <Copy className="h-3.5 w-3.5" />,
                         label: "Dupliceer",
                         onClick: () => duplicate.mutate(r.id),
@@ -629,6 +668,228 @@ export function RouteLibrary() {
           })}
         </ul>
       )}
+    </div>
+  )
+}
+
+// Privacyzones-beheer (taak #513). Woning/werk/gevoelige plekken: elk punt
+// binnen de zone verdwijnt uit iedere gedeelde of getoonde weergave voor
+// anderen — op leesmoment, de route zelf blijft intact. Het huisadres uit het
+// profiel telt altijd impliciet mee (vaste straal); zones hier zijn de
+// aanvulling en zijn per stuk verwijderbaar.
+const ZONE_KINDS = [
+  { key: "woning", label: "Woning" },
+  { key: "werk", label: "Werk" },
+  { key: "gevoelig", label: "Gevoelige plek" },
+] as const
+
+function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
+  const zones = usePrivacyZones()
+  const create = useCreatePrivacyZone()
+  const remove = useDeletePrivacyZone()
+  const geocode = useGeocode()
+  const [adres, setAdres] = useState("")
+  const [kind, setKind] = useState<PrivacyZone["kind"]>("gevoelig")
+  const [radiusM, setRadiusM] = useState(750)
+  const [picked, setPicked] = useState<{
+    label: string
+    lat: number
+    lon: number
+  } | null>(null)
+
+  const zoek = () => {
+    const q = adres.trim()
+    if (q.length < 3) return
+    setPicked(null)
+    geocode.mutate(q)
+  }
+
+  const opslaan = () => {
+    if (!picked) return
+    create.mutate(
+      {
+        label: picked.label.slice(0, 80),
+        kind,
+        lat: picked.lat,
+        lon: picked.lon,
+        radiusM,
+      },
+      {
+        onSuccess: () => {
+          setAdres("")
+          setPicked(null)
+          geocode.reset()
+        },
+        onError: (err) =>
+          window.alert(
+            err instanceof Error ? err.message : "Kon zone niet opslaan",
+          ),
+      },
+    )
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/[0.12] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="flex items-center gap-1.5 text-[13.5px] font-medium text-white/90">
+            <Shield className="h-4 w-4 text-cyan-200" />
+            Privacyzones
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-white/55">
+            Alles binnen een zone wordt weggelaten wanneer een route met
+            anderen wordt gedeeld of getoond. De route zelf blijft ongewijzigd
+            — alleen wat anderen zien verandert.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Sluit privacyzones"
+          className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-white/85"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {zones.isLoading ? (
+        <p className="mt-3 text-[12.5px] text-white/45">Zones laden…</p>
+      ) : (
+        <>
+          <p className="mt-3 text-[12px] text-white/60">
+            {zones.data?.thuisBeschermd
+              ? `Je thuisadres is altijd beschermd (${Math.round((zones.data?.thuisStraalM ?? 750) / 10) / 100} km rondom).`
+              : "Er is nog geen thuisadres bekend. Zonder thuisadres of zone worden bij delen in elk geval start en einde van de route afgeschermd."}
+          </p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {(zones.data?.zones ?? []).map((z) => (
+              <li
+                key={z.id}
+                className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.08] px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] text-white/85">
+                    {z.label}
+                  </p>
+                  <p className="text-[11px] text-white/45">
+                    {ZONE_KINDS.find((k) => k.key === z.kind)?.label ??
+                      z.kind}{" "}
+                    · {z.radiusM} m rondom
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => remove.mutate(z.id)}
+                  aria-label={`Verwijder zone ${z.label}`}
+                  className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-rose-300"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {/* Zone toevoegen: adres zoeken → kandidaat kiezen → opslaan */}
+      <div className="mt-3 border-t border-white/[0.08] pt-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={adres}
+            onChange={(e) => setAdres(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") zoek()
+            }}
+            placeholder="Zoek adres of plek…"
+            className="min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-[#05070e]/60 px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+          />
+          <button
+            type="button"
+            onClick={zoek}
+            disabled={geocode.isPending || adres.trim().length < 3}
+            className="rounded-xl border border-white/[0.14] px-3 py-2 text-[12px] text-white/75 transition hover:border-cyan-300/40 disabled:opacity-40"
+          >
+            {geocode.isPending ? "Zoeken…" : "Zoek"}
+          </button>
+        </div>
+        {geocode.isError && (
+          <p className="mt-2 text-[12px] text-rose-300/85">
+            {geocode.error instanceof Error
+              ? geocode.error.message
+              : "Kon adres niet zoeken"}
+          </p>
+        )}
+        {geocode.data && !picked && (
+          <ul className="mt-2 flex flex-col gap-1">
+            {geocode.data.results.length === 0 && (
+              <li className="text-[12px] text-white/45">
+                Geen plekken gevonden met deze zoekterm.
+              </li>
+            )}
+            {geocode.data.results.map((c, i) => (
+              <li key={i}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPicked({ label: c.label, lat: c.lat, lon: c.lon })
+                  }
+                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[12.5px] text-white/75 transition hover:bg-white/[0.06]"
+                >
+                  {c.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {picked && (
+          <div className="mt-2.5 rounded-xl border border-cyan-300/25 bg-cyan-300/[0.05] p-3">
+            <p className="text-[12.5px] text-white/85">{picked.label}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <select
+                value={kind}
+                onChange={(e) =>
+                  setKind(e.target.value as PrivacyZone["kind"])
+                }
+                aria-label="Zonetype"
+                className="rounded-lg border border-white/[0.12] bg-[#05070e]/70 px-2.5 py-1.5 text-[12px] text-white/80 outline-none"
+              >
+                {ZONE_KINDS.map((k) => (
+                  <option key={k.key} value={k.key}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={radiusM}
+                onChange={(e) => setRadiusM(Number(e.target.value))}
+                aria-label="Straal"
+                className="rounded-lg border border-white/[0.12] bg-[#05070e]/70 px-2.5 py-1.5 text-[12px] text-white/80 outline-none"
+              >
+                {[500, 750, 1000, 1500, 2000].map((m) => (
+                  <option key={m} value={m}>
+                    {m} m rondom
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={opslaan}
+                disabled={create.isPending}
+                className="rounded-full bg-cyan-400/90 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300 disabled:opacity-40"
+              >
+                {create.isPending ? "Opslaan…" : "Zone toevoegen"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPicked(null)}
+                className="rounded-full border border-white/[0.14] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:text-white/85"
+              >
+                Annuleer
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

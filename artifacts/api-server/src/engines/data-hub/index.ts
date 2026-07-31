@@ -33,6 +33,7 @@ import {
   resolveNotifications,
 } from "../../lib/notifications";
 import { refreshDerivedLoadForAthlete } from "../../lib/derived-load-backfill";
+import { scanRouteCandidatesForUser } from "../../lib/ridden-route-candidates";
 import { notifyWithPush } from "./connection-health";
 import {
   categorizeConnectError,
@@ -401,6 +402,16 @@ export async function runSync(
     // became derivable (e.g. FTP arrived after older rides) and re-derive an
     // ESTIMATED weekly target from real riding. Best-effort, never throws.
     await refreshDerivedLoadForAthlete(clerkId);
+
+    // Persoonlijke routekandidaten: analyseer NIEUWE sessies incrementeel
+    // (cursor per gebruiker) naar herbruikbare routekandidaten. Best-effort —
+    // een kandidatenscan mag een geslaagde sync nooit laten mislukken; nooit
+    // bij paginalaad, alleen hier ná een echte import.
+    await scanRouteCandidatesForUser(clerkId).catch((err) =>
+      console.warn(
+        `[data-hub] routekandidaten-scan overgeslagen: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
 
     return {
       run: finished!,

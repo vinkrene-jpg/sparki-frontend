@@ -120,8 +120,9 @@ app.use(
 );
 
 // Dev-only: resolve a dev user when no real Clerk session is present so the v0
-// frontend can be previewed without signing in. Never registered in production.
-if (process.env.NODE_ENV !== "production") {
+// frontend can be previewed without signing in. Never registered in production,
+// and never in ANY Replit deployment (REPLIT_DEPLOYMENT), whatever NODE_ENV zegt.
+if (process.env.NODE_ENV !== "production" && !process.env.REPLIT_DEPLOYMENT) {
   app.use(devAuthBypass);
 }
 

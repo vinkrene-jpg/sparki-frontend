@@ -627,13 +627,22 @@ export class GraphHopperProvider implements RoutingProvider {
     return [...new Set(parts)].join(", ");
   }
 
-  async geocodeSearch(text: string, limit = 5): Promise<GeocodeResult[]> {
+  async geocodeSearch(
+    text: string,
+    limit = 5,
+    focus?: LatLon,
+  ): Promise<GeocodeResult[]> {
     try {
       const url = new URL(`${GH_BASE}/geocode`);
       url.searchParams.set("key", this.apiKey());
       url.searchParams.set("q", text);
       url.searchParams.set("locale", "nl");
       url.searchParams.set("limit", String(Math.min(Math.max(limit, 1), 10)));
+      if (focus) {
+        // GraphHopper geocoder: `point` geeft een voorkeurslocatie mee zodat
+        // dichtbijgelegen naamgenoten voorop komen (bias, geen filter).
+        url.searchParams.set("point", `${focus.lat},${focus.lon}`);
+      }
       const res = await fetch(url);
       if (!res.ok) return [];
       const json = (await res.json()) as GhGeocodeResponse;

@@ -8,6 +8,7 @@ import { NavSettingsPanel } from "@/components/sparki/nav-settings-panel"
 import { RouteDiscover } from "@/components/sparki/route-discover"
 import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
+import { RouteCandidatesSection } from "@/components/sparki/route-candidates-section"
 
 type RoutesView = "maken" | "gpx" | "bewaard" | "ontdek" | "instellingen"
 
@@ -129,9 +130,15 @@ export default function RoutesPage() {
               params.has("nav") ||
               params.has("ritopties")
             ) && (
-              <section className="mt-8">
-                <RouteLibrary />
-              </section>
+              <>
+                <section className="mt-8">
+                  <RouteLibrary />
+                </section>
+                {/* Persoonlijke routekandidaten uit geïmporteerde ritten
+                    (opdracht 31-07-2026): leest alleen wat de incrementele
+                    scan al vond — nooit zware analyse bij paginalaad. */}
+                <RouteCandidatesSection />
+              </>
             )}
           </>
         ) : routePlannerEnabled ? (

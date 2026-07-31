@@ -1,0 +1,256 @@
+[
+  {
+    "identiteit": "governor-fixture-parent",
+    "rol": "parent",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Ouder gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-parent rol parent"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE OUDER · ROL PARENT\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-parent-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start (ouder)\", geen Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/parent/athletes → 1 kind(eren)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-trainer-zelfstandig",
+    "rol": "coach",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Trainer Zelfstandig gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-trainer-zelfstandig rol coach"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TRAINER ZELFSTANDIG · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-zelfstandig-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start (trainer)\", geen Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/coach/athletes → 1 gekoppelde sporter(s)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-trainer-1",
+    "rol": "coach",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Trainer Een gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-trainer-1 rol coach"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TRAINER EEN · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-1-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start (trainer)\", geen Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/coach/athletes → 2 gekoppelde sporter(s)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-trainer-2",
+    "rol": "coach",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Trainer Twee (niet gekoppeld) gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-trainer-2 rol coach"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TRAINER TWEE (NIET GEKOPPELD) · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-2-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start (trainer)\", geen Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/coach/athletes → 0 gekoppelde sporter(s)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-hoofdtrainer",
+    "rol": "coach",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Hoofdtrainer gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-hoofdtrainer rol coach"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE HOOFDTRAINER · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-hoofdtrainer-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start (trainer)\", geen Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/coach/athletes → 0 gekoppelde sporter(s)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-clubbeheerder",
+    "rol": "athlete",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Clubbeheerder gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-clubbeheerder rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE CLUBBEHEERDER · ROL ATHLETE\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-clubbeheerder-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start\" + Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-mechanieker",
+    "rol": "athlete",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Mechanieker gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-mechanieker rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE MECHANIEKER · ROL ATHLETE\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-mechanieker-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start\" + Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-tester",
+    "rol": "athlete",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Tester gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-tester rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TESTER · ROL ATHLETE · HOOFDTESTER\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-tester-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start\" + Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-admin",
+    "rol": "athlete",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Admin Testbeheer gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-admin rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE ADMIN TESTBEHEER · ROL ATHLETE · ADMIN\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-admin-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start\" + Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 200 (403-bewijs waar verwacht)"
+      }
+    ]
+  }
+]

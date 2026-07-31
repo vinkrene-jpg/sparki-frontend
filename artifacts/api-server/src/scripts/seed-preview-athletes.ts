@@ -168,7 +168,7 @@ const PERSONA_SPECS: Spec[] = [
   },
   {
     clerkId: "seed_persona_basic",
-    name: "Abonnee Basis",
+    name: "Abonnee Basis (interne tier, geen product)",
     email: "persona-basic@preview.sparki",
     expect: "variant sparki_basic",
     entitlementMode: "subscription",
@@ -181,7 +181,7 @@ const PERSONA_SPECS: Spec[] = [
   },
   {
     clerkId: "seed_persona_performance",
-    name: "Abonnee Performance",
+    name: "Abonnee Performance (interne tier, geen product)",
     email: "persona-performance@preview.sparki",
     expect: "variant sparki_performance",
     entitlementMode: "subscription",
@@ -194,7 +194,7 @@ const PERSONA_SPECS: Spec[] = [
   },
   {
     clerkId: "seed_persona_pro",
-    name: "Abonnee Pro (compleet)",
+    name: "Abonnee Compleet (Sparki Compleet)",
     email: "persona-pro@preview.sparki",
     expect: "variant sparki_pro",
     entitlementMode: "subscription",

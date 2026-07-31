@@ -158,6 +158,7 @@ export const queryKeys = {
     detail: (id: number) => ["routes", "detail", id] as const,
     byWorkout: (plannedWorkoutId: number) =>
       ["routes", "by-workout", plannedWorkoutId] as const,
+    privacyZones: () => ["routes", "privacy-zones"] as const,
   },
 
   trainingPlan: {

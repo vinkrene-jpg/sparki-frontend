@@ -109,6 +109,14 @@ export interface RoutingProvider {
   routePointToPoint(req: PointToPointRequest): Promise<RouteResult>;
   routeWaypoints(req: WaypointRequest): Promise<RouteResult>;
   geocode(text: string): Promise<GeocodeResult | null>;
-  geocodeSearch(text: string, limit?: number): Promise<GeocodeResult[]>;
+  // `focus` biedt de provider een voorkeurslocatie (bv. het huisadres van de
+  // renner) zodat bij gelijke namen (Hengelo OV vs. Hengelo Indonesië) de
+  // dichtstbijzijnde kandidaten voorop komen. Bias, geen filter: de provider
+  // mag verre kandidaten nog steeds teruggeven; de caller sorteert/filtert.
+  geocodeSearch(
+    text: string,
+    limit?: number,
+    focus?: LatLon,
+  ): Promise<GeocodeResult[]>;
   reverseGeocode(point: LatLon): Promise<string | null>;
 }

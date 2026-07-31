@@ -403,12 +403,22 @@ export class OrsProvider implements RoutingProvider {
 
   // Forward geocode free text to a list of candidates (best-first). Returns an
   // empty array on any failure — search never throws at the caller.
-  async geocodeSearch(text: string, limit = 5): Promise<GeocodeResult[]> {
+  async geocodeSearch(
+    text: string,
+    limit = 5,
+    focus?: LatLon,
+  ): Promise<GeocodeResult[]> {
     try {
       const url = new URL(`${ORS_BASE}/geocode/search`);
       url.searchParams.set("api_key", this.apiKey());
       url.searchParams.set("text", text);
       url.searchParams.set("size", String(Math.min(Math.max(limit, 1), 10)));
+      if (focus) {
+        // Pelias focus-punt: rangschikt kandidaten dicht bij de renner voorop
+        // zonder verre kandidaten te verbergen (bias, geen filter).
+        url.searchParams.set("focus.point.lat", String(focus.lat));
+        url.searchParams.set("focus.point.lon", String(focus.lon));
+      }
       const res = await fetch(url, { headers: { Accept: "application/json" } });
       if (!res.ok) return [];
       const json = (await res.json()) as PeliasResponse;

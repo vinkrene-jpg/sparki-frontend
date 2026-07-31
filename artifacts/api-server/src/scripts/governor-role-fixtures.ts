@@ -68,6 +68,7 @@ type Persona = {
   productVariant?: string | null;
   tierTrial?: "GO" | "COMPLETE"; // Sparki-beheerde trial als tier-context
   clubRole?: string; // rol in de fixture-club
+  isHeadTester?: boolean; // WP-R0: tester-identiteit (productiemechanisme: is_head_tester)
 };
 
 // Synthetische personas — geen echte persoonsgegevens.
@@ -80,6 +81,8 @@ export const PERSONAS: Persona[] = [
   { key: "parent", name: "TESTFIXTURE Ouder", roles: ["parent"], activeRole: "parent", entitlementMode: "subscription", clubRole: "parent" },
   { key: "trainer-1", name: "TESTFIXTURE Trainer Een", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription", clubRole: "trainer" },
   { key: "trainer-2", name: "TESTFIXTURE Trainer Twee (niet gekoppeld)", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription", clubRole: "trainer" },
+  // WP-R0: zelfstandige trainer — coach met directe koppeling, bewust GEEN clublid.
+  { key: "trainer-zelfstandig", name: "TESTFIXTURE Trainer Zelfstandig", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription" },
   { key: "hoofdtrainer", name: "TESTFIXTURE Hoofdtrainer", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription", clubRole: "hoofdtrainer" },
   { key: "clubbeheerder", name: "TESTFIXTURE Clubbeheerder", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "admin" },
   { key: "ploegleider", name: "TESTFIXTURE Ploegleider", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "teammanager" },
@@ -87,6 +90,8 @@ export const PERSONAS: Persona[] = [
   // Admin/testbeheer: admin-rechten lopen via SPARKI_ADMIN_IDS (env), die we hier
   // bewust NIET aanpassen; deze persona bestaat voor menusmoke en audit-tests.
   { key: "admin", name: "TESTFIXTURE Admin Testbeheer", roles: ["athlete"], activeRole: "athlete", entitlementMode: "legacy_unrestricted" },
+  // WP-R0: tester — sporter met het echte hoofdtester-mechanisme (is_head_tester).
+  { key: "tester", name: "TESTFIXTURE Tester", roles: ["athlete"], activeRole: "athlete", birthDate: "1994-06-08", entitlementMode: "legacy_unrestricted", isHeadTester: true },
   // Controlegeval buiten de club (niet-gekoppeld aan wat dan ook).
   { key: "outsider", name: "TESTFIXTURE Buitenstaander", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription" },
 ];
@@ -130,6 +135,7 @@ async function createFixturesInner() {
         entitlementMode: p.entitlementMode,
         productVariant: p.productVariant ?? null,
         releaseGroup: "test",
+        isHeadTester: p.isHeadTester === true,
       })
       .onConflictDoUpdate({
         target: userProfilesTable.clerkId,
@@ -141,6 +147,7 @@ async function createFixturesInner() {
           entitlementMode: p.entitlementMode,
           productVariant: p.productVariant ?? null,
           releaseGroup: "test",
+          isHeadTester: p.isHeadTester === true,
         },
       });
     if (p.birthDate) {
@@ -264,6 +271,14 @@ async function createFixturesInner() {
   await db
     .insert(coachAthleteLinksTable)
     .values({ coachClerkId: t1, athleteClerkId: clerkIdFor("athlete-adult"), status: "accepted" })
+    .onConflictDoUpdate({
+      target: [coachAthleteLinksTable.coachClerkId, coachAthleteLinksTable.athleteClerkId],
+      set: { status: "accepted" },
+    });
+  // WP-R0: zelfstandige trainer ↔ sporter buiten de club (athlete-compleet).
+  await db
+    .insert(coachAthleteLinksTable)
+    .values({ coachClerkId: clerkIdFor("trainer-zelfstandig"), athleteClerkId: clerkIdFor("athlete-compleet"), status: "accepted" })
     .onConflictDoUpdate({
       target: [coachAthleteLinksTable.coachClerkId, coachAthleteLinksTable.athleteClerkId],
       set: { status: "accepted" },
