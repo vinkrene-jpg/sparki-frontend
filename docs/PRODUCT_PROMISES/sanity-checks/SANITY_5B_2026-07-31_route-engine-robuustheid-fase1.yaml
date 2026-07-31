@@ -1,0 +1,33 @@
+# Poort 5b sanity-check — Robuustere route-engine, veilige eerste fase
+# Opdracht René 31-07-2026 (fase 1–4 + schaalopties-beslisdocument).
+
+delivery: "Routingwijzigingen worden voortaan vooraf op faalwijzen beoordeeld (bindend risicoanalyse-sjabloon docs/SPARKI_ROUTING_RISK_ANALYSIS_TEMPLATE.md + fail-closed diff-poort scripts/check-routing-risk-analysis.mjs), automatisch tegen gegenereerde onverwachte scenario's getest (seeded property-suite routing-generated-invariants: 120 scenario's compact, 2000 nachtelijk/handmatig, reproduceerbaar via ROUTING_GEN_SEED) en gekoppeld aan een mergepoort (gestaged workflowbestand docs/github/pr-checks-routing.yml voor #507-afronding). Cachinginventaris (SPARKI_ROUTING_CACHE_INVENTORY.md) en schaalopties-beslisdocument (SPARKI_ROUTING_SCALE_OPTIONS.md) opgeleverd. Bewust NIETS herbouwd: geen tweede cachesysteem, geen eigen Overpass, geen parallelle routemotor."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "Testsuite: pnpm --filter @workspace/api-server run test:routing-generated — 120 gegenereerde scenario's (4 fietsprofielen, 5–200 km, 4 gebieden, 1–3 kandidaten, wegdekvoorkeur, koude/warme metingen, 4 gelijktijdige aanvragen per batch), seed 20260731: 52 geleverd (schoon), 25 hard geweigerd, 43 eerlijk onverifieerbaar geweigerd, 0 invariantschendingen, ~1,5 s"
+  - "Governance: docs/SPARKI_AI_REVIEW_GOVERNANCE.md §11a (bindend) + scripts/check-routing-risk-analysis.mjs (uitgevoerd: exit 0 zonder routekern-wijziging; faalt aantoonbaar zonder analyse bij routekern-diff)"
+  - "Documenten: SPARKI_ROUTING_RISK_ANALYSIS_TEMPLATE.md, SPARKI_ROUTING_CACHE_INVENTORY.md (5 gaten benoemd), SPARKI_ROUTING_SCALE_OPTIONS.md (5 opties vergeleken, niets gebouwd)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "De mergepoort is geen dode belofte: de risicoanalyse-check is een echt uitvoerbaar script dat fail-closed exit 1 geeft, en het workflowbestand staat expliciet als GESTAGED gemarkeerd (agent-token mist workflows-scope) met de handmatige #507-stap benoemd — er wordt nergens gesuggereerd dat GitHub de checks nu al afdwingt."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "De gegenereerde suite kan niet vals slagen op één pad: de verdeling wordt gecontroleerd (geleverd, hard geweigerd én onverifieerbaar moeten alle drie voorkomen, anders faalt de run) en elk falend scenario print seed + index + scenario-JSON voor exacte herhaling."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Kerninvariant positief én negatief bewezen: een geleverde route heeft aantoonbaar een schone meting op exact de geleverde geometrie (kandidaat-tag-check), en hard geblokkeerde of onverifieerbare metingen eindigen aantoonbaar in NoSuitableRouteError/UnverifiableRouteError — nooit in een geleverde route; de verifier is in élk scenario aangeroepen (geen pending-uitkomst mogelijk)."
+        result: "pass"
+
+# Eerlijke kanttekeningen: (1) de suite test de poortlogica met nagebootste
+# provider/verifier — geen live Overpass/ORS; netwerkpaden blijven gedekt door
+# bestaande integratietests en het koudegat-422-bewijs. (2) POST /api/routes
+# (opslaan) heeft server-side geen eigen verificatie-gate; de UI respecteert de
+# remarks-status — ongewijzigd gelaten (opdracht: niets herbouwen), genoteerd
+# als bekend gat in de cache-/governance-docs. (3) Afdwinging in GitHub start
+# pas na René's handmatige workflows-scope-push (#507).
+verdict: "deliverable"

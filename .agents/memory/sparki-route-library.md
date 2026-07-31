@@ -17,3 +17,9 @@ description: Drie harde poorten tegen doodlopende wegen en mini-lusjes in biblio
 - Afgewezen lus ⇒ eerlijk géén rij; `generateStarterSet` probeert 2 seeds per combinatie en laat gaten staan; gaten worden bij een volgende vulvraag hervuld (cel-vol-guard op VOLLEDIGE set, niet ≥10).
 - ORS-dagquotum raakt op bij massaal hervullen (continu 429) — dan stoppen en hervullen aan quota-vernieuwing/nachttaak overlaten.
 - POST /bibliotheek/hier: ligt de woonlocatie in dezelfde cel als het kaartcentrum, dan starten routes exact bij huis.
+
+## Robuustheids-fase 1 (31-07-2026)
+- Gegenereerde invarianten-suite `src/tests/routing-generated-invariants.ts` (seed via ROUTING_GEN_SEED, compact 120 / full 2000): geleverde route MOET schone meting op exact de geleverde geometrie hebben; hard/onverifieerbaar ⇒ altijd throw. Verdeling-check voorkomt vals slagen op één pad.
+- Harde routeregels wijzigen vereist ingevulde risicoanalyse in docs/ROUTING_RISK_ANALYSES/ (template + scripts/check-routing-risk-analysis.mjs, fail-closed diff-poort; escape "RRA: niet van toepassing" in commit).
+- CI-workflow kan NIET door de agent gepusht worden (workflows-scope ontbreekt) — gestaged in docs/github/pr-checks-routing.yml.
+- Bekend gat (bewust gelaten): POST /api/routes opslaan heeft server-side geen eigen verificatie-gate; UI respecteert remarks-status.
