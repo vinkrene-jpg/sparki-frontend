@@ -51,7 +51,10 @@ async function loadFtp(clerkId: string): Promise<{
   history: FtpEntry[];
 }> {
   const [profile] = await db
-    .select({ ftp: athleteProfilesTable.ftp })
+    .select({
+      ftp: athleteProfilesTable.ftp,
+      estimated: athleteProfilesTable.ftpEstimated,
+    })
     .from(athleteProfilesTable)
     .where(eq(athleteProfilesTable.clerkId, clerkId))
     .limit(1);
@@ -62,7 +65,11 @@ async function loadFtp(clerkId: string): Promise<{
     })
     .from(ftpHistoryTable)
     .where(eq(ftpHistoryTable.clerkId, clerkId));
-  return { profileFtp: profile?.ftp ?? null, history };
+  // DATA_TRUST_01: een GESCHATTE profiel-FTP is geen brondata — een
+  // belastingscore afgeleid van een schatting zou een verzonnen getal zijn.
+  const profileFtp =
+    profile && profile.estimated !== true ? (profile.ftp ?? null) : null;
+  return { profileFtp, history };
 }
 
 /**

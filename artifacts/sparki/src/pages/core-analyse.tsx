@@ -591,7 +591,7 @@ function OverzichtTab({
           uitlegKey="vorm"
         />
         <StatTegel
-          label="FTP"
+          label={profiel?.ftpEstimated ? "FTP (geschat)" : "FTP"}
           value={profiel?.ftp ?? null}
           unit="W"
           color={CHART.ftp}

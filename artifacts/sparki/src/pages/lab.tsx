@@ -150,6 +150,7 @@ export default function LabPage() {
       feelScore: s.feelScore ?? null,
     })),
     ftpWatts: profile?.ftp ?? null,
+    ftpEstimated: profile?.ftpEstimated ?? null,
     weightKg: profile?.weightKg != null ? Number(profile.weightKg) : null,
     todayIso: localTodayIso(),
   })
@@ -201,7 +202,7 @@ export default function LabPage() {
         {profile && (
           <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
             {profile.displayName ?? "Atleet"}
-            {profile.ftp ? ` · FTP ${profile.ftp}W` : ""}
+            {profile.ftp ? ` · FTP ${profile.ftp}W${profile.ftpEstimated ? " (geschat)" : ""}` : ""}
             {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
           </p>
         )}
