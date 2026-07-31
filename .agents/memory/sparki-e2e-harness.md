@@ -12,6 +12,13 @@ description: Blijvende e2e-harness in e2e/ — echte Clerk-login, echte kliks, r
 - **Why:** dev-schermbewijs was structureel ongeldig (aparte routetabel + vroegere admin-bypass).
 - **How to apply:** elk WP met schermacceptatie krijgt een `e2e/tests/<naam>.mjs`-proef; run via shell (`node e2e/tests/…`).
 
+# Omgevingen (register: docs/product/SPARKI_OMGEVINGEN.md)
+
+- Productie (sparki-frontend.replit.app) = ANDERE Clerk-instantie (pk_live; dev=pk_test) + eigen prod-DB → dev-tickets werken daar nooit; ingelogde prod-tests kunnen alleen met een echt prod-account (René). Acceptatieomgeving = productie.
+- PWA is géén eigen omgeving: volgt de installatie-oorsprong; sw.js is alleen webpush (geen paginacache).
+- /sparki-mobile/ op prod = Expo-startpagina van de aparte navigatie-app, geen web-kliktest mogelijk.
+- Commit-identificatie: web define `__SPARKI_BUILD_SHA__` (TESTCONTEXT-label) + api `GET /api/version`; nooit meer bundel-forensiek. Prod toont pas na herpublicatie de nieuwe endpoint.
+
 # WP-S1 rechtenstriktheid
 
 - `isAdmin` (api-server lib/flags.ts) heeft GEEN dev-bypass meer: alleen SPARKI_ADMIN_IDS. Admin-UI in dev previewen = seed-clerkId expliciet in dat env zetten. admin-smoke bewijst eerst de dichte poort (403), maakt zichzelf daarna admin via env.

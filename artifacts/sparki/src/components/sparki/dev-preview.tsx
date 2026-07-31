@@ -256,7 +256,10 @@ function DevPanel({
     .filter(Boolean)
     .join("+")
   const illustratieActief = dayType !== undefined || coachScenario !== undefined
-  const contextLabel = `TESTCONTEXT · ${identiteit} · rol ${rol}${
+  // Omgevingsnaam + commit-SHA verplicht zichtbaar in elke niet-productieomgeving.
+  const buildSha =
+    typeof __SPARKI_BUILD_SHA__ === "string" ? __SPARKI_BUILD_SHA__ : "onbekend"
+  const contextLabel = `TESTCONTEXT · DEV PREVIEW @ ${buildSha} · ${identiteit} · rol ${rol}${
     rechten ? ` · ${rechten}` : ""
   }${illustratieActief ? " · ILLUSTRATIE" : ""}`
 
