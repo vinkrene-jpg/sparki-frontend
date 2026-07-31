@@ -16,7 +16,6 @@ import {
 import TrainPage from "@/pages/train"
 import CorePlanPage from "@/pages/core-plan"
 import JourneyPage from "@/pages/journey"
-import SprintenPage from "@/pages/sprinten"
 import SupportPage from "@/pages/support"
 import ProfielPage from "@/pages/profiel"
 import FeedPage from "@/pages/feed"
@@ -482,8 +481,6 @@ export function DevPreview() {
     page = <WedstrijdRoomPage />
   } else if (location.startsWith("/journey")) {
     page = <JourneyPage />
-  } else if (location.startsWith("/sprinten")) {
-    page = <SprintenPage />
   } else if (location.startsWith("/support")) {
     page = <SupportPage />
   } else if (location.startsWith("/profiel/")) {

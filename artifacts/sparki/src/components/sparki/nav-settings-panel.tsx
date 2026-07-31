@@ -188,10 +188,10 @@ export function NavSettingsPanel() {
                 k: "autoPois" as const,
                 l: "Stops onderweg tonen (koffie, water, pech)",
               },
-              {
-                k: "autoSprint" as const,
-                l: "Bordjes-sprint standaard aan bij samen rijden",
-              },
+              // "autoSprint" verwijderd uit de lijst: bordjes sprinten is
+              // gestopt (veiligheidsrisico op openbare weg, besluit
+              // 31-07-2026). De opgeslagen voorkeur blijft bestaan maar doet
+              // niets meer.
               {
                 k: "soundCues" as const,
                 l: "Geluidssignalen bij afslagen (korte tonen)",

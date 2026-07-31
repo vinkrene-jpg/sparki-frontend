@@ -1,0 +1,40 @@
+# Poort 5b sanity-check — Bordjes sprinten gestopt (veiligheidsrisico op
+# openbare weg, besluit René 31-07-2026): UI verborgen, startpaden geblokkeerd,
+# historie bewaard, docs gemarkeerd.
+
+delivery: "Bordjes sprinten is uit de actieve Ontdek-ervaring verwijderd en kan nergens meer gestart worden. Web: de ingangkaart op /routes (Ontdek-tab) is weg, de /sprinten-route is uit App.tsx en dev-preview verwijderd (directe URL ⇒ NotFound), de zoekingang uit het zoekregister gehaald, de nav-instelling 'Bordjes-sprint standaard aan bij samen rijden' verwijderd, en in de navigatie is de borddetectie uitgezet (query staat vast uit) zodat markers, aankondigingen, scoring en overlays nooit meer activeren; alle sprint-copy in generator, ritopties en legenda is vervangen door neutrale samen-rijden-teksten. Server: GET /api/sprints/route/:id, POST …/rescan, POST /api/sprints/result, POST /api/sprints/place en POST …/share geven 410 met eerlijke stopmelding — ook via directe URL/API, ook zonder inlog. Historie bewaard: GET /api/sprints/season blijft alleen-lezen werken en er is geen rij gebruikersdata verwijderd. Herbruikbare inventaris (engines/sprint detect/score/badges, schema, leesdeel use-sprints, pagina/free-ride-component) is behouden en als zodanig gemarkeerd. Roadmap en current state dragen 'Gestopt — veiligheidsrisico op openbare weg'. Er is bewust géén vervangende gamificationfunctie gebouwd."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/routes?view=ontdek (web): geen Bordjes-sprinten-kaart meer"
+  - "/sprinten (web, directe URL): niet meer gerout ⇒ NotFound"
+  - "API via curl op de draaiende dev-server: alle vijf sprint-startpaden 410 met stopmelding + stopped:true; /api/sprints/season 200 (historie leesbaar)"
+  - "Route-navigatie: borddetectie vast uit (useSprintBoards(null)); ritopties/generator tonen alleen nog maten-keuze"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Er blijft geen enkele zichtbare knop of link naar het sprintspel achter: de Ontdek-kaart, de 'Seizoen'-link in de navigatiebanner en de nav-instellingenregel zijn verwijderd, niet uitgegrijsd — grep op '/sprinten' in de web-src vindt alleen nog uitlegcommentaar; geen dode knop die naar een 410 leidt."
+        result: "pass"
+      - case: "De keuze 'Alleen / Met anderen' (generator, ritopties, navigatie-setup) blijft volledig werkend voor het kiezen van maten; de teksten beloven geen sprintspel meer, dus geen control die iets aankondigt dat niet gebeurt."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "De 410-melding legt eerlijk uit WAAROM ('gestopt — veiligheidsrisico op de openbare weg') en dat eerdere resultaten bewaard blijven — geen kale foutcode en geen suggestie van een tijdelijke storing; curl-bewezen op alle vijf startpaden."
+        result: "pass"
+      - case: "Historische sprint-items in de Samen-feed en het seizoensoverzicht-endpoint blijven kloppen met wat er echt gebeurd is (alleen-lezen, geen nieuwe rijen mogelijk); er wordt geen historie verzonnen of verwijderd — season-endpoint curl-gecontroleerd (200, echte telling)."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Het spel is niet 'leeg gemaakt' maar echt dicht: de borddetectie-query staat hard uit (null ⇒ enabled:false) én de server weigert met 410, dus ook een oude client of handmatige API-call kan nooit een half-startende sprintervaring krijgen; typecheck web+api groen, pure engine-test test:sprint 16/16 groen (inventaris blijft correct bewaard)."
+        result: "pass"
+      - case: "Docs tonen de status als expliciet besluit ('Gestopt — veiligheidsrisico op openbare weg' in roadmap en SPARKI_CURRENT_STATE, met bewaar- en herstartvoorwaarden) in plaats van de functie stilletjes uit de documentatie te laten verdwijnen."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): de blokkade en het behoud van historie zijn
+# bewezen met curl op de draaiende dev-server, typechecks en de pure
+# engine-test; er is geen interactieve kliksessie of mobiele test gedaan
+# (mobiel heeft geen bordjes-sprint-ingang — grep-gecontroleerd). Het
+# share-pad is bewust mee-dichtgezet: al gedeelde historie blijft zichtbaar,
+# nieuwe toggles kunnen niet meer.
+verdict: "deliverable"

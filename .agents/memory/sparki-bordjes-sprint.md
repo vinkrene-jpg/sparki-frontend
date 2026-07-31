@@ -5,6 +5,23 @@ description: Town-sign sprint feature — engine, scoring, board detection, and 
 
 # Bordjes sprinten (town-sign sprints)
 
+## GESTOPT — besluit René 31-07-2026 (bindend)
+Veiligheidsrisico op de openbare weg: de functie stimuleert sprintgedrag en kan
+kaartcontroles ten spijt niet betrouwbaar rekening houden met actueel verkeer.
+- UI verborgen (geen Ontdek-kaart, /sprinten niet gerout, zoekingang weg,
+  nav-instelling autoSprint verwijderd), borddetectie in de navigator hard uit
+  (`useSprintBoards(null)`).
+- Server blokkeert ALLE startpaden + share met 410 (vóór requireAuth, bewust);
+  alleen GET /season blijft (alleen-lezen historie). Geen data verwijderd.
+- Herbruikbaar bewaard: engines/sprint (detect/score/badges + test:sprint),
+  schema sprints.ts, use-sprints leesdeel, sprinten.tsx/free-ride-sprint.tsx
+  als gemarkeerde inventaris.
+- NIET opnieuw bouwen, geen vervangende gamification. Alleen een variant op
+  afgesloten terrein of vooraf handmatig goedgekeurde trainingssegmenten mag
+  later opnieuw worden onderzocht (nieuw besluit vereist).
+
+Alles hieronder is historische inventaris van hoe het spel werkte.
+
 Sprint for the town-name signs ("komborden") along a route. Boards are the
 NEW place-name transitions detected by reverse-geocoding sampled route points.
 

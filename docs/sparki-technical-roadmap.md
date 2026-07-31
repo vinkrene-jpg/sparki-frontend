@@ -2,6 +2,19 @@
 
 _Last updated: 2026-06-22 — end of the "AI Memory & Core Data Foundation" sprint._
 
+> **Statuswijziging 2026-07-31 — Bordjes sprinten: Gestopt — veiligheidsrisico op
+> openbare weg.** De functie stimuleerde sprintgedrag op de openbare weg en kan
+> ondanks kaartcontroles niet betrouwbaar rekening houden met actuele
+> verkeerssituaties, voetgangers, tegenliggers, werkzaamheden, slecht wegdek of
+> ontbrekende kaartdata. UI verborgen, startpaden (borddetectie, live
+> plaatsdetectie, nieuwe resultaten, share-toggle) geblokkeerd met 410 — ook via
+> directe URL/API. Historische `sprint_results` blijven bewaard (geen verwijdering
+> zonder migratieplan); herbruikbaar bewaard: `engines/sprint` (detect/score/
+> badges), schema `sprints.ts`, leesdeel `use-sprints.ts`, pagina/componenten als
+> inventaris. Er komt géén vervangende gamificationfunctie; alleen een variant op
+> afgesloten terrein of vooraf handmatig goedgekeurde trainingssegmenten mag later
+> opnieuw worden onderzocht.
+
 This document is an **honest** snapshot of what Sparki's data/AI foundation actually
 does today: what is real, what is a deliberate placeholder, what is mocked, the known
 debt, the risks, and the next 15 things worth doing. It is written for the next

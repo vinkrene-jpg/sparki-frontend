@@ -2811,7 +2811,8 @@ export function RouteGenerator({
         <p className="mt-3 text-[12px] text-negative/85">{error}</p>
       )}
 
-      {/* Samen rijden? — de plek waar je bordjes-sprint en je maten kiest. */}
+      {/* Samen rijden? — de plek waar je je maten kiest. (Bordjes-sprint is
+          gestopt — veiligheidsrisico op openbare weg, besluit 31-07-2026.) */}
       <div className="mt-4 border-t border-white/[0.08] pt-4">
         <span className="label-xs text-white/35">SAMEN RIJDEN?</span>
         <div className="mt-2 flex items-center gap-1.5">
@@ -2844,8 +2845,7 @@ export function RouteGenerator({
         {withOthers && (
           <div className="mt-2.5">
             <p className="text-[12px] leading-relaxed text-white/50">
-              Sprinten om plaatsbordjes staat aan — gas erop bij de komborden.
-              Na het bewaren opent de navigatie direct met deze instelling.
+              Kies met wie je rijdt — dat zie je terug in de navigatie.
             </p>
             {friends.length > 0 ? (
               <>
@@ -2881,7 +2881,7 @@ export function RouteGenerator({
             ) : (
               <p className="mt-2 text-[11px] leading-relaxed text-white/35">
                 Nog geen vrienden gekoppeld — voeg ze toe via Samen, dan kun je
-                ze hier kiezen. Sprinten om bordjes werkt ook zonder.
+                ze hier kiezen.
               </p>
             )}
           </div>
@@ -2951,11 +2951,11 @@ export function RouteGenerator({
             <p>
               <span className="text-white/40">Gezelschap: </span>
               {withOthers
-                ? `je rijdt met anderen (bordjes-sprint aan${
+                ? `je rijdt met anderen${
                     buddyIds.length > 0
-                      ? `, ${buddyIds.length} maat${buddyIds.length === 1 ? "" : "jes"}`
+                      ? ` (${buddyIds.length} maat${buddyIds.length === 1 ? "" : "jes"})`
                       : ""
-                  })`
+                  }`
                 : "je rijdt alleen"}
             </p>
           </div>

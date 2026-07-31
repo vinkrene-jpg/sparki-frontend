@@ -1,8 +1,6 @@
-import { Link, useLocation, useSearch } from "wouter"
+import { useLocation, useSearch } from "wouter"
 import { dagSfeer } from "@/lib/sfeer"
-import { Flag, ChevronRight } from "lucide-react"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
-import { ACCENT } from "@/components/sparki/ui"
 import { HoofdstukTabs, type HoofdstukTab } from "@/components/sparki/hoofdstuk-tabs"
 import { RoutePanel } from "@/components/sparki/route-panel"
 import { RouteLibrary } from "@/components/sparki/route-library"
@@ -115,37 +113,8 @@ export default function RoutesPage() {
             <div className="mt-8">
               <RouteDiscover />
             </div>
-            {/* Bordjes-sprinten hoorde bij het oude hoofdscherm; het is een
-                ontdek-achtige nevenweg en woont nu onder dit tabblad. */}
-            <section className="mt-8">
-              <Link
-                href="/sprinten"
-                className="flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-map-panel/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
-              >
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
-                  style={{ background: "rgba(120,210,230,0.08)" }}
-                >
-                  <Flag
-                    className="h-5 w-5"
-                    strokeWidth={1.75}
-                    style={{ color: ACCENT }}
-                  />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-medium text-white/90">
-                    Bordjes-sprinten
-                  </span>
-                  <span className="mt-0.5 block text-[12px] text-white/45">
-                    Sprint om plaatsnaamborden op je route
-                  </span>
-                </span>
-                <ChevronRight
-                  className="h-4 w-4 shrink-0 text-white/25"
-                  strokeWidth={1.75}
-                />
-              </Link>
-            </section>
+            {/* Bordjes-sprinten stond hier als ingang, maar is gestopt —
+                veiligheidsrisico op openbare weg (besluit 31-07-2026). */}
           </>
         ) : view === "bewaard" ? (
           <>

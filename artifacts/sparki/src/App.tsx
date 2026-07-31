@@ -36,7 +36,6 @@ import MechaniekerPage from "@/pages/mechanieker";
 import RoutesPage from "@/pages/routes";
 import KalenderPage from "@/pages/kalender";
 import RacesPage from "@/pages/races";
-import SprintenPage from "@/pages/sprinten";
 import WedstrijdRoomPage from "@/pages/wedstrijd-room";
 import JourneyPage from "@/pages/journey";
 import KnowledgePage from "@/pages/knowledge";
@@ -713,9 +712,9 @@ function AppRouter() {
                 <Route path="/races">
                   <ProtectedPage component={RacesPage} />
                 </Route>
-                <Route path="/sprinten">
-                  <ProtectedPage component={SprintenPage} />
-                </Route>
+                {/* /sprinten is bewust NIET meer gerout — Bordjes sprinten is
+                    gestopt (veiligheidsrisico op openbare weg, besluit
+                    31-07-2026); directe URL valt door naar NotFound. */}
                 <Route path="/wedstrijd-room">
                   <ProtectedPage component={WedstrijdRoomPage} />
                 </Route>

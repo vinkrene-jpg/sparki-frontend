@@ -1,3 +1,9 @@
+// GESTOPT — veiligheidsrisico op openbare weg (besluit 31-07-2026).
+// Deze pagina is bewust NIET meer gerout in App.tsx (directe URL ⇒ NotFound)
+// en de server blokkeert alle startpaden met 410. Het bestand blijft bewaard
+// als herbruikbare inventaris (seizoensoverzicht/badges-weergave) voor een
+// eventuele latere variant op afgesloten terrein of vooraf handmatig
+// goedgekeurde trainingssegmenten. Historische gebruikersdata blijft staan.
 import { useLocation } from "wouter"
 import { ArrowLeft, Trophy, Zap, Share2, Check, Lock } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"

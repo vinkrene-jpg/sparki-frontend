@@ -768,9 +768,14 @@ export function RouteNavigator({
       }, 400)
     }
   }
-  const boardsQuery = useSprintBoards(routeId)
+  // GESTOPT (besluit 31-07-2026): Bordjes sprinten is stopgezet wegens
+  // veiligheidsrisico op de openbare weg. De borddetectie wordt bewust NIET
+  // meer opgevraagd (null ⇒ query uit), waardoor het hele sprintspel —
+  // markers, aankondigingen, scoring, overlays — nooit meer activeert. De
+  // onderliggende code is bewaard als herbruikbare inventaris voor een
+  // eventuele latere variant op afgesloten terrein.
+  const boardsQuery = useSprintBoards(null)
   const boards = boardsQuery.data?.boards ?? []
-  const boardsAvailable = boardsQuery.data?.available ?? true
 
   const boardMarkersRef = useRef<L.Marker[]>([])
   // Rolling speed samples (km/h) with timestamps, for gain/peak over a sprint.
@@ -2862,12 +2867,8 @@ export function RouteNavigator({
                 <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">🚴</span>
                 Blauwe stip met pijl = jij, met je kijkrichting
               </li>
-              {withOthers && boards.length > 0 && (
-                <li className="flex items-center gap-2.5">
-                  <span className="flex h-5 w-6 shrink-0 items-center justify-center"><Zap className="h-3.5 w-3.5 text-amber-400" fill="currentColor" aria-hidden="true" /></span>
-                  Geel bordje = plaatsbordje om voor te sprinten
-                </li>
-              )}
+              {/* Legenda-regel voor sprintbordjes verwijderd — bordjes
+                  sprinten is gestopt (veiligheid, besluit 31-07-2026). */}
               {Array.from(new Set(pois.map((p) => p.kind))).map((kind) => (
                 <li key={kind} className="flex items-center gap-2.5">
                   <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">
@@ -3029,8 +3030,7 @@ export function RouteNavigator({
               </div>
               {withOthers && (
                 <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-                  Sprinten om plaatsbordjes staat aan — gas erop bij de
-                  komborden.
+                  Je rijdt met anderen — dat zie je terug in het ritverslag.
                 </p>
               )}
             </div>
@@ -3180,36 +3180,18 @@ export function RouteNavigator({
           </div>
         )}
 
-        {routeId != null && withOthers && (
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-yellow-400/25 bg-map-panel/92 px-3.5 py-2.5 backdrop-blur-md">
-            <Zap
-              className="h-5 w-5 shrink-0 text-yellow-300"
+        {/* De bordjes-sprintbanner stond hier; het spel is gestopt
+            (veiligheidsrisico op openbare weg, besluit 31-07-2026). Alleen de
+            eerlijke maten-melding blijft over. */}
+        {routeId != null && withOthers && buddyNames.length > 0 && (
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/15 bg-map-panel/92 px-3.5 py-2.5 backdrop-blur-md">
+            <Users
+              className="h-5 w-5 shrink-0 text-cyan-300"
               strokeWidth={1.75}
             />
             <p className="text-[12.5px] leading-snug text-white/70">
-              {boardsQuery.isLoading
-                ? "Bordjes zoeken langs de route…"
-                : !boardsAvailable
-                  ? "Bordjes kunnen nu niet bepaald worden."
-                  : boards.length > 0
-                    ? `${boards.length} ${boards.length === 1 ? "bordje" : "bordjes"} om te sprinten. Gas erop bij de komborden!`
-                    : "Geen plaatsbordjes op deze route — sprinten kan altijd, maar levert hier geen punten op."}
-              {buddyNames.length > 0 && (
-                <span className="text-white/45">
-                  {" "}
-                  Samen met {buddyNames.join(", ")}.
-                </span>
-              )}
+              Samen met {buddyNames.join(", ")}.
             </p>
-            {/* Nieuw tabblad: de lopende navigatie blijft gewoon staan. */}
-            <a
-              href={`${import.meta.env.BASE_URL}sprinten`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pointer-events-auto shrink-0 rounded-full border border-yellow-400/30 px-2.5 py-1 text-[11px] text-yellow-200/90 transition hover:bg-yellow-400/10"
-            >
-              Seizoen
-            </a>
           </div>
         )}
 
@@ -4240,8 +4222,8 @@ export function RideOptionsMenu({
               <span className="font-medium text-white/85">
                 Intervaltraining gekoppeld.
               </span>{" "}
-              Plekken langs de route en samen rijden met bordjes-sprint staan
-              deze rit uit, zodat jij je volledig op je blokken kunt richten.
+              Plekken langs de route en samen rijden staan deze rit uit,
+              zodat jij je volledig op je blokken kunt richten.
             </p>
           </div>
         )}
@@ -4303,8 +4285,7 @@ export function RideOptionsMenu({
               {opts.samen && (
                 <>
                   <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-                    Sprinten om plaatsbordjes staat aan — gas erop bij de
-                    komborden.
+                    Je rijdt met anderen — kies hieronder wie er meefietst.
                   </p>
                   {friends.length > 0 ? (
                     <>
@@ -4343,8 +4324,7 @@ export function RideOptionsMenu({
                   ) : (
                     <p className="mt-2 text-[11px] leading-relaxed text-white/35">
                       Nog geen vrienden gekoppeld — voeg ze toe via Samen, dan
-                      kun je ze hier kiezen. Sprinten om bordjes werkt ook
-                      zonder.
+                      kun je ze hier kiezen.
                     </p>
                   )}
                 </>

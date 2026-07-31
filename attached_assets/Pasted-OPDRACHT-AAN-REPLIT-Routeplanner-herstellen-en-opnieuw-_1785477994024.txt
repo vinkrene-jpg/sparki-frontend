@@ -1,0 +1,558 @@
+OPDRACHT AAN REPLIT — Routeplanner herstellen en opnieuw ontwerpen op basis van mobiele praktijktest
+
+Doel
+
+Verwerk de bevindingen uit René’s mobiele praktijktest tot één samenhangende verbetering van de bestaande routeplanner.
+
+De huidige vier plannerweergaven verbergen wel instellingen, maar de planner blijft functioneel een lange pagina met tabbladen en losse velden. Dat lost het kernprobleem niet op.
+
+De nieuwe richting is:
+
+- één kaartgericht hoofdscherm;
+- een moderne begeleide stappenflow;
+- de fietskeuze als eerste functionele beslissing;
+- compacte lijsten voor GPX, Bewaard en persoonlijke routes;
+- betrouwbare routegeneratie;
+- duidelijke acties om een route te gebruiken;
+- bestaande Strava-/Garmin-ritgeschiedenis actief benutten;
+- abonnement, gebruikersprofiel en plannerweergave correct van elkaar scheiden.
+
+Bouw geen parallelle routemotor. Hergebruik de bestaande route-engine, fail-closed verificatie, routeopslag, activiteitenimport en navigatie.
+
+BELANGRIJKE PRODUCTCORRECTIE
+
+Sparki heeft drie abonnementen:
+
+1. Gratis
+2. Go
+3. Compleet
+
+“Wedstrijd” is géén abonnement.
+
+Maak expliciet onderscheid tussen:
+
+A. Abonnement
+- Gratis
+- Go
+- Compleet
+
+B. Plannerweergave / gebruiksstand
+- Eenvoudig
+- Toer
+- Sportief
+- Wedstrijd
+
+Regels:
+
+- abonnement bepaalt welke betaalde functies beschikbaar zijn;
+- profiel en gekozen fiets bepalen welke plannerweergave Sparki automatisch voorstelt;
+- gebruiker mag altijd zelf een eenvoudiger of uitgebreider scherm kiezen;
+- een Compleet-abonnee mag Eenvoudig gebruiken;
+- Wedstrijd blijft een plannerweergave voor wedstrijdgericht gebruik binnen passende abonnementsrechten;
+- gebruik nergens “Wedstrijd” alsof het een abonnementsvorm is;
+- gebruik nergens “Compleet” als naam van een plannerweergave.
+
+FASE 1 — Eerst routegeneratie herstellen
+
+De mobiele test toont een blocker:
+
+- route genereren duurt te lang;
+- de berekening stopt;
+- er verschijnt geen route;
+- gebruiker weet niet of opnieuw op de knop moet worden gedrukt;
+- dit treedt op bij Gratis én Go.
+
+Onderzoek eerst de volledige keten:
+
+- klik op genereren;
+- aanvraag naar API;
+- GraphHopper;
+- obstakelverificatie;
+- timeout- en foutafhandeling;
+- antwoord naar de UI;
+- statusweergave;
+- opnieuw proberen;
+- bewaren van de ingevoerde keuzes.
+
+Gewenst gedrag:
+
+- duidelijke status “route berekenen”;
+- aparte status “veiligheidscontrole uitvoeren”;
+- geen stil stoppen;
+- nooit twee berekeningen starten door herhaald tikken;
+- knop tijdelijk blokkeren tijdens actieve aanvraag;
+- duidelijke foutreden;
+- duidelijke vervolgmogelijkheden:
+  - opnieuw proberen;
+  - afstand aanpassen;
+  - startpunt aanpassen;
+  - zoekvoorwaarden versoepelen;
+- ingevoerde keuzes blijven behouden;
+- `unverifiable` en `hard_blocked` blijven fail-closed;
+- geen oude route tonen alsof de nieuwe aanvraag is geslaagd.
+
+Stop brede UX-bouw wanneer routegeneratie niet aantoonbaar werkt. Herstel deze blocker eerst en lever een echte mobiele test.
+
+FASE 2 — Planner ombouwen naar kaartgerichte stappenflow
+
+Vervang de lange instellingenpagina als primaire ervaring door een modern, mobiel-eerst stappenplan boven één centrale kaart.
+
+Gebruik bijvoorbeeld:
+
+- een onderste schuifkaart;
+- een compacte overlay;
+- een popup-achtige stap;
+- of een moderne wizard die de kaart zichtbaar houdt.
+
+Geen losse pagina’s met grote hoeveelheden velden onder elkaar.
+
+Voorgestelde hoofdflow:
+
+1. Met welke fiets ga je fietsen?
+2. Waar wil je starten?
+3. Wat wil je rijden?
+4. Welke afstand of beschikbare tijd?
+5. Eventuele extra voorkeuren die werkelijk relevant zijn.
+6. Routevoorstellen.
+7. Route kiezen en gebruiken.
+
+De gebruiker moet steeds weten:
+
+- waar hij in de flow zit;
+- wat de huidige keuze is;
+- wat de volgende stap is;
+- hoe hij teruggaat;
+- hoe hij een eerdere keuze wijzigt.
+
+FASE 3 — Visuele eerste stap: fiets kiezen
+
+De eerste vraag wordt:
+
+“Met welke fiets ga je fietsen?”
+
+Toon vier grote visuele keuzekaarten die als knop werken:
+
+1. gewone fiets;
+2. racefiets;
+3. gravelbike;
+4. mountainbike.
+
+Visuele eisen:
+
+- per type een moderne, rechtenvrije of AI-gegenereerde fietsillustratie;
+- geen herkenbare merk- of modelkopieën;
+- rustige witte Sparki-uitstraling;
+- mobiel goed tikbaar;
+- duidelijke geselecteerde staat;
+- tekstlabel altijd zichtbaar;
+- afbeelding is ondersteunend, niet de enige informatiedrager;
+- goede toegankelijkheid en alt-tekst;
+- geen zware donkere game-uitstraling.
+
+De fietskeuze stuurt functioneel:
+
+- toegestane wegen en paden;
+- routeringsprofiel;
+- ondergrondopties;
+- standaardplannerweergave;
+- vervolgvragen;
+- zichtbare instellingen;
+- sensor- en wattageopties;
+- routevoorstellen;
+- termen en uitleg.
+
+Voorbeeld:
+
+- gewone fiets: geen wattage- of wedstrijdinstellingen;
+- racefiets: verhard, weggericht en passende sportopties;
+- gravel: ondergrondverhouding en onverhard;
+- MTB: paden en technische geschiktheid waar data dit ondersteunt.
+
+Gebruik bekende fietsen uit Garage alleen om een voorkeur subtiel voor te selecteren. De gebruiker houdt altijd keuzevrijheid.
+
+FASE 4 — Startpunt en routepunten veilig vastklikken
+
+René wil op de kaart kunnen tikken voor het startpunt en later routepunten kunnen toevoegen.
+
+Voorkom dat punten midden in een weiland, gebouw, water of onberijdbaar gebied terechtkomen.
+
+Gebruik geen ingewikkelde zichtbare kliklaag over de hele kaart tenzij aantoonbaar nodig.
+
+Gewenste werking:
+
+- gebruiker tikt op de kaart;
+- Sparki zoekt binnen een beperkte straal het dichtstbijzijnde berijdbare weg- of padsegment dat past bij de gekozen fiets;
+- toon zichtbaar waar het punt is vastgeklikt;
+- gebruiker kan bevestigen of opnieuw kiezen;
+- geen geschikt segment dichtbij: eerlijk melden;
+- geen stil vastklikken op een ver weg gelegen weg;
+- dezelfde regels gelden voor startpunt, eindpunt en tussenpunten;
+- directe routeaanvraag mag geen ongeldige vrije coördinaat accepteren.
+
+Test per fietstype en bij:
+- weiland;
+- gebouw;
+- water;
+- voetpad;
+- snelweg;
+- privéweg;
+- onverhard pad;
+- fietspad;
+- punt net naast een geldige weg.
+
+FASE 5 — Samen fietsen functioneel maken of uit korte flow halen
+
+De huidige stap “fiets je met iemand samen?” heeft onvoldoende aantoonbaar gevolg. Bordjes sprinten wordt verwijderd en mag hier niet meer aan gekoppeld zijn.
+
+Inventariseer wat Samen fietsen werkelijk doet.
+
+Samen fietsen heeft alleen nut wanneer de keuze concrete acties oplevert, zoals:
+
+- persoon uitnodigen;
+- gedeeld startpunt bepalen;
+- verzamelpunt kiezen;
+- afstand en niveau afstemmen;
+- route passend maken voor beide fietsprofielen;
+- route delen;
+- beschikbaarheid meenemen;
+- gezamenlijke navigatiecontext.
+
+Wanneer deze werking niet bestaat:
+
+- haal Samen fietsen uit de korte standaardflow;
+- plaats het als optionele actie ná het maken van de route;
+- toon geen lege of schijnwerkende stap.
+
+Documenteer wat al echt werkt en wat ontbreekt.
+
+FASE 6 — GPX terugbrengen naar compacte routebibliotheek
+
+Het GPX-tabblad toont nu volledige uitgewerkte routekaarten met te veel informatie.
+
+Maak eerst een compacte, scanbare lijst.
+
+Toon per geïmporteerde route minimaal:
+
+- routenaam;
+- startplaats;
+- finishplaats of rondrit;
+- afstand;
+- eventueel gereden datum;
+- gereden gemiddelde snelheid, uitsluitend wanneer het om een werkelijk gereden activiteit gaat;
+- fietstype;
+- herkomst: GPX, Strava, Garmin of andere bron.
+
+Na aanklikken opent pas:
+
+- kaart;
+- hoogteprofiel;
+- wegtypeanalyse;
+- opmerkingen;
+- veiligheidsstatus;
+- overige details.
+
+Voeg een primaire knop toe:
+
+“Deze route gebruiken”
+
+Deze actie moet minimaal:
+
+- route naar de actieve planner laden;
+- gekozen fiets en startcontext tonen;
+- route opnieuw actueel verifiëren;
+- daarna aanpassen, opslaan of navigeren mogelijk maken;
+- nooit oude veiligheidsstatus blind vertrouwen.
+
+FASE 7 — Bewaard vereenvoudigen
+
+Maak Bewaard eerst een compacte klikbare lijst.
+
+Eisen:
+
+- geen grote detailkaarten direct onder elkaar;
+- pas één route tegelijk volledig openen;
+- primaire knop “Deze route gebruiken”;
+- onderscheid:
+  - gereden;
+  - nog niet gereden;
+  - geïmporteerd;
+  - door Sparki gemaakt;
+  - handmatig aangepast;
+- nieuwste eerst;
+- filter per fietssoort;
+- maximaal 25 routes per fietssoort direct in de standaardlijst;
+- oudere routes blijven via zoeken en filters beschikbaar;
+- routes niet verwijderen alleen omdat ze ouder zijn;
+- vrijwel dubbele routes waar mogelijk groeperen;
+- duidelijke lege toestand.
+
+Voor Gratis:
+
+- volledige Bewaard-bibliotheek niet standaard aanbieden;
+- bepaal een beperkte bruikbare variant, bijvoorbeeld alleen enkele recente of laatst gebruikte routes;
+- maak duidelijk wat Go of Compleet toevoegt;
+- veiligheid en toegang tot een route die reeds actief gebruikt wordt mogen niet achter een betaalmuur verdwijnen.
+
+FASE 8 — Persoonlijke routegeschiedenis benutten
+
+Gebruikers die Strava of Garmin koppelen kunnen honderden historische ritten meenemen.
+
+Gebruik deze sterker zonder honderden losse records in de planner te dumpen.
+
+Bouw of hergebruik een persoonlijke route-index die:
+
+- vergelijkbare GPS-trajecten clustert;
+- fietssoorten onderscheidt;
+- startgebied, afstand en hoogtemeters vastlegt;
+- gereden versus alleen opgeslagen onderscheidt;
+- nieuwste en vaakst gereden routes herkent;
+- herkomst naar de originele activiteit bewaart;
+- geen activiteit wijzigt;
+- incrementeel wordt bijgewerkt.
+
+Bij route zoeken of maken:
+
+1. zoek eerst passende persoonlijke eerder gereden routes;
+2. daarna passende opgeslagen of geïmporteerde routes;
+3. daarna pas nieuw gegenereerde Sparki-routes.
+
+Toon bijvoorbeeld:
+
+- “Eerder door jou gereden”;
+- “Vaak door jou gereden”;
+- “Geïmporteerd uit Strava”;
+- “Nieuw voorstel van Sparki”.
+
+Iedere route moet vóór gebruik opnieuw door de actuele fail-closed veiligheidscontrole.
+
+Privacy:
+
+- persoonlijke routes standaard privé;
+- thuis- en werkgebieden beschermen;
+- geen automatische publieke publicatie;
+- jeugd- en deelrechten respecteren.
+
+FASE 9 — Ontdek herstellen en beperken
+
+Ontdek moet bij locatietoestemming standaard starten rond de actuele locatie.
+
+Niet bij ieder bezoek opnieuw bevestiging vragen.
+
+Eisen:
+
+- gebruik actuele locatie wanneer toestemming actief is;
+- bied handmatige plaatskeuze als alternatief;
+- toon een beperkt en overzichtelijk aantal resultaten;
+- geen onbeperkte lijst;
+- bij nul resultaten uitleggen waarom;
+- onderzoeken waarom nu voor geen enkele fiets hits verschijnen;
+- niet aannemen dat Strava-koppeling een defecte Ontdek-query oplost;
+- persoonlijke routes kunnen een aanvullende bron zijn;
+- Gratis toont een beperkte maar werkende indruk;
+- Go en Compleet kunnen meer resultaten en filters bieden.
+
+FASE 10 — Instellingen contextafhankelijk maken
+
+Toon alleen instellingen die relevant zijn voor:
+
+- gekozen fiets;
+- plannerweergave;
+- beschikbare sensoren;
+- profiel;
+- abonnement.
+
+Voorbeelden:
+
+- gewone fiets zonder vermogensmeter: geen wattagevelden;
+- gravel/MTB: relevante ondergrondopties;
+- wedstrijdstand: wedstrijdspecifieke opties;
+- Gratis: alleen noodzakelijke basisinstellingen.
+
+Verwijder of verberg voor gewone gebruikers:
+
+- “maximaal tegelijk zichtbaar”;
+- “databalk bovenaan of onderaan”;
+- andere interne of technische presentatieregelaars die Sparki zelf verstandig moet oplossen.
+
+Sparki moet data automatisch leesbaar tekenen zonder overlappende tekst of onbruikbaar kleine elementen.
+
+FASE 11 — Functies controleren die mogelijk niet werken
+
+Controleer aantoonbaar:
+
+- stops onderweg;
+- gesproken aanwijzingen;
+- route gebruiken vanuit GPX;
+- route gebruiken vanuit Bewaard;
+- navigatiestart;
+- Ontdek-resultaten;
+- locatiebepaling;
+- routegeneratie.
+
+Voor iedere functie:
+
+- echte codepad;
+- UI;
+- API;
+- mobiel testbewijs;
+- huidige status;
+- werkend, gedeeltelijk, defect of alleen UI.
+
+Wanneer niet werkend:
+
+- niet als actieve functie presenteren;
+- tijdelijk verbergen of duidelijk als niet beschikbaar tonen;
+- geen mockresultaat gebruiken;
+- niet stil als afgerond documenteren.
+
+Bordjes sprinten:
+
+- verwijderen uit de actieve Ontdek-ervaring;
+- start via UI, URL en API blokkeren;
+- markeren als gestopt wegens veiligheidsrisico op de openbare weg;
+- nu geen vervanger bouwen.
+
+Voor Gratis uitschakelen:
+
+- klimprofiel;
+- uitgebreide stops onderweg;
+- geavanceerde databalk;
+- uitgebreide analyses;
+- geavanceerde route-instellingen.
+
+Gesproken aanwijzingen alleen tonen wanneer aantoonbaar werkend.
+
+FASE 12 — Verschillen tussen Gratis, Go en Compleet vastleggen
+
+Werk een heldere functiematrix uit.
+
+Gratis:
+- basisroute maken;
+- gewone fiets moet beschikbaar zijn;
+- startpunt;
+- afstand of tijd;
+- eenvoudige routevorm;
+- noodzakelijke veiligheidscontrole;
+- basisroutevoorstel;
+- beperkte Ontdek-ervaring;
+- geen volledige bibliotheek en geen geavanceerde analyses.
+
+Go:
+- rondje, A-B en heen-terug;
+- meer routevoorkeuren;
+- N-wegen vermijden;
+- hoogtevoorkeur;
+- favorieten en delen;
+- tussenstop waar werkend;
+- ruimere routebibliotheek;
+- uitgebreidere Ontdek-resultaten;
+- sportieve opties passend bij gekozen fiets.
+
+Compleet:
+- alle passende Go-functies;
+- geavanceerde sport- en trainingskoppeling;
+- wedstrijdgerichte plannerweergave;
+- wedstrijdverkenning;
+- racepunten;
+- volgauto;
+- verzamelpunten;
+- vergelijk met eerdere rit;
+- geavanceerde analyse, voor zover werkelijk gebouwd en bewezen.
+
+Gebruik geen formulering zoals:
+
+“Dan zegt Sparki dat erbij.”
+
+Gebruik concrete gebruikerstaal, bijvoorbeeld:
+
+“Sparki kan een N-weg gebruiken wanneer er geen passend alternatief bestaat. Je krijgt vooraf een waarschuwing.”
+
+FASE 13 — Visuele en functionele testmatrix
+
+Test op echte telefoon/PWA en desktop minimaal:
+
+- Gratis met gewone fiets;
+- Gratis met racefiets;
+- Go met gewone fiets;
+- Go met gravel;
+- Go met MTB;
+- Compleet met sportieve planner;
+- Compleet met Wedstrijd-weergave;
+- automatische plannerweergave;
+- handmatig eenvoudiger kiezen;
+- herladen en opnieuw inloggen;
+- gebruiker met honderden Strava-ritten;
+- gebruiker zonder gekoppelde data;
+- route genereren geslaagd;
+- route genereren geblokkeerd;
+- route onverifieerbaar;
+- GPX-route gebruiken;
+- Bewaard-route gebruiken;
+- locatie geweigerd;
+- geen Ontdek-resultaten;
+- directe URL naar verwijderde Bordjes sprinten.
+
+Bewijs met screenshots en waar nodig korte schermopname.
+
+DOCUMENTATIE
+
+Werk minimaal bij:
+
+- routeplanner-UX-audit;
+- Current State;
+- roadmap;
+- abonnementsmatrix;
+- plannerweergave-documentatie;
+- besluitenregister;
+- routeplanner-testmatrix;
+- navigatie- en spraakstatus;
+- persoonlijke routebibliotheek;
+- veiligheids- en fail-closed documentatie.
+
+Leg expliciet vast:
+
+- drie abonnementen: Gratis, Go, Compleet;
+- vier plannerweergaven: Eenvoudig, Toer, Sportief, Wedstrijd;
+- deze twee indelingen zijn niet hetzelfde;
+- Wedstrijd is geen abonnement;
+- fietskeuze is de eerste plannerbeslissing;
+- de kaart is het centrale scherm;
+- Bordjes sprinten is gestopt.
+
+UITVOERINGSVOLGORDE
+
+1. Routegeneratie reproduceren en herstellen.
+2. Abonnement versus plannerweergave corrigeren.
+3. Kaartgerichte stappenflow ontwerpen en bouwen.
+4. Visuele fietskeuze bouwen.
+5. Startpunt en routepunten veilig vastklikken.
+6. GPX en Bewaard vereenvoudigen en “Deze route gebruiken” toevoegen.
+7. Persoonlijke routegeschiedenis aansluiten.
+8. Ontdek en locatiegedrag herstellen.
+9. Instellingen contextafhankelijk maken.
+10. Niet-bewezen functies controleren en zo nodig verbergen.
+11. Abonnementsmatrix en volledige mobiele test uitvoeren.
+
+Harde grenzen
+
+- Geen parallelle routemotor.
+- Geen complete herschrijving zonder aantoonbare noodzaak.
+- Bestaande fail-closed veiligheidscontrole behouden.
+- Geen betaalmuur rond noodzakelijke veiligheidsinformatie.
+- Geen mock- of fallbackroutes als persoonlijke resultaten.
+- Geen UX-afronding claimen zolang routegeneratie niet werkt.
+- Geen abonnementsnamen gebruiken voor plannerweergaven.
+- Geen nieuwe losse ideeën toevoegen buiten deze mobiele testbevindingen.
+
+Acceptatiecriterium
+
+De opdracht is pas geslaagd wanneer een gebruiker op de telefoon via een duidelijke kaartgerichte flow:
+
+- eerst een fiets kiest;
+- een geldig startpunt bepaalt;
+- een begrijpelijke routevraag doorloopt;
+- daadwerkelijk routevoorstellen ontvangt;
+- een geïmporteerde of bewaarde route kan kiezen via “Deze route gebruiken”;
+- begrijpt wat Gratis, Go en Compleet toevoegen;
+- geen irrelevante instellingen ziet;
+- en veilig kan doorgaan naar navigatie.

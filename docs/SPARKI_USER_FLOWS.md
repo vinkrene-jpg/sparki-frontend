@@ -54,7 +54,7 @@
 
 1. Start in `record.tsx` of `navigate/[id].tsx`; achtergrondtracking via TaskManager (`lib/ride-tracker.ts`, native build).
 2. Optioneel BLE-sensoren koppelen (`lib/ble-sensors.ts`; Expo Go eerlijk "niet ondersteund"); 1s-sampling → GPX met hartslag/vermogen (`lib/ride-gpx.ts`).
-3. Onderweg: route-match + off-route-keuze (`lib/route-match.ts`, `lib/off-route-choice.ts`), audio-cues, klimfases, verkeerslichten (`road_objects`), bordjes-sprints (`lib/race-mode.ts`-onafhankelijk, `sprint_results`), val-alarm (`lib/fall-detection.ts`), optioneel live locatie delen (flow 8), voedingstikkers (snapshot bij STOP).
+3. Onderweg: route-match + off-route-keuze (`lib/route-match.ts`, `lib/off-route-choice.ts`), audio-cues, klimfases, verkeerslichten (`road_objects`), val-alarm (`lib/fall-detection.ts`), optioneel live locatie delen (flow 8), voedingstikkers (snapshot bij STOP).
 4. Stoppen: auto-trim met ongedaan-maken (`ride-trim`), upload via fail-closed queue (`lib/upload-queue.ts`) → Data Hub-ingest → `training_sessions` (afgeleide TSS, streams, bests).
 5. Delen: deelkaart (whitelist), Strava handmatige activity, OS-deelmenu (`routes/share.ts`, `lib/share-api.ts`); rit als route bewaren kan.
 
