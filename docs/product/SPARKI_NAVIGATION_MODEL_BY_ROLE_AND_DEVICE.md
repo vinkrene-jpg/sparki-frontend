@@ -3,6 +3,9 @@
 **Datum:** 31-07-2026 · **Status:** VOORSTEL, ter goedkeuring aan René (niets gebouwd).
 Taakcategorieën per item: **P** primaire taak · **D** dagelijkse taak · **B** beheer · **A** profiel/account · **T** test/ontwikkel.
 
+## Mirror-testwerkwijze (BINDEND — vastgelegd 31-07-2026)
+Navigatieclaims ("rol X ziet menu Y") gelden pas na toetsing aan drie bronnen: afgesproken productwaarheid, actuele broncode + server-side rechten, én de werkelijke klikuitkomst in de draaiende app. Verplichte volgorde: vinden → werkelijk aanklikken → bewijs vastleggen → afwijkingen clusteren → herstelvoorstel → goedkeuring René → bouwen → dezelfde flow opnieuw testen → regressietest vastleggen. **Mirror-principe:** de browseragent volgt dezelfde klikroute als René in dezelfde app, vergelijkt met documenten en code, en legt inconsistenties vast vóór enig herstelvoorstel. Een knop is niet getest op basis van alleen code, routebestaan of HTTP 200; niet-aanklikbaar = "niet getest"; DEV Preview is testgereedschap, productie de officiële acceptatieomgeving; bewijs altijd met URL, omgeving, commit-SHA, identiteit, rol, apparaat, klikroute, verwacht/werkelijk en screenshots; herstelde fouten worden waar mogelijk vaste e2e-regressietests. Volledige canonieke beschrijving: `SPARKI_ROLE_DEVICE_INFORMATION_ARCHITECTURE_AUDIT.md` §0a.
+
 ## Harde regels (uit de opdracht, bindend)
 1. Testdashboard, tester-QR en ontwikkelhulpmiddelen (T) nooit in normale gebruikersnavigatie — alleen in de admin-omgeving.
 2. "Samen trainen" niet als eerste onderdeel van Profiel (hoort bovenaan de Samen-pagina — besluit 30-07).

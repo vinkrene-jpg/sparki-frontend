@@ -8,6 +8,31 @@
 
 ---
 
+## 0a. Mirror-testwerkwijze (BINDEND — canonieke beschrijving, 31-07-2026)
+
+Sparki toetst voortaan **iedere belangrijke gebruikersclaim aan drie bronnen**, die alle drie moeten kloppen:
+
+1. **Afgesproken productwaarheid** — de goedgekeurde documenten (deze vier structuurdocs, Master Plan, besluiten van René).
+2. **Actuele broncode en server-side rechten** — wat de code en de rechtenlaag werkelijk afdwingen.
+3. **Werkelijke klikuitkomst in de draaiende app** — wat een echte klik in de browser daadwerkelijk oplevert.
+
+**Mirror-principe:** de browseragent kijkt naar **dezelfde app als René**, volgt **dezelfde klikroute**, vergelijkt het waargenomen gedrag met documenten én code, legt inconsistenties vast en doet **pas daarna** een herstelvoorstel.
+
+**Verplichte volgorde (geen stap overslaan):**
+vinden → werkelijk aanklikken → bewijs vastleggen → afwijkingen clusteren → herstelvoorstel → goedkeuring René → bouwen → dezelfde flow opnieuw testen → regressietest vastleggen.
+
+**Harde regels:**
+1. Een knop geldt **niet** als getest op basis van alleen code, routebestaan of HTTP 200.
+2. Een scherm geldt **niet** als passend wanneer het technisch laadt maar bij de verkeerde rol of taak hoort.
+3. Een rol geldt **niet** als gebouwd wanneer alleen een label, startkaart of client-side rolwissel bestaat.
+4. Waar een browseragent niet werkelijk kan klikken, is de status **"niet getest"** — nooit iets gunstigers.
+5. **DEV Preview is testgereedschap; productie is de officiële acceptatieomgeving.**
+6. Ieder bewijs vermeldt: URL, omgeving, commit-SHA, identiteit, rol, apparaat, klikroute, verwachte uitkomst, werkelijke uitkomst en screenshots.
+7. Iedere gevonden en herstelde fout wordt waar mogelijk een vaste end-to-end regressietest (`e2e/`).
+8. **René test begrijpelijkheid en praktische bruikbaarheid; agents en automatische tests leveren de brede dekking.**
+
+Deze sectie is de canonieke beschrijving; de andere drie structuurdocumenten verwijzen hiernaar en herhalen de kernregels.
+
 ## 0. Nulmeting per rol — echte kliktest 31-07-2026 (BINDEND)
 
 Bron: kliktestrapport "Rollen en werkruimtes end-to-end" + verdiepende rolanalyse (31-07-2026). Toegestane statuswoorden (verplicht, uitsluitend): `working` · `partially_working` · `sporter_copy` · `missing_workspace` · `not_testable` · `broken` · `proposal_only`. **Regel: een rol is nooit `working` op grond van alleen een label, startkaart of pagina — zie de harde acceptatieregel in §5.**
