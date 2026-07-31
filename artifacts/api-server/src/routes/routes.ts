@@ -75,6 +75,11 @@ import {
 } from "../lib/route-generation-jobs";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import {
+  getRouteDowngradeState,
+  setActiveRouteSelection,
+  ACTIVE_ROUTE_LIMIT,
+} from "../lib/route-downgrade";
 // Go-poort op de bibliotheek-beheer-extra's (Besluit René 31-07-2026,
 // SPARKI-BESLUIT-2026-002): zoeken/sorteren/scopes, bewerken, dupliceren en
 // route-uit-rit zijn Sparki Go; opslaan, eigen lijst (simpel), openen,
@@ -161,6 +166,47 @@ import {
 } from "../lib/route-surfaces";
 
 const router = Router();
+
+// ── ABONNEMENT_01 §1.3 — downgrade-keuzeflow (vóór alle /:id-routes) ─────────
+// Alle routes blijven zichtbaar en herstelbaar; de gebruiker kiest max. drie
+// actieve routes. Alleen de keuzeflow hier; limiet/verval/opruiming in 02c.
+router.get("/downgrade-state", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    res.json(await getRouteDowngradeState(clerkId));
+  } catch (err) {
+    console.error("downgrade-state mislukt", err);
+    res.status(500).json({ error: "Kon de downgrade-status niet bepalen" });
+  }
+});
+
+router.put("/active-selection", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const ids = Array.isArray(body.routeIds)
+    ? body.routeIds.map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0)
+    : null;
+  if (!ids || (Array.isArray(body.routeIds) && ids.length !== body.routeIds.length)) {
+    res.status(400).json({ error: "routeIds moet een lijst geldige route-id's zijn" });
+    return;
+  }
+  try {
+    const result = await setActiveRouteSelection(clerkId, ids);
+    if (!result.ok) {
+      res.status(result.fout === "te_veel" ? 400 : 403).json({
+        error:
+          result.fout === "te_veel"
+            ? `Kies maximaal ${ACTIVE_ROUTE_LIMIT} actieve routes`
+            : "Eén of meer routes zijn niet van jou",
+      });
+      return;
+    }
+    res.json(await getRouteDowngradeState(clerkId));
+  } catch (err) {
+    console.error("active-selection mislukt", err);
+    res.status(500).json({ error: "Kon de keuze niet opslaan" });
+  }
+});
 
 function coerceSurface(v: unknown): RouteSurface {
   return typeof v === "string" &&

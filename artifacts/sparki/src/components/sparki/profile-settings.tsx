@@ -1251,6 +1251,11 @@ function BillingSection() {
     expired: "Verlopen",
     blocked: "Geblokkeerd",
     free: "Gratis",
+    // ABONNEMENT_01 §1.1 — eerlijke labels voor de nieuwe statussen.
+    incomplete: "Betaling niet afgerond",
+    paused: "Gepauzeerd",
+    unknown: "Status onbekend — veilig teruggezet naar Gratis",
+    legacy_unrestricted: "Volledige toegang (bestaand account)",
   }
 
   const btn =

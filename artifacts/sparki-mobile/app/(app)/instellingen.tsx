@@ -200,6 +200,23 @@ export default function InstellingenScreen() {
     }
   };
 
+  // ---------- Abonnement (ABONNEMENT_01 testeis 24: web en mobiel tonen
+  // dezelfde server-geresolvede status; mobiel kent nooit zelf rechten toe) ----------
+  const [billing, setBilling] = useState<{
+    status: string;
+    tier: string;
+    trialEndsAt: string | null;
+  } | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  useEffect(() => {
+    customFetch<{ status: string; tier: string; trialEndsAt: string | null }>(
+      "/api/billing/status",
+      { method: "GET" },
+    )
+      .then((r) => setBilling(r))
+      .catch(() => setBillingError("Abonnementsstatus kon niet geladen worden."));
+  }, []);
+
   // ---------- Account verwijderen ----------
   const [showDelete, setShowDelete] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
@@ -448,6 +465,58 @@ export default function InstellingenScreen() {
             {privacyError && (
               <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{privacyError}</Text>
             )}
+          </>
+        )}
+      </View>
+
+      {/* ---------- Abonnement (zelfde server-status als de webapp) ---------- */}
+      <Text style={[styles.sectionTitle, { color: c.mutedForeground }]}>
+        Abonnement
+      </Text>
+      <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
+        {billing === null ? (
+          billingError ? (
+            <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{billingError}</Text>
+          ) : (
+            <ActivityIndicator size="small" color={c.primary} />
+          )
+        ) : (
+          <>
+            <View style={styles.permRow}>
+              <Text style={[styles.rowLabel, { color: c.foreground }]}>Status</Text>
+              <Text style={[styles.rowValue, { color: c.foreground }]}>
+                {({
+                  trialing: "Proefperiode actief",
+                  active: "Actief",
+                  grace: "Betaling mislukt — respijtperiode",
+                  canceled: "Opgezegd (toegang tot periode-einde)",
+                  expired: "Verlopen",
+                  blocked: "Geblokkeerd",
+                  free: "Gratis",
+                  incomplete: "Betaling niet afgerond",
+                  paused: "Gepauzeerd",
+                  unknown: "Status onbekend — veilig teruggezet naar Gratis",
+                  legacy_unrestricted: "Volledige toegang (bestaand account)",
+                } as Record<string, string>)[billing.status] ?? billing.status}
+              </Text>
+            </View>
+            {billing.tier !== "FREE" && (
+              <View style={styles.permRow}>
+                <Text style={[styles.rowLabel, { color: c.foreground }]}>Pakket</Text>
+                <Text style={[styles.rowValue, { color: c.foreground }]}>
+                  Sparki {billing.tier}
+                </Text>
+              </View>
+            )}
+            {billing.trialEndsAt && billing.status === "trialing" && (
+              <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
+                Proef loopt tot{" "}
+                {new Date(billing.trialEndsAt).toLocaleDateString("nl-NL")}
+              </Text>
+            )}
+            <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
+              Je abonnement beheer je via de Sparki-webapp (Jij → Instellingen).
+            </Text>
           </>
         )}
       </View>

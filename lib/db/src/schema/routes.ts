@@ -9,6 +9,7 @@ import {
   boolean,
   uniqueIndex,
   index,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -146,6 +147,30 @@ export const routesTable = pgTable("routes", {
     .notNull()
     .defaultNow(),
 });
+
+// ── ABONNEMENT_01 §1.3 — actieve-routekeuze na downgrade ─────────────────────
+// Bij een downgrade naar Gratis blijven ALLE routes zichtbaar en herstelbaar;
+// de gebruiker kiest maximaal drie routes als "actief". Deze tabel legt alleen
+// die keuze vast. De opslaglimiet, vervaltermijn en opruimtaak horen in
+// ROUTE_PAKKET_02c en bouwen op deze structuur (afgestemd: één rij per gekozen
+// route, primaire sleutel clerk_id+route_id).
+export const routeActiveSelectionsTable = pgTable(
+  "route_active_selections",
+  {
+    clerkId: text("clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    routeId: integer("route_id")
+      .notNull()
+      .references(() => routesTable.id, { onDelete: "cascade" }),
+    selectedAt: timestamp("selected_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.clerkId, t.routeId] })],
+);
+
+export type RouteActiveSelection = typeof routeActiveSelectionsTable.$inferSelect;
 
 export const insertRouteSchema = createInsertSchema(routesTable).omit({
   id: true,
