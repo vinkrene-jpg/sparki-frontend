@@ -9,8 +9,12 @@ Laatst bijgewerkt: 2026-07-31.
 
 ## Wacht op jouw keuze
 
-12. **KNWU-categorieën** — STATUS: WACHT OP VERIFICATIE RENÉ (besluitendocument 30-07-2026);
-    niet als norm coderen tot René de categorie-indeling geverifieerd heeft.
+12. **Wielercategorieën — mappingvalidatie** — bronhiërarchie is BESLOTEN (31-07-2026:
+    UCI leidend → UEC Europese context → KNWU nationale licentievertaling; gescheiden
+    velden, provenance + geldigheidsperiode verplicht — zie
+    docs/SPARKI_CATEGORIE_LICENTIEMODEL.md). Open blijft alleen: de exacte categorie- en
+    disciplinemapping valideren tegen actuele UCI-/UEC-/KNWU-reglementen (🔎-punten in de
+    bronmatrix) vóór er iets definitiefs gebouwd wordt.
 13. **Ramp-rate-grenswaarden** — agent levert eerst een onderbouwd VOORSTEL (definitie,
     wetenschap, leeftijd/ervaring-differentiatie, waarschuwingsniveaus, foutpositieven,
     gebruikersteksten); bouwen pas na expliciete goedkeuring van René.

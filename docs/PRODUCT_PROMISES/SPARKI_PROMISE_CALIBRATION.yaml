@@ -4719,7 +4719,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         origin: knwu_protocol | erkende_externe_bron | sparki_standaard | clubbibliotheek | persoonlijk
         naam: "verplicht"
         doel: "verplicht (gekoppeld aan trainingsdoel-as)"
-        doelgroep_leeftijdscategorie: "verplichte tag op de ACTUELE KNWU-indeling (2026): jeugd U7/U9/U11/U13/U15/U17 (uniform UCI, m/v gelijk; licenties U13 en U17), 17+ (vervangt startlicentie/nieuwelingen/sportklasse/amateurs; nieuwelingen vallen onder U17), UCI U19+ (junioren/beloften/elite), masters — niet zelfverzonnen en niet de oude indeling"
+        doelgroep_leeftijdscategorie: "BIJGEWERKT per besluit René 31-07-2026 (bronhiërarchie B13-herzien): TWEE gescheiden velden — (1) internationale_categorie op het UCI-kader (leidend: Youth/U19/U23/Elite/Masters, UCI Deel 1 art. 1.1.034–1.1.038, leeftijd = wedstrijdjaar − geboortejaar) en (2) nationale_licentiecontext KNWU (2026: jeugdlicenties U13/U17 op de uniforme UCI-leeftijdsindeling U7–U17, 17+ vervangt startlicentie/nieuwelingen/sportklasse/amateurs, nieuwelingen onder U17 = nationale regel). Nooit samenvoegen in één categorieveld; elke waarde met bron/versie/ingangsdatum/land; NL-naam overschrijft nooit de UCI-categorie. Model + bronmatrix: docs/SPARKI_CATEGORIE_LICENTIEMODEL.md"
         ervaringsniveau: "verplicht"
         discipline: "verplicht (weg/MTB/gravel/baan/veldrijden/BMX; sluit aan op bestaand sports-register)"
         duur: "verplicht"
@@ -4771,7 +4771,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
           license_status: "Publieke structuurinformatie; de indeling zelf overnemen als tags is feitengebruik, geen contentovername."
           limitations:
             - "Exacte masters-/H-categorie-indeling nog te verifiëren op de 17+/UCI-licentiepagina's."
-          applicability: "Verplichte basis voor doelgroep_leeftijdscategorie-tags; niet-onderhandelbaar dat de actuele (niet de oude) indeling wordt gebruikt."
+          applicability: "Verplichte basis voor de NATIONALE licentiecontext (besluit 31-07-2026: KNWU is bron 3 in de hiërarchie UCI→UEC→KNWU; internationale categorie komt uit het UCI-reglement en staat in een eigen veld). Niet-onderhandelbaar dat de actuele (niet de oude) indeling wordt gebruikt; status mapping: bronhiërarchie besloten, exacte categorie- en disciplinemapping nog te valideren tegen actuele UCI-/UEC-/KNWU-reglementen (bronmatrix in docs/SPARKI_CATEGORIE_LICENTIEMODEL.md)."
         - name: "KNWU-trainingsinhoud en -opleidingen (kenniscentrum: 'Opleiding Trainer', 'Opleidingen KNWU Campus', 'Informatie voor trainers'; contact campus@knwu.nl)"
           coverage: "Bevestigt dat de KNWU trainersopleidingen, bijscholing en kaderlicenties heeft en trainersinformatie publiceert; er is GEEN publiek gepubliceerde, herbruikbare bibliotheek van trainingsplannen/jaarplannen met expliciete licentie gevonden (onderzocht 30-07-2026)."
           actuality: "Kenniscentrum-pagina's, opgehaald 30-07-2026."

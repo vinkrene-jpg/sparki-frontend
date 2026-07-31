@@ -51,6 +51,7 @@ Bij conflict geldt deze volgorde:
 
 - **F — Voeding, hydratatie en gewicht:** concept/inventarisatie; nog niet definitief gekalibreerd.
 - **J — Club, coachorganisatie en ploegomgeving:** bindende kalibratieopdracht is vastgesteld. Replit mag uitsluitend onderzoek en het YAML-hoofdstuk opleveren; geen productcode of UI.
+  - **Besluit 31-07-2026 — bronhiërarchie wielercategorieën (vervangt "wacht op KNWU-verificatie"):** UCI is primair en leidend (internationale categorieën, leeftijdsgrenzen, disciplineregels), UEC is Europese toepassing binnen dat kader, KNWU is uitsluitend de Nederlandse licentie-/deelnamevertaling. Internationale categorie en nationale licentiecontext zijn twee gescheiden velden (nooit samenvoegen); elke waarde draagt bron, versie, ingangsdatum en land; nationale uitzonderingen blijven herkenbaar nationaal. Volledig model + bronmatrix: `docs/SPARKI_CATEGORIE_LICENTIEMODEL.md`. Status: **bronhiërarchie besloten; exacte categorie- en disciplinemapping nog te valideren tegen actuele UCI-, UEC- en KNWU-reglementen** — geen definitieve mapping bouwen op alleen een KNWU-webpagina.
 - **Gewone fietser/e-bike:** productrichting vastgesteld als volwaardige recreatieve gebruiker, met elektrische ondersteuning als fiets- en activiteiteigenschap; nog geen brede bouwopdracht.
 
 ### Routes — actuele waarheid

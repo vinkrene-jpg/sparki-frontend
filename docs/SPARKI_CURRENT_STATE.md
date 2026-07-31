@@ -122,3 +122,16 @@ lees-/begeleidingsrechten. Server-side afgedwongen en bewezen
 (`test:trainer-assignment-messages` 9/9, `test:trainer-assignment-write-contract`
 5/5); coach-startpagina biedt de individuele cockpit niet meer aan voor
 team-toegewezen sporters. Volledig register: `docs/BESLUITENREGISTER_RENE_2026-07-30.md`.
+
+## Update 31-07-2026 — bronhiërarchie wielercategorieën (besluit B13-herzien)
+Besloten door René: categorie-informatie volgt de bronhiërarchie **UCI (leidend) →
+UEC (Europese toepassing) → KNWU (Nederlandse licentievertaling)**. Internationale
+categorie (UCI-kader: Youth/U19/U23/Elite/Masters, leeftijd = wedstrijdjaar −
+geboortejaar, art. 1.1.034–1.1.038) en nationale licentiecontext (KNWU U13/U17/17+,
+pakketten) zijn gescheiden velden met verplichte bron, versie, ingangsdatum en land;
+een NL-licentienaam overschrijft nooit de UCI-categorie en nationale uitzonderingen
+blijven herkenbaar nationaal. Bronmatrix geleverd in
+`docs/SPARKI_CATEGORIE_LICENTIEMODEL.md`. **Status: bronhiërarchie besloten; exacte
+categorie- en disciplinemapping nog te valideren tegen actuele UCI-, UEC- en
+KNWU-reglementen** — er wordt geen definitieve mapping gebouwd op alleen een
+KNWU-webpagina.

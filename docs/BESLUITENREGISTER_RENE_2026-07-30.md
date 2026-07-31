@@ -139,16 +139,29 @@ Statuswaarden: `besloten` · `in uitvoering` · `bewezen` · `open`.
 - **Status:** besloten; uitvoering gepland (§15 stap F). Sluit aan op bestaande
   fueling-engine (deterministische richtwaarden, jeugd-no-numbers, consent fail-closed).
 
-## B13 — KNWU-categorieën
-- **Besluit:** **STATUS: WACHT OP VERIFICATIE DOOR RENÉ.** Gevonden categorieën
-  mogen als onderzoeksbevinding vastliggen, maar niet als productnorm gecodeerd of
-  canoniek bevestigd worden. Bestaande functionaliteit behouden tot verificatie.
-- **Status:** **open** (verificatie René).
+## B13 — Wielercategorieën: bronhiërarchie (HERZIEN 31-07-2026)
+- **Besluit (René, 31-07-2026; vervangt "wacht op KNWU-verificatie"):** bindende
+  bronhiërarchie: **1. UCI** (primair/leidend: internationale categorieën,
+  leeftijdsgrenzen, disciplineregels) → **2. UEC** (Europese toepassing binnen het
+  UCI-kader) → **3. KNWU** (Nederlandse vertaling: licenties, nationale wedstrijden,
+  pakketten, lokale benamingen). Gevolgen: geen KNWU-indeling als universele waarheid
+  coderen; internationale categorie en nationale licentiecontext als **gescheiden
+  velden** bewaren (bv. U19/U23/Elite ≠ KNWU Licentie U17/17+/Basis-Plus-Premium —
+  nooit één categorieveld); verschillen per discipline en seizoen ondersteunen; bron,
+  versie, ingangsdatum en land vastleggen; geen hardcoded categorie zonder
+  geldigheidsperiode; een NL-licentienaam overschrijft nooit de UCI-categorie;
+  nationale uitzonderingen blijven herkenbaar nationaal. Model + bronmatrix:
+  `docs/SPARKI_CATEGORIE_LICENTIEMODEL.md`.
+- **Status:** **bronhiërarchie besloten; exacte categorie- en disciplinemapping nog te
+  valideren tegen actuele UCI-, UEC- en KNWU-reglementen.** Geen definitieve mapping
+  bouwen op basis van alleen een KNWU-webpagina; eerst de bronmatrix (geleverd
+  31-07-2026, 🔎-punten open).
 
 ---
 
 ## Open blijven uitsluitend (per opdracht §14)
-1. definitieve KNWU-categorieën (B13);
+1. exacte categorie- en disciplinemapping (B13 — bronhiërarchie zelf is 31-07 besloten;
+   validatie tegen actuele UCI-/UEC-/KNWU-reglementen open);
 2. wel/geen Samen op het eerste navigatieniveau (B10);
 3. definitieve ramp-rate-grens na voorstel + goedkeuring (B9).
 
