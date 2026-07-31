@@ -7,6 +7,18 @@
 
 Laatst bijgewerkt: 2026-07-31.
 
+## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
+
+- **ABONNEE_ADMIN_01** (files_10, 31-07-2026) — door René AANGENOMEN als volledige
+  bouwopdracht. Uitvoeren integraal zodra DATA_TRUST_01 én ABONNEMENT_01 door Mirror
+  zijn goedgekeurd. Bindende regels René: geen tweede abonnements-/rechtensysteem;
+  bestaande Clerk/Stripe/billing/support/privacy/audit hergebruiken; alle
+  niet-geblokkeerde onderdelen uitvoeren; open product-/juridische besluiten apart
+  melden (J-1…J-6, P-1…P-5, T-1…T-3 in files_10_uitgepakt); configureerbare
+  bewaartermijnen bouwen zonder zelf juridische waarden vast te stellen; opdracht
+  niet verkleinen of opsplitsen; eindrapport met tests, migratiebewijzen, exitcodes
+  en eindcommit.
+
 ## Open (wachten op René)
 
 14. **Vrijgave drie voorbereide pakketten (31-07-2026)** — `DATA_TRUST_01` (aangevuld
