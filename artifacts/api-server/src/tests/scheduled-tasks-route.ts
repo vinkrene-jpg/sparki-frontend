@@ -63,6 +63,11 @@ async function scenario(name: string, fn: () => Promise<void>) {
 const RUN = `test_schedtasks_${Date.now()}`;
 const adminId = `${RUN}_admin`;
 
+// WP-S1 (31-07-2026): isAdmin heeft geen dev-bypass meer — admin is altijd
+// strikt via SPARKI_ADMIN_IDS. De testadmin moet dus expliciet in de lijst
+// staan (zelfde patroon als data-origin.ts); isAdmin leest de env per call.
+process.env["SPARKI_ADMIN_IDS"] = `${process.env["SPARKI_ADMIN_IDS"] ?? ""},${adminId}`;
+
 // Track what we insert so cleanup removes only our rows.
 const seeded = {
   batchIds: [] as number[],

@@ -125,16 +125,33 @@ function Stat({
   )
 }
 
+// WP-K2: kort, eerlijk herkomstlabel bij een kernwaarde. Alleen bij een echte
+// waarde: "geschat" of "niet bevestigd" — nooit een kaal getal zonder status.
+function herkomstLabel(
+  profile: AthleteProfile | undefined,
+  veld: string,
+): string | null {
+  const h = profile?.herkomst?.[veld]
+  if (!h) return null
+  if (h.origin === "geschat" || h.estimated) return "geschat"
+  if (h.origin === "onbekend") return "niet bevestigd"
+  return null
+}
+
 export function PerformanceNumbers({
   profile,
   ftpHistory,
   load,
   bandbreedte,
+  laadt = false,
 }: {
   profile: AthleteProfile | undefined
   ftpHistory: FtpHistoryEntry[] | undefined
   load: LoadData | undefined
   bandbreedte: Bandbreedte
+  // WP-K3: zolang het profiel laadt tonen we een skeleton — nooit
+  // "nog niet bekend" terwijl de data gewoon onderweg is.
+  laadt?: boolean
 }) {
   const { data: bests } = usePowerBests()
   const startFix = useStartFix()
@@ -191,7 +208,27 @@ export function PerformanceNumbers({
             label="Gewicht"
           />
         </div>
-        {(ftp == null || weight == null) && (
+        {(herkomstLabel(profile, "ftp") != null && ftp != null) ||
+        (herkomstLabel(profile, "weightKg") != null && weight != null) ? (
+          <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+            {[
+              ftp != null && herkomstLabel(profile, "ftp") != null
+                ? `FTP ${ftp} W · ${herkomstLabel(profile, "ftp")}`
+                : null,
+              weight != null && herkomstLabel(profile, "weightKg") != null
+                ? `gewicht ${Math.round(weight * 10) / 10} kg · ${herkomstLabel(profile, "weightKg")}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" — ")}
+          </p>
+        ) : null}
+        {laadt && (ftp == null || weight == null) && (
+          <div className="mt-3 border-t border-white/[0.06] pt-3">
+            <div className="h-3.5 w-2/3 animate-pulse rounded bg-white/[0.06]" />
+          </div>
+        )}
+        {!laadt && (ftp == null || weight == null) && (
           <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
             {ftp == null && weight == null
               ? "FTP en gewicht zijn nog niet bekend."

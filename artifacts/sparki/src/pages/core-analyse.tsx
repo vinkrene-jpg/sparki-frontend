@@ -922,6 +922,10 @@ function BelastingTab({
         <div className="flex items-center gap-1.5 mb-1">
           <LCardTitle>Doelscenario</LCardTitle>
           <UitlegDot uitlegKey="doelscenario" label="Doelscenario" />
+          {/* WP-K5: vast label — dit is een verkenning, geen meting of advies. */}
+          <span className="ml-auto rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-purple-700">
+            Verkenning · simulatie
+          </span>
         </div>
         <p className="text-xs text-slate-500 mb-3">
           Kies een voorgenomen verandering van je trainingsvolume. De grafiek toont dan in het paars

@@ -166,10 +166,17 @@ export async function applyValueChange(input: {
   // Waarde + event + ftp_history in één transactie: een storing halverwege
   // laat nooit een gewijzigde waarde zonder herleidbaar event achter.
   const run = async (tx: PassportDbx) => {
-    await tx
+    const updatedRows = await tx
       .update(athleteProfilesTable)
       .set(set)
-      .where(eq(athleteProfilesTable.clerkId, input.clerkId));
+      .where(eq(athleteProfilesTable.clerkId, input.clerkId))
+      .returning({ clerkId: athleteProfilesTable.clerkId });
+    // Geen profielrij ⇒ er is NIETS opgeslagen; een event schrijven zou een
+    // herkomst claimen voor een waarde die niet bestaat. Hard falen (rollback).
+    if (updatedRows.length === 0)
+      throw new Error(
+        `Geen profielrij voor ${input.clerkId} — kernwaarde ${input.field} niet opgeslagen`,
+      );
 
     await recordValueEvent({ ...input, oldValue: old }, tx);
 
@@ -215,6 +222,54 @@ export async function applyValueChange(input: {
   else await db.transaction(async (tx) => run(tx));
 
   return { changed: true, oldValue: old };
+}
+
+// ── WP-K1: events voor een bestaand patch-schrijfpad ─────────────────────────
+// Sommige paden (onboarding, seeds, connector-sync) schrijven een patch met
+// meerdere velden in één upsert. Deze helper legt voor elk paspoortveld in de
+// patch een herkomst-event vast t.o.v. de oude rij — aanroepen BINNEN dezelfde
+// transactie als de waarde-schrijf, zodat waarde en herkomst atomair blijven.
+export function samePassportValue(a: string | null, b: string | null): boolean {
+  if ((a ?? null) === (b ?? null)) return true;
+  if (a == null || b == null) return false;
+  const na = Number(a);
+  const nb = Number(b);
+  return Number.isFinite(na) && Number.isFinite(nb) && na === nb;
+}
+
+export async function recordEventsForPatch(
+  input: {
+    clerkId: string;
+    patch: Record<string, unknown>;
+    before: Record<string, unknown> | null | undefined;
+    origin: PassportOrigin;
+    source: string;
+    actorType: PassportActorType;
+    actorId: string;
+  },
+  dbx: PassportDbx,
+): Promise<void> {
+  for (const f of Object.keys(input.patch)) {
+    if (!isPassportField(f)) continue;
+    const nvRaw = input.patch[f];
+    const nv = nvRaw == null ? null : String(nvRaw);
+    const ovRaw = input.before ? (input.before as Record<string, unknown>)[f] : null;
+    const ov = ovRaw == null ? null : String(ovRaw);
+    if (samePassportValue(ov, nv)) continue;
+    await recordValueEvent(
+      {
+        clerkId: input.clerkId,
+        field: f,
+        oldValue: ov,
+        newValue: nv,
+        origin: input.origin,
+        source: input.source,
+        actorType: input.actorType,
+        actorId: input.actorId,
+      },
+      dbx,
+    );
+  }
 }
 
 // ── Voorstellen ──────────────────────────────────────────────────────────────

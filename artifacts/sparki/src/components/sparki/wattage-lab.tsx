@@ -153,6 +153,10 @@ export function WattageLab({
         <div className="flex items-center gap-2">
           <FlaskConical className="h-4 w-4 text-cyan-600" />
           <span className="text-sm font-semibold text-slate-800">Wattage-lab</span>
+          {/* WP-K5: vast label — knutselen is verkennen, geen meting of advies. */}
+          <span className="ml-auto rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-700">
+            Verkenning · simulatie
+          </span>
         </div>
         <p className="mt-1 text-xs text-slate-500">
           Knutsel met je eigen doelen: wat is er nodig om je FTP, sprint of 5-minutenvermogen te

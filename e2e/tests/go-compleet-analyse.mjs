@@ -103,7 +103,9 @@ try {
       const entitled = !!api.commercial_features?.performance_lab || api.entitlement_mode === "legacy_unrestricted";
       if (entitled !== (wie.verwacht === "inhoud"))
         fout(`server-rechten wijken af van verwachting (entitled=${entitled})`);
-      else regels.push({ status: "OK", detail: `server: performance_lab entitled=${entitled} (variant ${api.product_variant})` });
+      else if (JSON.stringify(api).match(/sparki_(basic|performance|pro|go)/))
+        fout(`interne tiernaam lekt in /api/entitlements: ${JSON.stringify(api).match(/sparki_\w+/)[0]}`);
+      else regels.push({ status: "OK", detail: `server: performance_lab entitled=${entitled} (label ${api.product_label})` });
 
       // Echte gegate route: /api/core-prediction/* draagt requireCommercialFeature
       // ("performance_lab"). Vergrendeld ⇒ 403 upgrade_required; toegang ⇒ nooit 403.

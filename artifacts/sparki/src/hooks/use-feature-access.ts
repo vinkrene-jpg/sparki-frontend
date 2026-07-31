@@ -12,7 +12,8 @@ import { apiFetch } from "@/lib/api";
 
 export type EntitlementsMe = {
   entitlement_mode: string;
-  product_variant: string | null;
+  /** Klantgericht label (Gratis · Sparki Go · Sparki Compleet); nooit een interne variantnaam. */
+  product_label: string;
   commercial_features: Record<string, { source: string; expiresAt: string | null }>;
   degraded: boolean;
 };

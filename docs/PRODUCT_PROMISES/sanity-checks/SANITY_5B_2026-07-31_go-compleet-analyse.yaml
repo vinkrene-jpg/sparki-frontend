@@ -1,22 +1,29 @@
-datum: 2026-07-31
-onderwerp: "SPOEDCONTROLE abonnementsrechten Analyse/Performance Lab (Gratis · Go · Compleet)"
-status: PASS
-belofte: >
-  Analyse/Performance Lab is toegankelijk voor Sparki Go én Sparki Compleet
-  (Compleet erft alle Go-rechten); Gratis en interne testtiers zien een eerlijke
-  betaalmuur met rustige CTA naar het abonnementsoverzicht; tijdens het laden
-  van rechten verschijnt uitsluitend een duidelijke laadstatus, nooit lege
-  analyse-inhoud; een Compleet-gebruiker ziet nergens "hoort bij Sparki Go".
-oorzaak_defect: >
-  De grants-seed gaf alleen sparki_go de vier Go-rechten; sparki_pro
-  (= Sparki Compleet) had er nul en viel fail-closed op de betaalmuur met
-  Go-verwijzing. Daarnaast faalde de UI tijdens rechten-laden "open" en
-  toonde eerst de echte (lege) analysepagina.
-bewijs:
-  - "e2e/tests/go-compleet-analyse.mjs — 5 persona's, alle controles geslaagd"
-  - "e2e/evidence/go-compleet-analyse/ — screenshots + rapport.json"
-  - "artifacts/api-server: test entitlements 19/19 (incl. sparki_pro-erfenis en interne tiers leeg)"
-  - "server: /api/entitlements sparki_pro → performance_lab source variant:sparki_pro"
-kanttekeningen:
-  - "sparki_basic en sparki_performance zijn interne testtiers (geen productaanbod); in de previewkiezer zo gemarkeerd en bewust zonder rechten (fail-closed)."
-  - "Veiligheids-/gezondheidsinformatie valt buiten elke commerciële poort (ongewijzigd)."
+# Poort 5b sanity-check — SPOEDCONTROLE abonnementsrechten Analyse/Performance Lab
+# (Herformatteerd naar het verplichte rapportschema; inhoud = oorspronkelijk
+# bewijs van 31-07-2026, geen nieuwe claims toegevoegd.)
+
+delivery: "Analyse/Performance Lab is toegankelijk voor Sparki Go én Sparki Compleet (Compleet erft alle Go-rechten); Gratis en interne testtiers zien een eerlijke betaalmuur met rustige CTA naar het abonnementsoverzicht; tijdens het laden van rechten verschijnt uitsluitend een duidelijke laadstatus, nooit lege analyse-inhoud; een Compleet-gebruiker ziet nergens 'hoort bij Sparki Go'. Oorzaak defect: de grants-seed gaf alleen sparki_go de vier Go-rechten; sparki_pro (= Sparki Compleet) had er nul en viel fail-closed op de betaalmuur met Go-verwijzing; daarnaast faalde de UI tijdens rechten-laden 'open' en toonde eerst de echte (lege) analysepagina."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "Analyse/Performance Lab per persona (e2e/tests/go-compleet-analyse.mjs — 5 persona's, alle controles geslaagd; screenshots + rapport.json in e2e/evidence/go-compleet-analyse/)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Betaalmuur-CTA naar het abonnementsoverzicht werkt voor Gratis en interne testtiers (e2e-klikbewijs per persona)."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Compleet-gebruiker (sparki_pro) ziet nergens 'hoort bij Sparki Go'; /api/entitlements sparki_pro → performance_lab source variant:sparki_pro; entitlements-test 19/19 incl. sparki_pro-erfenis en interne tiers leeg."
+        result: "pass"
+      - case: "sparki_basic en sparki_performance zijn interne testtiers (geen productaanbod); in de previewkiezer zo gemarkeerd en bewust zonder rechten (fail-closed)."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Tijdens rechten-laden verschijnt uitsluitend een duidelijke laadstatus, nooit lege analyse-inhoud (UI faalde eerst 'open' — hersteld en e2e bewezen)."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): veiligheids-/gezondheidsinformatie valt buiten
+# elke commerciële poort (ongewijzigd).
+verdict: "deliverable"

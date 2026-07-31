@@ -251,23 +251,44 @@ export async function applyProfileCorrection(
       // Compare-and-set against the exact verified pre-state: if the athlete
       // changed their FTP in the meantime, this writes nothing (0 rows) and
       // the confirmation is honestly reported as not applied.
-      const updated = await db
-        .update(athleteProfilesTable)
-        .set({
-          ftp: floor.floorWatts,
-          // A floor is a derived lower bound, not a measurement: flag it as
-          // estimated so a stronger real effort keeps raising it automatically.
-          ftpEstimated: true,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(athleteProfilesTable.clerkId, clerkId),
-            eq(athleteProfilesTable.ftp, facts.ftp!),
-            eq(athleteProfilesTable.ftpEstimated, false),
-          ),
-        )
-        .returning({ clerkId: athleteProfilesTable.clerkId });
+      // WP-K1: compare-and-set + herkomst-event in één transactie — de waarde
+      // verandert nooit zonder herleidbaar paspoort-event.
+      const { recordValueEvent } = await import("../../lib/passport");
+      const updated = await db.transaction(async (tx) => {
+        const rows = await tx
+          .update(athleteProfilesTable)
+          .set({
+            ftp: floor.floorWatts,
+            // A floor is a derived lower bound, not a measurement: flag it as
+            // estimated so a stronger real effort keeps raising it automatically.
+            ftpEstimated: true,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(athleteProfilesTable.clerkId, clerkId),
+              eq(athleteProfilesTable.ftp, facts.ftp!),
+              eq(athleteProfilesTable.ftpEstimated, false),
+            ),
+          )
+          .returning({ clerkId: athleteProfilesTable.clerkId });
+        if (rows.length > 0) {
+          await recordValueEvent(
+            {
+              clerkId,
+              field: "ftp",
+              oldValue: String(facts.ftp!),
+              newValue: String(floor.floorWatts),
+              origin: "berekend",
+              source: "FTP-ondergrens (door jou bevestigd)",
+              actorType: "sporter",
+              actorId: clerkId,
+            },
+            tx,
+          );
+        }
+        return rows;
+      });
       if (updated.length === 0) {
         return {
           applied: false,
@@ -338,24 +359,43 @@ export async function applyProfileCorrection(
 
     case "profile_week_target_off": {
       const hours = facts.medianHours!;
-      // Compare-and-set against the verified pre-state (user-set target).
-      const updated = await db
-        .update(athleteProfilesTable)
-        .set({
-          weeklyHourTarget: hours,
-          // Derived from real riding — keep the flag true so it keeps
-          // recalibrating when the athlete's weeks change.
-          weeklyHourTargetEstimated: true,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(athleteProfilesTable.clerkId, clerkId),
-            eq(athleteProfilesTable.weeklyHourTarget, facts.weeklyHourTarget!),
-            eq(athleteProfilesTable.weeklyHourTargetEstimated, false),
-          ),
-        )
-        .returning({ clerkId: athleteProfilesTable.clerkId });
+      // WP-K1: compare-and-set + herkomst-event in één transactie.
+      const { recordValueEvent } = await import("../../lib/passport");
+      const updated = await db.transaction(async (tx) => {
+        const rows = await tx
+          .update(athleteProfilesTable)
+          .set({
+            weeklyHourTarget: hours,
+            // Derived from real riding — keep the flag true so it keeps
+            // recalibrating when the athlete's weeks change.
+            weeklyHourTargetEstimated: true,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(athleteProfilesTable.clerkId, clerkId),
+              eq(athleteProfilesTable.weeklyHourTarget, facts.weeklyHourTarget!),
+              eq(athleteProfilesTable.weeklyHourTargetEstimated, false),
+            ),
+          )
+          .returning({ clerkId: athleteProfilesTable.clerkId });
+        if (rows.length > 0) {
+          await recordValueEvent(
+            {
+              clerkId,
+              field: "weeklyHourTarget",
+              oldValue: String(facts.weeklyHourTarget!),
+              newValue: String(hours),
+              origin: "berekend",
+              source: "weekritme (door jou bevestigd)",
+              actorType: "sporter",
+              actorId: clerkId,
+            },
+            tx,
+          );
+        }
+        return rows;
+      });
       if (updated.length === 0) {
         return {
           applied: false,

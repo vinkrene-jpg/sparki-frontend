@@ -15,6 +15,7 @@
     "test:route-candidates": "node ./scripts/run-test.mjs route-candidates",
     "test:loop-quality-gate": "node ./scripts/run-test.mjs loop-quality-gate",
     "test:route-alternates": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-alternates",
+    "test:geocode-home-bias": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs geocode-home-bias",
     "test:route-surface-sources": "node ./scripts/run-test.mjs route-surface-sources",
     "test:route-improvement": "node ./scripts/run-test.mjs route-improvement",
     "test:disk-usage": "node ./scripts/run-test.mjs disk-usage",
@@ -90,6 +91,7 @@
     "test:route-library": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-library",
     "test:system-mode": "node ./scripts/run-test.mjs system-mode",
     "test:onboarding-connect-step": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs onboarding-connect-step",
+    "test:kernwaarden-herkomst": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs kernwaarden-herkomst",
     "test:onboarding-strava-gapfill": "node ./scripts/run-test.mjs onboarding-strava-gapfill",
     "test:analysis-quality": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs analysis-quality",
     "test:feedback-adjust": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs feedback-adjust",
@@ -115,7 +117,7 @@
     "test:health-endpoints": "node ./scripts/run-test.mjs health-endpoints",
     "test:consent-gate": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs consent-gate",
     "test:engagement": "node ./scripts/run-test.mjs engagement",
-    "test:entitlements": "node ./scripts/run-test.mjs entitlements",
+    "test:entitlements": "node ./scripts/run-test.mjs entitlements --dev-auth",
     "test:ride-story": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ride-story",
     "test:sprint": "node ./scripts/run-test.mjs sprint",
     "test:sprints-stop": "node ./scripts/run-test.mjs sprints-stop",
@@ -182,7 +184,9 @@
     "test:routing-generated-full": "ROUTING_GEN_COUNT=2000 ROUTING_GEN_PARALLEL=16 node ./scripts/run-test.mjs routing-generated-invariants",
     "test:route-library-straal": "node ./scripts/run-test.mjs route-library-straal",
     "test:route-privacy-zones": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-privacy-zones",
-    "test:wp-r1-parent-rights": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs wp-r1-parent-rights"
+    "test:wp-r1-parent-rights": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs wp-r1-parent-rights",
+    "test:route-search": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-search",
+    "test:route-search-sharing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-search-sharing"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

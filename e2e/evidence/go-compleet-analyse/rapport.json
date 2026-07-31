@@ -22,7 +22,7 @@
       },
       {
         "status": "OK",
-        "detail": "server: performance_lab entitled=false (variant null)"
+        "detail": "server: performance_lab entitled=false (label Gratis)"
       },
       {
         "status": "OK",
@@ -53,7 +53,7 @@
       },
       {
         "status": "OK",
-        "detail": "server: performance_lab entitled=true (variant sparki_go)"
+        "detail": "server: performance_lab entitled=true (label Sparki Go)"
       },
       {
         "status": "OK",
@@ -84,7 +84,7 @@
       },
       {
         "status": "OK",
-        "detail": "server: performance_lab entitled=true (variant sparki_pro)"
+        "detail": "server: performance_lab entitled=true (label Sparki Compleet)"
       },
       {
         "status": "OK",
@@ -115,7 +115,7 @@
       },
       {
         "status": "OK",
-        "detail": "server: performance_lab entitled=false (variant sparki_basic)"
+        "detail": "server: performance_lab entitled=false (label Gratis)"
       },
       {
         "status": "OK",
@@ -146,7 +146,7 @@
       },
       {
         "status": "OK",
-        "detail": "server: performance_lab entitled=false (variant sparki_performance)"
+        "detail": "server: performance_lab entitled=false (label Gratis)"
       },
       {
         "status": "OK",

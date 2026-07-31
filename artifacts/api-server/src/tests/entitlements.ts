@@ -370,7 +370,12 @@ async function main() {
     const own = await apiReq("GET", "/api/entitlements", subUser);
     assert(own.status === 200, `verwacht 200, kreeg ${own.status}`);
     assert(own.json.entitlement_mode === "subscription", "mode fout");
-    assert(own.json.product_variant === "sparki_go", "variant fout");
+    assert(own.json.product_label === "Sparki Go", "klantlabel fout");
+    assert(!("product_variant" in own.json), "interne variantnaam mag niet in het klantantwoord");
+    assert(
+      !JSON.stringify(own.json).match(/sparki_(basic|performance|pro|go)/),
+      "interne tiernaam lekt in het klantantwoord",
+    );
     const other = await apiReq("GET", "/api/entitlements", legacyUser);
     assert(other.status === 200, `verwacht 200, kreeg ${other.status}`);
     assert(other.json.entitlement_mode === "legacy_unrestricted", "legacy-mode fout");

@@ -1,0 +1,40 @@
+# Poort 5b — BILLINGHERSTEL 1: twee objectieve kleine defecten uit de
+# billing-inventarisatie (test:entitlements-script + interne tiernamen in
+# /api/entitlements). Geen wijziging van entitlementwerking of pakketrechten.
+
+delivery: "test:entitlements draait zelfstandig groen (dev-auth platformveilig via Node-flag i.p.v. shell-export); /api/entitlements toont alleen klantnamen (Gratis · Sparki Go · Sparki Compleet) — interne variantnamen (sparki_go/pro/basic/performance) komen nergens meer in het klantantwoord voor (product_label + gemapte source-velden)"
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "API: GET /api/entitlements (product_label, klantveilige sources)"
+  - "/analyse — betaalmuur/inhoud per abonnementspersona (e2e, echte kliks)"
+  - "scripts: pnpm --filter @workspace/api-server run test:entitlements"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Betaalmuur-CTA 'Bekijk je abonnement' blijft aanwezig en de paywall/inhoud-beslissing blijft per persona identiek na de antwoordwijziging (e2e go-compleet-analyse: 5 persona's, echte kliks + harde herlaad)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Interne testtiers (sparki_basic/sparki_performance) heten voor de klant 'Gratis' — rechten-accuraat (ze hebben geen commerciële rechten), nooit een verzonnen productnaam"
+        result: "pass"
+      - case: "sparki_pro toont als 'Sparki Compleet', sparki_go als 'Sparki Go'; e2e faalt hard zodra een sparki_*-naam in het API-antwoord lekt (regex-poort in go-compleet-analyse.mjs)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "source-velden tonen een leesbare bron ('variant:Sparki Go'), geen rauwe interne sleutel; de interne werking (resolveEntitlements, gates, grants) is byte-identiek gebleven — mapping zit uitsluitend in de presentatielaag van de route"
+        result: "pass"
+
+# Bewijs (alle op 31-07-2026 uitgevoerd):
+#   pnpm run test:entitlements — 19/19 (zelfstandig, zonder handmatige env)
+#   pnpm run test:stripe-billing — 14/14
+#   typecheck: libs + api-server + web (tsc --noEmit) groen
+#   gerichte API-test: curl /api/entitlements met seed_persona_go ⇒
+#     product_label "Sparki Go", sources "variant:Sparki Go";
+#     seed_persona_performance ⇒ product_label "Gratis", geen features
+#   browsercontrole: node e2e/tests/go-compleet-analyse.mjs — alle 5 persona's
+#     groen, incl. nieuwe lek-regex op het API-antwoord in de echte browser
+# Eerlijk niet gedekt: admin-oppervlakken (entitlements-admin, /api/admin/*)
+# tonen bewust nog interne variantnamen — dat is beheer, geen klantantwoord.
+verdict: "deliverable"
