@@ -58,6 +58,9 @@ export type SparkiRoute = {
   } | null;
   source: string;
   usageType: string | null;
+  // Eigenaarskeuze (privacy & eigendom): true = Sparki gebruikt deze route
+  // niet voor automatische voorstellen.
+  suggestExclude?: boolean;
   linkedActivityImportId: number | null;
   linkedPlannedWorkoutId: number | null;
   createdAt: string;
@@ -244,6 +247,70 @@ export function useSaveRideAsRoute() {
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
+    },
+  });
+}
+
+// ── Privacyzones ─────────────────────────────────────────────────────────────
+// Gebruikersbeheerde gevoelige locaties (woning/werk/gevoelig). Elke gedeelde
+// of getoonde routeweergave voor niet-eigenaren maskeert punten binnen de
+// zone op leesmoment; het huisadres uit het profiel telt altijd impliciet mee.
+
+export type PrivacyZone = {
+  id: number;
+  label: string;
+  kind: "woning" | "werk" | "gevoelig";
+  lat: number;
+  lon: number;
+  radiusM: number;
+  createdAt: string;
+};
+
+export type PrivacyZonesResponse = {
+  zones: PrivacyZone[];
+  thuisBeschermd: boolean;
+  thuisStraalM: number;
+};
+
+export function usePrivacyZones(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.routes.privacyZones(),
+    queryFn: () => apiFetch<PrivacyZonesResponse>("/api/routes/privacyzones"),
+    enabled: enabled && (isSignedIn === true || DEV_PREVIEW),
+    staleTime: STALE.session,
+  });
+}
+
+export function useCreatePrivacyZone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      label: string;
+      kind: "woning" | "werk" | "gevoelig";
+      lat: number;
+      lon: number;
+      radiusM?: number;
+    }) =>
+      apiFetch<{ zone: PrivacyZone }>("/api/routes/privacyzones", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.routes.privacyZones() });
+    },
+  });
+}
+
+export function useDeletePrivacyZone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (zoneId: number) =>
+      apiFetch<{ ok: boolean }>(`/api/routes/privacyzones/${zoneId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.routes.privacyZones() });
     },
   });
 }
@@ -743,6 +810,7 @@ export function useUpdateRoute() {
       favorite?: boolean;
       status?: "ready" | "archived";
       visibility?: string;
+      suggestExclude?: boolean;
     }) =>
       apiFetch<{ route: SparkiRoute }>(`/api/routes/${input.id}`, {
         method: "PUT",
@@ -752,6 +820,9 @@ export function useUpdateRoute() {
           ...(input.status !== undefined && { status: input.status }),
           ...(input.visibility !== undefined && {
             visibility: input.visibility,
+          }),
+          ...(input.suggestExclude !== undefined && {
+            suggestExclude: input.suggestExclude,
           }),
         }),
       }),

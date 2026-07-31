@@ -33,10 +33,15 @@ import {
   worldBlocksTable,
   worldReportsTable,
   worldNotificationPrefsTable,
+  privacyZonesTable,
 } from "@workspace/db";
 import { and, eq, inArray, or } from "drizzle-orm";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
+import {
+  haversineMeters,
+  segmentMinDistanceMeters,
+} from "../lib/world-social/location";
 
 type Status = "pass" | "fail";
 const results: { scenario: string; status: Status; note?: string }[] = [];
@@ -541,6 +546,76 @@ async function main() {
 
     const stranger = await req("GET", `/api/world-social/items/${id}/track`, clerkS);
     assert(stranger.status === 404, `buitenstaander-track gaf ${stranger.status}`);
+
+    // Taak #513: een zelf beheerde privacyzone (bijv. werk) midden op de rit
+    // maskeert óók punten in de World Social-rittenweergave — niet alleen in
+    // de routebibliotheek.
+    const zoneCenter = { lat: 52.02, lon: 5.0 };
+    const zoneRadiusM = 800;
+    await db.insert(privacyZonesTable).values({
+      clerkId: clerkA,
+      label: "Werk",
+      kind: "werk",
+      lat: zoneCenter.lat,
+      lon: zoneCenter.lon,
+      radiusM: zoneRadiusM,
+    });
+    const friend2 = await req("GET", `/api/world-social/items/${id}/track`, clerkF);
+    assert(friend2.status === 200, `vriend-track (met zone) gaf ${friend2.status}`);
+    assert(Array.isArray(friend2.json.track), "vriend krijgt geen track met zone");
+    const track2 = friend2.json.track as { lat: number; lon: number }[];
+    for (const p of track2) {
+      const d = haversineMeters(p, zoneCenter);
+      assert(
+        d > zoneRadiusM,
+        `punt op ${Math.round(d)} m binnen de werkzone gelekt`,
+      );
+    }
+    for (let i = 1; i < track2.length; i++) {
+      assert(
+        segmentMinDistanceMeters(track2[i - 1]!, track2[i]!, zoneCenter) >
+          zoneRadiusM,
+        "lijnstuk snijdt de werkzone in de rittenweergave",
+      );
+    }
+
+    // Zones zijn niet-optioneel: zelfs wanneer de eigenaar het item met
+    // privacyZone:false bijwerkt, krijgt een kijker nooit punten binnen huis-
+    // of werkzone. Huis ligt hier ver weg, dus we zetten hem eerst midden op
+    // de rit om ook de impliciete huiszone te bewijzen.
+    const homeOnRoute = { lat: 52.03, lon: 5.0 };
+    await db
+      .update(athleteProfilesTable)
+      .set({ homeLat: String(homeOnRoute.lat), homeLon: String(homeOnRoute.lon) })
+      .where(eq(athleteProfilesTable.clerkId, clerkA));
+    const relaxed = await req("PUT", `/api/world-social/items/${id}`, clerkA, {
+      locationPrivacy: { hideStartEnd: false, privacyZone: false, simplify: false },
+    });
+    assert(relaxed.status === 200, `privacy versoepelen gaf ${relaxed.status}`);
+    const friend3 = await req("GET", `/api/world-social/items/${id}/track`, clerkF);
+    assert(friend3.status === 200, `vriend-track (privacyZone:false) gaf ${friend3.status}`);
+    assert(Array.isArray(friend3.json.track), "vriend krijgt geen track (privacyZone:false)");
+    const track3 = friend3.json.track as { lat: number; lon: number }[];
+    for (const p of track3) {
+      const dWork = haversineMeters(p, zoneCenter);
+      const dHome = haversineMeters(p, homeOnRoute);
+      assert(dWork > zoneRadiusM, `werkzone gelekt ondanks privacyZone:false (${Math.round(dWork)} m)`);
+      assert(dHome > 750, `huiszone gelekt ondanks privacyZone:false (${Math.round(dHome)} m)`);
+    }
+    for (let i = 1; i < track3.length; i++) {
+      assert(
+        segmentMinDistanceMeters(track3[i - 1]!, track3[i]!, zoneCenter) > zoneRadiusM &&
+          segmentMinDistanceMeters(track3[i - 1]!, track3[i]!, homeOnRoute) > 750,
+        "lijnstuk snijdt een zone ondanks privacyZone:false",
+      );
+    }
+    await db
+      .update(athleteProfilesTable)
+      .set({ homeLat: null, homeLon: null })
+      .where(eq(athleteProfilesTable.clerkId, clerkA));
+    await db
+      .delete(privacyZonesTable)
+      .where(eq(privacyZonesTable.clerkId, clerkA));
   });
 
   await cleanup();

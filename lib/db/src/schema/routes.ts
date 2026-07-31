@@ -116,6 +116,10 @@ export const routesTable = pgTable("routes", {
   usageType: text("usage_type").notNull().default("training"),
   // Favoriet-markering voor de routebibliotheek.
   favorite: boolean("favorite").notNull().default(false),
+  // Eigenaarskeuze (privacy & eigendom): true = Sparki mag deze route NIET
+  // gebruiken voor automatische voorstellen (bijv. bij een routevraag of in de
+  // planner). Geldt óók voor geïmporteerde routekandidaten uit ritgeschiedenis.
+  suggestExclude: boolean("suggest_exclude").notNull().default(false),
   // Versienummer: start op 1, +1 bij iedere inhoudelijke wijziging. Trainingen,
   // wedstrijden en activiteiten leggen vast welke versie zij gebruikten
   // (route_version_usages), zodat "welke versie reed ik?" altijd eerlijk is.

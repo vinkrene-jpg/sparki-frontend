@@ -180,7 +180,8 @@
     "test:route-racefiets-verification": "node ./scripts/run-test.mjs route-racefiets-verification",
     "test:routing-generated": "node ./scripts/run-test.mjs routing-generated-invariants",
     "test:routing-generated-full": "ROUTING_GEN_COUNT=2000 ROUTING_GEN_PARALLEL=16 node ./scripts/run-test.mjs routing-generated-invariants",
-    "test:route-library-straal": "node ./scripts/run-test.mjs route-library-straal"
+    "test:route-library-straal": "node ./scripts/run-test.mjs route-library-straal",
+    "test:route-privacy-zones": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-privacy-zones"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

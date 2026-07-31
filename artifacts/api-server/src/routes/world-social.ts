@@ -42,6 +42,7 @@ import {
   privacySettingsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { loadOwnerPrivacyZones } from "../lib/world-social/privacy-zones";
 import { isAdmin } from "../lib/flags";
 import { writeAudit } from "../lib/security/audit";
 import { createNotification } from "../lib/notifications";
@@ -839,24 +840,24 @@ router.get(
       res.json({ track: points, origineel: true });
       return;
     }
-    const [profile] = await db
-      .select({
-        homeLat: athleteProfilesTable.homeLat,
-        homeLon: athleteProfilesTable.homeLon,
-      })
-      .from(athleteProfilesTable)
-      .where(eq(athleteProfilesTable.clerkId, item.clerkId))
-      .limit(1);
-    const home =
-      profile?.homeLat != null && profile?.homeLon != null
-        ? { lat: Number(profile.homeLat), lon: Number(profile.homeLon) }
-        : null;
+    // Alle privacyzones van de eigenaar: huisadres (impliciet) + zelf
+    // beheerde zones (woning/werk/gevoelig) — zelfde bron als de
+    // routebibliotheek, zodat "elke gedeelde weergave" ook hier waar is.
+    const zones = await loadOwnerPrivacyZones(item.clerkId);
+    // Taak #513: privacyzones zijn NIET optioneel voor kijkers. Wat een
+    // eigenaar ook bij het delen instelde (incl. oude items met
+    // privacyZone:false), huisadres en beheerde zones worden altijd
+    // gemaskeerd. hide/simplify blijven wél een keuze van de eigenaar.
     const opts = item.locationPrivacy ?? {
       hideStartEnd: true,
       privacyZone: true,
       simplify: true,
     };
-    const track = applyLocationPrivacy(points, opts, home);
+    const track = applyLocationPrivacy(
+      points,
+      { ...opts, privacyZone: true },
+      zones,
+    );
     res.json(
       track
         ? { track, origineel: false }

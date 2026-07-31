@@ -34,6 +34,11 @@ import {
   userProfilesTable,
   routeLibraryTable,
   routeLibraryCommentsTable,
+  privacyZonesTable,
+  privacyZoneKinds,
+  PRIVACY_ZONE_MIN_RADIUS_M,
+  PRIVACY_ZONE_MAX_RADIUS_M,
+  PRIVACY_ZONE_DEFAULT_RADIUS_M,
   type RouteShareAudience,
   type RouteSurface,
   type RouteVisibility,
@@ -42,7 +47,14 @@ import {
   type RouteMeetpoint,
   type RouteEngineSurface,
 } from "@workspace/db";
-import { applyLocationPrivacy } from "../lib/world-social/location";
+import {
+  applyLocationPrivacy,
+  type PrivacyZoneCircle,
+} from "../lib/world-social/location";
+import {
+  loadOwnerPrivacyZones,
+  HOME_ZONE_RADIUS_M,
+} from "../lib/world-social/privacy-zones";
 import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
 import { controlUnpavedShare } from "../lib/surface-control";
 import { activeRacePoints } from "../lib/race-points";
@@ -663,6 +675,12 @@ async function ownerHome(
     : null;
 }
 
+// Alle privacyzones van de eigenaar: het huisadres (altijd impliciet, 750 m)
+// plus de zelf beheerde zones (woning/werk/gevoelig, eigen straal). Gedeelde
+// helper met de World Social-rittenweergave zodat "elke gedeelde weergave"
+// overal dezelfde zones gebruikt.
+const ownerPrivacyZones = loadOwnerPrivacyZones;
+
 // Actieve clubs van een gebruiker.
 async function activeClubIds(clerkId: string): Promise<number[]> {
   const rows = await db
@@ -731,7 +749,7 @@ async function canViewSharedRoute(
 // per-punt gekoppeld aan de originele geometrie en zou na afkappen niet meer
 // kloppen — dus eerlijk null. Navigatie-aanwijzingen idem (start klopt niet
 // meer). Totalen (afstand/hoogtemeters) blijven de echte totalen van de route.
-function viewerRouteView(route: RouteRow, home: { lat: number; lon: number } | null) {
+function viewerRouteView(route: RouteRow, zones: PrivacyZoneCircle[]) {
   const raw = Array.isArray(route.geometry)
     ? (route.geometry as RoutePathPoint[]).map((p) => ({
         lat: Number(p[0]),
@@ -741,7 +759,7 @@ function viewerRouteView(route: RouteRow, home: { lat: number; lon: number } | n
   const track = applyLocationPrivacy(
     raw,
     { hideStartEnd: true, privacyZone: true, simplify: true },
-    home,
+    zones,
   );
   return {
     ...route,
@@ -1088,19 +1106,16 @@ router.get("/ontdek", requireAuth, async (req, res) => {
       .from(userProfilesTable)
       .where(inArray(userProfilesTable.clerkId, ownerIds));
     const nameByOwner = new Map(owners.map((o) => [o.clerkId, o.displayName]));
-    const homeByOwner = new Map<
-      string,
-      { lat: number; lon: number } | null
-    >();
+    const zonesByOwner = new Map<string, PrivacyZoneCircle[]>();
     await Promise.all(
       ownerIds.map(async (owner) => {
-        homeByOwner.set(owner, await ownerHome(owner));
+        zonesByOwner.set(owner, await ownerPrivacyZones(owner));
       }),
     );
     const routes = ridden
       .filter((r) => minorByOwner.get(r.clerkId) !== true)
       .map((r) => {
-        const view = viewerRouteView(r, homeByOwner.get(r.clerkId) ?? null);
+        const view = viewerRouteView(r, zonesByOwner.get(r.clerkId) ?? []);
         return {
           id: r.id,
           name: r.name,
@@ -1226,6 +1241,134 @@ router.get("/pace", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "routes.pace failed");
     res.status(500).json({ error: "Kon je eigen tempo niet berekenen" });
+  }
+});
+
+// ── Privacyzones ────────────────────────────────────────────────────────────
+// Gebruikersbeheerde gevoelige locaties (woning/werk/gevoelig). Elke gedeelde
+// of getoonde routeweergave voor niet-eigenaren verwijdert punten binnen de
+// zone — op leesmoment (nooit een "veilige kopie" opslaan). Het huisadres uit
+// het profiel telt daarnaast ALTIJD impliciet mee (750 m). Gedeclareerd VÓÓR
+// "/:id" zodat "privacyzones" nooit als route-id wordt gelezen.
+
+// GET /api/routes/privacyzones — eigen zones + of het huisadres bekend is.
+router.get("/privacyzones", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const [zones, home] = await Promise.all([
+      db
+        .select()
+        .from(privacyZonesTable)
+        .where(eq(privacyZonesTable.clerkId, clerkId))
+        .orderBy(asc(privacyZonesTable.createdAt)),
+      ownerHome(clerkId),
+    ]);
+    res.json({
+      zones,
+      // Alleen ÓF het huisadres beschermd is — nooit de coördinaten zelf terug
+      // over de lijn sturen; dit antwoord voedt puur de beheer-UI.
+      thuisBeschermd: home !== null,
+      thuisStraalM: HOME_ZONE_RADIUS_M,
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.privacyzones.list failed");
+    res.status(500).json({ error: "Kon privacyzones niet laden" });
+  }
+});
+
+// POST /api/routes/privacyzones — nieuwe zone (max 10 per gebruiker).
+router.post("/privacyzones", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const label =
+    typeof body.label === "string" ? body.label.trim().slice(0, 80) : "";
+  const kind = typeof body.kind === "string" ? body.kind : "gevoelig";
+  const lat = Number(body.lat);
+  const lon = Number(body.lon);
+  const radiusRaw =
+    body.radiusM === undefined ? PRIVACY_ZONE_DEFAULT_RADIUS_M : Number(body.radiusM);
+  if (!label) {
+    res.status(400).json({ error: "Een zone heeft een naam nodig" });
+    return;
+  }
+  if (!(privacyZoneKinds as readonly string[]).includes(kind)) {
+    res.status(400).json({ error: "Ongeldig zonetype" });
+    return;
+  }
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lon) > 180
+  ) {
+    res.status(400).json({ error: "Ongeldige locatie" });
+    return;
+  }
+  if (
+    !Number.isFinite(radiusRaw) ||
+    radiusRaw < PRIVACY_ZONE_MIN_RADIUS_M ||
+    radiusRaw > PRIVACY_ZONE_MAX_RADIUS_M
+  ) {
+    res.status(400).json({
+      error: `Straal moet tussen ${PRIVACY_ZONE_MIN_RADIUS_M} en ${PRIVACY_ZONE_MAX_RADIUS_M} meter liggen`,
+    });
+    return;
+  }
+  try {
+    const existing = await db
+      .select({ id: privacyZonesTable.id })
+      .from(privacyZonesTable)
+      .where(eq(privacyZonesTable.clerkId, clerkId));
+    if (existing.length >= 10) {
+      res.status(400).json({ error: "Maximaal 10 privacyzones" });
+      return;
+    }
+    const [zone] = await db
+      .insert(privacyZonesTable)
+      .values({
+        clerkId,
+        label,
+        kind,
+        lat,
+        lon,
+        radiusM: Math.round(radiusRaw),
+      })
+      .returning();
+    res.status(201).json({ zone });
+  } catch (err) {
+    req.log.error({ err }, "routes.privacyzones.create failed");
+    res.status(500).json({ error: "Kon privacyzone niet opslaan" });
+  }
+});
+
+// DELETE /api/routes/privacyzones/:zoneId — eigen zone verwijderen. Het
+// impliciete huisadres is hier bewust NIET verwijderbaar; dat hoort bij het
+// profiel en blijft altijd beschermd.
+router.delete("/privacyzones/:zoneId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const zoneId = Number(String(req.params.zoneId));
+  if (!Number.isInteger(zoneId)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [deleted] = await db
+      .delete(privacyZonesTable)
+      .where(
+        and(
+          eq(privacyZonesTable.id, zoneId),
+          eq(privacyZonesTable.clerkId, clerkId),
+        ),
+      )
+      .returning({ id: privacyZonesTable.id });
+    if (!deleted) {
+      res.status(404).json({ error: "Zone niet gevonden" });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "routes.privacyzones.delete failed");
+    res.status(500).json({ error: "Kon privacyzone niet verwijderen" });
   }
 });
 
@@ -1594,8 +1737,8 @@ router.get("/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Route niet gevonden" });
       return;
     }
-    const home = await ownerHome(route.clerkId);
-    res.json({ route: viewerRouteView(route, home) });
+    const zones = await ownerPrivacyZones(route.clerkId);
+    res.json({ route: viewerRouteView(route, zones) });
   } catch (err) {
     req.log.error({ err }, "routes.get failed");
     res.status(500).json({ error: "Kon route niet laden" });
@@ -4186,6 +4329,11 @@ router.put("/:id", requireAuth, async (req, res) => {
       updates.visibility = body.visibility as RouteVisibility;
     }
     if (typeof body.favorite === "boolean") updates.favorite = body.favorite;
+    // Eigenaarskeuze: mag Sparki deze route gebruiken voor automatische
+    // voorstellen? Presentatie/gedrag, geen inhoudelijke wijziging.
+    if (typeof body.suggestExclude === "boolean") {
+      updates.suggestExclude = body.suggestExclude;
+    }
     // Gebruikstype (training | toertocht | wedstrijd) — wedstrijd activeert
     // Wedstrijdmodus in de live navigatie. Presentatie/gedrag, geen inhoudelijke
     // routewijziging (geen versie-bump).
@@ -4248,8 +4396,8 @@ router.post("/:id/duplicate", requireAuth, async (req, res) => {
         res.status(404).json({ error: "Route niet gevonden" });
         return;
       }
-      const home = await ownerHome(route.clerkId);
-      source = viewerRouteView(route, home) as Record<string, unknown>;
+      const zones = await ownerPrivacyZones(route.clerkId);
+      source = viewerRouteView(route, zones) as Record<string, unknown>;
       if (!source.geometry) {
         res.status(422).json({
           error:
