@@ -7,7 +7,10 @@
 
 Laatst bijgewerkt: 2026-07-31.
 
-## Wacht op jouw keuze
+## Geparkeerd (48-uurs afbouwsprint, besluit René 31-07-2026)
+
+> Besluit 3 van de sprint: open punten #10, #12 en #13 blokkeren niet en zijn
+> geparkeerd tot na de sprint. Niet elke beurt meer voorleggen; wel bewaren.
 
 12. **Wielercategorieën — mappingvalidatie** — bronhiërarchie is BESLOTEN (31-07-2026:
     UCI leidend → UEC Europese context → KNWU nationale licentievertaling; gescheiden

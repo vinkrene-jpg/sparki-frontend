@@ -1,0 +1,134 @@
+SPARKI — 48-UURS VOLLEDIGE AFBOUWSPRINT
+
+BESLUIT RENÉ
+
+Binnen de resterende twee bouwdagen moet alles wat nu al onderdeel is van Sparki:
+
+- gebouwd;
+- technisch getest;
+- door Mirror getoetst;
+- werkend;
+- zonder mock-, seed-, demo- of fallbackdata als echte gebruikersdata;
+
+zijn.
+
+Dit is geen kernrelease. Dit is de afbouw van de volledige huidige Sparki-scope.
+
+VASTE BESLUITEN
+
+1. Wandelen wordt binnen deze sprint gebouwd volgens BOUWOPDRACHT_WANDELEN_v2, zodra de routepakket-reeks technisch gereed is.
+2. Bij downgrade naar Gratis blijven alle routes boven de limiet alleen-lezen totdat de gebruiker zelf drie routes kiest.
+3. Open punten #10, #12 en #13 blokkeren niet en worden geparkeerd.
+4. Bestaande schermen die nog niet betrouwbaar werken blijven zichtbaar en moeten worden gerepareerd. Niet verbergen, niet verwijderen, niet doorschuiven.
+5. Na een groene Mirror-toets start automatisch de volgende vastgelegde opdracht.
+6. Alleen stoppen bij:
+   - aantoonbaar datarisico;
+   - ontbrekend productbesluit dat bouwen onmogelijk maakt;
+   - architectuurblokkade;
+   - Mirror-afkeuring die eerst herstel vereist.
+
+WERKWIJZE
+
+- Geen nieuwe brede onderzoeken.
+- Geen nieuwe strategierapporten als vervanging van code.
+- Geen nieuwe functiematrix voordat er gebouwd is.
+- Geen reeds genomen besluiten opnieuw openen.
+- Eén actieve bouwstroom, maar meerdere onafhankelijke domeinen mogen parallel worden voorbereid wanneer zij technisch niet botsen.
+- Replit bouwt.
+- Mirror toetst onafhankelijk.
+- Bij afkeuring: gerichte herstelactie.
+- Bij goedkeuring: direct door.
+- Claude houdt de totale scope, afhankelijkheden en voortgang bij en voorkomt dat onderdelen vergeten worden.
+
+VERPLICHTE VOLGORDE VOOR AFHANKELIJKE DELEN
+
+1. ROUTE_PAKKET_01 hertoetsen en goedkeuren.
+2. ROUTE_PAKKET_02a.
+3. ROUTE_PAKKET_02b.
+4. ROUTE_PAKKET_02c.
+5. ROUTE_PAKKET_02d.
+6. Wandelen v2.
+7. Volledige regressie van routes, navigatie, pakketten en wandelen.
+
+PARALLELLE AFBOUWSTROMEN
+
+Tegelijk met de routeketen mogen alleen domeinen worden afgewerkt die dezelfde code, tabellen en rechten niet raken.
+
+Minimaal meenemen:
+
+- onboarding en account;
+- Gratis, Go en Compleet;
+- Stripe en abonnementen;
+- data-trust;
+- activiteiten;
+- trainingskalender;
+- trainingbouwer;
+- plannen en analyse;
+- AI-coach;
+- wedstrijd;
+- trainer/coach;
+- zelfstandige trainers;
+- club;
+- jeugd en ouder;
+- ploegleider;
+- mechanieker;
+- materiaal;
+- e-bike;
+- documenten uploaden;
+- technische gids;
+- PDF genereren;
+- exporteren;
+- e-mailen;
+- delen;
+- notificaties;
+- admin;
+- AI-helpdesk;
+- privacy, toestemming en accountverwijdering;
+- desktop, PWA en mobiel;
+- bedrijfscontinuïteit en support.
+
+AFBOUWMETHODE PER DOMEIN
+
+Voor ieder bestaand domein:
+
+1. Inventariseer alleen wat aantoonbaar al in de repo aanwezig is.
+2. Test de volledige gebruikersflow.
+3. Repareer alle defecten.
+4. Bouw ontbrekende stukken die nodig zijn om de bestaande flow compleet te maken.
+5. Verwijder geen zichtbare functie omdat zij lastig is.
+6. Gebruik geen voorbeelddata om een lege of defecte flow te verbergen.
+7. Lever bewijs:
+   - start-SHA;
+   - eind-SHA;
+   - gewijzigde bestanden;
+   - tests en exitcodes;
+   - desktopbewijs;
+   - mobiel bewijs;
+   - API-bewijs;
+   - Mirror-oordeel.
+8. Markeer pas als afgerond bij MIRROR_PROVEN.
+
+DOWGRADE GEDRAG ROUTES
+
+Bij downgrade naar Gratis:
+
+- geen routes stilzwijgend verwijderen;
+- alle routes blijven zichtbaar;
+- maximaal drie routes blijven actief bewerkbaar en bruikbaar;
+- routes boven de limiet worden alleen-lezen;
+- de gebruiker kiest zelf welke drie actief blijven;
+- totdat die keuze is gemaakt, wordt niets verwijderd;
+- duidelijke uitleg in de UI;
+- herstel en upgrade blijven mogelijk.
+
+EINDEIS NA 48 UUR
+
+Lever één actuele totaaltabel op met uitsluitend:
+
+- MIRROR_PROVEN;
+- AFGEKEURD MET CONCRETE BLOKKADE;
+- NIET BEWIJSBAAR MET REDEN.
+
+“Gebouwd maar nog niet getest”, “bijna klaar”, “scherm bestaat” en “later repareren” gelden niet als afgerond.
+
+Begin nu met de actieve herstel- en Mirror-stroom voor ROUTE_PAKKET_01 en start daarnaast alleen technisch onafhankelijke herstelstromen.
