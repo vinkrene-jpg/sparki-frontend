@@ -117,7 +117,7 @@
     "test:health-endpoints": "node ./scripts/run-test.mjs health-endpoints",
     "test:consent-gate": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs consent-gate",
     "test:engagement": "node ./scripts/run-test.mjs engagement",
-    "test:entitlements": "node ./scripts/run-test.mjs entitlements",
+    "test:entitlements": "node ./scripts/run-test.mjs entitlements --dev-auth",
     "test:ride-story": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ride-story",
     "test:sprint": "node ./scripts/run-test.mjs sprint",
     "test:sprints-stop": "node ./scripts/run-test.mjs sprints-stop",

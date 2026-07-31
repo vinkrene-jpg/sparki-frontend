@@ -31,6 +31,14 @@ if (!name || !/^[a-z0-9-]+$/.test(name)) {
   process.exit(1);
 }
 
+// --dev-auth: zet de dev-auth-omgeving platformveilig vanuit Node zelf
+// (geen shell-`export`, werkt dus ook buiten bash). Alleen voor testruns.
+const devAuth = process.argv.slice(3).includes("--dev-auth");
+if (devAuth) {
+  process.env.NODE_ENV = "development";
+  process.env.DEV_AUTH_BYPASS = "true";
+}
+
 const distDir = `dist-tests/${name}`;
 const buildEnv = {
   ...process.env,

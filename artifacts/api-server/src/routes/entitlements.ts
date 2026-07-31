@@ -3,7 +3,11 @@
 
 import { Router, type IRouter } from "express";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { resolveEntitlements } from "../lib/entitlements";
+import {
+  resolveEntitlements,
+  customerProductLabel,
+  customerSourceLabel,
+} from "../lib/entitlements";
 
 const router: IRouter = Router();
 
@@ -13,16 +17,23 @@ router.get("/", requireAuth, async (req, res) => {
     const resolved = await resolveEntitlements(clerkId);
     res.json({
       entitlement_mode: resolved.entitlementMode,
-      product_variant: resolved.productVariant,
+      // Klantgericht label — de interne variantnaam (sparki_pro e.d.) blijft
+      // bewust buiten dit antwoord; beheer ziet die via de adminrouter.
+      product_label: customerProductLabel(resolved),
       active_entitlements: resolved.activeEntitlements.map((e) => ({
         id: e.id,
         entitlement_key: e.entitlementKey,
         entitlement_type: e.entitlementType,
-        source: e.source,
+        source: customerSourceLabel(e.source),
         starts_at: e.startsAt.toISOString(),
         ends_at: e.endsAt ? e.endsAt.toISOString() : null,
       })),
-      commercial_features: resolved.commercialFeatures,
+      commercial_features: Object.fromEntries(
+        Object.entries(resolved.commercialFeatures).map(([key, v]) => [
+          key,
+          { ...v, source: customerSourceLabel(v.source) },
+        ]),
+      ),
       degraded: resolved.degraded,
     });
   } catch (err) {

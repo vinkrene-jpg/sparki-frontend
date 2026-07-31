@@ -307,6 +307,35 @@ export const GO_FEATURE_LABELS: Record<GoFeatureKey, string> = {
 export const GO_INHERITING_VARIANTS = ["sparki_go", "sparki_pro"] as const;
 
 /**
+ * Klantveilige weergave van een bron-string (bv. "variant:sparki_go").
+ * Vervangt interne variantnamen door klantlabels; alleen presentatie.
+ */
+export function customerSourceLabel(source: string): string {
+  return source
+    .replace(/sparki_go/g, "Sparki Go")
+    .replace(/sparki_pro/g, "Sparki Compleet")
+    .replace(/sparki_(basic|performance)/g, "intern");
+}
+
+/**
+ * Klantgericht productlabel. Interne variantnamen (sparki_pro, sparki_basic,
+ * sparki_performance) mogen NOOIT in een klantantwoord verschijnen — alleen de
+ * productlijn Gratis · Sparki Go · Sparki Compleet. Interne testtiers hebben
+ * geen commerciële rechten en heten voor de klant dus eerlijk "Gratis".
+ * Alleen presentatie: verandert niets aan de entitlementwerking.
+ */
+export function customerProductLabel(resolved: ResolvedEntitlements): string {
+  switch (resolved.productVariant) {
+    case "sparki_go":
+      return "Sparki Go";
+    case "sparki_pro":
+      return "Sparki Compleet";
+    default:
+      return "Gratis";
+  }
+}
+
+/**
  * Idempotente seed van de Go-variantrechten: sparki_go én sparki_pro
  * (= Sparki Compleet, erft alle Go-rechten) krijgen de vier Go-onderdelen;
  * interne tiers bewust niets (afwezigheid = geen recht, fail-closed).
