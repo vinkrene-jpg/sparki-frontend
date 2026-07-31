@@ -215,3 +215,17 @@ Go wielrenner/MTB/gravel · **Wedstrijd** — nooit "Compleet") zijn 31-07 gebou
 als pure weergavelaag op de bestaande routemotor: automatisch voorstel uit het
 profiel, handmatig aanpasbaar, bewaard in `athlete_profiles.planner_view`,
 los van abonnement, veiligheid op elk niveau actief.
+
+**Taakstatus-correctie René 31-07-2026:**
+- **#505** — afgerond en bewezen (definitief; nooit heropenen).
+- **#506** (Bewaard-tabblad één lijst) — afgerond en bewezen (definitief).
+- **#507 PR-governance** — GEEN te plannen bouwtaak meer: implementatie +
+  documentatie voorbereid, branch protection ingesteld, verplichte checks
+  vastgelegd, pull request staat open in GitHub ("Taak 507: PR-governance
+  instellen (GitHub Actions + branch protection + Copilot-status)"). Rest is
+  uitsluitend handmatige afronding door René in GitHub: (1) push van
+  `.github/workflows/pr-checks.yml` met workflows-scope, (2) Copilot automatic
+  code review inschakelen.
+- **Vandaag WP-T1** — door René vrijgegeven om te starten; feitelijk al
+  geleverd op 31-07 (Today Orchestrator, zie bijsturing hierboven). Open staan
+  alleen nog WP-T2 (rolvarianten) en WP-T3 (debugweergave + testmatrix §10).
