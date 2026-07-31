@@ -155,3 +155,4 @@
 - [Kernwaarden herkomst-herstel](sparki-kernwaarden-herkomst.md) — elk kernwaarde-schrijfpad eist paspoort-event in zelfde tx (recordEventsForPatch); /profile levert `herkomst`; uppercase-CSS ⇒ e2e case-insensitive.
 - [Routegebruik-telling 02a](sparki-route-usage-telling.md) — maandtelling DB-uniek (user+route+Ams-maand), registreer vóór res.send in exports, 20%-vlag uit (geen server-side routedekking), tier-snapshot nooit herrekend.
 - [Route-zoeklaag bekend-eerst](sparki-route-search-layer.md) — bekende routes vóór generatie: pure rank+verify-laag, fail-closed blokkadecheck ook op oude routes, gedeeld matcht op kijkersgeometrie, hybride alleen op eigen basis.
+- [Merknaam-lint UI-copy](sparki-brand-copy-lint.md) — UI spreekt direct, nooit "Sparki <werkwoord>"; check-brand-copy.mjs in typecheck-api, uitzonderingen zin-exact in allowlist.
