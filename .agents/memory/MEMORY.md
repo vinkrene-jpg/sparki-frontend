@@ -155,4 +155,5 @@
 - [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures met strikte delete-handtekening + advisory lock; GO↔COMPLETE-besluit open.
 - [Overpass burst rate-limits](overpass-burst-rate-limits.md) — recursieve kwadrant-splitsing vuurt query-bursts; mirrors 429'en dan — pauze tussen queries + één beleefde retry, eerlijk gat blijft.
 - [Blokkadepoort koude-cache fail-open](sparki-blokkadepoort-fail-open.md) — 1e aanvraag in vers gebied lekt route door locked gate (2500ms budget vs Overpass 10-20s); warm = 422; bewijs eist warme cache.
+- [Ritgeschiedenis-routekandidaten](sparki-ridden-route-candidates.md) — "route candidates" is al de provider-store (naamclash!); ritten-engine apart; save altijd door blokkadepoort; nieuwe tabellen eisen SQL-migratie naast push.
 - [Route-hm ruisdrempel](sparki-elevation-gain-noise.md) — SRTM-ruis: summarizeTrack smooth±150m + 3m-drempel is hm-SSOT; profiel-y-as min 100 m; nooit rauwe provider-ascend prefereren.

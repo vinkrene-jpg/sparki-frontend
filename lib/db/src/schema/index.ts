@@ -57,6 +57,7 @@ export * from "./club";
 export * from "./release";
 export * from "./route-shares";
 export * from "./route-library";
+export * from "./route-candidates";
 export * from "./volgauto";
 export * from "./route-proposals";
 export * from "./nav-settings";
