@@ -10,7 +10,26 @@ import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 import { useFeatureAccess } from "@/hooks/use-feature-access"
-import { useBillingStatus } from "@/hooks/use-billing"
+
+function GateShell({
+  actief,
+  section,
+  children,
+}: {
+  actief: string
+  section: string
+  children: ReactNode
+}) {
+  const { flags, isLoading } = useFeatureFlags()
+  if (isLoading || flags.commercial_shell) {
+    return <CommercialShell actief={actief}>{children}</CommercialShell>
+  }
+  return (
+    <ScreenShell bg={null} section={section}>
+      {children}
+    </ScreenShell>
+  )
+}
 
 export function GoGatePage({
   feature,
@@ -23,34 +42,23 @@ export function GoGatePage({
   /** Sectienaam voor de donkere ScreenShell (bijv. "Train"). */
   section: string
 }) {
-  const { flags, isLoading } = useFeatureFlags()
-  // Actieknop alleen tonen wanneer het abonnementspaneel echt een actie biedt
-  // (proef, checkout of beheer). Onbekend/uit ⇒ eerlijk geen knop.
-  const { data: billing } = useBillingStatus()
-  const metActie = Boolean(
-    billing &&
-      (billing.available.trial ||
-        billing.available.checkout ||
-        billing.available.portal),
-  )
-  const nudge = (
-    <div className="px-4 py-12">
-      <UpgradeNudge feature={feature} metActie={metActie} />
-    </div>
-  )
-  if (isLoading || flags.commercial_shell) {
-    return <CommercialShell actief={actief}>{nudge}</CommercialShell>
-  }
+  // De rustige CTA naar het abonnementsoverzicht staat er altijd (besluit
+  // 31-07-2026): het overzicht bestaat altijd, ook zonder checkout-actie.
   return (
-    <ScreenShell bg={null} section={section}>
-      {nudge}
-    </ScreenShell>
+    <GateShell actief={actief} section={section}>
+      <div className="px-4 py-12">
+        <UpgradeNudge feature={feature} metActie />
+      </div>
+    </GateShell>
   )
 }
 
 /**
- * Paginawissel: toont children alleen wanneer het Go-onderdeel commercieel
- * is toegestaan. Bij laden of leesfout faalt de UI open (server blijft gated).
+ * Paginawissel: toont children alleen wanneer het Go-onderdeel commercieel is
+ * toegestaan. Tijdens het laden van de rechten tonen we uitsluitend een
+ * duidelijke laadstatus — nooit alvast (lege) analyse-inhoud die daarna door
+ * een betaalmuur wordt vervangen. Alleen bij een echte leesfout faalt de UI
+ * open (de server-side 403 blijft altijd de echte poort).
  */
 export function GoGateSwitch({
   feature,
@@ -64,6 +72,24 @@ export function GoGateSwitch({
   children: ReactNode
 }) {
   const access = useFeatureAccess(feature)
+  if (access.isLoading) {
+    return (
+      <GateShell actief={actief} section={section}>
+        <div
+          className="flex flex-col items-center gap-3 px-4 py-16 text-center"
+          data-testid="go-gate-loading"
+        >
+          <span
+            className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-300/60 border-t-transparent"
+            aria-hidden
+          />
+          <p className="text-[13px] text-white/60">
+            Je toegang wordt gecontroleerd…
+          </p>
+        </div>
+      </GateShell>
+    )
+  }
   if (access.known && !access.entitled) {
     return <GoGatePage feature={feature} actief={actief} section={section} />
   }

@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 
 /** Vast doel van de upgrade-actie: het abonnementspaneel in de instellingen. */
 export const UPGRADE_ACTION_PATH = "/you?focus=abonnement";
-/** Vaste actie-copy — één plek, geen prijzen. */
-export const UPGRADE_ACTION_LABEL = "Bekijk Sparki Go";
+/** Vaste actie-copy — één plek, geen prijzen; leidt naar het abonnementsoverzicht. */
+export const UPGRADE_ACTION_LABEL = "Bekijk je abonnement";
 
 export const GO_FEATURE_COPY: Record<string, { titel: string; uitleg: string }> = {
   autonomous_training: {

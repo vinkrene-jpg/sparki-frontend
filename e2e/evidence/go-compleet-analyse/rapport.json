@@ -1,0 +1,137 @@
+[
+  {
+    "persona": "seed_persona_gratis",
+    "label": "gratis",
+    "verwacht": "paywall",
+    "regels": [
+      {
+        "status": "INFO",
+        "detail": "direct na laden: loading=true nudge=false"
+      },
+      {
+        "status": "OK",
+        "detail": "betaalmuur getoond zoals verwacht"
+      },
+      {
+        "status": "OK",
+        "detail": "CTA 'Bekijk je abonnement' aanwezig"
+      },
+      {
+        "status": "OK",
+        "detail": "harde herlaad geeft dezelfde uitkomst"
+      },
+      {
+        "status": "OK",
+        "detail": "server: performance_lab entitled=false (variant null)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_go",
+    "label": "go",
+    "verwacht": "inhoud",
+    "regels": [
+      {
+        "status": "INFO",
+        "detail": "direct na laden: loading=true nudge=false"
+      },
+      {
+        "status": "OK",
+        "detail": "inhoud toegankelijk, geen betaalmuur"
+      },
+      {
+        "status": "OK",
+        "detail": "nergens \"hoort bij Sparki Go\""
+      },
+      {
+        "status": "OK",
+        "detail": "harde herlaad geeft dezelfde uitkomst"
+      },
+      {
+        "status": "OK",
+        "detail": "server: performance_lab entitled=true (variant sparki_go)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_pro",
+    "label": "compleet",
+    "verwacht": "inhoud",
+    "regels": [
+      {
+        "status": "INFO",
+        "detail": "direct na laden: loading=true nudge=false"
+      },
+      {
+        "status": "OK",
+        "detail": "inhoud toegankelijk, geen betaalmuur"
+      },
+      {
+        "status": "OK",
+        "detail": "nergens \"hoort bij Sparki Go\""
+      },
+      {
+        "status": "OK",
+        "detail": "harde herlaad geeft dezelfde uitkomst"
+      },
+      {
+        "status": "OK",
+        "detail": "server: performance_lab entitled=true (variant sparki_pro)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_basic",
+    "label": "basis-intern",
+    "verwacht": "paywall",
+    "regels": [
+      {
+        "status": "INFO",
+        "detail": "direct na laden: loading=true nudge=false"
+      },
+      {
+        "status": "OK",
+        "detail": "betaalmuur getoond zoals verwacht"
+      },
+      {
+        "status": "OK",
+        "detail": "CTA 'Bekijk je abonnement' aanwezig"
+      },
+      {
+        "status": "OK",
+        "detail": "harde herlaad geeft dezelfde uitkomst"
+      },
+      {
+        "status": "OK",
+        "detail": "server: performance_lab entitled=false (variant sparki_basic)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_performance",
+    "label": "performance-intern",
+    "verwacht": "paywall",
+    "regels": [
+      {
+        "status": "INFO",
+        "detail": "direct na laden: loading=true nudge=false"
+      },
+      {
+        "status": "OK",
+        "detail": "betaalmuur getoond zoals verwacht"
+      },
+      {
+        "status": "OK",
+        "detail": "CTA 'Bekijk je abonnement' aanwezig"
+      },
+      {
+        "status": "OK",
+        "detail": "harde herlaad geeft dezelfde uitkomst"
+      },
+      {
+        "status": "OK",
+        "detail": "server: performance_lab entitled=false (variant sparki_performance)"
+      }
+    ]
+  }
+]

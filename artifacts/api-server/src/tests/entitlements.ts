@@ -163,6 +163,17 @@ async function cleanup() {
 }
 
 async function main() {
+  // Admin is sinds WP-S1 strikt (geen dev-bypass): de testadmin moet expliciet
+  // in SPARKI_ADMIN_IDS staan. In-process server leest de env per aanroep;
+  // we herstellen de oorspronkelijke waarde na afloop.
+  const savedAdminIds = process.env.SPARKI_ADMIN_IDS;
+  process.env.SPARKI_ADMIN_IDS = [savedAdminIds, adminUser]
+    .filter(Boolean)
+    .join(",");
+  process.once("exit", () => {
+    if (savedAdminIds === undefined) delete process.env.SPARKI_ADMIN_IDS;
+    else process.env.SPARKI_ADMIN_IDS = savedAdminIds;
+  });
   await startServer();
 
   await ensureAccount(legacyUser, `${legacyUser}@example.test`, "Legacy", silentLogger);
@@ -189,18 +200,22 @@ async function main() {
   await ensureGoVariantGrantSeed();
   await ensureGoVariantGrantSeed(); // tweede aanroep mag niets veranderen
 
-  await scenario("variant_feature_grants: sparki_go = de vier Go-onderdelen, sparki_basic = niets", async () => {
+  await scenario("variant_feature_grants: sparki_go én sparki_pro (Compleet) = de vier Go-onderdelen; interne tiers = niets", async () => {
     const rows = await db.select().from(variantFeatureGrantsTable);
-    const go = rows.filter((r) => r.productVariant === "sparki_go" && r.enabled);
-    const basic = rows.filter((r) => r.productVariant === "sparki_basic");
-    assert(
-      go.length === GO_FEATURE_KEYS.length,
-      `verwacht ${GO_FEATURE_KEYS.length} go-rijen, kreeg ${go.length}`,
-    );
-    for (const key of GO_FEATURE_KEYS) {
-      assert(go.some((r) => r.featureKey === key), `go mist ${key}`);
+    for (const variant of ["sparki_go", "sparki_pro"] as const) {
+      const v = rows.filter((r) => r.productVariant === variant && r.enabled);
+      assert(
+        v.length === GO_FEATURE_KEYS.length,
+        `verwacht ${GO_FEATURE_KEYS.length} ${variant}-rijen, kreeg ${v.length}`,
+      );
+      for (const key of GO_FEATURE_KEYS) {
+        assert(v.some((r) => r.featureKey === key), `${variant} mist ${key}`);
+      }
     }
-    assert(basic.length === 0, `sparki_basic moet leeg zijn, kreeg ${basic.length}`);
+    const basic = rows.filter((r) => r.productVariant === "sparki_basic");
+    const perf = rows.filter((r) => r.productVariant === "sparki_performance");
+    assert(basic.length === 0, `sparki_basic (interne tier) moet leeg zijn, kreeg ${basic.length}`);
+    assert(perf.length === 0, `sparki_performance (interne tier) moet leeg zijn, kreeg ${perf.length}`);
   });
 
   // ── Legacy-gedrag: flags blijven exact bepalend ────────────────────────────
