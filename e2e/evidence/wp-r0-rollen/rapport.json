@@ -1,35 +1,5 @@
 [
   {
-    "identiteit": "governor-fixture-parent",
-    "rol": "parent",
-    "regels": [
-      {
-        "status": "GEKLIKT",
-        "detail": "identiteit TESTFIXTURE Ouder gekozen (echte klik + herlaad)"
-      },
-      {
-        "status": "OK",
-        "detail": "/api/auth/me → governor-fixture-parent rol parent"
-      },
-      {
-        "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE OUDER · ROL PARENT\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-parent-desktop-03-home-als-identiteit.png)"
-      },
-      {
-        "status": "OK",
-        "detail": "paginalijst rolbewust (\"Start (ouder)\", geen Club-beheer)"
-      },
-      {
-        "status": "OK",
-        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
-      },
-      {
-        "status": "OK",
-        "detail": "/api/parent/athletes → 1 kind(eren)"
-      }
-    ]
-  },
-  {
     "identiteit": "governor-fixture-trainer-zelfstandig",
     "rol": "coach",
     "regels": [
@@ -228,6 +198,36 @@
     ]
   },
   {
+    "identiteit": "governor-fixture-parent",
+    "rol": "parent",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Ouder gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-parent rol parent"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ BB408B36 · TESTFIXTURE OUDER · ROL PARENT\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-parent-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start (ouder)\", geen Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/parent/athletes → 1 kind(eren)"
+      }
+    ]
+  },
+  {
     "identiteit": "governor-fixture-admin",
     "rol": "athlete",
     "regels": [
@@ -241,7 +241,7 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE ADMIN TESTBEHEER · ROL ATHLETE · ADMIN\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-admin-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ BB408B36 · TESTFIXTURE ADMIN TESTBEHEER · ROL ATHLETE · ADMIN\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-admin-desktop-03-home-als-identiteit.png)"
       },
       {
         "status": "OK",

@@ -90,7 +90,9 @@ test("coach en ouder behouden hun bestaande navigatie", () => {
   )
   assert.deepEqual(
     PARENT_NAV_ENTRIES.map((e) => e.href),
-    ["/", "/feed", "/invitations", "/you"],
+    // WP-R1 (besluit 31-07-2026): bindende ouderonderbalk
+    // Kinderen · Vandaag · Meldingen · Toestemmingen · Meer.
+    ["/kinderen", "/vandaag", "/meldingen", "/toestemmingen", "/meer"],
   )
   assert.deepEqual(
     chaptersForRole("coach", false).map((c) => c.href),

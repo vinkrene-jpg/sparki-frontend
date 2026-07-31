@@ -176,6 +176,23 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
     }
   }, [selfType, onComplete])
 
+  // WP-R1 — echte ouderstart: wie hier als ouder/verzorger binnenkomt, slaat
+  // de volledige sporteronboarding over. De server geeft de ouderrol (additief)
+  // en markeert de onboarding als afgerond; daarna landt het account direct in
+  // de ouderomgeving (kinderen koppelen via Uitnodigen).
+  const startAsParent = useCallback(async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      await apiFetch("/api/onboarding/parent-start", { method: "POST" })
+      clearOnboardingState(sessionStore)
+      onComplete()
+    } catch {
+      setError("Kon de ouderstart niet opslaan. Controleer je verbinding en probeer het opnieuw.")
+      setSaving(false)
+    }
+  }, [onComplete])
+
   return (
     <div className="relative min-h-dvh bg-[#05070e]">
       {/* Subtle cinematic glow, matching the app's blue-black language. */}
@@ -195,6 +212,16 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
             ]}
           >
             <PrimaryBtn onClick={next}>Verder</PrimaryBtn>
+            <button
+              type="button"
+              onClick={() => void startAsParent()}
+              disabled={saving}
+              data-testid="onboarding-parent-start"
+              className="mt-3 w-full text-center font-sans text-[13px] text-white/45 underline-offset-4 transition-colors hover:text-white/75 hover:underline disabled:opacity-40"
+            >
+              Ik ben ouder of verzorger — ik sport hier niet zelf
+            </button>
+            {error && <div className="mt-3"><ErrorMsg msg={error} /></div>}
           </NarrativeScreen>
         )}
 

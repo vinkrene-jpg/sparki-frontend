@@ -6,6 +6,9 @@ import { DayHome, type DevCoachOverride } from "@/components/sparki/day-home"
 import { CommercialToday } from "@/components/sparki/commercial-shell"
 import { CoachHome } from "@/components/sparki/coach-home"
 import { ParentHome } from "@/components/sparki/parent-home"
+import ParentKinderenPage from "@/pages/parent-kinderen"
+import ParentMeldingenPage from "@/pages/parent-meldingen"
+import ParentToestemmingenPage from "@/pages/parent-toestemmingen"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { DayType } from "@/lib/day-type"
 import {
@@ -485,9 +488,24 @@ export function DevPreview() {
     showNav = false
   } else if (location.startsWith("/vandaag")) {
     // commercial_shell is globally enabled — dev preview follows the same
-    // flag-respecting path as VandaagPage in the real router.
-    page = <CommercialToday />
-    showNav = false
+    // flag-respecting path as VandaagPage in the real router: coach en ouder
+    // houden hun rolstartpagina op /vandaag (WP-R1).
+    if (profile?.activeRole === "coach") {
+      page = <CoachHome />
+    } else if (profile?.activeRole === "parent") {
+      page = <ParentHome />
+    } else {
+      page = <CommercialToday />
+      showNav = false
+    }
+  } else if (location.startsWith("/kinderen")) {
+    // WP-R1 ouderomgeving — zonder deze regels viel de ouderonderbalk hier
+    // stil terug op de StartPage-fallback (zelfde valkuil als /privacy in WP-S1).
+    page = <ParentKinderenPage />
+  } else if (location.startsWith("/meldingen")) {
+    page = <ParentMeldingenPage />
+  } else if (location.startsWith("/toestemmingen")) {
+    page = <ParentToestemmingenPage />
   } else if (location.startsWith("/club/beheer")) {
     page = <ClubBeheerPage />
   } else if (location.startsWith("/club")) {

@@ -234,6 +234,52 @@ async function writeFactState(
     });
 }
 
+// POST /api/onboarding/parent-start — WP-R1: echte ouderstart. Wie zich als
+// ouder/verzorger aanmeldt, doorloopt GEEN sporteronboarding: dit endpoint
+// geeft de ouderrol (additief — reconcileRoles verwijdert nooit rollen), zet
+// de actieve rol op ouder en markeert de onboarding als afgerond zodat de
+// gate nooit meer de sporter-Q&A start. Idempotent.
+router.post("/parent-start", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const now = new Date();
+  try {
+    const [profile] = await db
+      .select()
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    if (!profile) {
+      res.status(409).json({
+        error: "Je account is nog niet klaar. Log opnieuw in en probeer het nog eens.",
+      });
+      return;
+    }
+    const roles = profile.roles.includes("parent")
+      ? profile.roles
+      : [...profile.roles, "parent"];
+    await db
+      .update(userProfilesTable)
+      .set({ roles, activeRole: "parent", updatedAt: now })
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    await db
+      .insert(onboardingStateTable)
+      .values({
+        clerkId,
+        onboardingStartedAt: now,
+        isComplete: true,
+        onboardingCompletedAt: now,
+        lastSeenAt: now,
+      })
+      .onConflictDoUpdate({
+        target: onboardingStateTable.clerkId,
+        set: { isComplete: true, onboardingCompletedAt: now, lastSeenAt: now, updatedAt: now },
+      });
+    res.json({ ok: true, activeRole: "parent" });
+  } catch (err) {
+    req.log.error({ err }, "onboarding.parentStart failed");
+    res.status(500).json({ error: "Kon de ouderstart niet opslaan." });
+  }
+});
+
 // GET /api/onboarding/state — DB is the source of truth; localStorage is a cache.
 router.get("/state", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;

@@ -260,6 +260,27 @@ export function useSendParentMessage() {
   });
 }
 
+// WP-R1 — gekoppelde trainer(s) van een kind, uitsluitend binnen de bestaande
+// toestemmingslaag (categorie "communicatie"); anders { allowed:false }.
+export type ParentChildTrainers = {
+  allowed: boolean;
+  reason?: string;
+  trainers: { displayName: string; email: string | null }[];
+};
+
+export function useParentTrainers(athleteClerkId: string | null) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: [...queryKeys.parent.all(), "trainers", athleteClerkId],
+    queryFn: () =>
+      apiFetch<ParentChildTrainers>(
+        `/api/parent/athletes/${athleteClerkId}/trainers`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && !!athleteClerkId,
+    staleTime: 5 * 60_000,
+  });
+}
+
 /**
  * A parent ends the link to an athlete from their own side. Scoped server-side
  * to the caller's own parent links; refreshes the list so the child disappears.

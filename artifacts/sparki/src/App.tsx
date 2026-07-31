@@ -62,6 +62,9 @@ import ClubPage from "@/pages/club";
 import ClubBeheerPage from "@/pages/club-beheer";
 import PaspoortPage from "@/pages/paspoort";
 import SupportPage from "@/pages/support";
+import ParentKinderenPage from "@/pages/parent-kinderen";
+import ParentMeldingenPage from "@/pages/parent-meldingen";
+import ParentToestemmingenPage from "@/pages/parent-toestemmingen";
 import { apiFetch } from "@/lib/api";
 import { decideOnboardingOutcome, lsKeyFor } from "@/lib/onboarding-gate";
 import { OnboardingCheckFailed } from "@/components/sparki/onboarding-check-failed";
@@ -285,6 +288,14 @@ function SignedInHomeReady() {
     // user_profiles row can never slip a user into onboarding. The guard below
     // is purely for type-narrowing.
     if (!profile) return;
+    // WP-R1 — echte ouderstart: een account in de ouderrol doorloopt nooit de
+    // sporteronboarding. De rol zelf is het bewijs (server-side toegekend via
+    // parent-start of een geaccepteerde koppeling); de gate slaat het
+    // onboarding-onderzoek volledig over.
+    if (profile.activeRole === "parent") {
+      setOnboarded(true);
+      return;
+    }
     let cancelled = false;
     const lsKey = lsKeyFor(profile.clerkId);
     const lsDone = localStorage.getItem(lsKey) === "true";
@@ -672,6 +683,15 @@ function AppRouter() {
                 </Route>
                 <Route path="/support">
                   <ProtectedPage component={SupportPage} />
+                </Route>
+                <Route path="/kinderen">
+                  <ProtectedPage component={ParentKinderenPage} />
+                </Route>
+                <Route path="/meldingen">
+                  <ProtectedPage component={ParentMeldingenPage} />
+                </Route>
+                <Route path="/toestemmingen">
+                  <ProtectedPage component={ParentToestemmingenPage} />
                 </Route>
                 <Route path="/train">
                   <ProtectedPage component={TrainSwitchPage} />

@@ -77,8 +77,12 @@ export const PERSONAS: Persona[] = [
   // Go = subscription + tier:GO-trial, Compleet = subscription + tier:COMPLETE-trial.
   { key: "athlete-adult", name: "TESTFIXTURE Sporter Volwassen", roles: ["athlete"], activeRole: "athlete", birthDate: "1996-04-12", entitlementMode: "subscription", tierTrial: "GO", clubRole: "member" },
   { key: "athlete-jeugd", name: "TESTFIXTURE Sporter Jeugd", roles: ["athlete"], activeRole: "athlete", birthDate: "2012-09-03", entitlementMode: "subscription", clubRole: "member" },
+  // WP-R1: tweede jeugdkind van dezelfde ouder — meerdere-kinderen-scenario.
+  { key: "athlete-jeugd-b", name: "TESTFIXTURE Sporter Jeugd B", roles: ["athlete"], activeRole: "athlete", birthDate: "2013-05-21", entitlementMode: "subscription" },
   { key: "athlete-compleet", name: "TESTFIXTURE Sporter Compleet", roles: ["athlete"], activeRole: "athlete", birthDate: "1990-01-20", entitlementMode: "subscription", tierTrial: "COMPLETE" },
   { key: "parent", name: "TESTFIXTURE Ouder", roles: ["parent"], activeRole: "parent", entitlementMode: "subscription", clubRole: "parent" },
+  // WP-R1: ouder met precies ÉÉN kind — het één-kind-scenario in tests/e2e.
+  { key: "parent-solo", name: "TESTFIXTURE Ouder Solo", roles: ["parent"], activeRole: "parent", entitlementMode: "subscription" },
   { key: "trainer-1", name: "TESTFIXTURE Trainer Een", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription", clubRole: "trainer" },
   { key: "trainer-2", name: "TESTFIXTURE Trainer Twee (niet gekoppeld)", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription", clubRole: "trainer" },
   // WP-R0: zelfstandige trainer — coach met directe koppeling, bewust GEEN clublid.
@@ -283,17 +287,26 @@ async function createFixturesInner() {
       target: [coachAthleteLinksTable.coachClerkId, coachAthleteLinksTable.athleteClerkId],
       set: { status: "accepted" },
     });
-  await db
-    .insert(parentAthleteLinksTable)
-    .values({
-      parentClerkId: clerkIdFor("parent"),
-      athleteClerkId: clerkIdFor("athlete-jeugd"),
-      status: "accepted",
-    })
-    .onConflictDoUpdate({
-      target: [parentAthleteLinksTable.parentClerkId, parentAthleteLinksTable.athleteClerkId],
-      set: { status: "accepted" },
-    });
+  // WP-R1: ouder ↔ beide jeugdkinderen (één- én meerdere-kinderen-scenario's
+  // draaien op dezelfde vaste fixtures).
+  for (const [parentKey, childKey] of [
+    ["parent", "athlete-jeugd"],
+    ["parent", "athlete-jeugd-b"],
+    // WP-R1: ouder-solo heeft precies één kind (één-kind-scenario).
+    ["parent-solo", "athlete-jeugd-b"],
+  ] as const) {
+    await db
+      .insert(parentAthleteLinksTable)
+      .values({
+        parentClerkId: clerkIdFor(parentKey),
+        athleteClerkId: clerkIdFor(childKey),
+        status: "accepted",
+      })
+      .onConflictDoUpdate({
+        target: [parentAthleteLinksTable.parentClerkId, parentAthleteLinksTable.athleteClerkId],
+        set: { status: "accepted" },
+      });
+  }
 
   return { clubId, teamIds };
 }

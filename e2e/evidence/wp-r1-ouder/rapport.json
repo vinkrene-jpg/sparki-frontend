@@ -1,0 +1,131 @@
+{
+  "datum": "2026-07-31T10:43:37.359Z",
+  "basis": "http://127.0.0.1:80",
+  "failures": 0,
+  "rapport": [
+    {
+      "scenario": "ouder-2-kinderen (mobiel)",
+      "regels": [
+        {
+          "status": "OK",
+          "detail": "identiteit governor-fixture-parent (rol parent) bevestigd"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Kinderen → /kinderen met verwachte inhoud (mobiel)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Vandaag → /vandaag met verwachte inhoud (mobiel)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Meldingen → /meldingen met verwachte inhoud (mobiel)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Toestemmingen → /toestemmingen met verwachte inhoud (mobiel)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Meer → /meer met verwachte inhoud (mobiel)"
+        },
+        {
+          "status": "GEKLIKT",
+          "detail": "kindkiezer: ander kind gekozen"
+        },
+        {
+          "status": "OK",
+          "detail": "Vandaag toont kindkiezer bij 2 kinderen"
+        },
+        {
+          "status": "OK",
+          "detail": "chip-wissel: Vandaag volgt gekozen kind"
+        },
+        {
+          "status": "OK",
+          "detail": "Toestemmingen heeft kindkiezer + rechtenpaneel"
+        }
+      ]
+    },
+    {
+      "scenario": "ouder-2-kinderen (desktop)",
+      "regels": [
+        {
+          "status": "OK",
+          "detail": "identiteit governor-fixture-parent (rol parent) bevestigd"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Kinderen → /kinderen met verwachte inhoud (desktop)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Vandaag → /vandaag met verwachte inhoud (desktop)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Meldingen → /meldingen met verwachte inhoud (desktop)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Toestemmingen → /toestemmingen met verwachte inhoud (desktop)"
+        },
+        {
+          "status": "OK",
+          "detail": "tab Meer → /meer met verwachte inhoud (desktop)"
+        },
+        {
+          "status": "GEKLIKT",
+          "detail": "kindkiezer: ander kind gekozen"
+        },
+        {
+          "status": "OK",
+          "detail": "Vandaag toont kindkiezer bij 2 kinderen"
+        },
+        {
+          "status": "OK",
+          "detail": "chip-wissel: Vandaag volgt gekozen kind"
+        },
+        {
+          "status": "OK",
+          "detail": "Toestemmingen heeft kindkiezer + rechtenpaneel"
+        }
+      ]
+    },
+    {
+      "scenario": "ouder-solo (1 kind)",
+      "regels": [
+        {
+          "status": "OK",
+          "detail": "één kind: geen kindkiezer"
+        },
+        {
+          "status": "OK",
+          "detail": "het enige kind is direct zichtbaar"
+        }
+      ]
+    },
+    {
+      "scenario": "uitnodiging → acceptatie → her-login",
+      "regels": [
+        {
+          "status": "OK",
+          "detail": "ouder maakte kind-uitnodiging (status 201)"
+        },
+        {
+          "status": "OK",
+          "detail": "kind accepteerde de uitnodiging (koppeling actief)"
+        },
+        {
+          "status": "OK",
+          "detail": "na her-login is het verse kind zichtbaar in Kinderen"
+        },
+        {
+          "status": "OK",
+          "detail": "tijdelijke koppeling weer beëindigd"
+        }
+      ]
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import {
   IdCard,
   Mountain,
   Music,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react"
 import type { Role } from "@/contexts/UserContext"
@@ -83,11 +84,13 @@ export const COACH_CHAPTERS: Chapter[] = [
   { href: "/you", icon: User, label: "Profiel", hint: "Jouw gegevens" },
 ]
 
+// WP-R1: inhoud van het "Meer"-tabblad voor ouders — Profiel en Hulp leven
+// hier (bindende onderbalk: Kinderen · Vandaag · Meldingen · Toestemmingen · Meer).
 export const PARENT_CHAPTERS: Chapter[] = [
-  { href: "/vandaag", icon: Home, label: "Vandaag", hint: "Dagstart" },
-  { href: "/feed", icon: Radio, label: "Nieuws", hint: "Wat er speelt" },
-  { href: "/invitations", icon: UserPlus, label: "Uitnodigen", hint: "Koppelen" },
   { href: "/you", icon: User, label: "Profiel", hint: "Jouw gegevens" },
+  { href: "/support", icon: LifeBuoy, label: "Hulp", hint: "Vragen & ondersteuning" },
+  { href: "/invitations", icon: UserPlus, label: "Uitnodigen", hint: "Kind koppelen" },
+  { href: "/feed", icon: Radio, label: "Nieuws", hint: "Wat er speelt" },
 ]
 
 // Hoofdnavigatie (onderbalk) — pure data zodat de navigatieregressietest dit
@@ -108,11 +111,13 @@ export const COACH_NAV_ENTRIES: NavEntry[] = [
   { href: "/you", label: "Profiel" },
 ]
 
+// WP-R1 bindende ouderonderbalk (besluit 31-07-2026).
 export const PARENT_NAV_ENTRIES: NavEntry[] = [
-  { href: "/", label: "Vandaag" },
-  { href: "/feed", label: "Nieuws" },
-  { href: "/invitations", label: "Uitnodigen" },
-  { href: "/you", label: "Profiel" },
+  { href: "/kinderen", label: "Kinderen" },
+  { href: "/vandaag", label: "Vandaag" },
+  { href: "/meldingen", label: "Meldingen" },
+  { href: "/toestemmingen", label: "Toestemmingen" },
+  { href: "/meer", label: "Meer" },
 ]
 
 export function chaptersForRole(
