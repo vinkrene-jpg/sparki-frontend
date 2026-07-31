@@ -61,6 +61,14 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15j. **Vrijgave bundel NOTIFICATIES/INTEGRATIES/LAB (ontvangen 31-07-2026)** —
+    NOTIFICATIES_01 (één centrale notificatielaag voor in-app/push/e-mail/
+    operationele waarschuwingen, web+PWA+native), INTEGRATIES_01 (alle externe
+    sport-/apparaatkoppelingen productiegeschikt vanuit één integratiehub,
+    incl. toestemming intrekken en herkomst), LAB_01 (Performance Lab
+    pakketgestuurd, alleen echte data, elke grafiek uitgelegd).
+    Start pas na vrijgave René; Mirror staat los van de bouw.
+
 15i. **RELEASE_01 (slotpakket, ontvangen 31-07-2026)** — afwijkend pakket:
     niets nieuws bouwen, alleen de app volledig en reproduceerbaar toetsbaar
     maken voor één integrale Mirror-doorloop; defecten gaan terug naar hun
