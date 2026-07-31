@@ -34,3 +34,9 @@ functiegebruik-meetbron voor Go/Compleet.
   routes (`lib/plan-routes.ts`) tellen niet.
 - routes.geometry = `[lat,lon]`-arrays; direct geseede testroutes met
   object-punten geven 422 bij GPX-export.
+
+## Aanvulling 02a — kandidaat-export telt (31-07-2026)
+- Elk succesvol exportformaat telt (GPX/TCX, usageType per formaat); dedupe blijft per identiteit per Ams-maand. Registratie altijd vlak vóór res.send, alleen bij succes.
+- Niet-opgeslagen voorstel telt via bestaande candidateId: route_usage_registrations kreeg nullable route_id + candidate_key + CHECK (precies één) + partiële unieke indexen (migratie 0009). onConflictDoNothing op partiële index eist `where` met het indexpredicaat (targetWhere is alleen voor doUpdate).
+- **Race-les:** kandidaat↔route-overgang eist een pg_advisory_xact_lock per user+kandidaat én identiteitskeuze BINNEN de lock via verse lezing (resolveSavedRouteId-callback) — een pre-lock momentopname van savedRouteId laat opslaan+export dubbel tellen (architect-FAIL 2×). settleCandidateOnSave: promote / normaliseer (delete kandidaatrij als route al telde) / SAVED-insert, check-dan-handel is veilig ónder de lock. Geen catch-all: fouten propageren, alleen Safe-wrapper logt.
+- Dev-server = build+start (geen watch): na wijzigingen workflow herstarten vóór live curl-bewijs, anders test je oude dist.
