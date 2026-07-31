@@ -2758,7 +2758,10 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
   await recordCandidateExportUsageSafe(req.log, {
     clerkId,
     candidateKey: candidateId,
-    savedRouteId: stored.savedRouteId ?? null,
+    // Verse lezing BINNEN de metering-lock — nooit een momentopname van
+    // vóór de lock (race met gelijktijdig opslaan).
+    resolveSavedRouteId: () =>
+      getCandidate(candidateId, clerkId)?.savedRouteId ?? null,
     usageType: "GPX_EXPORTED",
     source: "gpx-export:voorstel",
   });
@@ -2848,7 +2851,8 @@ router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
   await recordCandidateExportUsageSafe(req.log, {
     clerkId,
     candidateKey: candidateId,
-    savedRouteId: stored.savedRouteId ?? null,
+    resolveSavedRouteId: () =>
+      getCandidate(candidateId, clerkId)?.savedRouteId ?? null,
     usageType: "TCX_EXPORTED",
     source: "tcx-export:voorstel",
   });

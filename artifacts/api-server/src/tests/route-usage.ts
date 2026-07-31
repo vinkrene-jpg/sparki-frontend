@@ -37,7 +37,8 @@ import {
 import { eq, and, inArray } from "drizzle-orm";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
-import { putCandidate } from "../lib/route-candidates";
+import { getCandidate, putCandidate } from "../lib/route-candidates";
+import { recordCandidateExportUsage } from "../lib/route-usage-metering";
 import {
   amsterdamCalendarMonth,
   isRiddenTriggerEnabled,
@@ -566,6 +567,46 @@ async function main() {
         t.used === before + 1,
         `gelijktijdig exporteren+opslaan hoort samen 1 te tellen (${before} → ${t.used})`,
       );
+    });
+
+    await scenario("A11. verouderde export-momentopname kan niet dubbel tellen", async () => {
+      // Deterministische naspeling van de race: de export leest de kandidaat
+      // (savedRouteId nog null — de verouderde momentopname), daarna wint het
+      // opslaan de lock, en pas dán registreert de export. Omdat de
+      // identiteitskeuze BINNEN de lock via een verse lezing gebeurt, hoort
+      // de export onder de route-identiteit te vallen: precies één routerij,
+      // nul kandidaatrijen.
+      const id = cand("verouderde-momentopname");
+      const stale = getCandidate(id, aanvullingUser);
+      assert(stale && stale.savedRouteId == null, "momentopname hoort nog niet opgeslagen te zijn");
+      const s = await apiReq("POST", "/api/routes", aanvullingUser, {
+        source: "generated",
+        candidateId: id,
+        name: "verouderde-momentopname",
+      });
+      assert(s.status === 201, `opslaan gaf ${s.status}`);
+      const before = (await teller(aanvullingUser)).used;
+      // De "hervatte" export: verse lezing binnen de lock, niet de momentopname.
+      await recordCandidateExportUsage({
+        clerkId: aanvullingUser,
+        candidateKey: id,
+        resolveSavedRouteId: () =>
+          getCandidate(id, aanvullingUser)?.savedRouteId ?? null,
+        usageType: "GPX_EXPORTED",
+        source: "gpx-export:voorstel",
+      });
+      const t = await teller(aanvullingUser);
+      assert(t.used === before, `export na opslaan telde dubbel (${before} → ${t.used})`);
+      const candRows = await db
+        .select({ id: routeUsageRegistrationsTable.id })
+        .from(routeUsageRegistrationsTable)
+        .where(
+          and(
+            eq(routeUsageRegistrationsTable.clerkId, aanvullingUser),
+            eq(routeUsageRegistrationsTable.candidateKey, id),
+          ),
+        );
+      assert(candRows.length === 0, "er hoort geen kandidaatrij te bestaan");
     });
 
     await scenario("A8. planner-analoge route telt pas bij opslaan/exporteren", async () => {

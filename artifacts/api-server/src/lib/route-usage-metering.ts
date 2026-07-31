@@ -256,44 +256,65 @@ export async function settleCandidateOnSaveSafe(
 
 /**
  * Registreer de export van een (nog) niet opgeslagen voorstel, race-vrij
- * onder dezelfde kandidaat-lock. Is het voorstel intussen opgeslagen
- * (savedRouteId bekend), dan wordt onder de route-identiteit geregistreerd
- * zodat kandidaat- en route-telling nooit naast elkaar bestaan.
+ * onder dezelfde kandidaat-lock. De keuze kandidaat- vs route-identiteit
+ * wordt PAS BINNEN de lock gemaakt via `resolveSavedRouteId` (verse lezing
+ * van de kandidatenopslag) — nooit uit een momentopname van vóór de lock.
+ * Zo kan een gelijktijdig opslaan nooit tot twee telbare rijen leiden:
+ *  - opslaan won de lock eerder → markCandidateSaved is dan al gebeurd en de
+ *    verse lezing levert de route-id op → registratie onder de route;
+ *  - de export won de lock eerder → kandidaatrij; het opslaan promoveert die
+ *    daarna onder dezelfde lock (settleCandidateOnSave).
  */
 export async function recordCandidateExportUsage(opts: {
   clerkId: string;
   candidateKey: string;
-  savedRouteId?: number | null;
+  /** Verse lezing van de opslag; wordt binnen de lock aangeroepen. */
+  resolveSavedRouteId: () => number | null | undefined;
   usageType: RouteUsageType;
   source: string;
   occurredAt?: Date;
 }): Promise<void> {
-  if (opts.savedRouteId != null) {
-    await recordRouteUsage({
-      clerkId: opts.clerkId,
-      routeId: opts.savedRouteId,
-      usageType: opts.usageType,
-      source: opts.source,
-      occurredAt: opts.occurredAt,
-    });
-    return;
-  }
   const occurredAt = opts.occurredAt ?? new Date();
   const calendarMonth = amsterdamCalendarMonth(occurredAt);
   const ent = await resolveEntitlements(opts.clerkId);
+  const subscriptionTier =
+    ent.productVariant ?? ent.entitlementMode ?? "gratis";
   await db.transaction(async (tx) => {
     await candidateLock(tx, opts.clerkId, opts.candidateKey);
+    const savedRouteId = opts.resolveSavedRouteId() ?? null;
+    const base = {
+      clerkId: opts.clerkId,
+      usageType: opts.usageType,
+      occurredAt,
+      calendarMonth,
+      subscriptionTier,
+      source: opts.source,
+    };
+    if (savedRouteId != null) {
+      await tx
+        .insert(routeUsageRegistrationsTable)
+        .values({
+          ...base,
+          routeId: savedRouteId,
+          candidateKey: null,
+          idempotencyKey: `${opts.clerkId}:${savedRouteId}:${calendarMonth}`,
+        })
+        .onConflictDoNothing({
+          target: [
+            routeUsageRegistrationsTable.clerkId,
+            routeUsageRegistrationsTable.routeId,
+            routeUsageRegistrationsTable.calendarMonth,
+          ],
+          where: sql`route_id IS NOT NULL`,
+        });
+      return;
+    }
     await tx
       .insert(routeUsageRegistrationsTable)
       .values({
-        clerkId: opts.clerkId,
+        ...base,
         routeId: null,
         candidateKey: opts.candidateKey,
-        usageType: opts.usageType,
-        occurredAt,
-        calendarMonth,
-        subscriptionTier: ent.productVariant ?? ent.entitlementMode ?? "gratis",
-        source: opts.source,
         idempotencyKey: `${opts.clerkId}:${opts.candidateKey}:${calendarMonth}`,
       })
       .onConflictDoNothing({
