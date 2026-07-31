@@ -18,8 +18,8 @@ export const modules: ModuleMap = {
   "./components/mockups/route-kleuren/Signaal.tsx": () => import("../components/mockups/route-kleuren/Signaal.tsx"),
   "./components/mockups/route-kleuren/SportiefLicht.tsx": () => import("../components/mockups/route-kleuren/SportiefLicht.tsx"),
   "./components/mockups/route-kleuren/Terra.tsx": () => import("../components/mockups/route-kleuren/Terra.tsx"),
+  "./components/mockups/sparki-reboot/Prototype.tsx": () => import("../components/mockups/sparki-reboot/Prototype.tsx"),
   "./components/mockups/vandaag-sfeer/Current.tsx": () => import("../components/mockups/vandaag-sfeer/Current.tsx"),
   "./components/mockups/vandaag-sfeer/Komoot.tsx": () => import("../components/mockups/vandaag-sfeer/Komoot.tsx"),
-  "./components/mockups/vandaag-sfeer/Strava.tsx": () => import("../components/mockups/vandaag-sfeer/Strava.tsx"),
-  "./components/mockups/sparki-reboot/Prototype.tsx": () => import("../components/mockups/sparki-reboot/Prototype.tsx")
+  "./components/mockups/vandaag-sfeer/Strava.tsx": () => import("../components/mockups/vandaag-sfeer/Strava.tsx")
 };
