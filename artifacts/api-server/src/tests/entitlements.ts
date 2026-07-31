@@ -585,7 +585,6 @@ async function main() {
       ["GET", "/api/routes?sort=afstand"],
       ["GET", "/api/routes?q=test"],
       ["GET", "/api/routes?scope=favoriet"],
-      ["POST", "/api/routes/zoek"],
       ["PUT", "/api/routes/999999"],
       ["POST", "/api/routes/999999/duplicate"],
       ["POST", "/api/routes/from-activity"],
@@ -611,9 +610,7 @@ async function main() {
         .where(eq(userProfilesTable.clerkId, subUser));
       const r = await apiReq("GET", "/api/routes?sort=afstand&scope=favoriet&q=x", subUser);
       assert(r.status === 200, `${variant}: extras-lijst verwacht 200, kreeg ${r.status}`);
-      // Achterliggende validatie neemt het over (400/404 = poort gepasseerd).
-      const zoek = await apiReq("POST", "/api/routes/zoek", subUser, {});
-      assert(zoek.status === 400, `${variant}: zoek verwacht 400 (poort voorbij), kreeg ${zoek.status}`);
+      // Achterliggende validatie neemt het over (404 = poort gepasseerd).
       const dup = await apiReq("POST", "/api/routes/999999/duplicate", subUser, {});
       assert(dup.status === 404, `${variant}: duplicate verwacht 404 (poort voorbij), kreeg ${dup.status}`);
     }
@@ -652,6 +649,55 @@ async function main() {
       assert(r.status !== 403, `Compleet ${path}: kreeg onterecht 403 (${r.status})`);
       const l = await apiReq(method, path, legacyUser);
       assert(l.status !== 403, `legacy ${path}: kreeg onterecht 403 (${l.status})`);
+    }
+  });
+
+  await scenario("Mirror-herstel 31-07: POST /api/routes/zoek is gratis routeplanning, geen beheer-extra", async () => {
+    // Mirror stelde vast dat /zoek ten onrechte achter route_library_manage
+    // stond: het is de bekend-eerst zoeklaag van de gratis criteria-gestuurde
+    // routeplanning. Gratis moet er dus doorheen kunnen en kandidaten kunnen
+    // ontvangen — anders valt de planner stilzwijgend terug op nieuwe
+    // generatie omdat /zoek onterecht 403 gaf.
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_basic" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    // Eigen bewaarde route mét geometrie nabij het startpunt, zodat de
+    // kandidatenpijplijn echt iets te doorzoeken heeft.
+    const geometry = Array.from({ length: 30 }, (_, i) => [
+      52.09 + i * 0.001,
+      5.12 + (i % 2) * 0.001,
+    ]);
+    const [route] = await db
+      .insert(routesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest zoek-kandidaat",
+        distanceKm: 40,
+        geometry,
+      })
+      .returning({ id: routesTable.id });
+    try {
+      const zoek = await apiReq("POST", "/api/routes/zoek", subUser, {
+        startLat: 52.09,
+        startLon: 5.12,
+        targetDistanceKm: 40,
+      });
+      assert(zoek.status !== 403, `Gratis /zoek mag nooit 403 geven, kreeg 403 (${JSON.stringify(zoek.json)})`);
+      assert(zoek.status === 200, `Gratis /zoek verwacht 200, kreeg ${zoek.status} (${JSON.stringify(zoek.json)})`);
+      assert(
+        Array.isArray(zoek.json?.bekend),
+        `Gratis /zoek moet een kandidatenlijst (bekend[]) teruggeven, kreeg ${JSON.stringify(zoek.json)}`,
+      );
+      assert(
+        zoek.json?.criteria?.targetDistanceKm === 40,
+        `Gratis /zoek moet de criteria terugmelden, kreeg ${JSON.stringify(zoek.json?.criteria)}`,
+      );
+      // Lege body blijft gewone validatie (400), geen commerciële poort.
+      const leeg = await apiReq("POST", "/api/routes/zoek", subUser, {});
+      assert(leeg.status === 400, `Gratis /zoek zonder startpunt verwacht 400, kreeg ${leeg.status}`);
+    } finally {
+      await db.delete(routesTable).where(eq(routesTable.id, route!.id)).catch(() => {});
     }
   });
 

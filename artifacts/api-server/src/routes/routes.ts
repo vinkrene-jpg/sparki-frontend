@@ -3180,12 +3180,12 @@ async function buildLoopCandidate(
 //   body: { startLat, startLon, mode?: "loop"|"ptp", targetDistanceKm?,
 //           targetDurationMin?, sport?, bikeType?, elevationPreference?,
 //           trainingType?, unpavedPreferencePct? }
-// Geavanceerd zoeken in de bibliotheek = beheer-extra ⇒ Sparki Go
-// (Besluit 2026-002).
+// Mirror-herstelactie (René, 31-07-2026): dit is GEEN bibliotheekbeheer-extra
+// maar onderdeel van de gratis criteria-gestuurde routeplanning/-generatie
+// (bekend-eerst zoeklaag). Daarom bewust ZONDER commerciële poort.
 router.post(
   "/zoek",
   requireAuth,
-  requireCommercialFeature("route_library_manage"),
   async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
