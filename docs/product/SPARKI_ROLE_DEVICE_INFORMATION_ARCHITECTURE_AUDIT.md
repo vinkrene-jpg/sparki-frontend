@@ -52,6 +52,15 @@ Bron: kliktestrapport "Rollen en werkruimtes end-to-end" + verdiepende rolanalys
 
 ---
 
+### 0b. Verwerking verdiepingsrapport 31-07-2026 (rolanalyse tweede ronde)
+Het verdiepende rolanalyse-rapport (kliktest + broncode-spotchecks, zelfde dag) is verwerkt. Nieuwe, code-geverifieerde feiten die de nulmeting aanscherpen:
+1. **Ouder-writes server-side geverifieerd (door agent, 31-07):** write-endpoints schrijven alleen onder het eigen clerkId ⇒ géén cross-account-lek; wel ontbreekt een rolgate voor `parent` (zie rolwerkruimtemodel §3 en bouwplan WP-R1).
+2. **Preciezere ouder-diagnose:** `PARENT_CHAPTERS` (menu-laag) bestaat al; de bestemmingspagina's zijn niet rolbewust — het probleem zit in de pagina's, niet in het menu.
+3. **Clubbeheerder:** `CLUB_CHAPTER` bestaat als menu-configuratie in `core-meer.ts` zonder bijbehorende werkruimte/route — config zonder bestemming (bevestigt `missing_workspace`).
+4. **Admin/tester:** de bevestiging dat de dev-bypass achter `DEV_AUTH_BYPASS` zit is nu ook extern code-geverifieerd; de leklabels ("ONDERBOUWING (TESTER)", letterlijke `undefined`) blijven WP-R6.
+5. Het rapport gebruikt nog oude WP-S-nummers; de vertaaltabel staat in het bouwplan.
+De machine-toetsbare acceptatietests uit het rapport (o.a. parent-403, geen letterlijke `undefined` buiten `/admin`, hoofdtrainer-403 op individuele sporterdetail) zijn opgenomen als acceptatie-eisen bij de betreffende WP-R-pakketten.
+
 ## 1. Scherm- en functie-inventaris (web-app `artifacts/sparki`)
 
 Legenda apparaat: ✔ = ontworpen/geschikt, ± = werkt maar niet passend, ✘ = niet aanwezig/ongeschikt.
