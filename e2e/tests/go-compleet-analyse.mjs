@@ -104,6 +104,24 @@ try {
       if (entitled !== (wie.verwacht === "inhoud"))
         fout(`server-rechten wijken af van verwachting (entitled=${entitled})`);
       else regels.push({ status: "OK", detail: `server: performance_lab entitled=${entitled} (variant ${api.product_variant})` });
+
+      // Echte gegate route: /api/core-prediction/* draagt requireCommercialFeature
+      // ("performance_lab"). Vergrendeld ⇒ 403 upgrade_required; toegang ⇒ nooit 403.
+      const gated = await run.page.evaluate(async () => {
+        const id = window.localStorage.getItem("sparki.dev.previewAthlete");
+        const r = await fetch("/api/core-prediction/e2e-proef", { headers: { "x-dev-clerk-id": id } });
+        let body = null; try { body = await r.json(); } catch {}
+        return { status: r.status, code: body?.code ?? null };
+      });
+      if (wie.verwacht === "paywall") {
+        if (gated.status !== 403 || gated.code !== "upgrade_required")
+          fout(`gegate route gaf ${gated.status}/${gated.code}, verwacht 403 upgrade_required`);
+        else regels.push({ status: "OK", detail: "gegate route → 403 upgrade_required (fail-closed)" });
+      } else if (gated.status === 403) {
+        fout(`gegate route gaf 403 voor ${wie.label} — verboden`);
+      } else {
+        regels.push({ status: "OK", detail: `gegate route → ${gated.status} (geen 403, toegang)` });
+      }
     } catch (err) {
       failures += 1;
       regels.push({ status: "FOUT", detail: String(err?.message ?? err) });
