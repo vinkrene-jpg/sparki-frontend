@@ -1243,10 +1243,13 @@ router.get("/bibliotheek", requireAuth, async (req, res) => {
     bbox = { minLat, maxLat, minLon, maxLon };
   }
   try {
-    let rows = await routesInBbox(bbox);
+    // Straal-vorm: onbeperkt ophalen en pas ná de afstandssortering tot 60
+    // beperken — de rating-gesorteerde DB-limiet mag nooit dichtbijgelegen
+    // routes verdringen (en zo een vals-lege uitslag geven).
+    let rows = await routesInBbox(bbox, { unlimited: centrum != null });
     const afstanden = new Map<number, number>();
     if (centrum) {
-      const binnen = filterOpStraal(rows, centrum);
+      const binnen = filterOpStraal(rows, centrum, 60);
       for (const r of binnen) afstanden.set(r.id, r.startAfstandKm);
       rows = binnen;
     }

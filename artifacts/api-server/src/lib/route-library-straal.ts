@@ -69,16 +69,20 @@ export function straalOphaalBbox(c: StraalCentrum): {
 }
 
 // Exacte filter + sortering: alleen routes waarvan de start ≤ radiusKm van
-// het centrum ligt, dichtstbijzijnde eerst; afstand op 1 decimaal.
+// het centrum ligt, dichtstbijzijnde eerst; afstand op 1 decimaal. Een
+// eventuele limiet geldt pas NÁ de afstandssortering — een populaire route
+// verderop in de ophaal-bbox mag nooit een dichtbijgelegen route verdringen.
 export function filterOpStraal<T extends { startLat: number; startLon: number }>(
   rows: T[],
   c: StraalCentrum,
+  maxRows?: number,
 ): Array<T & { startAfstandKm: number }> {
-  return rows
+  const binnen = rows
     .flatMap((r) => {
       const d = haversineKm(c.lat, c.lon, r.startLat, r.startLon);
       if (d > c.radiusKm) return [];
       return [{ ...r, startAfstandKm: Math.round(d * 10) / 10 }];
     })
     .sort((a, b) => a.startAfstandKm - b.startAfstandKm);
+  return maxRows != null ? binnen.slice(0, maxRows) : binnen;
 }

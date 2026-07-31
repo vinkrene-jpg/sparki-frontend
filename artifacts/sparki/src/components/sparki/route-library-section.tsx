@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -102,6 +102,10 @@ function LibraryMap({
   const linesRef = useRef<
     Map<number, { casing: L.Polyline; line: L.Polyline }>
   >(new Map())
+  // Actuele selectie ook tijdens een lagen-rebuild: zo behoudt de gekozen
+  // route haar prominente stijl wanneer de polylines opnieuw worden getekend.
+  const selectedRef = useRef<number | null>(selectedId)
+  selectedRef.current = selectedId
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -140,25 +144,35 @@ function LibraryMap({
       line.remove()
     }
     linesRef.current.clear()
+    const sel = selectedRef.current
     for (const r of routes) {
       if (!r.geometry || r.geometry.length < 2) continue
       const color = routeColorById(r.id, alleIds)
+      const active = r.id === sel
       const casing = L.polyline(r.geometry, {
         color: "#1b2430",
         weight: 6,
-        opacity: 0.35,
+        opacity: active ? 0.55 : sel == null ? 0.35 : 0.25,
         interactive: false,
       })
       const line = L.polyline(r.geometry, {
         color,
-        weight: 3,
-        opacity: 0.85,
+        weight: active ? 6 : 3,
+        opacity: active ? 1 : sel == null ? 0.85 : 0.35,
         dashArray: bikeDash(r.bikeType),
       })
       line.on("click", () => onSelect(r.id))
       casing.addTo(map)
       line.addTo(map)
       linesRef.current.set(r.id, { casing, line })
+    }
+    // Geselecteerde route na een rebuild weer bovenop (zonder her-fitten).
+    if (sel != null) {
+      const top = linesRef.current.get(sel)
+      if (top) {
+        top.casing.bringToFront()
+        top.line.bringToFront()
+      }
     }
     // Bewust niet auto-fitten: de gebruiker bepaalt zelf de uitsnede.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -367,7 +381,12 @@ export function RouteLibrarySection() {
 
   const vulGebied = useMutation({
     mutationFn: () => {
-      const c = mapInstance.current!.getCenter()
+      // In straal-modus vullen we het gebied rond het GEKOZEN startpunt —
+      // niet rond het kaartmidden, dat na schuiven ergens anders kan liggen.
+      const c =
+        gebied?.mode === "straal"
+          ? { lat: gebied.lat, lng: gebied.lon }
+          : mapInstance.current!.getCenter()
       return apiFetch<{ status: string; count: number }>(
         "/api/routes/bibliotheek/hier",
         {
@@ -398,7 +417,12 @@ export function RouteLibrarySection() {
     (r) => bikeFilter == null || r.bikeType === bikeFilter,
   )
   // Kleur is stabiel binnen de volledige geladen set, óók tijdens filteren.
-  const alleIds = (data?.routes ?? []).map((r) => r.id)
+  // useMemo: een stabiele referentie voorkomt dat de kaartlagen bij elke
+  // onbetrokken render (bijv. typen in het zoekveld) worden herbouwd.
+  const alleIds = useMemo(
+    () => (data?.routes ?? []).map((r) => r.id),
+    [data?.routes],
+  )
   const selected = routes.find((r) => r.id === selectedId) ?? null
 
   const gebruik = useMutation({
@@ -519,7 +543,7 @@ export function RouteLibrarySection() {
         >
           Laat hier de routes zien
         </button>
-        {gebied != null && !isLoading && !isError && routes.length === 0 && (
+        {gebied != null && !isLoading && !isError && alleIds.length === 0 && (
           <button
             type="button"
             onClick={() => vulGebied.mutate()}
@@ -560,7 +584,22 @@ export function RouteLibrarySection() {
           Nog geen gebied gekozen — schuif de kaart en druk op de knop.
         </p>
       )}
-      {gebied != null && !isLoading && !isError && routes.length === 0 && (
+      {/* Eerlijke lege staat: onderscheid tussen "hier is echt niets" (hele
+          geladen set leeg) en "niets van dit fietstype" (alleen het filter
+          is leeg) — verruimen/vullen wordt alleen aangeboden als er werkelijk
+          niets is (reviewbevinding 31-07-2026). */}
+      {gebied != null &&
+        !isLoading &&
+        !isError &&
+        routes.length === 0 &&
+        alleIds.length > 0 && (
+          <p className="mt-3 text-[13px] text-white/40">
+            {gebied.mode === "straal"
+              ? `Wel routes binnen ${gebied.radiusKm} km, maar geen van het gekozen fietstype — kies een ander type of haal het filter weg.`
+              : "Wel routes in dit gebied, maar geen van het gekozen fietstype — kies een ander type of haal het filter weg."}
+          </p>
+        )}
+      {gebied != null && !isLoading && !isError && alleIds.length === 0 && (
         <div className="mt-3">
           <p className="text-[13px] text-white/40">
             {gebied.mode === "straal"

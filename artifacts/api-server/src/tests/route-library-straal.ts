@@ -82,6 +82,29 @@ assert(
 const ruimer = filterOpStraal(rows, { ...c, radiusKm: 10 });
 assert(ruimer.some((r) => r.id === 3), "bij expliciet 10 km hoort Enschede er wel bij");
 
+// --- limiet pas NÁ de afstandssortering (reviewbevinding 31-07-2026) --------
+// 70 routes op oplopende afstand: een limiet van 60 moet exact de 60
+// dichtstbijzijnde houden — nooit op iets anders (zoals rating) voorsorteren.
+const veel = Array.from({ length: 70 }, (_, i) => ({
+  id: 100 + i,
+  // ~0,9 km per stap noordwaarts; alle 70 binnen straal 100 km.
+  startLat: c.lat + (i * 0.9) / 111.19,
+  startLon: c.lon,
+}));
+// Bewust in omgekeerde volgorde aanleveren (verste eerst), alsof de DB op
+// rating sorteerde: de filter moet zelf op afstand her-sorteren en dan pas
+// beperken.
+const beperkt = filterOpStraal([...veel].reverse(), { ...c, radiusKm: 100 }, 60);
+assert(beperkt.length === 60, `limiet 60 toegepast (was ${beperkt.length})`);
+assert(
+  beperkt[0].id === 100 && beperkt[59].id === 159,
+  "de 60 DICHTSTBIJZIJNDE blijven over; de 10 verste vallen af",
+);
+assert(
+  beperkt.every((r, i) => i === 0 || r.startAfstandKm >= beperkt[i - 1].startAfstandKm),
+  "resultaat blijft op afstand gesorteerd",
+);
+
 if (failures > 0) {
   console.error(`\n${failures} controle(s) gefaald`);
   process.exit(1);
