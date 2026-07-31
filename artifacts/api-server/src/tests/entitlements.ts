@@ -716,6 +716,52 @@ async function main() {
     }
   });
 
+  await scenario("01 §3 bewaaktest: de zeven gratis functies dragen nooit een commerciële poort", async () => {
+    // ROUTE_PAKKET_01 §3 (v2): deze test moet FALEN zodra één van de zeven
+    // gratis functies achter requireCommercialFeature schuift. Hij bewijst
+    // bereikbaarheid voor een account ZONDER enig commercieel recht — niet
+    // alleen dat er geen sleutel bestaat. Alleen een 403 met code
+    // "upgrade_required" is een overtreding; validatie-4xx betekent juist dat
+    // de (niet-bestaande) poort is gepasseerd.
+    // Spraakaanwijzingen zijn client-side afgeleid van de nav-cues in het
+    // route-detail; het hoogteprofiel zit in detail (profile) + /insight.
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_basic" }) // gedraagt zich als Gratis: nul rechten
+      .where(eq(userProfilesTable.clerkId, subUser));
+    const [vrij] = await db
+      .insert(routesTable)
+      .values({ clerkId: subUser, name: "Gratis-bewaaktest route" })
+      .returning({ id: routesTable.id });
+    try {
+      const gratisFuncties = [
+        // 1. Route plannen en genereren
+        ["POST", "/api/routes/generate/options", {}],
+        ["POST", "/api/routes/generate", {}],
+        // 2. Route aanpassen (afstand/tijd/wegtype/hoogte/wind = generate-opties)
+        ["POST", "/api/routes/generate/start", {}],
+        // 3. GPX exporteren
+        ["GET", `/api/routes/${vrij!.id}/gpx`, undefined],
+        // 4. Afslag-voor-afslag navigatie (start + nav-cues in detail)
+        ["POST", `/api/routes/${vrij!.id}/navigatie-start`, {}],
+        // 5. Spraakaanwijzingen — server-side bron: nav-cues in route-detail
+        // 6. Hoogteprofiel met schuifbalk
+        ["GET", `/api/routes/${vrij!.id}/insight`, undefined],
+        // 7. Een route bekijken (detail bevat nav + profile)
+        ["GET", `/api/routes/${vrij!.id}`, undefined],
+      ] as const;
+      for (const [method, path, body] of gratisFuncties) {
+        const r = await apiReq(method, path, subUser, body);
+        assert(
+          !(r.status === 403 && r.json?.code === "upgrade_required"),
+          `${method} ${path}: gratis functie kreeg een commerciële poort (403 upgrade_required) — overtreding van ROUTE_PAKKET_01 §3`,
+        );
+      }
+    } finally {
+      await db.delete(routesTable).where(eq(routesTable.id, vrij!.id)).catch(() => {});
+    }
+  });
+
   await cleanup();
   await stopServer();
 
