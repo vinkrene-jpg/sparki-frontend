@@ -47,6 +47,12 @@ import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
 import { controlUnpavedShare } from "../lib/surface-control";
 import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
+import {
+  createRouteGenerationJob,
+  finishJob,
+  getRouteGenerationJob,
+  setJobPhase,
+} from "../lib/route-generation-jobs";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isMinorAthlete } from "../lib/sharing";
@@ -2614,6 +2620,9 @@ type LoopCandidateContext = {
   // pool teruggeven. Alleen op het interactieve /generate-pad; de
   // 3-afstanden-kiezer (/generate/options) toont al varianten per afstand.
   collectAlternates?: boolean;
+  // WP-1: eerlijke fasemelding richting de klant (berekenen →
+  // veiligheidscontrole). Optioneel; het synchrone pad geeft niets door.
+  onPhase?: (p: "berekenen" | "veiligheidscontrole") => void;
 };
 
 // Build one real loop candidate at a specific target distance, store it server-
@@ -2735,6 +2744,9 @@ async function buildLoopCandidate(
         // — die werden voorheen stil weggegooid.
         alternatesOut: ctx.collectAlternates ? altResults : undefined,
         alternatesMax: 2,
+        // WP-1: eerlijke fasemelding — de motor meldt wanneer de blokkerende
+        // veiligheidscontrole van de winnaar begint.
+        onPhase: ctx.onPhase,
       },
     );
     console.log(
@@ -2925,7 +2937,15 @@ async function buildLoopCandidate(
   };
 }
 
-router.post("/generate", requireAuth, async (req, res) => {
+// WP-1 (31-07-2026): fasemelding voor de routebouwer. De job-endpoints hangen
+// een callback aan het request; het synchrone pad heeft er geen — dan is dit
+// een no-op. Zo blijven beide paden exact dezelfde handler delen.
+type GeneratePhaseFn = (p: "berekenen" | "veiligheidscontrole") => void;
+function onPhaseOf(req: unknown): GeneratePhaseFn | undefined {
+  return (req as { sparkiOnPhase?: GeneratePhaseFn }).sparkiOnPhase;
+}
+
+const generateHandler: import("express").RequestHandler = async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
 
@@ -3168,6 +3188,7 @@ router.post("/generate", requireAuth, async (req, res) => {
             // Kaart-planner: bied naast de winnaar ook de écht anders lopende
             // pool-kandidaten aan als kiesbare voorstellen.
             collectAlternates: true,
+            onPhase: onPhaseOf(req),
           },
           targetDistanceKm,
         );
@@ -3388,6 +3409,7 @@ router.post("/generate", requireAuth, async (req, res) => {
     const rejectIfBlocked = async (
       path: RoutePathPoint[],
     ): Promise<boolean> => {
+      onPhaseOf(req)?.("veiligheidscontrole");
       const _t_gate0 = performance.now();
       const obs = await routeObstaclesOf()(path);
       console.log(
@@ -3511,7 +3533,8 @@ router.post("/generate", requireAuth, async (req, res) => {
         : "Routegeneratie mislukt";
     res.status(502).json({ error: message });
   }
-});
+};
+router.post("/generate", requireAuth, generateHandler);
 
 // POST /api/routes/generate/options — loop-only. Instead of a single route,
 // Sparki proposes THREE real loops at different distances (korter ≈ 0,9× /
@@ -3520,7 +3543,10 @@ router.post("/generate", requireAuth, async (req, res) => {
 // that can be saved via POST / like any other candidate. Nothing is fabricated:
 // distances that collide after rounding/clamping are de-duplicated, so near a
 // clamp bound you may honestly get fewer than three.
-router.post("/generate/options", requireAuth, async (req, res) => {
+const generateOptionsHandler: import("express").RequestHandler = async (
+  req,
+  res,
+) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
 
@@ -3660,6 +3686,7 @@ router.post("/generate/options", requireAuth, async (req, res) => {
         bikeType,
       ),
       avoidBusyRoads: coerceAvoidBusyRoads(body, sport),
+      onPhase: onPhaseOf(req),
     };
 
     // Build sequentially — each loop already fans out several provider probes,
@@ -3733,6 +3760,70 @@ router.post("/generate/options", requireAuth, async (req, res) => {
     }
     res.status(502).json({ error: message });
   }
+};
+router.post("/generate/options", requireAuth, generateOptionsHandler);
+
+// ── WP-1 (31-07-2026): generatie als korte start + statuspolling ───────────
+// Waarom: één lange POST wordt op mobiel afgebroken door proxy-afkap of
+// schermvergrendeling — de renner zag een berekening die "stil stopt". De
+// job-endpoints hergebruiken EXACT dezelfde handlers (zelfde motor, zelfde
+// fail-closed poorten, zelfde foutcodes); alleen het transport verschilt.
+function startGenerationJob(
+  handler: import("express").RequestHandler,
+  req: import("express").Request,
+  res: import("express").Response,
+): void {
+  const clerkId = getClerkUserId(req)!;
+  const job = createRouteGenerationJob(clerkId);
+  setJobPhase(job, "berekenen");
+  (req as unknown as { sparkiOnPhase: GeneratePhaseFn }).sparkiOnPhase = (p) =>
+    setJobPhase(job, p);
+  // Vang de uitkomst van de bestaande handler op in plaats van hem naar de
+  // (allang beantwoorde) verbinding te schrijven.
+  let captured = 200;
+  const fakeRes = {
+    status(code: number) {
+      captured = code;
+      return this;
+    },
+    json(body: unknown) {
+      finishJob(job, captured, body);
+      return this;
+    },
+  } as unknown as import("express").Response;
+  Promise.resolve(handler(req, fakeRes, () => {})).catch((err) => {
+    req.log.error({ err }, "routes.generate job crashed");
+    if (!job.done)
+      finishJob(job, 502, {
+        error: "Routegeneratie mislukt door een serverfout. Probeer het opnieuw.",
+      });
+  });
+  res.status(202).json({ jobId: job.id });
+}
+
+router.post("/generate/start", requireAuth, (req, res) => {
+  startGenerationJob(generateHandler, req, res);
+});
+router.post("/generate/options/start", requireAuth, (req, res) => {
+  startGenerationJob(generateOptionsHandler, req, res);
+});
+
+// GET /api/routes/generate-jobs/:id — status/resultaat van een gestarte
+// generatie. Ownership-gecheckt; andermans job = 404. Zolang de job loopt
+// komt alleen de eerlijke fase terug; daarna het volledige HTTP-contract van
+// het synchrone endpoint (status + body), zodat 422/503 fail-closed blijft.
+router.get("/generate-jobs/:id", requireAuth, (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const job = getRouteGenerationJob(String(req.params.id), clerkId);
+  if (!job) {
+    res.status(404).json({ error: "Aanvraag niet gevonden of verlopen" });
+    return;
+  }
+  if (!job.done) {
+    res.json({ done: false, phase: job.phase });
+    return;
+  }
+  res.json({ done: true, phase: job.phase, status: job.status, body: job.body });
 });
 
 // POST /api/routes — create a route. Two sources:

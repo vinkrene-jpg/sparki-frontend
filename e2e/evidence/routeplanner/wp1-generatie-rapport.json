@@ -1,0 +1,51 @@
+{
+  "baseUrl": "http://127.0.0.1:39713",
+  "geo": {
+    "latitude": 51.905,
+    "longitude": 5.66
+  },
+  "stappen": [
+    {
+      "stap": "login",
+      "status": "OK",
+      "detail": "auth/me=200",
+      "t": "2026-07-31T09:03:23.348Z"
+    },
+    {
+      "stap": "planner-zichtbaar",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-07-31T09:03:25.857Z"
+    },
+    {
+      "stap": "startpunt",
+      "status": "OK",
+      "detail": "eigen locatie vastgeklikt",
+      "t": "2026-07-31T09:03:25.941Z"
+    },
+    {
+      "stap": "status-berekenen",
+      "status": "OK",
+      "detail": "zichtbare status direct na de tik",
+      "t": "2026-07-31T09:03:27.486Z"
+    },
+    {
+      "stap": "knop-geblokkeerd",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-07-31T09:03:27.573Z"
+    },
+    {
+      "stap": "status-veiligheidscontrole",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-07-31T09:03:55.011Z"
+    },
+    {
+      "stap": "einde",
+      "status": "OK",
+      "detail": "echte route(varianten) op het scherm",
+      "t": "2026-07-31T09:05:30.480Z"
+    }
+  ]
+}

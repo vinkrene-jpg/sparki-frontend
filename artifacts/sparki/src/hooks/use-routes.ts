@@ -285,14 +285,100 @@ export function useEnrichRoute(candidateId: string | null | undefined) {
   });
 }
 
+// ── WP-1 (31-07-2026): generatie via korte start + statuspolling ────────────
+// Eén lange POST werd op mobiel afgebroken (proxy-afkap, schermvergrendeling,
+// app-wissel) — de berekening leek dan "stil te stoppen". De server rekent nu
+// door terwijl de telefoon lichtgewicht pollt; een gemiste poll is onschuldig.
+
+export type GeneratePhase = "wachten" | "berekenen" | "veiligheidscontrole";
+
+type JobStatus = {
+  done: boolean;
+  phase: GeneratePhase;
+  status?: number;
+  body?: unknown;
+};
+
+const JOB_POLL_MS = 1500;
+// Harde bovengrens aan de wachttijd (koud gebied kan minuten duren; daarboven
+// is er echt iets mis en stoppen we eerlijk in plaats van eeuwig te draaien).
+const JOB_MAX_WAIT_MS = 6 * 60 * 1000;
+// Tijdelijke netwerkfouten tijdens het pollen (mobiel, schermvergrendeling)
+// zijn juist het scenario dat dit patroon moet overleven — dus herproberen.
+const JOB_MAX_POLL_FAILURES = 8;
+
+async function runGenerationJob<T>(
+  startPath: string,
+  input: unknown,
+  onPhase?: (p: GeneratePhase) => void,
+): Promise<T> {
+  const { jobId } = await apiFetch<{ jobId: string }>(startPath, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const deadline = Date.now() + JOB_MAX_WAIT_MS;
+  let failures = 0;
+  let lastPhase: GeneratePhase | null = null;
+  // Op mobiel kan de timerlus lang stilstaan (schermvergrendeling). Na het
+  // ontwaken eerst nog één echte poll doen vóór we opgeven: het resultaat kan
+  // er allang zijn (reviewpunt 31-07-2026).
+  let finalAttempt = false;
+  for (;;) {
+    if (Date.now() > deadline) {
+      if (finalAttempt) {
+        throw new Error(
+          "De berekening duurt onverwacht lang. Probeer het opnieuw — je keuzes zijn bewaard.",
+        );
+      }
+      finalAttempt = true;
+    } else {
+      await new Promise((r) => setTimeout(r, JOB_POLL_MS));
+    }
+    let st: JobStatus;
+    try {
+      st = await apiFetch<JobStatus>(`/api/routes/generate-jobs/${jobId}`);
+      failures = 0;
+    } catch (err) {
+      // Structurele 404 = job verlopen/server herstart: herstelt niet vanzelf.
+      if ((err as Error & { status?: number })?.status === 404) {
+        throw new Error(
+          "De aanvraag is op de server verloren gegaan (bijv. door een herstart). Probeer het opnieuw — je keuzes zijn bewaard.",
+        );
+      }
+      if (finalAttempt) {
+        throw new Error(
+          "De berekening duurt onverwacht lang. Probeer het opnieuw — je keuzes zijn bewaard.",
+        );
+      }
+      failures += 1;
+      if (failures > JOB_MAX_POLL_FAILURES) throw err;
+      continue;
+    }
+    if (st.phase && st.phase !== lastPhase) {
+      lastPhase = st.phase;
+      onPhase?.(st.phase);
+    }
+    if (!st.done) continue;
+    if (st.status != null && st.status >= 200 && st.status < 300) {
+      return st.body as T;
+    }
+    const body = st.body as { error?: string } | null;
+    throw new Error(
+      body?.error ?? "Routegeneratie mislukt. Probeer het opnieuw.",
+    );
+  }
+}
+
 // Propose an ORS-backed route WITHOUT saving it. Returns the candidate.
-export function useGenerateRoute() {
+// onPhase meldt de eerlijke serverfase (berekenen → veiligheidscontrole).
+export function useGenerateRoute(onPhase?: (p: GeneratePhase) => void) {
   return useMutation({
     mutationFn: (input: GenerateRouteInput) =>
-      apiFetch<{ candidate: RouteCandidate }>("/api/routes/generate", {
-        method: "POST",
-        body: JSON.stringify(input),
-      }),
+      runGenerationJob<{ candidate: RouteCandidate }>(
+        "/api/routes/generate/start",
+        input,
+        onPhase,
+      ),
   });
 }
 
@@ -302,13 +388,14 @@ export type RouteOption = RouteCandidate & { variant: string };
 
 // Propose THREE loops at different distances (korter/gevraagd/langer) at once,
 // WITHOUT saving. Loop mode only. Returns the options for the rider to pick.
-export function useGenerateRouteOptions() {
+export function useGenerateRouteOptions(onPhase?: (p: GeneratePhase) => void) {
   return useMutation({
     mutationFn: (input: GenerateRouteInput) =>
-      apiFetch<{ options: RouteOption[] }>("/api/routes/generate/options", {
-        method: "POST",
-        body: JSON.stringify(input),
-      }),
+      runGenerationJob<{ options: RouteOption[] }>(
+        "/api/routes/generate/options/start",
+        input,
+        onPhase,
+      ),
   });
 }
 

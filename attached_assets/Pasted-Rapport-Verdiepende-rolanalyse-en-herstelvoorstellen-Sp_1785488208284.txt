@@ -1,0 +1,157 @@
+Rapport: Verdiepende rolanalyse en herstelvoorstellen — Sparki
+
+Datum: 31-07-2026 · Basis: eigen kliktestrapport "Rollen en werkruimtes end-to-end" (deze sessie), de 4 governance-documenten, SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md (nieuw gelezen deze ronde), en spotchecks in de broncode (artifacts/api-server/src/lib/auth.ts, artifacts/sparki/src/lib/core-meer.ts). Niets is gebouwd of gewijzigd.
+
+Methodologische kanttekening vooraf (verplicht te vermelden): dit rapport combineert echte klikuitkomsten uit de vorige sessie met nieuwe broncode-inspectie. Voor stappen waarvoor dit keer géén nieuwe klik is uitgevoerd (met name delen van de ouder-uitnodigingsflow: linkacceptatie door een nieuwe gebruiker, uitloggen/opnieuw inloggen, melding/verzoek-scherm, contact-met-trainer-scherm), staat dat expliciet vermeld als "NIET GETEST DEZE SESSIE" — er wordt geen oordeel "werkt" gegeven zonder klikbewijs. Telefoonweergave kon dit keer wederom niet apart getest worden (resize_window beïnvloedt window.innerWidth niet betrouwbaar in deze omgeving) — ook dat is een testbeperking, geen appbevinding.
+
+Belangrijke ontdekking deze ronde: er bestaat al een eigen, ongestart hersteldocument (SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md, status "VOORSTEL — wacht op goedkeuring van René") met werkpakketten WP-S1 t/m WP-S10 die grotendeels dezelfde problemen adresseren als mijn kliktests blootlegden. WP-S1 (dev-rolimpersonatie/testcontext) staat daar als AFGEROND (31-07-2026) vermeld. Ik heb dat in de broncode geverifieerd: auth.ts gate't de dev-bypass nu achter NODE_ENV !== "production" AND DEV_AUTH_BYPASS === "true" — dit is een echte, code-geverifieerde bevestiging, geen aanname. Ik gebruik dit bestaande plan als aanvullende testwaarheid en verwijs er per rol naar, zoals gevraagd.
+
+1. Samenvattende prioriteitentabel
+Rol	Huidig oordeel (kliktest)	Ernst	Belangrijkste blokkerende issue	Overlapt met bestaand WP	Prioriteit
+Sporter	Passend	—	Geen (controlegroep)	WP-S6 (telefoonflows verfijnen)	Laag
+Ouder/verzorger	Sporterkopie	Kritiek	Geen kind-kiezer; eigen training/doel toevoegbaar; sporteronboarding zichtbaar	WP-S2, WP-S3, WP-S4	1
+Zelfstandige trainer / Clubtrainer / Hoofdtrainer	Gedeeltelijk passend (alleen "Coach Bram" testbaar)	Hoog	Geen subrol-onderscheid; sidebar toont volledige persoonlijke sportersnavigatie naast cockpit; "Rol-uitnodiging" taalbug	WP-S7, WP-S8, WP-S2	2
+Clubbeheerder	Niet testbaar (geen identiteit/route)	Hoog (ontbrekend, niet fout)	Rol bestaat nergens in code of testdata	WP-S8	3
+Mechanieker	Niet testbaar als rol (alleen sporter-contentpagina /mechanieker)	Middel	Rolverwarring: "Mechanieker" is nu een sporterscherm, geen clubrol	WP-S9 (bewust gepauzeerd, product­besluit nodig)	4
+Admin/Tester	Niet testbaar als aparte rol	Middel (privacy-/geloofwaardigheidsrisico)	Interne testlabels ("ONDERBOUWING (TESTER)", "undefined · rol: athlete") lekken in normale schermen	WP-S1 (grotendeels afgerond), WP-S3	5
+2. Rolcontracten
+2.1 Ouder/verzorger — PRIORITEIT 1
+
+Huidige werkelijke klikuitkomst (getest, "Ouder van Noa"): root / rendert /vandaag met een sporter-dashboard ("Je bent goed belastbaar", "Hoofddoel instellen"). Klik op "Hoofddoel instellen" → /races "Mijn races" met werkende knop "Race toevoegen". Klik "Trainen" → volledige persoonlijke trainingspagina met "Training toevoegen" en "Voeg een doel toe". Klik "Profiel" → identieke sporter-onboardingpagina ("01 Wie je bent als sporter", "De volhouder", "Samen trainen"). Sidebar identiek aan sporter (Vandaag, Trainen, Rijden, Wedstrijd, Activiteiten, Analyse, Ontdekken, Meer). Uitnodiging aanmaken ("Atleet koppelen") werkte functioneel (link met status OPEN, vervaldatum, "Intrekken"). Privacy/Voorwaarden/Help bereikbaar, zelfde navigatiepatroon als sporter.
+
+Broncode-bevinding (nieuw, deze ronde): core-meer.ts bevat een apart PARENT_CHAPTERS-object naast ATHLETE_MEER_CHAPTERS — er ís dus al een rolbewuste Meer-menu-configuratie voor parent. Dit betekent dat het probleem niet is dat er "niets" voor ouder bestaat, maar dat de bestemmingspagina's achter die menu-items (/you, /train, /races) zelf niet rolbewust zijn: ze tonen voor elke rol dezelfde sporter-georiënteerde inhoud. Dit is een preciezere diagnose dan "niets gebouwd" en is direct relevant voor de bouwvolgorde (zie §7).
+
+Gewenste startpagina: een ouderhome met kind-kiezer (indien >1 kind), status van het gekozen kind ("Vandaag van [kind]"), openstaande meldingen/verzoeken, en snelkoppelingen naar planning en toestemming — geen eigen trainings- of wedstrijddata.
+
+Gewenste navigatie telefoon: onderbalk met vermoedelijk 4 items (Kind/Vandaag, Planning, Meldingen, Meer) — geen Rijden/Wedstrijd/Analyse/Ontdekken.
+
+Gewenste navigatie desktop: zijbalk analoog, eventueel met kind-kiezer bovenaan vast, plus Samen/koppelingenbeheer.
+
+Belangrijkste dagelijkse taken: kind kiezen, dagstatus kind bekijken, planning kind inzien, meldingen/verzoeken beoordelen, toestemming/privacy beheren, contact met trainer.
+
+Wel mogen zien/doen: eigen profiel (accountgegevens ouder zelf), gekoppelde-kind(eren)-data voor zover toegestaan, uitnodigingen beheren, Privacy/Voorwaarden/Help.
+
+Expliciet niet mogen zien/doen (bevestigd fout in huidige app): eigen training toevoegen (FOUT — bevestigd via klik), eigen wedstrijd/doel toevoegen (FOUT — bevestigd via klik), sporteronboarding doorlopen (FOUT — bevestigd via klik), Rijden/Wedstrijd/Analyse/Ontdekken als standaardmenu (FOUT — bevestigd via klik), data van niet-gekoppelde kinderen/sporters zien (NIET GETEST DEZE SESSIE — er was maar één gekoppeld kind beschikbaar in de testdata om dit te verifiëren).
+
+Benodigde server-side rechten: niet geverifieerd in broncode deze sessie of /train, /races, /you server-side al filteren op rol parent en alleen visueel gelijk ogen, of ook server-side dezelfde (sporter-)data-endpoints aanroepen. Dit is een open technisch risico: als de server geen aparte rolcheck heeft op deze endpoints, is "eigen training toevoegen" niet alleen een UI-bug maar mogelijk ook een echte schrijfrechten-lek. Aanbeveling: eerst dit verifiëren (grep op rolchecks in de write-endpoints voor training/races/profile) vóórdat WP-S2/S4 als "alleen UI-probleem" wordt ingeschat.
+
+Benodigde testidentiteiten/testdata: minimaal twee ouder-testidentiteiten (één met 1 kind, één met 2+ kinderen) om kind-kiezer en cross-kind-isolatie te kunnen testen; een verse (nog niet geaccepteerde) ouder-uitnodiging om de volledige ontvangflow te kunnen doorlopen.
+
+Lege/fouttoestanden: niet aangetroffen in de doorlopen schermen dat er een specifieke lege-toestand voor "geen gekoppeld kind" bestaat — dit moet nog getest/gebouwd worden.
+
+Uitnodigings-/onboardingflow (per de 11-stappen flow uit de opdracht):
+
+Stap	Status	Bevinding
+Ouder ontvangt uitnodiging	NIET GETEST DEZE SESSIE	Vereist verse token/e-mail
+Opent link	NIET GETEST DEZE SESSIE	—
+Login/registratie	NIET GETEST DEZE SESSIE	Claude mag sowieso geen accounts aanmaken (productiebeleid) — dit onderdeel moet door René/tester zelf met een echte testidentiteit
+Oudergerichte onboarding	NIET GETEST DEZE SESSIE	Doel WP-S2: acht concrete flows i.p.v. abstracte "rol-uitnodiging"
+Koppeling met kind accepteren	NIET GETEST DEZE SESSIE	—
+Ouderhome	FOUT — getest: toont sportershome, geen ouderhome	Bevestigd via klik
+Kind kiezen	ONTBREEKT — getest: geen kiezer aangetroffen in nav/Meer/profiel	Bevestigd via afwezigheid
+Vandaag van kind bekijken	FOUT — getest: toont eigen (sporter-stijl) Vandaag, niet die van kind	Bevestigd via klik
+Planning bekijken (van kind)	FOUT — getest: toont eigen persoonlijke trainingsplanning	Bevestigd via klik
+Melding/verzoek beoordelen	NIET AANGETROFFEN in doorlopen schermen	Nader onderzoek nodig, niet met zekerheid "ontbreekt" te noemen
+Toestemming beheren (over kind)	NIET AANGETROFFEN — wel gevonden: generieke "Delen met coach/ouder"-toggles op eigen profiel, wat voor een ouder-identiteit zelf inhoudelijk vreemd is	Bevestigd via klik (verkeerde context)
+Contact met trainer	NIET GETEST DEZE SESSIE	—
+Uitloggen/opnieuw inloggen, juiste omgeving blijft actief	NIET GETEST DEZE SESSIE	—
+
+Kruisverbanden: invitation-model (WP-S2), navigatieregister (WP-S3), Profiel/Lichaam-herindeling (WP-S4) grijpen alle drie in op dezelfde onderliggende paginas (/you, /train, /races) — dit rolcontract kan niet los van die drie WP's gebouwd worden.
+
+Herbruikbare bestaande code: PARENT_CHAPTERS in core-meer.ts (bestaat al, alleen menu-laag); het uitnodigingsmechanisme onder "Atleet koppelen" werkt functioneel (token, expiry, intrekken) en is herbruikbaar als basis voor de acht flows uit WP-S2.
+
+Ontbrekende onderdelen: kind-kiezer component; rolbewuste /vandaag-, /train-, /races-varianten (of server-side redirect/gate voor rol parent); meldingen-/verzoekenscherm; toestemmingsbeheer-scherm gericht op het kind (niet op zichzelf); contact-met-trainer-scherm.
+
+Risico op privacy-/rechtenlek: hoog, tot serverkant geverifieerd is. Als schrijfrechten op /train//races niet apart gated zijn voor rol parent, kan een ouder feitelijk data van een sporter-account muteren die niet van haarzelf is (of eigen ongewenste data aanmaken onder een account dat als "ouder" bedoeld was). Dit moet met voorrang op WP-S2/S4 worden geverifieerd.
+
+Minimale bouwvolgorde: (1) server-side rolcheck verifiëren/dichtzetten op /train, /races, /you-writes voor rol parent (veiligheidsfix, mag tussendoor per de "pauzeregels" van het herstelplan); (2) WP-S2 (uitnodiging/onboarding); (3) WP-S3 (navigatieregister, inclusief ouder-onderbalk); (4) WP-S4 (Profiel/Lichaam-scheiding + kind-kiezer/ouderhome).
+
+Concrete acceptatietests (machine-toetsbaar):
+
+Geef aan: rol=parent + coupled_child=1 → GET / retourneert een view met data-role="parent-home" en een child-selector-element, niet data-role="athlete-home".
+POST naar het trainingscreate-endpoint met sessie rol=parent en zonder child-context → verwacht 403, niet 200.
+Menu-items Rijden/Wedstrijd/Analyse/Ontdekken afwezig in DOM voor rol=parent (assert queryByText = null).
+Onboarding-route (/you init-flow) retourneert voor rol=parent nooit de sporter-onboardingstappen "01 Wie je bent als sporter".
+2.2 Trainer-subrollen (zelfstandige trainer / clubtrainer / hoofdtrainer)
+
+Huidige werkelijke klikuitkomst (getest, "Coach Bram"): root / toont een coach-dashboard ("Eén training niet afgerond", "01 Jouw sporters", "Uitnodigingen beheren"). Klik op cockpit-link op sporterkaart → /coach/athletes/{id}/cockpit — een echte, goed opgebouwde rolwerkruimte: signaalkaarten met Overnemen/Zelf aanpassen/Afwijzen/Parkeren, planning expliciet geschraagd tot de sporter ("alleen jouw eigen trainingen zijn aanpasbaar"), berichten, afspraken. "COACH PLAN" via paginalijst toont demo-atleet met correcte lege-toestand ("Atleet deelt geen data met jou"). Sidebar toont echter nog steeds de volledige persoonlijke sportersnavigatie (Vandaag, Trainen, Rijden, Wedstrijd, Activiteiten, Analyse, Ontdekken) naast de trainersfuncties. Bestaande uitnodiging toont het label "Rol-uitnodiging · rol: parent" — een bevestigde schending van het uitnodigingsmodel (dat abstracte "rol-uitnodiging"-taal expliciet afwijst).
+
+Subrol-onderscheid: kan met de huidige testdata niet vastgesteld worden — er is precies één trainersidentiteit ("Coach Bram") beschikbaar, zonder aanwijsbaar verschil tussen zelfstandige trainer/clubtrainer/hoofdtrainer. Dit is een testdata-gat, geen appfout op zich, maar betekent dat er momenteel geen bewijs is dat het onderscheid uberhaupt al bestaat in rollen/rechten.
+
+Gewenste startpagina/navigatie: per het bouwplan (WP-S7/S8): professionele desktopwerkruimte (Sporters/Planning/Voorstellen/Uitnodigingen) zonder de persoonlijke sportersbalk ernaast; hoofdtrainer krijgt organisatiebreed overzicht maar nooit individuele sporterdata (expliciet server-side geborgd volgens het bouwplan, "staat al server-side vast + getest" — niet door mij dit keer herverifieerd, dus dit is een claim uit het bouwplan-document, niet een eigen klikbewijs en moet als zodanig gelabeld blijven).
+
+Verschillen die nodig zijn tussen de drie subrollen (voorstel, nog te bevestigen met René):
+
+Subrol	Scope	Verschil t.o.v. huidige "Coach Bram"
+Zelfstandige trainer	Eigen sporters, geen club	Vrijwel gelijk aan huidige cockpit-ervaring
+Clubtrainer	Sporters binnen één club/team	+ teamcontext, clubbeheerder als bovenliggende laag
+Hoofdtrainer	Organisatiebreed overzicht, geen individuele data	Vereist aparte "rolvandaag"-variant zonder cockpit-detailtoegang (WP-S8)
+
+Herbruikbare bestaande code: de volledige cockpit (coach/athletes/{id}/cockpit) is functioneel goed en hoeft niet herschreven te worden — dit is expliciet ook een "harde regel" uit de opdracht ("geen bestaande werkende cockpit herschrijven zonder noodzaak"). coach-home.tsx als basis voor sporterstabel/filters (WP-S7).
+
+Ontbrekende onderdelen: apart navigatieregister zonder persoonlijke sportersbalk (WP-S3/S7); testidentiteiten voor clubtrainer en hoofdtrainer specifiek; correcte uitnodigingstaal i.p.v. "Rol-uitnodiging" (WP-S2).
+
+Risico op privacy-/rechtenlek: middel — de sidebar-vervuiling is een UI-issue, maar zolang subrol-rechten niet met een tweede testidentiteit geverifieerd zijn, is niet uit te sluiten dat een clubtrainer per ongeluk sporters buiten zijn team kan zien. Niet aangenomen, wel als open risico benoemd.
+
+Minimale bouwvolgorde: WP-S2 (taalbug uitnodiging) kan los; daarna WP-S7 (trainerdesktop, navigatieregister zonder persoonlijke balk); daarna WP-S8 (club/hoofdtrainer-onderscheid, vereist eerst testidentiteiten voor die twee subrollen).
+
+Acceptatietests: sidebar voor rol=coach bevat geen Rijden/Wedstrijd/Ontdekken-items; bestaande uitnodiging met bestemming "parent" toont label "Ouder uitnodigen", niet "Rol-uitnodiging"; hoofdtrainer-sessie op een individuele-sporter-detailroute retourneert 403.
+
+2.3 Clubbeheerder
+
+Huidige werkelijke klikuitkomst: niet testbaar — geen identiteit, geen paginaroute aangetroffen in de volledige paginalijst van de DEV Preview.
+
+Gewenste minimale desktopworkspace (per opdracht): overzicht, leden, teams, trainers, uitnodigingen, instellingen, audit-/beheeracties — nadrukkelijk geen individuele sportdata tenzij expliciet toegestaan.
+
+Herbruikbare bestaande code: CLUB_CHAPTER bestaat al als los object in core-meer.ts (geconstateerd bij het lezen van dat bestand) — er is dus al minstens een menu-ingang voorzien, maar geen bijbehorende workspace/route aangetroffen tijdens het klikken. Dit is een concreet, code-geverifieerd gat: config bestaat, bestemming ontbreekt.
+
+Ontbrekende onderdelen: volledige rolroute, testidentiteit, ledenbeheer-UI, team/trainer-koppel-UI, audittrail-UI.
+
+Risico op privacy-/rechtenlek: hoog zodra gebouwd, indien individuele sportdata niet expliciet fail-closed wordt afgeschermd — moet vanaf het begin server-side getest worden, niet achteraf toegevoegd.
+
+Minimale bouwvolgorde: WP-S8 (na WP-S7, trainerdesktop als basis voor patronen).
+
+Acceptatietests: clubbeheerder-sessie op een individuele-trainingdetailroute van een lid retourneert 403 tenzij expliciet gedeeld; ledenlijst toont alleen leden van eigen club.
+
+2.4 Mechanieker
+
+Huidige werkelijke klikuitkomst: /mechanieker bestaat, maar is een sporter-gerichte contentpagina (eigen fiets/uitrusting beheren), geen clubrol-workspace.
+
+Strikt onderscheid (per opdracht):
+
+	Materiaal (huidig, sporter)	Mechanieker (voorgesteld, clubrol)
+Wie	Sporter zelf	Clubmedewerker
+Scope	Eigen fiets/uitrusting	Gedeelde materiaalgegevens van sporters die delen, voor heel team/club
+Bestaat nu?	Ja, werkend	Nee
+
+Advies bouwen-of-parkeren: parkeren tot na WP-S8, met als motivatie: (1) het bouwplan zelf plaatst WP-S9 al na WP-S8 en expliciet afhankelijk van "productbesluit René over gegevensdeling materiaal" — er is dus nog geen product­beslissing over de kern van deze rol (welke data mag gedeeld worden, opt-in per sporter); (2) er is momenteel geen enkele testidentiteit of testdata voor een gedeelde-materiaal-scenario, dus elke bouwstap zou op aannames rusten; (3) de huidige naamsverwarring ("Mechanieker" = sportersscherm) moet eerst opgelost worden (hernoemen naar "Materiaal" voor de sporterskant) voordat een echte Mechanieker-rol zonder naamscollisie kan landen.
+
+Ontbrekende onderdelen: productbesluit over materiaal-deel-toestemming (fail-closed vereist), testidentiteit, Werkplaats-lijst-UI, onderhoudsregistratie-UI, hernoeming van het sportersscherm.
+
+Risico op privacy-/rechtenlek: hoog indien gebouwd zonder expliciete opt-in per sporter — materiaal kan indirect gevoelige locatie-/gebruiksdata bevatten.
+
+Acceptatietests: mechanieker ziet uitsluitend materiaalvelden, nooit trainings-/gezondheidsdata, ook niet van sporters die materiaal delen; sporters die niet expliciet gedeeld hebben zijn onzichtbaar voor mechanieker (fail-closed, niet fail-open).
+
+2.5 Admin/Tester
+
+Huidige werkelijke klikuitkomst: Hoofdtester is een vlag op de Sporter-identiteit, geen aparte rol; "ADMIN"-paginalink in de DEV-Preview-lijst navigeerde bij herhaald klikken niet weg van "/"; Tester-QR-pagina toonde het label "undefined · rol: athlete"; het interne label "ONDERBOUWING (TESTER)" is zichtbaar in de normale Vandaag-UI voor een Hoofdtester-gevlagde identiteit.
+
+Broncode-bevinding (bevestigd, WP-S1): de dev-auth-bypass is inmiddels correct achter een expliciete flag gezet (DEV_AUTH_BYPASS === "true" bovenop NODE_ENV !== "production") — dit specifieke onderliggende risico (dev-bypass die per ongeluk in een verkeerd geconfigureerde omgeving actief zou staan) is dus al verkleind. Dat is een echte verbetering, niet louter een claim uit het planningsdocument.
+
+Wat hoort onder /admin: systeembeheerfuncties (het huidige "Beheer"-item wijst hier al naar, zag ik in core-meer.ts als ADMIN_ITEM), niet zichtbaar voor niet-adminrollen.
+
+Wat mag in normale schermen blijven: niets van de huidige testlabels zoals "ONDERBOUWING (TESTER)" of "undefined · rol: —" — dit zijn per definitie interne artefacten die nooit in een voor-de-gebruiker-zichtbaar scherm mogen verschijnen, ook niet voor Hoofdtester-gevlagde accounts (een Hoofdtester is nog steeds, uit gebruikersperspectief, "gewoon" een sporter-achtige identiteit die toevallig test-diagnostiek nodig heeft — die diagnostiek hoort in een apart devpaneel, niet in de productie-UI-laag).
+
+Hoe testfixtures en echte rechten gescheiden blijven: conform WP-S1's aanpak — dezelfde strikte poort die al voor de Vandaag-debugweergave gebruikt wordt (SPARKI_ADMIN_IDS/isHeadTester-checks) app-breed doortrekken, in plaats van per-scherm losse checks.
+
+Hoe "undefined"/"ONBEKEND" structureel voorkomen: een verplichte fallback-waarde op elk label dat rol/commit-context toont (bijv. "onbekend" als expliciete, bewust gekozen tekst is prima — een letterlijke JS undefined die doorlekt in de UI is een bug, geen bewuste tekst) plus een lint/test-regel die faalt zodra een label-string undefined bevat in gerenderde tekst.
+
+Minimale bouwvolgorde: grotendeels binnen WP-S1 (afgerond) en WP-S3 (navigatieregister, T-items alleen naar /admin).
+
+Acceptatietests: geen enkel scherm buiten /admin bevat de literal string "undefined" in gerenderde tekst; niet-adminrollen krijgen 403 op alle /admin-subroutes; Hoofdtester-vlag toont wel een TESTCONTEXT-label (gewenst, al aanwezig per WP-S1) maar geen interne debug-labels als "ONDERBOUWING (TESTER)" in reguliere schermen.
+
+3. Workflowdiagrammen per rol (tekstueel)
+
+Ouder: Uitnodiging → link → login/registratie → oudergerichte onboarding → koppeling accepteren → [huidig: valt terug op sporterhome] → gewenst: ouderhome → kind kiezen → Vandaag kind → planning kind → melding/verzoek → toestemming → contact trainer → uitloggen/inloggen → zelfde ouderomgeving.
+
+Trainer: Login → coach-dashboard → sporterskaart → cockpit (werkt) ↔

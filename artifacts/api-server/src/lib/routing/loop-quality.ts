@@ -316,6 +316,10 @@ export async function generateVariedLoop(
     // (cycling-road); de motor wordt hiermee NIET vervangen, alleen de
     // selectie tussen echte kandidaten gecontroleerd.
     unpavedShareOf?: (path: [number, number][]) => Promise<number | null>;
+    // WP-1: eerlijke fasemelding — aangeroepen zodra de blokkerende
+    // veiligheidscontrole van de winnaar begint (Overpass kan bij een koud
+    // gebied tientallen seconden duren; de klant toont dan een aparte status).
+    onPhase?: (p: "berekenen" | "veiligheidscontrole") => void;
     // Obstakel-telling (Overpass, gedeelde cache met de routeopmerkingen).
     // Acceptatiegrenzen René (30-07-2026): een kandidaat met een trap, een
     // aantoonbaar fietsverbod of een afgesloten/privé-poort wordt nooit
@@ -740,9 +744,11 @@ export async function generateVariedLoop(
     if (hasForbidden || hasUnpaved) {
       throw new NoSuitableRouteError(
         req.profile,
+        // Gebruikerstaal (WP-1): de exacte tellers staan al in de PERF-log
+        // hierboven — de renner krijgt een begrijpelijke reden.
         hasForbidden
-          ? `fietsverbod, trap of afgesloten poort (forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates})`
-          : `aantoonbaar onverhard wegdek (${obs.unpavedSegments} vak${obs.unpavedSegments > 1 ? "ken" : ""})`,
+          ? "elke gevonden kandidaat bevat een fietsverbod, trap of afgesloten poort"
+          : `de gevonden wegen bevatten aantoonbaar onverhard wegdek (${obs.unpavedSegments} stuk${obs.unpavedSegments > 1 ? "ken" : ""})`,
       );
     }
   };
@@ -787,6 +793,7 @@ export async function generateVariedLoop(
   const pickVerifiedWinner = async (
     ordered: RouteResult[],
   ): Promise<RouteResult> => {
+    opts?.onPhase?.("veiligheidscontrole");
     let lastHard: NoSuitableRouteError | null = null;
     for (const cand of ordered) {
       try {
@@ -892,13 +899,22 @@ export class UnverifiableRouteError extends Error {
  * onverhard wegdek (racefiets) of een zéker fietsverbod/trap. De renner
  * krijgt een eerlijke "geen geschikte route" melding — nooit een foute route.
  */
+// Gebruikerstaal (WP-1): profielcodes zoals "cycling-regular" zijn intern —
+// de renner ziet de fietsnaam.
+const PROFILE_LABELS_NL: Record<string, string> = {
+  "cycling-road": "de racefiets",
+  "cycling-gravel": "de gravelbike",
+  "cycling-mountain": "de mountainbike",
+  "cycling-regular": "de gewone fiets",
+};
+
 export class NoSuitableRouteError extends Error {
   readonly profile: string;
   readonly reason: string;
   constructor(profile: string, reason: string) {
     super(
-      `Geen geschikte route gevonden voor ${profile}: ${reason}. ` +
-        "Probeer een ander startpunt of een kortere afstand.",
+      `Geen geschikte route gevonden voor ${PROFILE_LABELS_NL[profile] ?? profile}: ${reason}. ` +
+        "Probeer een ander startpunt, een kortere afstand of versoepel je voorkeuren.",
     );
     this.name = "NoSuitableRouteError";
     this.profile = profile;

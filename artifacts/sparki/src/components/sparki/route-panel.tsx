@@ -27,6 +27,7 @@ import {
   type RouteClimb,
   useGeocode,
   type GeocodeResult,
+  type GeneratePhase,
 } from "@/hooks/use-routes"
 import type { PlannedWorkout } from "@/lib/athlete-types"
 import {
@@ -1570,8 +1571,16 @@ export function RouteGenerator({
       ) => void)
     | null
 }) {
-  const generate = useGenerateRoute()
-  const genOptions = useGenerateRouteOptions()
+  // WP-1 (31-07-2026): generatie loopt server-side als job met statuspolling
+  // (overleeft proxy-afkap en schermvergrendeling). De server meldt de
+  // eerlijke fase: eerst berekenen, daarna de blokkerende veiligheidscontrole.
+  const [genPhase, setGenPhase] = useState<GeneratePhase | null>(null)
+  const generate = useGenerateRoute(setGenPhase)
+  const genOptions = useGenerateRouteOptions(setGenPhase)
+  const genPending = generate.isPending || genOptions.isPending
+  useEffect(() => {
+    if (!genPending) setGenPhase(null)
+  }, [genPending])
   // Weergaveniveau (besluit B6): bepaalt alleen welke invoeropties zichtbaar
   // zijn — nooit de veiligheid (blokkadepoort, verificatie, waarschuwingen
   // gelden op elk niveau) en nooit stiekem meesturen: een verborgen optie
@@ -1762,15 +1771,17 @@ export function RouteGenerator({
   // Na een drempel van 3 s tonen we WAT er loopt — geen voortgangsbalk of
   // verzonnen percentages, alleen eerlijke tekst. Warme aanvragen (~0 ms)
   // halen de drempel nooit en zien niets extra's.
+  // WP-1: geldt nu voor ÁLLE modi (lus incluis — juist daar bleef het scherm
+  // voorheen minutenlang stil).
   const [slowNotice, setSlowNotice] = useState(false)
   useEffect(() => {
-    if (!generate.isPending || (mode !== "waypoints" && mode !== "ptp")) {
+    if (!genPending) {
       setSlowNotice(false)
       return
     }
     const t = setTimeout(() => setSlowNotice(true), 3000)
     return () => clearTimeout(t)
-  }, [generate.isPending, mode])
+  }, [genPending])
 
   // Wizard: vier duidelijke stappen, daarna een apart resultaatscherm.
   // Zodra er een berekende route (of varianten) is, verdwijnen de stappen en
@@ -2808,7 +2819,36 @@ export function RouteGenerator({
 
       {stepVisible(3) && (<>
       {error && (
-        <p className="mt-3 text-[12px] text-negative/85">{error}</p>
+        <div className="mt-3 rounded-2xl border border-negative/25 bg-negative/[0.06] p-3">
+          <p className="text-[12px] leading-relaxed text-negative/85">{error}</p>
+          {/* WP-1: geen doodlopende fout — duidelijke vervolgacties. */}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() =>
+                mode === "loop" ? runGenerateOptions() : runGenerate()
+              }
+              disabled={genPending}
+              className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30 disabled:opacity-50"
+            >
+              Opnieuw proberen
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null)
+                setStep(1)
+              }}
+              className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
+            >
+              Startpunt of afstand aanpassen
+            </button>
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+            Je keuzes zijn bewaard — pas gerust één ding aan (korter, ander
+            startpunt of soepelere voorkeuren) en probeer opnieuw.
+          </p>
+        </div>
       )}
 
       {/* Samen rijden? — de plek waar je je maten kiest. (Bordjes-sprint is
@@ -3011,8 +3051,10 @@ export function RouteGenerator({
               disabled={generate.isPending || genOptions.isPending}
               className="min-w-0 flex-1 rounded-2xl bg-accent-cyan py-3.5 font-sans text-[13px] font-semibold text-on-accent disabled:opacity-50"
             >
-              {generate.isPending || genOptions.isPending
-                ? "Berekenen…"
+              {genPending
+                ? genPhase === "veiligheidscontrole"
+                  ? "Veiligheidscontrole…"
+                  : "Berekenen…"
                 : mode === "waypoints"
                   ? "Bereken route"
                   : "Genereer route"}
@@ -3021,16 +3063,24 @@ export function RouteGenerator({
         </div>
       )}
 
-      {/* Eerlijke tussenmelding bij een lang lopende aanvraag (taak #503):
-          de blokkadepoort wacht bij een vers gebied blokkerend op de volledige
-          Overpass-meting — eenmalig ~10–30 s. Geen voortgangsbalk, alleen
-          eerlijke tekst na een drempel van 3 s. */}
-      {slowNotice && generate.isPending && !showResult && (
-        <p className="mt-3 text-[12px] leading-relaxed text-accent-cyan/75">
-          Sparki controleert de route op blokkades (fietsverbod, trappen,
-          afgesloten poorten) — bij een nieuw gebied kan dit eenmalig tientallen
-          seconden duren.
-        </p>
+      {/* Eerlijke statusmelding tijdens de aanvraag (WP-1, geldt voor ALLE
+          modi): de server meldt de echte fase. Geen voortgangsbalk of
+          verzonnen percentages — alleen wat er werkelijk loopt. */}
+      {genPending && !showResult && (
+        <div className="mt-3">
+          <p className="text-[12px] leading-relaxed text-accent-cyan/85">
+            {genPhase === "veiligheidscontrole"
+              ? "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op fietsverboden, trappen en afgesloten poorten…"
+              : "Route berekenen…"}
+          </p>
+          {slowNotice && (
+            <p className="mt-1 text-[12px] leading-relaxed text-accent-cyan/60">
+              Bij een nieuw gebied kan dit eenmalig langer duren (soms enkele
+              minuten). Je mag je scherm vergrendelen — de berekening loopt op
+              de server door.
+            </p>
+          )}
+        </div>
       )}
 
       {/* Resultaatscherm — eigen weergave, los van de stappen */}
@@ -3359,17 +3409,24 @@ export function RouteGenerator({
             <button
               type="button"
               onClick={() => runGenerate(Math.floor(Math.random() * 1e6))}
-              disabled={generate.isPending}
+              disabled={genPending}
               className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
             >
-              {generate.isPending ? "Berekenen…" : "Opnieuw genereren"}
+              {generate.isPending
+                ? genPhase === "veiligheidscontrole"
+                  ? "Veiligheidscontrole…"
+                  : "Berekenen…"
+                : "Opnieuw genereren"}
             </button>
-            {/* Eerlijke tussenmelding bij lang opnieuw genereren (taak #503) */}
-            {slowNotice && generate.isPending && (
+            {/* Eerlijke fasemelding bij opnieuw genereren (WP-1) */}
+            {generate.isPending && (
               <p className="w-full basis-full text-[12px] leading-relaxed text-accent-cyan/75">
-                Sparki controleert de route op blokkades (fietsverbod, trappen,
-                afgesloten poorten) — bij een nieuw gebied kan dit eenmalig
-                tientallen seconden duren.
+                {genPhase === "veiligheidscontrole"
+                  ? "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op fietsverboden, trappen en afgesloten poorten…"
+                  : "Route berekenen…"}
+                {slowNotice
+                  ? " Bij een nieuw gebied kan dit eenmalig langer duren — de berekening loopt op de server door."
+                  : ""}
               </p>
             )}
             {candidate.geometry.length > 1 && (

@@ -1,0 +1,200 @@
+OPDRACHT AAN REPLIT — Rolomgevingen corrigeren op basis van echte kliktest
+
+Gebruik het volledige Claude-rapport “Rollen en werkruimtes end-to-end” als feitelijke nulmeting.
+
+Doel
+
+Werk eerst de officiële documentatie en het herstelplan bij op basis van wat werkelijk is aangeklikt en gezien.
+
+Nog niets bouwen.
+
+Feitelijke status per rol
+
+- Sporter: passend.
+- Ouder/verzorger: vrijwel volledige sporterkopie; hoog risico.
+- Trainer: echte coachcockpit bestaat en werkt, maar hoofdnavigatie is niet goed rolgericht en trainer-subrollen zijn niet afzonderlijk testbaar.
+- Clubbeheerder: geen testidentiteit en geen vindbare workspace.
+- Mechanieker: alleen een sporter-materiaalpagina; geen mechaniekerrol of werkruimte.
+- Admin/tester: geen echte aparte workspace; admin-link werkt niet; testfuncties en interne labels zitten in gewone gebruikersschermen.
+- Telefoonweergave: nog niet betrouwbaar getest.
+
+1. Werk de audit bij
+
+Pas aan:
+
+- docs/product/SPARKI_ROLE_DEVICE_INFORMATION_ARCHITECTURE_AUDIT.md
+- docs/product/SPARKI_ROLE_WORKSPACE_MODEL.md
+- docs/product/SPARKI_NAVIGATION_MODEL_BY_ROLE_AND_DEVICE.md
+- docs/product/SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md
+- docs/SPARKI_CURRENT_STATE.md
+
+Gebruik bij werkstatus alleen:
+
+- working;
+- partially_working;
+- sporter_copy;
+- missing_workspace;
+- not_testable;
+- broken;
+- proposal_only.
+
+Geen rol “working” noemen wanneer alleen een label, startkaart of pagina bestaat.
+
+2. Ouder als hoogste prioriteit
+
+Leg expliciet vast dat de huidige ouderomgeving fout is omdat:
+
+- de ouder dezelfde sporternavigatie ziet;
+- eigen training kan toevoegen;
+- eigen doelen en wedstrijden kan toevoegen;
+- Rijden, Wedstrijd, Analyse en Ontdekken zichtbaar zijn;
+- sporterprofiel en sporteronboarding zichtbaar zijn;
+- geen kindkiezer bestaat;
+- geen Vandaag van het kind bestaat;
+- geen kindplanning bestaat;
+- geen kindgerichte meldingen of toestemmingen zichtbaar zijn.
+
+Definieer de gewenste ouderomgeving:
+
+Telefoon:
+- Kind(eren)
+- Vandaag
+- Meldingen
+- Toestemmingen
+- Profiel/Hulp
+
+Desktop:
+- kindkiezer;
+- overzicht per kind;
+- planning bekijken;
+- meldingen en verzoeken;
+- toestemmingen en privacy;
+- contact met trainer;
+- geen eigen sporterfuncties als standaard ouderomgeving.
+
+De ouder mag nooit automatisch in sporteronboarding of een eigen sporterdashboard belanden.
+
+3. Trainerstatus aanscherpen
+
+Leg vast:
+
+- coach-startpagina en cockpit zijn echt en grotendeels passend;
+- hoofdsidebar is nog sportergericht;
+- “Rol-uitnodiging” is verboden gebruikerstaal;
+- zelfstandige trainer, clubtrainer en hoofdtrainer zijn niet afzonderlijk testbaar;
+- voor ieder van deze subrollen is een eigen testidentiteit nodig;
+- rechten en zichtbaarheid moeten per subrol afzonderlijk bewezen worden.
+
+Geen nieuwe trainerbackend bouwen wanneer bestaande cockpit en rechten herbruikbaar zijn.
+
+4. Clubbeheerder
+
+Leg vast als:
+
+missing_workspace / not_testable
+
+Benodigd vóór bouwacceptatie:
+
+- vaste testidentiteit;
+- eigen startpagina;
+- eigen navigatie;
+- leden;
+- teams;
+- trainers;
+- uitnodigingen;
+- instellingen;
+- geen ongeoorloofde individuele sportdata;
+- desktop als primaire werkruimte;
+- compacte mobiele kernacties.
+
+5. Mechanieker
+
+Maak duidelijk onderscheid tussen:
+
+- “Materiaal” als bestaande sporterfunctie voor eigen fiets;
+- “Mechanieker” als mogelijke clubrol met eigen werkruimte.
+
+Hernoem in het plan de bestaande sporterpagina voorlopig naar “Materiaal” om begripsverwarring te voorkomen.
+
+Een mechaniekerrol geldt pas als bestaand bij:
+
+- eigen testidentiteit;
+- eigen rechten;
+- eigen werkplaats;
+- materiaalgegevens van alleen toegestane sporters;
+- fail-closed gegevensdeling;
+- eigen navigatie.
+
+6. Admin en tester
+
+Leg vast:
+
+- hoofdtester is nu een vlag op een sporteridentiteit;
+- dit is geen aparte admin/testerworkspace;
+- ADMIN-link is defect;
+- “undefined”-labels zijn fout;
+- interne testerlabels zijn zichtbaar in gewone gebruikersschermen.
+
+Definieer:
+
+- adminfuncties uitsluitend onder /admin;
+- testerextra’s alleen zichtbaar wanneer expliciet toegestaan en duidelijk gelabeld;
+- normale sporters zien geen test- of adminfuncties;
+- aparte admin/testfixtures voor acceptatietests.
+
+7. Herstelplan opnieuw ordenen
+
+Herzie de werkpakketten als volgt:
+
+WP-R1 — ouderomgeving en ouderonboarding;
+WP-R2 — navigatieregister per rol en apparaat;
+WP-R3 — trainer-subrollen en testidentiteiten;
+WP-R4 — clubbeheerderworkspace;
+WP-R5 — onderscheid Materiaal versus mechaniekerrol;
+WP-R6 — admin/tester scheiden;
+WP-R7 — rolrechten server-side testen;
+WP-R8 — telefoon- en desktopacceptatietest per rol.
+
+Geef per pakket:
+
+- huidige fout;
+- gewenste uitkomst;
+- bestaande code die wordt hergebruikt;
+- ontbrekende delen;
+- testidentiteit;
+- rechten;
+- desktop- en telefoonvariant;
+- automatische tests;
+- echte kliktest;
+- acceptatiebewijs;
+- omvang;
+- afhankelijkheden.
+
+8. Harde acceptatieregel
+
+Een rol geldt pas als gebouwd wanneer aantoonbaar aanwezig zijn:
+
+1. eigen startpagina;
+2. eigen navigatie;
+3. juiste server-side rechten;
+4. eigen hoofdtaak;
+5. passende teksten;
+6. passende lege en fouttoestanden;
+7. vaste testidentiteit;
+8. echte kliktest;
+9. telefoon- en desktopbewijs waar relevant;
+10. geen ongewenste sporterfuncties.
+
+9. Oplevering
+
+Lever uitsluitend op:
+
+- bijgewerkte documenten;
+- nieuwe status per rol;
+- herzien werkpakketplan;
+- overzicht van beslissingen die nog van René nodig zijn;
+- commit-SHA.
+
+Bouw nog niets.
+
+Start geen werkpakket totdat René het herziene plan heeft goedgekeurd.
