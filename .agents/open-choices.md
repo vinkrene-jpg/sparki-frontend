@@ -61,6 +61,14 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15k. **Vrijgave AI_ENGINE_01 (ontvangen 31-07-2026)** — één centrale technische
+    AI-engine voor álle AI-functies: domeinrol per verzoek, herleidbare
+    context, deterministisch/AI-uitleg gescheiden, server-side pakket/rol/
+    privacy/jeugdregels, tool-bevoegdheidslaag, kosten- en besluitlogging,
+    failover zonder stille kwaliteitsverlaging, prompt-injection-preventie.
+    Grondslag AI_GOVERNANCE_01 (beleid, nog niet ontvangen als pakket).
+    Sluit aan op bestaande aiMessage()-gateway. Start pas na vrijgave René.
+
 15j. **Vrijgave bundel NOTIFICATIES/INTEGRATIES/LAB (ontvangen 31-07-2026)** —
     NOTIFICATIES_01 (één centrale notificatielaag voor in-app/push/e-mail/
     operationele waarschuwingen, web+PWA+native), INTEGRATIES_01 (alle externe
