@@ -29,6 +29,7 @@ import {
   type TodayAction,
   type TodayItem,
 } from "@/hooks/use-today"
+import { TodayDebugPanel } from "@/components/sparki/role-today"
 import { cn } from "@/lib/utils"
 import {
   DsButton,
@@ -889,6 +890,10 @@ function TodayOrchestratorSection() {
           </div>
         </DsCard>
       )}
+      <div className="mt-4">
+        {/* WP-T3: onderbouwing voor bevoegde testers/admins (server-gated). */}
+        <TodayDebugPanel />
+      </div>
       {(data.insight || data.rotating) && (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {[data.insight, data.rotating]

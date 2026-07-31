@@ -242,3 +242,17 @@ los van abonnement, veiligheid op elk niveau actief.
 - **Vandaag WP-T1** — door René vrijgegeven om te starten; feitelijk al
   geleverd op 31-07 (Today Orchestrator, zie bijsturing hierboven). Open staan
   alleen nog WP-T2 (rolvarianten) en WP-T3 (debugweergave + testmatrix §10).
+- **Vandaag WP-T2 (rolvarianten) — geleverd 31-07:** `GET /api/today?rol=…`
+  met server-side rechtenafleiding (`engines/today/roles.ts`:
+  `availableTodayRoles` uit user_profiles.roles + actieve clubrollen; rol
+  zonder recht → 403, onzin-rol → 400). Vier rolweergaven op dezelfde
+  orchestrator + weergavehistorie: **trainer** (aandacht ziek/geblesseerd
+  urgent > gemiste trainingen > open voorstellen > eerlijk all-clear),
+  **ouder** (alleen toegestane categorieën; herbevestiging urgent),
+  **clubbeheer** (teams zonder trainer, open uitnodigingen, ledenstand) en
+  **hoofdtrainer** (uitsluitend organisatorisch — nooit individuele
+  sportersdata). Frontend: rol-Vandaag-sectie bovenaan CoachHome (met
+  weergavewissel trainer/hoofdtrainer/clubbeheer), ParentHome en Clubbeheer.
+  Bewijs: `test:today-roles` 14/14 (rolwissel, multi-rol, ontbrekende
+  relatie, geen datalek, lege trainer/club, urgent + dag-stabiele
+  wisselkaart, cross-login-isolatie, 403 zonder recht).

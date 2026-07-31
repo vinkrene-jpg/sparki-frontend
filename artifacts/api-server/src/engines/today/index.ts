@@ -11,5 +11,12 @@ export type {
   TodayAction,
   TodaySlotName,
 } from "./orchestrate";
+export {
+  availableTodayRoles,
+  defaultTodayRole,
+  orchestrateTodayForRole,
+  todayRoles,
+} from "./roles";
+export type { TodayRole, RoleTodayResult } from "./roles";
 export { deriveTodayProfile } from "./profile";
 export type { TodayProfile, TodayVariant } from "./profile";

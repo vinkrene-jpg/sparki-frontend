@@ -31,7 +31,8 @@ export const queryKeys = {
 
   today: {
     all: () => ["today"] as const,
-    orchestrator: () => ["today", "orchestrator"] as const,
+    orchestrator: (rol: string | null = null) =>
+      ["today", "orchestrator", rol] as const,
   },
 
   corePrediction: {

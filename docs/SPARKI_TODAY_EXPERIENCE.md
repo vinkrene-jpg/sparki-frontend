@@ -16,7 +16,7 @@ Maximaal: 1 hoofdboodschap/hoofdactie · 1 onderbouwing (uitklapbaar, mét bron)
 - **Wedstrijd/prestatie:** wedstrijd-aftelling in de hoofdboodschap, wedstrijdvoorbereiding in de wisselpool, compacte prestatie-context.
 - **Recreatief:** standaardopbouw zonder wedstrijddruk.
 
-**WP-T2 (open):** eigen Vandaag-prioriteiten voor trainer (aandachtssporters, te beoordelen voorstellen — hergebruik cockpit-data), ouder/verzorger, clubbeheerder; ploegleider blijft vooralsnog coach-functie. **WP-T3 (open):** debug-/onderbouwingsweergave (admin/tester) + volledige testmatrix (§10, 17 scenario's) + screenshots ≥6 profielen.
+**WP-T2 (geleverd 31-07-2026):** eigen Vandaag-prioriteiten per rol via `GET /api/today?rol=…` — trainer (aandachtssporters urgent > gemiste trainingen > open voorstellen > eerlijk all-clear), ouder/verzorger (herbevestiging urgent; uitsluitend toegestane categorieën), clubbeheerder (teams zonder trainer, uitnodigingen, ledenstand) en hoofdtrainer (alleen organisatorisch, nooit individuele sportersdata); ploegleider blijft coach-functie. Rechten server-side (403 zonder recht), zelfde weergavehistorie met rol-geprefixte sleutels. **WP-T3 (geleverd 31-07-2026):** debug-/onderbouwingsweergave (alleen expliciete admin of Hoofdtester, `?debug=1`: profiel, rol, gekozen kaarten + bron/confidence, afgevallen kandidaten, aiUsed, historie/reden van hertoning; gewone gebruikers krijgen nooit debugdetails) + volledige 17-scenario-testmatrix (`test:today-matrix` 21/21) met bewijs van ≥6 aantoonbaar verschillende profiel-/rolweergaven.
 
 ## Prioriteringsregels
 

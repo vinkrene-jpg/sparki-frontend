@@ -1,0 +1,36 @@
+# Poort 5b sanity-check rapport — Vandaag WP-T2 (rolvarianten)
+
+delivery: "Vandaag voor rollen (WP-T2): GET /api/today?rol=… met server-side rechtenafleiding en vier rolweergaven (trainer, ouder, clubbeheer, hoofdtrainer) op dezelfde Today Orchestrator; rol-Vandaag-sectie in CoachHome (met weergavewissel), ParentHome en Clubbeheer."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "GET /api/today en /api/today?rol=trainer|ouder|clubbeheer|hoofdtrainer|atleet (echte Express-app, DB-gestoelde scenario's via test:today-roles, 14/14)"
+  - "CoachHome (/): trainer-Vandaag bovenaan + rolweergavewissel"
+  - "ParentHome (/): ouder-Vandaag bovenaan"
+  - "/club/beheer: clubbeheer-Vandaag bovenaan"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Actieknoppen op rol-lead/inzicht/wisselkaart: elke actie registreert een klik in today_display_history en navigeert naar een bestaand pad (hrefs wijzen naar bestaande routes: /coach/athletes/:id/cockpit, /invitations, /club/beheer, /club, /ouder-portaal)."
+        result: "pass"
+      - case: "Rolweergavewissel in CoachHome toont alleen server-bevestigde rollen (availableRoles); met maar één rol wordt de wissel helemaal niet gerenderd (geen dode enkele knop)."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Hoofdtrainer-weergave bevat uitsluitend organisatorische informatie — test bewijst dat gezondheidsstatus/sportersnamen-markers afwezig zijn in de volledige respons."
+        result: "pass"
+      - case: "Ouder-weergave respecteert categorie-rechten: zonder planning-recht lekt geen workout-titel (marker-string afwezig); herbevestiging is de urgente lead als die vereist is."
+        result: "pass"
+      - case: "Rol zonder recht is geen lege weergave maar een eerlijke 403; onzin-rol een 400. Trainer/club zonder sporters/teams toont een eerlijke lege lead, geen verzonnen kaart."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Rol-Vandaag-sectie rendert niets bij laden/fout/lege sloten (geen blijvende laadtekst of vulkaart); all-clear-leads dragen echte tellingen (sporters/leden) uit de DB."
+        result: "pass"
+
+# Bewijs: pnpm --filter @workspace/api-server run test:today-roles → 14/14 geslaagd
+# (rolwissel binnen account, multi-rol, ontbrekende relatie, datalek-markers,
+# lege trainer/club, urgent-lead, dag-stabiele wisselkaart, cross-login-isolatie,
+# directe API-calls zonder recht → 403). typecheck-api en web-tsc schoon.
+verdict: "deliverable"

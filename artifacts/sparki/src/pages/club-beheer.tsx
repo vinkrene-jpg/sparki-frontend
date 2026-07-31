@@ -4,6 +4,7 @@ import { Redirect, useLocation } from "wouter"
 import { ArrowLeft, Users, CalendarDays, Trophy, Package, ClipboardList, Link2, MapPin, QrCode, Settings2 } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { RoleTodaySection } from "@/components/sparki/role-today"
 import {
   useMyClubs,
   useClubDashboard,
@@ -819,6 +820,10 @@ export default function ClubBeheerPage() {
             <p className="text-[12px] text-white/50">Je rol: {ROLE_LABELS[myRole]}</p>
           </div>
         </header>
+
+        {/* WP-T2: clubbeheer-Vandaag — operationele prioriteiten bovenaan
+            (teams zonder trainer, open uitnodigingen, ledenstand). */}
+        <RoleTodaySection rol="clubbeheer" />
 
         {(dash?.signals?.length ?? 0) > 0 && (
           <section aria-label="Signalen" className="space-y-1.5">

@@ -1,0 +1,289 @@
+OPDRACHT AAN REPLIT — Uitnodigings-, rol-, onboarding- en ondersteuningsketen herstellen
+
+Aanleiding
+
+Een mobiele praktijktest van de uitnodigingsflow heeft meerdere samenhangende defecten aangetoond.
+
+Geteste situatie:
+- vanuit Testers & koppelingen is een rol-uitnodiging voor ouder/parent aangemaakt;
+- de uitnodigingslink is per e-mail geopend op een telefoon;
+- de link opent Sparki correct;
+- daarna verschijnt echter de onboarding/inlogflow voor een renner;
+- de bedoelde ouderrol en uitnodigingscontext zijn kennelijk verloren gegaan.
+
+Daarnaast:
+- het testdashboard toont “Het testdashboard kon niet worden geladen”;
+- Hulp & Ondersteuning geeft op normale vragen geen bruikbaar antwoord;
+- Privacy en Voorwaarden openen de verkeerde pagina;
+- niet bewezen is of een nieuwe ouder op mobiel passende installatie-/PWA-uitleg krijgt.
+
+Dit is één verticale herstelopdracht. Geen cosmetische workaround bouwen.
+
+1. Uitnodigingscontext end-to-end behouden
+
+Onderzoek de volledige keten:
+
+uitnodiging aanmaken
+→ link genereren
+→ e-mail/link openen
+→ app/deeplink
+→ niet-ingelogde gebruiker
+→ account aanmaken of inloggen
+→ onboarding
+→ rol accepteren
+→ relatie koppelen
+→ juiste omgeving openen
+
+De uitnodiging moet minimaal behouden:
+
+- uitnodiging-ID;
+- token;
+- bedoelde rol;
+- uitnodigende gebruiker of organisatie;
+- relatiecontext, bijvoorbeeld ouder van welke jeugdrenner;
+- vervaldatum;
+- huidige status;
+- gewenste bestemming na acceptatie.
+
+Deze context mag niet verloren gaan door:
+
+- openen in mobiele browser;
+- redirect naar login;
+- accountregistratie;
+- e-mailverificatie;
+- opnieuw openen van de app;
+- PWA-installatie;
+- bestaande sessie met een ander account;
+- herladen.
+
+2. Rolgerichte onboarding
+
+Een ouderuitnodiging mag nooit de standaard onboarding voor een renner starten.
+
+Maak afzonderlijke onboardingroutes voor minimaal:
+
+- sporter;
+- ouder/verzorger;
+- zelfstandige coach;
+- clubtrainer;
+- clubbeheerder;
+- mechanieker;
+- andere bestaande uitnodigbare rollen.
+
+Voor ouder/verzorger:
+
+- leg kort uit waarvoor de uitnodiging geldt;
+- toon met welke jeugdrenner de ouder wordt gekoppeld;
+- vraag alleen gegevens die voor het ouderaccount nodig zijn;
+- vraag niet naar FTP, fietsdoelen, trainingsniveau of sportersprofiel;
+- toon privacy- en toestemmingscontext;
+- laat de ouder de koppeling expliciet accepteren;
+- open daarna de ouderomgeving, niet de sporterhome.
+
+Wanneer een gebruiker al een Sparki-account heeft:
+
+- geen volledige onboarding opnieuw;
+- toon de uitnodiging;
+- laat rol en relatie accepteren;
+- voeg de rol veilig toe;
+- behoud bestaande accountdata.
+
+3. Rol- en relatiecontrole server-side
+
+De uitnodiging mag niet alleen client-side bepalen wat iemand ziet.
+
+Controleer server-side:
+
+- token geldig;
+- rol toegestaan;
+- uitnodiging niet verlopen;
+- uitnodiging niet ingetrokken;
+- juiste ontvanger of veilige claimflow;
+- relatie wordt één keer aangemaakt;
+- dubbele acceptatie veroorzaakt geen dubbele records;
+- gebruiker krijgt niet automatisch ruimere rechten;
+- ouder ziet uitsluitend toegestane kindcontext;
+- directe manipulatie van rol of user-ID wordt geweigerd.
+
+Log:
+
+- uitnodiging aangemaakt;
+- link geopend;
+- account aangemaakt of bestaand account gebruikt;
+- uitnodiging geaccepteerd;
+- rol toegevoegd;
+- relatie aangemaakt;
+- mislukking en reden;
+- intrekking.
+
+4. Mobiele installatie-/PWA-flow
+
+Onderzoek expliciet wat een nieuwe genodigde op telefoon ziet.
+
+Vereisten:
+
+- de uitnodiging moet eerst bruikbaar zijn in de browser;
+- installatie van de PWA mag geen voorwaarde zijn om de uitnodiging te accepteren;
+- wanneer installatie beschikbaar en zinvol is, toon een korte rolneutrale uitleg;
+- toon geen misleidende installatieknop wanneer het gebruikte apparaat of de browser dit niet ondersteunt;
+- na installatie moet de uitnodigingscontext behouden blijven;
+- test Android en iPhone/Safari waar de testomgeving dit toelaat;
+- leg vast wat automatisch kan en waar alleen uitleg mogelijk is.
+
+5. Testdashboard herstellen
+
+Onderzoek waarom “Het testdashboard kon niet worden geladen” verschijnt.
+
+Controleer:
+
+- UI-request;
+- API-route;
+- authenticatie;
+- rechten;
+- databasequery;
+- lege toestand;
+- foutmelding;
+- mobiele en desktopweergave.
+
+Gewenst:
+
+- bestaand testdashboard werkt;
+- lege data geeft een eerlijke lege toestand;
+- API-fout toont een bruikbare fout met opnieuw proberen;
+- geen mockgegevens;
+- geen generieke fout zonder diagnostiek voor bevoegde tester;
+- normale gebruiker ziet geen technische details.
+
+6. Hulp & Ondersteuning herstellen
+
+De huidige hulp lijkt op iedere vraag geen antwoord te weten. Onderzoek eerst wat werkelijk is aangesloten:
+
+- statische kennisbank;
+- zoekfunctie;
+- AI-help;
+- contextuele schermhulp;
+- backend/API;
+- bronindex;
+- fallback.
+
+Test minimaal vragen over:
+
+- uitnodiging accepteren;
+- ouderaccount;
+- route maken;
+- Strava koppelen;
+- wachtwoord vergeten;
+- privacy;
+- abonnement;
+- training;
+- contact opnemen.
+
+Gewenst gedrag:
+
+- antwoord uit aantoonbare Sparki-documentatie;
+- geen verzonnen functionaliteit;
+- bij onvoldoende kennis eerlijk zeggen wat ontbreekt;
+- altijd een bruikbare vervolgstap;
+- relevante link naar de juiste pagina;
+- mogelijkheid om een supportvraag door te zetten;
+- rol- en schermcontext meenemen waar beschikbaar.
+
+Wanneer de AI-help nog niet productioneel werkt:
+
+- presenteer hem niet als algemene vraagbaak;
+- gebruik tijdelijk een betrouwbare kennisbank/FAQ;
+- markeer de echte status in Current State.
+
+7. Privacy en Voorwaarden corrigeren
+
+Controleer alle links naar:
+
+- Privacyverklaring;
+- Algemene voorwaarden;
+- Cookie-informatie indien van toepassing;
+- ouder-/jeugdprivacy;
+- abonnementsvoorwaarden.
+
+Vereisten:
+
+- iedere link opent de bedoelde pagina;
+- juiste route op mobiel en desktop;
+- geen redirect naar landing, onboarding of verkeerde documentpagina;
+- links werken voor niet-ingelogde gebruikers;
+- documenten zijn leesbaar zonder account;
+- versienummer en datum zichtbaar;
+- geen lege placeholdertekst;
+- terugnavigatie werkt.
+
+8. DEV Preview en echte roltest
+
+Gebruik deze herstelronde om te bewijzen dat rolcontext werkelijk verandert.
+
+Test minimaal:
+
+- nieuwe ouder zonder account;
+- bestaande gebruiker die ouderrol toevoegt;
+- uitnodiging voor sporter;
+- uitnodiging voor coach;
+- verlopen uitnodiging;
+- ingetrokken uitnodiging;
+- reeds geaccepteerde uitnodiging;
+- link geopend op ander apparaat;
+- login tussendoor;
+- PWA-installatie tussendoor;
+- gemanipuleerde rol in request;
+- ouder probeert niet-toegestane data te openen.
+
+Maak screenshots van:
+
+- ouderuitnodiging;
+- oudergerichte onboarding;
+- acceptatie;
+- ouderhome;
+- correcte privacy- en voorwaardenpagina;
+- werkend testdashboard;
+- bruikbaar hulpantwoord.
+
+9. Documentatie
+
+Werk minimaal bij:
+
+- uitnodigings- en deeplinkarchitectuur;
+- rollen- en rechtenmatrix;
+- onboarding per rol;
+- ouder-/jeugdflow;
+- DEV-testmatrix;
+- Hulp & Ondersteuning current state;
+- Privacy/Voorwaarden linkregister;
+- SPARKI_CURRENT_STATE.md;
+- roadmap en bekende problemen.
+
+10. Oplevering
+
+Rapporteer:
+
+- exacte oorzaak van het verlies van de ouderrol;
+- exacte oorzaak van het defecte testdashboard;
+- huidige technische werking van Hulp & Ondersteuning;
+- foutieve en gecorrigeerde links;
+- gewijzigde bestanden;
+- eventuele migraties;
+- tests en uitslagen;
+- mobiele screenshots;
+- commit-hash;
+- resterende beperkingen.
+
+Harde acceptatiegrens
+
+Deze taak is pas afgerond wanneer een nieuwe ouder via de uitnodigingslink op een telefoon:
+
+1. Sparki opent;
+2. de oudercontext behoudt;
+3. een oudergerichte registratie/onboarding krijgt;
+4. de koppeling met het juiste kind accepteert;
+5. in de ouderomgeving uitkomt;
+6. geen sportersvragen krijgt;
+7. Privacy en Voorwaarden correct kan openen;
+8. een bruikbaar antwoord uit Hulp & Ondersteuning kan krijgen.
+
+Geen volledige roltest claimen op basis van alleen een gewijzigde DEV-labelselector.

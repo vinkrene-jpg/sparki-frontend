@@ -1,6 +1,6 @@
 # SPARKI TODAY ORCHESTRATOR — technische architectuur (WP-T1)
 
-**Status:** WP-T1 geleverd (31-07-2026). WP-T2 (rolvarianten trainer/ouder/club) en WP-T3 (debugweergave + volledige testmatrix §10) volgen.
+**Status:** WP-T1, WP-T2 én WP-T3 geleverd (31-07-2026). Vandaag is hiermee afgerond: rolvarianten (`engines/today/roles.ts`, `GET /api/today?rol=…`, server-side rechten, 403 zonder recht), tester-/admin-debugweergave (`?debug=1`, alleen expliciete admin of Hoofdtester; passedOver wordt uit normale responses gestript) en de volledige 17-scenario-testmatrix (`test:today-matrix` 21/21, incl. bewijs van ≥6 verschillende profiel-/rolweergaven). Overige bewijzen: `test:today-orchestrator` 7/7, `test:today-roles` 14/14.
 
 ## Architectuur
 

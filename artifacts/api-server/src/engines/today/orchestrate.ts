@@ -71,7 +71,7 @@ function daysBetween(fromYmd: string, toYmd: string): number {
 }
 
 /** Dag-stabiele deterministische hash (zelfde gebruiker+dag ⇒ zelfde keuze). */
-function daySeed(clerkId: string, ymd: string): number {
+export function daySeed(clerkId: string, ymd: string): number {
   let h = 0;
   const s = `${clerkId}:${ymd}`;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
