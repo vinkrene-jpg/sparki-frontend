@@ -84,7 +84,7 @@ anders vermeld — een expliciet eigenaarveld ontbreekt in vrijwel alle bronnen
 
 | ID | Naam | Code | Categorie | Belofte | Norm | CE | FC | Huidig bewijs | Status | B? |
 |---|---|---|---|---|---|---|---|---|---|---|
-| BC0 | Besluitlogica | bc_besluit_020 | interne invariant | Besluiten alleen op geverifieerde data | 0 aannames | ja | ja | deterministische engines + tests | **calibrated** *(verified)* — enige gekalibreerde | nee |
+| BC0 | Overkoepelend besluit 20: autonomie-grens | bc_besluit_020 | **besluitrecord (record_type: overkoepelend_besluit — géén belofte)** | Zonder reactie van de sporter past Sparki alleen voorlopige planning/niet-kritieke keuzes veilig aan; definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten nooit; blokkeren mag bij harde veiligheidsreden | besluit René 30-07-2026 (letterlijk) | n.v.t. | ja | besluittekst zelf; verwezen vanuit train_plan_001/train_coaching_001 | **geen statusveld in YAML** *(approved — het is een genomen besluit, geen te bewijzen belofte)* | genoemde BOUWOPGAVEN (o.a. automatische vaste-week-aanpassing bij veiligheidsreden) bestaan nog niet in code | nee |
 | BC1 | Trainingsplan | train_plan_001 | coaching-advies | Plan past zich aan gemiste sessies aan | 0 verouderde plannen | deels | ja | plan-execution tests | needs_calibration *(partially_verified)* | ja |
 | BC2 | Uitvoering | train_uitvoering_001 | prestatie | Realtime begeleiding tijdens training | <2% intensiteitsafwijking | nee | nee | beperkt | needs_calibration *(not_verified)* | ja |
 | BC3 | Coaching | train_coaching_001 | coaching-advies | Contextueel advies, altijd "waarom" | 100% uitgelegd | nee | nee | uitleglaag + observation-engine | needs_calibration *(partially_verified)* | ja |
@@ -183,13 +183,13 @@ anders vermeld — een expliciet eigenaarveld ontbreekt in vrijwel alle bronnen
 
 ## 3. Telling (oplevering §9)
 
-- **Totaal geïnventariseerd: 73 beloftes/claims** (55 in kalibratie-YAML, 18 daarbuiten in besluiten/governance/code/UI).
+- **Totaal geïnventariseerd: 73 claims, waarvan 72 beloftes/claims en 1 besluitrecord** (55 YAML-records — waarvan 54 beloftes en 1 overkoepelend besluit (BC0) — plus 18 daarbuiten in besluiten/governance/code/UI).
 - Per categorie: hard functioneel 9 · veiligheid 12 · privacy/rechten 8 · data-trust 9 · prestatie 15 · beschikbaarheid 1 (G13, en die is eigenlijk een invariant — zie C10) · UX 12 · coaching-advies 8 · juridisch/compliance 4 · commercieel 3 · toekomst 1 · interne invariant 5 · aspiratie 3. (Sommige tellen dubbel door menging; hoofdcategorie geteld.)
 - Zonder meetbare norm: **17** (vetgedrukt "geen norm" + niet-meetbare zoals "0 clutter").
 - Zonder counterexample: **31**.
 - Met conflict/dubbeling: **14** (C1–C6, C9, C11-betrokken rijen).
 - Verouderd/achterlopend gedocumenteerd: **3 documenten** (RN_01A, Current State-gedeelten, ontbrekende Master Plan v3.02).
-- Werkelijk onafhankelijk bewezen (onafhankelijke reviewer én uitgevoerde praktijktest): **1** volledig (lusroutes fail-closed: 12-routes-batch + onafhankelijke review; praktijkrit deels), plus 1 gekalibreerd (bc_besluit_020). Alle overige hoogstens technisch bewezen.
+- Werkelijk onafhankelijk bewezen (onafhankelijke reviewer én volledig uitgevoerde praktijktest): **0**. Het dichtstbij komt lusroutes fail-closed (G1): technisch bewijs + tegenvoorbeelden + onafhankelijke review zijn er, maar de volledige praktijkrit (trede 4 van de bewijsladder) ontbreekt nog. De YAML bevat géén enkel record met status `calibrated`. Alle overige claims zijn hoogstens technisch bewezen.
 - Besluit René nodig: **62** rijen (alle needs_calibration + alle C2-canonisaties + C3 + G17/G18).
 
 ## 4. Gebruikte en niet-doorzochte bronnen
