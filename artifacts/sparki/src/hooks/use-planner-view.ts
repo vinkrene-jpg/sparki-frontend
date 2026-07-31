@@ -26,8 +26,7 @@ export function usePlannerView(): {
   const profile = useAthleteExtendedProfile()
   const update = useUpdateAthleteProfile()
 
-  const raw = (profile.data as { plannerView?: string | null } | undefined)
-    ?.plannerView
+  const raw = profile.data?.plannerView
   const manual = isPlannerView(raw) ? raw : null
   const suggested = suggestPlannerView(profile.data ?? null)
 
@@ -37,7 +36,6 @@ export function usePlannerView(): {
     manual,
     loaded: profile.isSuccess,
     saving: update.isPending,
-    choose: (view) =>
-      update.mutate({ plannerView: view } as never),
+    choose: (view) => update.mutate({ plannerView: view }),
   }
 }

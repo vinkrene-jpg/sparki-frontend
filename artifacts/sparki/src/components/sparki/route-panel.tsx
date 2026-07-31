@@ -1855,6 +1855,18 @@ export function RouteGenerator({
   // Effectieve waarden voor verborgen opties: niet zichtbaar = niet meesturen.
   const effectieveWens = heeft("wens") ? wish.trim() : ""
   const effectiefVermijdN = heeft("nWegen") && avoidBusyRoads
+  const effectieveHoogte = heeft("hoogte") ? elevationPreference : "any"
+  const effectiefTrainingstype = heeft("training") ? trainingType : "duurtraining"
+
+  // Weergave omlaag gezet terwijl de eigen routebouwer actief was? Dan terug
+  // naar Lus — een verborgen modus mag nooit stilletjes waypoints meesturen.
+  // Bij "route wijzigen" (bestaande punten) blijft de bouwer wél beschikbaar.
+  useEffect(() => {
+    if (mode === "waypoints" && !heeft("eigenRoute") && !hasInitial) {
+      setMode("loop")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plannerView.view, mode])
 
   // Startpunt via adres/plaatsnaam zoeken — naast "Gebruik mijn locatie", zodat
   // je ook een route kunt plannen die ergens anders begint (vakantie, clubrit).
@@ -1930,8 +1942,8 @@ export function RouteGenerator({
         startLon: start.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference,
-        trainingType,
+        elevationPreference: effectieveHoogte,
+        trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
           !linkedWorkout && Number.isFinite(distNum) ? distNum : undefined,
@@ -1980,8 +1992,8 @@ export function RouteGenerator({
         startLon: start?.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference,
-        trainingType,
+        elevationPreference: effectieveHoogte,
+        trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
           mode === "loop" && !linkedWorkout && Number.isFinite(distNum)
@@ -2913,20 +2925,27 @@ export function RouteGenerator({
               {sport === "cycling"
                 ? BIKE_OPTIONS.find((b) => b.value === bikeType)?.label ?? bikeType
                 : SPORT_OPTIONS.find((s) => s.value === sport)?.label ?? sport}
-              {" · "}
-              {ELEVATION_OPTIONS.find((e) => e.value === elevationPreference)
-                ?.label ?? elevationPreference}
+              {heeft("hoogte") && (
+                <>
+                  {" · "}
+                  {ELEVATION_OPTIONS.find((e) => e.value === effectieveHoogte)
+                    ?.label ?? effectieveHoogte}
+                </>
+              )}
             </p>
+            {heeft("training") && (
             <p>
               <span className="text-white/40">Training: </span>
               {linkedWorkout
                 ? `gekoppeld aan ${linkedWorkout.title}`
-                : trainingType.charAt(0).toUpperCase() + trainingType.slice(1)}
+                : effectiefTrainingstype.charAt(0).toUpperCase() +
+                  effectiefTrainingstype.slice(1)}
             </p>
-            {wish.trim() && (
+            )}
+            {effectieveWens && (
               <p>
                 <span className="text-white/40">Wens: </span>
-                {wish.trim()}
+                {effectieveWens}
               </p>
             )}
             <p>
