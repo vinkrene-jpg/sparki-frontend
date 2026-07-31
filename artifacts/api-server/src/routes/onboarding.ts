@@ -13,6 +13,7 @@ import {
   isValidSubdiscipline,
 } from "@workspace/feature-flags";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { recordEventsForPatch } from "../lib/passport";
 import { generatePlan } from "../engines/training-plan";
 import {
   assignFoundingNumber,
@@ -138,13 +139,33 @@ router.post("/missing-data", requireAuth, async (req, res) => {
     }
 
     if (Object.keys(athletePatch).length > 0) {
-      await db
-        .insert(athleteProfilesTable)
-        .values({ clerkId, ...athletePatch })
-        .onConflictDoUpdate({
-          target: athleteProfilesTable.clerkId,
-          set: { ...athletePatch, updatedAt: now },
-        });
+      // WP-K1: waarde + herkomst-event atomair — handmatige invoer in de
+      // aanvulstap is een bewuste sporter-actie, herkomst "handmatig".
+      const [beforeRow] = await db
+        .select()
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId));
+      await db.transaction(async (tx) => {
+        await tx
+          .insert(athleteProfilesTable)
+          .values({ clerkId, ...athletePatch })
+          .onConflictDoUpdate({
+            target: athleteProfilesTable.clerkId,
+            set: { ...athletePatch, updatedAt: now },
+          });
+        await recordEventsForPatch(
+          {
+            clerkId,
+            patch: athletePatch as Record<string, unknown>,
+            before: beforeRow as Record<string, unknown> | undefined,
+            origin: "handmatig",
+            source: "onboarding-aanvulling",
+            actorType: "sporter",
+            actorId: clerkId,
+          },
+          tx,
+        );
+      });
     }
 
     const result = await getMissingOnboardingData(clerkId);
@@ -417,13 +438,33 @@ router.post("/quick-start", requireAuth, async (req, res) => {
       return;
     }
 
-    await db
-      .insert(athleteProfilesTable)
-      .values({ clerkId, ...patch })
-      .onConflictDoUpdate({
-        target: athleteProfilesTable.clerkId,
-        set: { ...patch, updatedAt: now },
-      });
+    // WP-K1: geschatte startwaarden (FTP, weekuren) krijgen direct een
+    // herkomst-event ("geschat"), atomair met de waarde zelf.
+    const [beforeQuick] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(athleteProfilesTable)
+        .values({ clerkId, ...patch })
+        .onConflictDoUpdate({
+          target: athleteProfilesTable.clerkId,
+          set: { ...patch, updatedAt: now },
+        });
+      await recordEventsForPatch(
+        {
+          clerkId,
+          patch: patch as Record<string, unknown>,
+          before: beforeQuick as Record<string, unknown> | undefined,
+          origin: "geschat",
+          source: "onboarding-schatting",
+          actorType: "engine",
+          actorId: "onboarding",
+        },
+        tx,
+      );
+    });
 
     await db
       .insert(onboardingStateTable)
@@ -528,13 +569,28 @@ router.post("/complete-v2", requireAuth, async (req, res) => {
     }
     const patch: ProfilePatch = { ...seed, selfType };
 
-    await db
-      .insert(athleteProfilesTable)
-      .values({ clerkId, ...patch })
-      .onConflictDoUpdate({
-        target: athleteProfilesTable.clerkId,
-        set: { ...patch, updatedAt: now },
-      });
+    // WP-K1: ook V2-schattingen krijgen atomair een "geschat"-event.
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(athleteProfilesTable)
+        .values({ clerkId, ...patch })
+        .onConflictDoUpdate({
+          target: athleteProfilesTable.clerkId,
+          set: { ...patch, updatedAt: now },
+        });
+      await recordEventsForPatch(
+        {
+          clerkId,
+          patch: patch as Record<string, unknown>,
+          before: existing as Record<string, unknown> | undefined,
+          origin: "geschat",
+          source: "onboarding-schatting",
+          actorType: "engine",
+          actorId: "onboarding",
+        },
+        tx,
+      );
+    });
 
     await db
       .insert(onboardingStateTable)
@@ -721,11 +777,34 @@ router.post("/answer", requireAuth, async (req, res) => {
     return;
   }
   try {
-    const [updated] = await db
-      .update(athleteProfilesTable)
-      .set({ ...parsed.patch, updatedAt: new Date() })
-      .where(eq(athleteProfilesTable.clerkId, clerkId))
-      .returning({ id: athleteProfilesTable.id });
+    // WP-K1: een beantwoorde profielvraag is handmatige invoer — waarde +
+    // herkomst-event in één transactie.
+    const [beforeAnswer] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(athleteProfilesTable)
+        .set({ ...parsed.patch, updatedAt: new Date() })
+        .where(eq(athleteProfilesTable.clerkId, clerkId))
+        .returning({ id: athleteProfilesTable.id });
+      if (row) {
+        await recordEventsForPatch(
+          {
+            clerkId,
+            patch: parsed.patch as Record<string, unknown>,
+            before: beforeAnswer as Record<string, unknown> | undefined,
+            origin: "handmatig",
+            source: "onboarding-vraag",
+            actorType: "sporter",
+            actorId: clerkId,
+          },
+          tx,
+        );
+      }
+      return row;
+    });
     if (!updated) {
       res.status(404).json({ error: "Profile not found" });
       return;

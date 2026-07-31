@@ -31,6 +31,7 @@ import {
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { ensureAccount, silentLogger } from "../lib/account";
+import { recordEventsForPatch } from "../lib/passport";
 import { runCoachAnalysis } from "../engines/observation";
 import { PREVIEW_CLERK_IDS } from "../lib/preview-athletes";
 
@@ -351,32 +352,43 @@ async function seedOne(spec: Spec): Promise<void> {
     return;
   }
 
-  await db
-    .insert(athleteProfilesTable)
-    .values({
-      clerkId,
-      birthDate: spec.birthDate ?? null,
-      ftp: spec.profile.ftp ?? null,
-      experienceLevel: spec.profile.experienceLevel ?? null,
-      competitionLevel: spec.profile.competitionLevel ?? null,
-      birthYear: spec.profile.birthYear ?? null,
-      goals: spec.profile.goals ?? null,
-      weeklyHourTarget: spec.profile.weeklyHourTarget ?? null,
-      healthStatus: "ok",
-    })
-    .onConflictDoUpdate({
-      target: athleteProfilesTable.clerkId,
-      set: {
-        birthDate: spec.birthDate ?? null,
-        ftp: spec.profile.ftp ?? null,
-        experienceLevel: spec.profile.experienceLevel ?? null,
-        competitionLevel: spec.profile.competitionLevel ?? null,
-        birthYear: spec.profile.birthYear ?? null,
-        goals: spec.profile.goals ?? null,
-        weeklyHourTarget: spec.profile.weeklyHourTarget ?? null,
-        healthStatus: "ok",
+  // WP-K1: ook demo-waarden krijgen een eerlijk herkomst-event ("geschat",
+  // bron demo-seed) — nooit meer een kaal getal met "herkomst onbekend".
+  const [beforeSeed] = await db
+    .select()
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, clerkId));
+  const profileValues = {
+    birthDate: spec.birthDate ?? null,
+    ftp: spec.profile.ftp ?? null,
+    experienceLevel: spec.profile.experienceLevel ?? null,
+    competitionLevel: spec.profile.competitionLevel ?? null,
+    birthYear: spec.profile.birthYear ?? null,
+    goals: spec.profile.goals ?? null,
+    weeklyHourTarget: spec.profile.weeklyHourTarget ?? null,
+    healthStatus: "ok" as const,
+  };
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(athleteProfilesTable)
+      .values({ clerkId, ...profileValues })
+      .onConflictDoUpdate({
+        target: athleteProfilesTable.clerkId,
+        set: profileValues,
+      });
+    await recordEventsForPatch(
+      {
+        clerkId,
+        patch: profileValues as unknown as Record<string, unknown>,
+        before: beforeSeed as Record<string, unknown> | undefined,
+        origin: "geschat",
+        source: "demo-seed",
+        actorType: "engine",
+        actorId: "seed-preview",
       },
-    });
+      tx,
+    );
+  });
 
   const sessions = sessionsFor(spec.load);
   if (sessions.length > 0) {

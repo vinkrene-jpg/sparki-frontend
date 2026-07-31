@@ -242,7 +242,22 @@ type IntroProfile = {
   ftp?: number | null
   discipline?: string | null
   wkg?: number | string | null
+  // WP-K2: herkomststatus per kernwaarde (Sportpaspoort).
+  herkomst?: Record<
+    string,
+    { origin: string; estimated: boolean; stale: boolean }
+  > | null
 } | null
+
+// WP-K2: kort herkomstlabel achter de FTP in de kop — nooit een kaal getal
+// als de waarde geschat of onbevestigd is.
+function ftpHerkomstSuffix(profile: IntroProfile): string {
+  const h = profile?.herkomst?.ftp
+  if (!h) return ""
+  if (h.origin === "geschat" || h.estimated) return " · geschat"
+  if (h.origin === "onbekend") return " · niet bevestigd"
+  return ""
+}
 
 // The shared homepage intro — greeting + identity line. `kicker` adapts the
 // eyebrow to the day type (e.g. "TRAINING DAY", "RUSTDAG", "HERSTELDAG").
@@ -285,6 +300,7 @@ export function HomeIntro({
         ) : profile?.ftp ? (
           <p className="mt-1 font-mono text-[11px] tracking-wide text-white/50">
             {profile.discipline ?? "Wielrenner"} · FTP {profile.ftp}W
+            {ftpHerkomstSuffix(profile)}
             {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
           </p>
         ) : (

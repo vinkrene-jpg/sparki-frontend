@@ -13,8 +13,21 @@ import LabPage from "@/pages/lab"
 // gebruikers in productie zien (defect A-06).
 export function AnalyseSwitchPage() {
   const { flags, isLoading: flagsLoading } = useFeatureFlags()
-  const page =
-    flagsLoading || flags.commercial_shell ? <CoreAnalysePage /> : <LabPage />
+  // WP-K3: zolang de flags laden tonen we een neutrale laadstatus — nooit
+  // alvast de verkeerde pagina renderen en daarna omklappen (flits).
+  const page = flagsLoading ? (
+    <div
+      className="flex min-h-[40vh] items-center justify-center"
+      role="status"
+      aria-label="Analyse laadt"
+    >
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+    </div>
+  ) : flags.commercial_shell ? (
+    <CoreAnalysePage />
+  ) : (
+    <LabPage />
+  )
   // Go-poort (taak 385): Performance Lab is een Go-onderdeel. Abonnees zonder
   // recht zien de upgrade-melding in plaats van de inhoud; legacy blijft vrij.
   return (

@@ -91,6 +91,7 @@
     "test:route-library": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-library",
     "test:system-mode": "node ./scripts/run-test.mjs system-mode",
     "test:onboarding-connect-step": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs onboarding-connect-step",
+    "test:kernwaarden-herkomst": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs kernwaarden-herkomst",
     "test:onboarding-strava-gapfill": "node ./scripts/run-test.mjs onboarding-strava-gapfill",
     "test:analysis-quality": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs analysis-quality",
     "test:feedback-adjust": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs feedback-adjust",

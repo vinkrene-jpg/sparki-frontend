@@ -1,0 +1,39 @@
+# Poort 5b — Herstel kernwaarden (WP-K1 herkomst-events, WP-K2 herkomststatus
+# op kaarten, WP-K3 laaddiscipline, WP-K5 simulatielabel).
+
+delivery: "Kernwaarden: elk schrijfpad via Sportpaspoort (waarde+event atomair), herkomststatus op home-kop en Kerngetallen, skeleton i.p.v. 'nog niet bekend' tijdens laden, vast label 'Verkenning · simulatie' op Doelscenario en Wattage-lab"
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/you — Kerngetallen (FTP/gewicht met herkomststatus, laad-skeleton)"
+  - "/ — home-kop (FTP-regel met herkomstsuffix)"
+  - "/analyse — Doelscenario + Wattage-lab (simulatielabel), flag-laadstatus"
+  - "API: POST /api/onboarding/quick-start, /missing-data, /complete-v2, GET /api/athlete/profile (herkomst)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Invullen →-knop bij ontbrekend gewicht op /you blijft werken (rendert alleen ná laden, e2e wp-k-kernwaarden: eindtoestand toont eerlijke gewicht-melding mét actie)"
+        result: "pass"
+      - case: "Doelscenario −/+-wieltje op /analyse Belasting-tab blijft bedienbaar met het nieuwe label ernaast (e2e tab-klik bereikt de kaart, label 2× zichtbaar)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Herkomstlabel toont alleen bij een ECHTE waarde ('345 W · geschat'); bij ontbrekende waarde blijft de eerlijke lege-staat — nooit 'onbekend · geschat' zonder getal"
+        result: "pass"
+      - case: "Simulatielabel staat uitsluitend op Doelscenario en Wattage-lab (2 vindplaatsen op /analyse), niet op meetkaarten"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Tijdens profiel-laden op /you nooit 'nog niet bekend' als resultaat-tekst; skeleton tot data er is (e2e: direct-na-laden-check + eindtoestand)"
+        result: "pass"
+      - case: "Tijdens flags-laden op /analyse een neutrale spinner i.p.v. alvast de mogelijk verkeerde pagina (analyse-switch)"
+        result: "pass"
+
+# Bewijs: pnpm --filter @workspace/api-server run test:kernwaarden-herkomst (4/4),
+# node e2e/tests/wp-k-kernwaarden.mjs (5/5, screenshots in e2e/evidence/wp-k-kernwaarden/),
+# typecheck-api-keten groen, admin-smoke 13/13.
+# Eerlijk niet gedekt: Strava-connector-pad en profile-consistency-bevestiging zijn
+# alleen op transactieniveau geborgd (code + typecheck), niet route-getest (vergt
+# echte Strava-tokens resp. opgebouwde vermogensdata).
+verdict: "deliverable"

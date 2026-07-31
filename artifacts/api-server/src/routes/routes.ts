@@ -3255,6 +3255,7 @@ router.post("/zoek", requireAuth, async (req, res) => {
         string,
         { lat: number; lon: number } | null
       >();
+      const zonesByOwnerSearch = new Map<string, PrivacyZoneCircle[]>();
       // Fail-closed voor eigenaren die niet AANTOONBAAR volwassen zijn
       // (minderjarig ÓF onbekende leeftijd): hun routes verschijnen NOOIT in
       // andermans zoekresultaten, ongeacht het deelniveau. Strikter dan
@@ -3280,6 +3281,14 @@ router.post("/zoek", requireAuth, async (req, res) => {
         if (!homeByOwner.has(route.clerkId)) {
           homeByOwner.set(route.clerkId, await ownerHome(route.clerkId));
         }
+        // Kijkersgeometrie gebruikt ALLE privacyzones van de eigenaar (huis
+        // impliciet + zelf beheerde zones), net als elk ander gedeeld leespad.
+        if (!zonesByOwnerSearch.has(route.clerkId)) {
+          zonesByOwnerSearch.set(
+            route.clerkId,
+            await ownerPrivacyZones(route.clerkId),
+          );
+        }
         // Fail-closed: zonder bekend huisadres van de eigenaar is geen
         // veilige kijkersgeometrie te garanderen ⇒ de route doet niet mee
         // (sharedKnownRouteRow geeft dan null en transformeert niets).
@@ -3290,7 +3299,7 @@ router.post("/zoek", requireAuth, async (req, res) => {
           () => {
             const veilig = viewerRouteView(
               route,
-              homeByOwner.get(route.clerkId)!,
+              zonesByOwnerSearch.get(route.clerkId) ?? [],
             );
             return Array.isArray(veilig.geometry)
               ? (veilig.geometry as RoutePathPoint[])

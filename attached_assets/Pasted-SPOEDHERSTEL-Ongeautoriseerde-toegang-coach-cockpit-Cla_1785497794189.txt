@@ -1,0 +1,68 @@
+SPOEDHERSTEL — Ongeautoriseerde toegang coach-cockpit
+
+Claude Mirror heeft met echte kliktests een kritiek rechtenlek vastgesteld:
+
+- Hoofdtrainer met 0 gekoppelde sporters kon via directe URL
+  /coach/athletes/<id>/cockpit
+  volledige cockpitinhoud van een niet-gekoppelde sporter zien.
+- Trainer Twee met 0 gekoppelde sporters kon dezelfde cockpit eveneens openen.
+- Clubbeheerder kreeg bij ongeautoriseerde toegang een oneindige laadspinner in plaats van 403 of een eerlijke fouttoestand.
+
+Behandel dit als hoogste prioriteit.
+
+Onderzoek eerst:
+1. Welke API-endpoints en loaders voeden de coach-cockpit?
+2. Waar ontbreekt de server-side hasCoachAccess-/scopecontrole?
+3. Wordt alleen de sporter-ID uit de URL vertrouwd?
+4. Welke onderdelen kunnen ongeautoriseerd worden gelezen of geschreven:
+   - signalen;
+   - planning;
+   - berichten;
+   - privénotities;
+   - analyse;
+   - profiel- en gezondheidsgegevens?
+5. Is dezelfde fout aanwezig op andere coachroutes of API-endpoints?
+
+Bindende toegangsregel:
+- zelfstandige trainer: alleen directe, actieve koppelingen;
+- clubtrainer: alleen directe koppelingen plus geldige actieve teamtoewijzingen;
+- hoofdtrainer: alleen expliciet toegestane organisatie-informatie, nooit automatisch individuele privé-, gezondheids- of coachnotitiedata;
+- geen relatie of verlopen relatie: server-side 403;
+- UI-verbergen of redirect is nooit voldoende.
+
+Herstel:
+- centrale bestaande rechtenlaag hergebruiken;
+- server-side controle op ieder cockpit-lees- en schrijvend endpoint;
+- geen parallel rechtenmodel;
+- ongeautoriseerde UI toont een duidelijke foutmelding of veilige redirect;
+- nooit oneindige spinner;
+- geen gedeeltelijke data vóór rechtencontrole;
+- berichten en privénotities afzonderlijk fail-closed controleren.
+
+Tests:
+- gekoppelde zelfstandige trainer → toegestaan;
+- niet-gekoppelde zelfstandige trainer → 403;
+- gekoppelde clubtrainer via actief team → toegestaan volgens bestaande rechten;
+- clubtrainer zonder scope → 403;
+- hoofdtrainer zonder individuele koppeling → 403 op cockpit en privédata;
+- clubbeheerder → 403;
+- gewone sporter/ouder → 403;
+- verlopen/inactieve koppeling → 403;
+- andere club/cross-account → 403;
+- URL-wijziging geeft nooit data;
+- lees- én schrijfpaden testen.
+
+Voer repositorybrede controle uit op vergelijkbare coach-athlete routes.
+
+Lever:
+- exacte oorzaak;
+- getroffen endpoints;
+- datarisico en mogelijke reikwijdte;
+- gewijzigde bestanden;
+- rechtenmatrix vóór/na;
+- automatische tests;
+- echte klikbewijzen;
+- Poort 5b;
+- commit-SHA.
+
+Start geen andere productbouw.

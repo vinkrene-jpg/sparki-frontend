@@ -294,7 +294,7 @@ export default function YouPage() {
   const completeFix = useCompleteFix()
   const startFix = useStartFix()
 
-  const { data: profile } = useAthleteExtendedProfile()
+  const { data: profile, isLoading: profileLaadt } = useAthleteExtendedProfile()
   const clearDecor = useClearPhotoDecor()
   const { data: state } = useSparkiState()
   const { data: obsData, isLoading: obsLoading } = useObservations()
@@ -634,6 +634,7 @@ export default function YouPage() {
               ftpHistory={ftpHistory}
               load={load}
               bandbreedte={bandbreedte}
+              laadt={profileLaadt}
             />
           </div>
         </section>

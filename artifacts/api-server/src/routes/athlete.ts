@@ -98,7 +98,20 @@ router.get("/profile", requireAuth, async (req, res) => {
         ? Math.round((athlete.ftp / Number(athlete.weightKg)) * 100) / 100
         : null;
 
-    res.json({ ...user, ...athlete, zones, wkg });
+    // WP-K2: herkomststatus per kernwaarde meesturen zodat kaarten "geschat"
+    // of "niet bevestigd" kunnen tonen — één brondefinitie (Sportpaspoort).
+    const { composePassport } = await import("../lib/passport");
+    const passport = await composePassport(clerkId);
+    const herkomst = passport
+      ? Object.fromEntries(
+          passport.fields.map((f) => [
+            f.field,
+            { origin: f.origin, estimated: f.estimated, stale: f.stale },
+          ]),
+        )
+      : null;
+
+    res.json({ ...user, ...athlete, zones, wkg, herkomst });
   } catch (err) {
     req.log.error({ err }, "athlete.profile GET failed");
     res.status(500).json({ error: "Internal server error" });

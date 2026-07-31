@@ -1,0 +1,146 @@
+# OPDRACHT AAN REPLIT — Sparki billing- en abonnementsmodule (Stripe)
+
+**Datum:** 31 juli 2026
+**Opdrachtgever:** René — Founder, Sparki
+**Status:** ONTWERPOPDRACHT — bouwen pas na expliciete goedkeuring per werkpakket
+**Relatie tot lopend werk:** ondergeschikt aan het lopende structuurherstel (rol, apparaat, navigatie, WP-S1..S10)
+
+---
+
+## 0. Stopregel (lees dit eerst)
+
+Van deze opdracht mag **alleen WP-B1 (inventarisatie)** nu worden uitgevoerd. Alle overige werkpakketten zijn ontwerp- en voorbereidingswerk dat pas start na:
+
+1. afronding van het structuurherstel (rolwerkruimtemodel en navigatiemodel vastgesteld), en
+2. expliciete schriftelijke goedkeuring van René per werkpakket.
+
+Reden: abonnementen zitten vast aan rollen en rechten. Een betaallaag bouwen bovenop een rolmodel dat nog wordt omgegooid, levert dubbel werk en verborgen rechtenlekken op.
+
+**Verboden in deze hele opdracht:**
+
+- Elke vorm van live-modus. Uitsluitend Stripe test-/sandbox-sleutels.
+- Elke echte betaling, ook geen bedrag van € 0,01 "om te testen".
+- Elke wijziging aan wat vandaag gratis is. Geen enkele bestaande functie gaat achter een betaalmuur zonder aparte, expliciete opdracht.
+- Bouwen vóór presenteren. De architectuur van elk werkpakket wordt eerst voorgelegd en goedgekeurd, dán gebouwd. (Dit is eerder misgegaan bij #505: technisch correct, maar de gevraagde volgorde werd niet gevolgd.)
+
+---
+
+## 1. Doel
+
+Eén server-side bron van waarheid voor wat een gebruiker mag, afgeleid uit een geverifieerde abonnementsstatus — niet uit frontend-state, niet uit een rol-label, niet uit een DEV-previewinstelling.
+
+De abonnementsstructuur zoals vastgesteld:
+
+| Niveau | Prijs | Proefperiode | Status |
+|---|---|---|---|
+| Gratis | € 0 | n.v.t. | vastgesteld |
+| Go | € 2,99 / maand — € 29,90 / jaar | 7 dagen | vastgesteld |
+| Compleet | € 9,99 / maand — € 99,90 / jaar | 14 dagen | vastgesteld |
+| Club | gratis of zeer laag | n.t.b. | **prijs nog niet vastgesteld** |
+| Team | merkbaar hoger | n.t.b. | **prijs nog niet vastgesteld** |
+| Zelfstandige trainer (zzp) | n.t.b. | n.t.b. | **prijs nog niet vastgesteld** |
+
+Alleen Gratis, Go en Compleet worden in deze opdracht technisch uitgewerkt. De overige drie worden in het datamodel wel voorzien maar niet geïmplementeerd, zolang de prijs niet vaststaat.
+
+Let op de naamgeving: het planner-UI-niveau heet **Wedstrijd**, het abonnement heet **Compleet**. Deze twee mogen in code, UI en documentatie nooit door elkaar lopen.
+
+---
+
+## 2. Werkpakketten
+
+### WP-B1 — Inventarisatie (mag nu worden uitgevoerd)
+
+Lever een document, geen code:
+
+- Welke functies zijn er vandaag in Sparki en aan welk niveau zijn ze feitelijk gekoppeld (gratis / Go / Compleet)?
+- Waar in de code staat op dit moment enige vorm van abonnements- of rechtencontrole? Bestandsnamen en regelnummers.
+- Bestaat er nu al een tabel, veld of variabele die een abonnement of tier voorstelt? Zo ja, waar en met welke waarden?
+- Welke functies worden vandaag onterecht als "gratis" geleverd terwijl ze volgens het master plan betaald zijn — en omgekeerd?
+- Waar wordt op dit moment iets over rechten uit de frontend afgeleid?
+
+Deze inventarisatie is het bewijsobject. Zonder dit document begint WP-B2 niet.
+
+### WP-B2 — Entitlement-model (ontwerp, goedkeuring vereist)
+
+Eén centrale server-side functie die per gebruiker teruggeeft wat die mag. Geen tweede plek waar hetzelfde nog eens wordt bepaald.
+
+Ontwerp voorleggen vóór implementatie: hoe ziet de functie eruit, waar wordt hij aangeroepen, wat gebeurt er bij twijfel.
+
+### WP-B3 — Datamodel en migratie (ontwerp, goedkeuring vereist)
+
+Minimaal vast te leggen per abonnement: gebruiker, Stripe-klant-ID, Stripe-abonnements-ID, niveau, status, einde huidige periode, einde proefperiode, en — apart — **wie betaalt**. Dat laatste veld is nodig omdat de betaler en de gebruiker niet altijd dezelfde persoon zijn (zie WP-B6).
+
+### WP-B4 — Stripe Checkout en Customer Portal (testmodus, goedkeuring vereist)
+
+Gehoste Stripe Checkout en de Stripe Customer Portal gebruiken, niet zelf bouwen. Opzeggen, kaartwissel, factuuroverzicht, mislukte incasso's en 3D-Secure worden daarmee door Stripe afgehandeld.
+
+Onderbouw expliciet als je hiervan wilt afwijken.
+
+### WP-B5 — Webhooks (goedkeuring vereist)
+
+Eén endpoint dat Stripe-gebeurtenissen ontvangt, met handtekeningverificatie en idempotentie (dezelfde gebeurtenis twee keer binnen mag nooit twee keer effect hebben). Dit is de enige plek waar een abonnementsstatus in Sparki mag veranderen.
+
+### WP-B6 — Minderjarigen: ouder betaalt, kind gebruikt (ontwerp, goedkeuring vereist)
+
+Sparki heeft renners van 14 tot 17 jaar. Die kunnen geen abonnement afsluiten. De betaling loopt via het gekoppelde ouder-/voogdaccount, de toegang ligt bij de renner.
+
+Dit raakt het bestaande CYD-rechtenmodel (ouder-kindkoppeling, gelijkgerechtigde voogden, toestemming die vervalt op 18 jaar). Werk uit wat er gebeurt als: de koppeling wordt verbroken, de ouder opzegt, het kind 18 wordt, er twee voogden zijn en er één opzegt.
+
+---
+
+## 3. Hard reject rules
+
+Per regel geldt: `proof_stage: designed` nu, `executed` pas na een echt gedraaide test.
+
+| ID | Regel | rule_type | measurement_level | Tegenvoorbeeld dat moet worden geweigerd |
+|---|---|---|---|---|
+| HR-B1 | Rechten worden nooit afgeleid uit frontend-state, localStorage, een rol-label of een DEV-previewinstelling | hard_blockage | per_request | Client stuurt een gemanipuleerde waarde "niveau = compleet" mee → server negeert dit volledig en levert 403 op een Compleet-functie |
+| HR-B2 | Een gebruiker jonger dan 18 kan nooit zelf een betaald abonnement starten | hard_blockage | per_checkout_attempt | Account van 16 jaar klikt op "upgraden naar Go" → geen checkout, doorverwijzing naar de gekoppelde ouder |
+| HR-B3 | Geen enkele live-sleutel in de repo, de frontend of een build-artefact | hard_blockage | per_build | Zoekopdracht op `sk_live` / `pk_live` in de repo geeft één treffer → build faalt |
+| HR-B4 | Een abonnementsstatus wijzigt alleen via een Stripe-webhook met geldige handtekening | hard_blockage | per_event | POST naar het webhook-endpoint zonder geldige handtekening → 400, geen enkele statuswijziging |
+| HR-B5 | Bij onbekende of niet-vaststelbare status valt het systeem terug op het láágste rechtenniveau | hard_blockage | per_request | Stripe onbereikbaar → gebruiker houdt de opgeslagen status tot die verloopt, daarna gratis-niveau, nooit Compleet |
+| HR-B6 | Een functie die vandaag gratis is, gaat niet achter een betaalmuur zonder aparte opdracht | hard_blockage | per_feature | Bestaande gratis navigatiefunctie wordt in de nieuwe entitlement-tabel op Go gezet → afgewezen |
+| HR-B7 | Een proefperiode kan per gebruiker maar één keer worden gestart | soft_tolerance | per_user | Gebruiker zegt op en start binnen een week opnieuw dezelfde trial → geweigerd, upgrade wel mogelijk |
+
+HR-B5 is dezelfde fail-closed-doctrine als bij taak #505: bij onzekerheid nooit het gunstige geval aannemen.
+
+---
+
+## 4. Openstaande beslissingen — René, niet Replit
+
+Deze mogen niet door Replit worden ingevuld met een aanname:
+
+1. Prijs van het teamabonnement.
+2. Prijs van het zzp-trainerabonnement.
+3. Bevestiging dat het clubabonnement gratis is, of wat het anders kost.
+4. Wat gebeurt er met opgeslagen gegevens (ritten, routes, analyses) als een betaald abonnement afloopt — bewaren en afschermen, of verwijderen na een termijn?
+5. Blijft het planner-niveau **Wedstrijd** losgekoppeld van het abonnement, zoals eerder besloten, ook nadat billing bestaat?
+6. Bij overstap maand → jaar: verrekenen of laten aflopen?
+
+---
+
+## 5. Buiten scope
+
+- Live-modus en echte betalingen.
+- BTW- en OSS-configuratie. Dit is een vraag voor de accountant, niet voor Replit.
+- Restitutiebeleid, kortingscodes, affiliates, cadeau-abonnementen.
+- Club-, team- en zzp-abonnementen zolang de prijzen niet vaststaan.
+- Elke wijziging aan het rolmodel zelf — dat loopt via het structuurherstel.
+
+---
+
+## 6. Acceptatie
+
+Deze opdracht is pas afgerond wanneer:
+
+- WP-B1 als document is geleverd met bestandsnamen en regelnummers;
+- elk volgend werkpakket eerst als ontwerp is voorgelegd en goedgekeurd vóór implementatie;
+- alle zeven hard reject rules een gedraaid tegenvoorbeeld hebben met `proof_stage: executed`;
+- aantoonbaar geen enkele live-sleutel in de codebase voorkomt;
+- een verticale gebruikersketen als bewijsobject is doorlopen in testmodus: gratis gebruiker → upgrade → proefperiode → betaald → opzeggen → terug naar gratis, met de juiste rechten op elk moment.
+
+Commitvolume, groene losse tests of aantallen aangemaakte bestanden gelden niet als bewijs van voortgang.
+
+---
+
+*René — Founder, Sparki*
