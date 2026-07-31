@@ -141,11 +141,13 @@ router.post("/missing-data", requireAuth, async (req, res) => {
     if (Object.keys(athletePatch).length > 0) {
       // WP-K1: waarde + herkomst-event atomair — handmatige invoer in de
       // aanvulstap is een bewuste sporter-actie, herkomst "handmatig".
-      const [beforeRow] = await db
-        .select()
-        .from(athleteProfilesTable)
-        .where(eq(athleteProfilesTable.clerkId, clerkId));
       await db.transaction(async (tx) => {
+        // Oude rij BINNEN de transactie lezen: gelijktijdige requests kunnen
+        // anders allebei dezelfde stale snapshot zien en dubbele events schrijven.
+        const [beforeRow] = await tx
+          .select()
+          .from(athleteProfilesTable)
+          .where(eq(athleteProfilesTable.clerkId, clerkId));
         await tx
           .insert(athleteProfilesTable)
           .values({ clerkId, ...athletePatch })
@@ -440,11 +442,13 @@ router.post("/quick-start", requireAuth, async (req, res) => {
 
     // WP-K1: geschatte startwaarden (FTP, weekuren) krijgen direct een
     // herkomst-event ("geschat"), atomair met de waarde zelf.
-    const [beforeQuick] = await db
-      .select()
-      .from(athleteProfilesTable)
-      .where(eq(athleteProfilesTable.clerkId, clerkId));
     await db.transaction(async (tx) => {
+      // Oude rij BINNEN de transactie lezen (geen stale snapshot bij
+      // gelijktijdige requests).
+      const [beforeQuick] = await tx
+        .select()
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId));
       await tx
         .insert(athleteProfilesTable)
         .values({ clerkId, ...patch })
@@ -571,6 +575,12 @@ router.post("/complete-v2", requireAuth, async (req, res) => {
 
     // WP-K1: ook V2-schattingen krijgen atomair een "geschat"-event.
     await db.transaction(async (tx) => {
+      // Verse oude rij BINNEN de transactie (niet de eerdere `existing`-
+      // snapshot): voorkomt dubbele/onjuiste events bij gelijktijdigheid.
+      const [beforeV2] = await tx
+        .select()
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId));
       await tx
         .insert(athleteProfilesTable)
         .values({ clerkId, ...patch })
@@ -582,7 +592,7 @@ router.post("/complete-v2", requireAuth, async (req, res) => {
         {
           clerkId,
           patch: patch as Record<string, unknown>,
-          before: existing as Record<string, unknown> | undefined,
+          before: beforeV2 as Record<string, unknown> | undefined,
           origin: "geschat",
           source: "onboarding-schatting",
           actorType: "engine",
@@ -779,11 +789,12 @@ router.post("/answer", requireAuth, async (req, res) => {
   try {
     // WP-K1: een beantwoorde profielvraag is handmatige invoer — waarde +
     // herkomst-event in één transactie.
-    const [beforeAnswer] = await db
-      .select()
-      .from(athleteProfilesTable)
-      .where(eq(athleteProfilesTable.clerkId, clerkId));
     const updated = await db.transaction(async (tx) => {
+      // Oude rij BINNEN de transactie lezen (geen stale snapshot).
+      const [beforeAnswer] = await tx
+        .select()
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId));
       const [row] = await tx
         .update(athleteProfilesTable)
         .set({ ...parsed.patch, updatedAt: new Date() })

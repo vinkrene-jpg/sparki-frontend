@@ -166,10 +166,17 @@ export async function applyValueChange(input: {
   // Waarde + event + ftp_history in één transactie: een storing halverwege
   // laat nooit een gewijzigde waarde zonder herleidbaar event achter.
   const run = async (tx: PassportDbx) => {
-    await tx
+    const updatedRows = await tx
       .update(athleteProfilesTable)
       .set(set)
-      .where(eq(athleteProfilesTable.clerkId, input.clerkId));
+      .where(eq(athleteProfilesTable.clerkId, input.clerkId))
+      .returning({ clerkId: athleteProfilesTable.clerkId });
+    // Geen profielrij ⇒ er is NIETS opgeslagen; een event schrijven zou een
+    // herkomst claimen voor een waarde die niet bestaat. Hard falen (rollback).
+    if (updatedRows.length === 0)
+      throw new Error(
+        `Geen profielrij voor ${input.clerkId} — kernwaarde ${input.field} niet opgeslagen`,
+      );
 
     await recordValueEvent({ ...input, oldValue: old }, tx);
 

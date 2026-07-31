@@ -354,10 +354,6 @@ async function seedOne(spec: Spec): Promise<void> {
 
   // WP-K1: ook demo-waarden krijgen een eerlijk herkomst-event ("geschat",
   // bron demo-seed) — nooit meer een kaal getal met "herkomst onbekend".
-  const [beforeSeed] = await db
-    .select()
-    .from(athleteProfilesTable)
-    .where(eq(athleteProfilesTable.clerkId, clerkId));
   const profileValues = {
     birthDate: spec.birthDate ?? null,
     ftp: spec.profile.ftp ?? null,
@@ -369,6 +365,11 @@ async function seedOne(spec: Spec): Promise<void> {
     healthStatus: "ok" as const,
   };
   await db.transaction(async (tx) => {
+    // Oude rij BINNEN de transactie lezen (zelfde regel als de app-paden).
+    const [beforeSeed] = await tx
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
     await tx
       .insert(athleteProfilesTable)
       .values({ clerkId, ...profileValues })

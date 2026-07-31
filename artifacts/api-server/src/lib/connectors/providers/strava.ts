@@ -125,36 +125,47 @@ export async function syncStrava(clerkId: string): Promise<ProviderSyncResult> {
   // in één transactie) — nooit meer een kernwaarde met "herkomst onbekend".
   if (Object.keys(profilePatch).length > 0) {
     const { applyValueChange } = await import("../../passport");
-    if (profilePatch.weightKg != null) {
-      await applyValueChange({
-        clerkId,
-        field: "weightKg",
-        newValue: String(profilePatch.weightKg),
-        origin: "berekend",
-        source: "Strava",
-        actorType: "engine",
-        actorId: "strava-connector",
-      });
-    }
-    if (profilePatch.ftp != null) {
-      await applyValueChange({
-        clerkId,
-        field: "ftp",
-        newValue: String(profilePatch.ftp),
-        origin: "berekend",
-        source: "Strava",
-        actorType: "engine",
-        actorId: "strava-connector",
-      });
-      // Een FTP die de renner zelf op Strava heeft ingesteld is een echte
-      // instelling, geen schatting — anders blijft de ondergrens-engine een
-      // oude "bewezen" waarde over deze echte waarde heen zetten. (applyValueChange
-      // haalt de schattingsvlag alleen bij gemeten/handmatig weg.)
-      await db
-        .update(athleteProfilesTable)
-        .set({ ftpEstimated: false, updatedAt: new Date() })
-        .where(eq(athleteProfilesTable.clerkId, clerkId));
-    }
+    // Eén transactie voor waarde(s) + events + schattingsvlag: bij een
+    // ontbrekende profielrij gooit applyValueChange en rolt alles terug —
+    // nooit een herkomst-event voor een waarde die niet is opgeslagen.
+    await db.transaction(async (tx) => {
+      if (profilePatch.weightKg != null) {
+        await applyValueChange(
+          {
+            clerkId,
+            field: "weightKg",
+            newValue: String(profilePatch.weightKg),
+            origin: "berekend",
+            source: "Strava",
+            actorType: "engine",
+            actorId: "strava-connector",
+          },
+          tx,
+        );
+      }
+      if (profilePatch.ftp != null) {
+        await applyValueChange(
+          {
+            clerkId,
+            field: "ftp",
+            newValue: String(profilePatch.ftp),
+            origin: "berekend",
+            source: "Strava",
+            actorType: "engine",
+            actorId: "strava-connector",
+          },
+          tx,
+        );
+        // Een FTP die de renner zelf op Strava heeft ingesteld is een echte
+        // instelling, geen schatting — anders blijft de ondergrens-engine een
+        // oude "bewezen" waarde over deze echte waarde heen zetten.
+        // (applyValueChange haalt de vlag alleen bij gemeten/handmatig weg.)
+        await tx
+          .update(athleteProfilesTable)
+          .set({ ftpEstimated: false, updatedAt: new Date() })
+          .where(eq(athleteProfilesTable.clerkId, clerkId));
+      }
+    });
   }
 
   return {
