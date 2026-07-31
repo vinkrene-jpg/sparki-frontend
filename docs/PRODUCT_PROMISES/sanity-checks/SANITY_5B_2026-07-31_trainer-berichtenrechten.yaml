@@ -1,0 +1,35 @@
+# Poort 5b sanity-check — Rechtencorrectie: assignment-only trainer en individuele berichten
+# Aanvullende opdracht René 30-07-2026, §1 (verplicht eerst, los van alles).
+
+delivery: "Een trainer die uitsluitend via een club-/sportertoewijzing toegang heeft (geen directe geaccepteerde coach-sporterlink) kan géén individuele berichten schrijven of lezen, en geen enkele andere individuele schrijfactie doen (context-item, training aanmaken, plan adopteren). Server-side bewezen met directe endpoint-aanroepen (API-manipulatie langs de UI heen): alle paden weigeren met 403 en schrijven nul rijen. De coach-startpagina biedt de individuele cockpit (met berichtencomposer) nu ook niet meer aan als klikbare kaart voor toegewezen sporters, en bulk-trainingen tellen alleen direct-gelinkte sporters mee. Auditcontrole: in ontwikkeling én productie bestaat geen enkel bericht van een coach zonder geaccepteerde directe link — er is dus ook geen misbruikte data; niets gewist."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "API: GET/POST /api/coach/athletes/:id/messages, POST context-items, POST workouts, POST plan/adopt, POST /api/coach/messages/reply — echte Express-app, direct aangeroepen als assignment-only trainer (bewijs: src/tests/trainer-assignment-message-rights.ts, 9/9 groen)"
+  - "UI: coach-startpagina (coach-home) — sporterkaart zonder directe link is niet langer een link naar de individuele cockpit; bulk-planner filtert team-toegewezen sporters uit"
+  - "DB-audit (dev + productie, read-only): coach_messages ⟕ coach_athlete_links op status≠accepted → 0 rijen"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Sporterkaart op de coach-startpagina voor een alleen-toegewezen sporter was een klikbare deur naar een cockpit die server-side overal 403 geeft (dode/misleidende knop). Kaart is nu niet-klikbaar; alleen direct-gelinkte sporters openen de cockpit."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Bulk-trainingen (schrijfactie) toonden ook team-toegewezen sporters als aanvinkbaar terwijl de server ze weigert — nu uitgefilterd, zodat de UI geen rechten suggereert die er niet zijn."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Het rechtenbewijs bevat positieve controles zodat het nooit vals kan slagen: (1) de toewijzing is aantoonbaar echt (clubAssignedAthleteIds bevat de sporter én het dashboard toont hem), (2) een trainer mét directe link kan wél een bericht sturen (201 + rij bestaat). Weigeringen controleren óók dat er nul rijen in de database zijn geschreven."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): het gemelde 'actieve lek' bleek server-side al
+# dicht (alle berichten-/schrijfroutes eisten hasDirectCoachLink); dit is nu
+# voor het eerst met uitgevoerde manipulatietests bewezen en geborgd als vaste
+# test (pnpm --filter @workspace/api-server run test:trainer-assignment-messages).
+# Het reële gat zat in de UI (klikbare cockpit-kaart + bulk-selectie zonder
+# rechten); dat is gedicht. Club-/teamberichten in clubcontext blijven bewust
+# mogelijk voor toegewezen trainers — dat is per besluit toegestane
+# teamcommunicatie, geen individueel kanaal. Audit: 0 berichten zonder link in
+# dev én productie; er is geen data gewist of aangepast.
+verdict: "deliverable"

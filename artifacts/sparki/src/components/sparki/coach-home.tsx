@@ -103,7 +103,12 @@ function AthleteCard({
 }) {
   const r = a.readiness?.label ?? "unknown"
   const rl = readinessLabel[r]
-  const canOpen = a.sharing !== "none"
+  // Individuele cockpit (met berichten en andere schrijfacties) is er alléén
+  // bij een directe geaccepteerde link. Club-/teamtoewijzing geeft zichtbaarheid
+  // op het overzicht, maar geen individuele omgeving — de server weigert dat
+  // óók (403); dit voorkomt dat de UI een dichte deur als knop aanbiedt.
+  const isDirect = a.relation !== "team"
+  const canOpen = a.sharing !== "none" && isDirect
   const inner = (
     <>
       <div className="flex items-center gap-3">
@@ -234,7 +239,9 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
   const [dur, setDur] = useState("")
   const [result, setResult] = useState<string | null>(null)
 
-  const eligible = athletes.filter((a) => a.sharing !== "none")
+  // Bulk-trainingen zijn een schrijfactie: alleen sporters met een directe
+  // link tellen mee (de server weigert team-toegewezen sporters toch met 403).
+  const eligible = athletes.filter((a) => a.sharing !== "none" && a.relation !== "team")
   if (eligible.length < 2) return null
 
   function toggle(id: string) {

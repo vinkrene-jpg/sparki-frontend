@@ -1,6 +1,8 @@
 ---
-name: Routeplanner 4 weergaveniveaus + Compleet-tier
-description: Productbesluit René (30/31-07-2026) over routeplanner-niveaus, abonnement "Compleet" en het Bewaard één-lijst-contract.
+name: Routeplanner 4 weergaveniveaus + Wedstrijd-weergave
+description: Productbesluit René (30/31-07-2026) over routeplanner-niveaus, abonnement Sparki Complete en het Bewaard één-lijst-contract.
+
+**Naamcorrectie (besluit 30-07-2026):** het hoogste weergaveniveau heet **"Wedstrijd"**, uitdrukkelijk NIET "Compleet" — dat zou verwarren met het abonnement **Sparki Complete**. Weergaven: Gratis / Go gewone fietser / Go wielrenner-MTB-gravel / Wedstrijd. Automatisch voorgesteld, altijd handmatig aanpasbaar, keuze bewaard, terug-naar-automatisch mogelijk, volledig los van abonnement; veiligheid (blokkadepoort, eindverificatie, wegdekwaarschuwingen) op élk niveau.
 ---
 
 # Routeplanner-niveaus (besluit René)

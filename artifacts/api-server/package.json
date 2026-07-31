@@ -98,6 +98,7 @@
     "test:data-reliability": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs data-reliability",
     "test:cross-account-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs cross-account-isolation",
     "test:trainer-assignment-write-contract": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-assignment-write-contract",
+    "test:trainer-assignment-messages": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-assignment-message-rights",
     "test:coach-parent-link-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-link-isolation",
     "test:links-unlink-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs links-unlink-isolation",
     "test:links-end-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs links-end-isolation",
