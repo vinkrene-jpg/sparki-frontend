@@ -39,6 +39,10 @@ export const clubRoles = [
   "parent", // ouder/verzorger
   "vrijwilliger", // leest kalender/berichten, geen beheer
   "alleen_lezen", // strikt alleen-lezen
+  // TEAM_ABONNEMENT_01: begeleidende teamrollen. Least privilege — geen
+  // beheerrechten, geen automatische sportdata-inzage (consent blijft leidend).
+  "soigneur", // verzorger: kalender/berichten, geen beheer of sportdata
+  "medic", // medische begeleider: kalender/berichten; sportdata alleen via consent
 ] as const;
 export type ClubRole = (typeof clubRoles)[number];
 
@@ -500,7 +504,7 @@ export const clubConsentsTable = pgTable(
 // ── Commerciële clubadministratie (geen boekhouding) ─────────────────────────
 // Pakket + limieten + status. Overschrijding blokkeert nieuwe toevoegingen,
 // verwijdert nooit data. Configureerbaar en klaar voor latere facturatie.
-export const clubPackages = ["proef", "start", "basis", "groei"] as const;
+export const clubPackages = ["proef", "start", "basis", "groei", "team"] as const;
 export type ClubPackage = (typeof clubPackages)[number];
 
 export const clubSubscriptionsTable = pgTable("club_subscriptions", {

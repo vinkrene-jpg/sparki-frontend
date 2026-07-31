@@ -43,7 +43,7 @@ export function isValidTier(v: unknown): v is CommercialTier {
   return typeof v === "string" && (COMMERCIAL_TIERS as readonly string[]).includes(v);
 }
 export function isPaidTier(v: unknown): v is Exclude<CommercialTier, "FREE"> {
-  return v === "GO" || v === "COMPLETE";
+  return v === "GO" || v === "COMPLETE" || v === "TEAM";
 }
 export function isValidInterval(v: unknown): v is BillingInterval {
   return typeof v === "string" && (BILLING_INTERVALS as readonly string[]).includes(v);

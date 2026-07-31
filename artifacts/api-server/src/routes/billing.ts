@@ -117,7 +117,9 @@ router.post("/checkout", requireAuth, async (req, res) => {
       return;
     }
     const body = req.body as { tier?: unknown; interval?: unknown };
-    if (!isPaidTier(body?.tier) || !isValidInterval(body?.interval)) {
+    // TEAM loopt uitsluitend via de club-checkout (centrale facturatie met
+    // club-koppeling); persoonlijk afsluiten zou een team zonder organisatie geven.
+    if (!isPaidTier(body?.tier) || body.tier === "TEAM" || !isValidInterval(body?.interval)) {
       res.status(400).json({ error: "Ongeldige tier of interval" });
       return;
     }

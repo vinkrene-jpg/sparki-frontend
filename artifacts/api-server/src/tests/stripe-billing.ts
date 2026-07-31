@@ -73,7 +73,7 @@ class FakeGateway implements StripeGateway {
   }
   async createCheckoutSession(args: {
     clerkId: string;
-    tier: "GO" | "COMPLETE";
+    tier: "GO" | "COMPLETE" | "TEAM";
     interval: "month" | "year";
   }) {
     return {

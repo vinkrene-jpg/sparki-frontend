@@ -20,6 +20,8 @@ import {
   useCreateClubTraining,
   useCreateClubRace,
   useClubSubscription,
+  useTeamSubscription,
+  useStartTeamCheckout,
   useSetClubPackage,
   useCreateClubInvite,
   useUpdateClub,
@@ -735,6 +737,77 @@ function BeheerSignalen({ clubId }: { clubId: number }) {
   )
 }
 
+// TEAM_ABONNEMENT_01: Sparki Team — centrale facturatie door de eigenaar.
+// Toont uitsluitend server-geresolvede staat; de knop start alleen een
+// Stripe-checkout (testmodus), rechten worden nooit in de UI toegekend.
+function TeamSubscriptionSection({ clubId, isOwner }: { clubId: number; isOwner: boolean }) {
+  const { data } = useTeamSubscription(clubId)
+  const checkout = useStartTeamCheckout(clubId)
+  const [error, setError] = useState<string | null>(null)
+  if (!data) return null
+  const eur = (cents: number) => `€${(cents / 100).toLocaleString("nl-NL")}`
+  const start = (interval: "month" | "year") => {
+    setError(null)
+    checkout.mutate(interval, {
+      onSuccess: (r) => { window.location.href = r.url },
+      onError: (err) => setError(err instanceof Error ? err.message : "Checkout starten is niet gelukt."),
+    })
+  }
+  return (
+    <section aria-label="Sparki Team">
+      <h2 className={H2}><Package className="h-3 w-3" /> Sparki Team</h2>
+      <div className={CARD}>
+        {data.isTeam ? (
+          <>
+            <p className="text-[13px] text-white/85">
+              Team-abonnement {data.billing?.status === "active" || data.subscription?.status === "active" ? "actief" : `status: ${data.subscription?.status ?? "onbekend"}`}
+            </p>
+            <p className="mt-0.5 text-[11px] text-white/45">
+              {data.counts.members} van {data.subscription?.maxMembers ?? "—"} actieve leden
+              {data.billing?.currentPeriodEnd
+                ? ` · loopt t/m ${new Date(data.billing.currentPeriodEnd).toLocaleDateString("nl-NL")}`
+                : ""}
+            </p>
+            {data.subscription?.status === "blocked" && (
+              <p className="mt-1 text-[11px] text-amber-200/85">
+                De betaling is niet actueel. Nieuwe leden toevoegen is geblokkeerd; bestaande gegevens blijven volledig bewaard.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-[13px] text-white/85">
+              Eén abonnement voor de hele ploeg: tot 50 actieve leden, teams, rollen en centrale facturatie.
+            </p>
+            <p className="mt-0.5 text-[11px] text-white/45">
+              {eur(data.pricing.monthCents)} per maand of {eur(data.pricing.yearCents)} per jaar.
+            </p>
+            {isOwner && data.checkoutAvailable ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <button onClick={() => start("month")} disabled={checkout.isPending}
+                  className="rounded-lg border border-cyan-300/50 bg-cyan-300/10 px-2.5 py-1 text-[11px] text-cyan-200">
+                  Start — {eur(data.pricing.monthCents)}/maand
+                </button>
+                <button onClick={() => start("year")} disabled={checkout.isPending}
+                  className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] text-white/60 hover:border-white/30">
+                  Start — {eur(data.pricing.yearCents)}/jaar
+                </button>
+              </div>
+            ) : isOwner ? (
+              <p className="mt-1.5 text-[11px] text-white/40">
+                Afsluiten kan zodra de betaalomgeving voor dit account is opengesteld.
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[11px] text-white/40">Alleen de eigenaar kan dit abonnement afsluiten.</p>
+            )}
+          </>
+        )}
+        {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      </div>
+    </section>
+  )
+}
+
 function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean }) {
   const { data } = useClubSubscription(clubId)
   const setPkg = useSetClubPackage(clubId)
@@ -844,6 +917,7 @@ export default function ClubBeheerPage() {
         <SeasonsTeamsSection clubId={clubId} />
         <PlanTrainingSection clubId={clubId} />
         <PlanRaceSection clubId={clubId} />
+        <TeamSubscriptionSection clubId={clubId} isOwner={myRole === "owner"} />
         <PackageSection clubId={clubId} isOwner={myRole === "owner"} />
 
         <section aria-label="Logboek">

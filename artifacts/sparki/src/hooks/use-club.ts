@@ -449,6 +449,32 @@ export function useSetClubPackage(clubId: number | null) {
   })
 }
 
+// TEAM_ABONNEMENT_01: Sparki Team-abonnement (centrale facturatie).
+export function useTeamSubscription(clubId: number | null, enabled = true) {
+  return useQuery<{
+    subscription: ClubDashboard["subscription"]
+    isTeam: boolean
+    counts: { members: number; trainers: number }
+    pricing: { monthCents: number; yearCents: number }
+    billing: { status: string; interval: string; currentPeriodEnd: string | null } | null
+    checkoutAvailable: boolean
+  }>({
+    queryKey: ["clubs", clubId, "team-subscription"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/team-subscription`),
+    enabled: clubId != null && enabled,
+  })
+}
+
+export function useStartTeamCheckout(clubId: number | null) {
+  return useMutation({
+    mutationFn: (interval: "month" | "year") =>
+      apiFetch<{ url: string }>(`/api/clubs/${clubId}/team-subscription/checkout`, {
+        method: "POST",
+        body: JSON.stringify({ interval }),
+      }),
+  })
+}
+
 export function useJoinClub() {
   const qc = useQueryClient()
   return useMutation({

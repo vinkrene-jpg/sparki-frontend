@@ -30,8 +30,11 @@ import {
   clubSignupStatuses,
   type ClubRole,
 } from "@workspace/db";
+import { billingSubscriptionsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { createNotification } from "../lib/notifications";
+import { isValidInterval } from "../lib/billing";
+import { getStripeGateway, TIER_PRICING } from "../lib/billing/stripe-gateway";
 import {
   getClubContext,
   canManageClub,
@@ -658,6 +661,106 @@ router.put("/:clubId/subscription", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club subscription update failed");
     res.status(500).json({ error: "Pakket wijzigen is niet gelukt." });
+  }
+});
+
+// ── Sparki Team-abonnement (TEAM_ABONNEMENT_01) ───────────────────────────────
+// Centrale facturatie: de clubeigenaar betaalt één Stripe-abonnement (tier
+// TEAM) dat via webhook het clubabonnement van precies deze organisatie
+// aanstuurt. Geen parallel systeem: capaciteit en status lopen door de
+// bestaande club_subscriptions-laag.
+
+function teamAppBaseUrl(): string {
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
+  return domain ? `https://${domain}` : "http://localhost:5000";
+}
+
+router.get("/:clubId/team-subscription", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder ziet het Team-abonnement." });
+      return;
+    }
+    const counts = await countActive(ctx.club.id);
+    // Facturatiestatus alleen via de gekoppelde subscription (billingRef);
+    // nooit "de nieuwste subscription van de eigenaar" aannemen.
+    let billing: { status: string; interval: string; currentPeriodEnd: Date | null } | null =
+      null;
+    const ref = ctx.subscription?.billingRef ?? null;
+    if (ctx.subscription?.packageKey === "team" && ref) {
+      const [row] = await db
+        .select()
+        .from(billingSubscriptionsTable)
+        .where(eq(billingSubscriptionsTable.stripeSubscriptionId, ref));
+      if (row && row.tier === "TEAM") {
+        billing = {
+          status: row.status,
+          interval: row.interval,
+          currentPeriodEnd: row.currentPeriodEnd,
+        };
+      }
+    }
+    res.json({
+      subscription: ctx.subscription,
+      isTeam: ctx.subscription?.packageKey === "team",
+      counts,
+      pricing: {
+        monthCents: TIER_PRICING.TEAM.month,
+        yearCents: TIER_PRICING.TEAM.year,
+      },
+      billing,
+      checkoutAvailable:
+        hasClubRole(ctx, ["owner"]) && getStripeGateway().isConfigured(),
+    });
+  } catch (err) {
+    req.log.error({ err }, "club team-subscription status failed");
+    res.status(500).json({ error: "Team-abonnement ophalen is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/team-subscription/checkout", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    // Centrale facturatie is aan de eigenaar voorbehouden (server-side).
+    if (!hasClubRole(ctx, ["owner"]) || ctx.club.ownerClerkId !== ctx.membership.clerkId) {
+      res.status(403).json({ error: "Alleen de clubeigenaar kan het Team-abonnement afsluiten." });
+      return;
+    }
+    const interval = req.body?.interval;
+    if (!isValidInterval(interval)) {
+      res.status(400).json({ error: "Ongeldig interval (month of year)." });
+      return;
+    }
+    if (!getStripeGateway().isConfigured()) {
+      res.status(503).json({
+        error: "Stripe-testmodus is niet geconfigureerd (STRIPE_SECRET_KEY sk_test_… ontbreekt)",
+      });
+      return;
+    }
+    const base = teamAppBaseUrl();
+    const session = await getStripeGateway().createCheckoutSession({
+      clerkId: ctx.membership.clerkId,
+      tier: "TEAM",
+      interval,
+      successUrl: `${base}/club/beheer?team_billing=success`,
+      cancelUrl: `${base}/club/beheer?team_billing=cancel`,
+      clubId: ctx.club.id,
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "team_abonnement_checkout_gestart",
+      targetType: "subscription",
+      targetId: ctx.club.id,
+      detail: { interval },
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    req.log.error({ err }, "club team-subscription checkout failed");
+    res.status(500).json({ error: "Team-checkout starten is niet gelukt." });
   }
 });
 

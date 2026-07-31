@@ -17,7 +17,7 @@ import { userProfilesTable } from "./users";
 // Sparki-beheerde trial-rijen in user_entitlements). Alles hier is additief;
 // legacy-gebruikers (commercial_tier = NULL) gedragen zich byte-identiek.
 
-export const COMMERCIAL_TIERS = ["FREE", "GO", "COMPLETE"] as const;
+export const COMMERCIAL_TIERS = ["FREE", "GO", "COMPLETE", "TEAM"] as const;
 export type CommercialTier = (typeof COMMERCIAL_TIERS)[number];
 
 export const BILLING_INTERVALS = ["month", "year"] as const;

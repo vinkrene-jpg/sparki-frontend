@@ -175,6 +175,7 @@
     "test:climb-profile-unit": "node ./scripts/run-test.mjs climb-profile-unit",
     "test:climb-cache-unit": "node ./scripts/run-test.mjs climb-cache-unit",
     "test:stripe-billing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs stripe-billing",
+    "test:team-abonnement": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs team-abonnement",
     "test:build-ratings": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs build-ratings",
     "job:observation-cleanup": "pnpm run build && node --enable-source-maps ./dist/jobs/observation-cleanup.mjs",
     "test:observation-cleanup": "node ./scripts/run-test.mjs observation-cleanup",

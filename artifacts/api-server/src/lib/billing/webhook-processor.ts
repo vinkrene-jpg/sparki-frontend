@@ -17,6 +17,8 @@ import {
   userProfilesTable,
   billingSubscriptionsTable,
   stripeWebhookEventsTable,
+  clubsTable,
+  clubSubscriptionsTable,
   type CommercialTier,
 } from "@workspace/db";
 import {
@@ -282,7 +284,75 @@ async function upsertFromSubscriptionState(
     });
     if (notice) notices.push(notice);
   }
+
+  // TEAM_ABONNEMENT_01: centrale facturatie — een TEAM-subscription met
+  // club_id-metadata stuurt het clubabonnement van die ene organisatie.
+  if (tier === "TEAM") {
+    const teamDetail = await syncTeamClubSubscription(tx, state, clerkId, mapped);
+    return `subscription ${state.id} → ${mapped}; ${teamDetail}`;
+  }
   return `subscription ${state.id} → ${mapped}`;
+}
+
+// Vertaal de billing-status naar de bestaande club_subscriptions-status.
+// Fail-closed: alles wat niet aantoonbaar betaald-en-actueel is, blokkeert
+// nieuwe toevoegingen (bestaande data blijft altijd staan).
+function teamClubStatus(mapped: string): "active" | "blocked" | "ended" {
+  if (mapped === "active" || mapped === "grace" || mapped === "canceled") return "active";
+  if (mapped === "expired") return "ended";
+  return "blocked"; // paused | incomplete | unknown | blocked
+}
+
+async function syncTeamClubSubscription(
+  tx: Tx,
+  state: SubscriptionState,
+  clerkId: string,
+  mapped: string,
+): Promise<string> {
+  const clubId = state.clubId ?? null;
+  if (clubId == null) return "team: genegeerd (geen club_id-metadata)";
+  const [club] = await tx.select().from(clubsTable).where(eq(clubsTable.id, clubId));
+  if (!club) return `team: genegeerd (club ${clubId} onbekend)`;
+  // Fail-closed eigendomscheck: alleen de eigenaar van de club mag met zijn
+  // subscription het clubabonnement sturen (metadata is geen autorisatie).
+  if (club.ownerClerkId !== clerkId) {
+    return `team: genegeerd (clerk is geen eigenaar van club ${clubId})`;
+  }
+  const status = teamClubStatus(mapped);
+  const now = new Date();
+  const [existingSub] = await tx
+    .select()
+    .from(clubSubscriptionsTable)
+    .where(eq(clubSubscriptionsTable.clubId, clubId));
+  // maxMembers blijft configureerbaar: een bestaande team-configuratie wordt
+  // nooit stilzwijgend teruggezet; alleen bij eerste activering geldt 50.
+  const keepLimits = existingSub?.packageKey === "team";
+  if (existingSub) {
+    await tx
+      .update(clubSubscriptionsTable)
+      .set({
+        packageKey: "team",
+        status,
+        trialEndsAt: null,
+        ...(keepLimits ? {} : { maxMembers: 50, maxTrainers: 10 }),
+        billingRef: state.id,
+        updatedAt: now,
+      })
+      .where(eq(clubSubscriptionsTable.clubId, clubId));
+  } else {
+    await tx.insert(clubSubscriptionsTable).values({
+      clubId,
+      packageKey: "team",
+      status,
+      trialEndsAt: null,
+      maxMembers: 50,
+      maxTrainers: 10,
+      billingRef: state.id,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+  return `team: club ${clubId} → ${status}`;
 }
 
 async function handleEvent(

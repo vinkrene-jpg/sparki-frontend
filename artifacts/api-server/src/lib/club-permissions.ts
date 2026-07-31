@@ -132,6 +132,9 @@ export const CLUB_PACKAGES: Record<
   start: { label: "Start", maxMembers: 30, maxTrainers: 4 },
   basis: { label: "Basis", maxMembers: 75, maxTrainers: 10 },
   groei: { label: "Groei", maxMembers: 200, maxTrainers: 25 },
+  // TEAM_ABONNEMENT_01: Sparki Team-abonnement — maximaal 50 actieve leden
+  // (per club configureerbaar via club_subscriptions.maxMembers).
+  team: { label: "Sparki Team", maxMembers: 50, maxTrainers: 10 },
 };
 
 type DbExecutor = Pick<typeof db, "select" | "insert" | "update" | "execute">;
