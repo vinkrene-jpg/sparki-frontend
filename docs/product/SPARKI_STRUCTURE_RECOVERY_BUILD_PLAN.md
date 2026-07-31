@@ -15,6 +15,19 @@ Omvang-schaal: S (≤ halve dag), M (± 1 dag), L (meerdere dagen).
 
 ---
 
+## WP-R0 — DEV Preview-testfundament (DP1) — EERSTE UITVOERINGSPAKKET (besluit René 31-07-2026)
+- **Huidige fout:** DEV Preview is ongeschikt voor rechten-/rolacceptatietests (zie `SPARKI_CURRENT_STATE.md` §9): persona-aanbod dekt de rollen niet, elke rol krijgt dezelfde sporterpaginalijst, ouder valt terug op sporterweergave.
+- **Scope (bindend, uitsluitend dit — besluit René):**
+  1. vaste testidentiteiten voor **ouder, zelfstandige trainer, clubtrainer, hoofdtrainer, clubbeheerder, mechanieker, admin en tester**;
+  2. **echte onderlinge relaties en realistische testdata** (ouder↔kind(eren), trainers↔sporters, club met leden/teams, gedeeld materiaal);
+  3. **rolbewuste DEV Preview-navigatie** (paginalijst en startpunt per rol, geen sporterlijst voor iedere rol);
+  4. duidelijke **TESTCONTEXT-banner** met identiteit, rol, rechten, omgeving en commit-SHA;
+- **Expliciet buiten scope (bindend):** géén productfunctionaliteit of rolworkspaces vooruitbouwen (dat is R1–R6); géén algemene admin-bypass; bestaande rechtenlaag blijft de enige waarheid.
+- **Harde eis:** iedere testidentiteit heeft **server-side exact dezelfde rechten als die rol in productie** — de preview mag nooit meer tonen dan de echte rechtenlaag toestaat. Rollen zonder gebouwde workspace tonen dus eerlijk hun huidige (kapotte/lege) toestand; dat is juist het doel: de nulmeting reproduceerbaar maken.
+- **Hergebruik:** `lib/preview-athletes.ts`, `scripts/seed-preview-athletes.ts`, bestaande `x-dev-clerk-id`-swap (fail-closed, alleen dev), WP-S1-e2e-omgeving.
+- **Bewijs:** per rol een echte kliktest via de preview met banner zichtbaar + Poort 5b-rapport; e2e-test die per testidentiteit de server-side rechten aftast.
+- **Omvang:** M. **Afhankelijkheden:** geen. **Start:** pas na goedkeuring van het volledige WP-R-plan.
+
 ## WP-R1 — Ouderomgeving en ouderonboarding (PRIORITEIT 1)
 - **Huidige fout:** ouder = `sporter_copy` (bevestigd via klik): sporternavigatie, eigen training/doel/wedstrijd toevoegbaar, Rijden/Wedstrijd/Analyse/Ontdekken zichtbaar, sporterprofiel + sporteronboarding zichtbaar, geen kindkiezer, geen Vandaag/planning van het kind, geen kindgerichte meldingen/toestemmingen.
 - **Gewenste uitkomst:** eigen ouderomgeving. Telefoon-onderbalk: Kind(eren) · Vandaag (kind) · Meldingen · Toestemmingen · Profiel/Hulp. Desktop: kindkiezer, overzicht per kind, planning lezen, meldingen/verzoeken, toestemmingen/privacy, contact met trainer. Ouder belandt nooit automatisch in sporteronboarding of een eigen sporterdashboard.
@@ -87,11 +100,11 @@ Omvang-schaal: S (≤ halve dag), M (± 1 dag), L (meerdere dagen).
 ---
 
 ## Volgorde en pauzeregels
-R1 → R2 → R3 → R4 → R5 → R6 → (R7 loopt mee vanaf R1, rondt af na R6) → R8.
+**R0 (DP1, eerst)** → R1 → R2 → R3 → R4 → R5 → R6 → (R7 loopt mee vanaf R1, rondt af na R6) → R8. R0's testidentiteiten zijn de fixtures waarop R1–R8 hun bewijs leveren.
 Veiligheidsfixes en actieve rechtenlekken (m.n. parent-write-verificatie, R1 stap 1) mogen tussendoor, mits ze niet op structuurkeuzes wachten. Sporter-telefoonflows (oud WP-S6, incl. gepauzeerd routeplanner-weergavenwerk) en Profiel/Lichaam/Samen-herindeling (oud WP-S4) en Hulp/Privacy-plaatsing (oud WP-S5) blijven bestaan als later werk ná R8, tenzij René anders besluit.
 
 ## Beslissingen die nog van René nodig zijn
-1. **Goedkeuring van dit herziene WP-R-plan** (er start niets zonder).
+1. **Goedkeuring van dit herziene WP-R-plan** (er start niets zonder). *Reeds besloten (31-07): DP1 is opgenomen als WP-R0, eerste uitvoeringspakket; DP1 start pas na goedkeuring van het volledige plan.*
 2. **Ouder-onderbalk telefoon:** akkoord met 5 items (Kind(eren) · Vandaag · Meldingen · Toestemmingen · Profiel/Hulp)?
 3. **Trainer-subrolverschillen:** bevestiging van de voorgestelde scope-verschillen zelfstandig/club/hoofdtrainer.
 4. **Materiaal-gegevensdeling mechanieker:** productbesluit over opt-in-deling (fail-closed) — vereist vóór elke bouwstap aan de mechaniekerrol.
