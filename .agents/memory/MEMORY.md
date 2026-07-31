@@ -54,7 +54,7 @@
 - [Sparki reminders & meldingen](sparki-reminder-delivery.md) — idempotent via dedupeKey+sentAt; email honest-limited skips, never fake-sends; push = SSRF host-allowlist, only fresh rows ([push](sparki-web-push.md); [daily fold](sparki-notification-daily-fold.md): fold per Ams-dag, badge telt DAGEN, [attention](sparki-attention-notifications.md)).
 - [Sound Studio](sparki-sound-studio.md) wekker: web kan locked phone niet laten rinkelen (zeg dat eerlijk), dedupe op LOCAL date; [engagement](sparki-engagement-engine.md) leert echt open-ritme, honest default bij dun.
 - [Poort 5b sanity-check](sparki-poort-5b.md) — verplicht rapport in sanity-checks/ vóór elke praktijktest-oplevering; testerfout ⇒ afkeurregel+uitgevoerde test in kalibratie-YAML; `check:sanity-5b` fail-closed.
-- [AI-reviewgovernance v3](sparki-ai-review-governance.md) — bindende reviewketen-afspraak: claims-categorieën strikt scheiden, nooit eindgoedkeuring, docs/ canoniek (attached_assets = staging).
+- [AI-reviewgovernance v3 + ontwikkelstraat 31-07](sparki-ai-review-governance.md) — reviewketen; nieuwe statussen: Replit meldt alleen BUILD_DELIVERED, GitHub-first (alles pushen), alleen René geeft vrij.
 - [Product Proof Doctrine](sparki-product-proof-doctrine.md) — GOVERNING: beloftegedreven bouwen, "gereed" = belofte objectief bewezen ≥9,0; geen uitbreiding op module <9; onafhankelijke proof.
 - [GitHub Actions CI-env](github-actions-ci-env.md) — connector mist workflow-scope (webeditor als uitweg); kale CI eist dummy Clerk/AI-vars + geseede dev-user of alles 500t.
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.

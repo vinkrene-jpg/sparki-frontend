@@ -845,6 +845,79 @@ async function main() {
     await db.delete(notificationsTable).where(eq(notificationsTable.clerkId, trialUser));
   });
 
+  // 22. Verlate invoice.paid herstelt NOOIT rechten als de actuele Stripe-staat
+  // niet betaald-actief is (review 31-07-2026, fail-closed).
+  await scenario("22. verlate invoice.paid: paused/unknown/verdwenen sub herstelt geen rechten", async () => {
+    const user = `${RUN}_late_invoice`;
+    await ensureAccount(user, `${user}@test.sparki.local`, user, silentLogger);
+    await db
+      .update(userProfilesTable)
+      .set({ entitlementMode: "subscription" })
+      .where(eq(userProfilesTable.clerkId, user));
+    const subId = `sub_${RUN}_late`;
+    seedSub(subId, user, "GO", "month");
+    await sendWebhook("customer.subscription.created", { id: subId });
+    // Zet actuele Stripe-staat op paused; profiel wordt FREE.
+    fake.subs.get(subId)!.status = "paused";
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    let state = await getBillingState(user);
+    assert(state.status === "paused", `voorbereiding faalde: ${state.status}`);
+    // Verlate betaalde invoice komt binnen terwijl de sub nog paused is.
+    fake.invoices.set(`in_${RUN}_late_paused`, {
+      id: `in_${RUN}_late_paused`,
+      subscriptionId: subId,
+      customerId: `cus_${subId}`,
+      created: new Date(),
+      status: "paid",
+      attemptCount: 1,
+    });
+    await sendWebhook("invoice.paid", { id: `in_${RUN}_late_paused` });
+    state = await getBillingState(user);
+    assert(state.status === "paused", `invoice.paid overschreef paused met ${state.status}`);
+    let ent = await resolveEntitlements(user);
+    assert(!ent.commercialFeatures["premium"], "verlate invoice gaf tóch betaalde rechten (paused)");
+    // Onbekende actuele status ⇒ unknown, geen rechten.
+    fake.subs.get(subId)!.status = "toekomstige_status_xyz";
+    fake.invoices.set(`in_${RUN}_late_unknown`, {
+      id: `in_${RUN}_late_unknown`,
+      subscriptionId: subId,
+      customerId: `cus_${subId}`,
+      created: new Date(),
+      status: "paid",
+      attemptCount: 1,
+    });
+    await sendWebhook("invoice.paid", { id: `in_${RUN}_late_unknown` });
+    // Rij fail-closed op "unknown"; de klantweergave valt terug op free/FREE.
+    let [row] = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(row?.status === "unknown", `onbekende staat werd rij-status ${row?.status}`);
+    state = await getBillingState(user);
+    assert(state.status === "free" && state.tier === "FREE", `onbekende staat gaf weergave ${state.status}/${state.tier}`);
+    ent = await resolveEntitlements(user);
+    assert(!ent.commercialFeatures["premium"], "verlate invoice gaf tóch rechten (unknown)");
+    // Subscription niet meer vindbaar bij Stripe ⇒ genegeerd, niets hersteld.
+    fake.subs.delete(subId);
+    fake.invoices.set(`in_${RUN}_late_gone`, {
+      id: `in_${RUN}_late_gone`,
+      subscriptionId: subId,
+      customerId: `cus_${subId}`,
+      created: new Date(),
+      status: "paid",
+      attemptCount: 1,
+    });
+    const r = await sendWebhook("invoice.paid", { id: `in_${RUN}_late_gone` });
+    assert(r.status === 200, `webhook gaf ${r.status}`);
+    [row] = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(row?.status === "unknown", `verdwenen sub veranderde rij-status naar ${row?.status}`);
+    ent = await resolveEntitlements(user);
+    assert(!ent.commercialFeatures["premium"], "verdwenen sub gaf tóch rechten");
+  });
+
   await cleanup();
 
   let failed = 0;

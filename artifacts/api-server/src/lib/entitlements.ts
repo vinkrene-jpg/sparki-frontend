@@ -95,6 +95,11 @@ export interface ResolvedEntitlements {
 let forcedEntitlementReadError = false;
 /** Alleen voor tests: forceer een leesfout op user_entitlements. */
 export function __setEntitlementsReadFailureForTests(v: boolean): void {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "__setEntitlementsReadFailureForTests is uitgeschakeld in productie",
+    );
+  }
   forcedEntitlementReadError = v;
 }
 

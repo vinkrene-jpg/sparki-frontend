@@ -364,7 +364,19 @@ async function handleEvent(
       }
       if (existing.status === "blocked") return "genegeerd: subscription is blocked";
       const state = await gateway.getSubscription(invoice.subscriptionId);
-      const paidStatus = state?.cancelAtPeriodEnd ? "canceled" : "active";
+      // Fail-closed (review 31-07-2026): een (verlate) invoice.paid mag nooit
+      // rechten herstellen op basis van de betaling alleen — de ACTUELE
+      // Stripe-subscriptionstatus is de waarheid.
+      if (!state) {
+        return "genegeerd: subscription niet gevonden bij Stripe (invoice herstelt niets)";
+      }
+      const mappedNow = mapStripeSubStatus(state);
+      if (mappedNow !== "active" && mappedNow !== "canceled") {
+        // Actuele staat is niet betaald-actief (bv. paused/incomplete/unknown/
+        // grace): verwerk de echte staat via het centrale pad, geen tierherstel.
+        return await upsertFromSubscriptionState(tx, state, eventCreated, notices);
+      }
+      const paidStatus = mappedNow;
       await tx
         .update(billingSubscriptionsTable)
         .set({

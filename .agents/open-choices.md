@@ -31,6 +31,21 @@ Laatst bijgewerkt: 2026-07-31.
     labels bij zones/plan/pacing, of (b) deze functies blokkeren tot er een echte/
     afgeleide FTP is. Advies: (a).
 
+18. **Legacy-migratie per account (ABONNEMENT_01 §1.4, 31-07-2026)** — Er is
+    NIETS gemigreerd; alleen geïnventariseerd (dry-run). Echte accounts met
+    `legacy_unrestricted` in dev: `dev_qa_athlete` (8 routes, 1 entitlement),
+    `user_3FTiMcQbYrQ8KA299tNXu0Ir6EQ`, `user_3HG8jhjNUhHTFf7bqpMzZm5QhL4`
+    (beide leeg); rest zijn test-/seedaccounts. Migratie = per account, alleen
+    na jouw expliciet akkoord; tot die tijd behouden ze volledige toegang en
+    raken webhooks ze niet aan. KEUZE: welke accounts (ooit) migreren?
+
+19. **Degraded-gedrag rechtenlaag (ABONNEMENT_01 §1.2, 31-07-2026) — gemaakte
+    veiligheidskeuze ter bevestiging**: bij een onleesbare rechtenbron telt die
+    bron niet mee (nooit rechten aannemen), maar wél-leesbare bronnen blijven
+    gelden zodat een storing betalende gebruikers niet buitensluit. Vastgelegd
+    in docs/SPARKI_ABONNEMENTSFLOW.md §3. Akkoord, of liever alles-dicht bij
+    elke storing?
+
 14. **Vrijgave drie voorbereide pakketten (31-07-2026)** — `DATA_TRUST_01` (aangevuld
     met herstelprotocol/afhankelijkheden uit files_8), `ABONNEMENT_01` en
     `DOCUMENTEN_COMMUNICATIE_01` staan klaar; geadviseerde volgorde: data-trust →
