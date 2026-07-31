@@ -195,7 +195,9 @@ function AthleteCard({
   const cardClass =
     "block rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
 
-  const endLinkButton = (
+  // Zonder directe link is er geen koppeling om te beëindigen — knop verbergen
+  // (anders biedt de UI een besturingselement aan dat server-side niets doet).
+  const endLinkButton = !isDirect ? null : (
     <button
       type="button"
       onClick={onEndLink}
