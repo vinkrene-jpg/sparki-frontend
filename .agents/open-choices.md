@@ -61,6 +61,14 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15c. **Vrijgave CLUB_ONBOARDING_01 (pakket ontvangen 31-07-2026)** — clubinstroom
+    van registratie tot actief (concept/actief-status, teams+seizoenen,
+    transactionele ledenimport met bevestiging, hervatbare onboarding).
+    Harde voorwaarde uit het pakket zelf: `DATA_TRUST_01` én `ROUTE_PAKKET_01`
+    moeten MIRROR_PROVEN zijn vóór de start; daarnaast expliciete vrijgave
+    door René. Twee configureerbare besluitpunten (geen blokkade): standaard
+    seizoensperiode en bewaartermijn geïmporteerd ledenbestand.
+
 15b. **Vrijgave drie AI-pakketten (files_11, 31-07-2026)** — opsplitsing van
     AI_GOVERNANCE_01: `AI_GRENZEN_01` (veiligheidsgrenzen/weigeringen; DATA_TRUST_01
     sterk aanbevolen vóóraf), `AI_CONTEXT_01` (geheugen, toestemming, toolgebruik,
