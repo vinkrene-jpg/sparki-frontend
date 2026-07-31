@@ -65,6 +65,18 @@ Een route telt als **één gebruikte route** per gebruiker per kalendermaand
   de database gezette rijen (seed/mock/demo) tellen nooit mee — alleen de
   genoemde request-paden registreren.
 
+### Privacybesluit bewaartermijn (besluit René 31-07-2026)
+
+Gebruiks- en fair-usedata (routegebruik-registraties, en straks reserveringen,
+routeberekeningen en fair-usemetingen uit 02b–02d) blijven **24 maanden
+herleidbaar** tot de gebruiker; daarna worden ze **onomkeerbaar
+geanonimiseerd** (koppeling met `clerk_id` verbroken, geaggregeerde telling
+mag blijven). Dit besluit geldt uitsluitend voor deze categorieën, niet voor
+andere gegevens. De geautomatiseerde anonimiseringsuitvoering wordt gebouwd
+in hoofdstuk 3 (02c, opslag en verval); tot die tijd is er geen rij ouder dan
+de termijn (de tabel is nieuw en start leeg), dus er kan nog niets buiten het
+besluit vallen.
+
 ### Restpunt: de 20%-trigger staat uit
 
 `RIDDEN_20_PERCENT` staat achter een aparte operationele vlag
