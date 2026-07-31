@@ -28,6 +28,7 @@ import {
   clubSubscriptionsTable,
   notificationsTable,
   featureFlagsTable,
+  userFlagOverridesTable,
 } from "@workspace/db";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
@@ -206,6 +207,19 @@ async function setup() {
     .insert(billingTestAccountsTable)
     .values([{ clerkId: owner, reason: RUN }])
     .onConflictDoNothing();
+  // Betaalflags voor de eigenaar aan, zodat scenario 9 de tier-guards zelf
+  // raakt (en niet alleen de allowlist-poort).
+  await db
+    .insert(userFlagOverridesTable)
+    .values(
+      ["commercial_tiers", "stripe_checkout", "stripe_portal"].map((flagKey) => ({
+        clerkId: owner,
+        flagKey,
+        enabled: true,
+        setBy: "team-testmatrix",
+      })),
+    )
+    .onConflictDoNothing();
   // Webhookflag is endpoint-breed (geen usercontext) ⇒ tijdelijk globaal aan;
   // cleanup zet hem alleen terug als wíj hem hebben aangezet.
   const flipped = await db
@@ -360,6 +374,39 @@ async function main() {
       const chk = await api(who, "POST", `/api/clubs/${clubId}/team-subscription/checkout`, { interval: "month" });
       assert(chk.status === 403, `${who} kon checkout starten (${chk.status})`);
     }
+  });
+
+  await scenario("8. Exclusiviteit: tweede/verlate subscription kaapt de club niet", async () => {
+    const otherId = `sub_second_${Date.now()}`;
+    fake.subs.set(otherId, { ...seedTeamSub(), id: otherId });
+    const r = await sendWebhook("customer.subscription.updated", { id: otherId, object: "subscription" });
+    assert(r.status === 200, `webhook ${r.status}`);
+    const [sub] = await db.select().from(clubSubscriptionsTable).where(eq(clubSubscriptionsTable.clubId, clubId));
+    assert(sub?.billingRef === SUB_ID, `billingRef gekaapt naar ${sub?.billingRef}`);
+    const chk = await api(owner, "POST", `/api/clubs/${clubId}/team-subscription/checkout`, { interval: "month" });
+    assert(chk.status === 409, `tweede checkout kreeg ${chk.status}, verwacht 409`);
+  });
+
+  await scenario("9. Persoonlijke paden geblokkeerd: trial/checkout/change nooit TEAM", async () => {
+    for (const path of ["/api/billing/trial", "/api/billing/checkout", "/api/billing/change"]) {
+      const r = await api(owner, "POST", path, { tier: "TEAM", interval: "month" });
+      // 400 = tier geweigerd; 403 = betaalpad niet opengesteld; 409 = TEAM-bron
+      // beschermd — in álle gevallen komt er geen persoonlijke TEAM-flow door.
+      assert([400, 403, 409].includes(r.status), `${path} met TEAM kreeg ${r.status}`);
+    }
+    const ch = await api(owner, "POST", "/api/billing/change", { tier: "GO", interval: "month" });
+    assert(ch.status === 409, `TEAM-sub wegwijzigen naar GO kreeg ${ch.status}, verwacht 409`);
+  });
+
+  await scenario("10. Opzegging (deleted) sluit ook de club", async () => {
+    const r = await sendWebhook("customer.subscription.deleted", { id: SUB_ID, object: "subscription" });
+    assert(r.status === 200, `webhook ${r.status}`);
+    const [sub] = await db.select().from(clubSubscriptionsTable).where(eq(clubSubscriptionsTable.clubId, clubId));
+    assert(sub?.status === "ended", `clubstatus is ${sub?.status}, verwacht ended`);
+    const cap = await checkCapacityByClubId(clubId, "member");
+    assert(cap.ok === false, "beëindigd team laat nog nieuwe leden toe");
+    const members = await db.select().from(clubMembersTable).where(eq(clubMembersTable.clubId, clubId));
+    assert(members.length >= 5, "leden verdwenen bij opzegging — mag nooit");
   });
 
   await cleanup();

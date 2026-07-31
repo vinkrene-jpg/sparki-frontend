@@ -11,6 +11,7 @@ import {
   userEntitlementsTable,
   billingSubscriptionsTable,
   billingTestAccountsTable,
+  clubSubscriptionsTable,
   featureFlagsTable,
   userFlagOverridesTable,
   COMMERCIAL_TIERS,
@@ -350,6 +351,7 @@ export async function expireBillingStates(now = new Date()): Promise<{
     .returning({
       clerkId: billingSubscriptionsTable.clerkId,
       stripeSubscriptionId: billingSubscriptionsTable.stripeSubscriptionId,
+      tier: billingSubscriptionsTable.tier,
     });
   const canceledRows = await db
     .update(billingSubscriptionsTable)
@@ -363,7 +365,24 @@ export async function expireBillingStates(now = new Date()): Promise<{
     .returning({
       clerkId: billingSubscriptionsTable.clerkId,
       stripeSubscriptionId: billingSubscriptionsTable.stripeSubscriptionId,
+      tier: billingSubscriptionsTable.tier,
     });
+  // TEAM: verlopen facturatie moet óók de gekoppelde club sluiten, anders
+  // blijft een opgezegd team stilzwijgend leden toelaten.
+  const teamRefs = [...graceRows, ...canceledRows]
+    .filter((r) => r.tier === "TEAM" && r.stripeSubscriptionId)
+    .map((r) => r.stripeSubscriptionId);
+  if (teamRefs.length > 0) {
+    await db
+      .update(clubSubscriptionsTable)
+      .set({ status: "ended", updatedAt: now })
+      .where(
+        and(
+          inArray(clubSubscriptionsTable.billingRef, teamRefs),
+          eq(clubSubscriptionsTable.packageKey, "team"),
+        ),
+      );
+  }
   const affected = [
     ...new Set([...graceRows, ...canceledRows].map((r) => r.clerkId)),
   ];

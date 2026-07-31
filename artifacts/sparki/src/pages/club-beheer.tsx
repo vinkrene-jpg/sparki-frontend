@@ -47,6 +47,8 @@ const ROLE_LABELS: Record<ClubRole, string> = {
   trainer: "Trainer",
   assistent: "Assistent-trainer",
   teammanager: "Teammanager",
+  soigneur: "Soigneur",
+  medic: "Medic",
   mechanieker: "Mechanieker",
   vrijwilliger: "Vrijwilliger",
   alleen_lezen: "Alleen lezen",

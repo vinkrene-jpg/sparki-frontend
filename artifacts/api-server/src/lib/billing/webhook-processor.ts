@@ -303,6 +303,25 @@ function teamClubStatus(mapped: string): "active" | "blocked" | "ended" {
   return "blocked"; // paused | incomplete | unknown | blocked
 }
 
+// Terminale overgangen (deleted/refund/expiry) moeten óók doorwerken naar de
+// gekoppelde club, anders blijft een opgezegd team stilzwijgend actief.
+export async function endTeamClubByBillingRef(
+  tx: Tx,
+  subscriptionId: string | null | undefined,
+  status: "blocked" | "ended",
+): Promise<void> {
+  if (!subscriptionId) return;
+  await tx
+    .update(clubSubscriptionsTable)
+    .set({ status, updatedAt: new Date() })
+    .where(
+      and(
+        eq(clubSubscriptionsTable.billingRef, subscriptionId),
+        eq(clubSubscriptionsTable.packageKey, "team"),
+      ),
+    );
+}
+
 async function syncTeamClubSubscription(
   tx: Tx,
   state: SubscriptionState,
@@ -324,6 +343,22 @@ async function syncTeamClubSubscription(
     .select()
     .from(clubSubscriptionsTable)
     .where(eq(clubSubscriptionsTable.clubId, clubId));
+  // Exclusiviteit per club: als er al een ANDERE subscription is gekoppeld
+  // die nog leeft (active/grace), mag een tweede of verlaat event die niet
+  // zomaar vervangen (laat event van een oude sub ≠ de actuele facturatie).
+  if (
+    existingSub?.packageKey === "team" &&
+    existingSub.billingRef &&
+    existingSub.billingRef !== state.id
+  ) {
+    const [currentRow] = await tx
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, existingSub.billingRef));
+    if (currentRow && (currentRow.status === "active" || currentRow.status === "grace")) {
+      return `team: genegeerd (club ${clubId} is al gekoppeld aan actieve subscription ${existingSub.billingRef})`;
+    }
+  }
   // maxMembers blijft configureerbaar: een bestaande team-configuratie wordt
   // nooit stilzwijgend teruggezet; alleen bij eerste activering geldt 50.
   const keepLimits = existingSub?.packageKey === "team";
@@ -400,6 +435,9 @@ async function handleEvent(
           .set({ status: "expired", lastEventCreated: eventCreated, updatedAt: new Date() })
           .where(eq(billingSubscriptionsTable.id, existing.id));
         await setProfileTier(tx, existing.clerkId, "FREE");
+        if (existing.tier === "TEAM") {
+          await endTeamClubByBillingRef(tx, subId, "ended");
+        }
         if (existing.status !== "expired") {
           const n = billingTransitionNotice("expired", {
             clerkId: existing.clerkId,
@@ -540,6 +578,9 @@ async function handleEvent(
         .set({ status: "blocked", lastEventCreated: eventCreated, updatedAt: new Date() })
         .where(eq(billingSubscriptionsTable.id, existing.id));
       await setProfileTier(tx, existing.clerkId, "FREE");
+      if (existing.tier === "TEAM") {
+        await endTeamClubByBillingRef(tx, existing.stripeSubscriptionId, "blocked");
+      }
       logger.warn(
         { chargeId, clerkId: existing.clerkId },
         "billing: volledige (cumulatieve) refund — entitlement ingetrokken (blocked)",

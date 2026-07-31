@@ -734,6 +734,18 @@ router.post("/:clubId/team-subscription/checkout", requireAuth, async (req, res)
       res.status(400).json({ error: "Ongeldig interval (month of year)." });
       return;
     }
+    // Exclusiviteit: geen tweede checkout terwijl er al een levende
+    // Team-koppeling voor deze club bestaat (voorkomt dubbele subscriptions).
+    if (ctx.subscription?.packageKey === "team" && ctx.subscription.billingRef) {
+      const [row] = await db
+        .select()
+        .from(billingSubscriptionsTable)
+        .where(eq(billingSubscriptionsTable.stripeSubscriptionId, ctx.subscription.billingRef));
+      if (row && (row.status === "active" || row.status === "grace")) {
+        res.status(409).json({ error: "Deze club heeft al een actief Team-abonnement." });
+        return;
+      }
+    }
     if (!getStripeGateway().isConfigured()) {
       res.status(503).json({
         error: "Stripe-testmodus is niet geconfigureerd (STRIPE_SECRET_KEY sk_test_… ontbreekt)",

@@ -31,6 +31,8 @@ export type ClubRole =
   | "trainer"
   | "assistent"
   | "teammanager"
+  | "soigneur"
+  | "medic"
   | "mechanieker"
   | "vrijwilliger"
   | "alleen_lezen"
