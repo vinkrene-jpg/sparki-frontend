@@ -39,6 +39,19 @@ if (devAuth) {
   process.env.DEV_AUTH_BYPASS = "true";
 }
 
+// Many tests import the full app graph, which includes AI clients that validate
+// required env vars at module-load time. Provide safe dev defaults so isolated
+// test runs fail only on the scenario under test (not on missing AI secrets).
+const requiredTestEnvDefaults = {
+  AI_INTEGRATIONS_ANTHROPIC_BASE_URL: "http://localhost:9/ci-dummy",
+  AI_INTEGRATIONS_ANTHROPIC_API_KEY: "ci-dummy",
+  AI_INTEGRATIONS_GEMINI_BASE_URL: "http://localhost:9/ci-dummy",
+  AI_INTEGRATIONS_GEMINI_API_KEY: "ci-dummy",
+};
+for (const [key, value] of Object.entries(requiredTestEnvDefaults)) {
+  if (!process.env[key]) process.env[key] = value;
+}
+
 const distDir = `dist-tests/${name}`;
 const buildEnv = {
   ...process.env,
