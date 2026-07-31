@@ -11,6 +11,8 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 
 ---
 
+**Update 31 juli 2026 — status DEV Preview (opdracht rolimpersonatie, §9):** de huidige DEV Preview is tot nader order **niet geschikt voor rechten- of rolacceptatietests**. De identiteitswissel zelf is echt (server-side, per verzoek), maar het persona-aanbod dekt de rollen niet (geen clubtrainer/hoofdtrainer/clubbeheerder/mechanieker/admin-testaccounts met echte relaties) en de dev-preview-schil toont voor elke rol dezelfde sportergerichte paginanavigatie; een ouder-persona valt op de home zelfs terug op de sporterweergave. Resultaten uit deze selector gelden niet als bewijs voor WP-T2/WP-T3 en er wordt niet geclaimd dat trainer-, ouder- of clubvarianten via alleen deze selector getest zijn. Oorzaakrapport + herstelvoorstel: zie chatverslag 31-07-2026; bouw start pas na goedkeuring René.
+
 **Update 31 juli 2026 — WP-S1 (structuurherstel):** admin-rechten zijn app-breed strikt (geen dev-bypass meer in `isAdmin`; alleen `SPARKI_ADMIN_IDS`), DEV Preview toont altijd een TESTCONTEXT-label (identiteit · rol · echte rechten) en markeert scenario-overrides als illustratie, en er is een blijvende e2e-browsertestomgeving in `e2e/` (echte Clerk-login, echte kliks, voor/na-screenshots, mobiel + desktop). Eerste proef Meer → Privacy: 3/3 groen; de eerder gevonden verkeerde uitkomst bleek een ontbrekende `/privacy`-route in de aparte dev-preview-routetabel en is verholpen. Zie `docs/product/SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md` en `e2e/README.md`.
 
 ---
