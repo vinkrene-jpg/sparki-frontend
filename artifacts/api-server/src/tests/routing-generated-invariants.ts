@@ -288,7 +288,83 @@ function checkInvariants(s: Scenario, o: Outcome): void {
   }
 }
 
+// ── Deterministische orakel-gevallen (reviewronde 31-07): expliciete
+// tegenvoorbeelden náást de gegenereerde suite, zodat een verzwakte poort
+// altijd op een benoembaar geval faalt. ────────────────────────────────────
+async function oracleCases(): Promise<void> {
+  const rnd = mulberry32(424242);
+  const base = genScenario(rnd, 100000);
+
+  // I6: geblokkeerde kandidaat eerst, schone kandidaat daarna ⇒ de schone wint.
+  const i6: Scenario = {
+    ...base,
+    candidates: 2,
+    perCandidate: [
+      { verdict: "hard_blocked", obstacles: { steps: 0, forbidden: 1, blockedGates: 0, gates: 0, unpavedSegments: 0 } },
+      { verdict: "clean", obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0 } },
+    ],
+  };
+  const o6 = await runScenario(i6);
+  assert.equal(o6.kind, "delivered", "I6: schone tweede kandidaat moet geleverd worden");
+  assert.equal(o6.pathTag, 1, "I6: precies de schone kandidaat moet winnen, nooit de geblokkeerde");
+
+  // Elke harde oorzaak afzonderlijk, op elk profiel ⇒ altijd weigeren.
+  for (const profile of PROFILES) {
+    for (const [naam, obs] of [
+      ["fietsverbod", { steps: 0, forbidden: 1, blockedGates: 0, gates: 0, unpavedSegments: 0 }],
+      ["trap", { steps: 1, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0 }],
+      ["afgesloten poort", { steps: 0, forbidden: 0, blockedGates: 1, gates: 0, unpavedSegments: 0 }],
+    ] as const) {
+      const s: Scenario = {
+        ...base,
+        profile,
+        candidates: 1,
+        unpavedTargetShare: null,
+        perCandidate: [{ verdict: "hard_blocked", obstacles: { ...obs } }],
+      };
+      const o = await runScenario(s);
+      assert.equal(o.kind, "no_suitable", `${profile}/${naam}: harde oorzaak moet altijd weigeren`);
+    }
+    // Onverifieerbare meting ⇒ altijd UnverifiableRouteError, op elk profiel.
+    const su: Scenario = {
+      ...base,
+      profile,
+      candidates: 1,
+      unpavedTargetShare: null,
+      perCandidate: [
+        { verdict: "unverifiable", obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0 } },
+      ],
+    };
+    const ou = await runScenario(su);
+    assert.equal(ou.kind, "unverifiable", `${profile}: kapotte meting moet eerlijk weigeren`);
+  }
+
+  // Onverhard: hard op racefiets + gewone fiets, toegestaan op gravel/MTB (I5).
+  for (const profile of PROFILES) {
+    const s: Scenario = {
+      ...base,
+      profile,
+      candidates: 1,
+      unpavedTargetShare: null,
+      perCandidate: [
+        {
+          verdict: profile === "cycling-road" || profile === "cycling-regular" ? "hard_blocked" : "clean",
+          obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 3 },
+        },
+      ],
+    };
+    const o = await runScenario(s);
+    if (profile === "cycling-road" || profile === "cycling-regular") {
+      assert.equal(o.kind, "no_suitable", `${profile}: onverhard moet hard weigeren`);
+    } else {
+      assert.equal(o.kind, "delivered", `${profile}: onverhard mag niet weigeren`);
+    }
+  }
+  console.log("orakel-gevallen: OK (I5/I6 + alle harde oorzaken per profiel + onverifieerbaar per profiel)");
+}
+
 async function main(): Promise<void> {
+  await oracleCases();
   console.log(
     `routing-generated-invariants — seed=${SEED} count=${COUNT} parallel=${CONCURRENCY_BATCHES}`,
   );
@@ -299,8 +375,20 @@ async function main(): Promise<void> {
   let rejectedHard = 0;
   let rejectedUnverifiable = 0;
 
-  // I7: draai in batches gelijktijdig — uitkomsten moeten per scenario
-  // hetzelfde zijn als sequentieel (geen gedeelde toestand tussen aanvragen).
+  // I7: eerst een expliciete gelijkheidscheck parallel vs. sequentieel op de
+  // eerste 24 scenario's — zelfde soort uitkomst én zelfde winnaar.
+  {
+    const head = scenarios.slice(0, Math.min(24, scenarios.length));
+    const seq: Outcome[] = [];
+    for (const s of head) seq.push(await runScenario(s));
+    const par = await Promise.all(head.map((s) => runScenario(s)));
+    for (let i = 0; i < head.length; i++) {
+      assert.equal(par[i]!.kind, seq[i]!.kind, `I7: scenario #${i} wijkt parallel af van sequentieel`);
+      assert.equal(par[i]!.pathTag, seq[i]!.pathTag, `I7: scenario #${i} andere winnaar parallel`);
+    }
+  }
+
+  // Daarna de volledige suite in gelijktijdige batches.
   for (let i = 0; i < scenarios.length; i += CONCURRENCY_BATCHES) {
     const batch = scenarios.slice(i, i + CONCURRENCY_BATCHES);
     const outcomes = await Promise.all(batch.map((s) => runScenario(s)));

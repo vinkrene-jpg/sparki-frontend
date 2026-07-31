@@ -59,8 +59,13 @@ frontend ↔ provider. GraphHopper/ORS-antwoorden worden alleen via de
   negatief resultaat als "veilig" hergebruikt.
 - **Gedeelde verificatie:** in-flight promise-dedupe per cachesleutel (zelfde
   bbox/geometrie ⇒ één meting, meerdere wachters).
-- **Privacy:** alle genoemde caches bevatten kaart-/omgevingsdata, geen
-  persoonsgegevens; routekandidaten blijven owner-gescoped en in-memory.
+- **Privacy:** de meeste caches bevatten gedeelde kaart-/omgevingsdata, maar
+  de routegeometrie-cache en routekandidaten bevatten door gebruikers
+  aangevraagde geometrieën die een thuis-/startlocatie kunnen verraden —
+  routekandidaten zijn owner-gescoped, de geometrie-cache is dat niet (sleutel
+  is parameterhash, dus alleen exact dezelfde aanvraag deelt een entry, maar
+  behandel deze data bij een DB-promotie als persoonsgebonden en owner-scope of
+  aggregeer hem).
 - **Opslagkosten:** verwaarloosbaar (orde MB's; `climb_cache` bewijst het
   patroon al).
 - **Foutgedrag:** cache-lagen mogen nooit een verificatie-uitkomst verzinnen;
