@@ -682,7 +682,9 @@ export default function AdminPage() {
   const { data: who, isLoading: whoLoading } = useAdminWhoami();
   const isAdmin = who?.isAdmin === true;
 
-  const enabled = isAdmin || DEV_PREVIEW;
+  // WP-S1: geen DEV_PREVIEW-escape meer — de geïmpersoneerde identiteit
+  // krijgt uitsluitend de rechten die de echte rij heeft (server beslist).
+  const enabled = isAdmin;
   const { data: health, isLoading } = useAdminHealth(enabled);
   const { data: statusData } = useAdminStatus(enabled);
   const { data: batchData } = useAdminHealthBatches(enabled);
@@ -705,7 +707,7 @@ export default function AdminPage() {
     return [...map.entries()];
   }, [health?.checks]);
 
-  if (!whoLoading && !isAdmin && !DEV_PREVIEW) {
+  if (!whoLoading && !isAdmin) {
     return <Redirect to="/" />;
   }
   if (isSignedIn === false && !DEV_PREVIEW) {

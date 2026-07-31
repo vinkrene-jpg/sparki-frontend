@@ -141,6 +141,7 @@
 - [Sparki bewijsarchief](sparki-bewijsarchief.md) — evidence files live in bewijsarchief/ + SHA-256 inventory; never modify/delete; public export-zips only removed after byte-identical verified private copy.
 - [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
 - Repo/deploy-hygiëne: [8 GiB-imagelimiet](deploy-image-size-limit.md) export-zips/test-bundels weren; [history cleanup](git-history-cleanup.md) filter-repo verwijdert origin-remote, LFS blijft tot handmatige delete.
+- [Sparki e2e-harness (WP-S1)](sparki-e2e-harness.md) — BINDEND: schermacceptatie alleen via echte browserklik (e2e/), DEV Preview nooit bewijs; isAdmin strikt zonder dev-bypass.
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
 - [Sparki Gratis vs Go paywall](sparki-go-paywall.md) — GO_FEATURE_KEYS commercieel-only gate (nooit via flags); UI faalt open; admin.ts bad-merge-corruptie herstel uit parent-commit.
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.

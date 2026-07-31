@@ -39,6 +39,7 @@ import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import CoachCockpitPage from "@/pages/coach-cockpit"
 import LandingPage from "@/pages/landing"
 import StartPage from "@/pages/start"
+import LegalPage from "@/pages/legal"
 import MeerPage from "@/pages/core-meer"
 import SparkiConnectPage from "@/pages/sparki-connect"
 import ClubPage from "@/pages/club"
@@ -242,17 +243,33 @@ function DevPanel({
   onCoachScenario: (value: CoachScenarioKey | undefined) => void
 }) {
   const [open, setOpen] = useState(false)
+  // WP-S1: TESTCONTEXT-label — altijd zichtbaar, toont de ECHTE actieve
+  // identiteit + rol + echte rechten van die rij (geen dev-bypass meer).
+  const { profile } = useUserProfile()
+  const identiteit =
+    profile?.displayName ?? getDevAthleteId() ?? "standaard dev-gebruiker"
+  const rol = profile?.activeRole ?? "?"
+  const rechten = [
+    profile?.isAdmin ? "admin" : null,
+    profile?.isHeadTester ? "hoofdtester" : null,
+  ]
+    .filter(Boolean)
+    .join("+")
+  const illustratieActief = dayType !== undefined || coachScenario !== undefined
+  const contextLabel = `TESTCONTEXT · ${identiteit} · rol ${rol}${
+    rechten ? ` · ${rechten}` : ""
+  }${illustratieActief ? " · ILLUSTRATIE" : ""}`
 
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed left-3 top-3 z-[9999] flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-[#040506]/85 px-3 py-1.5 shadow-[0_0_20px_rgba(120,210,230,0.12)] backdrop-blur-xl"
+        className="fixed left-3 top-3 z-[9999] flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-[#040506]/85 px-3 py-1.5 shadow-[0_0_20px_rgba(230,190,120,0.14)] backdrop-blur-xl"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/80" />
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">
-          Dev
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" />
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber-200/80">
+          {contextLabel}
         </span>
       </button>
     )
@@ -261,8 +278,8 @@ function DevPanel({
   return (
     <div className="fixed left-3 top-3 z-[9999] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-cyan-300/20 bg-[#040506]/90 p-3 shadow-[0_0_30px_rgba(120,210,230,0.12)] backdrop-blur-xl">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">
-          Dev preview
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber-200/80">
+          {contextLabel}
         </span>
         <button
           type="button"
@@ -300,7 +317,8 @@ function DevPanel({
       {isHome && (
         <div className="mt-3 border-t border-white/[0.07] pt-3">
           <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
-            Dagtype
+            Dagtype{" "}
+            <span className="text-amber-200/60">— illustratie, geen echte data</span>
           </span>
           <div className="mt-1.5 flex flex-wrap gap-1">
             {DAY_TYPE_OPTIONS.map((o) => {
@@ -324,7 +342,8 @@ function DevPanel({
       {isHome && (
         <div className="mt-3 border-t border-white/[0.07] pt-3">
           <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
-            Coach-engine · type sporter
+            Coach-engine · type sporter{" "}
+            <span className="text-amber-200/60">— illustratie, geen echte data</span>
           </span>
 
           {/* Mode toggle — Scenario (fictief profiel + dagdata) is default;
@@ -512,6 +531,15 @@ export function DevPreview() {
     page = <CoachAthletePlanPage />
   } else if (location.startsWith("/meer")) {
     page = <MeerPage />
+  } else if (location.startsWith("/privacy")) {
+    // WP-S1: publieke juridische pagina's ontbraken in de dev-preview-routetabel,
+    // waardoor Meer → Privacy hier stil op de StartPage-fallback landde terwijl
+    // productie de echte Privacyverklaring toont (de door René gevonden fout).
+    page = <LegalPage kind="privacy" />
+    showNav = false
+  } else if (location.startsWith("/voorwaarden")) {
+    page = <LegalPage kind="terms" />
+    showNav = false
   } else if (location.startsWith("/connect")) {
     page = <SparkiConnectPage />
   } else if (location.startsWith("/invite/")) {

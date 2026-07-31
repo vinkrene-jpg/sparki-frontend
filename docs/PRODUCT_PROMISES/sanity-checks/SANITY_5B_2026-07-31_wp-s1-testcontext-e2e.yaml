@@ -1,0 +1,36 @@
+# Poort 5b sanity-check rapport — WP-S1: echte DEV-rolimpersonatie + e2e-browsertestomgeving
+
+delivery: "WP-S1: (1) admin-bypass losgekoppeld van impersonatie — isAdmin is app-breed strikt (alleen SPARKI_ADMIN_IDS; dev-bypass verwijderd), frontend-admin-guards zonder DEV_PREVIEW-escape; (2) altijd zichtbaar TESTCONTEXT-label met actieve identiteit, rol en échte rechten; (3) dagtype-/coach-scenario-overrides expliciet gemarkeerd als illustratie; (4) werkende e2e-browsertestomgeving (e2e/) met echte Clerk ticket-login, rol-/identiteitscontrole die hard faalt bij afwijking, echte kliks met voor/na-screenshots, telefoon- én desktopformaat; eerste proef Meer → Privacy geslaagd én de door René gevonden verkeerde uitkomst gereproduceerd (ontbrekende /privacy-route in de dev-preview-routetabel) en verholpen."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "e2e/tests/meer-privacy.mjs tegen prod-build (mobiel 402x874 + desktop 1440x900) en tegen DEV Preview"
+  - "/api/admin/* strikte poort (admin-smoke 13/13, incl. nieuw 403-scenario zonder SPARKI_ADMIN_IDS)"
+  - "DEV Preview /meer en /admin (screenshots docs/product/evidence/wp-s1/)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Meer → Privacy is een echte zichtbare klik die op /privacy landt met kop 'Privacyverklaring Sparki' (prod-build, beide formaten, screenshots vóór en na de klik)."
+        result: "pass"
+      - case: "/admin voor een niet-admin: redirect naar Vandaag, geen dode of verboden admin-UI — ook in DEV Preview (DEV_PREVIEW-escape verwijderd)."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Geïmpersoneerde identiteit krijgt uitsluitend de rechten van de echte rij: isAdmin zonder SPARKI_ADMIN_IDS is false en /api/admin/status geeft 403 (nieuw admin-smoke-scenario); daarna expliciet admin via env en alle 12 admin-oppervlakken werken."
+        result: "pass"
+      - case: "TESTCONTEXT-label altijd zichtbaar in DEV Preview (ook ingeklapt): identiteit · rol · echte rechten (bv. hoofdtester) · ILLUSTRATIE-markering zodra een scenario-override actief is; dagtype- en coach-scenario-secties dragen 'illustratie, geen echte data'."
+        result: "pass"
+      - case: "Identiteits-/rolcontrole in de e2e-harness faalt hard op status 200 met verkeerd clerkId (dev-fallback-valkuil) of verkeerde rol — verkeerde rolcontext kan nooit stil als bewijs doorgaan."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "De door René gevonden verkeerde uitkomst is gereproduceerd, niet weggeredeneerd: met de oude dev-preview-routetabel faalt de proef aantoonbaar ('Privacyverklaring Sparki' niet zichtbaar — StartPage-fallback, bewijs devpreview-OUD-…png); oorzaak: /privacy en /voorwaarden ontbraken in de aparte dev-preview-routetabel; fix toegevoegd, daarna 3/3 groen."
+        result: "pass"
+      - case: "E2e-login is écht (Clerk ticket, dedicated QA-account, consent via echte kliks op het eigen QA-account) — geen dev-bypass, geen gesimuleerde sessie; prod-build via serve-prod met /api-proxy naar de draaiende api-server."
+        result: "pass"
+
+# Bewijs: e2e meer-privacy 3/3 + reproductierun (FAIL op oude routetabel),
+# screenshots e2e/evidence/meer-privacy/ + docs/product/evidence/wp-s1/,
+# admin-smoke 13/13, api-typecheck + web-tsc schoon.
+verdict: "deliverable"
