@@ -53,6 +53,7 @@ async function proefMeerPrivacy({ browser, baseUrl, viewport, userId }) {
       label: "meer-privacy",
       locator: run.page.getByText("Privacy", { exact: true }).first(),
       expectPath: "/privacy",
+      expectTitle: "Sparki",
       expectVisibleText: ["Privacyverklaring Sparki"],
     });
   } finally {

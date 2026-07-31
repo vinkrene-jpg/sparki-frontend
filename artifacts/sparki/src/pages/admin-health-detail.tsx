@@ -39,7 +39,8 @@ export default function AdminHealthDetailPage() {
   const resolve = useResolveHealthCheck();
   const [showTech, setShowTech] = useState(false);
 
-  if (!whoLoading && !isAdmin && !DEV_PREVIEW) return <Redirect to="/" />;
+  // WP-S1: geen DEV_PREVIEW-escape — niet-admins zien deze admin-UI nooit.
+  if (!whoLoading && !isAdmin) return <Redirect to="/" />;
   if (isSignedIn === false && !DEV_PREVIEW) return <Redirect to="/sign-in" />;
 
   const check = data?.check;

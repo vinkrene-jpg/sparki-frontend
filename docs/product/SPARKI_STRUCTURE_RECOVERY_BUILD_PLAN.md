@@ -7,6 +7,8 @@ Algemene regels voor élk pakket: geen parallel backend- of rechtenmodel; bestaa
 Omvang-schaal: S (≤ halve dag), M (± 1 dag), L (meerdere dagen).
 
 ## WP-S1 — Echte DEV-rolimpersonatie en testcontext
+
+> **STATUS: AFGEROND 31-07-2026** — isAdmin strikt (dev-bypass verwijderd), frontend-guards zonder DEV_PREVIEW-escape, TESTCONTEXT-label + illustratie-markering, `/privacy`+`/voorwaarden` in de dev-preview-routetabel, en blijvende e2e-browsertestomgeving (`e2e/`, eerste proef Meer → Privacy 3/3 + reproductie van de oorspronkelijke fout). Sanityrapport: `SANITY_5B_2026-07-31_wp-s1-testcontext-e2e.yaml`.
 - **Doel:** dev-/testbewijs weer geldig maken.
 - **Scope:** (1) admin-bypass loskoppelen van impersonatie: geïmpersoneerde identiteit krijgt uitsluitend de rechten die de echte rij heeft (strikte `SPARKI_ADMIN_IDS`/`isHeadTester`-poorten zoals bij de Vandaag-debugweergave app-breed doortrekken voor UI-zichtbaarheid); (2) zichtbaar "TESTCONTEXT"-label met actieve identiteit/rol; (3) dagtype-/scenario-overrides duidelijk markeren als illustratie.
 - **Afhankelijkheden:** geen. **Bestanden:** `artifacts/sparki/src/lib/dev.ts`, `dev-preview.tsx`, `artifacts/api-server/src/lib/auth.ts`, `lib/flags.ts`-consumenten.

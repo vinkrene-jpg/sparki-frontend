@@ -11,6 +11,10 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 
 ---
 
+**Update 31 juli 2026 — WP-S1 (structuurherstel):** admin-rechten zijn app-breed strikt (geen dev-bypass meer in `isAdmin`; alleen `SPARKI_ADMIN_IDS`), DEV Preview toont altijd een TESTCONTEXT-label (identiteit · rol · echte rechten) en markeert scenario-overrides als illustratie, en er is een blijvende e2e-browsertestomgeving in `e2e/` (echte Clerk-login, echte kliks, voor/na-screenshots, mobiel + desktop). Eerste proef Meer → Privacy: 3/3 groen; de eerder gevonden verkeerde uitkomst bleek een ontbrekende `/privacy`-route in de aparte dev-preview-routetabel en is verholpen. Zie `docs/product/SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md` en `e2e/README.md`.
+
+---
+
 ## 1. Onboarding & Sportpaspoort — Volledig
 
 - **Gebruiker kan:** aanmelden via Clerk (`/sign-in`, `/sign-up`), wordt JIT geprovisioned (`POST /api/auth/sync` → `user_profiles` + `athlete_profiles`), doorloopt adaptieve vraagflow met verplichte connect-stap (koppelen zelf optioneel — eerlijkheid) en Strava-gap-fill; halverwege hervatten kan.

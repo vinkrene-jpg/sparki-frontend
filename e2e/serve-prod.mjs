@@ -50,7 +50,16 @@ export async function startProdServer() {
         });
         const outHeaders = {};
         upstream.headers.forEach((v, k) => {
-          if (k !== "set-cookie" && k !== "content-encoding" && k !== "transfer-encoding")
+          // fetch() decomprimeert het antwoord al: content-encoding én
+          // content-length beschrijven de gecomprimeerde variant en zouden
+          // het browserantwoord afkappen — beide weglaten (Node zet zelf een
+          // kloppende content-length op de ontpakte bytes).
+          if (
+            k !== "set-cookie" &&
+            k !== "content-encoding" &&
+            k !== "content-length" &&
+            k !== "transfer-encoding"
+          )
             outHeaders[k] = v;
         });
         const setCookies = upstream.headers.getSetCookie?.() ?? [];
