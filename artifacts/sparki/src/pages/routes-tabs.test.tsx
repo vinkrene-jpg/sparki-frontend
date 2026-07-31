@@ -143,8 +143,8 @@ for (const tab of ALLE_TABS) {
 // (?route=/?nav=/?ritopties=) is de compacte bibliotheeklijst tijdelijk
 // verborgen — het detail rendert via RoutePanel; zonder selectie is de lijst
 // juist dé weergave.
-for (const oud of ["route=42", "nav=1", "ritopties=1", ""]) {
-  test(`?${oud || "(geen parameters)"} zonder view landt op Bewaard`, async () => {
+for (const oud of ["route=42", "nav=1", "ritopties=1"]) {
+  test(`?${oud} zonder view landt op Bewaard`, async () => {
     const view = await renderPage(oud);
     try {
       assert.equal(actieveTab(view.container), "bewaard");
@@ -155,25 +155,47 @@ for (const oud of ["route=42", "nav=1", "ritopties=1", ""]) {
         tekst.includes("route-panel:bewaard"),
         "detailpaneel (RoutePanel) rendert op Bewaard",
       );
-      if (oud === "") {
-        assert.ok(tekst.includes("route-library"), "zonder selectie: lijst zichtbaar");
-      } else {
-        assert.ok(
-          !tekst.includes("route-library"),
-          "met open route (?route/?nav/?ritopties): lijst tijdelijk verborgen",
-        );
-      }
+      assert.ok(
+        !tekst.includes("route-library"),
+        "met open route (?route/?nav/?ritopties): lijst tijdelijk verborgen",
+      );
     } finally {
       view.rtl.cleanup();
     }
   });
 }
 
-// Onbekende view valt óók terug op Bewaard (nooit een leeg scherm).
-test("?view=onzin valt terug op Bewaard", async () => {
+// Zonder parameters opent Rijden op "Maken" (besluit René 31-07-2026): wie
+// het hoofdstuk opent, begint bij het plannen van een route. De bewaarde
+// lijst blijft één tik verderop (?view=bewaard, hierboven getest).
+test("zonder parameters opent Maken", async () => {
+  const view = await renderPage("");
+  try {
+    assert.equal(actieveTab(view.container), "maken");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// Onbekende view valt óók terug op Maken (nooit een leeg scherm).
+test("?view=onzin valt terug op Maken", async () => {
   const view = await renderPage("view=onzin");
   try {
-    assert.equal(actieveTab(view.container), "bewaard");
+    assert.equal(actieveTab(view.container), "maken");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// Bewaard zonder selectie: de ingeklapte routelijst is dé weergave
+// (één-lijst-contract 30/31-07-2026).
+test("?view=bewaard zonder selectie toont de routelijst", async () => {
+  const view = await renderPage("view=bewaard");
+  try {
+    const paneel = view.container.querySelector("#tab-bewaard");
+    assert.ok(paneel && !paneel.hasAttribute("hidden"));
+    const tekst = paneel!.textContent ?? "";
+    assert.ok(tekst.includes("route-library"), "zonder selectie: lijst zichtbaar");
   } finally {
     view.rtl.cleanup();
   }

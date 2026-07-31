@@ -21,6 +21,13 @@ description: Productbesluit René (30/31-07-2026) over routeplanner-niveaus, abo
 - "Eigen route"-modus blijft altijd bereikbaar bij route-wijzigen (bestaande waypoints), anders valt bestaande functionaliteit stil weg.
 - #505 en #506 zijn afgerond en bewezen — nooit heropenen of opnieuw bevragen.
 
+# Nacontrole 31-07-2026 (bewezen)
+
+- Kliktest mobiel+desktop + API-persistentie: alle checkpunten PASS; rapport SANITY_5B_2026-07-31_planner-vier-weergaven-nacontrole.yaml, screenshots docs/product/evidence/planner-views/.
+- **Profielenums kunnen NL óf EN zijn:** competition_level bevat zowel "regional" als "regionaal/nationaal" — elke afleiding uit profielenums moet beide talen matchen (suggestPlannerView gebruikt nu regex incl. lokaal/regionaal/nationaal en "gevorderd").
+- Node-page-testmocks veroudereren stil: nieuwe import in de component-keten (use-planner-view→useMutation/@clerk/react/@/lib/dev, DsStatus) breekt de mock-dekking pas bij de eerstvolgende run — na elke wijziging aan route-panel de gate-tests draaien.
+- Standaardtab /routes is "maken" (besluit René 31-07, commit ffc18aa9); ?route/?nav/?ritopties zonder view blijven op Bewaard landen.
+
 # Bewaard één-lijst-contract (gebouwd 31-07-2026)
 
 - /routes?view=bewaard: RouteLibrary is dé (ingeklapte) lijst; de grote RouteCard rendert alleen voor de route in `?route=`/`?nav=`/`?ritopties=`, lijst dan tijdelijk verborgen, terugknop "← Alle routes".

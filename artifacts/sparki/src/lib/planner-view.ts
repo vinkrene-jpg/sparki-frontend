@@ -81,9 +81,11 @@ export function suggestPlannerView(profile: {
   const comp = (profile.competitionLevel ?? "").toLowerCase()
   const exp = (profile.experienceLevel ?? "").toLowerCase()
   const disc = (profile.discipline ?? "").toLowerCase()
+  // Wedstrijdniveau kan in het Engels óf Nederlands zijn opgeslagen
+  // (bv. "regional" of "regionaal/nationaal") — beide tellen.
   if (
-    ["local", "regional", "national"].includes(comp) ||
-    ["advanced", "elite"].includes(exp)
+    /local|regional|national|lokaal|regionaal|nationaal/.test(comp) ||
+    ["advanced", "elite", "gevorderd"].includes(exp)
   )
     return "wedstrijd"
   const sportief =
