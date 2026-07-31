@@ -13,7 +13,7 @@
 //   commercieel recht. Een fout in deze laag zet nooit alles aan.
 
 import type { Request, Response, NextFunction, RequestHandler } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -275,21 +275,32 @@ export async function resolveEntitlements(
   };
 }
 
-// ── Go-onderdelen (taak 385) ─────────────────────────────────────────────────
-// Productbesluit (René): deze vier onderdelen zijn Sparki Go-only. Alles wat
-// hier NIET staat blijft gratis (routeplanner, navigatie, materiaalcoach,
-// kennisbank, …). Veiligheids-/gezondheidskritieke informatie valt nooit onder
-// een commerciële poort. De sleutels leven als commerciële feature-keys in
-// variant_feature_grants; operationele flags blijven daarnaast met EN gelden.
-export const GO_FEATURE_KEYS = [
+// ── Commerciële onderdelen per variant ───────────────────────────────────────
+// Productbesluit: Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001). De vier
+// onderstaande onderdelen horen bij Sparki Compleet (DB-variant "sparki_pro").
+// Sparki Go krijgt eigen sleutels; die verzameling is bewust nog leeg totdat
+// René de grens gratis/Go bevestigt (Opdracht 2). Veiligheids-/gezondheids-
+// kritieke informatie valt nooit onder een commerciële poort. De sleutels
+// leven als commerciële feature-keys in variant_feature_grants; operationele
+// flags blijven daarnaast met EN gelden.
+export const COMPLEET_FEATURE_KEYS = [
   "autonomous_training", // Trainingsplan-engine — automatische plannen & aanpassingen
   "race_intel", // Race-intelligentie — wedstrijdvoorbereiding, voeding, dossier
   "ai_observations", // Coach-observaties & dagelijkse briefing
   "performance_lab", // Performance Lab — diepe analyse & trends
 ] as const;
-export type GoFeatureKey = (typeof GO_FEATURE_KEYS)[number];
+export type CompleetFeatureKey = (typeof COMPLEET_FEATURE_KEYS)[number];
 
-export const GO_FEATURE_LABELS: Record<GoFeatureKey, string> = {
+// Alle commerciële sleutels samen; groeit in Opdracht 2 met de Go-sleutels.
+export type CommercialFeatureKey = CompleetFeatureKey;
+// Bestaande signatuur van requireCommercialFeature blijft hierop steunen.
+export type GoFeatureKey = CommercialFeatureKey;
+
+// Go-sleutels: bewust leeg tot Besluit-Opdracht 2 (grens gratis/Go) door René
+// is bevestigd. Compleet blijft altijd een superset van Go (zie hieronder).
+export const GO_FEATURE_KEYS: readonly CommercialFeatureKey[] = [];
+
+export const GO_FEATURE_LABELS: Record<CommercialFeatureKey, string> = {
   autonomous_training: "Trainingsplan-engine",
   race_intel: "Race-intelligentie",
   ai_observations: "Coach-observaties & dagelijkse briefing",
@@ -298,13 +309,22 @@ export const GO_FEATURE_LABELS: Record<GoFeatureKey, string> = {
 
 /**
  * Productlijn (bindend besluit): Gratis · Sparki Go · Sparki Compleet.
- * Sparki Compleet ERFT alle Go-rechten — een Compleet-gebruiker mag nooit naar
- * Go worden verwezen voor een Go-onderdeel. In de database heet de
- * Compleet-variant historisch "sparki_pro". "sparki_basic" en
- * "sparki_performance" zijn oude interne testtiers (géén productaanbod) en
- * blijven bewust zonder rechten (fail-closed).
+ * Expliciete toewijzing per variant (Besluit René 31-07-2026,
+ * SPARKI-BESLUIT-2026-001): sparki_go krijgt de Go-sleutels; sparki_pro
+ * (klantlabel: Sparki Compleet) krijgt de Go-sleutels PLUS de
+ * Compleet-sleutels — Compleet is daarmee aantoonbaar een superset van Go en
+ * een Compleet-gebruiker mag nooit naar Go worden verwezen voor een
+ * Go-onderdeel. "sparki_basic" en "sparki_performance" zijn oude interne
+ * testtiers (géén productaanbod) en blijven bewust zonder rechten
+ * (fail-closed).
  */
-export const GO_INHERITING_VARIANTS = ["sparki_go", "sparki_pro"] as const;
+export const VARIANT_FEATURE_KEYS: Record<
+  "sparki_go" | "sparki_pro",
+  readonly CommercialFeatureKey[]
+> = {
+  sparki_go: GO_FEATURE_KEYS,
+  sparki_pro: [...GO_FEATURE_KEYS, ...COMPLEET_FEATURE_KEYS],
+};
 
 /**
  * Klantveilige weergave van een bron-string (bv. "variant:sparki_go").
@@ -336,21 +356,50 @@ export function customerProductLabel(resolved: ResolvedEntitlements): string {
 }
 
 /**
- * Idempotente seed van de Go-variantrechten: sparki_go én sparki_pro
- * (= Sparki Compleet, erft alle Go-rechten) krijgen de vier Go-onderdelen;
- * interne tiers bewust niets (afwezigheid = geen recht, fail-closed).
+ * Idempotente seed van de variantrechten volgens de expliciete toewijzing in
+ * VARIANT_FEATURE_KEYS (Besluit René 31-07-2026, SPARKI-BESLUIT-2026-001):
+ * sparki_go = Go-sleutels, sparki_pro (Sparki Compleet) = Go + Compleet.
+ * Interne tiers bewust niets (afwezigheid = geen recht, fail-closed).
  * onConflictDoNothing — een latere beheerbeslissing (bijv. enabled=false
  * zetten) wordt nooit overschreven.
+ *
+ * Migratie in dezelfde functie (idempotent): de oude seed gaf sparki_go de
+ * vier Compleet-sleutels; die rijen worden hier verwijderd zolang sparki_go
+ * die sleutels niet in zijn eigen verzameling heeft. Het aantal verwijderde
+ * rijen wordt gelogd (na de eerste run: 0).
  */
 export async function ensureGoVariantGrantSeed(): Promise<void> {
-  await db
-    .insert(variantFeatureGrantsTable)
-    .values(
-      GO_INHERITING_VARIANTS.flatMap((productVariant) =>
-        GO_FEATURE_KEYS.map((featureKey) => ({ productVariant, featureKey })),
-      ),
-    )
-    .onConflictDoNothing();
+  const values = (
+    Object.entries(VARIANT_FEATURE_KEYS) as Array<
+      [string, readonly CommercialFeatureKey[]]
+    >
+  ).flatMap(([productVariant, keys]) =>
+    keys.map((featureKey) => ({ productVariant, featureKey })),
+  );
+  if (values.length > 0) {
+    await db
+      .insert(variantFeatureGrantsTable)
+      .values(values)
+      .onConflictDoNothing();
+  }
+  const staleGoKeys = COMPLEET_FEATURE_KEYS.filter(
+    (k) => !VARIANT_FEATURE_KEYS.sparki_go.includes(k),
+  );
+  if (staleGoKeys.length > 0) {
+    const removed = await db
+      .delete(variantFeatureGrantsTable)
+      .where(
+        and(
+          eq(variantFeatureGrantsTable.productVariant, "sparki_go"),
+          inArray(variantFeatureGrantsTable.featureKey, staleGoKeys),
+        ),
+      )
+      .returning({ featureKey: variantFeatureGrantsTable.featureKey });
+    logger.info(
+      { removed: removed.length, keys: removed.map((r) => r.featureKey) },
+      "variant_feature_grants-migratie (Besluit 31-07-2026): oude sparki_go-rijen verwijderd",
+    );
+  }
 }
 
 /**

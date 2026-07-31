@@ -36,6 +36,8 @@ import {
   hasCommercialFeature,
   ensureGoVariantGrantSeed,
   GO_FEATURE_KEYS,
+  COMPLEET_FEATURE_KEYS,
+  VARIANT_FEATURE_KEYS,
 } from "../lib/entitlements";
 
 type Status = "pass" | "fail";
@@ -195,27 +197,55 @@ async function main() {
     }
   });
 
-  // Taak 385: de Go-verdeling is een bewust productbesluit — sparki_go krijgt
-  // de vier Go-onderdelen, sparki_basic niets. Seed is idempotent.
+  // Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001): Compleet (sparki_pro)
+  // krijgt de vier Compleet-sleutels; sparki_go alleen de (nu nog lege)
+  // Go-verzameling. De seed migreert oude sparki_go-rijen weg en is idempotent.
   await ensureGoVariantGrantSeed();
   await ensureGoVariantGrantSeed(); // tweede aanroep mag niets veranderen
 
-  await scenario("variant_feature_grants: sparki_go én sparki_pro (Compleet) = de vier Go-onderdelen; interne tiers = niets", async () => {
+  await scenario("variant_feature_grants: sparki_pro (Compleet) = Go+Compleet-sleutels; sparki_go = alleen Go-sleutels; interne tiers = niets", async () => {
     const rows = await db.select().from(variantFeatureGrantsTable);
-    for (const variant of ["sparki_go", "sparki_pro"] as const) {
-      const v = rows.filter((r) => r.productVariant === variant && r.enabled);
-      assert(
-        v.length === GO_FEATURE_KEYS.length,
-        `verwacht ${GO_FEATURE_KEYS.length} ${variant}-rijen, kreeg ${v.length}`,
-      );
-      for (const key of GO_FEATURE_KEYS) {
-        assert(v.some((r) => r.featureKey === key), `${variant} mist ${key}`);
+    const pro = rows.filter((r) => r.productVariant === "sparki_pro" && r.enabled);
+    assert(
+      pro.length === VARIANT_FEATURE_KEYS.sparki_pro.length,
+      `verwacht ${VARIANT_FEATURE_KEYS.sparki_pro.length} sparki_pro-rijen, kreeg ${pro.length}`,
+    );
+    for (const key of VARIANT_FEATURE_KEYS.sparki_pro) {
+      assert(pro.some((r) => r.featureKey === key), `sparki_pro mist ${key}`);
+    }
+    // Besluit 31-07-2026: de vier Compleet-sleutels zijn bij sparki_go
+    // weggemigreerd; sparki_go heeft uitsluitend zijn eigen Go-sleutels.
+    const go = rows.filter((r) => r.productVariant === "sparki_go");
+    for (const key of COMPLEET_FEATURE_KEYS) {
+      if (!VARIANT_FEATURE_KEYS.sparki_go.includes(key)) {
+        assert(!go.some((r) => r.featureKey === key), `sparki_go mag ${key} niet meer hebben (gemigreerd)`);
       }
     }
+    assert(
+      go.length === VARIANT_FEATURE_KEYS.sparki_go.length,
+      `verwacht ${VARIANT_FEATURE_KEYS.sparki_go.length} sparki_go-rijen, kreeg ${go.length}`,
+    );
     const basic = rows.filter((r) => r.productVariant === "sparki_basic");
     const perf = rows.filter((r) => r.productVariant === "sparki_performance");
     assert(basic.length === 0, `sparki_basic (interne tier) moet leeg zijn, kreeg ${basic.length}`);
     assert(perf.length === 0, `sparki_performance (interne tier) moet leeg zijn, kreeg ${perf.length}`);
+  });
+
+  await scenario("superset-invariant: Compleet bezit élke Go-sleutel (Besluit 31-07-2026)", async () => {
+    for (const key of GO_FEATURE_KEYS) {
+      assert(
+        VARIANT_FEATURE_KEYS.sparki_pro.includes(key),
+        `Compleet mist Go-sleutel ${key} — superset-invariant geschonden`,
+      );
+    }
+    // Ook in de database zelf: elke enabled sparki_go-rij bestaat als sparki_pro-rij.
+    const rows = await db.select().from(variantFeatureGrantsTable);
+    const proKeys = new Set(
+      rows.filter((r) => r.productVariant === "sparki_pro" && r.enabled).map((r) => r.featureKey),
+    );
+    for (const r of rows.filter((x) => x.productVariant === "sparki_go" && x.enabled)) {
+      assert(proKeys.has(r.featureKey), `DB: Compleet mist Go-sleutel ${r.featureKey}`);
+    }
   });
 
   // ── Legacy-gedrag: flags blijven exact bepalend ────────────────────────────
@@ -450,37 +480,55 @@ async function main() {
     assert(basic.length === 0, "sparki_basic moet leeg blijven");
   });
 
-  // ── Taak 385: Gratis vs Go zichtbaar — Go-onderdelen + routepoorten ────────
-  await scenario("sparki_go-abonnee heeft commercieel recht op de vier Go-onderdelen", async () => {
-    const resolved = await resolveEntitlements(subUser); // subscription + sparki_go
-    for (const key of GO_FEATURE_KEYS) {
-      assert(hasCommercialFeature(resolved, key), `go mist recht op ${key}`);
+  // ── Besluit 31-07-2026 (was taak 385): Go ≠ Compleet — rechten + poorten ───
+  // Omgezet per Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001): de vier
+  // onderdelen zijn nu Compleet-only; sparki_go heeft ze NIET meer. Dit is een
+  // bewuste omzetting van het oude besluit (taak 385), geen reparatie.
+  await scenario("sparki_go-abonnee heeft GEEN recht meer op de vier Compleet-onderdelen; Compleet wél", async () => {
+    const goResolved = await resolveEntitlements(subUser); // subscription + sparki_go
+    for (const key of COMPLEET_FEATURE_KEYS) {
+      assert(!hasCommercialFeature(goResolved, key), `go mag ${key} niet meer hebben (Compleet-only)`);
+    }
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_pro" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    const compleet = await resolveEntitlements(subUser);
+    for (const key of COMPLEET_FEATURE_KEYS) {
+      assert(hasCommercialFeature(compleet, key), `Compleet mist recht op ${key}`);
       assert(
-        resolved.commercialFeatures[key]?.source === "variant:sparki_go",
-        `source van ${key} was ${resolved.commercialFeatures[key]?.source}`,
+        compleet.commercialFeatures[key]?.source === "variant:sparki_pro",
+        `source van ${key} was ${compleet.commercialFeatures[key]?.source}`,
       );
     }
-    // Niet-Go-onderdelen blijven zonder recht (fail-closed).
-    assert(!hasCommercialFeature(resolved, "route_planner"), "route_planner mag geen variantrecht zijn");
+    // Niet-toegekende onderdelen blijven zonder recht (fail-closed).
+    // route_planner wordt pas in Opdracht 2 (na bevestigde grens) een variantrecht.
+    assert(!hasCommercialFeature(compleet, "route_planner"), "route_planner mag geen variantrecht zijn");
+    // Terug naar sparki_go voor de vervolgscenario's.
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_go" })
+      .where(eq(userProfilesTable.clerkId, subUser));
   });
 
-  await scenario("sparki_basic-abonnee heeft géén Go-rechten; legacy alles", async () => {
+  await scenario("sparki_basic-abonnee heeft géén Compleet-rechten; legacy alles", async () => {
     await db
       .update(userProfilesTable)
       .set({ productVariant: "sparki_basic" })
       .where(eq(userProfilesTable.clerkId, subUser));
     const basic = await resolveEntitlements(subUser);
-    for (const key of GO_FEATURE_KEYS) {
+    for (const key of COMPLEET_FEATURE_KEYS) {
       assert(!hasCommercialFeature(basic, key), `basic mag ${key} niet hebben`);
     }
     const legacy = await resolveEntitlements(legacyUser);
-    for (const key of GO_FEATURE_KEYS) {
+    for (const key of COMPLEET_FEATURE_KEYS) {
       assert(hasCommercialFeature(legacy, key), `legacy moet ${key} behouden`);
     }
   });
 
-  await scenario("Go-routes zijn fail-closed voor basic (403 upgrade_required), open voor go en legacy", async () => {
-    // subUser staat nu op sparki_basic.
+  await scenario("Compleet-routes zijn fail-closed voor basic én go (403 upgrade_required), open voor Compleet en legacy", async () => {
+    // subUser staat nu op sparki_basic. Besluit 31-07-2026: ook sparki_go
+    // heeft geen recht meer op deze onderdelen — alleen Compleet en legacy.
     const paths = [
       ["GET", "/api/training-plan"],
       ["GET", "/api/races/insight"],
@@ -499,7 +547,16 @@ async function main() {
       .where(eq(userProfilesTable.clerkId, subUser));
     for (const [method, path] of paths) {
       const r = await apiReq(method, path, subUser);
-      assert(r.status !== 403, `${path}: go-abonnee kreeg onterecht 403`);
+      assert(r.status === 403, `${path}: go-abonnee moet nu 403 krijgen (Compleet-only), kreeg ${r.status}`);
+      assert(r.json?.code === "upgrade_required", `${path}: code was ${r.json?.code}`);
+    }
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_pro" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    for (const [method, path] of paths) {
+      const r = await apiReq(method, path, subUser);
+      assert(r.status !== 403, `${path}: Compleet-abonnee kreeg onterecht 403`);
       const l = await apiReq(method, path, legacyUser);
       assert(l.status !== 403, `${path}: legacy kreeg onterecht 403`);
     }

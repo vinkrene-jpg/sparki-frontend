@@ -40,7 +40,7 @@ import {
 } from "../scripts/governor-role-fixtures";
 import { getClubContext } from "../lib/club-permissions";
 import { effectiveParentAccess, SAFETY_CATEGORIES } from "../lib/parent-permissions";
-import { resolveEntitlements, hasCommercialFeature, GO_FEATURE_KEYS } from "../lib/entitlements";
+import { resolveEntitlements, hasCommercialFeature, COMPLEET_FEATURE_KEYS } from "../lib/entitlements";
 
 type Status = "pass" | "fail";
 const results: { scenario: string; status: Status; note?: string }[] = [];
@@ -155,13 +155,16 @@ async function main() {
     const go = await resolveEntitlements(clerkIdFor("athlete-adult"));
     const compleet = await resolveEntitlements(clerkIdFor("athlete-compleet"));
     assert(gratis.entitlementMode === "subscription", "gratis-context hoort subscription te zijn");
-    for (const key of GO_FEATURE_KEYS) {
+    // Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001): de vier onderdelen
+    // zijn Compleet-sleutels; GO_FEATURE_KEYS is (tot Opdracht 2) leeg, dus we
+    // tellen over de Compleet-sleutels om een betekenisvolle trap te toetsen.
+    for (const key of COMPLEET_FEATURE_KEYS) {
       assert(!hasCommercialFeature(gratis, key), `gratis mag ${key} niet hebben (fail-closed)`);
     }
     // GO- en COMPLETE-trial lopen door DEZELFDE resolutie; ze mogen niet
     // minder opleveren dan gratis en COMPLETE niet minder dan GO.
     const count = (r: Awaited<ReturnType<typeof resolveEntitlements>>) =>
-      GO_FEATURE_KEYS.filter((k) => hasCommercialFeature(r, k)).length;
+      COMPLEET_FEATURE_KEYS.filter((k) => hasCommercialFeature(r, k)).length;
     assert(count(go) >= count(gratis), "GO-trial resolvet minder dan gratis");
     assert(count(compleet) >= count(go), "COMPLETE-trial resolvet minder dan GO");
   });
