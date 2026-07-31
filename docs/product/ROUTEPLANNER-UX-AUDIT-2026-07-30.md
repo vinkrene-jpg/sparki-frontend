@@ -39,8 +39,8 @@ Belangrijk: het niveau verbergt alleen UI — de motor, veiligheidspoorten (blok
 ## 4. Hoe bepalen we iemands niveau?
 Voorstel: **automatische startkeuze + altijd zelf aanpasbaar.**
 - Afleiding: entitlement (gratis/go/compleet) × profiel-signalen (competitionLevel of wedstrijd-doelen ⇒ 4; garagefiets race/gravel/mtb of experienceLevel ≥ advanced ⇒ 3; anders 1/2).
-- Zichtbare instelling "Plannerweergave: Eenvoudig / Sport / Compleet" in route-instellingen, zodat niemand opgesloten zit. Eerlijk label: "Sparki koos Eenvoudig op basis van je profiel — pas aan wanneer je wilt."
-- Nieuw benodigd: waarde "stadsfiets/e-bike" in de garage-fietstypen (klein), en de "Compleet"-entitlement-variant.
+- Zichtbare instelling "Plannerweergave" in route-instellingen, zodat niemand opgesloten zit. Eerlijk label: "Sparki koos deze weergave op basis van je profiel — pas aan wanneer je wilt." *(Bijgewerkt 31-07-2026, WP-2: de definitieve weergavenamen zijn Gratis · Go gewone fietser · Go wielrenner/MTB/gravel · **Wedstrijd** — de oorspronkelijke voorstel-namen "Eenvoudig / Sport / Compleet" zijn vervallen; "Compleet" is uitsluitend een abonnementsnaam.)*
+- Nieuw benodigd: waarde "stadsfiets/e-bike" in de garage-fietstypen (klein), en de "Compleet"-entitlement-variant (abonnement, geen weergave).
 
 ## 5. Bouwvolgorde (voorstel, na akkoord)
 1. **Opruimen (grootste winst, geen gating nodig):** Bewaard → één compacte lijst, detail achter tik, alles standaard ingeklapt, duidelijke kaartgrenzen, stappenplan-afspraak ook in de trainings-drawer, tabs 5→3.
