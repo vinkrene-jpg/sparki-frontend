@@ -139,6 +139,10 @@ for (const tab of ALLE_TABS) {
 }
 
 // Oude deep-links zonder view landen op Bewaard — daar leven de routekaarten.
+// Eén-lijst-contract (besluit René 30/31-07-2026): zolang een route open staat
+// (?route=/?nav=/?ritopties=) is de compacte bibliotheeklijst tijdelijk
+// verborgen — het detail rendert via RoutePanel; zonder selectie is de lijst
+// juist dé weergave.
 for (const oud of ["route=42", "nav=1", "ritopties=1", ""]) {
   test(`?${oud || "(geen parameters)"} zonder view landt op Bewaard`, async () => {
     const view = await renderPage(oud);
@@ -146,7 +150,19 @@ for (const oud of ["route=42", "nav=1", "ritopties=1", ""]) {
       assert.equal(actieveTab(view.container), "bewaard");
       const paneel = view.container.querySelector("#tab-bewaard");
       assert.ok(paneel && !paneel.hasAttribute("hidden"));
-      assert.ok((paneel!.textContent ?? "").includes("route-library"));
+      const tekst = paneel!.textContent ?? "";
+      assert.ok(
+        tekst.includes("route-panel:bewaard"),
+        "detailpaneel (RoutePanel) rendert op Bewaard",
+      );
+      if (oud === "") {
+        assert.ok(tekst.includes("route-library"), "zonder selectie: lijst zichtbaar");
+      } else {
+        assert.ok(
+          !tekst.includes("route-library"),
+          "met open route (?route/?nav/?ritopties): lijst tijdelijk verborgen",
+        );
+      }
     } finally {
       view.rtl.cleanup();
     }

@@ -3536,10 +3536,13 @@ export function RoutePanel({
     view === "bewaard" && selRaw != null && Number.isFinite(Number(selRaw))
       ? Number(selRaw)
       : null
+  // Actieve navigatie (?nav=) is een veiligheidspad: na een telefoonherlaad
+  // midden in de rit herstelt de URL de open navigatie. De terugknop mag die
+  // NOOIT sluiten — hij verschijnt niet tijdens navigatie en wist ?nav= niet.
+  const navActive = selParams.get("nav") != null
   const clearSelection = () => {
     const params = new URLSearchParams(window.location.search)
     params.delete("route")
-    params.delete("nav")
     params.delete("ritopties")
     const q = params.toString()
     setPanelLocation(`${panelPath}${q ? `?${q}` : ""}`)
@@ -3867,7 +3870,7 @@ export function RoutePanel({
 
       {/* Terugknop boven de geopende routekaart — de compacte lijst is de
           standaardweergave, de grote kaart alleen voor de gekozen route. */}
-      {view === "bewaard" && selectedId != null && !isLoading && (
+      {view === "bewaard" && selectedId != null && !isLoading && !navActive && (
         <button
           type="button"
           onClick={clearSelection}

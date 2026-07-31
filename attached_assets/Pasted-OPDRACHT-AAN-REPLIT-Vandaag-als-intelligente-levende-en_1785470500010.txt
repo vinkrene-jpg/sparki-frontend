@@ -1,0 +1,383 @@
+OPDRACHT AAN REPLIT — Vandaag als intelligente, levende en rolafhankelijke startpagina
+
+Doel
+De huidige Vandaag-pagina is te statisch en voegt op rustige dagen te weinig toe. Bouw Vandaag om tot de persoonlijke, intelligente startpagina van Sparki. De pagina moet per gebruiker, rol, leeftijd, niveau, actuele situatie en inlogmoment bepalen wat nu het belangrijkst is.
+
+Belangrijk
+Dit is geen volledige herschrijving en geen nieuw parallel systeem.
+
+Eerst:
+1. inventariseer welke bestaande engines, rollen, API’s, databronnen, kaarten en analyses al beschikbaar zijn;
+2. hergebruik deze aantoonbaar;
+3. voeg alleen ontbrekende selectie-, prioriterings- en presentatielogica toe;
+4. behoud bestaande werkende flows, data en autorisaties.
+
+1. Onderzoek huidige situatie
+
+Breng vóór bouwen in kaart:
+
+- huidige implementatie van Vandaag;
+- herkomst van alle getoonde waarden en teksten;
+- bestaande coach-, herstel-, belasting- en planningsengines;
+- seizoen-, doel- en wedstrijdinformatie;
+- route-, navigatie-, materiaal-, voeding- en analysefuncties;
+- bestaande rollen en rolwisselaar;
+- leeftijd, niveau, ervaringsprofiel en gebruikersvoorkeuren;
+- welke functies al bestaan maar nu diep in de applicatie verborgen zijn;
+- welke kaarten nu dubbelingen tonen;
+- welke uitspraken mogelijk onvoldoende door echte data worden onderbouwd.
+
+Leg dit vast in:
+
+docs/SPARKI_TODAY_CAPABILITY_INVENTORY.md
+
+2. Vandaag wordt rol- en gebruikersafhankelijk
+
+Vandaag mag niet voor iedereen hetzelfde dashboard tonen.
+
+Ondersteun minimaal afzonderlijke ervaringen voor:
+
+- jonge renner rond 15 jaar;
+- wedstrijdrenner rond 17 jaar;
+- volwassen wedstrijdrenner;
+- recreatieve renner;
+- beginnende renner;
+- ervaren prestatiegerichte renner;
+- zelfstandige trainer/coach;
+- ploegleider;
+- mechanieker;
+- ouder/verzorger;
+- clubbeheerder.
+
+Verschillen moeten verder gaan dan alleen tekst.
+
+Per profiel mogen veranderen:
+
+- hoofdboodschap;
+- prioriteit;
+- kaartvolgorde;
+- informatiediepte;
+- gebruikte termen;
+- beschikbare acties;
+- zichtbare functies;
+- veiligheids- en leeftijdscontext;
+- mate van technische detaillering.
+
+Voorbeeld:
+Een zelfstandige trainer krijgt een coachdashboard met aandachtssporters, gemiste trainingen, feedback, afwijkingen en te beoordelen voorstellen.
+
+Een 15-jarige renner krijgt eenvoudige uitleg, één duidelijke actie, leerdoelen, herstelcontext en passende veiligheidscommunicatie.
+
+Een volwassen wedstrijdrenner krijgt compacte prestatie-informatie, wedstrijdvoorbereiding, trainingsrespons en diepere onderbouwing.
+
+3. Intelligente selectie per moment
+
+Bouw één centrale Today Orchestrator die bestaande informatie rangschikt.
+
+De orchestrator bepaalt bij iedere paginalaad:
+
+- wat urgent is;
+- wat nieuw is;
+- wat relevant is;
+- wat al eerder is getoond;
+- welke actie nog openstaat;
+- wat past bij de rol en het profiel;
+- welk onderdeel op dit moment waarde toevoegt.
+
+Gebruik eerst deterministische regels en betrouwbare data.
+
+AI mag worden gebruikt voor:
+
+- het begrijpelijk formuleren van de conclusie;
+- het combineren van meerdere betrouwbare signalen;
+- het kiezen van een passende uitlegtoon;
+- het samenvatten van bestaande analyses;
+- het voorstellen van relevante vervolgstappen.
+
+AI mag niet:
+
+- feiten, vooruitgang of herstel verzinnen;
+- ontbrekende data invullen;
+- willekeurige kaarten tonen om de pagina levendig te laten lijken;
+- medische conclusies stellen;
+- bestaande trainerbeslissingen onzichtbaar overschrijven.
+
+4. Iedere dag en inlog moet relevant kunnen verschillen
+
+De pagina moet levendig zijn, maar niet willekeurig.
+
+Inhoud mag veranderen door:
+
+- nieuwe activiteit of synchronisatie;
+- gewijzigde herstelstatus;
+- uitgevoerde of gemiste training;
+- extra activiteit;
+- tijdstip van de dag;
+- naderende wedstrijd;
+- nieuwe coachfeedback;
+- materiaalwaarschuwing;
+- nieuwe persoonlijke prestatie;
+- gewijzigde planning;
+- onbeantwoorde check-in;
+- eerder getoonde inhoud;
+- gewijzigde weers- of routecontext wanneer beschikbaar.
+
+Voeg een weergavehistorie toe zodat Sparki weet:
+
+- welke boodschap is getoond;
+- wanneer die is getoond;
+- of de gebruiker erop heeft geklikt;
+- of de actie is afgerond;
+- of herhaling nog zinvol is.
+
+Niet iedere herinlog hoeft totaal nieuwe inhoud te tonen. Belangrijke openstaande acties mogen blijven staan, maar ondersteunende kaarten moeten slim kunnen wisselen.
+
+5. Gewenste paginaopbouw
+
+Toon standaard maximaal:
+
+1. één hoofdboodschap of hoofdactie;
+2. één duidelijke onderbouwing;
+3. één persoonlijk inzicht of ontwikkelpunt;
+4. één wisselend relevant onderdeel;
+5. aanvullende kaarten alleen bij echte noodzaak.
+
+Voorkom:
+
+- herhaling van dezelfde conclusie;
+- grote lege schermdelen;
+- kaarten zonder actie of betekenis;
+- generieke teksten die voor iedereen gelijk zijn;
+- onverklaarde cijfers;
+- claims zoals “je gaat vooruit” zonder aantoonbare trenddata.
+
+6. Bestaande functies zichtbaar maken
+
+Gebruik Vandaag als intelligent etalagevenster voor reeds gebouwde functies.
+
+Maak contextafhankelijk zichtbaar:
+
+Training en coaching:
+- training van vandaag;
+- adaptieve coachlogica;
+- trainingsaanpassing;
+- gemiste of extra training;
+- herstel- en belastbaarheidsbeoordeling;
+- analyse na een activiteit;
+- seizoen- en doelplanning;
+- autonome coaching versus trainerbegeleiding.
+
+Prestatie en ontwikkeling:
+- vermogensontwikkeling;
+- sprint- en duurprestaties;
+- hartslag, cadans, pacing en herstel;
+- sterke en zwakke punten;
+- persoonlijke trends;
+- betrouwbaarheid van conclusies;
+- sporthistorie en ontwikkelpunten.
+
+Wedstrijdintelligentie:
+- komende wedstrijd;
+- voorbereiding;
+- parcours en koersinformatie;
+- tactisch aandachtspunt;
+- materiaalvoorbereiding;
+- wedstrijdanalyse;
+- gevolgen voor vervolgtraining.
+
+Routes en navigatie:
+- passende route;
+- GPX- en course-pointfuncties;
+- hoogteprofiel;
+- routegeschiktheid;
+- persoonlijk testtraject;
+- navigatievoorstel passend bij beschikbare tijd.
+
+Materiaal:
+- garage;
+- fietsprofiel;
+- onderhoudsstatus;
+- begeleide fietsscan;
+- materiaalwaarschuwing;
+- wedstrijdcheck;
+- reserveonderdelen.
+
+Data en koppelingen:
+- synchronisatiestatus;
+- Garmin, Strava en andere gekoppelde bronnen;
+- ontbrekende data;
+- betrouwbaarheid van de analyse;
+- bron van het advies.
+
+Voeding en herstel:
+- voeding rond training en wedstrijd;
+- slaap en vermoeidheid;
+- korte check-in;
+- hersteladvies;
+- uitleg waarom een advies wordt gegeven.
+
+7. Voorbeeldsituatie huidige screenshot
+
+De huidige situatie met:
+
+- “Je bent goed belastbaar en je gaat vooruit”;
+- geen training gepland;
+- herstelstatus “Belastbaar”;
+- seizoenkaart;
+- veel lege ruimte;
+
+is onvoldoende.
+
+In een vergelijkbare situatie moet Vandaag bijvoorbeeld tonen:
+
+“Vandaag staat geen training gepland. Je bent voldoende hersteld en je belangrijkste wedstrijd is over negen dagen. Een korte intensieve prikkel past nog in de opbouw, maar een bewuste hersteldag is ook verantwoord.”
+
+Acties:
+
+- Laat Sparki een training voorstellen
+- Kies bewust voor herstel
+- Bekijk de onderbouwing
+
+Bij een latere inlog kan een relevant vervolg worden getoond, zoals:
+
+- een passende route;
+- materiaalcontrole;
+- inzicht uit de laatste rit;
+- korte herstelvraag;
+- wedstrijdvoorbereiding.
+
+8. Technische randvoorwaarden
+
+- Geen mock-, demo-, seed- of fallbackdata als persoonlijke informatie.
+- Bij ontbrekende data een eerlijke lege toestand.
+- Iedere conclusie moet een herleidbare bron hebben.
+- Bestaande rechten en privacyregels behouden.
+- Leeftijds- en rolgevoelige informatie correct afschermen.
+- Geen nieuwe AI-call bij iedere paginalaad wanneer dezelfde uitkomst gecachet kan worden.
+- AI-output opslaan met bronverwijzing, timestamp, confidence en gebruikte inputcategorieën.
+- Zorg voor een deterministische fallback wanneer AI niet beschikbaar is.
+- Voorkom flikkerende kaartvolgorde en volledig willekeurige UI.
+- Zorg dat desktop en mobiel allebei bruikbaar blijven.
+- Behoud de bestaande visuele verbeteringen, maar maak de inhoud leidend.
+
+9. Beheer en uitlegbaarheid
+
+Voeg voor test- en beheerdoeleinden een debug-/onderbouwingsweergave toe, alleen toegankelijk voor bevoegde testers of admins.
+
+Deze toont:
+
+- gekozen gebruikersprofiel;
+- actieve rol;
+- geselecteerde hoofdprioriteit;
+- kandidaten die zijn afgevallen;
+- gebruikte databronnen;
+- reden van selectie;
+- confidence;
+- AI gebruikt: ja/nee;
+- laatste wijzigingsmoment;
+- reden waarom een kaart opnieuw wordt getoond.
+
+Geen technische debugdetails zichtbaar voor gewone gebruikers.
+
+10. Testscenario’s
+
+Maak minimaal testscenario’s voor:
+
+- 15-jarige renner zonder training;
+- 17-jarige wedstrijdrenner één dag voor wedstrijd;
+- volwassen wedstrijdrenner na zware training;
+- recreatieve renner met slechts 45 minuten beschikbaar;
+- beginner zonder voldoende historische data;
+- sporter met trainerkoppeling;
+- sporter zonder trainer;
+- zelfstandige trainer met meerdere aandachtssporters;
+- ploegleider in wedstrijddagcontext;
+- mechanieker met materiaalwaarschuwing;
+- ouder/verzorger;
+- clubbeheerder;
+- gebruiker met ontbrekende synchronisatie;
+- gebruiker die meerdere keren op één dag inlogt;
+- AI-dienst niet beschikbaar;
+- tegenstrijdige databronnen;
+- geen relevante nieuwe gebeurtenissen.
+
+Bewijs dat:
+
+- rollen daadwerkelijk verschillende pagina’s krijgen;
+- leeftijd en niveau invloed hebben;
+- dezelfde boodschap niet zinloos blijft herhalen;
+- urgente acties wel zichtbaar blijven;
+- AI niets verzint;
+- bestaande functies worden hergebruikt;
+- de pagina ook zonder AI functioneert.
+
+11. Documentatie bijwerken
+
+Werk minimaal deze documenten bij of maak ze aan wanneer ze nog niet bestaan:
+
+docs/SPARKI_TODAY_CAPABILITY_INVENTORY.md
+- inventaris van bestaande functies, engines, data en rollen;
+- wat al beschikbaar is;
+- wat nog ontbreekt;
+- hergebruikbeslissingen.
+
+docs/SPARKI_TODAY_EXPERIENCE.md
+- productvisie;
+- profiel- en rolverschillen;
+- prioriteringsregels;
+- voorbeeldsituaties;
+- gedrag bij meerdere inlogmomenten;
+- regels voor AI en deterministische logica.
+
+docs/SPARKI_TODAY_ORCHESTRATOR.md
+- technische architectuur;
+- inputs;
+- ranking;
+- caching;
+- history;
+- confidence;
+- privacy;
+- fallback;
+- uitlegbaarheid.
+
+docs/SPARKI_TODAY_TEST_MATRIX.md
+- alle testprofielen;
+- scenario’s;
+- verwachte hoofdboodschap;
+- verwachte acties;
+- toegestane en verboden informatie;
+- testresultaten en bewijs.
+
+docs/SPARKI_CURRENT_STATE.md
+- huidige status van de vernieuwde Vandaag-ervaring;
+- wat productiegeschikt is;
+- wat nog experimenteel is;
+- bekende beperkingen;
+- openstaande vervolgstappen.
+
+De actuele Master Plan-/roadmapdocumentatie:
+- voeg deze verbetering toe als een eigen werkpakket;
+- markeer niet als afgerond voordat de verschillende rollen en profielen aantoonbaar zijn getest;
+- vermeld dat visuele verbetering alleen niet voldoende is;
+- leg vast dat Vandaag het persoonlijke etalagevenster van Sparki wordt.
+
+12. Oplevering
+
+Lever op:
+
+- overzicht van gevonden bestaande componenten;
+- overzicht van hergebruikte componenten;
+- gewijzigde bestanden;
+- databasemigraties, indien nodig;
+- screenshots voor minimaal zes duidelijk verschillende gebruikersprofielen;
+- bewijs van meerdere inlogmomenten op dezelfde dag;
+- testresultaten;
+- bekende beperkingen;
+- documentatie-updates;
+- expliciete bevestiging dat geen parallel coach- of analysesysteem is gebouwd.
+
+Stop na inventarisatie wanneer blijkt dat essentiële databronnen of rolprofielen ontbreken. Rapporteer dan eerst exact wat ontbreekt en bouw geen schijnoplossing met algemene AI-teksten.
+
+Acceptatiecriterium
+
+De opdracht is pas geslaagd wanneer Vandaag niet langer één vrijwel gelijk dashboard voor iedereen is, maar aantoonbaar een andere, actuele en nuttige startpagina vormt voor verschillende leeftijden, niveaus en rollen — gevoed door echte Sparki-data en bestaande hoogwaardige functies.
