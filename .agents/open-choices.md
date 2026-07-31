@@ -61,6 +61,16 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15i. **RELEASE_01 (slotpakket, ontvangen 31-07-2026)** — afwijkend pakket:
+    niets nieuws bouwen, alleen de app volledig en reproduceerbaar toetsbaar
+    maken voor één integrale Mirror-doorloop; defecten gaan terug naar hun
+    domeinpakket. Start pas als ALLE domeinpakketten MIRROR_PROVEN zijn.
+    De voorwaardenlijst noemt ook pakketten die nog niet zijn ontvangen:
+    CLUB_LEDEN_01 · JEUGD_OUDER_01 · TRAINER_KOPPELING_01 · ACTIVITEITEN_01 ·
+    MECHANIEKER_01 · COACH_ADAPTIEF_01 · WEDSTRIJD_01 · VOEDING_01 · EBIKE_01 ·
+    ANALYSE_01 · AI_GRENZEN_01 · AI_CONTEXT_01 · AI_KWALITEIT_01 · WANDELEN_01.
+    Stripe-livegang blijft een apart besluit van René.
+
 15h. **Vrijgave TRAINING_FLOW_01 (ontvangen 31-07-2026)** — training van
     ontwerp tot evaluatie (bouwer, inplannen, uitvoeren, automatisch koppelen
     aan gereden activiteit, gepland-naast-uitgevoerd, feedback). Bouwt op
