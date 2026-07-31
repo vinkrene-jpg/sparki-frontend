@@ -15,9 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: pnpm
+      # De validator-scripts importeren workspace-pakketten (o.a. "yaml");
+      # zonder install faalt de job op ERR_MODULE_NOT_FOUND — dit was de
+      # eerste echte foutoorzaak van de rode validators-job.
+      - name: Install
+        run: pnpm install --frozen-lockfile
       - name: Promise-calibratie
         run: node scripts/check-promise-calibration.mjs
       - name: Sanity-rapporten (checker-zelftest + fail-closed check)
@@ -64,6 +73,12 @@ jobs:
       SESSION_SECRET: ci-only-session-secret
       NODE_ENV: development
       DEV_AUTH_BYPASS: "true"
+      # Verse CI-database heeft géén user_profiles-rijen; zonder dev-identiteit
+      # resolvet de dev-auth naar niemand en geeft elke route 401 — dit was de
+      # eerste echte foutoorzaak van de rode admin-smoke-job. De identiteit
+      # wordt hieronder als echte rij geseed; de test zelf bewijst onverminderd
+      # eerst de strikte niet-admin-poort (isAdmin:false zonder SPARKI_ADMIN_IDS).
+      DEV_AUTH_CLERK_ID: ci_admin_smoke
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -77,5 +92,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Schema naar verse Postgres (drizzle push)
         run: pnpm --filter @workspace/db run push-force
+      - name: Seed dev-identiteit (verse DB heeft geen gebruikers)
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d sparki_ci -v ON_ERROR_STOP=1 \
+            -c "INSERT INTO user_profiles (clerk_id, email) VALUES ('ci_admin_smoke', 'ci-admin-smoke@sparki.test') ON CONFLICT DO NOTHING"
       - name: Admin-smoke (echte Express-app)
         run: pnpm --filter @workspace/api-server run test:admin-smoke
