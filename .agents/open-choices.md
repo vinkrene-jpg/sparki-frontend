@@ -61,6 +61,13 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15h. **Vrijgave TRAINING_FLOW_01 (ontvangen 31-07-2026)** — training van
+    ontwerp tot evaluatie (bouwer, inplannen, uitvoeren, automatisch koppelen
+    aan gereden activiteit, gepland-naast-uitgevoerd, feedback). Bouwt op
+    bestaande training-plan-engine + planned_workouts/training_sessions.
+    Harde voorwaarden: `ACTIVITEITEN_01` (pakket nog niet ontvangen!),
+    `DATA_TRUST_01` en `ROUTE_PAKKET_01` MIRROR_PROVEN vóór start.
+
 15g. **Vrijgave bundel 30–34 (ontvangen 31-07-2026)** — vijf domeinpakketten:
     30 PROFIEL_01 (centraal sportpaspoort/profielbeheer incl. privacy/export),
     31 HELPDESK_01 (AI-helpdesk met triage, escalatie, audittrail),
