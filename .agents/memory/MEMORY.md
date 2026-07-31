@@ -92,6 +92,7 @@
 - [Sparki routeketen](sparki-route-chain.md) — share-uniqueness needs nullsNotDistinct (NULL targets duplicate); version bumps only on inhoudelijke edits; soft-delete only with usage history.
 - [Sparki plan lifecycle](sparki-plan-lifecycle.md) — pause/resume/delete scoped to ONE resolveCurrentPlan id (newest active else newest paused); never status-wide bulk updates; sessions never touched.
 - [Sparki ride-navigator & rit-einde](sparki-ride-navigator.md) — nav-live is SSOT; elk rit-einde-pad moet clearSavedRide of spookherstel ([trim](sparki-ride-trim.md): auto-trim undoable pre-save, metadata-only, duration honest-null op nul afstand; [rit als route](sparki-ridden-route-save.md)).
+- [Routegeneratie jobmodel](sparki-route-generation-jobs.md) — start+poll ipv lange POST; sweep-timer, idempotente finish, resume-safe poll, dev-header-fallback-valkuil.
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
 - [Sparki leefagenda](sparki-life-agenda.md) — athlete-entered life events steer the plan generator; list queries need overlap semantics or ongoing events become invisible but still steer.
 - [Sparki mobile BLE sensors](sparki-mobile-ble-sensors.md) — ble-plx guarded require (Expo Go honest-unsupported); BLE values base64; 1s sampler → GPX gpxtpx/power ([GPX](sparki-ride-sensor-gpx.md)).
