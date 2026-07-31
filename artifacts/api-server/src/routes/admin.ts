@@ -24,6 +24,7 @@ import {
   type TesterRawData,
 } from "../lib/test-dashboard/scoring";
 import { isConnectorAvailable } from "../lib/connectors/registry";
+import { isTestIdentity } from "../engines/data-origin/classification";
 import { buildScheduledTasks } from "../lib/scheduled-tasks";
 import { libraryBackfillState } from "../lib/library-backfill";
 import { securityAuditLogTable, analysisFeedbackTable } from "@workspace/db";
@@ -1325,6 +1326,16 @@ router.get("/data-provenance", requireAuth, requireAdmin, async (req, res) => {
             (row?.n ?? 0) > 0
               ? "directe of afgeleide echte gebruikersdata"
               : "geen brondata",
+          // Centrale data-trust-classificatie (DATA_TRUST_01): testidentiteit
+          // is zichtbaar in het adminoverzicht. Per-waarde-klassen komen uit
+          // de explain-endpoints; een surface-brede klasse zou hier gokken
+          // zijn, dus die geven we eerlijk alleen wanneer hij vaststaat.
+          klasse: isTestIdentity(target)
+            ? ("TEST_ONLY" as const)
+            : (row?.n ?? 0) === 0
+              ? ("UNKNOWN" as const)
+              : null,
+          testAccount: isTestIdentity(target),
         });
       } catch (err) {
         // Eerlijke fout per blok — nooit vervangen door verzonnen cijfers.

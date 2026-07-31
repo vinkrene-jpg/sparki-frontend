@@ -21,6 +21,16 @@ Laatst bijgewerkt: 2026-07-31.
 
 ## Open (wachten op René)
 
+17. **Geschatte FTP en zones/plangeneratie (31-07-2026, uit DATA_TRUST_01-review)** —
+    De geschatte onboarding-FTP is nu overal zichtbaar als schatting en telt NIET
+    meer mee voor belastingscores (TSS/IF) of de Vermogen-as van de radar. Maar:
+    trainingszones, W/kg-weergave, plangeneratie en tijdrit-pacing gebruiken de
+    profiel-FTP nog wél (ook als die geschat is). Dat is bewust productgedrag voor
+    Q&A-only-onboarding (anders heeft een nieuwe gebruiker geen zones en geen plan).
+    KEUZE voor René: (a) zo laten, met duidelijke "(op basis van geschatte FTP)"-
+    labels bij zones/plan/pacing, of (b) deze functies blokkeren tot er een echte/
+    afgeleide FTP is. Advies: (a).
+
 14. **Vrijgave drie voorbereide pakketten (31-07-2026)** — `DATA_TRUST_01` (aangevuld
     met herstelprotocol/afhankelijkheden uit files_8), `ABONNEMENT_01` en
     `DOCUMENTEN_COMMUNICATIE_01` staan klaar; geadviseerde volgorde: data-trust →

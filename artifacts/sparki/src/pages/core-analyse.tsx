@@ -127,7 +127,7 @@ type Bron<T> = {
 }
 
 type Profiel =
-  | { displayName?: string | null; ftp?: number | null; weightKg?: number | null; weeklyHourTarget?: number | null }
+  | { displayName?: string | null; ftp?: number | null; ftpEstimated?: boolean | null; weightKg?: number | null; weeklyHourTarget?: number | null }
   | null
   | undefined
 
@@ -591,7 +591,7 @@ function OverzichtTab({
           uitlegKey="vorm"
         />
         <StatTegel
-          label="FTP"
+          label={profiel?.ftpEstimated ? "FTP (geschat)" : "FTP"}
           value={profiel?.ftp ?? null}
           unit="W"
           color={CHART.ftp}

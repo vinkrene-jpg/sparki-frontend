@@ -26,6 +26,8 @@ import {
   type LifeEventImpact,
 } from "@/hooks/use-life-events"
 import { workoutIcon } from "@/lib/workout-visual"
+import { useDataState } from "@/hooks/use-data-state"
+import { DataStateNotice } from "@/components/sparki/data-state-notice"
 import { localISODate } from "@/lib/commercial-shell"
 
 function formatDate(iso: string): string {
@@ -76,6 +78,18 @@ type AgendaItem = {
 // Hoofdstuk Kalender — één agenda-overzicht van wat er aankomt: geplande
 // trainingen, wedstrijden én je leefagenda (school/familie/werk). Sparki
 // bouwt het trainingsschema om je leefagenda heen.
+function KalenderDataState() {
+  const dataState = useDataState("kalender")
+  if (dataState.isError) {
+    return <DataStateNotice className="mt-4" state={null} queryError={dataState.error} onActie={() => void dataState.refetch()} />
+  }
+  if (!dataState.data || dataState.data.toestand === "ok" || dataState.data.toestand === "geen_data") {
+    // geen_data heeft hieronder al zijn eigen eerlijke lege staat met acties.
+    return null
+  }
+  return <DataStateNotice className="mt-4" state={dataState.data} />
+}
+
 export default function KalenderPage() {
   const { data: workouts, isLoading: plansLoading } = usePlanWindow(4)
   const { data: races, isLoading: racesLoading } = useRaces()
@@ -134,6 +148,8 @@ export default function KalenderPage() {
 
       <section className="mt-8">
         <SectionLabel title="Aankomend" />
+        {/* Zeven-toestandencontract: server-side bepaald (DATA_TRUST_01 §4). */}
+        <KalenderDataState />
         {loading ? (
           <p className="mt-4 text-[13px] text-white/40">Bezig met laden…</p>
         ) : items.length === 0 ? (

@@ -8,6 +8,8 @@ import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer";
 import { TrainingProgression } from "@/components/sparki/training-progression";
 import { useSessions } from "@/hooks/use-sessions";
 import { useLoad } from "@/hooks/use-load";
+import { useDataState } from "@/hooks/use-data-state";
+import { DataStateNotice } from "@/components/sparki/data-state-notice";
 import { localISODate } from "@/lib/commercial-shell";
 import { cn } from "@/lib/utils";
 import type { TrainingSession } from "@/lib/athlete-types";
@@ -36,6 +38,8 @@ export default function CoreActiviteitenPage() {
     refetch: refetchSessions,
   } = useSessions(500);
   const { data: load, isLoading: loadLoading, isError: loadIsError } = useLoad();
+  // Zeven-toestandencontract: server-side bepaald (DATA_TRUST_01 §4).
+  const dataState = useDataState("sessies");
 
   const [selected, setSelected] = useState<TrainingSession | null>(null);
   const [open, setOpen] = useState(false);
@@ -132,20 +136,29 @@ export default function CoreActiviteitenPage() {
               </p>
             </div>
           </div>
-          <DsState
-            className="mt-8"
-            soort="leeg"
-            titel="Nog geen ritten"
-            beschrijving="Koppel je fietscomputer of Strava."
-            actie={{
-              label: "Koppeling instellen",
-              onClick: () => navigate("/you?focus=connections"),
-            }}
-            uitleg={{
-              tekst:
-                "Na het koppelen verschijnen je ritten hier vanzelf — met al je meetgegevens, zoals vermogen, hartslag en hoogte.",
-            }}
-          />
+          {dataState.data && dataState.data.toestand !== "ok" && dataState.data.toestand !== "geen_data" ? (
+            <DataStateNotice
+              className="mt-8"
+              state={dataState.data}
+              onActie={() => navigate("/you?focus=connections")}
+              actieLabel="Naar koppelingen"
+            />
+          ) : (
+            <DsState
+              className="mt-8"
+              soort="leeg"
+              titel="Nog geen ritten"
+              beschrijving="Koppel je fietscomputer of Strava."
+              actie={{
+                label: "Koppeling instellen",
+                onClick: () => navigate("/you?focus=connections"),
+              }}
+              uitleg={{
+                tekst:
+                  "Na het koppelen verschijnen je ritten hier vanzelf — met al je meetgegevens, zoals vermogen, hartslag en hoogte.",
+              }}
+            />
+          )}
           <HumorLine context="empty_training" className="mx-auto mt-4 max-w-xs text-center" />
         </div>
       </CommercialShell>
