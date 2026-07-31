@@ -42,6 +42,12 @@ import {
   type RouteVergelijk,
 } from "@/hooks/use-routes"
 import { useActivityImports } from "@/hooks/use-activity-imports"
+// Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-002): bibliotheek-beheer-
+// extra's (zoeken, sorteren, scopes, hernoemen/bewerken, dupliceren) horen
+// bij Sparki Go. Opslaan, simpele lijst, openen en verwijderen blijven
+// gratis. Server-side poort is leidend; hier alleen een rustige verwijzing.
+import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 import { ACCENT } from "@/components/sparki/ui"
 import { displayRouteName } from "@/lib/route-name"
 import { racefietsVerification } from "@/lib/racefiets-verification"
@@ -206,8 +212,19 @@ export function RouteLibrary() {
   // gedeelde of getoonde weergave voor anderen worden gemaskeerd.
   const [zonesOpen, setZonesOpen] = useState(false)
 
-  const libScope: RouteScope = scope === "gedeeld" ? "mijn" : scope
-  const lib = useRouteLibrary(q, libScope, sort)
+  // Go-poort (Besluit 2026-002): zonder Go tonen we de simpele lijst
+  // (nieuwste eerst) zonder zoek/sorteer/scope-extra's — geen slotjes,
+  // één rustige verwijzing. UI faalt open zolang rechten laden.
+  const beheer = useFeatureAccess("route_library_manage")
+  const beheerLocked = beheer.known && !beheer.entitled
+
+  const libScope: RouteScope =
+    scope === "gedeeld" || beheerLocked ? "mijn" : scope
+  const lib = useRouteLibrary(
+    beheerLocked ? "" : q,
+    libScope,
+    beheerLocked ? "nieuwste" : sort,
+  )
   const shared = useSharedRoutes(scope === "gedeeld")
   const update = useUpdateRoute()
   const download = useDownloadRoute()
@@ -247,29 +264,33 @@ export function RouteLibrary() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Zoeken + sorteren */}
+      {/* Zoeken + sorteren — beheer-extra's, alleen met Sparki Go (Besluit 2026-002) */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Zoek op naam…"
-            className="w-full rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] py-2 pl-9 pr-3 text-[13px] text-white/85 placeholder:text-white/30 outline-none backdrop-blur-md focus:border-cyan-300/40"
-          />
-        </div>
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as RouteSort)}
-          className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/75 outline-none backdrop-blur-md"
-          aria-label="Sorteren"
-        >
-          {SORTS.map((s) => (
-            <option key={s.key} value={s.key}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        {!beheerLocked && (
+          <>
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Zoek op naam…"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] py-2 pl-9 pr-3 text-[13px] text-white/85 placeholder:text-white/30 outline-none backdrop-blur-md focus:border-cyan-300/40"
+              />
+            </div>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as RouteSort)}
+              className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/75 outline-none backdrop-blur-md"
+              aria-label="Sorteren"
+            >
+              {SORTS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <button
           type="button"
           onClick={() => setZonesOpen(!zonesOpen)}
@@ -287,9 +308,17 @@ export function RouteLibrary() {
 
       {zonesOpen && <PrivacyZonesPanel onClose={() => setZonesOpen(false)} />}
 
-      {/* Scope-tabs */}
+      {/* Rustige verwijzing i.p.v. de beheer-extra's (Besluit 2026-002) */}
+      {beheerLocked && (
+        <UpgradeNudge feature="route_library_manage" compact metActie />
+      )}
+
+      {/* Scope-tabs — zonder Go alleen "Mijn routes" en "Gedeeld met mij" */}
       <div className="flex flex-wrap gap-1.5">
-        {SCOPES.map((s) => {
+        {(beheerLocked
+          ? SCOPES.filter((s) => s.key === "mijn" || s.key === "gedeeld")
+          : SCOPES
+        ).map((s) => {
           const n = countFor(s.key)
           return (
             <button
@@ -392,6 +421,7 @@ export function RouteLibrary() {
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5">
+                      {!beheerLocked && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -409,6 +439,7 @@ export function RouteLibrary() {
                           style={fav ? { color: "#fde68a" } : undefined}
                         />
                       </button>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -507,18 +538,33 @@ export function RouteLibrary() {
                   <RouteMenu
                     onClose={() => setOpenMenuId(null)}
                     items={[
-                      {
-                        icon: <Pencil className="h-3.5 w-3.5" />,
-                        label: "Naam wijzigen",
-                        onClick: () => {
-                          const next = window.prompt(
-                            "Nieuwe naam voor deze route:",
-                            r.name,
-                          )
-                          if (next && next.trim() && next.trim() !== r.name)
-                            update.mutate({ id: r.id, name: next.trim() })
-                        },
-                      },
+                      // Beheer-extra's (hernoemen, openbaar, voorstellen,
+                      // dupliceren, archiveren) horen bij Sparki Go
+                      // (Besluit 2026-002) — zonder Go rustig weglaten;
+                      // delen, GPX, vergelijken en verwijderen blijven.
+                      ...(beheerLocked
+                        ? []
+                        : [
+                            {
+                              icon: <Pencil className="h-3.5 w-3.5" />,
+                              label: "Naam wijzigen",
+                              onClick: () => {
+                                const next = window.prompt(
+                                  "Nieuwe naam voor deze route:",
+                                  r.name,
+                                )
+                                if (
+                                  next &&
+                                  next.trim() &&
+                                  next.trim() !== r.name
+                                )
+                                  update.mutate({
+                                    id: r.id,
+                                    name: next.trim(),
+                                  })
+                              },
+                            },
+                          ]),
                       {
                         icon: <Share2 className="h-3.5 w-3.5" />,
                         label: "Delen",
@@ -552,6 +598,9 @@ export function RouteLibrary() {
                             },
                           ]
                         : []),
+                      ...(beheerLocked
+                        ? []
+                        : [
                       {
                         icon: <Globe2 className="h-3.5 w-3.5" />,
                         label:
@@ -634,6 +683,7 @@ export function RouteLibrary() {
                             onClick: () =>
                               update.mutate({ id: r.id, status: "archived" }),
                           },
+                          ]),
                       {
                         icon: <Trash2 className="h-3.5 w-3.5" />,
                         label: "Verwijder",

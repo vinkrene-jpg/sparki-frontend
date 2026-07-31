@@ -1,0 +1,190 @@
+[
+  {
+    "persona": "seed_persona_gratis",
+    "viewport": "mobiel",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "mobiel: simpele lijst: geen zoek/sorteer"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: alleen Mijn routes + Gedeeld met mij"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: rustige verwijzing naar Sparki Go aanwezig"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: GET /api/routes (simpel) → 200 voor iedereen"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: routes?sort=afstand → 403 upgrade_required (route_library_manage)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: races/:id/points → 403 upgrade_required (route_course_points)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: live-location/friends → 403 upgrade_required (live_friends_map)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_gratis",
+    "viewport": "desktop",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "desktop: simpele lijst: geen zoek/sorteer"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: alleen Mijn routes + Gedeeld met mij"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: rustige verwijzing naar Sparki Go aanwezig"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: GET /api/routes (simpel) → 200 voor iedereen"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: routes?sort=afstand → 403 upgrade_required (route_library_manage)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: races/:id/points → 403 upgrade_required (route_course_points)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: live-location/friends → 403 upgrade_required (live_friends_map)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_go",
+    "viewport": "mobiel",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "mobiel: zoeken + sorteren zichtbaar (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: geen nudge (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: GET /api/routes (simpel) → 200 voor iedereen"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: routes?sort=afstand → 200 (geen 403)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: races/:id/points → 403 upgrade_required (route_course_points)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: live-location/friends → 403 upgrade_required (live_friends_map)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_go",
+    "viewport": "desktop",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "desktop: zoeken + sorteren zichtbaar (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: geen nudge (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: GET /api/routes (simpel) → 200 voor iedereen"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: routes?sort=afstand → 200 (geen 403)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: races/:id/points → 403 upgrade_required (route_course_points)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: live-location/friends → 403 upgrade_required (live_friends_map)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_pro",
+    "viewport": "mobiel",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "mobiel: zoeken + sorteren zichtbaar (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: geen nudge (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: GET /api/routes (simpel) → 200 voor iedereen"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: routes?sort=afstand → 200 (geen 403)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: races/:id/points → 404 (geen 403)"
+      },
+      {
+        "status": "OK",
+        "detail": "mobiel: live-location/friends → 200 (geen 403)"
+      }
+    ]
+  },
+  {
+    "persona": "seed_persona_pro",
+    "viewport": "desktop",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "desktop: zoeken + sorteren zichtbaar (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: geen nudge (toegang)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: GET /api/routes (simpel) → 200 voor iedereen"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: routes?sort=afstand → 200 (geen 403)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: races/:id/points → 404 (geen 403)"
+      },
+      {
+        "status": "OK",
+        "detail": "desktop: live-location/friends → 200 (geen 403)"
+      }
+    ]
+  }
+]

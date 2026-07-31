@@ -67,6 +67,16 @@ import {
 } from "../lib/route-generation-jobs";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+// Go-poort op de bibliotheek-beheer-extra's (Besluit René 31-07-2026,
+// SPARKI-BESLUIT-2026-002): zoeken/sorteren/scopes, bewerken, dupliceren en
+// route-uit-rit zijn Sparki Go; opslaan, eigen lijst (simpel), openen,
+// verwijderen, plannen/genereren, GPX/TCX en navigatie blijven gratis.
+import {
+  requireCommercialFeature,
+  resolveEntitlements,
+  hasCommercialFeature,
+  GO_FEATURE_LABELS,
+} from "../lib/entitlements";
 import { isMinorAthlete, isVerifiedAdultAthlete } from "../lib/sharing";
 import {
   parseGpxRoute,
@@ -883,6 +893,40 @@ async function cleanupUnriddenProposals(
 //   ?plannedWorkoutId=N      — only routes linked to that planned workout
 router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
+  // Besluit 2026-002: de eigen lijst simpel bekijken (nieuwste eerst) blijft
+  // gratis; zoeken (q), filter-scopes en sorteren zijn bibliotheek-beheer-
+  // extra's en horen bij Sparki Go. De poort geldt dus alleen zodra zo'n
+  // parameter daadwerkelijk wordt gebruikt — fail-closed via dezelfde
+  // entitlements-laag als requireCommercialFeature.
+  const usesLibraryExtras =
+    (typeof req.query.q === "string" && req.query.q.trim() !== "") ||
+    (typeof req.query.scope === "string" &&
+      req.query.scope !== "" &&
+      req.query.scope !== "mijn") ||
+    (typeof req.query.sort === "string" &&
+      req.query.sort !== "" &&
+      req.query.sort !== "nieuwste");
+  if (usesLibraryExtras) {
+    try {
+      const resolved = await resolveEntitlements(clerkId);
+      if (!hasCommercialFeature(resolved, "route_library_manage")) {
+        res.status(403).json({
+          error: `${GO_FEATURE_LABELS.route_library_manage} hoort bij Sparki Go.`,
+          code: "upgrade_required",
+          feature: "route_library_manage",
+        });
+        return;
+      }
+    } catch (err) {
+      req.log.error({ err }, "route library gate failed");
+      res.status(403).json({
+        error: "Commerciële toegang kon niet worden vastgesteld.",
+        code: "upgrade_required",
+        feature: "route_library_manage",
+      });
+      return;
+    }
+  }
   await cleanupUnriddenProposals(clerkId, req.log);
   const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 100);
   const plannedWorkoutId =
@@ -1718,11 +1762,23 @@ router.get("/:id", requireAuth, async (req, res) => {
           .orderBy(asc(racesTable.raceDate))
           .limit(1);
         if (linkedRace) {
-          const points = await db
-            .select()
-            .from(racePointsTable)
-            .where(eq(racePointsTable.raceId, linkedRace.id))
-            .orderBy(asc(racePointsTable.raceKm), asc(racePointsTable.id));
+          // Compleet-poort (Besluit 2026-002): wedstrijdpunten zijn
+          // route_course_points. Zonder dat recht gaat de wedstrijd-metadata
+          // wél mee (route en navigatie blijven gratis), maar de puntenlijst
+          // blijft leeg met een eerlijke pointsLocked-vlag — anders zou dit
+          // detail-endpoint de gepoorte /api/races/:id/points omzeilen.
+          const resolved = await resolveEntitlements(clerkId);
+          const pointsEntitled = hasCommercialFeature(
+            resolved,
+            "route_course_points",
+          );
+          const points = pointsEntitled
+            ? await db
+                .select()
+                .from(racePointsTable)
+                .where(eq(racePointsTable.raceId, linkedRace.id))
+                .orderBy(asc(racePointsTable.raceKm), asc(racePointsTable.id))
+            : [];
           race = {
             id: linkedRace.id,
             name: linkedRace.name,
@@ -1730,6 +1786,7 @@ router.get("/:id", requireAuth, async (req, res) => {
             localLaps: linkedRace.localLaps,
             assignment: linkedRace.assignment,
             points: activeRacePoints(points),
+            pointsLocked: !pointsEntitled,
           };
         }
       }
@@ -3123,7 +3180,13 @@ async function buildLoopCandidate(
 //   body: { startLat, startLon, mode?: "loop"|"ptp", targetDistanceKm?,
 //           targetDurationMin?, sport?, bikeType?, elevationPreference?,
 //           trainingType?, unpavedPreferencePct? }
-router.post("/zoek", requireAuth, async (req, res) => {
+// Geavanceerd zoeken in de bibliotheek = beheer-extra ⇒ Sparki Go
+// (Besluit 2026-002).
+router.post(
+  "/zoek",
+  requireAuth,
+  requireCommercialFeature("route_library_manage"),
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
 
@@ -4472,7 +4535,12 @@ router.post("/", requireAuth, async (req, res) => {
 // fabricated. If the import has no stored track (older imports, or non-GPX
 // sources that don't retain geometry), we honestly refuse (422) instead of
 // inventing a path.
-router.post("/from-activity", requireAuth, async (req, res) => {
+// Route-uit-rit maken = beheer-extra ⇒ Sparki Go (Besluit 2026-002).
+router.post(
+  "/from-activity",
+  requireAuth,
+  requireCommercialFeature("route_library_manage"),
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
   const importId =
@@ -4573,7 +4641,12 @@ router.post("/from-activity", requireAuth, async (req, res) => {
 // wijzigingen (naam, ondergrond, meetpunten) verhogen het versienummer, zodat
 // eerder vastgelegd versiegebruik eerlijk naar de oude versie blijft wijzen.
 // Niet-inhoudelijk (favoriet, zichtbaarheid, archiveren) laat de versie staan.
-router.put("/:id", requireAuth, async (req, res) => {
+// Hernoemen/bewerken = beheer-extra ⇒ Sparki Go (Besluit 2026-002).
+router.put(
+  "/:id",
+  requireAuth,
+  requireCommercialFeature("route_library_manage"),
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = Number(String(req.params.id));
   if (!Number.isInteger(id)) {
@@ -4679,7 +4752,12 @@ router.put("/:id", requireAuth, async (req, res) => {
 // POST /api/routes/:id/duplicate — kopieer een eigen route (of een met jou
 // gedeelde route naar je eigen bibliotheek; dan wordt de VEILIGE kijkers-
 // geometrie gekopieerd, nooit de exacte start van de eigenaar).
-router.post("/:id/duplicate", requireAuth, async (req, res) => {
+// Dupliceren = beheer-extra ⇒ Sparki Go (Besluit 2026-002).
+router.post(
+  "/:id/duplicate",
+  requireAuth,
+  requireCommercialFeature("route_library_manage"),
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = Number(String(req.params.id));
   if (!Number.isInteger(id)) {

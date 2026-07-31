@@ -1,0 +1,36 @@
+# Poort 5b sanity-check rapport — ROUTE_PAKKET_01 "Sleutels en poorten"
+# (SPARKI-BESLUIT-2026-002, met René's definitieve grenslijst als leidend kader)
+
+delivery: "ROUTE_PAKKET_01: commerciële poorten routebibliotheek. Gratis = plannen/genereren/GPX/TCX/navigatie/hoogteprofiel + opslaan/simpele lijst (nieuwste eerst)/openen/verwijderen. Go = route_library_manage (zoeken, sorteren, scopes favoriet/archief/wedstrijd, hernoemen, dupliceren, route-uit-rit). Compleet = route_course_points + live_friends_map. route_planner bewust GEEN variantrecht (afwijking van document). Blokkadeverificatie nooit commercieel gepoort. Server 403-teksten noemen eerlijk het juiste pakket (Go vs Compleet)."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "DEV Preview /routes (bibliotheek) mobiel 402x874 én desktop 1440x900, persona's seed_persona_gratis / seed_persona_go / seed_persona_pro via echte browserkliks (e2e/tests/route-bibliotheek-go.mjs)"
+  - "API-server poorten: GET/POST /api/routes (+zoek, hernoem, dupliceer, from-activity), /api/races/:id/points en export (Compleet), /api/live-location/* (Compleet)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Gratis persona: bibliotheek toont simpele lijst, zoek-/sorteer-UI en beheer-menu-items (hernoemen/dupliceer/archiveer/favoriet) afwezig; delen, GPX, vergelijken en verwijderen blijven werkende knoppen — kliktest mobiel + desktop, bewijs e2e/evidence/route-bibliotheek-go/"
+        result: "pass"
+      - case: "Go- en pro-persona: volledige beheer-UI zichtbaar en klikbaar (zoeken, sorteren, alle scopes, menu-items) — kliktest mobiel + desktop"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Gratis persona krijgt bij beheer een compacte UpgradeNudge met eerlijke tekst 'hoort bij Sparki Go' (geen vage fout, geen dode knop); Compleet-functies noemen 'Sparki Compleet' — copy per key uit GO_FEATURE_COPY met pakket-veld"
+        result: "pass"
+      - case: "Server-side: basic 403 op beheer-endpoints (route_library_manage) met pakketnaam Go; basic én go 403 op course points/live-kaart met pakketnaam Compleet; pro/legacy open — test:entitlements 23/23"
+        result: "pass"
+      - case: "Gratis basis blijft volledig open: opslaan (POST), lijst nieuwste-eerst, detail, GPX/TCX, generate, navigatie, gedeeld, DELETE — server-fetch-checks per persona in e2e + entitlements-test"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Tijdens laden van rechten faalt de UI open (geen flits van slot of nudge zonder zekerheid: beheerLocked alleen bij known && !entitled); geen placeholderteksten in nudges of 403-antwoorden"
+        result: "pass"
+
+# Beperkingen:
+# - Mobiel (native app) toont bij live-delen zonder Compleet nu een rustige eerlijke
+#   verwijzing bij 403 upgrade_required; geen native kliktest gedaan (webbewijs + servertest dekken de poort).
+# - e2e vereiste een herstart van de api-server-workflow: draaiende dev-server had oude
+#   routecode; na herstart alles groen.
+verdict: "deliverable"

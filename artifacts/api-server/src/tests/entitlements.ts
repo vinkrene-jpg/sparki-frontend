@@ -26,6 +26,9 @@ import {
   variantFeatureGrantsTable,
   featureFlagsTable,
   securityAuditLogTable,
+  routesTable,
+  racesTable,
+  racePointsTable,
 } from "@workspace/db";
 import { eq, and, inArray, desc } from "drizzle-orm";
 import app from "../app";
@@ -502,7 +505,10 @@ async function main() {
       );
     }
     // Niet-toegekende onderdelen blijven zonder recht (fail-closed).
-    // route_planner wordt pas in Opdracht 2 (na bevestigde grens) een variantrecht.
+    // Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-002): route plannen/
+    // genereren blijft GRATIS — route_planner wordt dus bewust GEEN
+    // variantrecht (afwijking van het oorspronkelijke opdrachtdocument,
+    // dat r464 wilde omzetten; René's definitieve grenslijst gaat voor).
     assert(!hasCommercialFeature(compleet, "route_planner"), "route_planner mag geen variantrecht zijn");
     // Terug naar sparki_go voor de vervolgscenario's.
     await db
@@ -559,6 +565,154 @@ async function main() {
       assert(r.status !== 403, `${path}: Compleet-abonnee kreeg onterecht 403`);
       const l = await apiReq(method, path, legacyUser);
       assert(l.status !== 403, `${path}: legacy kreeg onterecht 403`);
+    }
+  });
+
+  // ── Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-002): poorten op routes ──
+  // Go = bibliotheek-beheer-extra's (route_library_manage); Compleet = course
+  // points (route_course_points) en live vrienden/ploeg (live_friends_map).
+  // Gratis basis (opslaan, simpele lijst, openen, verwijderen, plannen,
+  // GPX/TCX, navigatie) blijft bewust ongepoort.
+  await scenario("Besluit 2026-002: bibliotheek-extra's 403 zonder Go; gratis basis blijft open", async () => {
+    // subUser staat op sparki_pro na het vorige scenario ⇒ eerst naar een
+    // recht-loze variant (gedraagt zich als Gratis: geen variantrechten).
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_basic" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    const extras = [
+      ["GET", "/api/routes?sort=afstand"],
+      ["GET", "/api/routes?q=test"],
+      ["GET", "/api/routes?scope=favoriet"],
+      ["POST", "/api/routes/zoek"],
+      ["PUT", "/api/routes/999999"],
+      ["POST", "/api/routes/999999/duplicate"],
+      ["POST", "/api/routes/from-activity"],
+    ] as const;
+    for (const [method, path] of extras) {
+      const r = await apiReq(method, path, subUser, method === "GET" ? undefined : {});
+      assert(r.status === 403, `${method} ${path}: verwacht 403 zonder Go, kreeg ${r.status}`);
+      assert(r.json?.code === "upgrade_required", `${path}: code was ${r.json?.code}`);
+      assert(r.json?.feature === "route_library_manage", `${path}: feature was ${r.json?.feature}`);
+    }
+    // Gratis basis blijft open: simpele lijst (nieuwste eerst) en verwijderen.
+    const lijst = await apiReq("GET", "/api/routes", subUser);
+    assert(lijst.status === 200, `simpele lijst moet gratis blijven, kreeg ${lijst.status}`);
+    const del = await apiReq("DELETE", "/api/routes/999999", subUser);
+    assert(del.status !== 403, `verwijderen moet gratis blijven, kreeg 403`);
+  });
+
+  await scenario("Besluit 2026-002: bibliotheek-extra's open voor Go, Compleet en legacy", async () => {
+    for (const variant of ["sparki_go", "sparki_pro"] as const) {
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: variant })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const r = await apiReq("GET", "/api/routes?sort=afstand&scope=favoriet&q=x", subUser);
+      assert(r.status === 200, `${variant}: extras-lijst verwacht 200, kreeg ${r.status}`);
+      // Achterliggende validatie neemt het over (400/404 = poort gepasseerd).
+      const zoek = await apiReq("POST", "/api/routes/zoek", subUser, {});
+      assert(zoek.status === 400, `${variant}: zoek verwacht 400 (poort voorbij), kreeg ${zoek.status}`);
+      const dup = await apiReq("POST", "/api/routes/999999/duplicate", subUser, {});
+      assert(dup.status === 404, `${variant}: duplicate verwacht 404 (poort voorbij), kreeg ${dup.status}`);
+    }
+    const l = await apiReq("GET", "/api/routes?sort=afstand", legacyUser);
+    assert(l.status === 200, `legacy: verwacht 200, kreeg ${l.status}`);
+  });
+
+  await scenario("Besluit 2026-002: course points & live-kaart zijn Compleet-only (Go krijgt 403)", async () => {
+    const compleetPaths = [
+      ["GET", "/api/races/999999/points", "route_course_points"],
+      ["GET", "/api/live-location/friends", "live_friends_map"],
+      ["GET", "/api/live-location/group-options", "live_friends_map"],
+    ] as const;
+    for (const variant of ["sparki_basic", "sparki_go"] as const) {
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: variant })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      for (const [method, path, feature] of compleetPaths) {
+        const r = await apiReq(method, path, subUser);
+        assert(r.status === 403, `${variant} ${path}: verwacht 403, kreeg ${r.status}`);
+        assert(r.json?.feature === feature, `${path}: feature was ${r.json?.feature}`);
+        // Eerlijk pakketlabel: een Compleet-onderdeel mag nooit "Sparki Go" claimen.
+        assert(
+          typeof r.json?.error === "string" && r.json.error.includes("Sparki Compleet"),
+          `${path}: 403-tekst moet naar Sparki Compleet verwijzen, was "${r.json?.error}"`,
+        );
+      }
+    }
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_pro" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    for (const [method, path] of compleetPaths) {
+      const r = await apiReq(method, path, subUser);
+      assert(r.status !== 403, `Compleet ${path}: kreeg onterecht 403 (${r.status})`);
+      const l = await apiReq(method, path, legacyUser);
+      assert(l.status !== 403, `legacy ${path}: kreeg onterecht 403 (${l.status})`);
+    }
+  });
+
+  await scenario("Besluit 2026-002: route-detail lekt geen wedstrijdpunten zonder Compleet", async () => {
+    // Regressie (architect-review 31-07-2026): GET /api/routes/:id bouwde de
+    // puntenlijst van een gekoppelde wedstrijd altijd op — een omweg om de
+    // gepoorte /api/races/:id/points. Zonder route_course_points moet de
+    // detail-payload een lege puntenlijst + pointsLocked geven; mét recht de
+    // echte actieve punten.
+    const [route] = await db
+      .insert(routesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest wedstrijdroute",
+        usageType: "wedstrijd",
+      })
+      .returning({ id: routesTable.id });
+    const [race] = await db
+      .insert(racesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest wedstrijd",
+        raceDate: "2027-06-01",
+        status: "gepland",
+        routeId: route!.id,
+      })
+      .returning({ id: racesTable.id });
+    await db.insert(racePointsTable).values({
+      raceId: race!.id,
+      clerkId: subUser,
+      kind: "bevoorrading",
+      pointClass: "verzorging",
+      label: "Poorttest punt",
+      raceKm: 10,
+      status: "bevestigd",
+    });
+    try {
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: "sparki_basic" })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const locked = await apiReq("GET", `/api/routes/${route!.id}`, subUser);
+      assert(locked.status === 200, `detail (basic) verwacht 200, kreeg ${locked.status}`);
+      assert(locked.json?.race, "detail (basic): wedstrijd-metadata moet meegaan");
+      assert(
+        Array.isArray(locked.json.race.points) && locked.json.race.points.length === 0,
+        `detail (basic): puntenlijst moet leeg zijn, was ${JSON.stringify(locked.json.race.points)}`,
+      );
+      assert(locked.json.race.pointsLocked === true, "detail (basic): pointsLocked moet true zijn");
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: "sparki_pro" })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const open = await apiReq("GET", `/api/routes/${route!.id}`, subUser);
+      assert(open.status === 200, `detail (pro) verwacht 200, kreeg ${open.status}`);
+      assert(
+        open.json?.race?.points?.length === 1 && open.json.race.pointsLocked === false,
+        `detail (pro): verwacht 1 actief punt + pointsLocked false, kreeg ${JSON.stringify(open.json?.race)}`,
+      );
+    } finally {
+      await db.delete(racesTable).where(eq(racesTable.id, race!.id)).catch(() => {});
+      await db.delete(routesTable).where(eq(routesTable.id, route!.id)).catch(() => {});
     }
   });
 

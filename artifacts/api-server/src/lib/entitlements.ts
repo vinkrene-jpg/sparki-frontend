@@ -276,36 +276,63 @@ export async function resolveEntitlements(
 }
 
 // ── Commerciële onderdelen per variant ───────────────────────────────────────
-// Productbesluit: Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001). De vier
-// onderstaande onderdelen horen bij Sparki Compleet (DB-variant "sparki_pro").
-// Sparki Go krijgt eigen sleutels; die verzameling is bewust nog leeg totdat
-// René de grens gratis/Go bevestigt (Opdracht 2). Veiligheids-/gezondheids-
-// kritieke informatie valt nooit onder een commerciële poort. De sleutels
-// leven als commerciële feature-keys in variant_feature_grants; operationele
-// flags blijven daarnaast met EN gelden.
+// Productbesluiten: Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001, structuur
+// Go/Compleet) + Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-002, grens
+// gratis/Go/Compleet op routes & navigatie — grenslijst door René bevestigd,
+// incl. verduidelijking "beheer-extra's"):
+//   GRATIS blijft: route plannen/genereren, aanpassen (afstand/tijd/wegtype/
+//   hoogte/wind), GPX/TCX-export, afslag-voor-afslag navigatie, spraak-
+//   aanwijzingen, hoogteprofiel, route bekijken, route OPSLAAN, eigen lijst
+//   bekijken (simpel, nieuwste eerst), route openen en verwijderen.
+//   GO: de bibliotheek-beheer-extra's (route_library_manage).
+//   COMPLEET: course points/wedstrijdinformatie in routes en vrienden/ploeg
+//   live op de kaart, bovenop alles van Go.
+// Veiligheids-/gezondheidskritieke informatie valt nooit onder een commerciële
+// poort (blokkadeverificatie op routes blijft dus voor iedereen gelden). De
+// sleutels leven als commerciële feature-keys in variant_feature_grants;
+// operationele flags blijven daarnaast met EN gelden.
 export const COMPLEET_FEATURE_KEYS = [
   "autonomous_training", // Trainingsplan-engine — automatische plannen & aanpassingen
   "race_intel", // Race-intelligentie — wedstrijdvoorbereiding, voeding, dossier
   "ai_observations", // Coach-observaties & dagelijkse briefing
   "performance_lab", // Performance Lab — diepe analyse & trends
+  "route_course_points", // Course points & wedstrijdinformatie in routes (Besluit 2026-002)
+  "live_friends_map", // Vrienden & ploeg live op de kaart (Besluit 2026-002)
 ] as const;
 export type CompleetFeatureKey = (typeof COMPLEET_FEATURE_KEYS)[number];
 
-// Alle commerciële sleutels samen; groeit in Opdracht 2 met de Go-sleutels.
-export type CommercialFeatureKey = CompleetFeatureKey;
+// Go-sleutels (Besluit 2026-002): alleen de bibliotheek-beheer-extra's.
+// Opslaan, eigen lijst (simpel), openen en verwijderen blijven gratis —
+// zoeken, sorteren, filter-scopes, hernoemen/bewerken, dupliceren en
+// route-uit-rit maken horen bij Sparki Go.
+export const GO_FEATURE_KEYS = ["route_library_manage"] as const;
+export type GoOnlyFeatureKey = (typeof GO_FEATURE_KEYS)[number];
+
+// Alle commerciële sleutels samen.
+export type CommercialFeatureKey = CompleetFeatureKey | GoOnlyFeatureKey;
 // Bestaande signatuur van requireCommercialFeature blijft hierop steunen.
 export type GoFeatureKey = CommercialFeatureKey;
-
-// Go-sleutels: bewust leeg tot Besluit-Opdracht 2 (grens gratis/Go) door René
-// is bevestigd. Compleet blijft altijd een superset van Go (zie hieronder).
-export const GO_FEATURE_KEYS: readonly CommercialFeatureKey[] = [];
 
 export const GO_FEATURE_LABELS: Record<CommercialFeatureKey, string> = {
   autonomous_training: "Trainingsplan-engine",
   race_intel: "Race-intelligentie",
   ai_observations: "Coach-observaties & dagelijkse briefing",
   performance_lab: "Performance Lab",
+  route_library_manage: "Routebibliotheek-beheer",
+  route_course_points: "Course points & wedstrijdinformatie",
+  live_friends_map: "Vrienden & ploeg live op de kaart",
 };
+
+/**
+ * Klantlabel van het goedkoopste pakket dat dit onderdeel bevat — voor
+ * eerlijke 403-teksten: een Compleet-onderdeel mag nooit "hoort bij Sparki
+ * Go" claimen (Go-kopen zou het dan niet oplossen).
+ */
+export function featurePackageLabel(featureKey: CommercialFeatureKey): string {
+  return (GO_FEATURE_KEYS as readonly string[]).includes(featureKey)
+    ? "Sparki Go"
+    : "Sparki Compleet";
+}
 
 /**
  * Productlijn (bindend besluit): Gratis · Sparki Go · Sparki Compleet.
@@ -438,7 +465,9 @@ export function requireCommercialFeature(
         return;
       }
       res.status(403).json({
-        error: `${GO_FEATURE_LABELS[featureKey]} hoort bij Sparki Go.`,
+        // Eerlijk pakketlabel: Go-onderdeel ⇒ "Sparki Go", Compleet-onderdeel
+        // ⇒ "Sparki Compleet" (Besluit 2026-002).
+        error: `${GO_FEATURE_LABELS[featureKey]} hoort bij ${featurePackageLabel(featureKey)}.`,
         code: "upgrade_required",
         feature: featureKey,
       });

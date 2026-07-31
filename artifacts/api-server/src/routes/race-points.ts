@@ -8,6 +8,7 @@ import {
   type RoutePathPoint,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import {
   KIND_LABELS,
   activeRacePoints,
@@ -42,7 +43,7 @@ function parseNum(v: unknown): number | null {
 // GET /api/races/:raceId/points — alle punten van deze wedstrijd (alle
 // statussen; de kaartcontrole toont voorgesteld/afgewezen apart) + welke
 // actief zijn.
-router.get("/:raceId/points", requireAuth, async (req, res) => {
+router.get("/:raceId/points", requireAuth, requireCommercialFeature("route_course_points"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const raceId = Number(String(req.params.raceId));
   if (!Number.isInteger(raceId)) {
@@ -74,7 +75,7 @@ router.get("/:raceId/points", requireAuth, async (req, res) => {
 // POST /api/races/:raceId/points — handmatig punt toevoegen (kaartklik of km).
 // Handmatig = direct "bevestigd" (de renner stelt het zelf vast), geen bron,
 // geen betrouwbaarheid.
-router.post("/:raceId/points", requireAuth, async (req, res) => {
+router.post("/:raceId/points", requireAuth, requireCommercialFeature("route_course_points"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const raceId = Number(String(req.params.raceId));
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -137,7 +138,7 @@ router.post("/:raceId/points", requireAuth, async (req, res) => {
 // PATCH /api/races/:raceId/points/:pointId — bevestigen / aanpassen /
 // verplaatsen / afwijzen. Een locatie- of tekstwijziging zet de status op
 // "aangepast" tenzij expliciet "bevestigd" wordt meegestuurd.
-router.patch("/:raceId/points/:pointId", requireAuth, async (req, res) => {
+router.patch("/:raceId/points/:pointId", requireAuth, requireCommercialFeature("route_course_points"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const raceId = Number(String(req.params.raceId));
   const pointId = Number(String(req.params.pointId));
@@ -251,7 +252,7 @@ router.patch("/:raceId/points/:pointId", requireAuth, async (req, res) => {
 });
 
 // DELETE /api/races/:raceId/points/:pointId — punt verwijderen.
-router.delete("/:raceId/points/:pointId", requireAuth, async (req, res) => {
+router.delete("/:raceId/points/:pointId", requireAuth, requireCommercialFeature("route_course_points"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const raceId = Number(String(req.params.raceId));
   const pointId = Number(String(req.params.pointId));
