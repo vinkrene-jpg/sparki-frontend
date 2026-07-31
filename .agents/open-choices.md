@@ -36,6 +36,14 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15b. **Vrijgave drie AI-pakketten (files_11, 31-07-2026)** — opsplitsing van
+    AI_GOVERNANCE_01: `AI_GRENZEN_01` (veiligheidsgrenzen/weigeringen; DATA_TRUST_01
+    sterk aanbevolen vóóraf), `AI_CONTEXT_01` (geheugen, toestemming, toolgebruik,
+    logging; bewaartermijnen configureerbaar, niet zelf vaststellen) en
+    `AI_KWALITEIT_01` (bronvermelding, onzekerheid, taal/toon; DATA_TRUST_01
+    blokkerend — zonder herkomst geen bronvermelding). Geen pakket start zonder
+    expliciete vrijgave.
+
 16. **Besluit D5 — ploegleiderrol (TRAINER_CLUB_01)** — clubRoles kent wél
     `teammanager`, geen `ploegleider`. Keuze René: (a) ploegleider = teammanager
     (term verdwijnt uit productcommunicatie) of (b) eigen rol met eigen rechten
