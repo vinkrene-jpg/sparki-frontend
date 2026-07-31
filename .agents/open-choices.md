@@ -61,6 +61,14 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15l. **Vrijgave SOCIAL_01 (ontvangen 31-07-2026)** — feed, vrienden, groepen,
+    challenges, reacties, moderatie, privacy; hergebruikt bestaande
+    world-social/feed-engines, "geen tweede feed/deelmechanisme/toegangs-
+    controle". Clubomgeving expliciet buiten scope. Harde voorwaarden
+    MIRROR_PROVEN vóór start: DATA_TRUST_01 · ACTIVITEITEN_01 (pakket nog
+    niet ontvangen) · TRAINER_CLUB_01 · JEUGD_OUDER_01 (nog niet ontvangen) ·
+    ROUTE_PAKKET_01. Start pas na vrijgave René.
+
 15k. **Vrijgave AI_ENGINE_01 (ontvangen 31-07-2026)** — één centrale technische
     AI-engine voor álle AI-functies: domeinrol per verzoek, herleidbare
     context, deterministisch/AI-uitleg gescheiden, server-side pakket/rol/
