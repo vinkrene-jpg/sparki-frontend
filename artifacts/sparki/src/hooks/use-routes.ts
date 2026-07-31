@@ -98,6 +98,9 @@ export type GenerateRouteInput = {
   // fietspad. Een voorkeur, geen garantie — het eerlijke resultaat komt terug
   // in `avoidReport` op de kandidaat.
   avoidBusyRoads?: boolean;
+  // Hybride voorstel (taak #512): id van een EIGEN bekende route als basis —
+  // de heenweg volgt die route, de terugweg wordt opnieuw gepland. Alleen lus.
+  baseRouteId?: number;
 };
 
 // Eerlijk rapport over vermijd-voorkeuren: wat is echt toegepast en wat kon de
@@ -146,8 +149,21 @@ export type RouteCandidate = {
   // kandidaten die de motor toch al bouwde en die écht anders lopen dan de
   // winnaar. Leeg/afwezig bij cache-hits of te gelijkende kandidaten.
   alternates?: RouteCandidate[];
+  // Hybride herkomst (taak #512): dit voorstel is gebaseerd op een bekende
+  // route van de rijder — de heenweg volgt de bekende route, de terugweg is
+  // opnieuw gepland. Herkomst zit ook in naam + rationale, zodat zij bij het
+  // opslaan mee de bibliotheek in reist.
+  hybride?: { baseRouteId: number; baseRouteName: string };
 };
 
+export type KnownRouteVerification =
+  | { status: "geverifieerd" }
+  | {
+      status: "geblokkeerd";
+      reden: string;
+      blockage: { forbidden: number; steps: number; blockedGates: number };
+    }
+  | { status: "niet_controleerbaar"; reden: string };
 export type GeocodeResult = { lat: number; lon: number; label: string };
 
 // Forward-geocode an address to coordinate candidates (best-first). Used by the
@@ -945,3 +961,44 @@ export function useDeleteRoute() {
     },
   });
 }
+
+export type KnownRouteMatch = {
+  routeId: number;
+  name: string;
+  origin: "gereden" | "bewaard" | "gedeeld";
+  originLabel: string;
+  ownership: "eigen" | "gedeeld";
+  gedeeldVia: string | null;
+  distanceKm: number | null;
+  elevationGainM: number | null;
+  durationSec: number | null;
+  surface: string;
+  geometry: [number, number][];
+  matchReasons: string[];
+  startAfstandKm: number;
+  verificatie: KnownRouteVerification;
+  bruikbaar: boolean;
+};
+
+export function useZoekBekendeRoutes() {
+  return useMutation({
+    mutationFn: (input: ZoekBekendeRoutesInput) =>
+      apiFetch<{ bekend: KnownRouteMatch[] }>("/api/routes/zoek", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+  });
+}
+
+export type ZoekBekendeRoutesInput = {
+  startLat: number;
+  startLon: number;
+  mode?: "loop" | "ptp";
+  targetDistanceKm?: number;
+  targetDurationMin?: number;
+  sport?: Sport;
+  bikeType?: BikeType;
+  elevationPreference?: ElevationPreference;
+  trainingType?: string;
+  unpavedPreferencePct?: number;
+};

@@ -8,6 +8,7 @@
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:route-search-criteria": "node ../../scripts/run-tsx-test.mjs src/lib/route-search-criteria.test.ts",
     "test:humor": "node ../../scripts/run-tsx-test.mjs src/lib/humor.test.ts",
     "test:day-advice-canonical": "node ../../scripts/run-tsx-test.mjs src/lib/day-advice-canonical.test.ts",
     "test:uitleg-content": "node ../../scripts/run-tsx-test.mjs src/lib/uitleg-content.test.ts",

@@ -33,6 +33,25 @@ export async function isMinorAthlete(
   return age != null && age < 16;
 }
 
+// Strikter dan !isMinorAthlete: alleen een AANTOONBAAR volwassen (≥16)
+// eigenaar telt. Onbekende leeftijd faalt hier gesloten — gebruik dit op
+// paden die andermans data blootstellen (zoals gedeelde routes in
+// zoekresultaten), waar "we weten het niet" nooit "toon maar" mag betekenen.
+export async function isVerifiedAdultAthlete(
+  athleteClerkId: string,
+): Promise<boolean> {
+  const [athlete] = await db
+    .select({
+      birthDate: athleteProfilesTable.birthDate,
+      birthYear: athleteProfilesTable.birthYear,
+    })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, athleteClerkId));
+  if (!athlete) return false;
+  const age = computeAge(athlete.birthDate, athlete.birthYear);
+  return age != null && age >= 16;
+}
+
 /**
  * A coarse, heuristic readiness read derived from the latest self-reported daily
  * metric. This is NOT a validated sports-science model — it is an honest summary

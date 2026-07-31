@@ -10,6 +10,8 @@ import {
   useDeleteRoute,
   useGenerateRoute,
   useGenerateRouteOptions,
+  useZoekBekendeRoutes,
+  type KnownRouteMatch,
   useSaveGeneratedRoute,
   useEnrichRoute,
   useDownloadRoute,
@@ -41,6 +43,7 @@ import { PlannerViewSwitcher } from "@/components/sparki/planner-view-switcher"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
 import { racefietsVerification } from "@/lib/racefiets-verification"
+import { zoekCriteriaKey } from "@/lib/route-search-criteria"
 import { ArrowLeft, MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon, Lock } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
@@ -1581,6 +1584,10 @@ export function RouteGenerator({
   useEffect(() => {
     if (!genPending) setGenPhase(null)
   }, [genPending])
+  // Zoeklaag (taak #512): bij een routevraag eerst je eigen bekende routes —
+  // eerder gereden, bewust opgeslagen of met jou gedeeld — vóór de nieuwe
+  // voorstellen. Loopt parallel aan de generator; nooit een tweede motor.
+  const zoekBekend = useZoekBekendeRoutes()
   // Weergaveniveau (besluit B6): bepaalt alleen welke invoeropties zichtbaar
   // zijn — nooit de veiligheid (blokkadepoort, verificatie, waarschuwingen
   // gelden op elk niveau) en nooit stiekem meesturen: een verborgen optie
@@ -1765,16 +1772,24 @@ export function RouteGenerator({
       : []
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
+  // Bekende routes die bij deze aanvraag passen (zoeklaag, taak #512) + het
+  // bekend-of-nieuw-filter over de gemengde resultatenlijst.
+  const [bekend, setBekend] = useState<KnownRouteMatch[] | null>(null)
+  const [bekendFilter, setBekendFilter] = useState<"alles" | "bekend" | "nieuw">(
+    "alles",
+  )
+  // "Gebruik deze route": haalt de echte bewaarde route op (route-id → detail).
+  const [gebruikPendingId, setGebruikPendingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   // Eerlijke tussenmelding (taak #503): de blokkadepoort wacht bij een vers
   // gebied blokkerend op de volledige Overpass-meting (~10–30 s eenmalig).
   // Na een drempel van 3 s tonen we WAT er loopt — geen voortgangsbalk of
   // verzonnen percentages, alleen eerlijke tekst. Warme aanvragen (~0 ms)
   // halen de drempel nooit en zien niets extra's.
-  // WP-1: geldt nu voor ÁLLE modi (lus incluis — juist daar bleef het scherm
-  // voorheen minutenlang stil).
   const [slowNotice, setSlowNotice] = useState(false)
   useEffect(() => {
+    // WP-1: geldt nu voor ÁLLE modi (lus incluis — juist daar bleef het
+    // scherm voorheen minutenlang stil).
     if (!genPending) {
       setSlowNotice(false)
       return
@@ -1869,6 +1884,35 @@ export function RouteGenerator({
   const effectieveHoogte = heeft("hoogte") ? elevationPreference : "any"
   const effectiefTrainingstype = heeft("training") ? trainingType : "duurtraining"
 
+  // Contract "eerst bekend, dán nieuw": de bekende-routes-lijst hoort bij
+  // PRECIES één set zoekcriteria. Wijzigt een zoek-bepalend gegeven (start,
+  // modus, bestemming, afstand, fietssoort, hoogte, doel, ondergrond, wens…)
+  // dan wordt de lijst gewist — een nieuwe aanvraag doorloopt dan altijd
+  // opnieuw de verplichte zoekstap en kan nooit oude treffers hergebruiken.
+  const zoekKey = zoekCriteriaKey({
+    mode,
+    startLat: start?.lat ?? null,
+    startLon: start?.lon ?? null,
+    destination,
+    distance,
+    sport,
+    bikeType: sport === "cycling" ? bikeType : null,
+    elevationPreference: effectieveHoogte,
+    trainingType: effectiefTrainingstype,
+    unpavedPreferencePct:
+      sport === "cycling" && unpavedAdjustable ? unpavedPct : null,
+    linkedWorkoutId: linkedWorkout ? linkedWorkout.id : null,
+    wish: effectieveWens,
+    avoidBusyRoads: sport === "cycling" && effectiefVermijdN,
+  })
+  const vorigeZoekKey = useRef(zoekKey)
+  useEffect(() => {
+    if (vorigeZoekKey.current === zoekKey) return
+    vorigeZoekKey.current = zoekKey
+    setBekend(null)
+    setBekendFilter("alles")
+  }, [zoekKey])
+
   // Weergave omlaag gezet terwijl de eigen routebouwer actief was? Dan terug
   // naar Lus — een verborgen modus mag nooit stilletjes waypoints meesturen.
   // Bij "route wijzigen" (bestaande punten) blijft de bouwer wél beschikbaar.
@@ -1946,6 +1990,45 @@ export function RouteGenerator({
       return
     }
     const distNum = parseInt(distance)
+    // Zoeklaag (taak #512): parallel aan de nieuwe voorstellen ook je eigen
+    // bekende routes ophalen die bij deze aanvraag passen.
+    setBekend(null)
+    zoekBekend.mutate(
+      {
+        mode: "loop",
+        startLat: start.lat,
+        startLon: start.lon,
+        sport,
+        bikeType: sport === "cycling" ? bikeType : undefined,
+        elevationPreference: effectieveHoogte,
+        trainingType: effectiefTrainingstype ?? undefined,
+        targetDistanceKm:
+          !linkedWorkout && Number.isFinite(distNum) ? distNum : undefined,
+        unpavedPreferencePct:
+          sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
+      },
+      {
+        onSuccess: (data) => {
+          setBekend(data.bekend)
+          // Eerst bekend, dán pas nieuw: alleen automatisch genereren wanneer
+          // er GEEN bruikbare bekende route is. Zijn die er wél, dan kiest de
+          // rijder zelf of Sparki daarnaast nieuwe voorstellen maakt.
+          if (!data.bekend.some((b) => b.bruikbaar)) doGenerateOptions()
+        },
+        // Eerlijk stil falen van de zoeklaag mag de generator nooit blokkeren.
+        onError: () => {
+          setBekend([])
+          doGenerateOptions()
+        },
+      },
+    )
+  }
+
+  // De eigenlijke nieuwe-voorstellen-generatie (lus, 3 afstandsvarianten) —
+  // start pas ná de zoeklaag, of via de expliciete "nieuwe voorstellen"-knop.
+  function doGenerateOptions() {
+    if (!start) return
+    const distNum = parseInt(distance)
     genOptions.mutate(
       {
         mode: "loop",
@@ -1972,7 +2055,7 @@ export function RouteGenerator({
     )
   }
 
-  function runGenerate(nextSeed?: number) {
+  function runGenerate(nextSeed?: number, baseRouteId?: number) {
     setError(null)
     if (mode === "waypoints") {
       if (allPoints.length < 2) {
@@ -1991,6 +2074,51 @@ export function RouteGenerator({
         return
       }
     }
+    const distNum = parseInt(distance)
+    // Zoeklaag (taak #512) ook bij A→B: éérst bekende routes rond je
+    // startpunt. Nieuwe generatie start pas wanneer er geen bruikbare bekende
+    // route is, of via de expliciete "nieuw voorstel"-knop (bekend is dan al
+    // gevuld). Niet bij hybride hergeneratie (baseRouteId) of een volgende
+    // seed — dan staat de lijst er al.
+    if (
+      mode === "ptp" &&
+      start &&
+      baseRouteId == null &&
+      nextSeed == null &&
+      bekend == null
+    ) {
+      zoekBekend.mutate(
+        {
+          mode: "ptp",
+          startLat: start.lat,
+          startLon: start.lon,
+          sport,
+          bikeType: sport === "cycling" ? bikeType : undefined,
+          elevationPreference: effectieveHoogte,
+          trainingType: effectiefTrainingstype ?? undefined,
+          targetDistanceKm:
+            !linkedWorkout && Number.isFinite(distNum) ? distNum : undefined,
+        },
+        {
+          onSuccess: (data) => {
+            setBekend(data.bekend)
+            // Bruikbare bekende routes gevonden ⇒ die eerst tonen; de rijder
+            // kiest zelf of Sparki alsnog een nieuw voorstel maakt.
+            if (!data.bekend.some((b) => b.bruikbaar)) doGenerate(nextSeed, baseRouteId)
+          },
+          onError: () => {
+            setBekend([])
+            doGenerate(nextSeed, baseRouteId)
+          },
+        },
+      )
+      return
+    }
+    doGenerate(nextSeed, baseRouteId)
+  }
+
+  // De eigenlijke generatie-aanroep — pas ná de zoeklaag (of expliciet).
+  function doGenerate(nextSeed?: number, baseRouteId?: number) {
     const distNum = parseInt(distance)
     // Increment the request counter so an in-flight slow request can't overwrite
     // a newer one when the user taps again before the first result arrives.
@@ -2013,6 +2141,7 @@ export function RouteGenerator({
         destinationText: mode === "ptp" ? destination.trim() : undefined,
         waypoints: mode === "waypoints" ? allPoints : undefined,
         seed: nextSeed,
+        baseRouteId,
         wish: effectieveWens ? effectieveWens : undefined,
         unpavedPreferencePct:
           sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
@@ -2062,6 +2191,25 @@ export function RouteGenerator({
           setError(e instanceof Error ? e.message : "Opslaan mislukt"),
       },
     )
+  }
+
+  // "Gebruik deze route" (zoeklaag #512): een eigen bekende route direct
+  // gebruiken — haalt de echte bewaarde route op en opent de routekaart, net
+  // als na het bewaren van een nieuw voorstel. Alleen voor geverifieerde
+  // (bruikbare) eigen routes; gedeelde routes wijzen naar de bibliotheek.
+  function gebruikBekendeRoute(m: KnownRouteMatch) {
+    if (!m.bruikbaar || m.ownership !== "eigen") return
+    setGebruikPendingId(m.routeId)
+    apiFetch<{ route: SparkiRoute }>(`/api/routes/${m.routeId}`)
+      .then((data) => {
+        setGebruikPendingId(null)
+        onClose()
+        onSaved?.(data.route, { withOthers: false, maten: [], navigeer: false })
+      })
+      .catch((e) => {
+        setGebruikPendingId(null)
+        setError(e instanceof Error ? e.message : "Kon route niet laden")
+      })
   }
 
   // Drop a named meeting point ("verzamelpunt") — e.g. a spot to pick up a
@@ -3048,7 +3196,7 @@ export function RouteGenerator({
               onClick={() =>
                 mode === "loop" ? runGenerateOptions() : runGenerate()
               }
-              disabled={generate.isPending || genOptions.isPending}
+              disabled={genPending}
               className="min-w-0 flex-1 rounded-2xl bg-accent-cyan py-3.5 font-sans text-[13px] font-semibold text-on-accent disabled:opacity-50"
             >
               {genPending
@@ -3104,10 +3252,171 @@ export function RouteGenerator({
         </div>
       )}
 
+      {/* Zoeklaag (taak #512): bekende routes eerst — eerder gereden, bewust
+          opgeslagen of met jou gedeeld — mét herkomstlabel, motivering en de
+          fail-closed blokkadecontrole. Daaronder pas de nieuwe voorstellen. */}
+      {(mode === "loop" ? !candidate : mode === "ptp") &&
+        (options || bekend) && (
+        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/[0.08] pt-5">
+          <span className="label-xs text-white/35">RESULTATEN</span>
+          {(
+            [
+              ["alles", "Alles"],
+              ["bekend", "Alleen bekend"],
+              ["nieuw", "Alleen nieuw"],
+            ] as const
+          ).map(([val, label]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setBekendFilter(val)}
+              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
+                bekendFilter === val
+                  ? "border-accent-cyan/50 text-accent-cyan/90"
+                  : "border-white/[0.12] text-white/40 hover:text-white/70"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {(mode === "loop" ? !candidate : mode === "ptp") &&
+        bekend &&
+        bekendFilter !== "nieuw" && (
+        <div className="mt-4">
+          <span className="label-xs text-white/35">BEKENDE ROUTES</span>
+          {bekend.length === 0 ? (
+            <p className="mt-1 text-[12px] leading-relaxed text-white/40">
+              Geen passende route gevonden in je eigen ritten, bibliotheek of
+              gedeelde routes — hieronder alleen nieuwe voorstellen.
+            </p>
+          ) : (
+            <div className="mt-3 grid gap-4 lg:grid-cols-3">
+              {bekend.map((m) => (
+                <div
+                  key={m.routeId}
+                  className={`min-w-0 rounded-2xl border p-4 ${
+                    m.bruikbaar
+                      ? "border-white/[0.1] bg-white/[0.03] hover:border-accent-cyan/40"
+                      : "border-warning/40 bg-warning/[0.04]"
+                  } transition-colors`}
+                >
+                  <span
+                    className="font-mono text-[10px] uppercase tracking-[0.16em]"
+                    style={{ color: ACCENT }}
+                  >
+                    {m.originLabel}
+                  </span>
+                  <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-2.5">
+                    <span className="truncate font-sans text-lg font-light tracking-tight text-white/90">
+                      {m.name}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[11px] tabular-nums text-white/45">
+                    <span className="whitespace-nowrap">
+                      {m.distanceKm != null
+                        ? `${Math.round(m.distanceKm)} km`
+                        : "—"}
+                    </span>
+                    <span>·</span>
+                    <span className="whitespace-nowrap">
+                      {m.elevationGainM != null
+                        ? `${Math.round(m.elevationGainM)} m omhoog`
+                        : "hoogte onbekend"}
+                    </span>
+                  </div>
+                  {m.geometry.length > 1 && (
+                    <RouteMap
+                      geometry={m.geometry}
+                      height={220}
+                      interactive={false}
+                      className="mt-3"
+                    />
+                  )}
+                  {/* Waarom deze route past — echte metingen, geen verkooppraat */}
+                  <ul className="mt-2 space-y-0.5">
+                    {m.matchReasons.map((r) => (
+                      <li
+                        key={r}
+                        className="text-[11px] leading-relaxed text-white/50"
+                      >
+                        · {r}
+                      </li>
+                    ))}
+                  </ul>
+                  {m.verificatie.status !== "geverifieerd" ? (
+                    <p className="mt-2 rounded-xl border border-warning/35 px-2.5 py-1.5 text-[11px] leading-relaxed text-warning/90">
+                      {m.verificatie.status === "geblokkeerd"
+                        ? "Geblokkeerd: "
+                        : "Niet controleerbaar: "}
+                      {m.verificatie.reden}
+                    </p>
+                  ) : m.ownership === "gedeeld" ? (
+                    <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                      Gedeelde route (veilige weergave) — open hem via je
+                      routebibliotheek om hem te gebruiken.
+                    </p>
+                  ) : (
+                    <div className="mt-3.5 grid gap-2">
+                      <button
+                        type="button"
+                        disabled={gebruikPendingId === m.routeId}
+                        onClick={() => gebruikBekendeRoute(m)}
+                        className="w-full rounded-xl border border-accent-cyan/30 py-2.5 font-sans text-[13px] font-medium text-accent-cyan/90 transition-colors hover:bg-accent-cyan/[0.08] disabled:opacity-50"
+                      >
+                        {gebruikPendingId === m.routeId
+                          ? "Route openen…"
+                          : "Gebruik deze route"}
+                      </button>
+                      {/* Hybride variant: alleen bij een lus — de motor bouwt
+                          de heenweg op jouw bekende route en plant de terugweg
+                          opnieuw (met blokkadecontrole). */}
+                      {mode === "loop" && (
+                        <button
+                          type="button"
+                          disabled={generate.isPending}
+                          onClick={() => runGenerate(undefined, m.routeId)}
+                          className="w-full rounded-xl border border-white/[0.15] py-2 font-sans text-[12px] text-white/70 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50"
+                        >
+                          Maak hiervan een nieuwe variant
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Eerst bekend, dán nieuw: nieuwe generatie start alleen
+              automatisch als er níets bruikbaars bekend is — anders kiest de
+              rijder hier expliciet voor nieuwe voorstellen van Sparki. */}
+          {bekend.length > 0 &&
+            ((mode === "loop" && !options) ||
+              (mode === "ptp" && !candidate)) && (
+              <button
+                type="button"
+                disabled={genPending}
+                onClick={() =>
+                  mode === "loop" ? doGenerateOptions() : doGenerate()
+                }
+                className="mt-4 w-full rounded-xl border border-white/[0.15] py-2.5 font-sans text-[13px] text-white/75 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50 lg:w-auto lg:px-5"
+              >
+                {genPending
+                  ? "Sparki plant nieuwe voorstellen…"
+                  : "Maak óók nieuwe voorstellen van Sparki"}
+              </button>
+            )}
+        </div>
+      )}
+
       {/* Loop mode: pick one of the 3 distance variants Sparki proposed */}
-      {mode === "loop" && options && !candidate && (
+      {mode === "loop" && options && !candidate && bekendFilter !== "bekend" && (
         <div className="mt-5 border-t border-white/[0.08] pt-5">
-          <span className="label-xs text-white/35">KIES JE ROUTE</span>
+          <span className="label-xs text-white/35">
+            NIEUWE VOORSTELLEN VAN SPARKI
+          </span>
           <p className="mt-1 text-[12px] leading-relaxed text-white/40">
             {options.length > 1
               ? "Varianten rond je gekozen afstand — korter, zoals gevraagd en langer. Bekijk de kaart en het hoogteprofiel en kies wat past."
@@ -3201,6 +3510,16 @@ export function RouteGenerator({
           <h4 className="font-sans text-lg font-light tracking-tight text-white/90">
             {candidate.name}
           </h4>
+          {/* Herkomstlabel in de gemengde resultatenlijst (taak #512):
+              hybride varianten dragen hun basisroute zichtbaar mee. */}
+          <p
+            className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em]"
+            style={{ color: ACCENT }}
+          >
+            {candidate.hybride
+              ? `Gebaseerd op jouw eerdere route “${candidate.hybride.baseRouteName}”`
+              : "Nieuw voorstel van Sparki"}
+          </p>
 
           {/* Andere echte voorstellen uit dezelfde generatieronde — de motor
               bouwde meerdere lussen; wissel gerust, de huidige blijft kiesbaar. */}
@@ -3409,7 +3728,7 @@ export function RouteGenerator({
             <button
               type="button"
               onClick={() => runGenerate(Math.floor(Math.random() * 1e6))}
-              disabled={genPending}
+              disabled={generate.isPending}
               className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
             >
               {generate.isPending

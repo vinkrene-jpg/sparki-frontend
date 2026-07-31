@@ -67,7 +67,7 @@ import {
 } from "../lib/route-generation-jobs";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { isMinorAthlete } from "../lib/sharing";
+import { isMinorAthlete, isVerifiedAdultAthlete } from "../lib/sharing";
 import {
   parseGpxRoute,
   summarizeTrack,
@@ -126,6 +126,13 @@ import {
   remarksSource,
   routeObstaclesOf,
 } from "../lib/route-remarks";
+import {
+  rankKnownRoutes,
+  verifyKnownRoutes,
+  hybrideViaPunten,
+  sharedKnownRouteRow,
+  type KnownRouteRow,
+} from "../lib/route-search";
 import {
   getRouteSurfaces,
   computeBikeSuitability,
@@ -3103,6 +3110,237 @@ async function buildLoopCandidate(
   };
 }
 
+// POST /api/routes/zoek — zoeklaag voor routeaanvragen (taak #512, opdracht
+// René 31-07-2026 §4–6): vind PASSENDE bestaande routes vóórdat er nieuw
+// gegenereerd wordt. Zoekt in (1) eerder gereden routes (ritgeschiedenis),
+// (2) bewust opgeslagen routes en (3) met de aanvrager gedeelde routes —
+// gerangschikt op startplaats/afstand/hoogte/fietssoort/lus-of-A-B. Elke
+// gevonden route gaat vóór levering door dezelfde fail-closed blokkadepoort
+// als een nieuw gegenereerde route: geblokkeerd of niet-controleerbaar wordt
+// eerlijk gemarkeerd en is niet bruikbaar. GEEN parallelle motor — nieuwe
+// voorstellen blijven uit /generate komen; deze laag levert alleen écht
+// bestaande routes met herkomstlabel + motivering.
+//   body: { startLat, startLon, mode?: "loop"|"ptp", targetDistanceKm?,
+//           targetDurationMin?, sport?, bikeType?, elevationPreference?,
+//           trainingType?, unpavedPreferencePct? }
+router.post("/zoek", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+
+  const startLat = finiteNum(body.startLat);
+  const startLon = finiteNum(body.startLon);
+  if (
+    startLat == null ||
+    startLon == null ||
+    Math.abs(startLat) > 90 ||
+    Math.abs(startLon) > 180
+  ) {
+    res.status(400).json({ error: "Geldig startpunt is verplicht" });
+    return;
+  }
+  const mode = body.mode === "ptp" ? ("ptp" as const) : ("loop" as const);
+  const sport = coerceSport(body.sport);
+  const bikeType = coerceBikeType(body.bikeType);
+  const elevationPreference = coerceElevation(body.elevationPreference) ?? "any";
+  const trainingType =
+    typeof body.trainingType === "string" && body.trainingType.trim()
+      ? body.trainingType.trim()
+      : null;
+  const unpavedTargetShare = coerceUnpavedTargetShare(
+    body.unpavedPreferencePct,
+    bikeType,
+  );
+
+  // Afstandsdoel: expliciet > tijdsduur × kruissnelheid > standaard 40 km —
+  // dezelfde maatvoering als de generator, zodat "past bij je aanvraag" voor
+  // bekende en nieuwe voorstellen hetzelfde betekent.
+  let targetDistanceKm = finiteNum(body.targetDistanceKm);
+  const targetDurationMin = finiteNum(body.targetDurationMin);
+  if (targetDistanceKm == null && targetDurationMin != null) {
+    const profile = selectRoutingProfile({
+      sport,
+      bikeType,
+      trainingType: trainingType ?? "duurtraining",
+      durationMin: targetDurationMin,
+      targetDistanceKm: null,
+      elevationPreference:
+        elevationPreference === "any" ? null : elevationPreference,
+    });
+    targetDistanceKm =
+      Math.round((targetDurationMin / 60) * profileCruisingSpeedKmh(profile)) ||
+      null;
+  }
+  if (targetDistanceKm == null) targetDistanceKm = 40;
+  targetDistanceKm = Math.min(Math.max(targetDistanceKm, 3), 300);
+
+  try {
+    // (1)+(2) Eigen routes: gereden (ritgeschiedenis) én bewust opgeslagen.
+    const own = await db
+      .select()
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+          ne(routesTable.status, "archived"),
+          isNotNull(routesTable.geometry),
+        ),
+      )
+      .orderBy(desc(routesTable.createdAt))
+      .limit(400);
+    const rows: KnownRouteRow[] = own.map((r) => ({
+      id: r.id,
+      name: r.name,
+      source: r.source,
+      linkedActivityImportId: r.linkedActivityImportId,
+      distanceKm: r.distanceKm,
+      elevationGainM: r.elevationGainM,
+      durationSec: r.durationSec,
+      surface: r.surface,
+      favorite: r.favorite,
+      geometry: Array.isArray(r.geometry)
+        ? (r.geometry as RoutePathPoint[])
+        : null,
+      ownership: "eigen",
+    }));
+
+    // (3) Toegestane gedeelde routes — zelfde zichtbaarheidsregels als
+    // GET /gedeeld, en ALTIJD de veilige kijkersgeometrie (start/einde
+    // afgekapt, privacyzone rond het huis van de eigenaar; fail-closed
+    // wanneer dat huisadres onbekend is: dan geen geometrie ⇒ niet
+    // voorstelbaar).
+    const shares = await db
+      .select({ share: routeSharesTable, route: routesTable })
+      .from(routeSharesTable)
+      .innerJoin(routesTable, eq(routeSharesTable.routeId, routesTable.id))
+      .where(
+        and(
+          isNull(routesTable.deletedAt),
+          ne(routesTable.clerkId, clerkId),
+          isNotNull(routesTable.geometry),
+        ),
+      )
+      .orderBy(desc(routeSharesTable.createdAt))
+      .limit(200);
+    if (shares.length > 0) {
+      const [coachOf, myClubs] = await Promise.all([
+        db
+          .select({ athleteClerkId: coachAthleteLinksTable.athleteClerkId })
+          .from(coachAthleteLinksTable)
+          .where(
+            and(
+              eq(coachAthleteLinksTable.coachClerkId, clerkId),
+              eq(coachAthleteLinksTable.status, "accepted"),
+            ),
+          ),
+        activeClubIds(clerkId),
+      ]);
+      const coachedIds = new Set(coachOf.map((r) => r.athleteClerkId));
+      const ownerIds = [...new Set(shares.map((s) => s.route.clerkId))];
+      const clubmates = new Set<string>();
+      if (myClubs.length > 0 && ownerIds.length > 0) {
+        const clubRows = await db
+          .select({ clerkId: clubMembersTable.clerkId })
+          .from(clubMembersTable)
+          .where(
+            and(
+              inArray(clubMembersTable.clubId, myClubs),
+              inArray(clubMembersTable.clerkId, ownerIds),
+              isNull(clubMembersTable.endedAt),
+            ),
+          );
+        for (const r of clubRows) clubmates.add(r.clerkId);
+      }
+      const homeByOwner = new Map<
+        string,
+        { lat: number; lon: number } | null
+      >();
+      // Fail-closed voor eigenaren die niet AANTOONBAAR volwassen zijn
+      // (minderjarig ÓF onbekende leeftijd): hun routes verschijnen NOOIT in
+      // andermans zoekresultaten, ongeacht het deelniveau. Strikter dan
+      // isMinorAthlete, dat onbekende leeftijd als niet-minderjarig telt.
+      const adultByOwner = new Map<string, boolean>();
+      const seen = new Set<number>();
+      for (const { share, route } of shares) {
+        if (seen.has(route.id)) continue;
+        const visible =
+          (share.audience === "persoon" && share.targetClerkId === clerkId) ||
+          (share.audience === "coach" && coachedIds.has(route.clerkId)) ||
+          ((share.audience === "club" || share.audience === "team") &&
+            clubmates.has(route.clerkId));
+        if (!visible) continue;
+        seen.add(route.id);
+        if (!adultByOwner.has(route.clerkId)) {
+          adultByOwner.set(
+            route.clerkId,
+            await isVerifiedAdultAthlete(route.clerkId),
+          );
+        }
+        if (adultByOwner.get(route.clerkId) !== true) continue;
+        if (!homeByOwner.has(route.clerkId)) {
+          homeByOwner.set(route.clerkId, await ownerHome(route.clerkId));
+        }
+        // Fail-closed: zonder bekend huisadres van de eigenaar is geen
+        // veilige kijkersgeometrie te garanderen ⇒ de route doet niet mee
+        // (sharedKnownRouteRow geeft dan null en transformeert niets).
+        const rij = sharedKnownRouteRow(
+          route,
+          share.audience,
+          homeByOwner.get(route.clerkId) ?? null,
+          () => {
+            const veilig = viewerRouteView(
+              route,
+              homeByOwner.get(route.clerkId)!,
+            );
+            return Array.isArray(veilig.geometry)
+              ? (veilig.geometry as RoutePathPoint[])
+              : null;
+          },
+        );
+        if (rij) rows.push(rij);
+      }
+    }
+
+    const ranked = rankKnownRoutes(rows, {
+      start: { lat: startLat, lon: startLon },
+      targetDistanceKm,
+      mode,
+      bikeType,
+      elevationPreference,
+      unpavedTargetShare,
+      trainingType,
+    });
+
+    // Fail-closed blokkadepoort (taak #505/#512): dezelfde blokkerende
+    // meting als bij nieuwe generatie — nooit een bekende route ongecheckt
+    // leveren, ook niet als hij ooit probleemloos gereden is. De limiet van
+    // 5 geldt voor BRUIKBARE voorstellen (ná verificatie): een lager
+    // gerangschikte maar schone route verdringt zo een geblokkeerde top-5.
+    // Geblokkeerde/niet-controleerbare treffers blijven beperkt zichtbaar,
+    // eerlijk gemarkeerd met hun reden.
+    const verified = await verifyKnownRoutes(ranked, routeObstaclesOf(), {
+      maxBruikbaar: 5,
+    });
+    const bekend = [
+      ...verified.filter((m) => m.bruikbaar).slice(0, 5),
+      ...verified.filter((m) => !m.bruikbaar).slice(0, 3),
+    ];
+
+    res.json({
+      bekend,
+      criteria: {
+        targetDistanceKm,
+        mode,
+        bikeType,
+        elevationPreference,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.zoek failed");
+    res.status(500).json({ error: "Kon bekende routes niet doorzoeken" });
+  }
+});
+
 // WP-1 (31-07-2026): fasemelding voor de routebouwer. De job-endpoints hangen
 // een callback aan het request; het synchrone pad heeft er geen — dan is dit
 // een no-op. Zo blijven beide paden exact dezelfde handler delen.
@@ -3193,8 +3431,8 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
 
   // Via-punten (alleen lus): de lus wordt als echte wegroute door deze punten
   // gelegd (start → via's → start).
-  const viaPoints = mode === "loop" ? parseWaypoints(body.viaPoints) : [];
-  const viaLoop = mode === "loop" && viaPoints.length > 0;
+  let viaPoints = mode === "loop" ? parseWaypoints(body.viaPoints) : [];
+  let viaLoop = mode === "loop" && viaPoints.length > 0;
 
   // Vermijd-voorkeuren met een EERLIJK rapport: wat is echt toegepast en wat
   // kan de routebron niet garanderen. Nooit stilletjes negeren.
@@ -3249,6 +3487,50 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       linkedWorkoutTitle = workout.title;
       workoutDurationMin = workout.targetDurationMin;
       if (workout.type && workout.type.trim()) workoutTrainingType = workout.type;
+    }
+
+    // Hybride voorstel (taak #512): een EIGEN bekende route als basis — de
+    // heenweg volgt de bekende route (via-punten uit de echte geometrie), de
+    // terugweg wordt door de motor opnieuw gepland. Herkomst wordt bewaard in
+    // naam + motivering ("Gebaseerd op jouw eerdere route …") en reist bij het
+    // opslaan mee de bibliotheek in. Het voorstel gaat door exact dezelfde
+    // fail-closed blokkadepoort als elke andere route — nooit omzeilen.
+    let hybrideBase: { id: number; name: string } | null = null;
+    const rawBaseRouteId = finiteNum(body.baseRouteId);
+    if (
+      mode === "loop" &&
+      rawBaseRouteId != null &&
+      Number.isInteger(rawBaseRouteId) &&
+      rawBaseRouteId > 0
+    ) {
+      const [base] = await db
+        .select()
+        .from(routesTable)
+        .where(
+          and(
+            eq(routesTable.id, rawBaseRouteId),
+            // Alleen eigen routes als hybride basis: gedeelde routes hebben
+            // een privacy-afgeschermde geometrie (start/einde afgekapt) en
+            // zouden een oneerlijke basis vormen.
+            eq(routesTable.clerkId, clerkId),
+            isNull(routesTable.deletedAt),
+          ),
+        )
+        .limit(1);
+      const baseGeom =
+        base && Array.isArray(base.geometry)
+          ? (base.geometry as RoutePathPoint[])
+          : null;
+      if (!base || !baseGeom || baseGeom.length < 4) {
+        res.status(400).json({
+          error:
+            "Basisroute voor het hybride voorstel niet gevonden of zonder bruikbare geometrie.",
+        });
+        return;
+      }
+      hybrideBase = { id: base.id, name: base.name };
+      if (viaPoints.length === 0) viaPoints = hybrideViaPunten(baseGeom);
+      viaLoop = viaPoints.length > 0;
     }
 
     // Auto-select the routing profile — the athlete never picks one.
@@ -3469,8 +3751,9 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       const nav: RouteStep[] = geom.steps;
 
       const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
-      const name =
-        mode === "ptp"
+      const name = hybrideBase
+        ? `Variant op ${hybrideBase.name}${distLabel ? ` · ${distLabel}` : ""}`
+        : mode === "ptp"
           ? `${resolvedStartName ?? "Start"} → ${resolvedEndName ?? "bestemming"}${distLabel ? ` · ${distLabel}` : ""}`
           : mode === "waypoints"
             ? `Eigen route${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
@@ -3490,7 +3773,11 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         endName: resolvedEndName,
         wish,
       };
-      const rationale = buildRationaleFallback(rationaleInput);
+      // Hybride herkomst hoort onlosmakelijk bij de motivering — zo reist
+      // "Gebaseerd op jouw eerdere route …" bij het opslaan automatisch mee.
+      const rationale = hybrideBase
+        ? `Gebaseerd op jouw eerdere route "${hybrideBase.name}": de heenweg volgt je bekende route, de terugweg is opnieuw gepland en gecontroleerd. ${buildRationaleFallback(rationaleInput)}`
+        : buildRationaleFallback(rationaleInput);
 
       const candidateId = putCandidate({
         clerkId,
@@ -3513,13 +3800,18 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         engineSurface: engineSurfaceOf(geom),
       });
 
-      scheduleEnrichment(
-        candidateId,
-        clerkId,
-        rationaleInput,
-        geom.path,
-        false, // PTP/waypoints/via-loop routes have no scenery steering
-      );
+      // Hybride voorstellen behouden hun deterministische motivering-met-
+      // herkomst: AI-verrijking zou de "Gebaseerd op jouw eerdere route …"-
+      // regel stilletjes overschrijven, dus die slaan we hier bewust over.
+      if (!hybrideBase) {
+        scheduleEnrichment(
+          candidateId,
+          clerkId,
+          rationaleInput,
+          geom.path,
+          false, // PTP/waypoints/via-loop routes have no scenery steering
+        );
+      }
 
       const totalMs = Math.round(performance.now() - _t_ptpreq0);
       console.log(
@@ -3557,6 +3849,13 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         plannedWorkoutId,
         targetDistanceKm: null,
         avoidReport,
+        // Hybride herkomst (taak #512): welke bekende route de basis vormde.
+        hybride: hybrideBase
+          ? {
+              baseRouteId: hybrideBase.id,
+              baseRouteName: hybrideBase.name,
+            }
+          : undefined,
       };
     };
 
