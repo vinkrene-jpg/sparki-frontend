@@ -32,9 +32,46 @@ Copilot wijzigt deze betekenissen niet, neemt geen productbesluit en beantwoordt
 
 ## Operationele borging
 
-De instructiebestanden bepalen **hoe** Copilot reviewt; zij starten zelf geen proces na een git-push. De repositorybeheerder moet automatische Copilot-review in de GitHub-repository/ruleset inschakelen of na iedere relevante Replit-push expliciet een Copilot-review over het pushverschil aanvragen. Bij rechtstreekse pushes zonder pull request moet de review het verschil tussen de vorige en nieuwe push-SHA gebruiken.
+### GitHub Actions PR-poort (aantoonbaar actief)
 
-Zolang die GitHub-instelling of expliciete trigger niet aantoonbaar actief is, blijft dit een verplichte handmatige procespoort en geen automatisch afgedwongen technische poort. Branchbescherming, mergebevoegdheid en de uiteindelijke vrijgave blijven menselijke verantwoordelijkheden.
+`.github/workflows/pr-checks.yml` draait automatisch bij elke pull request naar `main`. De workflow bevat drie verplichte jobs met exacte check-namen zoals hieronder:
+
+| Job (check-naam in GitHub)                           | Wat er draait                                                                 |
+|------------------------------------------------------|-------------------------------------------------------------------------------|
+| `validators (promise-calibration + sanity-reports)`  | `node scripts/check-promise-calibration.mjs` + `test-check-sanity-reports.mjs` + `check-sanity-reports.mjs` |
+| `typecheck (libs + api-server)`                      | `pnpm run typecheck:libs` + `pnpm --filter @workspace/api-server run typecheck` |
+| `admin-smoke (echte app tegen verse Postgres)`       | `pnpm --filter @workspace/db run push-force` + `pnpm --filter @workspace/api-server run test:admin-smoke` |
+
+### Branch protection op main (vereist handmatige instelling)
+
+De branch protection op `main` moet via GitHub worden ingesteld. De exacte instelling die aansluit op de bovenstaande check-namen:
+
+**GitHub → Settings → Branches → Add branch ruleset of Add protection rule → Branch name pattern: `main`**
+
+Verplichte vinkjes:
+
+- ☑ **Require a pull request before merging**  
+  - Dismiss stale reviews on new commits: ✓  
+  - Require approving reviews: 0 (Copilot-review is voldoende)
+- ☑ **Require status checks to pass before merging**  
+  - Require branches to be up to date: ✓  
+  - Status checks: voeg de volgende drie namen toe (exact):
+    - `validators (promise-calibration + sanity-reports)`
+    - `typecheck (libs + api-server)`
+    - `admin-smoke (echte app tegen verse Postgres)`
+- ☑ **Do not allow bypassing the above settings** (of: Do not allow force pushes)
+
+> **Status (2026-07-31):** Workflow-YAML aanwezig in repository; branch protection moet nog handmatig worden ingesteld via het GitHub-dashboard door de repositorybeheerder. Directe pushes naar main zijn daarna beperkt.
+
+### Automatische Copilot-PR-review (aantoonbaar niet actief)
+
+GitHub biedt geen API-eindpunt waarmee automatische Copilot-review programmatisch kan worden gecontroleerd of ingeschakeld — dit vereist een handmatige instelling via het GitHub-dashboard.
+
+**GitHub → Settings → Code Security → Copilot code review → Enable automatic review on pull requests**
+
+Zolang die instelling niet aantoonbaar actief is, blijft dit een **verplichte handmatige procespoort**: na het openen van een PR vraagt de eerste reviewer expliciet een Copilot-review aan via de PR-pagina ("Request a review from Copilot"). De SHA's van base en head worden in het reviewcommentaar genoteerd.
+
+Branchbescherming, mergebevoegdheid en de uiteindelijke vrijgave blijven menselijke verantwoordelijkheden.
 
 ## Poort 5b en Poort 5c
 
