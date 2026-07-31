@@ -1,0 +1,34 @@
+# Poort 5b sanity-check rapport — WP-S1-aanvulling: vier Sparki-omgevingen geïdentificeerd + identieke kliktest
+
+delivery: "Omgevingsregister (docs/product/SPARKI_OMGEVINGEN.md): vier omgevingen (telefoon-PWA, desktop Preview, productie-root, productie /sparki-mobile/) volledig gedocumenteerd (doel, branch, commit, build, backend, database, auth, flags, serviceworker, standaardidentiteit, verschillen); commit-SHA + omgevingsnaam nu zichtbaar in elke niet-productieomgeving (TESTCONTEXT-label 'DEV PREVIEW @ <sha>' + GET /api/version); identieke echte kliktest (Privacy, Voorwaarden, Hulp, Profiel, Uitnodigingen) op alle omgevingen met per resultaat URL+omgeving+commit+rol+formaat; officiële acceptatieomgeving aangewezen (productie met René's echte account); exacte verklaring van het gedragsverschil."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "e2e/tests/omgevingen-kliktest.mjs (echte browserkliks, screenshots + rapport.json in e2e/evidence/omgevingen/)"
+  - "GET /api/version (dev: commit 23007e1a) + TESTCONTEXT-label met SHA in DEV Preview"
+  - "Productie sparki-frontend.replit.app (publieke paden + bundel-/Clerk-forensiek) en /sparki-mobile/"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Kliktest DEV Preview (mobiel+desktop): Privacy, Voorwaarden, Hulp & ondersteuning en Profiel (Jij) landen alle op de juiste pagina met juiste kop; 'Uitnodigingen' bestaat niet als Meer-item voor rol athlete — eerlijk genoteerd als bevinding (direct /invitations toont 'Testers & koppelingen'), niet verdoezeld."
+        result: "pass"
+      - case: "Productie: /privacy en /voorwaarden publiek correct; /meer stuurt uitgelogd netjes naar /sign-in; /sparki-mobile/ is de Expo-startpagina van de aparte navigatie-app (geen Meer-menu) — vastgelegd, geen nep-kliktest gefingeerd."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Geen aannames: prod-Clerk-instantie bewezen anders (pk_live in de prod-bundel vs pk_test in dev, alleen key-type vergeleken, geen secretwaarden getoond); prod-database bewezen apart (2 vs 22 gebruikers, 15 vs 17 flag-rijen, business-mode-rij ontbreekt); prod-build bewezen ouder (markers van b2d974ad ontbreken in de prod-bundel, last-modified 31-07 05:21 UTC)."
+        result: "pass"
+      - case: "Elk kliktestresultaat draagt volledige URL, omgevingsnaam, commit-SHA, actieve rol/identiteit en apparaat/formaat (rapport.json + tabellen)."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Waar de commit-SHA niet hard bewijsbaar is (huidige prod-deploy zonder /api/version) staat er '≈93bc588d' mét methode en beperking — geen verzonnen zekerheid; structurele fix ingebouwd zodat dit vanaf de volgende publicatie exact is."
+        result: "pass"
+      - case: "Ingelogde prod-stappen (Hulp/Profiel/Uitnodigingen) zijn NIET met een verzonnen testaccount gedaan: prod mag geen testdata bevatten en pk_live accepteert geen dev-tickets — expliciet vastgelegd dat René die als acceptatietest zelf doorloopt; Hulp-basisvraag: pagina werkt met keuzeknoppen, geen vrij invoerveld (in álle omgevingen zo)."
+        result: "pass"
+
+# Kanttekening: acceptatieomgeving = productie; vereist wel herpublicatie zodat
+# /api/version + WP-S1-fixes live staan. PWA is geen eigen omgeving maar volgt
+# zijn installatie-oorsprong (sw.js = alleen webpush, geen paginacache).
+verdict: "deliverable"

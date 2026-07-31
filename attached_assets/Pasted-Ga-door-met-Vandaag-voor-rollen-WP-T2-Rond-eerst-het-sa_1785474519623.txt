@@ -1,0 +1,72 @@
+Ga door met Vandaag voor rollen (WP-T2).
+
+Rond eerst het samenhangende Vandaag-werkpakket af voordat je teruggaat naar de routeplanner.
+
+Bouw nu de afzonderlijke Vandaag-ervaringen voor minimaal:
+- zelfstandige trainer/coach;
+- ouder/verzorger;
+- clubbeheerder;
+- hoofdtrainer waar deze rol apart bestaat.
+
+Eisen:
+- geen atletenpagina met alleen andere teksten;
+- per rol eigen prioriteiten, kaartvolgorde, acties en informatiediepte;
+- hergebruik de bestaande Today Orchestrator, historie, rechten en bestaande engines;
+- geen parallel dashboard- of analysesysteem;
+- server-side rechten blijven leidend;
+- toon alleen gegevens waarvoor de actieve rol en relatie recht geven;
+- voorkom herhaling en lege algemene kaarten;
+- urgente zaken blijven zichtbaar;
+- wisselkaarten mogen variëren op basis van historie en nieuw beschikbare informatie.
+
+Voorbeelden van prioriteiten:
+
+Zelfstandige trainer:
+- sporters die aandacht nodig hebben;
+- gemiste of afwijkende trainingen;
+- nieuwe feedback;
+- te beoordelen voorstellen;
+- aankomende wedstrijden;
+- openstaande acties.
+
+Ouder/verzorger:
+- planning en relevante voortgang;
+- passende veiligheids- en herstelcontext;
+- benodigde toestemming of actie;
+- geen onnodige medische of prestatiegevoelige details;
+- leeftijds- en rechtenregels strikt toepassen.
+
+Clubbeheerder:
+- operationele clubaandachtspunten;
+- teams, trainers en planning;
+- algemene en toegestane individuele voortgang;
+- rechten-, VOG- en beheeracties;
+- geen individuele details buiten de vastgelegde bevoegdheden.
+
+Hoofdtrainer:
+- team- en trainersoverzicht;
+- sporters met afwijkingen;
+- te beoordelen plannen;
+- wedstrijd- en belastingsoverzicht;
+- auditbare acties.
+
+Voer gerichte tests uit voor:
+- rolwissel binnen hetzelfde account;
+- gebruiker met meerdere rollen;
+- ontbrekende relatie;
+- verboden individuele gegevens;
+- lege club of trainer zonder sporters;
+- urgente melding versus gewone wisselkaart;
+- meerdere inlogmomenten;
+- directe API-aanroepen zonder recht.
+
+Werk documentatie, Current State en roadmap bij.
+
+Daarna direct WP-T3 uitvoeren:
+- tester-debugweergave;
+- volledige 17-scenario-testmatrix;
+- minimaal zes aantoonbaar verschillende profiel-/rolweergaven;
+- Poort 5b;
+- pas daarna Vandaag als volledig afgerond markeren.
+
+Na WP-T2 en WP-T3 terugkeren naar routeplanner vier weergaven inclusief Wedstrijd.

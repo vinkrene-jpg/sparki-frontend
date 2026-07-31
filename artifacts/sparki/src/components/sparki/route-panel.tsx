@@ -34,6 +34,9 @@ import {
   useWorkoutSearch,
 } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
+import { usePlannerView } from "@/hooks/use-planner-view"
+import { plannerViewHas, type PlannerFeature } from "@/lib/planner-view"
+import { PlannerViewSwitcher } from "@/components/sparki/planner-view-switcher"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
 import { racefietsVerification } from "@/lib/racefiets-verification"
@@ -1569,6 +1572,12 @@ export function RouteGenerator({
 }) {
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
+  // Weergaveniveau (besluit B6): bepaalt alleen welke invoeropties zichtbaar
+  // zijn — nooit de veiligheid (blokkadepoort, verificatie, waarschuwingen
+  // gelden op elk niveau) en nooit stiekem meesturen: een verborgen optie
+  // gaat ook niet mee in de aanvraag (effectieve waarden hieronder).
+  const plannerView = usePlannerView()
+  const heeft = (f: PlannerFeature) => plannerViewHas(plannerView.view, f)
   const save = useSaveGeneratedRoute()
   // RequestId guard: prevents a slow in-flight request from overwriting a newer one.
   const generateReqId = useRef(0)
@@ -1837,9 +1846,27 @@ export function RouteGenerator({
     }
   }
 
-  const linkedWorkout = workoutId
-    ? workouts?.find((w) => String(w.id) === workoutId)
-    : undefined
+  // Trainingskoppeling hoort bij de Wedstrijd-weergave; in andere weergaven
+  // wordt een (eerder gekozen) koppeling ook niet stilletjes meegestuurd.
+  const linkedWorkout =
+    heeft("training") && workoutId
+      ? workouts?.find((w) => String(w.id) === workoutId)
+      : undefined
+  // Effectieve waarden voor verborgen opties: niet zichtbaar = niet meesturen.
+  const effectieveWens = heeft("wens") ? wish.trim() : ""
+  const effectiefVermijdN = heeft("nWegen") && avoidBusyRoads
+  const effectieveHoogte = heeft("hoogte") ? elevationPreference : "any"
+  const effectiefTrainingstype = heeft("training") ? trainingType : "duurtraining"
+
+  // Weergave omlaag gezet terwijl de eigen routebouwer actief was? Dan terug
+  // naar Lus — een verborgen modus mag nooit stilletjes waypoints meesturen.
+  // Bij "route wijzigen" (bestaande punten) blijft de bouwer wél beschikbaar.
+  useEffect(() => {
+    if (mode === "waypoints" && !heeft("eigenRoute") && !hasInitial) {
+      setMode("loop")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plannerView.view, mode])
 
   // Startpunt via adres/plaatsnaam zoeken — naast "Gebruik mijn locatie", zodat
   // je ook een route kunt plannen die ergens anders begint (vakantie, clubrit).
@@ -1915,16 +1942,16 @@ export function RouteGenerator({
         startLon: start.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference,
-        trainingType,
+        elevationPreference: effectieveHoogte,
+        trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
           !linkedWorkout && Number.isFinite(distNum) ? distNum : undefined,
-        wish: wish.trim() ? wish.trim() : undefined,
+        wish: effectieveWens ? effectieveWens : undefined,
         unpavedPreferencePct:
           sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
         avoidBusyRoads:
-          sport === "cycling" && avoidBusyRoads ? true : undefined,
+          sport === "cycling" && effectiefVermijdN ? true : undefined,
       },
       {
         onSuccess: (data) => setOptions(data.options),
@@ -1965,8 +1992,8 @@ export function RouteGenerator({
         startLon: start?.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference,
-        trainingType,
+        elevationPreference: effectieveHoogte,
+        trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
           mode === "loop" && !linkedWorkout && Number.isFinite(distNum)
@@ -1975,11 +2002,11 @@ export function RouteGenerator({
         destinationText: mode === "ptp" ? destination.trim() : undefined,
         waypoints: mode === "waypoints" ? allPoints : undefined,
         seed: nextSeed,
-        wish: wish.trim() ? wish.trim() : undefined,
+        wish: effectieveWens ? effectieveWens : undefined,
         unpavedPreferencePct:
           sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
         avoidBusyRoads:
-          sport === "cycling" && avoidBusyRoads ? true : undefined,
+          sport === "cycling" && effectiefVermijdN ? true : undefined,
       },
       {
         onSuccess: (data) => {
@@ -2107,6 +2134,11 @@ export function RouteGenerator({
         )}
       </div>
 
+      {/* Weergaveniveau (besluit B6): automatisch voorgesteld, altijd zelf
+          aanpasbaar, los van het abonnement. Alleen bij het samenstellen —
+          het resultaatscherm toont voor iedereen dezelfde eerlijke controle. */}
+      {!showResult && <PlannerViewSwitcher />}
+
       {/* Stappenteller — vier duidelijke stappen, resultaat apart */}
       {!showResult && (
         <div className="mt-4 flex items-center gap-2">
@@ -2157,7 +2189,15 @@ export function RouteGenerator({
               { v: "ptp", l: "A → B" },
               { v: "waypoints", l: "Eigen route" },
             ] as const
-          ).map((m) => (
+          )
+            // De eigen routebouwer hoort bij de sportievere weergaven; bij
+            // "route wijzigen" (bestaande punten) blijft hij altijd bereikbaar,
+            // anders zou bestaande functionaliteit stilletjes wegvallen.
+            .filter(
+              (m) =>
+                m.v !== "waypoints" || heeft("eigenRoute") || hasInitial,
+            )
+            .map((m) => (
             <button
               key={m.v}
               type="button"
@@ -2397,7 +2437,11 @@ export function RouteGenerator({
           </div>
 
           {/* Onverhard-voorkeur (taak #440): schuifbalk voor gravel/MTB;
-              racefiets/gewone fiets vast op 0 (harde grens, taak #437). */}
+              racefiets/gewone fiets vast op 0 (harde grens, taak #437).
+              Zichtbaar in de sportieve weergaven, én zodra gravel/MTB is
+              gekozen — een instelling die meestuurt mag nooit onzichtbaar
+              zijn (eerlijkheid boven eenvoud). */}
+          {(heeft("onverhard") || unpavedAdjustable) && (
           <div className="mt-4">
             <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
               ONVERHARD-VOORKEUR
@@ -2448,10 +2492,13 @@ export function RouteGenerator({
               </>
             )}
           </div>
+          )}
 
           {/* Vermijd drukke N-wegen (taak #462): expliciete keuze naast de
               onverhard-voorkeur. Voorkeur in de routemotor — geen garantie;
-              lukt het niet, dan meldt Sparki dat eerlijk bij het resultaat. */}
+              lukt het niet, dan meldt Sparki dat eerlijk bij het resultaat.
+              Vanaf de Go-weergaven; verborgen = telt niet mee. */}
+          {heeft("nWegen") && (
           <div className="mt-4">
             <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
               DRUKKE WEGEN
@@ -2475,11 +2522,12 @@ export function RouteGenerator({
               </span>
             </label>
           </div>
+          )}
         </div>
       )}
 
-      {/* Elevation preference */}
-      {stepVisible(2) && (<>
+      {/* Elevation preference — vanaf de Go-weergaven */}
+      {stepVisible(2) && heeft("hoogte") && (
       <div className="mt-4">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
           HOOGTEVOORKEUR
@@ -2497,8 +2545,10 @@ export function RouteGenerator({
           ))}
         </div>
       </div>
+      )}
 
-      {/* Training type + workout link */}
+      {/* Training type + workout link — alleen in de Wedstrijd-weergave */}
+      {stepVisible(2) && heeft("training") && (
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
@@ -2598,7 +2648,7 @@ export function RouteGenerator({
           })()}
         </div>
       </div>
-      </>)}
+      )}
 
       {/* Distance (loop, manual) */}
       {stepVisible(1) && mode === "loop" && (
@@ -2736,8 +2786,8 @@ export function RouteGenerator({
         </div>
       )}
 
-      {/* Free-text wish — applies to every mode */}
-      {stepVisible(3) && (<>
+      {/* Free-text wish — sportieve weergaven; geldt voor elke vorm */}
+      {stepVisible(3) && heeft("wens") && (
       <div className="mt-4">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
           SPECIFIEKE WENS (OPTIONEEL)
@@ -2754,12 +2804,15 @@ export function RouteGenerator({
           dan hoor je dat — met een passend alternatief.
         </p>
       </div>
+      )}
 
+      {stepVisible(3) && (<>
       {error && (
         <p className="mt-3 text-[12px] text-negative/85">{error}</p>
       )}
 
-      {/* Samen rijden? — de plek waar je bordjes-sprint en je maten kiest. */}
+      {/* Samen rijden? — de plek waar je je maten kiest. (Bordjes-sprint is
+          gestopt — veiligheidsrisico op openbare weg, besluit 31-07-2026.) */}
       <div className="mt-4 border-t border-white/[0.08] pt-4">
         <span className="label-xs text-white/35">SAMEN RIJDEN?</span>
         <div className="mt-2 flex items-center gap-1.5">
@@ -2792,8 +2845,7 @@ export function RouteGenerator({
         {withOthers && (
           <div className="mt-2.5">
             <p className="text-[12px] leading-relaxed text-white/50">
-              Sprinten om plaatsbordjes staat aan — gas erop bij de komborden.
-              Na het bewaren opent de navigatie direct met deze instelling.
+              Kies met wie je rijdt — dat zie je terug in de navigatie.
             </p>
             {friends.length > 0 ? (
               <>
@@ -2829,7 +2881,7 @@ export function RouteGenerator({
             ) : (
               <p className="mt-2 text-[11px] leading-relaxed text-white/35">
                 Nog geen vrienden gekoppeld — voeg ze toe via Samen, dan kun je
-                ze hier kiezen. Sprinten om bordjes werkt ook zonder.
+                ze hier kiezen.
               </p>
             )}
           </div>
@@ -2873,30 +2925,37 @@ export function RouteGenerator({
               {sport === "cycling"
                 ? BIKE_OPTIONS.find((b) => b.value === bikeType)?.label ?? bikeType
                 : SPORT_OPTIONS.find((s) => s.value === sport)?.label ?? sport}
-              {" · "}
-              {ELEVATION_OPTIONS.find((e) => e.value === elevationPreference)
-                ?.label ?? elevationPreference}
+              {heeft("hoogte") && (
+                <>
+                  {" · "}
+                  {ELEVATION_OPTIONS.find((e) => e.value === effectieveHoogte)
+                    ?.label ?? effectieveHoogte}
+                </>
+              )}
             </p>
+            {heeft("training") && (
             <p>
               <span className="text-white/40">Training: </span>
               {linkedWorkout
                 ? `gekoppeld aan ${linkedWorkout.title}`
-                : trainingType.charAt(0).toUpperCase() + trainingType.slice(1)}
+                : effectiefTrainingstype.charAt(0).toUpperCase() +
+                  effectiefTrainingstype.slice(1)}
             </p>
-            {wish.trim() && (
+            )}
+            {effectieveWens && (
               <p>
                 <span className="text-white/40">Wens: </span>
-                {wish.trim()}
+                {effectieveWens}
               </p>
             )}
             <p>
               <span className="text-white/40">Gezelschap: </span>
               {withOthers
-                ? `je rijdt met anderen (bordjes-sprint aan${
+                ? `je rijdt met anderen${
                     buddyIds.length > 0
-                      ? `, ${buddyIds.length} maat${buddyIds.length === 1 ? "" : "jes"}`
+                      ? ` (${buddyIds.length} maat${buddyIds.length === 1 ? "" : "jes"})`
                       : ""
-                  })`
+                  }`
                 : "je rijdt alleen"}
             </p>
           </div>

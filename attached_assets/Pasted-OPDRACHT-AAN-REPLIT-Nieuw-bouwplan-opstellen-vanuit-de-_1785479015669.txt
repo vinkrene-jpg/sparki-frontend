@@ -1,0 +1,160 @@
+OPDRACHT AAN REPLIT — Nieuw bouwplan opstellen vanuit de actuele telefoon-/desktopdoctrine
+
+De canonieke ontwerpregel in het Master Plan-addendum is gewijzigd en staat op GitHub in:
+
+docs/SPARKI_MASTER_PLAN_ADDENDUM_GOVERNANCE_EN_KALIBRATIE.md
+
+Commit:
+66d248364658998e0680556a211c16d2a235067f
+
+Lees dit document opnieuw als actuele bron van waarheid voordat je verder bouwt.
+
+Belangrijke nieuwe bindende regel:
+
+1. Sporters worden primair telefoon-first bediend.
+2. Trainer, ploegleider, hoofdtrainer en clubbeheerder krijgen primair een desktopgerichte professionele werkruimte.
+3. Telefoon en desktop mogen wezenlijk verschillen in interactie, informatiedichtheid, navigatie en workflow.
+4. Dit is niet alleen responsive gedrag.
+5. Onderliggende data, rechten, engines, auditlogging en veiligheidsregels blijven gedeeld.
+6. Geen parallel product of dubbele businesslogica bouwen.
+
+Stel nu eerst een nieuw bouwplan op. Nog niet bouwen.
+
+Het bouwplan moet minimaal bevatten:
+
+A. Huidige situatie
+- welke schermen zijn aantoonbaar desktop-first gebouwd;
+- welke sporterflows zijn op mobiel te lang, te druk of onvoldoende begeleid;
+- welke trainer-, coach-, ploegleider-, hoofdtrainer- en clubbeheerflows nu juist te weinig desktopwaarde bieden;
+- welke onderdelen alleen schalen maar functioneel niet verschillen;
+- waar huidige navigatie en rolcontext tekortschieten.
+
+B. Doelarchitectuur per gebruikstype
+
+Sporter op telefoon:
+- kaart- en taakgericht;
+- begeleide stappen;
+- pop-ups, drawers en overlays;
+- één primaire actie per moment;
+- beperkte informatiedichtheid;
+- details pas na keuze;
+- geschikt voor gebruik onderweg.
+
+Sporter op desktop:
+- bruikbaar voor planning, terugkijken en diepere analyse;
+- meer ruimte, maar niet automatisch een beheeromgeving.
+
+Trainer/coach op desktop:
+- aandachtssporters;
+- planning;
+- vergelijking;
+- feedback;
+- bulkacties;
+- meerdere sporters tegelijk;
+- filters, tabellen en zijpanelen waar nuttig.
+
+Ploegleider op desktop:
+- wedstrijdcontext;
+- selectie;
+- rennersstatus;
+- planning;
+- logistiek;
+- materiaal- en koersinformatie;
+- operationeel overzicht.
+
+Hoofdtrainer en clubbeheerder op desktop:
+- teams;
+- trainers;
+- rollen;
+- voortgang;
+- belasting;
+- beheer;
+- audit;
+- rechten en VOG-statusmetadata;
+- meerdere entiteiten tegelijk.
+
+Mobiel voor professionele rollen:
+- kernacties en urgente informatie;
+- geen volledige verkleinde desktopweergave;
+- geen onbruikbare tabellen;
+- veilige compacte bediening;
+- eventueel minder functies tegelijk, maar geen foutieve rechtenbeperking.
+
+C. Verschillen per apparaat
+Maak per relevante module een tabel:
+
+| Module | Sporter telefoon | Sporter desktop | Trainer desktop | Professionele rol mobiel | Gedeelde backend |
+
+Neem minimaal mee:
+- Vandaag;
+- routeplanner;
+- navigatie;
+- planning;
+- activiteiten;
+- coachomgeving;
+- clubomgeving;
+- wedstrijdomgeving;
+- materiaal/mechanieker;
+- Lab/analyse;
+- berichten;
+- beheer.
+
+D. Hergebruik
+- welke componenten kunnen gedeeld blijven;
+- welke presentatielagen moeten splitsen;
+- welke API’s en engines blijven identiek;
+- waar adaptive layout voldoende is;
+- waar aparte interactiecomponenten nodig zijn;
+- voorkom dubbele businesslogica.
+
+E. Prioriteiten
+Geef een volgorde in kleine werkpakketten.
+
+Begin met:
+1. routeplanner sporter mobiel;
+2. Vandaag sporter mobiel;
+3. echte rolomgevingen en impersonatietest;
+4. trainerdesktop;
+5. clubbeheerdesktop;
+6. ploegleider/hoofdtrainer waar technisch aanwezig;
+7. mobiele compacte variant voor professionele rollen.
+
+F. Acceptatie
+Per werkpakket:
+- echte telefoontest;
+- echte desktoptest;
+- roltest;
+- rechtencontrole;
+- API-controle;
+- screenshots;
+- regressietests;
+- Poort 5b;
+- onafhankelijke review.
+
+G. Documentatie
+Werk daarna bij of maak:
+- SPARKI_DEVICE_AND_ROLE_EXPERIENCE.md
+- SPARKI_MOBILE_FIRST_ATHLETE_STANDARD.md
+- SPARKI_DESKTOP_PROFESSIONAL_STANDARD.md
+- SPARKI_DEVICE_ROLE_TEST_MATRIX.md
+- roadmap;
+- Current State;
+- Product Promise-inventaris;
+- UX-auditdocumenten.
+
+Harde grens
+
+Nog niet bouwen voordat René het nieuwe bouwplan heeft beoordeeld.
+
+Lever eerst:
+- inventarisatie;
+- voorgestelde werkpakketten;
+- afhankelijkheden;
+- risico’s;
+- migraties;
+- testaanpak;
+- voorstel voor volgorde.
+
+Geen schermen aanpassen in deze stap.
+Geen parallelle backend bouwen.
+Geen bestaande routeplanner- of Vandaag-opdracht stil herschrijven zonder expliciete mapping naar dit nieuwe plan.

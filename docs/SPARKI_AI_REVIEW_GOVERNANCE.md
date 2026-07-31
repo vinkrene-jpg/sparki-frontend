@@ -131,6 +131,26 @@ Gewenste structurele werkwijze:
 
 Tot dat moment blijft de reviewketen deels handmatig.
 
+### 11a. Verplichte risicoanalyse voor harde routeregels (bindend, 31-07-2026)
+
+Een nieuwe of gewijzigde **harde routeregel** (afkeurpoort, fail-closed
+eindverificatie, blokkade-classificatie, navigatiestart-controle,
+routeopslag-gate) mag **niet gebouwd of gemerged** worden zonder vooraf
+ingevulde risicoanalyse volgens `docs/SPARKI_ROUTING_RISK_ANALYSIS_TEMPLATE.md`,
+opgeslagen in `docs/ROUTING_RISK_ANALYSES/`. De controle
+`scripts/check-routing-risk-analysis.mjs` is lokaal uitvoerbaar en bindend als
+werkafspraak, maar wordt **nog níet automatisch door GitHub afgedwongen**: het
+workflowbestand staat gestaged in `docs/github/pr-checks-routing.yml` en wordt
+pas een echte verplichte check nadat René het met workflows-scope naar
+`.github/workflows/` pusht en als required check markeert (#507-afronding).
+Tot dat moment draait de agent de controle zelf vóór elke push die de routekern
+raakt. Puur redactionele wijzigingen mogen gemotiveerd "RRA: niet van
+toepassing — <reden>" in de HEAD-commit claimen; de reviewketen beoordeelt die
+claim. Daarnaast geldt: PR's die de routekern raken draaien de compacte
+regressiematrix (loop-quality-gate, route-library-gates, route-alternates) én
+de gegenereerde invarianten-suite (`test:routing-generated`, vaste seed); de
+grote suite (2000 scenario's) draait nachtelijk of handmatig.
+
 ## 12. Huidige werkfocus
 
 Prioriteit:

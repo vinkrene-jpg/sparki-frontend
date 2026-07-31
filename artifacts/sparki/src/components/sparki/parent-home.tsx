@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { RoleTodaySection } from "@/components/sparki/role-today"
 import {
   useParentOverview,
   useEndParentLink,
@@ -602,6 +603,9 @@ export function ParentHome() {
   return (
     <ScreenShell section="Ouder" bg="/atmosphere/samen-fietsen-terras.webp">
       <div className="space-y-5">
+        {/* WP-T2: ouder-Vandaag — toestemmingsacties, veiligheidscontext en
+            planning (uitsluitend binnen de toegestane categorieën). */}
+        <RoleTodaySection rol="ouder" />
         <div>
           <SectionLabel n="01" title="Welzijn & veiligheid" />
           <p className="mt-2 text-[13px] text-white/45">

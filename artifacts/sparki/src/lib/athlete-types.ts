@@ -21,6 +21,11 @@ export type AthleteProfile = {
   discipline: string | null;
   goals: string | null;
   developmentGoal: string | null;
+  // Zelfgerapporteerd niveau — voedt o.a. het automatische plannerweergave-voorstel.
+  experienceLevel: string | null;
+  competitionLevel: string | null;
+  // Routeplanner-weergaveniveau (besluit B6); null = automatisch voorstel volgen.
+  plannerView: "gratis" | "go_fietser" | "go_sport" | "wedstrijd" | null;
   weeklyHourTarget: number | null;
   weeklyHourTargetEstimated: boolean | null;
   trainingDaysPerWeek: number | null;

@@ -1,0 +1,37 @@
+# Poort 5b sanity-check — Rijden opent op Maken; routebibliotheek met
+# kleur+lijnstijl per route; zoeken op plaats respecteert het startgebied.
+
+delivery: "Rijden (/routes) opent zonder parameters op tabblad Maken (deep-links ?route=/?nav=/?ritopties= landen nog op Bewaard). Routebibliotheek-kaart (Ontdek): elke route een eigen stabiele kleur (kleurenblind-vriendelijk palet) + lijnstijl per fietstype (racefiets doorgetrokken, MTB grove stippellijn, gravel streep-stippellijn, fiets streepjeslijn), donkere casing tegen samensmelten, geselecteerde route prominenter, compacte legenda en hetzelfde lijnvoorbeeld op elk routekaartje (één stijlmodule lib/route-style.tsx). Zoeken op plaatsnaam: bij meerdere plaatsen kiest de gebruiker; daarna alleen routes die binnen 5 km van het gekozen startpunt starten, met afstand per route; verruimen naar 10/20/50 km is expliciet en wordt nooit als voorkeur bewaard. API /api/routes/bibliotheek kreeg daarvoor een straal-vorm (lat/lon/radiusKm, haversine-filter, startAfstandKm)."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/routes zonder parameters (screenshot dev): opent op Maken met wizard stap 1"
+  - "/routes?view=ontdek (screenshot dev): zoekveld, kaart, knoppen renderen; leeg-gebied-tekst eerlijk"
+  - "API GET /api/routes/bibliotheek via curl op echte Hengelo-data (straal 5/25 km, straal 1000 ⇒ 400, bbox-vorm ongewijzigd zonder startAfstandKm)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Plaatskeuzelijst (meerdere 'Hengelo's'): elke knop roept kiesPlaats aan — zet kaartcentrum, laadt routes binnen 5 km en sluit de lijst; geen knop zonder werking."
+        result: "pass"
+      - case: "'Zoek tot 10/20/50 km'-knoppen verschijnen alleen bij een lege straal-uitslag en herladen echt met de ruimere straal (zelfde query-pad, curl-bewezen dat 25 km meer routes geeft dan de exacte start); 'Laat hier de routes zien' schakelt terug naar kaartgestuurd zoeken en wist de straal-stand."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Bij meerdere geocodekandidaten met verschillende labels gokt de app nooit stil de eerste, maar vraagt 'welke bedoel je?'; bij precies één kandidaat wordt direct geladen zonder overbodige vraag."
+        result: "pass"
+      - case: "'Start op X km' staat alleen op kaartjes bij straal-zoeken (bbox-antwoorden hebben startAfstandKm null — curl-gecontroleerd); de straal-uitleg zegt expliciet dat hij alleen voor deze zoekopdracht geldt en niets wordt als voorkeur bewaard (alleen componentstate, geen opslag)."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Geen routes binnen de straal ⇒ eerlijke lege staat met de reden ('Geen Sparki-routes die binnen X km van <plaats> starten') en expliciete keuzes (verruimen, ander startpunt, gebied laten vullen) — nooit stil verruimen of routes van verderop als resultaat presenteren; server filtert op echte haversine-afstand (regressietest test:route-library-straal uitgevoerd en groen, incl. binnen/buiten-gevallen en bbox-dekking van de cirkelrand)."
+        result: "pass"
+      - case: "Kleuren en lijnstijlen op kaart, legenda en routekaartjes komen uit één gedeelde module (routeColorById/bikeDash/LijnVoorbeeld) — lijst en kaart kunnen niet uiteenlopen; onderscheid leunt nooit alleen op kleur (lijnstijl per fietstype + legenda-tekst)."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): de meerdere-routes-weergave is bewezen met code,
+# tsc (sparki + api-server + libs groen), de regressietest en echte API-data,
+# maar niet met een interactieve kliksessie op een gevuld gebied (screenshottool
+# kan niet klikken). De planner-tab (Maken) toont één kandidaatroute tegelijk op
+# de kaart; het meerdere-routes-onderscheid speelt daar dus niet.
+verdict: "deliverable"

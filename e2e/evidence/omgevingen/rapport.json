@@ -1,0 +1,217 @@
+[
+  {
+    "omgeving": "DEV Preview (desktop)",
+    "url": "http://127.0.0.1:80 (workspace-dev)",
+    "commit": "23007e1a",
+    "rol": "athlete",
+    "identiteit": "dev_qa_athlete",
+    "formaat": "desktop",
+    "stappen": [
+      {
+        "stap": "open-meer",
+        "status": "OK",
+        "url": "http://127.0.0.1/meer",
+        "titel": "Sparki — Performance Center",
+        "kop": "Meer"
+      },
+      {
+        "stap": "privacy",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/privacy",
+        "titel": "Sparki — Performance Center",
+        "kop": "Privacyverklaring Sparki",
+        "inhoudOk": true
+      },
+      {
+        "stap": "voorwaarden",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/voorwaarden",
+        "titel": "Sparki — Performance Center",
+        "kop": "Gebruiksvoorwaarden Sparki",
+        "inhoudOk": true
+      },
+      {
+        "stap": "hulp",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/support",
+        "titel": "Sparki — Performance Center",
+        "kop": "Hulp & ondersteuning",
+        "antwoordBevatStrava": "geen invoerveld gevonden"
+      },
+      {
+        "stap": "profiel",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/you",
+        "titel": "Sparki — Performance Center",
+        "kop": "Wat er van je bekend is"
+      },
+      {
+        "stap": "uitnodigingen",
+        "status": "NIET AANWEZIG",
+        "detail": "\"Uitnodigingen\" niet zichtbaar",
+        "url": "http://127.0.0.1/meer",
+        "titel": "Sparki — Performance Center",
+        "kop": "Meer",
+        "directeNavigatie": {
+          "url": "http://127.0.0.1/invitations",
+          "titel": "Sparki — Performance Center",
+          "kop": "Testers & koppelingen"
+        }
+      }
+    ]
+  },
+  {
+    "omgeving": "DEV Preview (mobiel)",
+    "url": "http://127.0.0.1:80 (workspace-dev)",
+    "commit": "23007e1a",
+    "rol": "athlete",
+    "identiteit": "dev_qa_athlete",
+    "formaat": "mobiel",
+    "stappen": [
+      {
+        "stap": "open-meer",
+        "status": "OK",
+        "url": "http://127.0.0.1/meer",
+        "titel": "Sparki — Performance Center",
+        "kop": "Meer"
+      },
+      {
+        "stap": "privacy",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/privacy",
+        "titel": "Sparki — Performance Center",
+        "kop": "Privacyverklaring Sparki",
+        "inhoudOk": true
+      },
+      {
+        "stap": "voorwaarden",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/voorwaarden",
+        "titel": "Sparki — Performance Center",
+        "kop": "Gebruiksvoorwaarden Sparki",
+        "inhoudOk": true
+      },
+      {
+        "stap": "hulp",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/support",
+        "titel": "Sparki — Performance Center",
+        "kop": "Hulp & ondersteuning",
+        "antwoordBevatStrava": "geen invoerveld gevonden"
+      },
+      {
+        "stap": "profiel",
+        "status": "GEKLIKT",
+        "url": "http://127.0.0.1/you",
+        "titel": "Sparki — Performance Center",
+        "kop": "Wat er van je bekend is"
+      },
+      {
+        "stap": "uitnodigingen",
+        "status": "NIET AANWEZIG",
+        "detail": "\"Uitnodigingen\" niet zichtbaar",
+        "url": "http://127.0.0.1/meer",
+        "titel": "Sparki — Performance Center",
+        "kop": "Meer",
+        "directeNavigatie": {
+          "url": "http://127.0.0.1/invitations",
+          "titel": "Sparki — Performance Center",
+          "kop": "Testers & koppelingen"
+        }
+      }
+    ]
+  },
+  {
+    "omgeving": "Productie (mobiel)",
+    "url": "https://sparki-frontend.replit.app/",
+    "commit": "onbekend (endpoint ontbreekt in deze build)",
+    "rol": "uitgelogd (bezoeker)",
+    "identiteit": "geen (bewust: geen testdata in productie)",
+    "formaat": "mobiel",
+    "stappen": [
+      {
+        "stap": "open-meer (zonder login)",
+        "status": "AUTH VEREIST",
+        "url": "https://sparki-frontend.replit.app/sign-in",
+        "titel": "Sparki — Performance Center",
+        "kop": "Welkom terug"
+      },
+      {
+        "stap": "privacy",
+        "status": "OK (publiek)",
+        "inhoudOk": true,
+        "url": "https://sparki-frontend.replit.app/privacy",
+        "titel": "Sparki — Performance Center",
+        "kop": "Privacyverklaring Sparki"
+      },
+      {
+        "stap": "voorwaarden",
+        "status": "OK (publiek)",
+        "inhoudOk": true,
+        "url": "https://sparki-frontend.replit.app/voorwaarden",
+        "titel": "Sparki — Performance Center",
+        "kop": "Gebruiksvoorwaarden Sparki"
+      },
+      {
+        "stap": "hulp/profiel/uitnodigingen",
+        "status": "ALLEEN MET ECHT PRODUCTIE-ACCOUNT",
+        "detail": "prod-Clerk is pk_live; geen testidentiteit toegestaan/mogelijk — René voert deze stappen zelf uit als acceptatietest"
+      }
+    ]
+  },
+  {
+    "omgeving": "Productie (desktop)",
+    "url": "https://sparki-frontend.replit.app/",
+    "commit": "onbekend (endpoint ontbreekt in deze build)",
+    "rol": "uitgelogd (bezoeker)",
+    "identiteit": "geen (bewust: geen testdata in productie)",
+    "formaat": "desktop",
+    "stappen": [
+      {
+        "stap": "open-meer (zonder login)",
+        "status": "AUTH VEREIST",
+        "url": "https://sparki-frontend.replit.app/sign-in",
+        "titel": "Sparki — Performance Center",
+        "kop": "Welkom terug"
+      },
+      {
+        "stap": "privacy",
+        "status": "OK (publiek)",
+        "inhoudOk": true,
+        "url": "https://sparki-frontend.replit.app/privacy",
+        "titel": "Sparki — Performance Center",
+        "kop": "Privacyverklaring Sparki"
+      },
+      {
+        "stap": "voorwaarden",
+        "status": "OK (publiek)",
+        "inhoudOk": true,
+        "url": "https://sparki-frontend.replit.app/voorwaarden",
+        "titel": "Sparki — Performance Center",
+        "kop": "Gebruiksvoorwaarden Sparki"
+      },
+      {
+        "stap": "hulp/profiel/uitnodigingen",
+        "status": "ALLEEN MET ECHT PRODUCTIE-ACCOUNT",
+        "detail": "prod-Clerk is pk_live; geen testidentiteit toegestaan/mogelijk — René voert deze stappen zelf uit als acceptatietest"
+      }
+    ]
+  },
+  {
+    "omgeving": "Productie /sparki-mobile/ (Expo-web)",
+    "url": "https://sparki-frontend.replit.app/sparki-mobile/",
+    "commit": "zelfde deploy als productie-root",
+    "rol": "n.v.t. (aparte app)",
+    "formaat": "mobiel",
+    "stappen": [
+      {
+        "stap": "identificatie",
+        "status": "GEEN Meer-menu — andere app (navigatie-app), kliktest niet 1-op-1 uitvoerbaar",
+        "url": "https://sparki-frontend.replit.app/sparki-mobile/",
+        "titel": "Sparki",
+        "kop": "Sparki",
+        "zichtbaar": "Sparki Preview this app on your phone 1 Download Expo Go Expo Go is a free app to test mobile apps App Store Google Play 2 Scan QR Code Use your phone's camera or Expo Go Open in Expo Go"
+      }
+    ]
+  }
+]

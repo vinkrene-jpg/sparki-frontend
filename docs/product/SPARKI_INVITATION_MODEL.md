@@ -1,0 +1,24 @@
+# Sparki — Uitnodigingsmodel (per flow, geen abstracte "rol-uitnodiging")
+
+**Datum:** 31-07-2026 · **Status:** VOORSTEL, ter goedkeuring aan René (niets gebouwd).
+Techniek vandaag: één token-systeem (`/api/invitations`, verval 14 dagen, audit-logging, server-side rolcheck) + club-joincodes met capaciteits-/jeugdregels. Dat fundament blijft; wat verandert is de **presentatie per flow** en de **landing na acceptatie**.
+
+Per flow: wie nodigt uit → wie ontvangt → relatie → rechten → onboarding → bestemming → deelopties → server-side controle → logging → verval/intrekken.
+
+| # | Flow | Wie nodigt uit | Ontvanger | Relatie die ontstaat | Rechten die ontstaan | Onboarding na accept | Bestemming na accept | Deelopties desktop | Deelopties mobiel | Server-side controle | Logging | Verval/intrekken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Sporter uitnodigen (zelfstandige trainer) | trainer | (nieuwe) sporter | coach↔sporter-link | trainer ziet volgens deelniveau; schrijft alleen plan | sporteronboarding + koppelbevestiging + deelniveau-keuze | Vandaag van de sporter | kopieer link + e-mail (Resend) | OS-deelmenu (WhatsApp/e-mail/SMS) | rol coach vereist; token eenmalig | writeAudit | 14 d; intrekbaar in trainersomgeving |
+| 2 | Sporter uitnodigen (club/clubtrainer) | clubbeheer of clubtrainer | (nieuwe) sporter | clublidmaatschap (+ evt. team) | roster-zichtbaarheid; data pas bij directe link | sporteronboarding + clubbevestiging | Vandaag + clubkaart | link + e-mail + joincode | deelmenu + QR/joincode | capaciteit + jeugdconsent, advisory lock | writeClubAudit | 14 d; joincode vernieuwbaar |
+| 3 | Ouder/verzorger uitnodigen | sporter (of club bij jeugd) | ouder | ouder↔kind-link met permissiecategorieën | alleen toegestane categorieën; minor fail-closed | **ouderlanding** (uitleg wat je wel/niet ziet, toestemmingen) — NIET sporteronboarding | Ouderoverzicht | link + e-mail | deelmenu | leeftijdstier + herbevestiging bij 16 | writeAudit | 14 d; intrekbaar door beide kanten |
+| 4 | Trainer uitnodigen | clubbeheer/hoofdtrainer | trainer | clubrol trainer | teamtoewijzing mogelijk; sporterdata alleen via directe link | trainerslanding (werkruimte-uitleg) | Trainersoverzicht | link + e-mail | deelmenu | clubrolcheck + capaciteit | writeClubAudit | 14 d; intrekbaar in clubbeheer |
+| 5 | Clubbeheerder uitnodigen | clubbeheer (owner) | beheerder | clubrol admin | ledenbeheer, geen sportdata | beheerlanding | Clubbeheer | link + e-mail | deelmenu | owner-check | writeClubAudit | 14 d; intrekbaar |
+| 6 | Mechanieker uitnodigen | clubbeheer | mechanieker | clubrol mechanieker | alleen materiaalgegevens (WP-S9) | mechaniekerlanding (minimaal) | Werkplaats (WP-S9); tot die tijd clubkaart | link | deelmenu | clubrolcheck | writeClubAudit | 14 d; intrekbaar |
+| 7 | Tester uitnodigen | admin | tester | tester-/hoofdtestervlag | tester-extra's (gelabeld) | auto-accept → `/welkom-tester` (bestaand, werkt) | welkom + normale app | QR + link | QR scannen | isAdmin-only | writeAudit | 14 d; intrekbaar in admin |
+| 8 | Vriend/samen fietsen | sporter | vriend | vriendrelatie (sociaal) | wederzijdse sociale zichtbaarheid volgens privacy-instellingen | sporteronboarding (indien nieuw) | Samen | link | deelmenu | privacy-visibility checks | writeAudit | 14 d |
+
+## Belangrijkste herstelpunten (gebouwd in WP-S2)
+1. **Landing per flow:** de accept-route krijgt per relatie een eigen bestemming + onboarding (nu: generiek `/`, waardoor een ouder in sporteronboarding belandt).
+2. **Taakgerichte taal:** knoppen heten per flow ("Nodig je sporter uit", "Koppel je kind", "Nodig een trainer uit") — nooit "rol-uitnodiging"; relatie-enums blijven intern.
+3. **Delen:** naast kale link ook e-mail (Resend is al gekoppeld) en op mobiel het OS-deelmenu (Web Share API) met een nette uitnodigingstekst per flow.
+4. **Betekenis en beheer van verstuurde uitnodigingen:** per uitnodiging status (open/geaccepteerd/verlopen/ingetrokken), ontvangersomschrijving in gewone taal en acties (opnieuw sturen, intrekken) in de omgeving van de uitnodigende rol.
+5. **Plaatsing:** elke flow woont in de omgeving van de rol die mag uitnodigen (regel 5 navigatiemodel); tester-QR alleen admin.

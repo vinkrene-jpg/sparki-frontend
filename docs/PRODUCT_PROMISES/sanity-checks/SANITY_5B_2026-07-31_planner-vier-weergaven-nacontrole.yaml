@@ -1,0 +1,38 @@
+# Poort 5b sanity-check rapport — Nacontrole vier plannerweergaven
+
+delivery: "Nacontrole routeplanner-weergaveniveaus: echte kliktest (Playwright-testagent) op mobiel 402x874 én desktop 1440x900 voor Gratis / Go gewone fietser / Go wielrenner-MTB-gravel / Wedstrijd, plus API-persistentiebewijs en code-zijdige bevestiging dat verborgen opties nooit meesturen. Twee gevonden gebreken direct hersteld: (1) automatisch voorstel herkende alleen Engelse wedstrijdniveaus, Nederlandse waarde 'regionaal/nationaal' kreeg te laag voorstel; (2) route-panel-verification-gate-test crashte op onvolledige mocks sinds de planner-view/designsysteem-wijzigingen."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/routes tab Maken op 402x874 (kliktest per weergave, wisselen, herladen, terug-naar-automatisch)"
+  - "/routes op 1440x900 (switcher + layout)"
+  - "PUT/GET /api/athlete/profile veld plannerView (persistentie, enum-whitelist, null=automatisch)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Switcher 'wijzig' toont alle vier weergaven met exact de afgesproken labels + 'Terug naar automatisch (voorstel: Wedstrijd)'; elke keuze schakelt direct en blijft na harde herlaad staan (server-side bewaard, dus ook na opnieuw inloggen)."
+        result: "pass"
+      - case: "Mobiel geen horizontale overflow (scrollWidth == clientWidth in Gratis én Wedstrijd), Verder-knop en switcher bereikbaar/klikbaar; desktop 1440x900 zonder overlap."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Per weergave alleen de bedoelde opties zichtbaar: Gratis basis-only; Go fietser + hoogte + N-wegen; Go sport + eigen routebouwer + onverhard + routewens; Wedstrijd + trainingskoppeling (tester-screenshots per weergave)."
+        result: "pass"
+      - case: "Verborgen opties sturen niet mee: aanvraag-payload gebruikt effectieve waarden (wens leeg, hoogte 'any', N-wegen uit, trainingskoppeling weg buiten de betreffende weergave; eigen-routebouwer valt terug naar Lus behalve bij route-wijzigen met bestaande punten) — code-zijdig bewezen in route-panel (effectieveWens/effectieveHoogte/effectiefVermijdN/linkedWorkout + mode-reset-effect); netwerk-afvangen in de kliktest lukte niet (Berekenen liep nog), eerlijk zo benoemd."
+        result: "pass"
+      - case: "Gravel/MTB toont de onverhard-instelling ALTIJD zodra die meestuurt, ook in de Gratis-weergave (kliktest: schuif verschijnt na fietstype gravel)."
+        result: "pass"
+      - case: "Terug naar automatisch kiest opnieuw op profiel: voorstel 'Wedstrijd' voor road/intermediate/regionaal-nationaal — na fix die ook Nederlandse wedstrijdniveaus (lokaal/regionaal/nationaal, gevorderd) herkent; ongeldige waarde ('compleet') wordt server-side genegeerd; keuze staat volledig los van abonnement (entitlementMode/commercialTier ongewijzigd en ongebruikt in dit pad)."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Veiligheid niveau-onafhankelijk: planner-view filtert uitsluitend invoeropties (lib/planner-view.ts), verificatie-/blokkadegates staan erbuiten; regressietests route-verification-gate 3/3 en route-library-gate 2/2 groen (na mock-herstel), routes-tabs 13/13 (verwachtingen bijgewerkt naar besluit 'Rijden opent op Maken' 31-07; één-lijst-contract onveranderd getest)."
+        result: "pass"
+
+# Bewijs: testagent-kliktest mobiel+desktop (checkpunten 1-7 en 9-13 PASS, punt 8
+# code-zijdig), screenshots docs/product/evidence/planner-views/ (4x mobiel per
+# weergave + desktop), API-run PUT/GET plannerView (4 waarden + ongeldige +
+# null), web-tsc schoon. Tester-fout-kalibratie n.v.t.: beide gevonden gebreken
+# waren echte productgebreken, geen testerfouten.
+verdict: "deliverable"

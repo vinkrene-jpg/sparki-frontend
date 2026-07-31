@@ -1,0 +1,15 @@
+---
+name: Sparki Today Orchestrator (WP-T1)
+description: Vandaag-startpagina orchestrator — ranking, weergavehistorie, profielvarianten; wat WP-T2/T3 nog moeten doen.
+---
+
+- `engines/today` (api-server) is de ENIGE selectielaag voor Vandaag: urgent (gezondheid) > openstaande actie (geplande training) > §7-handelingsperspectief (geen plan) > support (state-signalen) > insight (alleen echte trend, ≥2 signalen) > rotating (dag-stabiele seed, pauze na 3 getoonde dagen zonder klik).
+- **Why:** opdracht "Vandaag als intelligente, levende en rolafhankelijke startpagina" verbiedt vulkaarten, herhaling en "je gaat vooruit" zonder trenddata; geen parallel systeem — orchestrator consumeert bestaande engines.
+- Weergavehistorie: `today_display_history`, unique (clerkId,itemKey); daysShown telt per Amsterdamse dag (niet per call); interacties via POST /api/today/interactions.
+- Dedupe-valkuil: insight-body mag NIET `state.status` zijn (staat al letterlijk in de CoachBoodschap) — gebruik het eerste why-signaal.
+- Profielvarianten (deriveTodayProfile): jeugd (<18, gaat vóór alles) · beginner (<5 sessies of exp=beginner) · wedstrijd/prestatie · recreatief. Jeugd: geen jargon, geen wedstrijd-rotatie; frontend zet training vóór weekbalk.
+- WP-T1 is bewust AI-loos; AI-formulering later alleen via centrale aiMessage-poort met dag+inputhash-cache, deterministische tekst blijft fallback.
+- Presentatie-dedupe is TWEEZIJDIG: workout-lead ⇒ orchestrator-kaart verbergen (TrainingSection is al de leider); niet-workout-lead ⇒ TrainingSection verbergen. Anders staat dezelfde conclusie dubbel.
+- Nieuwe tabellen horen óók als guarded SQL-migratie in lib/db/migrations/ (drizzle push alleen is niet genoeg voor migratie-opgebouwde omgevingen); day-queries met limit(1) altijd expliciet orderBy of de lead flikkert.
+- WP-T2 (31-07-2026): rolvarianten in `engines/today/roles.ts` — `availableTodayRoles` leidt rechten server-side af (user_profiles.roles + actieve clubrollen: owner/admin→clubbeheer, clubrol hoofdtrainer→hoofdtrainer); `GET /api/today?rol=…` toetst de gevraagde rol (403 zonder recht, 400 onzin). Zelfde `today_display_history` met rol-geprefixte itemKeys. Regels: hoofdtrainer NOOIT individuele sportersdata; ouder alleen binnen effectiveParentAccess-categorieën; club-toegewezen sporters (team) alleen roster, geen data; lege relaties = eerlijke lege lead, geen vulkaart. Frontend: RoleTodaySection + RoleViewSwitch (role-today.tsx) in CoachHome/ParentHome/club-beheer; useToday(rol) met rol in querykey. Bewijs: test:today-roles 14/14.
+- Debug-/onderbouwingsweergave: strikte poort = expliciete SPARKI_ADMIN_IDS of isHeadTester — NOOIT lib/flags.isAdmin voor zichtbaarheid (dev-bypass maakt iedereen admin, dan zien preview-gebruikers de knop). passedOver is debugdetail en wordt ALTIJD uit normale responses gestript; frontend gate't de knop op de server-vlag `debugAllowed`, niet op profielvlaggen. Impliciete default-rol moet ALTIJD uit availableTodayRoles komen (anders geeft dezelfde weergave impliciet 200 en expliciet 403).

@@ -327,13 +327,19 @@ export async function generateStarterSet(
 // Routes binnen een kaartuitsnede, best gewaardeerde eerst (onbeoordeeld
 // achteraan op ouderdom). Geometrie gaat mee — dit zijn Sparki's eigen
 // gegenereerde routes zonder privégegevens.
-export async function routesInBbox(bbox: {
-  minLat: number;
-  maxLat: number;
-  minLon: number;
-  maxLon: number;
-}) {
-  return db
+export async function routesInBbox(
+  bbox: {
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+  },
+  // Straal-zoeken haalt ALLE rijen in de ophaal-bbox op en beperkt pas ná de
+  // afstandssortering — anders verdringt een hoog gewaardeerde route verderop
+  // een dichtbijgelegen route (reviewbevinding 31-07-2026).
+  opts?: { unlimited?: boolean },
+) {
+  const q = db
     .select()
     .from(routeLibraryTable)
     .where(
@@ -350,6 +356,6 @@ export async function routesInBbox(bbox: {
       sql`${routeLibraryTable.avgRating} DESC NULLS LAST`,
       desc(routeLibraryTable.ratingCount),
       asc(routeLibraryTable.id),
-    )
-    .limit(60);
+    );
+  return opts?.unlimited ? q : q.limit(60);
 }

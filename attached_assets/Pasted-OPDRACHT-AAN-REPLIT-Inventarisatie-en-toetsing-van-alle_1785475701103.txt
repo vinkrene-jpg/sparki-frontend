@@ -1,0 +1,198 @@
+OPDRACHT AAN REPLIT — Inventarisatie en toetsing van alle Sparki-beloftes
+
+Doel
+
+Breng alle huidige productbeloftes van Sparki systematisch in kaart, inclusief de definities, kaders, meetniveaus, tegenvoorbeelden, bronnen en huidige bewijsstatus.
+
+Deze opdracht is eerst uitsluitend inventarisatie en beoordeling.
+
+Nog niets herschrijven, verwijderen, verruimen of opnieuw canoniseren voordat René de gehanteerde kaders heeft beoordeeld en goedgekeurd.
+
+1. Definieer eerst wat binnen Sparki als “belofte” geldt
+
+Geef vóór de tabel een heldere werkdefinitie van een productbelofte.
+
+Maak daarbij onderscheid tussen minimaal:
+
+- harde functionele belofte;
+- veiligheidsbelofte;
+- privacy- of rechtenbelofte;
+- databron- of data-trustbelofte;
+- prestatiebelofte;
+- beschikbaarheidsbelofte;
+- UX-belofte;
+- coachings- of adviesbelofte;
+- juridische of compliancebelofte;
+- commerciële belofte;
+- toekomstbelofte;
+- interne technische invariant;
+- aspiratie of productvisie die nog geen afdwingbare belofte is.
+
+Leg per categorie uit:
+
+- wanneer iets werkelijk een belofte is;
+- wanneer iets alleen een ontwerpdoel, voorkeur, hypothese of ambitie is;
+- welke bron leidend is;
+- welk bewijs nodig is;
+- wanneer een belofte als bewezen, gedeeltelijk bewezen, onbewezen, verouderd, conflicterend of ingetrokken geldt;
+- wanneer een belofte fail-closed moet worden behandeld;
+- wanneer gebruikerscommunicatie nodig is.
+
+2. Inventariseer alle bestaande beloftes
+
+Doorzoek minimaal:
+
+- `docs/PRODUCT_PROMISES/`;
+- `SPARKI_PROMISE_CALIBRATION.yaml`;
+- Master Plan en addenda;
+- Current State;
+- roadmap;
+- besluitenregister;
+- rechtenmatrix;
+- privacy- en veiligheidsdocumenten;
+- test- en bewijsrapporten;
+- relevante codecomments en contracttests;
+- UI-teksten die een concrete productclaim bevatten;
+- API-contracten en statuscodes;
+- open-keuzes- en kalibratiebestanden.
+
+Neem geen beloftes over op basis van alleen herinnering of chatcontext wanneer deze niet in de repository aantoonbaar zijn vastgelegd.
+
+3. Maak één volledige tabel
+
+Maak:
+
+`docs/PRODUCT_PROMISES/SPARKI_PROMISE_INVENTORY_2026-07-31.md`
+
+Gebruik minimaal deze kolommen:
+
+| ID | Gewone Nederlandse naam | Technische code | Categorie | Belofte in gewone taal | Exacte norm / grens | Geldt voor | Bron | Bronversie / datum | Measurement level | Counterexample | Fail-closed? | Bewijs vereist | Huidig bewijs | Huidige status | Conflicten | Eigenaar | Laatste controle | Besluit René nodig? |
+
+Gebruik voor iedere belofte een gewone Nederlandse naam en zet de technische code alleen klein erachter.
+
+Nooit uitsluitend codes tonen.
+
+4. Leg de kaders van Replit expliciet vast
+
+Maak apart:
+
+`docs/PRODUCT_PROMISES/SPARKI_PROMISE_FRAMEWORK_PROPOSAL.md`
+
+Beschrijf daarin exact welke kaders Replit nu hanteert of voorstelt voor:
+
+- wat wel en niet als belofte telt;
+- niveau van bewijs;
+- measurement levels;
+- verplichte counterexamples;
+- hard versus zacht;
+- gebruikersbelofte versus interne invariant;
+- absolute norm versus contextafhankelijke norm;
+- tijdelijke of experimentele beloftes;
+- versiebeheer;
+- bronhiërarchie;
+- conflictbeslechting;
+- hercontrole;
+- afwaarderen of intrekken van een belofte;
+- AI-geformuleerde claims;
+- claims zonder voldoende data;
+- rol- en leeftijdsafhankelijke verschillen;
+- medische, veiligheids- en juridische begrenzing;
+- welke beloftes merge- of releaseblokkerend zijn.
+
+Geef per kader:
+
+- huidige praktijk;
+- voorstel van Replit;
+- reden;
+- risico;
+- voorbeeld;
+- vraag aan René.
+
+5. Gebruik een duidelijke statusindeling
+
+Gebruik voorlopig deze statussen, tenzij Replit gemotiveerd een betere set voorstelt:
+
+- `proposed`
+- `approved`
+- `implemented`
+- `partially_verified`
+- `verified`
+- `independently_verified`
+- `not_verified`
+- `conflicting`
+- `stale`
+- `deprecated`
+- `withdrawn`
+- `blocked_pending_decision`
+
+Definieer precies wat iedere status betekent en welke overgang is toegestaan.
+
+6. Onderzoek conflicten en dubbelingen
+
+Markeer expliciet:
+
+- dezelfde belofte met verschillende teksten;
+- dezelfde code met verschillende normen;
+- oude beloftes die code of huidige besluiten tegenspreken;
+- UI-claims die strenger of ruimer zijn dan de code;
+- documentatie die achterloopt;
+- aspiraties die ten onrechte als bewezen belofte zijn vastgelegd;
+- technische invarianten die gebruikersbelofte zijn geworden zonder besluit;
+- beloftes zonder meetbare norm;
+- beloftes zonder counterexample;
+- beloftes zonder eigenaar;
+- beloftes zonder hercontroledatum.
+
+Maak geen stilzwijgende keuze tussen conflicterende bronnen.
+
+Leg ieder conflict voor.
+
+7. Maak een beslismatrix voor René
+
+Voeg aan het frameworkdocument een compacte tabel toe met alle voorgestelde kaders waar René expliciet akkoord op moet geven.
+
+Minimaal:
+
+| Nr. | Kader | Voorstel Replit | Gevolg | Risico | Keuze René |
+
+Formuleer de keuzes zo dat René per regel eenvoudig kan antwoorden:
+
+- akkoord;
+- aanpassen;
+- afwijzen;
+- eerst nader onderzoeken.
+
+8. Geen inhoudelijke opschoning vóór goedkeuring
+
+In deze opdracht:
+
+- geen beloftes verwijderen;
+- geen codes hernummeren;
+- geen normen wijzigen;
+- geen status automatisch verhogen;
+- geen verouderde belofte stil archiveren;
+- geen gebruikerscommunicatie aanpassen;
+- geen productgedrag wijzigen.
+
+Alleen inventariseren, analyseren en voorstellen doen.
+
+9. Oplevering
+
+Rapporteer:
+
+- totaal aantal gevonden beloftes;
+- aantal per categorie;
+- aantal zonder meetbare norm;
+- aantal zonder counterexample;
+- aantal met conflict;
+- aantal verouderd;
+- aantal werkelijk onafhankelijk bewezen;
+- aantal waarvoor René nog een besluit moet nemen;
+- gebruikte bronnen;
+- niet-doorzochte of ontbrekende bronnen;
+- bekende beperkingen;
+- commit-hash.
+
+Acceptatiecriterium
+
+De opdracht is geslaagd wanneer René één volledige, begrijpelijke tabel heeft van alle huidige Sparki-beloftes én een apart overzicht van de kaders die Replit hanteert of voorstelt, zodat René die kaders eerst kan beoordelen voordat verdere kalibratie of opschoning plaatsvindt.

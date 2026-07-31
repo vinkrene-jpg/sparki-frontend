@@ -1,0 +1,84 @@
+CORRECTIE — Kalibratie synchroniseren met actuele rechtenfix
+
+De onafhankelijke repo-review heeft bevestigd dat het assignment-only-trainer-berichtenlek server-side is gesloten:
+
+- het schrijfpad gebruikt nu `hasDirectCoachLink`;
+- assignment-only toegang zonder directe coachrelatie geeft 403;
+- de gebruikersinterface volgt deze servergrens.
+
+Maar `SPARKI_PROMISE_CALIBRATION.yaml` loopt nog achter op de actuele code.
+
+Voer nu deze gerichte correctie uit.
+
+1. Werk hoofdstuk J bij
+
+Pas regel `CLUB_ROLMODEL_001` aan:
+
+- verwijder de vermelding dat een assignment-only-trainer momenteel coachberichten mag schrijven;
+- leg vast dat dit eerder een actief rechtenlek was;
+- leg vast dat het lek is hersteld vanaf commit `1d5fa874` en aanwezig is in de gecontroleerde HEAD `380f05a`;
+- huidige verwachte uitkomst zonder directe coachrelatie: HTTP 403;
+- behoud het oude lek als expliciet regressie-tegenvoorbeeld;
+- koppel de regel aan de bestaande rechten- en regressietests.
+
+2. Synchroniseer de overige documentatie
+
+Controleer en werk waar nodig bij:
+
+- `SPARKI_PROMISE_CALIBRATION.yaml`;
+- hoofdstuk J;
+- actuele Current State;
+- rollen- en rechtenmatrix;
+- taakstatus van het rechtenlek;
+- relevante governance- en testrapporten.
+
+Na deze wijziging moeten code, kalibratie, rechtenmodel en taakstatus dezelfde actuele werkelijkheid beschrijven.
+
+3. Teststatus eerlijk vastleggen
+
+De onafhankelijke reviewer heeft:
+
+- de echte codepaden gecontroleerd;
+- bevestigd dat de schrijfcontrole server-side `hasDirectCoachLink` gebruikt;
+- bevestigd dat de verwachte uitkomst 403 is;
+- de testbestanden en npm-scripts aangetroffen.
+
+De reviewer heeft de tests niet zelfstandig opnieuw kunnen uitvoeren, doordat in de reviewomgeving `node_modules` en de database ontbraken.
+
+Schrijf daarom nergens dat de regressietests onafhankelijk opnieuw zijn uitgevoerd.
+
+Gebruik voorlopig deze status:
+
+“Codepad onafhankelijk gecontroleerd; testclaims bestaan en zijn herleidbaar, maar zijn in deze reviewomgeving niet opnieuw uitgevoerd.”
+
+4. Tests opnieuw uitvoeren
+
+Voer in een complete Replit-omgeving minimaal de relevante tests opnieuw uit:
+
+- assignment-only trainer zonder directe coachrelatie kan niet schrijven;
+- directe coachrelatie met passend recht kan wel schrijven;
+- team- of clubtoegang alleen geeft geen individueel schrijfrecht;
+- directe API-aanroep wordt server-side met 403 geweigerd;
+- verborgen of zichtbare UI-knoppen veranderen de serverautorisatie niet;
+- bestaande toegestane coachberichten blijven werken.
+
+Voer ook de relevante typecheck uit.
+
+5. Oplevering
+
+Rapporteer:
+
+- gewijzigde bestanden;
+- exacte wijziging in `CLUB_ROLMODEL_001`;
+- testcommando’s;
+- testuitslagen;
+- typecheckuitslag;
+- commit-hash;
+- bevestiging dat geen rechten zijn verruimd;
+- bevestiging dat het oude lek als regressiescenario behouden blijft.
+
+Dit is een gerichte synchronisatie- en verificatietaak.
+
+Geen nieuwe functionaliteit bouwen.
+Geen rollenmodel herschrijven.
+Geen bredere refactor uitvoeren.

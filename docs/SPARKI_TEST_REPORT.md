@@ -48,3 +48,12 @@
 - **Uitgevoerd:** 6 bouw-/typechecks + 19 testsuites (≈ 243 scenario's/asserties).
 - **Geslaagd:** alles (100%). **Mislukt:** 0 (één her-run nodig wegens ontbrekende dev-omgevingsvariabele, geen productdefect).
 - Niet alle ±130 aanwezige testsuites zijn opnieuw gedraaid; de selectie dekt exact de door de opdracht genoemde gebieden plus de bouwketen. De overige suites draaien via hun eigen workflows/scripts en stonden groen bij hun laatste oplevering (zie `replit.md` per module).
+
+## 7. Aanvulling testmatrix 31-07-2026 — rechtenbesluiten 30-07
+- `test:trainer-assignment-messages` (nieuw, 9 scenario's): assignment-only
+  trainer 403 + nul rijen op alle individuele berichten-/schrijfpaden; positieve
+  controles (toewijzing echt, directe link 201). Uitgevoerd 31-07: 9/9 groen.
+- `test:trainer-assignment-write-contract` (omgeklapt naar besluit B1):
+  scenario 2 verwacht nu 403 + nul rijen. Uitgevoerd 31-07: 5/5 groen.
+- Zie `docs/BESLUITENREGISTER_RENE_2026-07-30.md` voor de bijbehorende
+  acceptatiecriteria per besluit (B1–B13).

@@ -37,6 +37,9 @@ export type DashboardAthlete = {
   athleteClerkId: string;
   displayName: string | null;
   sharing: "none" | "summary" | "full";
+  // "direct" = geaccepteerde coach-sporterlink (volledige individuele cockpit);
+  // "team" = alleen club-/teamtoewijzing (zichtbaarheid, geen schrijfacties).
+  relation?: "direct" | "team";
   lastReviewedAt: string | null;
   discipline?: string | null;
   healthStatus?: string | null;

@@ -37,8 +37,25 @@ export default defineConfig(({ command }) => {
 
   const basePath = process.env.BASE_PATH ?? "/";
 
+  // Omgevingsidentificatie: bak de commit-SHA in de build zodat elke
+  // niet-productieomgeving (DEV Preview) hem zichtbaar kan tonen en
+  // testbewijs altijd aan een commit te koppelen is.
+  let buildSha = "onbekend";
+  try {
+    buildSha = execSync("git rev-parse --short HEAD", {
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+  } catch {
+    /* eerlijk "onbekend" */
+  }
+
   return {
     base: basePath,
+    define: {
+      __SPARKI_BUILD_SHA__: JSON.stringify(buildSha),
+    },
     plugins: [
       react(),
       tailwindcss({ optimize: false }),

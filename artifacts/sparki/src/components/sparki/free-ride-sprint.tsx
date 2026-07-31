@@ -1,3 +1,8 @@
+// GESTOPT — veiligheidsrisico op openbare weg (besluit 31-07-2026).
+// Nergens meer gebruikt (alleen door de niet-meer-geroute /sprinten-pagina);
+// de server blokkeert /api/sprints/place en /api/sprints/result met 410.
+// Bewaard als herbruikbare inventaris voor een eventuele latere variant op
+// afgesloten terrein.
 import { useCallback, useEffect, useRef, useState } from "react"
 import { MapPin, Play, Square, Zap, Bluetooth } from "lucide-react"
 import {

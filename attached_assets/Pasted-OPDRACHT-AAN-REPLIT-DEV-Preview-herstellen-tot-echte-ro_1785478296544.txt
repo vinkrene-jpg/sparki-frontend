@@ -1,0 +1,183 @@
+OPDRACHT AAN REPLIT — DEV Preview herstellen tot echte rol- en omgevingsimpersonatie
+
+Probleem
+
+De huidige DEV Preview-selector wekt de indruk dat René verschillende gebruikers, rollen en abonnementen kan testen.
+
+In werkelijkheid blijven na selectie grotendeels dezelfde pagina’s, navigatie en gebruikerscontext zichtbaar. Een coach, ouder, clubtrainer of clubbeheerder ziet daardoor feitelijk dezelfde omgeving.
+
+Dit is geen bruikbare acceptatietest en mag niet als bewijs voor rolafhankelijke functionaliteit gelden.
+
+Doel
+
+Maak van DEV Preview een echte, veilige testimpersonatie waarmee René aantoonbaar kan zien en testen wat iedere rol in de eigen omgeving ziet en mag doen.
+
+Geen cosmetische profielwissel.
+Geen alleen client-side filtering.
+Geen mockweergave zonder echte rechtencontext.
+
+1. Inventariseer huidige werking
+
+Leg eerst vast:
+
+- welke velden nu wijzigen bij selectie;
+- welke velden niet wijzigen;
+- of user ID wisselt;
+- of actieve rol wisselt;
+- of club/teamcontext wisselt;
+- of abonnement wisselt;
+- of API-verzoeken onder een andere context worden uitgevoerd;
+- of navigatie en rechten server-side wijzigen;
+- welke profielen nu alleen labels zijn.
+
+Rapporteer eerst de oorzaak voordat je breder bouwt.
+
+2. Echte impersonatiecontext
+
+Bij selectie van een testprofiel moeten minimaal werkelijk wijzigen:
+
+- actieve test user ID;
+- actieve rol;
+- leeftijd;
+- ervaringsniveau;
+- abonnement;
+- club- en teamrelaties;
+- trainer-sporterrelaties;
+- ouder-kindrelaties;
+- toegestane modules;
+- navigatie;
+- Vandaag-ervaring;
+- API-rechten;
+- zichtbare en verboden data.
+
+Gebruik waar mogelijk echte DEV-testaccounts en echte relationele data.
+
+3. Ondersteun minimaal deze testomgevingen
+
+- sporter;
+- jeugdrenner;
+- recreatieve renner;
+- wedstrijdrenner;
+- zelfstandige coach;
+- clubtrainer;
+- hoofdtrainer;
+- ouder/verzorger;
+- clubbeheerder;
+- mechanieker;
+- admin;
+- ploegleider zodra die rol technisch bestaat.
+
+Voor iedere omgeving moet een aparte, betekenisvolle context bestaan.
+
+4. Server-side afdwingen
+
+De impersonatie moet doorwerken in de servercontext.
+
+Controleer minimaal:
+
+- directe API-aanroepen;
+- lezen van sporters;
+- schrijven van berichten;
+- trainingsplannen;
+- clubdata;
+- individuele belasting;
+- oudertoegang;
+- materiaaldata;
+- beheerfuncties;
+- adminfuncties.
+
+Een verborgen knop is onvoldoende.
+
+5. Navigatie per rol
+
+De hoofd- en subnavigatie moeten werkelijk verschillen.
+
+Voorbeelden:
+
+Coach:
+- coachdashboard;
+- aandachtssporters;
+- plannen;
+- feedback;
+- wedstrijden;
+- geen gewone sporterhome als primaire omgeving.
+
+Ouder:
+- kindcontext;
+- planning;
+- toestemming;
+- passende voortgang;
+- geen onnodige prestatie- of medische details.
+
+Clubtrainer:
+- toegewezen teams en sporters;
+- trainingsbeheer;
+- feedback;
+- geen volledige clubadministratie tenzij recht bestaat.
+
+Clubbeheerder:
+- teams;
+- trainers;
+- rollen;
+- VOG-statusmetadata;
+- clubvoortgang;
+- beheer;
+- auditinformatie binnen bevoegdheid.
+
+Mechanieker:
+- fietsen;
+- materiaalstatus;
+- onderhoud;
+- wedstrijdvoorbereiding;
+- geen trainings- of medische gegevens zonder apart recht.
+
+6. Zichtbare DEV-status
+
+Toon tijdens impersonatie altijd een duidelijke vaste banner:
+
+- actieve testpersoon;
+- actieve rol;
+- club/team;
+- abonnement;
+- impersonatie actief;
+- knop “Terug naar René”.
+
+Voorkom dat een tester vergeet in welke context hij zit.
+
+7. Veiligheid
+
+- alleen beschikbaar in DEV of expliciete testomgeving;
+- nooit in productie voor gewone gebruikers;
+- alle impersonatie-acties loggen;
+- geen productiegegevens wijzigen via een onbeveiligde preview;
+- schrijfhandelingen duidelijk markeren;
+- mogelijkheid voor read-only testmodus;
+- veilige reset naar eigen sessie.
+
+8. Acceptatietests
+
+Bewijs minimaal:
+
+- coach ziet andere navigatie dan sporter;
+- ouder ziet alleen toegestaan kind;
+- clubtrainer ziet toegewezen team;
+- clubbeheerder ziet beheerfuncties;
+- mechanieker ziet materiaalomgeving;
+- verboden API-aanroep geeft 403;
+- rolwissel verandert actuele data en niet alleen labels;
+- herladen behoudt of reset impersonatie volgens expliciete keuze;
+- terugkeer naar René herstelt de eigen context volledig.
+
+Maak screenshots van minimaal zes werkelijk verschillende omgevingen.
+
+9. Status huidige DEV Preview
+
+Tot deze reparatie is afgerond:
+
+- markeer huidige DEV Preview als “niet geschikt voor rechten- of rolacceptatietests”;
+- gebruik resultaten ervan niet als bewijs voor WP-T2 of WP-T3;
+- claim niet dat trainer-, ouder- of clubvarianten getest zijn via alleen deze selector.
+
+Acceptatiecriterium
+
+De opdracht is pas geslaagd wanneer René vanuit DEV aantoonbaar een andere echte gebruikers- en rechtencontext kan openen en coach, ouder, clubtrainer, clubbeheerder en andere rollen werkelijk verschillende pagina’s, navigatie, data en bevoegdheden zien.

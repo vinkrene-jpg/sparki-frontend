@@ -25,6 +25,8 @@ import {
   type DashboardAthlete,
 } from "@/hooks/use-coach-cockpit"
 import { useInvitations } from "@/hooks/use-invitations"
+import { RoleTodaySection, RoleViewSwitch } from "@/components/sparki/role-today"
+import { useToday, type TodayRole } from "@/hooks/use-today"
 
 // Open trainersuitnodigingen op de startpagina: eerlijk beeld van wat nog
 // wacht (pending coach_athlete-invites van deze trainer), met vervaldatum.
@@ -103,7 +105,12 @@ function AthleteCard({
 }) {
   const r = a.readiness?.label ?? "unknown"
   const rl = readinessLabel[r]
-  const canOpen = a.sharing !== "none"
+  // Individuele cockpit (met berichten en andere schrijfacties) is er alléén
+  // bij een directe geaccepteerde link. Club-/teamtoewijzing geeft zichtbaarheid
+  // op het overzicht, maar geen individuele omgeving — de server weigert dat
+  // óók (403); dit voorkomt dat de UI een dichte deur als knop aanbiedt.
+  const isDirect = a.relation !== "team"
+  const canOpen = a.sharing !== "none" && isDirect
   const inner = (
     <>
       <div className="flex items-center gap-3">
@@ -190,7 +197,9 @@ function AthleteCard({
   const cardClass =
     "block rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
 
-  const endLinkButton = (
+  // Zonder directe link is er geen koppeling om te beëindigen — knop verbergen
+  // (anders biedt de UI een besturingselement aan dat server-side niets doet).
+  const endLinkButton = !isDirect ? null : (
     <button
       type="button"
       onClick={onEndLink}
@@ -234,7 +243,9 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
   const [dur, setDur] = useState("")
   const [result, setResult] = useState<string | null>(null)
 
-  const eligible = athletes.filter((a) => a.sharing !== "none")
+  // Bulk-trainingen zijn een schrijfactie: alleen sporters met een directe
+  // link tellen mee (de server weigert team-toegewezen sporters toch met 403).
+  const eligible = athletes.filter((a) => a.sharing !== "none" && a.relation !== "team")
   if (eligible.length < 2) return null
 
   function toggle(id: string) {
@@ -357,10 +368,26 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
   )
 }
 
+// Labels voor de rolweergavewissel (alleen echte, server-bevestigde opties).
+const ROLE_VIEW_LABELS: Partial<Record<TodayRole, string>> = {
+  trainer: "Trainer",
+  hoofdtrainer: "Hoofdtrainer",
+  clubbeheer: "Clubbeheer",
+}
+
 export function CoachHome() {
   const { data, isLoading } = useCoachDashboard()
   const endLink = useEndCoachLink()
   const [pendingEnd, setPendingEnd] = useState<string | null>(null)
+
+  // WP-T2: rol-Vandaag bovenaan. De server bepaalt welke rolweergaven dit
+  // account echt heeft (trainer + evt. hoofdtrainer/clubbeheer via clubrollen);
+  // de wissel toont uitsluitend die opties.
+  const [roleView, setRoleView] = useState<TodayRole>("trainer")
+  const roleToday = useToday(roleView)
+  const availableViews = (roleToday.data?.availableRoles ?? ["trainer"]).filter(
+    (r): r is TodayRole => r in ROLE_VIEW_LABELS,
+  )
 
   const athletes = useMemo(() => data?.athletes ?? [], [data])
 
@@ -381,6 +408,15 @@ export function CoachHome() {
   return (
     <ScreenShell section="Coach" bg="/atmosphere/samen-renners-gesprek.webp">
       <div className="space-y-5">
+        <RoleViewSwitch
+          value={roleView}
+          options={availableViews.map((r) => ({
+            rol: r,
+            label: ROLE_VIEW_LABELS[r]!,
+          }))}
+          onChange={setRoleView}
+        />
+        <RoleTodaySection rol={roleView} />
         <div>
           <SectionLabel n="01" title="Jouw sporters" />
           <p className="mt-2 text-[13px] text-white/45">

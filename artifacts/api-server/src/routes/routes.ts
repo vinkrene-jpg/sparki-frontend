@@ -92,6 +92,12 @@ import {
   cellKeyFor,
   routesInBbox,
 } from "../lib/route-library";
+import {
+  filterOpStraal,
+  parseStraalCentrum,
+  straalOphaalBbox,
+  type StraalCentrum,
+} from "../lib/route-library-straal";
 import { maybeReplacePoorRoute } from "../lib/route-improvement";
 import { getRoutePois } from "../lib/route-pois";
 import {
@@ -1198,26 +1204,55 @@ router.get("/pace", requireAuth, async (req, res) => {
 // Door Sparki gegenereerde, kant-en-klare routes per gebied. Gedeclareerd
 // VÓÓR "/:id" (anders slikt die deze paden op).
 
-// GET /api/routes/bibliotheek?minLat=&maxLat=&minLon=&maxLon= — routes binnen
-// de kaartuitsnede ("laat hier de routes zien"). Geometrie gaat mee: dit zijn
-// Sparki's eigen routes, zonder privégegevens van gebruikers.
+// GET /api/routes/bibliotheek — twee vormen:
+// - ?minLat=&maxLat=&minLon=&maxLon= : routes binnen de kaartuitsnede
+//   ("laat hier de routes zien", kaartgestuurd).
+// - ?lat=&lon=&radiusKm= : routes waarvan de START binnen de straal rond een
+//   gezocht startpunt ligt (correctie René 31-07-2026: bij zoeken op plaats
+//   nooit stilzwijgend routes tientallen km verderop tonen). Antwoord bevat
+//   dan per route startAfstandKm en is gesorteerd op afstand.
+// Geometrie gaat mee: dit zijn Sparki's eigen routes, zonder privégegevens
+// van gebruikers.
 router.get("/bibliotheek", requireAuth, async (req, res) => {
-  const minLat = Number(req.query.minLat);
-  const maxLat = Number(req.query.maxLat);
-  const minLon = Number(req.query.minLon);
-  const maxLon = Number(req.query.maxLon);
-  if (
-    ![minLat, maxLat, minLon, maxLon].every(Number.isFinite) ||
-    minLat >= maxLat ||
-    minLon >= maxLon ||
-    maxLat - minLat > 6 ||
-    maxLon - minLon > 8
-  ) {
-    res.status(400).json({ error: "Ongeldige of te grote kaartuitsnede" });
-    return;
+  let bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+  let centrum: StraalCentrum | null = null;
+  if (req.query.lat != null || req.query.lon != null || req.query.radiusKm != null) {
+    centrum = parseStraalCentrum(req.query.lat, req.query.lon, req.query.radiusKm);
+    if (!centrum) {
+      res.status(400).json({ error: "Ongeldig startpunt of ongeldige straal" });
+      return;
+    }
+    // Ruime ophaal-bbox rond het startpunt; de exacte straal-filter volgt
+    // hieronder op werkelijke afstand.
+    bbox = straalOphaalBbox(centrum);
+  } else {
+    const minLat = Number(req.query.minLat);
+    const maxLat = Number(req.query.maxLat);
+    const minLon = Number(req.query.minLon);
+    const maxLon = Number(req.query.maxLon);
+    if (
+      ![minLat, maxLat, minLon, maxLon].every(Number.isFinite) ||
+      minLat >= maxLat ||
+      minLon >= maxLon ||
+      maxLat - minLat > 6 ||
+      maxLon - minLon > 8
+    ) {
+      res.status(400).json({ error: "Ongeldige of te grote kaartuitsnede" });
+      return;
+    }
+    bbox = { minLat, maxLat, minLon, maxLon };
   }
   try {
-    const rows = await routesInBbox({ minLat, maxLat, minLon, maxLon });
+    // Straal-vorm: onbeperkt ophalen en pas ná de afstandssortering tot 60
+    // beperken — de rating-gesorteerde DB-limiet mag nooit dichtbijgelegen
+    // routes verdringen (en zo een vals-lege uitslag geven).
+    let rows = await routesInBbox(bbox, { unlimited: centrum != null });
+    const afstanden = new Map<number, number>();
+    if (centrum) {
+      const binnen = filterOpStraal(rows, centrum, 60);
+      for (const r of binnen) afstanden.set(r.id, r.startAfstandKm);
+      rows = binnen;
+    }
     res.json({
       routes: rows.map((r) => ({
         id: r.id,
@@ -1240,6 +1275,9 @@ router.get("/bibliotheek", requireAuth, async (req, res) => {
         // wordt in de bibliotheek eerlijk als "Niet volledig geverifieerd"
         // gelabeld — nooit stil als geschikt gepresenteerd.
         engineSurface: r.engineSurface ?? null,
+        // Alleen bij straal-zoeken: eerlijke afstand van het gekozen
+        // startpunt tot de start van deze route (km, 1 decimaal).
+        startAfstandKm: afstanden.get(r.id) ?? null,
       })),
     });
   } catch (err) {

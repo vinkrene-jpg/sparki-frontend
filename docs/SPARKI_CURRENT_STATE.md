@@ -11,6 +11,10 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 
 ---
 
+**Update 31 juli 2026 — WP-S1 (structuurherstel):** admin-rechten zijn app-breed strikt (geen dev-bypass meer in `isAdmin`; alleen `SPARKI_ADMIN_IDS`), DEV Preview toont altijd een TESTCONTEXT-label (identiteit · rol · echte rechten) en markeert scenario-overrides als illustratie, en er is een blijvende e2e-browsertestomgeving in `e2e/` (echte Clerk-login, echte kliks, voor/na-screenshots, mobiel + desktop). Eerste proef Meer → Privacy: 3/3 groen; de eerder gevonden verkeerde uitkomst bleek een ontbrekende `/privacy`-route in de aparte dev-preview-routetabel en is verholpen. Zie `docs/product/SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md` en `e2e/README.md`.
+
+---
+
 ## 1. Onboarding & Sportpaspoort — Volledig
 
 - **Gebruiker kan:** aanmelden via Clerk (`/sign-in`, `/sign-up`), wordt JIT geprovisioned (`POST /api/auth/sync` → `user_profiles` + `athlete_profiles`), doorloopt adaptieve vraagflow met verplichte connect-stap (koppelen zelf optioneel — eerlijkheid) en Strava-gap-fill; halverwege hervatten kan.
@@ -21,6 +25,7 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 ## 2. Today (Vandaag), trainingen, plannen & coaching — Volledig
 
 - **Vandaag** (`pages/start.tsx` + `components/sparki/screen-shell.tsx`): dagtype-engine (rust/training/wedstrijd/algemeen), één leidend Momentblok (aandachtswet), State Card, coach-analyse met presentatievariatie (`lib/variation.ts`), thuisweer (Open-Meteo, `lib/weather/home.ts`), concreet dagadvies zonder plan.
+- **Vandaag WP-T1 (31-07-2026, productiegeschikt):** deterministische Today Orchestrator (`api-server/engines/today`, `GET /api/today`) rangschikt urgent > openstaande actie > §7-handelingsperspectief > onderbouwing > echt inzicht > dag-stabiel wisselblok; weergavehistorie `today_display_history` (klik/afronding, rotatiepauze na 3 dagen zonder interactie); atleet-profielvarianten jeugd/wedstrijd/prestatie/recreatief/beginner sturen copy + kaartvolgorde in de commercial shell. **WP-T2 (31-07-2026, productiegeschikt):** rolweergaven trainer/ouder/clubbeheer/hoofdtrainer op dezelfde orchestrator via `GET /api/today?rol=…` (server-side rechten: rol zonder recht → 403; hoofdtrainer nooit individuele sportersdata; ouder alleen toegestane categorieën; eerlijke lege leads); frontend rol-Vandaag-sectie in CoachHome (+weergavewissel), ParentHome en Clubbeheer; bewijs `test:today-roles` 14/14. **WP-T3 (31-07-2026, productiegeschikt — Vandaag afgerond):** tester-/admin-debugweergave (`?debug=1`, alleen expliciete admin of Hoofdtester; passedOver nooit in normale responses) + volledige 17-scenario-testmatrix `test:today-matrix` 21/21 incl. bewijs ≥6 verschillende profiel-/rolweergaven. Nog open (bewust): AI-formulering via aiMessage-cache. Bewijs: `test:today-orchestrator` 7/7. Zie `docs/SPARKI_TODAY_ORCHESTRATOR.md` en `docs/SPARKI_TODAY_EXPERIENCE.md`.
 - **Trainingen:** toevoegen opgesplitst plannen/registreren (`add-training.tsx`, server-whitelist `lib/plan-details.ts`), GPX/FIT/TCX-import via Data Hub (`lib/activity-file-ingest.ts`), afgeleide belastingsscore uit power+FTP (`lib/derived-load.ts`), sessiegrafieken + power bests alleen bij ingest (oude sessies eerlijk leeg).
 - **Plannen:** autonome plan-engine — deterministische getallen, LLM alleen prose (`engines/training-plan`, tabellen `training_plans`/`plan_days`/`planned_workouts`); per-sessie-caps; leefagenda stuurt mee (`life_events`); lifecycle pauze/hervat/verwijder; uitvoering + adaptieve voorstellen (`lib/workout-execution.ts`, `lib/adjust-rules.ts`); feedbacklus (`workout_feedback`, test `test-feedback-adjust`).
 - **Coaching door Sparki:** observatie-engine met ≥2-signalen-regel (`engines/observation`), voice/personality met centraal humorniveau (`engines/voice`, `ai_preferences.humor_level`), Vraag Sparki-chat (header-overlay, sessie-scoped thread, `routes/ai.ts` + input-center), Core-voorspelling per training (`engines/core-prediction`, `core_predictions`).
@@ -44,6 +49,7 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 
 ## 6. Routes, GPX, course-points, technische gids & wedstrijdmodus — Volledig
 
+- **Plannerweergaven (B6, 31-07):** vier weergaveniveaus Gratis · Go gewone fietser · Go wielrenner/MTB/gravel · **Wedstrijd** (nooit "Compleet") — pure weergavelaag (`lib/planner-view.ts`, `use-planner-view.ts`, `planner-view-switcher.tsx`); automatisch voorstel uit profiel, handmatig aanpasbaar, bewaard in `athlete_profiles.planner_view` (NULL = automatisch, migratie 0006), los van abonnement; verborgen opties sturen nooit stiekem mee, veiligheid (blokkadepoort/verificatie/waarschuwingen) op élk niveau actief. **Nacontrole 31-07: vier plannerweergaven afgerond en visueel/functioneel bewezen** — kliktest mobiel 402×874 + desktop 1440×900 (testagent, alle checkpunten PASS), persistentie/automatisch/abonnement-onafhankelijkheid via API bewezen, screenshots in `docs/product/evidence/planner-views/`, rapport `SANITY_5B_2026-07-31_planner-vier-weergaven-nacontrole.yaml`; fix: automatisch voorstel herkent nu ook Nederlandse wedstrijdniveaus ("regionaal/nationaal", "gevorderd").
 - **Routes** (`/routes`, `pages/routes.tsx`): planner + generator (ORS via `lib/routing/providers/ors.ts`; echte routes of eerlijk niets; vrije-tekstwens alleen in rationale), routeketen (delen/versies/soft-delete, `route_shares`/`route_version_usages`), route-paspoort + POI's (Overpass), routevoorstellen (`routes/route-proposals.ts`), GPX-import (web + mobiel `gpx-import.tsx`), gereden rit als route bewaren.
 - **Technische gids:** documentanalyse via Anthropic document block → eerlijk gevonden/ontbreekt + deterministische vervolgvragen; verrijkt races en levert puntvoorstellen (`engines/document-analysis`, tabel `document_analyses`).
 - **Wedstrijdmodus mobiel:** `sparki-mobile/lib/race-mode.ts` — rondeteller via wrap-detectie, finish-cue alleen laatste ronde, POI's/verkeerslicht onderdrukt (11 tests).
@@ -96,7 +102,7 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 
 ## 16. Mobiele ritregistratie, navigatie & Bluetooth — Volledig (BLE Gedeeltelijk; device-sync Voorbereid)
 
-- **Ritregistratie:** achtergrondtracking (TaskManager, `lib/ride-tracker.ts` — native build vereist), auto-trim altijd ongedaan te maken (`api-server lib/ride-trim.ts`), upload-queue met fail-closed opslag (`lib/upload-queue.ts`), rit-herstel na crash, val-alarm (30s-venster; meldingen "klaargezet", bezorging nooit geclaimd — `lib/fall-detection.ts`), bordjes-sprints (`route_sprint_boards`/`sprint_results`), GPX met sensordata (`lib/ride-gpx.ts`).
+- **Ritregistratie:** achtergrondtracking (TaskManager, `lib/ride-tracker.ts` — native build vereist), auto-trim altijd ongedaan te maken (`api-server lib/ride-trim.ts`), upload-queue met fail-closed opslag (`lib/upload-queue.ts`), rit-herstel na crash, val-alarm (30s-venster; meldingen "klaargezet", bezorging nooit geclaimd — `lib/fall-detection.ts`), GPX met sensordata (`lib/ride-gpx.ts`). Bordjes-sprints: **Gestopt — veiligheidsrisico op openbare weg** (besluit 31-07-2026; startpaden geblokkeerd met 410, UI verborgen, historische `sprint_results`-data bewaard; alleen een toekomstige variant op afgesloten terrein of vooraf handmatig goedgekeurde trainingssegmenten mag opnieuw worden onderzocht).
 - **Navigatie** (`app/(app)/navigate/[id].tsx`): route-match state machine (`lib/route-match.ts`), HUD, audio-cues (waypoints nooit bestemmingen, `lib/nav-cues.ts`), off-route-keuze per episode, klimfases, zelflerende verkeerslichten (`road_objects`), volgauto-modus (renner/volgauto-rolkeuze), wedstrijdmodus, live locatie delen.
 - **BLE-sensoren:** **Gedeeltelijk** — hartslag/vermogen/cadans via ble-plx werken alleen in de volledige app-build; in Expo Go/web eerlijk "niet ondersteund" (`lib/ble-sensors.ts` r.68).
 - **Garmin/Wahoo device-sync:** **Voorbereid** — volledige OAuth-/webhook-code aanwezig (`lib/connectors/providers/device-sync.ts` r.14, `routes/webhooks.ts` fail-closed), maar zonder fabrikantsleutels `configured: false` en eerlijk "niet beschikbaar" in de UI.
@@ -104,3 +110,28 @@ Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARK
 ---
 
 **Samenvattend:** 22 gecontroleerde modulegebieden; 19 Volledig, 3 met een eerlijk gecommuniceerde beperking (e-mailbezorging, BLE buiten native build, Garmin/Wahoo-sync voorbereid). Geen placeholders of onbereikbare functies aangetroffen.
+
+---
+
+## Update 31-07-2026 — trainerrechten (besluit B1)
+
+Sectie 3 (coachomgeving) aangescherpt per besluit René 30-07-2026: individuele
+berichten en alle individuele schrijfacties vereisen een directe geaccepteerde
+coach-sporterlink; een club-/teamtoewijzing geeft alleen de vastgelegde
+lees-/begeleidingsrechten. Server-side afgedwongen en bewezen
+(`test:trainer-assignment-messages` 9/9, `test:trainer-assignment-write-contract`
+5/5); coach-startpagina biedt de individuele cockpit niet meer aan voor
+team-toegewezen sporters. Volledig register: `docs/BESLUITENREGISTER_RENE_2026-07-30.md`.
+
+## Update 31-07-2026 — bronhiërarchie wielercategorieën (besluit B13-herzien)
+Besloten door René: categorie-informatie volgt de bronhiërarchie **UCI (leidend) →
+UEC (Europese toepassing) → KNWU (Nederlandse licentievertaling)**. Internationale
+categorie (UCI-kader: Youth/U19/U23/Elite/Masters, leeftijd = wedstrijdjaar −
+geboortejaar, art. 1.1.034–1.1.038) en nationale licentiecontext (KNWU U13/U17/17+,
+pakketten) zijn gescheiden velden met verplichte bron, versie, ingangsdatum en land;
+een NL-licentienaam overschrijft nooit de UCI-categorie en nationale uitzonderingen
+blijven herkenbaar nationaal. Bronmatrix geleverd in
+`docs/SPARKI_CATEGORIE_LICENTIEMODEL.md`. **Status: bronhiërarchie besloten; exacte
+categorie- en disciplinemapping nog te valideren tegen actuele UCI-, UEC- en
+KNWU-reglementen** — er wordt geen definitieve mapping gebouwd op alleen een
+KNWU-webpagina.

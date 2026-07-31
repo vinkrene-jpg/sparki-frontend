@@ -45,7 +45,6 @@ const TREFWOORDEN: Record<string, string[]> = {
   "/connect": ["koppelen", "bronnen", "strava", "garmin", "wahoo", "importeren"],
   "/lab": ["inzicht", "lab", "cijfers", "analyse", "belasting", "vorm"],
   "/meer": ["meer", "onderdelen"],
-  "/sprinten": ["sprinten", "sprint", "bordjes", "plaatsnaamborden"],
   "/invitations": ["uitnodigen", "uitnodiging", "koppelen", "sporters"],
 }
 

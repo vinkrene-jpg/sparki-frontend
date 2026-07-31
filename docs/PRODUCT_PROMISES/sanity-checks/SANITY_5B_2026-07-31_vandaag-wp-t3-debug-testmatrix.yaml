@@ -1,0 +1,31 @@
+# Poort 5b sanity-check rapport — Vandaag WP-T3 (debugweergave + testmatrix)
+
+delivery: "Vandaag WP-T3: tester-/admin-debugweergave (?debug=1 alleen voor expliciete admin of Hoofdtester; passedOver altijd uit normale responses gestript) + volledige 17-scenario-testmatrix (test:today-matrix 21/21) met bewijs van ≥6 aantoonbaar verschillende profiel-/rolweergaven. Hiermee is het Vandaag-werkpakket (WP-T1/T2/T3) afgerond."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "GET /api/today?debug=1 (echte Express-app, DB-fixtures via test:today-matrix, 21/21)"
+  - "Onderbouwing (tester)-paneel in de Vandaag-secties (atleet-shell + rolweergaven CoachHome/ParentHome/Clubbeheer)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "'Onderbouwing (tester)'-knop klapt het paneel open/dicht en laadt het debug-blok op verzoek; knop wordt HELEMAAL niet gerenderd voor gebruikers zonder admin/Hoofdtester-status (geen dode knop voor gewone gebruikers)."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Debugdetails horen niet bij gewone gebruikers: passedOver wordt server-side uit elke normale respons gestript en ?debug=1 zonder bevoegdheid levert géén debug-blok (getest voor jeugd-, trainer-, ouder- en clubbeheer-accounts)."
+        result: "pass"
+      - case: "Bewust NIET lib/flags.isAdmin gebruikt voor deze poort (die heeft een dev-preview-bypass die iedereen admin maakt); strikte poort = expliciete SPARKI_ADMIN_IDS of isHeadTester."
+        result: "pass"
+      - case: "Mechanieker-clubrol geeft géén geleende beheer-/trainerweergave (403), maar de eigen atleten-Vandaag blijft werken — eerlijke afwijzing i.p.v. onzinnige lege pagina."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Debug-paneel toont bij lege sloten expliciet 'leeg (eerlijk)' met de afvalreden uit passedOver; aiUsed is eerlijk 'nee' (orchestrator is deterministisch); stille dagen tonen geen verzonnen inzicht of vooruitgangsclaim (S13/S17)."
+        result: "pass"
+
+# Bewijs: test:today-matrix 21/21 (17 §10-scenario's + debug-gating + ≥6
+# verschillende weergaven over ≥4 rollen), test:today-roles 14/14,
+# test:today-orchestrator 7/7 (regressie), typecheck-api + web-tsc schoon.
+verdict: "deliverable"

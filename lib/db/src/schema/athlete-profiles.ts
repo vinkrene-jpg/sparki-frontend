@@ -82,6 +82,11 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   // their profile as an atmosphere/hero image. Null = none chosen → no fake
   // hero is shown. Points at an owner-gated stored object (original or styled).
   decorPhotoPath: text("decor_photo_path"),
+  // Routeplanner-weergaveniveau (besluit B6, 30/31-07-2026). Handmatige keuze
+  // van de rijder: gratis | go_fietser | go_sport | wedstrijd. NULL betekent
+  // "automatisch": de weergave wordt dan uit het profiel voorgesteld. Staat
+  // volledig los van het abonnement; veiligheid geldt op elk niveau.
+  plannerView: text("planner_view"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

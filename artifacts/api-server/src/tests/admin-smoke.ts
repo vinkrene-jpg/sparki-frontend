@@ -112,6 +112,45 @@ async function main() {
 
   await startServer();
 
+  // WP-S1: isAdmin heeft GEEN dev-bypass meer — de geïmpersoneerde identiteit
+  // krijgt uitsluitend de rechten van de echte rij. Eerst bewijzen dat de
+  // strikte poort dicht zit, daarna de dev-gebruiker expliciet admin maken
+  // via SPARKI_ADMIN_IDS zodat de admin-oppervlakken zelf getest kunnen worden.
+  let devClerkId = "";
+  await scenario(
+    "strikte poort: zonder SPARKI_ADMIN_IDS is de dev-gebruiker GEEN admin",
+    async () => {
+      const saved = process.env.SPARKI_ADMIN_IDS;
+      delete process.env.SPARKI_ADMIN_IDS;
+      try {
+        const body = await getJson("/api/admin/whoami");
+        assert(
+          typeof body.clerkId === "string" && (body.clerkId as string).length > 0,
+          `whoami should return a non-empty clerkId, got ${JSON.stringify(body)}`,
+        );
+        devClerkId = body.clerkId as string;
+        assert(
+          body.isAdmin === false,
+          `whoami must report isAdmin:false without SPARKI_ADMIN_IDS (dev bypass removed in WP-S1), got ${JSON.stringify(body)}`,
+        );
+        const res = await fetch(`${baseUrl}/api/admin/status`);
+        assert(
+          res.status === 403,
+          `GET /api/admin/status must be 403 for a non-admin, got ${res.status}`,
+        );
+      } finally {
+        if (saved !== undefined) process.env.SPARKI_ADMIN_IDS = saved;
+      }
+    },
+  );
+  // Vanaf hier: expliciet admin gemaakt (zoals in productie via het secret).
+  process.env.SPARKI_ADMIN_IDS = [
+    process.env.SPARKI_ADMIN_IDS ?? "",
+    devClerkId,
+  ]
+    .filter(Boolean)
+    .join(",");
+
   await scenario("GET /api/admin/whoami → clerkId + isAdmin:true", async () => {
     const body = await getJson("/api/admin/whoami");
     assert(
@@ -120,7 +159,7 @@ async function main() {
     );
     assert(
       body.isAdmin === true,
-      `whoami should report isAdmin:true under the dev bypass, got ${JSON.stringify(body)}`,
+      `whoami should report isAdmin:true once SPARKI_ADMIN_IDS includes the dev user, got ${JSON.stringify(body)}`,
     );
   });
 

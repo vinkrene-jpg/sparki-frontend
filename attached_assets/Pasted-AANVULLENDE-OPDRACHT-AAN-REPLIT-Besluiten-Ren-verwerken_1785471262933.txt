@@ -1,0 +1,281 @@
+AANVULLENDE OPDRACHT AAN REPLIT — Besluiten René verwerken en uitvoering starten
+
+Verwerk onderstaande besluiten als definitieve product- en bouwbesluiten in de canonieke Sparki-documentatie, kalibratiebestanden, roadmap en relevante technische taken.
+
+Gebruik geen oudere tegenstrijdige aannames meer.
+
+1. Direct herstellen: actief rechtenlek
+
+Herstel per direct dat een trainer die uitsluitend via een sportertoewijzing toegang heeft, berichten kan schrijven.
+
+Gewenst gedrag:
+- assignment-only toegang geeft uitsluitend de expliciet vastgelegde lees- en begeleidingsrechten;
+- geen berichten schrijven wanneer daarvoor geen afzonderlijk berichtrecht bestaat;
+- controleer API, serverautorisatie en gebruikersinterface;
+- alleen het verbergen van de knop is onvoldoende;
+- test manipulatie van API-verzoeken en directe endpoint-aanroepen;
+- controleer bestaande berichten en auditlogs zonder gegevens te verwijderen.
+
+Lever afzonderlijk bewijs dat het lek server-side is gesloten.
+
+Deze correctie staat los van andere prioriteiten en moet als eerste worden uitgevoerd.
+
+2. Externe coach en extern trainingsplan
+
+De externe-coachfunctionaliteit is vrijgegeven om nu te bouwen.
+
+Bouw:
+- een expliciet herkomstsysteem voor trainingen en plannen;
+- upload/import van een extern trainingsplan;
+- behoud van de oorspronkelijke herkomst;
+- onderscheid tussen:
+  - Sparki-plan;
+  - gekoppelde trainer;
+  - externe coach;
+  - geïmporteerd extern plan;
+  - handmatig door gebruiker gemaakt;
+  - later door Sparki aangepast;
+- versie- en wijzigingshistorie;
+- zichtbare verantwoordelijkheid en actuele begeleidingsmodus;
+- veilige verwerking van bestanden en inhoud;
+- geen stille omzetting van externe inhoud naar “Sparki” of “coach”.
+
+Wanneer een extern plan een mogelijk veiligheidsrisico bevat:
+- nadrukkelijk waarschuwen;
+- uitleggen wat het risico is;
+- een veiliger alternatief voorstellen;
+- de gebruiker niet automatisch blokkeren;
+- geen medische zekerheid claimen;
+- de waarschuwing en gebruikersbeslissing loggen.
+
+3. VOG-registratiemodel
+
+Sla nooit een kopie of afbeelding van een VOG op.
+
+Registreer uitsluitend passende metadata, zoals:
+- status;
+- controledatum;
+- wie de status heeft geregistreerd of gecontroleerd;
+- eventueel verval- of hercontroledatum;
+- context waarin de registratie geldt;
+- auditlog.
+
+Context:
+- zelfstandige trainer of teamtrainer: trainer registreert zelf de status;
+- clubomgeving: clubbeheerder registreert of controleert de status.
+
+Maak in de interface duidelijk dat een zelf geregistreerde status niet hetzelfde is als controle door een clubbeheerder.
+
+4. Teamtrainer en individuele sportdata
+
+Een teamtrainer mag individuele sportdata bekijken zonder dat een ploegleider vooraf iedere inzage hoeft goed te keuren, mits de bestaande relatie en rechten dit toestaan.
+
+Verplicht:
+- logging van individuele inzage;
+- minimaal trainer, sporter, datatype, tijdstip en context;
+- ploegleider kan deze logging achteraf bekijken;
+- geen toegang buiten het eigen team of de geldige relatie;
+- gevoelige gegevens blijven onder bestaande privacy- en leeftijdsregels vallen.
+
+5. Clubomgeving algemene voortgang
+
+“Algemene voortgang” in de clubomgeving omvat:
+- groepsgemiddelden;
+- teamontwikkeling;
+- individuele TSS en belasting;
+- individuele afwijkingen en aandachtspunten.
+
+Pas rolrechten en privacy toe. Niet iedere clubrol hoeft automatisch alle individuele details te zien.
+
+6. Routeplanner met vier weergaven
+
+Bouw het overeengekomen vier-niveaumodel:
+
+1. Gratis
+2. Go gewone fietser
+3. Go wielrenner, mountainbiker of gravelrijder
+4. Wedstrijd
+
+Gebruik “Wedstrijd” en niet “Compleet” als naam van het hoogste plannerniveau, zodat dit niet wordt verward met het abonnement Sparki Complete.
+
+De plannerweergave:
+- wordt automatisch voorgesteld op basis van profiel, ervaring en gebruik;
+- is altijd handmatig aanpasbaar;
+- staat volledig los van het abonnement;
+- mag nooit uitsluitend op abonnementsnaam worden gekozen;
+- bewaart de gebruikerskeuze;
+- biedt een duidelijke mogelijkheid om terug te keren naar automatisch.
+
+Een gebruiker met een Compleet-abonnement mag de eenvoudigste weergave kiezen. Een gebruiker met een ander abonnement mag een uitgebreidere weergave kiezen voor zover de concrete betaalde functies binnen diens rechten beschikbaar zijn.
+
+Veiligheid is nooit een premiumfunctie.
+
+Op ieder niveau zichtbaar en actief:
+- blokkadepoort;
+- eindverificatie;
+- wegdek- en routewaarschuwingen;
+- oncontroleerbare-routewaarschuwing;
+- verbod op opslaan of navigeren van niet goedgekeurde routekandidaten.
+
+Bouw de Wedstrijd-weergave nu mee en schuif deze niet door naar een latere losse taak.
+
+7. Vermogenszones
+
+Bouw individuele vermogenszones naast generieke FTP-zones.
+
+Eisen:
+- generieke zones blijven beschikbaar;
+- individuele zones zijn geen vervanging;
+- gebruiker kiest zelf welke zones zichtbaar of actief zijn;
+- toon duidelijk welke methode wordt gebruikt;
+- voorkom dat analyses ongemerkt tussen methodes wisselen;
+- bewaar gebruikte zones bij historische analyses;
+- trainerrechten en gebruikersbeslissingsrecht blijven gerespecteerd.
+
+8. Power Duration Curve
+
+Het tijdvenster van de Power Duration Curve wordt door de gebruiker ingesteld.
+
+Ondersteun passende selecties, bijvoorbeeld:
+- recente periode;
+- seizoen;
+- kalenderjaar;
+- aangepaste periode;
+- volledige beschikbare historie.
+
+Geen hard vast standaardvenster als enige mogelijkheid.
+
+Toon:
+- gekozen tijdvenster;
+- databeschikbaarheid;
+- ontbrekende historische backfill;
+- betrouwbaarheid van de curve;
+- geen schijnprecisie wanneer onvoldoende maximale inspanningen beschikbaar zijn.
+
+9. Ramp-rate-veiligheidsgrens
+
+Doe eerst een onderbouwd voorstel voor de ramp-rate-veiligheidsgrens.
+
+Het voorstel bevat:
+- gebruikte definitie en berekening;
+- wetenschappelijke of vakinhoudelijke onderbouwing;
+- verschillen per leeftijd, ervaring en trainingsniveau;
+- behandeling van beperkte of onbetrouwbare data;
+- waarschuwingsniveaus;
+- voorbeelden;
+- risico op foutpositieven en foutnegatieven;
+- relatie tot trainerbegeleiding;
+- voorstel voor tekst richting gebruiker.
+
+Bouw de definitieve harde grens pas nadat René deze expliciet heeft goedgekeurd.
+
+10. Samen-pagina
+
+Plaats “Samen trainen” bovenaan de Samen-pagina.
+
+De keuze of Samen ook op het eerste navigatieniveau komt, is nog niet genomen. Verander daarom de hoofdnavigatie nog niet op basis van een aanname.
+
+11. KnowledgeIsWatt
+
+Gebruik uitsluitend de gratis beschikbare signaallaag.
+
+Niet toegestaan zonder nieuw besluit:
+- betaald abonnement;
+- overname van betaalde inhoud;
+- omzeilen van paywalls;
+- opslaan of reproduceren van beschermde artikelen.
+
+Wel toegestaan:
+- gratis signalen en previews gebruiken als aanwijzing;
+- verwijzen naar de oorspronkelijke bron;
+- onderwerpen herkennen;
+- eigen analyses en uitleg schrijven op basis van eigen data en rechtmatig beschikbare informatie.
+
+12. Koolhydraat-pilot
+
+Ga door zoals gepland:
+
+- 30–60 gram per uur: gevestigd bereik binnen passende context;
+- 60–90 gram per uur: gevestigd voor langere en intensievere belasting, afhankelijk van sporter en tolerantie;
+- 100 gram per uur of meer: uitsluitend labelen als “in ontwikkeling”.
+
+Eisen:
+- personaliseren op duur, intensiteit, ervaring en tolerantie;
+- geen universele opdracht geven;
+- maag-darmklachten en gewenning meenemen;
+- bij jongeren extra terughoudend communiceren;
+- bron, confidence en reden van advies tonen;
+- geen medische claims.
+
+13. KNWU-categorieën
+
+Markeer de KNWU-categorie-indeling als:
+
+STATUS: WACHT OP VERIFICATIE DOOR RENÉ
+
+De door Replit gevonden categorieën mogen als onderzoeksbevinding worden vastgelegd, maar nog niet als definitieve productnorm worden gecodeerd of canoniek bevestigd.
+
+Behoud bestaande functionaliteit totdat René de indeling heeft gecontroleerd.
+
+14. Documentatie bijwerken
+
+Werk minimaal bij:
+
+- relevante `rene_calibration`-onderdelen;
+- hoofdstuk J;
+- Master Plan Addendum;
+- actuele roadmap en takenlijst;
+- `docs/SPARKI_CURRENT_STATE.md`;
+- routeplanner-UX-documentatie;
+- rollen- en rechtenmatrix;
+- externe-coach- en planherkomstdocumentatie;
+- Lab-/analyse-documentatie;
+- privacy- en auditloggingdocumentatie;
+- testmatrix.
+
+Leg per besluit vast:
+- besluit van René;
+- datum: 30 juli 2026;
+- gevolgen voor product en techniek;
+- betrokken rollen;
+- benodigde migraties;
+- test- en acceptatiecriteria;
+- status: besloten, in uitvoering, bewezen of nog open.
+
+Open blijven uitsluitend:
+1. definitieve KNWU-categorieën na verificatie door René;
+2. wel of geen positie van Samen op het eerste navigatieniveau;
+3. definitieve ramp-rate-grens na voorstel en goedkeuring door René.
+
+15. Oplevervolgorde
+
+Voer uit in deze volgorde:
+
+A. Assignment-only-berichtenlek server-side sluiten en bewijzen.
+B. Besluiten in canonieke documenten en kalibratie verwerken.
+C. Routeplanner-opruiming en vier weergaven inclusief Wedstrijd uitvoeren.
+D. Externe-coachherkomst en plan-upload ontwerpen en bouwen.
+E. Logging voor teamtrainerinzage en clubvoortgang uitbreiden.
+F. Vermogenszones, instelbaar PDC-venster en koolhydraat-pilot uitvoeren.
+G. Onderbouwd ramp-ratevoorstel aan René voorleggen.
+H. Overige UX- en documentatiebewijzen afronden.
+
+Governance
+
+Voer geen niet-goedgekeurde beleidskeuzes zelfstandig in.
+
+Wanneer eerst een ontwerp of voorstel wordt gevraagd:
+- eerst alleen ontwerp of voorstel leveren;
+- wachten op expliciete goedkeuring van René;
+- pas daarna implementeren.
+
+Meld bij oplevering:
+- gewijzigde bestanden;
+- migraties;
+- tests;
+- screenshots;
+- rechtenbewijzen;
+- auditlogbewijs;
+- bekende beperkingen;
+- nog openstaande beslissingen;
+- commits per afzonderlijk onderdeel.

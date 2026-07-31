@@ -1,0 +1,62 @@
+# STAGING — bedoeld voor .github/workflows/pr-checks-routing.yml
+#
+# Deze agent kan géén bestanden onder .github/workflows/ pushen (GitHub-token
+# mist de workflows-scope — zelfde handmatige stap als taak #507). René kopieert
+# dit bestand handmatig naar .github/workflows/ bij het afronden van #507.
+#
+# Mergepoort FASE 3 (opdracht 31-07-2026): PR's die routingcode,
+# obstakelverificatie, routeopslag of navigatiestart raken, mogen niet mergen
+# zonder groene regressiematrix + gegenereerde tests + aanwezige risicoanalyse.
+# Compact gehouden (doel: minuten, geen uren); de zware suite draait nachtelijk
+# of handmatig.
+
+name: routing-checks
+
+on:
+  pull_request:
+    paths:
+      - "artifacts/api-server/src/lib/routing/**"
+      - "artifacts/api-server/src/lib/route-remarks.ts"
+      - "artifacts/api-server/src/lib/road-objects/**"
+      - "artifacts/api-server/src/lib/verharding/**"
+      - "artifacts/api-server/src/routes/routes.ts"
+      - "docs/ROUTING_RISK_ANALYSES/**"
+  schedule:
+    - cron: "30 2 * * *" # nachtelijke grote suite
+  workflow_dispatch: # handmatige volledige stresstest
+
+jobs:
+  routing-pr-suite:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Risicoanalyse verplicht bij harde routeregels
+        run: node scripts/check-routing-risk-analysis.mjs origin/${{ github.base_ref }}
+      - name: Vaste regressiematrix (compact, deterministisch)
+        run: |
+          pnpm --filter @workspace/api-server run test:loop-quality-gate
+          pnpm --filter @workspace/api-server run test:route-library-gates
+          pnpm --filter @workspace/api-server run test:route-alternates
+      - name: Gegenereerde routinginvarianten (compact, vaste seed)
+        run: pnpm --filter @workspace/api-server run test:routing-generated
+
+  routing-nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Grote gegenereerde suite (2000 scenario's, wisselende seed gelogd)
+        run: |
+          SEED=$(date +%Y%m%d)
+          echo "ROUTING_GEN_SEED=$SEED"
+          ROUTING_GEN_SEED=$SEED pnpm --filter @workspace/api-server run test:routing-generated-full

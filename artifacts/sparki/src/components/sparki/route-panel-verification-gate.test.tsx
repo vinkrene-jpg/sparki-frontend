@@ -127,11 +127,34 @@ mock.module("@/hooks/use-route-proposals", {
   },
 })
 mock.module("@tanstack/react-query", {
-  namedExports: { useQuery: noopQuery },
+  namedExports: {
+    useQuery: noopQuery,
+    // use-planner-view → use-athlete-extended-profile gebruikt ook
+    // useMutation/useQueryClient — de mock dekt het volledige importoppervlak.
+    useMutation: () => ({ mutate: () => {}, isPending: false }),
+    useQueryClient: () => ({ invalidateQueries: () => {}, setQueryData: () => {} }),
+  },
 })
 mock.module("@/lib/api", { namedExports: { apiFetch: async () => ({}) } })
+// use-athlete-extended-profile importeert @/lib/dev (import.meta.env bestaat
+// niet in de node-testrunner) — volledig mocken.
+// …en @clerk/react (useUser buiten ClerkProvider crasht in de testrunner).
+mock.module("@clerk/react", {
+  namedExports: { useUser: () => ({ isSignedIn: true, user: null }) },
+})
+mock.module("@/lib/dev", {
+  namedExports: {
+    DEV_PREVIEW: false,
+    getDevAthleteId: () => null,
+    setDevAthleteId: () => {},
+  },
+})
 mock.module("@/lib/telemetry", { namedExports: { trackScreen: () => {} } })
-mock.module("@/components/ds", { namedExports: { IconCheck: Null } })
+mock.module("@/components/ds", {
+  // route-panel gebruikt sinds de designsysteem-migratie ook DsStatus —
+  // de mock moet het volledige importoppervlak dekken.
+  namedExports: { IconCheck: Null, DsStatus: Null },
+})
 mock.module("@/components/sparki/ui", {
   namedExports: {
     SectionLabel: Null,

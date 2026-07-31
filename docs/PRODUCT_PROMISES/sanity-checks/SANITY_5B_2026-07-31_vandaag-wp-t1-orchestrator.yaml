@@ -1,0 +1,32 @@
+# Poort 5b sanity-check rapport — Vandaag WP-T1 (Today Orchestrator)
+
+delivery: "Vandaag WP-T1: deterministische Today Orchestrator (engines/today) + weergavehistorie (today_display_history) + atleet-profielvarianten (jeugd/wedstrijd/prestatie/recreatief/beginner) + orchestrator-blokken op /vandaag (commercial shell)"
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/vandaag (commercial shell) — TodayOrchestratorSection boven de bestaande secties"
+  - "GET /api/today en POST /api/today/interactions via test:today-orchestrator (echte engine + echte database, 7/7 groen)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Actieknoppen in de hoofdboodschap (bijv. 'Laat Sparki een training voorstellen' → /trainen/toevoegen, 'Kies bewust voor herstel' → /vandaag?zelf=1) registreren een klik in de weergavehistorie (POST /api/today/interactions, in test bewezen: clicked=true) en navigeren daarna; elk gerenderd blok heeft óf een werkende actie óf bewust geen actie (support-uitklap)."
+        result: "pass"
+      - case: "Uitklap 'Waarom Sparki dit zegt' (details/summary) toont echte state-signalen + bronvermelding; zonder signalen wordt de uitklap helemaal niet gerenderd (geen dode summary)."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Jeugd (<18) krijgt geen wedstrijdvoorbereidings-rotatie en geen trainingsjargon ('gerichte prikkel'); testscenario jeugd-15 bewijst de eenvoudige copy. Zieke sporter krijgt géén trainingslead ook al staat er een training gepland (gezondheid wint, urgent)."
+        result: "pass"
+      - case: "Geen 'je gaat vooruit'-inzicht zonder aantoonbare trend: insight-slot is null bij beginner zonder data, met verantwoording in passedOver (testscenario groen)."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Slots zonder echte inhoud renderen niets (sectie verdwijnt volledig bij lege orchestrator-uitkomst, laad- en fouttoestand renderen null in plaats van een vulkaart); geen enkele deterministische tekst bevat placeholder-/laadcopy. Bronregel toont de echte bron (bijv. 'planned_workouts + state-engine + races'), nooit 'onbekend'."
+        result: "pass"
+
+# Beperking eerlijk vermeld: visuele controle van /vandaag draait op de bestaande
+# commercial-shell (typecheck + vite dev groen); de scenario-bewijzen lopen via de
+# echte engine-test (7/7). Volledige rol-/profiel-screenshots (≥6 profielen) zijn
+# per fasering onderdeel van WP-T3 (testmatrix), niet van deze WP-T1-oplevering.
+verdict: "deliverable"

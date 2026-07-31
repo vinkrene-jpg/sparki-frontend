@@ -1,0 +1,204 @@
+AANVULLING — Persoonlijke routebibliotheek uit gekoppelde ritgeschiedenis
+
+Doel
+
+Gebruik de historische ritten die via gekoppelde databronnen beschikbaar komen veel sterker voor routevoorstellen.
+
+Wanneer een nieuwe gebruiker Strava, Garmin of een andere bron koppelt, kan Sparki beschikken over tientallen of honderden gereden GPS-trajecten. Behandel die niet alleen als activiteitenhistorie, maar ook als grondstof voor een persoonlijke routebibliotheek.
+
+Bouw geen los tweede routesysteem. Hergebruik de bestaande activiteitenimport, routeplanner, routeopslag, profielkeuze en fail-closed routeverificatie.
+
+1. Persoonlijke routekandidaten opbouwen
+
+Analyseer geïmporteerde ritten op minimaal:
+
+- start- en eindgebied;
+- afstand;
+- duur;
+- hoogtemeters;
+- wegtype;
+- race, gravel, MTB, e-bike of gewone fiets;
+- rondrit of A-B;
+- gebruikte fiets;
+- gemiddeld tempo;
+- herhalingsfrequentie;
+- hoe recent de route is gereden;
+- volledige GPS-dekking;
+- pauzes en ongewenste uitstapjes;
+- mogelijke autoritten vóór of na de fietsrit;
+- bestaande labels, titels en opmerkingen;
+- voorkeuren van de gebruiker.
+
+Maak van geschikte ritten routekandidaten, zonder de originele activiteit te wijzigen.
+
+2. Opschonen en clusteren
+
+Voorkom dat honderden vrijwel gelijke ritten als losse routes verschijnen.
+
+Cluster vergelijkbare ritten op basis van:
+
+- geometrische overlap;
+- gelijk startgebied;
+- gelijk doelgebied;
+- afstand;
+- hoogtemeters;
+- fietsprofiel;
+- richting;
+- terugkerende segmenten.
+
+Toon bijvoorbeeld:
+
+- vaak gereden;
+- favoriet trainingsrondje;
+- rustige duurroute;
+- klimroute;
+- gravelroute;
+- korte avondrit;
+- lange weekendrit;
+- route naar werk;
+- wedstrijdverkenning.
+
+Laat de gebruiker labels corrigeren of zelf toevoegen.
+
+3. Persoonlijke routekwaliteit
+
+Geef iedere kandidaat een transparante kwaliteitsscore op basis van bijvoorbeeld:
+
+- aantal keren gereden;
+- meest recente rit;
+- volledigheid GPS;
+- consistente route;
+- passend fietsprofiel;
+- actuele weg- en obstakelcontrole;
+- bekende afwijkingen;
+- hoeveelheid ongewenst keren of stilstand;
+- terugkeer naar startpunt;
+- beoordeling door de gebruiker.
+
+Een oude of vaak gereden route is niet automatisch veilig of nog actueel.
+
+Iedere route die opnieuw wordt voorgesteld, opgeslagen of gestart moet daarom door de actuele fail-closed verificatie gaan.
+
+4. Route zoeken: eerst bestaande passende routes
+
+Wanneer de gebruiker een route wil aanmaken, zoek eerst in deze volgorde:
+
+1. passende persoonlijke routes uit eigen ritgeschiedenis;
+2. passende bewust opgeslagen of gelabelde routes;
+3. eventueel toegestane gedeelde routes van vrienden, club of trainer;
+4. pas daarna nieuwe routes die Sparki genereert.
+
+De zoekopdracht kan onder andere bevatten:
+
+- startplaats;
+- gewenste afstand;
+- beschikbare tijd;
+- hoogtemeters;
+- fietssoort;
+- trainingsdoel;
+- ondergrond;
+- rondrit of A-B;
+- verkeersrust;
+- route die bekend of juist nieuw moet zijn.
+
+5. Gemengde resultaten tonen
+
+Toon bij een passende zoekopdracht bijvoorbeeld maximaal:
+
+- drie tot vijf bestaande persoonlijke of opgeslagen routes;
+- twee nieuw door Sparki berekende routes.
+
+Maak het verschil duidelijk zichtbaar:
+
+- “Eerder door jou gereden”
+- “Vaak door jou gereden”
+- “Opgeslagen route”
+- “Nieuw voorstel van Sparki”
+
+Toon per voorstel waarom het past, bijvoorbeeld:
+
+- 4 keer eerder gereden;
+- past bij 60 kilometer en racefiets;
+- vergelijkbare hoogtemeters;
+- recent gecontroleerd;
+- nieuw alternatief met minder drukke wegen.
+
+6. Nieuwe route hoeft niet volledig nieuw te zijn
+
+Sparki mag ook een hybride voorstel maken:
+
+- bestaande persoonlijke route als basis;
+- defect of ongeschikt deel vervangen;
+- afstand verlengen of inkorten;
+- extra klim toevoegen;
+- drukke of geblokkeerde weg vermijden;
+- startpunt verplaatsen;
+- route geschikt maken voor ander fietsprofiel.
+
+Leg dan duidelijk uit:
+
+“Gebaseerd op jouw eerdere route X, aangepast met 12 kilometer en een veiligere terugweg.”
+
+Bewaar herkomst en aanpassingen.
+
+7. Privacy en eigendom
+
+- Eigen ritgeschiedenis blijft standaard privé.
+- Maak routes niet automatisch openbaar.
+- Deel geen thuisadres of exacte terugkerende startlocatie.
+- Bied privacyzones rond woning, werk of andere gevoelige locaties.
+- Gebruik routes van andere gebruikers alleen wanneer delen expliciet is toegestaan.
+- Laat de gebruiker geïmporteerde routekandidaten uitsluiten of verwijderen.
+- Houd rekening met jeugdprofielen en ouder-/clubrechten.
+
+8. Eerste onboarding na koppeling
+
+Na de eerste volledige synchronisatie mag Sparki voorstellen:
+
+“Uit je ritgeschiedenis hebben we 184 activiteiten gevonden. Daaruit lijken 23 unieke, bruikbare routes te ontstaan.”
+
+Laat de gebruiker daarna:
+
+- routes bekijken;
+- labels bevestigen;
+- favorieten kiezen;
+- foutieve routes uitsluiten;
+- privacyzones instellen;
+- bepalen welke routes Sparki voor voorstellen mag gebruiken.
+
+Toon geen honderden losse ritten als één onoverzichtelijke routelijst.
+
+9. Technische randvoorwaarden
+
+- Geen zware volledige analyse bij iedere paginalaad.
+- Verwerk nieuwe activiteiten incrementeel.
+- Gebruik route-fingerprints voor duplicaatdetectie.
+- Bewaar herkomst naar de oorspronkelijke activiteit.
+- Verander historische activiteiten niet.
+- Herverifieer tegen actuele kaart- en obstakeldata.
+- Een eerder gereden route mag nooit de fail-closed veiligheidscontrole omzeilen.
+- Geen parallelle route-engine bouwen.
+- Sluit aan op de bestaande cachinginventaris en routingtests.
+
+10. Testscenario’s
+
+Test minimaal:
+
+- nieuwe gebruiker met 300 sterk vergelijkbare ritten;
+- gebruiker met ritten vanuit meerdere woonplaatsen;
+- race-, gravel- en MTB-ritten door elkaar;
+- route met autorit vóór of na de fietsrit;
+- route met slechte GPS;
+- oude route over inmiddels geblokkeerde weg;
+- gebruiker met privacyzone rond woning;
+- zoekopdracht met meerdere passende eigen routes;
+- zoekopdracht zonder passende eigen routes;
+- hybride aanpassing van bestaande route;
+- meerdere imports van dezelfde activiteit;
+- gebruiker die een automatisch label corrigeert.
+
+Acceptatiecriterium
+
+Bij een gebruiker met veel historische ritten toont Sparki geen onoverzichtelijke stapel activiteiten, maar een compacte persoonlijke routebibliotheek.
+
+Bij het maken van een route toont Sparki eerst passende, veilige en herkenbare routes uit de eigen geschiedenis, aangevuld met ongeveer twee nieuwe voorstellen van de Sparki-engine.

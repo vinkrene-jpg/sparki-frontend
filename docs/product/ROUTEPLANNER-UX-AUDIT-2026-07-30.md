@@ -52,3 +52,17 @@ Voorstel: **automatische startkeuze + altijd zelf aanpasbaar.**
 - Akkoord met de 4-niveaustabel (of schuiven met wat waar zichtbaar is)?
 - "Plannerweergave" automatisch met handmatige override — akkoord?
 - Naamgeving derde bundel: "Compleet"?
+
+## 7. Besluiten René 30-07-2026 (antwoorden op §6)
+- 4-niveaustabel: **akkoord**. Niveaus: Gratis / Go gewone fietser / Go
+  wielrenner-MTB-gravel / **Wedstrijd**.
+- Automatische weergavekeuze met handmatige override: **akkoord**; keuze wordt
+  bewaard, met duidelijke terug-naar-automatisch; volledig los van abonnement
+  (nooit uitsluitend op abonnementsnaam kiezen).
+- Naamgeving hoogste plannerniveau: **"Wedstrijd"**, uitdrukkelijk NIET
+  "Compleet" (verwarring met abonnement Sparki Complete). Wedstrijd-weergave
+  wordt in het niveaus-werk meegebouwd, geen losse latere taak.
+- Veiligheid is nooit premium: blokkadepoort, eindverificatie, wegdek-/route-
+  waarschuwingen, oncontroleerbare-routewaarschuwing en het verbod op
+  opslaan/navigeren van niet-goedgekeurde kandidaten actief op élk niveau.
+- Bron: `docs/BESLUITENREGISTER_RENE_2026-07-30.md` (B6).

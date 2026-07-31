@@ -1,8 +1,6 @@
-import { Link, useLocation, useSearch } from "wouter"
+import { useLocation, useSearch } from "wouter"
 import { dagSfeer } from "@/lib/sfeer"
-import { Flag, ChevronRight } from "lucide-react"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
-import { ACCENT } from "@/components/sparki/ui"
 import { HoofdstukTabs, type HoofdstukTab } from "@/components/sparki/hoofdstuk-tabs"
 import { RoutePanel } from "@/components/sparki/route-panel"
 import { RouteLibrary } from "@/components/sparki/route-library"
@@ -34,7 +32,8 @@ const TAB_INTRO: Record<RoutesView, string> = {
 // Rijden-hoofdscherm met tabbladen. Elke tab blijft deep-linkbaar via
 // ?view=…; deep-links (?nav=, ?ritopties=, ?route=) zonder view landen
 // automatisch op "Bewaard", waar de routekaarten leven. Zonder parameters
-// opent ook "Bewaard" — daar staat wat je het vaakst nodig hebt.
+// opent "Maken" (besluit René 31-07-2026): wie het hoofdstuk Rijden opent,
+// begint bij het plannen van een route.
 export default function RoutesPage() {
   const routePlannerEnabled = useFeatureFlag("route_planner")
   const search = useSearch()
@@ -43,7 +42,9 @@ export default function RoutesPage() {
   const rawView = params.get("view")
   const view: RoutesView = TABS.some((t) => t.id === rawView)
     ? (rawView as RoutesView)
-    : "bewaard"
+    : params.has("route") || params.has("nav") || params.has("ritopties")
+      ? "bewaard"
+      : "maken"
 
   // Tab-wissel schrijft alleen ?view= — oude deep-linkparameters (?route=…)
   // horen bij de vorige weergave en gaan niet mee.
@@ -112,37 +113,8 @@ export default function RoutesPage() {
             <div className="mt-8">
               <RouteDiscover />
             </div>
-            {/* Bordjes-sprinten hoorde bij het oude hoofdscherm; het is een
-                ontdek-achtige nevenweg en woont nu onder dit tabblad. */}
-            <section className="mt-8">
-              <Link
-                href="/sprinten"
-                className="flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-map-panel/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
-              >
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
-                  style={{ background: "rgba(120,210,230,0.08)" }}
-                >
-                  <Flag
-                    className="h-5 w-5"
-                    strokeWidth={1.75}
-                    style={{ color: ACCENT }}
-                  />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-medium text-white/90">
-                    Bordjes-sprinten
-                  </span>
-                  <span className="mt-0.5 block text-[12px] text-white/45">
-                    Sprint om plaatsnaamborden op je route
-                  </span>
-                </span>
-                <ChevronRight
-                  className="h-4 w-4 shrink-0 text-white/25"
-                  strokeWidth={1.75}
-                />
-              </Link>
-            </section>
+            {/* Bordjes-sprinten stond hier als ingang, maar is gestopt —
+                veiligheidsrisico op openbare weg (besluit 31-07-2026). */}
           </>
         ) : view === "bewaard" ? (
           <>

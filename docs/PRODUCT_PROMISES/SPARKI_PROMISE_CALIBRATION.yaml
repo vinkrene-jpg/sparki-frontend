@@ -3959,7 +3959,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       practice_status: "Clubomgeving en trainer-werkruimte draaien in dev en zijn door testers gebruikt; een trainer die tegelijk directe links én clubtoewijzingen heeft is nooit gericht in de praktijk getest."
       known_limitations:
         - "Er is geen expliciet access_context-veld; 'independent' = directe link, 'club/team' = toewijzing. Zolang rechten strikt per relatie worden afgeleid is dat equivalent, maar het onderscheid independent-met-abonnement vs gratis directe link bestaat nog niet: er is geen 'Sparki-trainer-abonnement' in de entitlement-laag (lib/entitlements.ts kent Go-tier/feature keys en club_subscriptions, geen trainer-product)."
-        - "Bestaand afwijkend contract: een assignment-only trainer mag nu coach-berichten schrijven (201) — src/tests/trainer-assignment-write-contract.ts. Dat is ruimer dan het vastgestelde model en moet bij implementatie expliciet worden herbeslist of dichtgezet."
+        - "RECHTENLEK HERSTELD 31-07-2026 (besluit René 30-07, besluitenregister B1): het oude taak-412-contract was een actief rechtenlek — een assignment-only trainer (alleen club-/teamtoewijzing, geen directe coachrelatie) kon individuele coachberichten schrijven (201). Hersteld vanaf commit 1d5fa874 en aanwezig in de onafhankelijk gecontroleerde HEAD 380f05a: het schrijfpad gebruikt server-side hasDirectCoachLink; assignment-only zonder directe coachrelatie = HTTP 403 + nul rijen, en de UI volgt die servergrens (verborgen/zichtbare knoppen veranderen de autorisatie niet). Het oude lek blijft expliciet bewaard als regressie-tegenvoorbeeld: assignment-only mag NOOIT meer 201 opleveren. Regressietests: src/tests/trainer-assignment-write-contract.ts (npm test:trainer-assignment-write-contract) en src/tests/trainer-assignment-message-rights.ts (npm test:trainer-assignment-messages, incl. endpoint-manipulatie + UI-gating + DB-audit dev/prod zonder lek-rijen). Onafhankelijke repo-review (31-07): codepad onafhankelijk gecontroleerd; testclaims bestaan en zijn herleidbaar, maar zijn in die reviewomgeving niet opnieuw uitgevoerd (node_modules/database ontbraken). In de volledige dev-omgeving opnieuw uitgevoerd 31-07-2026: write-contract 5/5 en message-rights 9/9 groen."
         - "Multi-context-stapeling (zelfde trainer, zelfde renner via twee wegen) heeft geen eigen test; het no-leak-principe steunt nu op het feit dat elke route zelf de juiste relatie checkt."
 
     proposed_promise:
@@ -3999,7 +3999,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
           actuality: "Code van 30-07-2026, met draaiende contracttests."
           license_status: "Eigen code."
           limitations:
-            - "Assignment-only schrijfpad voor berichten wijkt af van het vastgestelde model."
+            - "Assignment-only schrijfpad voor berichten week af van het vastgestelde model (actief rechtenlek); hersteld vanaf commit 1d5fa874 — schrijfpad eist hasDirectCoachLink, assignment-only = 403."
           applicability: "Direct herbruikbaar als fundament; access_context is een administratieve laag bovenop bestaande relaties, geen herbouw."
       sources_in_use: []
       privacy_status: unknown
@@ -4008,7 +4008,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
     replit_definition:
       objective_quality_standard: "Elke trainer-leesroute en -schrijfroute herleidt zijn rechten aantoonbaar uit exact één relatie (trainer+renner+context); een geautomatiseerde no-leak-test met een gestapelde trainer (zelfde persoon: zzp-renner A, clubrenner B) bewijst dat rechten van A nooit op B toepasbaar zijn en omgekeerd — 0 toegestane lekken."
-      recommended_default: "Hergebruik: directe link = independent, club_trainer_assignments = club/team; voeg een expliciet context-label per relatie toe in plaats van een nieuw rechtenmodel; sluit het afwijkende assignment-only-schrijfpad aan op het vastgestelde model (of leg de uitzondering vast)."
+      recommended_default: "Hergebruik: directe link = independent, club_trainer_assignments = club/team; voeg een expliciet context-label per relatie toe in plaats van een nieuw rechtenmodel; het afwijkende assignment-only-schrijfpad is 31-07-2026 al aangesloten op het vastgestelde model (403 zonder directe coachrelatie, commit 1d5fa874)."
       technical_limits:
         - "Zolang er geen expliciet context-veld is, is 'welke context leverde dit recht' niet logbaar per actie."
       assumptions:
@@ -4064,7 +4064,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Na akkoord René: context-label per relatie toevoegen, assignment-only-schrijfpad in lijn brengen met het model, en de no-leak-contracttest bouwen en draaien."
+      description: "Na akkoord René: context-label per relatie toevoegen en de no-leak-contracttest voor gestapelde contexten bouwen en draaien. (Het assignment-only-schrijfpad is al in lijn gebracht met het model, 31-07-2026, commit 1d5fa874.)"
       approved_for_execution: false
 
   - id: CLUB_CLUBOMGEVING_001
@@ -4719,7 +4719,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         origin: knwu_protocol | erkende_externe_bron | sparki_standaard | clubbibliotheek | persoonlijk
         naam: "verplicht"
         doel: "verplicht (gekoppeld aan trainingsdoel-as)"
-        doelgroep_leeftijdscategorie: "verplichte tag op de ACTUELE KNWU-indeling (2026): jeugd U7/U9/U11/U13/U15/U17 (uniform UCI, m/v gelijk; licenties U13 en U17), 17+ (vervangt startlicentie/nieuwelingen/sportklasse/amateurs; nieuwelingen vallen onder U17), UCI U19+ (junioren/beloften/elite), masters — niet zelfverzonnen en niet de oude indeling"
+        doelgroep_leeftijdscategorie: "BIJGEWERKT per besluit René 31-07-2026 (bronhiërarchie B13-herzien): TWEE gescheiden velden — (1) internationale_categorie op het UCI-kader (leidend: Youth/U19/U23/Elite/Masters, UCI Deel 1 art. 1.1.034–1.1.038, leeftijd = wedstrijdjaar − geboortejaar) en (2) nationale_licentiecontext KNWU (2026: jeugdlicenties U13/U17 op de uniforme UCI-leeftijdsindeling U7–U17, 17+ vervangt startlicentie/nieuwelingen/sportklasse/amateurs, nieuwelingen onder U17 = nationale regel). Nooit samenvoegen in één categorieveld; elke waarde met bron/versie/ingangsdatum/land; NL-naam overschrijft nooit de UCI-categorie. Model + bronmatrix: docs/SPARKI_CATEGORIE_LICENTIEMODEL.md"
         ervaringsniveau: "verplicht"
         discipline: "verplicht (weg/MTB/gravel/baan/veldrijden/BMX; sluit aan op bestaand sports-register)"
         duur: "verplicht"
@@ -4771,7 +4771,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
           license_status: "Publieke structuurinformatie; de indeling zelf overnemen als tags is feitengebruik, geen contentovername."
           limitations:
             - "Exacte masters-/H-categorie-indeling nog te verifiëren op de 17+/UCI-licentiepagina's."
-          applicability: "Verplichte basis voor doelgroep_leeftijdscategorie-tags; niet-onderhandelbaar dat de actuele (niet de oude) indeling wordt gebruikt."
+          applicability: "Verplichte basis voor de NATIONALE licentiecontext (besluit 31-07-2026: KNWU is bron 3 in de hiërarchie UCI→UEC→KNWU; internationale categorie komt uit het UCI-reglement en staat in een eigen veld). Niet-onderhandelbaar dat de actuele (niet de oude) indeling wordt gebruikt; status mapping: bronhiërarchie besloten, exacte categorie- en disciplinemapping nog te valideren tegen actuele UCI-/UEC-/KNWU-reglementen (bronmatrix in docs/SPARKI_CATEGORIE_LICENTIEMODEL.md)."
         - name: "KNWU-trainingsinhoud en -opleidingen (kenniscentrum: 'Opleiding Trainer', 'Opleidingen KNWU Campus', 'Informatie voor trainers'; contact campus@knwu.nl)"
           coverage: "Bevestigt dat de KNWU trainersopleidingen, bijscholing en kaderlicenties heeft en trainersinformatie publiceert; er is GEEN publiek gepubliceerde, herbruikbare bibliotheek van trainingsplannen/jaarplannen met expliciete licentie gevonden (onderzocht 30-07-2026)."
           actuality: "Kenniscentrum-pagina's, opgehaald 30-07-2026."

@@ -1,22 +1,21 @@
 // Taak 412 — contracttest: wat mag een assignment-only club-trainer op een
 // SCHRIJFPAD (coach-bericht sturen, POST /api/coach/athletes/:id/messages)?
 //
-// Huidige, bewust vastgelegde contract (tot het productbesluit uit de
-// vervolg-taak anders beslist): hasCoachAccess = directe geaccepteerde link
-// ÓF actieve club/team-toewijzing. Een trainer met ALLEEN een toewijzing
-// (geen directe link) mag dus óók schrijven. Deze test pint dat expliciet
-// vast, plus de fail-closed randen eromheen:
+// Contract per productbesluit René 29/30-07-2026 (WP-01C + aanvullende
+// opdracht §1): individuele berichten zijn een SCHRIJFACTIE en vereisen een
+// DIRECTE geaccepteerde coach-sporterlink. Een trainer met ALLEEN een
+// club-/teamtoewijzing (geen directe link) mag NIET schrijven. Deze test pint
+// dat vast, plus de fail-closed randen eromheen:
 //
 //   1. Positieve controle: trainer-1 → volwassen sporter (directe link) = 201.
 //   2. Assignment-only: trainer-1 → jeugdsporter (GEEN link, wél via
-//      teamtoewijzing) = 201 en de berichtrij bestaat echt.
-//      ⚠ Als het productbesluit wordt "toewijzing = alleen meekijken", moet
-//      deze verwachting hier omklappen naar 403 — dat is precies waarom deze
-//      test bestaat.
+//      teamtoewijzing) = 403 en er wordt géén berichtrij geschreven.
+//      (Tot 30-07-2026 stond hier het oude taak-412-contract met 201; het
+//      besluit heeft die verwachting definitief omgeklapt.)
 //   3. Clublid-trainer ZONDER toewijzing of link (trainer-2) = 403, nul rijen.
 //   4. Buitenstaander zonder coach-rol = 403, nul rijen.
-//   5. Beëindigd clublidmaatschap van trainer-1 sluit het toewijzingspad
-//      direct (403 naar jeugd), terwijl het directe-linkpad (adult) blijft.
+//   5. Beëindigd clublidmaatschap van trainer-1 raakt het directe-linkpad
+//      (adult) niet; naar de jeugdsporter blijft het 403.
 //
 // Run: node ./scripts/run-test.mjs trainer-assignment-write-contract
 // Vereist: DATABASE_URL, NODE_ENV!=production, DEV_AUTH_BYPASS=true.
@@ -146,14 +145,14 @@ async function main() {
   });
 
   await scenario(
-    "2. assignment-only trainer (geen link, wél teamtoewijzing) mag schrijven — huidig contract",
+    "2. assignment-only trainer (geen link, wél teamtoewijzing): 403 + nul rijen — besluit 30-07-2026",
     async () => {
       const r = await write(t1, jeugd);
       assert(
-        r.status === 201,
-        `verwacht 201 (huidig contract: toewijzing = ook schrijven), kreeg ${r.status}`,
+        r.status === 403,
+        `verwacht 403 (besluit: schrijfacties eisen directe link), kreeg ${r.status}`,
       );
-      assert((await messageCount(t1, jeugd)) === 1, "berichtrij ontbreekt na 201");
+      assert((await messageCount(t1, jeugd)) === 0, "assignment-only trainer schreef tóch een rij");
     },
   );
 
@@ -172,7 +171,7 @@ async function main() {
   });
 
   await scenario(
-    "5. beëindigd clublidmaatschap sluit het toewijzings-schrijfpad direct; linkpad blijft",
+    "5. beëindigd clublidmaatschap: jeugdpad blijft 403; directe-linkpad blijft werken",
     async () => {
       await db
         .update(clubMembersTable)

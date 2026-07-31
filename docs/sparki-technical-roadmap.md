@@ -2,6 +2,19 @@
 
 _Last updated: 2026-06-22 — end of the "AI Memory & Core Data Foundation" sprint._
 
+> **Statuswijziging 2026-07-31 — Bordjes sprinten: Gestopt — veiligheidsrisico op
+> openbare weg.** De functie stimuleerde sprintgedrag op de openbare weg en kan
+> ondanks kaartcontroles niet betrouwbaar rekening houden met actuele
+> verkeerssituaties, voetgangers, tegenliggers, werkzaamheden, slecht wegdek of
+> ontbrekende kaartdata. UI verborgen, startpaden (borddetectie, live
+> plaatsdetectie, nieuwe resultaten, share-toggle) geblokkeerd met 410 — ook via
+> directe URL/API. Historische `sprint_results` blijven bewaard (geen verwijdering
+> zonder migratieplan); herbruikbaar bewaard: `engines/sprint` (detect/score/
+> badges), schema `sprints.ts`, leesdeel `use-sprints.ts`, pagina/componenten als
+> inventaris. Er komt géén vervangende gamificationfunctie; alleen een variant op
+> afgesloten terrein of vooraf handmatig goedgekeurde trainingssegmenten mag later
+> opnieuw worden onderzocht.
+
 This document is an **honest** snapshot of what Sparki's data/AI foundation actually
 does today: what is real, what is a deliberate placeholder, what is mocked, the known
 debt, the risks, and the next 15 things worth doing. It is written for the next
@@ -184,3 +197,62 @@ All new tables key off `clerkId`. Dead `conversations`/`messages` schemas were r
 - Dutch UI maintained; AI is honest (no fabricated metrics).
 - The Sparki cinematic design language (dark blue-black, cyan accent, glass cards,
   Inter Variable) was preserved across all new panels.
+
+---
+
+## Roadmap-update 31-07-2026 — besluiten René 30-07 (bindend, §15)
+
+Volgorde: A rechtenlek assignment-only trainer (✅ bewezen 31-07) → B besluiten
+in canonieke docs (dit register: `docs/BESLUITENREGISTER_RENE_2026-07-30.md`) →
+C routeplanner vier weergaven incl. **Wedstrijd** → D externe coach + plan-upload
++ herkomstsysteem → E logging teamtrainerinzage + clubvoortgang → F individuele
+vermogenszones, instelbaar PDC-venster, koolhydraat-pilot → G ramp-rate-VOORSTEL
+(bouwen pas na akkoord René) → H overige UX-/documentatiebewijzen.
+Open uitsluitend: KNWU-verificatie, Samen-nav-positie, ramp-rate-grens.
+
+**Bijsturing René 31-07-2026:** taak #505 (Bewaard-één-lijst/routeplanner-niveaus)
+is afgerond, getest, onafhankelijk beoordeeld en gepusht — niet meer open. Vandaag
+is naar voren gehaald: **WP-T1 geleverd 31-07** (Today Orchestrator `engines/today`
++ weergavehistorie `today_display_history` + atleet-profielvarianten + eerlijke
+lege toestanden; bewijs `test:today-orchestrator` 7/7; docs
+`SPARKI_TODAY_ORCHESTRATOR.md`/`SPARKI_TODAY_EXPERIENCE.md`). Vandaag is het
+persoonlijke etalagevenster van Sparki; visuele verbetering alleen is niet
+voldoende — niet als afgerond markeren vóór rollen/profielen aantoonbaar getest
+zijn (WP-T2 rolvarianten, WP-T3 debugweergave + testmatrix §10). Daarna volgen
+§15-C t/m H.
+
+**Bijsturing René 31-07-2026 (2):** #505 én #506 (Bewaard-tabblad één lijst)
+zijn definitief afgerond en bewezen — nooit meer heropenen of opnieuw vragen.
+De vier plannerweergaven (besluit B6: Gratis · Go gewone fietser ·
+Go wielrenner/MTB/gravel · **Wedstrijd** — nooit "Compleet") zijn 31-07 gebouwd
+als pure weergavelaag op de bestaande routemotor: automatisch voorstel uit het
+profiel, handmatig aanpasbaar, bewaard in `athlete_profiles.planner_view`,
+los van abonnement, veiligheid op elk niveau actief.
+
+**Taakstatus-correctie René 31-07-2026:**
+- **#505** — afgerond en bewezen (definitief; nooit heropenen).
+- **#506** (Bewaard-tabblad één lijst) — afgerond en bewezen (definitief).
+- **#507 PR-governance** — GEEN te plannen bouwtaak meer: implementatie +
+  documentatie voorbereid, branch protection ingesteld, verplichte checks
+  vastgelegd, pull request staat open in GitHub ("Taak 507: PR-governance
+  instellen (GitHub Actions + branch protection + Copilot-status)"). Rest is
+  uitsluitend handmatige afronding door René in GitHub: (1) push van
+  `.github/workflows/pr-checks.yml` met workflows-scope, (2) Copilot automatic
+  code review inschakelen.
+- **Vandaag WP-T1** — door René vrijgegeven om te starten; feitelijk al
+  geleverd op 31-07 (Today Orchestrator, zie bijsturing hierboven). Open staan
+  alleen nog WP-T2 (rolvarianten) en WP-T3 (debugweergave + testmatrix §10).
+- **Vandaag WP-T2 (rolvarianten) — geleverd 31-07:** `GET /api/today?rol=…`
+  met server-side rechtenafleiding (`engines/today/roles.ts`:
+  `availableTodayRoles` uit user_profiles.roles + actieve clubrollen; rol
+  zonder recht → 403, onzin-rol → 400). Vier rolweergaven op dezelfde
+  orchestrator + weergavehistorie: **trainer** (aandacht ziek/geblesseerd
+  urgent > gemiste trainingen > open voorstellen > eerlijk all-clear),
+  **ouder** (alleen toegestane categorieën; herbevestiging urgent),
+  **clubbeheer** (teams zonder trainer, open uitnodigingen, ledenstand) en
+  **hoofdtrainer** (uitsluitend organisatorisch — nooit individuele
+  sportersdata). Frontend: rol-Vandaag-sectie bovenaan CoachHome (met
+  weergavewissel trainer/hoofdtrainer/clubbeheer), ParentHome en Clubbeheer.
+  Bewijs: `test:today-roles` 14/14 (rolwissel, multi-rol, ontbrekende
+  relatie, geen datalek, lege trainer/club, urgent + dag-stabiele
+  wisselkaart, cross-login-isolatie, 403 zonder recht).

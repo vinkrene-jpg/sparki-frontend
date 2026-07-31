@@ -1,0 +1,266 @@
+OPDRACHT AAN REPLIT — Sparki structuurherstel: rol, apparaat, navigatie en gebruikersflow
+
+Aanleiding
+
+De mobiele praktijktest toont geen verzameling losse UX-fouten, maar een app-breed structuurprobleem.
+
+Voorbeelden:
+
+- Atleet uitnodigen is niet duidelijk gepositioneerd voor coach, club of andere gebruiker.
+- Rol-uitnodiging is een interne technische term zonder begrijpelijke productcontext.
+- Uitnodigingen leveren alleen een link op, zonder passend delen via e-mail, WhatsApp of mobiel deelmenu.
+- Een ouderuitnodiging komt uit bij sporteronboarding.
+- Testdashboard staat tussen gebruikersfunctionaliteit en werkt niet.
+- Verstuurde uitnodigingen missen duidelijke betekenis en acties.
+- Mobiel en desktop hebben verschillende menu’s zonder aantoonbare samenhang.
+- Samen trainen staat bovenaan Profiel.
+- Lichaamsgegevens en een nieuw weegmoment zijn slecht vindbaar.
+- DEV Preview wisselt labels, maar niet aantoonbaar de volledige rol-, rechten- en gegevenscontext.
+- Meerdere schermen lijken desktop-first gebouwd en daarna verkleind.
+
+Doel
+
+Maak eerst een volledige, bewijsbare structuur- en informatiearchitectuuraudit en stel daarna een klein uitvoerbaar herstelplan op.
+
+Nog niet breed bouwen.
+
+1. Volledige scherm- en functie-inventaris
+
+Inventariseer iedere bestaande pagina, route, tab, hoofdactie en belangrijke functie.
+
+Maak:
+
+docs/product/SPARKI_ROLE_DEVICE_INFORMATION_ARCHITECTURE_AUDIT.md
+
+Gebruik minimaal deze tabel:
+
+| Scherm/functie | Gewone Nederlandse naam | Huidige route | Bedoeld voor | Actieve rol | Telefoon | Desktop | Hoofdtaak | Huidige navigatieplek | Gewenste plek | Benodigde rechten | Backend/API | Werkstatus | Probleem | Voorstel |
+
+Werkstatus:
+
+- working;
+- partially_working;
+- broken;
+- UI_only;
+- inaccessible;
+- duplicate;
+- misplaced;
+- unclear;
+- internal_only;
+- obsolete.
+
+2. Rolmodel en werkomgevingen
+
+Maak per rol een eigen productdefinitie voor:
+
+- sporter;
+- jeugdrenner;
+- ouder/verzorger;
+- zelfstandige trainer;
+- clubtrainer;
+- hoofdtrainer;
+- clubbeheerder;
+- mechanieker;
+- ploegleider, alleen wanneer technisch bestaand;
+- admin;
+- tester.
+
+Leg per rol vast:
+
+- doel van de omgeving;
+- startpagina;
+- hoofdmenu;
+- secundaire navigatie;
+- belangrijkste dagelijkse taken;
+- toegestane gegevens;
+- schrijf- en beheerrechten;
+- telefoonervaring;
+- desktopervaring;
+- uitnodigings- en onboardingroute.
+
+Maak:
+
+docs/product/SPARKI_ROLE_WORKSPACE_MODEL.md
+
+3. Apparaatdoctrine toepassen
+
+Gebruik het actuele Master Plan-addendum op GitHub als bindende bron.
+
+Sporter:
+- telefoon-first;
+- begeleide stappen;
+- pop-ups, drawers en overlays;
+- één primaire actie;
+- details pas na keuze.
+
+Trainer, ploegleider, hoofdtrainer en clubbeheerder:
+- desktop als primaire professionele werkruimte;
+- meer informatie tegelijk;
+- filters, tabellen, vergelijkingen, bulkacties en zijpanelen;
+- mobiel alleen compacte kernacties en urgente informatie.
+
+Telefoon en desktop mogen wezenlijk anders werken, maar delen:
+
+- dezelfde data;
+- dezelfde rechten;
+- dezelfde businesslogica;
+- dezelfde engines;
+- dezelfde auditlogging;
+- dezelfde veiligheidsregels.
+
+Geen parallel backend- of rechtenmodel bouwen.
+
+4. Navigatie opnieuw modelleren
+
+Ontwerp per rol en apparaat een navigatiemodel.
+
+Maak onderscheid tussen:
+
+- primaire taak;
+- dagelijkse taak;
+- beheer;
+- profiel/account;
+- test- en ontwikkelfuncties.
+
+Harde regels:
+
+- Testdashboard, tester-QR en ontwikkelhulpmiddelen niet in normale gebruikersnavigatie.
+- Samen trainen niet als eerste onderdeel van Profiel.
+- Profiel bevat persoonlijke en accountgerichte gegevens.
+- Lichaamsgegevens moeten direct vindbaar zijn.
+- Gewicht invoeren krijgt een duidelijke actie “Nieuw weegmoment”.
+- Uitnodigingen staan in de omgeving van de rol die mag uitnodigen.
+- Interne termen zoals “rol-uitnodiging” niet als primaire gebruikerstaal tonen.
+
+Maak:
+
+docs/product/SPARKI_NAVIGATION_MODEL_BY_ROLE_AND_DEVICE.md
+
+5. Uitnodigingsmodel opnieuw uitwerken
+
+Breng afzonderlijk in kaart:
+
+- sporter uitnodigen door zelfstandige trainer;
+- sporter uitnodigen door clubtrainer of club;
+- ouder/verzorger uitnodigen;
+- trainer uitnodigen;
+- clubbeheerder uitnodigen;
+- mechanieker uitnodigen;
+- tester uitnodigen;
+- vrienden of samen fietsen.
+
+Deze flows mogen niet via één abstracte “rol-uitnodiging” worden gepresenteerd.
+
+Per flow vastleggen:
+
+- wie nodigt uit;
+- wie ontvangt;
+- welke relatie ontstaat;
+- welke rechten ontstaan;
+- welke onboarding volgt;
+- gewenste bestemming na acceptatie;
+- desktopdeelopties;
+- mobiel deelmenu, WhatsApp en e-mail;
+- server-side controle;
+- logging;
+- verval en intrekken.
+
+6. DEV Preview beoordelen
+
+Bepaal exact:
+
+- wat de selector nu wijzigt;
+- wat alleen een visueel label is;
+- of user-ID, rol, relaties, abonnement, navigatie en API-context werkelijk wijzigen;
+- of huidige screenshots geldig testbewijs zijn.
+
+Tot echte impersonatie bestaat:
+
+- markeer DEV Preview als ongeschikt voor rol- en rechtenacceptatie;
+- gebruik hem niet als bewijs dat coach-, ouder- of clubomgevingen werken.
+
+7. Problemen clusteren
+
+De audit moet alle bevindingen groeperen in:
+
+A. rechten- of privacyrisico;
+B. onbereikbare of verkeerde rolflow;
+C. kapotte kernfunctie;
+D. verkeerde navigatie of plaatsing;
+E. telefoon-/desktopmismatch;
+F. interne testfunctie zichtbaar voor gebruiker;
+G. onduidelijke tekst of naam;
+H. alleen visuele of lagere prioriteit.
+
+8. Nieuw bouwplan
+
+Maak na de audit:
+
+docs/product/SPARKI_STRUCTURE_RECOVERY_BUILD_PLAN.md
+
+Verdeel het herstel in kleine werkpakketten.
+
+Voorgestelde volgorde:
+
+WP-S1 — echte DEV-rolimpersonatie en testcontext;
+WP-S2 — uitnodiging, account, rolgerichte onboarding en deeplink;
+WP-S3 — navigatie per rol en apparaat;
+WP-S4 — Profiel, Lichaam, account en Samen correct plaatsen;
+WP-S5 — Hulp, Privacy en Voorwaarden;
+WP-S6 — sporter telefoonflows: Vandaag en routeplanner;
+WP-S7 — trainerdesktop;
+WP-S8 — club-, hoofdtrainer- en ploegleiderdesktop;
+WP-S9 — mechaniekeromgeving;
+WP-S10 — volledige rol-/apparaatacceptatietest.
+
+Geef per werkpakket:
+
+- doel;
+- scope;
+- afhankelijkheden;
+- betrokken bestanden;
+- risico’s;
+- migraties;
+- acceptatiecriteria;
+- bewijs;
+- geschatte omvang.
+
+9. Nu nog niet doen
+
+In deze opdracht:
+
+- geen complete navigatie herschrijven;
+- geen nieuwe rol toevoegen;
+- geen nieuwe backend bouwen;
+- geen pagina’s verwijderen;
+- geen productbesluiten stil nemen;
+- geen mockomgevingen bouwen;
+- geen bestaande werkende flows vervangen zonder inventarisatie;
+- geen volledige app in één werkpakket repareren.
+
+10. Oplevering
+
+Lever eerst uitsluitend:
+
+- scherm- en functie-inventaris;
+- rolwerkruimtemodel;
+- telefoon-/desktopmodel;
+- navigatievoorstel;
+- uitnodigingsmodel;
+- beoordeling DEV Preview;
+- geprioriteerde problemenlijst;
+- herstelbouwplan.
+
+René keurt dit eerst goed.
+
+Acceptatiecriterium
+
+De audit is geslaagd wanneer voor iedere belangrijke Sparki-functie duidelijk is:
+
+- voor wie zij bedoeld is;
+- vanuit welke rol;
+- op welk apparaat;
+- waar zij thuishoort;
+- welke rechten gelden;
+- of zij werkelijk werkt;
+- en in welk afgebakend werkpakket zij wordt hersteld.

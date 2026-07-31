@@ -85,3 +85,16 @@ WP-01 bouwde dit als fundament; het productbesluit over de rechtengrens moest no
 expliciet worden vastgelegd. Dit document is het resultaat.
 
 Zie ook: `reports/wp-01-trainer/WP_01_FINAL_REPORT.md`
+
+---
+
+## Update 31-07-2026 — besluit B1 uitgevoerd en bewezen
+
+Per besluit René 30-07-2026 (zie `docs/BESLUITENREGISTER_RENE_2026-07-30.md`, B1)
+is de rechtengrens nu ook als contract bewezen: een assignment-only trainer krijgt
+op álle individuele schrijf- en berichtenpaden 403 met nul databaserijen
+(`test:trainer-assignment-messages` 9/9; `test:trainer-assignment-write-contract`
+5/5 met omgeklapt scenario 2). De coach-startpagina biedt de individuele cockpit
+niet meer aan voor team-toegewezen sporters en de beëindig-knop is daar verborgen.
+DB-audit (dev + productie, read-only): 0 berichten van coaches zonder geaccepteerde
+directe link; geen gegevens gewist.
