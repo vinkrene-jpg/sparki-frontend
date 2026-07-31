@@ -60,7 +60,11 @@ export async function apiFetch<T = unknown>(
   }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(text);
+    const err = new Error(text) as Error & { status?: number };
+    // Structurele statuscode voor callers die 404 ≠ netwerkfout moeten
+    // onderscheiden (o.a. de generatie-jobpolling) — tekst-matchen is broos.
+    err.status = res.status;
+    throw err;
   }
   return res.json() as Promise<T>;
 }

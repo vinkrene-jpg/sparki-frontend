@@ -1,0 +1,32 @@
+# Poort 5b sanity-check rapport — WP-1 Routeplanner-herstel: routegeneratie via jobmodel (31-07-2026)
+delivery: "Routegeneratie omgezet van één lange sync-POST naar start+poll-jobmodel (202+jobId, fases wachten/berekenen/veiligheidscontrole), zichtbare voortgangsstatus en fase op de knop in het routepaneel, eerlijke foutafhandeling met vervolgacties en behouden invoer, gebruikerstaal in de afkeurfout (fietstype-label, geen tellers)"
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "Routepaneel web (Routes → Maken, lus/A→B/eigen route) — e2e-browserkliktest tegen productiebuild, mobiel 402×874 (e2e/tests/routeplanner-generatie.mjs, bewijs in e2e/evidence/routeplanner/)"
+  - "API: POST /api/routes/generate/start, /generate/options/start, GET /generate-jobs/:id — live curl-runs (echte route 200, eerlijke 422 en fail-closed 503 gezien)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Genereer-knop tijdens een lopende aanvraag: knop is aantoonbaar disabled (e2e-stap 'knop-geblokkeerd' pass) en toont de actieve fase ('Berekenen…'/'Veiligheidscontrole…') — herhaald tikken start geen tweede berekening"
+        result: "pass"
+      - case: "Vervolgactieknoppen in het foutblok doen echt iets: 'Opnieuw proberen' start een nieuwe job, 'Startpunt of afstand aanpassen' springt naar stap 1 met behouden invoer (code-pad setStep(1), invoer-state wordt bij fout niet gewist; e2e bevestigt behouden stappen na eerlijke weigering in run 1)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Statusuitleg na 3 s ('kan langer duren in een nieuw gebied…') verschijnt alleen tijdens een lopende aanvraag en verdwijnt bij einde; hij claimt geen voortgang die er niet is — fase komt live uit de jobstatus van de server, niet uit een timer"
+        result: "pass"
+      - case: "Afkeurfout spreekt gebruikerstaal: fietstype-label ('voor de racefiets') in plaats van interne tellers (forbidden=…), met concreet handelingsperspectief (ander startpunt, kortere afstand, voorkeuren versoepelen)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Een niet-controleerbare route wordt nooit stil of nep geleverd: bij Overpass-storing eindigt de job met een eerlijke 503 ('kon niet gecontroleerd worden op blokkades… probeer het over een paar minuten') — live gezien tijdens echte mirror-storing; na herstel leverde dezelfde aanvraag een echte route (200, drie varianten)"
+        result: "pass"
+      - case: "Jobstatus is nooit een placeholder: GET /generate-jobs/:id geeft 404 voor andermans of verlopen jobs (clerkId-ownership, TTL 30 min); het eindantwoord draagt het volledige oorspronkelijke HTTP-contract (200/422/503 met dezelfde body als het oude sync-pad)"
+        result: "pass"
+      - case: "Regressie: test:route-alternates 9/9, test:loop-quality-gate (incl. MTB-blokkadepoort + fail-closed) groen, test:gravel-steering groen, typecheck-api-keten groen, admin-smoke 13/13"
+        result: "pass"
+
+# verdict: deliverable alleen als alle results pass zijn; anders blocked.
+verdict: "deliverable"
