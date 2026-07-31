@@ -105,7 +105,7 @@ export function judgeGoalFit(args: {
       headline: "Voeg je eerstvolgende doel toe",
       reason: "Dan wordt elk advies daarop afgestemd.",
       detail:
-        "Zonder doel of wedstrijd is er geen maatstaf voor of je training de goede kant op gaat. Met een doel weegt Sparki je opbouw, je vermoeidheid en je planning af tegen waar je naartoe wilt.",
+        "Zonder doel of wedstrijd is er geen maatstaf voor of je training de goede kant op gaat. Met een doel worden je opbouw, je vermoeidheid en je planning afgewogen tegen waar je naartoe wilt.",
       needs: ["een doel of wedstrijd"],
     }
   }
@@ -125,7 +125,7 @@ export function judgeGoalFit(args: {
       headline: `Nog ${weeksAway} ${weeksAway === 1 ? "week" : "weken"} tot ${goalLabel}`,
       reason: "Nog te weinig gelogde belasting om je koers te beoordelen.",
       detail:
-        "Sparki heeft minimaal twee weken aan gelogde trainingen nodig om je opbouw richting dit doel te beoordelen. Log je trainingen of koppel een platform, dan wordt je koers zichtbaar.",
+        "Er zijn minimaal twee weken aan gelogde trainingen nodig om je opbouw richting dit doel te beoordelen. Log je trainingen of koppel een platform, dan wordt je koers zichtbaar.",
       needs: ["meer gelogde trainingen om je opbouw te beoordelen"],
     }
   }

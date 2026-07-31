@@ -375,7 +375,7 @@ export async function orchestrateTrainerToday(coachId: string): Promise<RoleToda
       key: `trainer:lead:proposals:${proposals.length}`,
       slot: "lead",
       title: proposals.length === 1 ? "Eén voorstel wacht op je beoordeling" : `${proposals.length} voorstellen wachten op je beoordeling`,
-      body: `Sparki stelde aanpassingen voor op basis van echte feedback of signalen. Jij beslist — er verandert niets zonder jouw akkoord.`,
+      body: `Er zijn aanpassingen voorgesteld op basis van echte feedback of signalen. Jij beslist — er verandert niets zonder jouw akkoord.`,
       actions: [
         { id: "review", label: "Beoordeel het voorstel", href: `/coach/athletes/${p.athleteClerkId}/cockpit` },
       ],
@@ -567,7 +567,7 @@ export async function orchestrateOuderToday(parentId: string): Promise<RoleToday
       key: `ouder:lead:health:${c.clerkId}:${c.healthStatus}`,
       slot: "lead",
       title: `${c.name} is ${c.healthStatus === "sick" ? "ziek gemeld" : "geblesseerd gemeld"}`,
-      body: `Sparki plant geen trainingen tot ${c.name} hersteld gemeld is. Je ziet dit omdat gezondheid tot het veiligheidsminimum hoort.`,
+      body: `Er worden geen trainingen ingepland tot ${c.name} hersteld gemeld is. Je ziet dit omdat gezondheid tot het veiligheidsminimum hoort.`,
       actions: [{ id: "overview", label: "Bekijk de context", href: "/vandaag" }],
       source: "athlete_profiles.health_status (categorie gezondheid toegestaan)",
       confidence: null,

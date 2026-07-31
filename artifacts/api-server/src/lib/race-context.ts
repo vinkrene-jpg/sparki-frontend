@@ -153,14 +153,14 @@ function weatherValue(w: WeatherSummary): string {
 const WEATHER_REASON: Record<string, { reason: string; question: string }> = {
   too_far: {
     reason: "De wedstrijd valt buiten de 16-daagse voorspelhorizon.",
-    question: "Sparki haalt het weer automatisch op zodra de dag binnen 16 dagen ligt.",
+    question: "Het weer wordt automatisch opgehaald zodra de dag binnen 16 dagen ligt.",
   },
   no_location: {
     reason: "De locatie van de wedstrijd ontbreekt.",
-    question: "Vul de locatie in, dan haalt Sparki het weer op.",
+    question: "Vul de locatie in, dan wordt het weer opgehaald.",
   },
   geocode_failed: {
-    reason: "Sparki vindt deze locatie niet op de kaart.",
+    reason: "Deze locatie is niet op de kaart gevonden.",
     question: "Controleer de plaatsnaam van de locatie.",
   },
   no_forecast: {
@@ -172,14 +172,14 @@ const WEATHER_REASON: Record<string, { reason: string; question: string }> = {
 const TRAVEL_REASON: Record<string, { reason: string; question: string }> = {
   no_home: {
     reason: "Je thuislocatie staat niet in je profiel.",
-    question: "Vul je thuislocatie in je profiel in, dan berekent Sparki de reisafstand.",
+    question: "Vul je thuislocatie in je profiel in, dan wordt de reisafstand berekend.",
   },
   no_location: {
     reason: "De locatie van de wedstrijd ontbreekt.",
     question: "Vul de locatie van de wedstrijd in.",
   },
   geocode_failed: {
-    reason: "Sparki vindt deze locatie niet op de kaart.",
+    reason: "Deze locatie is niet op de kaart gevonden.",
     question: "Controleer de plaatsnaam van de locatie.",
   },
 };
@@ -228,7 +228,7 @@ export function composeRaceContext(
       value: null,
       origin: "wedstrijd",
       explanation: "De startlocatie is nog niet ingevuld.",
-      question: "Vul de locatie in — dan haalt Sparki het weer en de reisafstand op.",
+      question: "Vul de locatie in — dan worden het weer en de reisafstand opgehaald.",
     });
   }
 
@@ -274,8 +274,8 @@ export function composeRaceContext(
         value: derived,
         origin: "afgeleid",
         explanation: fromDiscipline
-          ? `Sparki leidt dit af uit de discipline "${race.discipline}".`
-          : `Sparki leidt dit af uit de naam van de wedstrijd.`,
+          ? `Afgeleid uit de discipline "${race.discipline}".`
+          : `Afgeleid uit de naam van de wedstrijd.`,
         confidence: fromDiscipline ? 0.7 : 0.55,
       });
     } else {
@@ -285,7 +285,7 @@ export function composeRaceContext(
         status: "missing",
         value: null,
         origin: "afgeleid",
-        explanation: "Sparki kan het type niet uit de discipline of naam afleiden.",
+        explanation: "Het type is niet uit de discipline of naam af te leiden.",
         question: "Kies het wedstrijdtype (weg, criterium, tijdrit, veld, mtb, gravel).",
       });
     }
@@ -300,7 +300,7 @@ export function composeRaceContext(
       value: hoursLabel(fuel.estimatedDurationMin),
       origin: "afgeleid",
       explanation:
-        "Sparki schat de duur uit de afstand en een gemiddeld wedstrijdtempo; pas aan op je eigen tempo.",
+        "De duur is geschat uit de afstand en een gemiddeld wedstrijdtempo; pas aan op je eigen tempo.",
       confidence: 0.6,
     });
   } else {
@@ -310,8 +310,8 @@ export function composeRaceContext(
       status: "missing",
       value: null,
       origin: "afgeleid",
-      explanation: "Zonder afstand kan Sparki de duur niet schatten.",
-      question: "Vul de afstand in, dan schat Sparki de duur en de voeding.",
+      explanation: "Zonder afstand is de duur niet te schatten.",
+      question: "Vul de afstand in, dan worden de duur en de voeding geschat.",
     });
   }
 
@@ -385,7 +385,7 @@ export function composeRaceContext(
       status: "missing",
       value: null,
       origin: "afgeleid",
-      explanation: "Zonder starttijd kan Sparki geen aankomsttijd afleiden.",
+      explanation: "Zonder starttijd is er geen aankomsttijd af te leiden.",
       question: "Vul de starttijd in voor een aanbevolen aankomsttijd.",
     });
   }
@@ -398,7 +398,7 @@ export function composeRaceContext(
     status: "missing",
     value: null,
     origin: "afgeleid",
-    explanation: "Reistijd over de weg kan Sparki niet automatisch berekenen.",
+    explanation: "Reistijd over de weg is niet automatisch te berekenen.",
     question: "Vul je geschatte reistijd in voor een vertrektijd van huis.",
   });
 
@@ -430,8 +430,8 @@ export function composeRaceContext(
     status: "missing",
     value: null,
     origin: "geen bereikbare bron",
-    explanation: "Sparki heeft hier geen bereikbare, toegestane bron voor.",
-    question: "Ken je een eerdere uitslag? Zet die in je notities, dan weegt Sparki die mee.",
+    explanation: "Hier is geen bereikbare, toegestane bron voor.",
+    question: "Ken je een eerdere uitslag? Zet die in je notities, dan wordt die meegewogen.",
   });
   F({
     key: "deelnemerslijst",
@@ -558,7 +558,7 @@ function buildGuidance(
   // Race summary line.
   const known = countKnown(race);
   g.race.push(
-    `Sparki combineert wat bekend is over ${race.name}; ontbrekende gegevens staan als openstaande vraag.`,
+    `Alles wat bekend is over ${race.name} wordt gecombineerd; ontbrekende gegevens staan als openstaande vraag.`,
   );
   void known;
 

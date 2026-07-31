@@ -383,7 +383,7 @@ router.get("/:raceId/exports", requireAuth, async (req, res) => {
       exports: withFreshness,
       // Eerlijke apparaatuitleg — géén sync-knoppen, geen geteste-claim.
       deviceNote:
-        "Garmin: zet het FIT Course-bestand in de map Garmin/NewFiles of importeer het via Garmin Connect. Wahoo en Hammerhead Karoo lezen GPX- en FIT-routes via hun eigen app (bestand delen of uploaden). Sparki heeft geen directe synchronisatie met deze diensten en doet daar ook geen beloftes over.",
+        "Garmin: zet het FIT Course-bestand in de map Garmin/NewFiles of importeer het via Garmin Connect. Wahoo en Hammerhead Karoo lezen GPX- en FIT-routes via hun eigen app (bestand delen of uploaden). Er is geen directe synchronisatie met deze diensten en daar worden ook geen beloftes over gedaan.",
     });
   } catch (err) {
     req.log.error({ err }, "raceExports.list failed");

@@ -249,8 +249,8 @@ function ConsentDialog({
 
           <p className="text-[12px] leading-relaxed text-white/45">
             {isOauth
-              ? `Je wordt doorgestuurd naar ${connector.displayName} om toestemming te geven. Daarna haalt Sparki je gegevens automatisch op.`
-              : "Na je toestemming haalt Sparki je gegevens automatisch op."}
+              ? `Je wordt doorgestuurd naar ${connector.displayName} om toestemming te geven. Daarna worden je gegevens automatisch opgehaald.`
+              : "Na je toestemming worden je gegevens automatisch opgehaald."}
           </p>
 
           <div className="flex items-center justify-end gap-2 pt-1">
@@ -440,7 +440,7 @@ function ConnectionRow({
           )}
           {cs === "temporarily_unavailable" && (
             <span className="font-mono text-[10px] tracking-wide text-amber-400/70">
-              Tijdelijk niet beschikbaar — Sparki probeert het vanzelf opnieuw
+              Tijdelijk niet beschikbaar — er wordt vanzelf opnieuw geprobeerd
             </span>
           )}
         </div>

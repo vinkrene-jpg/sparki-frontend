@@ -419,9 +419,9 @@ function SparkiStyleSection({ autoOpen, onSaved }: EditorProps = {}) {
     <section ref={ref}>
       <SectionLabel n="03b" title="Sparki-stijl" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-        Hoeveel droge humor mag Sparki gebruiken? Dit geldt overal in de app.
+        Hoeveel droge humor mag er zijn? Dit geldt overal in de app.
         Bij medische signalen, veiligheid, privacy en andere serieuze momenten
-        blijft Sparki altijd zakelijk — ongeacht deze instelling.
+        blijft de toon altijd zakelijk — ongeacht deze instelling.
       </p>
       <div className="mt-3 space-y-2">
         <div className="flex items-center gap-3">
@@ -650,7 +650,7 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
         {hrvSupplier && !hrvManual ? (
           <div className="flex flex-col gap-1.5 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3.5 py-2.5">
             <span className="text-[13px] text-white/70">
-              Sparki haalt je HRV automatisch op uit {hrvSupplier.displayName}
+              Je HRV wordt automatisch opgehaald uit {hrvSupplier.displayName}
               {formatLastSync(hrvSupplier.lastSyncAt)
                 ? ` — laatste sync ${formatLastSync(hrvSupplier.lastSyncAt)}`
                 : ""}
@@ -944,7 +944,7 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           {profile?.weightKg ? `${profile.weightKg} kg` : "Nog niet gesynct"}
         </span>
         <span className="text-[10px] text-white/30">
-          Sparki haalt dit op uit {weightSupplier.displayName}
+          Dit wordt opgehaald uit {weightSupplier.displayName}
           {lastSync ? ` · ${lastSync}` : ""}
         </span>
         <button
@@ -1542,7 +1542,7 @@ export function ProfileSettings({
 
       {/* HOE SPARKI KLINKT */}
       <section>
-        <SectionLabel n="04" title="Hoe Sparki klinkt" />
+        <SectionLabel n="04" title="Hoe de app klinkt" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Sparki's toon groeit mee naarmate jullie elkaar beter leren kennen
         </p>

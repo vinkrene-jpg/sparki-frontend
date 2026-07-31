@@ -213,7 +213,7 @@ export default function SupportPage() {
           </h1>
         </div>
         <p className="mt-1 text-[13px] leading-snug text-white/45">
-          Stel je vraag. Sparki antwoordt op basis van de beheerde kennisbank;
+          Stel je vraag. Je krijgt antwoord op basis van de beheerde kennisbank;
           wat niet betrouwbaar te beantwoorden is, gaat naar een medewerker.
         </p>
 
@@ -246,7 +246,7 @@ export default function SupportPage() {
           </button>
         </form>
         {ask.isPending && (
-          <p className="mt-3 text-[12px] text-white/35">Sparki zoekt het uit…</p>
+          <p className="mt-3 text-[12px] text-white/35">Bezig met uitzoeken…</p>
         )}
         {ask.isError && (
           <p className="mt-3 text-[12px] text-orange-300/80">

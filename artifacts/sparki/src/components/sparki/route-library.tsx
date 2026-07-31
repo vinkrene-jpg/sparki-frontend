@@ -494,8 +494,8 @@ export function RouteLibrary() {
                         {verification!.onbekendPct != null
                           ? `${String(verification!.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
                           : "Een deel van het wegdek is onbekend"}{" "}
-                        volgens de routemotor. Sparki beveelt deze route
-                        daarom niet aan als racefietsroute — gebruiken kan
+                        volgens de routemotor. Deze route wordt
+                        daarom niet aanbevolen als racefietsroute — gebruiken kan
                         alleen als jij daar expliciet voor kiest.
                       </p>
                       <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-[12px] text-white/75">

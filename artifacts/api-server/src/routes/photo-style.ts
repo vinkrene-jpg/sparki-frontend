@@ -72,7 +72,7 @@ router.post("/stylize", requireAuth, async (req, res) => {
     // Honest failure: keep the original usable, record the attempt, no fake green.
     req.log.error({ err }, "photo-style.stylize failed");
     const reason =
-      "Sparki kon de sfeer nu niet toepassen. Je originele foto blijft bruikbaar.";
+      "De sfeer kon nu niet toegepast worden. Je originele foto blijft bruikbaar.";
     const [row] = await db
       .insert(photoLabUploadsTable)
       .values({

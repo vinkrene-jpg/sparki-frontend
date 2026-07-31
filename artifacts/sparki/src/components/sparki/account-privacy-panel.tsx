@@ -186,7 +186,7 @@ export function AccountPrivacyPanel() {
                 <span className="text-[13px] font-medium text-white/85">Al je gegevens downloaden</span>
               </div>
               <p className="mt-1 text-[12px] leading-snug text-white/40">
-                Eén bestand met alles wat Sparki over jou bewaart. Toegangssleutels van gekoppelde diensten zitten er om veiligheidsredenen niet in.
+                Eén bestand met alles wat er over jou wordt bewaard. Toegangssleutels van gekoppelde diensten zitten er om veiligheidsredenen niet in.
               </p>
               {exportAccount.isError && (
                 <p className="mt-1 text-[12px] text-red-400/80">

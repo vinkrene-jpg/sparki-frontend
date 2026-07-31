@@ -106,7 +106,7 @@ export function StateCard({
     return (
       <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
         <p className="text-[14px] text-white/70">
-          Sparki kon je toestand nu niet ophalen.
+          Je toestand kon nu niet worden opgehaald.
         </p>
         <button
           type="button"
@@ -137,7 +137,7 @@ export function StateCard({
       {showCheckInButtons ? (
         <>
           <p className="mt-2 text-[14px] leading-relaxed text-white/75">
-            Hoe voel je je vandaag? Sparki past je beeld er direct op aan.
+            Hoe voel je je vandaag? Je beeld wordt er direct op aangepast.
           </p>
           <div className="mt-3 flex gap-2">
             {CHECKINS.map((c) => (
@@ -278,7 +278,7 @@ export function StateCard({
           <div className="space-y-3 px-5 pb-5">
             {state.why.length > 0 && (
               <p className="text-[12px] leading-relaxed text-white/50">
-                Dit is waar Sparki vandaag naar kijkt:
+                Dit weegt vandaag mee in je beeld:
               </p>
             )}
             {state.why.length > 0 ? (
@@ -299,7 +299,7 @@ export function StateCard({
               </ul>
             ) : (
               <p className="text-[13px] text-white/60">
-                Sparki heeft nog te weinig data om je beeld te onderbouwen.
+                Er is nog te weinig data om je beeld te onderbouwen.
               </p>
             )}
 

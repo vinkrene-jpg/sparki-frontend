@@ -168,7 +168,7 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
             {conflicts.map((c) => c.title).join(", ")}.
             {conflicts.some((c) => c.source === "coach")
               ? " Die is door je coach klaargezet en wordt nooit automatisch vervangen — overleg met je coach."
-              : " Sparki past niets automatisch aan; kies zelf wat je doet."}
+              : " Er wordt niets automatisch aangepast; kies zelf wat je doet."}
           </p>
         </div>
       )}

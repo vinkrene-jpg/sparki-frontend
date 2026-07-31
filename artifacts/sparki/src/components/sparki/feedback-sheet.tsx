@@ -76,7 +76,7 @@ function MyReportsView({
     return (
       <p className="mt-6 text-center text-[12px] leading-relaxed text-white/40">
         Je hebt nog niets gemeld. Zodra je iets meldt, zie je hier de status —
-        en Sparki laat het je weten wanneer het opgepakt of opgelost is.
+        en je krijgt bericht wanneer het opgepakt of opgelost is.
       </p>
     )
   }
@@ -268,7 +268,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
           <div className="mt-6 rounded-xl border p-5 text-center"
             style={{ borderColor: "rgba(130,220,160,0.3)", background: "rgba(130,220,160,0.06)" }}>
             <p className="text-[14px] font-light text-white/90">
-              Verstuurd — bedankt. Sparki neemt het mee.
+              Verstuurd — bedankt. We nemen het mee.
             </p>
           </div>
         ) : (

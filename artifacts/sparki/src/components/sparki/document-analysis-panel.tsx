@@ -185,7 +185,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
       {questions.length > 0 && (
         <div className="mt-3 space-y-2">
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
-            Sparki vraagt
+            Nog even dit
           </p>
           {questions.map((q, i) => {
             const key = questionToFieldKey(q)
@@ -335,8 +335,8 @@ export function DocumentAnalysisPanel() {
 
       <p className="mt-2 text-[12px] leading-relaxed text-white/35">
         Upload een technische gids, wedstrijdgids, etappeboek, routekaart of
-        tijdschema (PDF of foto). Sparki haalt de kerninfo eruit en vraagt door
-        wat nog ontbreekt.
+        tijdschema (PDF of foto). De kerninfo wordt eruit gehaald en er wordt
+        doorgevraagd wat nog ontbreekt.
       </p>
 
       {error && (

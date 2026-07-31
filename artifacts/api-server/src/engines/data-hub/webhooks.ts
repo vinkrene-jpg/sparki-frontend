@@ -110,7 +110,7 @@ export async function processWebhookEvent(event: WebhookEvent): Promise<{
           status: "skipped",
           attempts,
           lastError:
-            "Verwijdering op Strava — Sparki verwijdert nooit lokale trainingsdata op basis van een extern signaal.",
+            "Verwijdering op Strava — lokale trainingsdata wordt nooit verwijderd op basis van een extern signaal.",
           processedAt: new Date(),
         })
         .where(eq(webhookEventsTable.id, event.id));

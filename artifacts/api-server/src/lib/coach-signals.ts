@@ -314,12 +314,12 @@ export async function buildCoachSignals(
       key: `schema:voorstel:${p.id}`,
       category: "schema",
       priority: 2,
-      title: "Sparki stelt een schemawijziging voor",
+      title: "Voorstel voor een schemawijziging",
       changed: p.reason,
       sources: ["Feedback van de sporter op een coachtraining"],
       confidence: "middel",
       whyHuman:
-        "Dit is een training van de coach — Sparki past die nooit zelf aan. Alleen de coach beslist.",
+        "Dit is een training van de coach — die wordt nooit automatisch aangepast. Alleen de coach beslist.",
       proposedAction: "Beoordeel het voorstel: overnemen, aanpassen, afwijzen of parkeren.",
       action: null,
     });
@@ -362,7 +362,7 @@ export async function buildCoachSignals(
       sources: ["Dagelijkse check-ins", "Uitgevoerde sessies uit de Data Hub"],
       confidence: "hoog",
       whyHuman:
-        "Zonder recente gegevens kan Sparki de toestand van de sporter niet betrouwbaar beoordelen.",
+        "Zonder recente gegevens kan de toestand van de sporter niet betrouwbaar beoordeeld worden.",
       proposedAction:
         "Vraag de sporter om een check-in te doen of een koppeling/bestand toe te voegen.",
       action: null,

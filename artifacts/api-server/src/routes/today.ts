@@ -165,7 +165,7 @@ router.get("/", requireAuth, async (req, res) => {
     req.log?.error?.({ err }, "today.orchestrate failed");
     res
       .status(500)
-      .json({ error: "Sparki kon je startpagina nu niet samenstellen" });
+      .json({ error: "Je startpagina kon nu niet samengesteld worden" });
   }
 });
 

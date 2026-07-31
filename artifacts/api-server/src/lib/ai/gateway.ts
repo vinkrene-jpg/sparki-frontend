@@ -686,7 +686,7 @@ async function enforceGates(
         await logCall({ clerkId, purpose, config, consent, status: "blocked_minor" });
         throw new AiBlockedError(
           "minor",
-          "Deze analyse is niet beschikbaar. Sparki is hier bewust terughoudend voor jonge sporters.",
+          "Deze analyse is niet beschikbaar. Voor jonge sporters is hier bewust terughoudendheid.",
         );
       }
     }

@@ -15,4 +15,4 @@ export function magAdviesTonen(
 
 // Eerlijke vervangtekst wanneer het advies verborgen blijft.
 export const ADVIES_ONBEKEND_TEKST =
-  "Sparki kan dit op basis van deze foto('s) niet beoordelen en geeft daarom nog geen advies. Voeg een extra of scherpere foto toe voor een eerlijke inschatting."
+  "Dit is op basis van deze foto('s) niet te beoordelen, daarom nog geen advies. Voeg een extra of scherpere foto toe voor een eerlijke inschatting."

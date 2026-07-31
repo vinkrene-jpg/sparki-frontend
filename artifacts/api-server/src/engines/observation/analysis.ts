@@ -91,7 +91,7 @@ export function composeCoachAnalysis(
 
   let waaromAdvies = `${advice.explainers.waaromDitAdvies} ${advice.explainers.watVerandertMijnAdvies}`;
   if (followUps.length > 0) {
-    waaromAdvies += ` Sparki twijfelt nog op één punt: ${followUps[0]!.because}.`;
+    waaromAdvies += ` Er is nog twijfel op één punt: ${followUps[0]!.because}.`;
   }
   const enc = encouragementLine(personality);
   if (enc) waaromAdvies += ` ${enc}`;
@@ -136,7 +136,7 @@ function buildActions(intake: SignalIntake, advice: Advice): CoachAction[] {
         key: "adjust_easier",
         kind: "adjust_training",
         label: "Maak je training lichter",
-        reason: "Sparki adviseert vandaag een lichtere prikkel",
+        reason: "Advies: vandaag een lichtere prikkel",
       });
       break;
     case "stevig":
@@ -183,7 +183,7 @@ function buildActions(intake: SignalIntake, advice: Advice): CoachAction[] {
       key: "add_race",
       kind: "add_race",
       label: "Voeg een wedstrijd toe",
-      reason: "met een doel in zicht stemt Sparki je opbouw daarop af",
+      reason: "met een doel in zicht wordt je opbouw daarop afgestemd",
     });
   } else if (raceSoon && m.races.nextA != null) {
     actions.push({

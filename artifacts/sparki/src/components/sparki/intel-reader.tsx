@@ -165,7 +165,7 @@ function MythBody({ item }: { item: IntelFeedItem }) {
 
       {!answered && (
         <p className="mt-3 font-mono text-[10px] tracking-wide text-white/30">
-          Kies een antwoord om te zien wat Sparki erover weet.
+          Kies een antwoord om te zien wat hierover bekend is.
         </p>
       )}
 

@@ -96,7 +96,7 @@ export function resolvePersonality(input: PersonalityInput): Personality {
     return withBasis("beginner", "je bent net begonnen met gericht trainen");
   }
 
-  return withBasis("beginner", "Sparki kent je nog niet goed genoeg");
+  return withBasis("beginner", "je bent nog niet goed genoeg bekend");
 }
 
 function withBasis(key: PersonalityKey, basis: string): Personality {

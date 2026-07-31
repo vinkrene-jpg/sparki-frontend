@@ -391,7 +391,7 @@ async function main() {
       statement: "Ik had afgelopen weekend een wedstrijd.",
       title: "Wedstrijd",
       detail:
-        "Je vertelde dat je afgelopen weekend een wedstrijd had. Sparki vraagt hoe het ging.",
+        "Je vertelde dat je afgelopen weekend een wedstrijd had. Er wordt gevraagd hoe het ging.",
       followUpQuestion: "Hoe ging je wedstrijd? Wat ging goed en wat was zwaar?",
       followUpAt: at(-1, 19),
       status: "scheduled",
@@ -407,7 +407,7 @@ async function main() {
       statement: "Ik heb een nieuw zadel gemonteerd.",
       title: "Materiaal",
       detail:
-        "Je hebt iets aan je materiaal veranderd. Sparki vraagt later hoe het bevalt.",
+        "Je hebt iets aan je materiaal veranderd. Er wordt later gevraagd hoe het bevalt.",
       followUpQuestion:
         "Hoe bevalt je nieuwe materiaal? Voelt het fijn op de fiets?",
       followUpAt: at(-2, 19),

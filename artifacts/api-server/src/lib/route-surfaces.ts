@@ -941,11 +941,11 @@ export function compareSurfaceSources(
 
   if (clash1) {
     uitleg.push(
-      "De metingen spreken elkaar tegen: de actuele kaart vindt (half)onverharde stukken die de motorkaart niet kent. Sparki kiest niet stil één bron — houd voor het wegdek dít scherm aan: de motorkaart kan verouderd zijn.",
+      "De metingen spreken elkaar tegen: de actuele kaart vindt (half)onverharde stukken die de motorkaart niet kent. Er wordt niet stil één bron gekozen — houd voor het wegdek dít scherm aan: de motorkaart kan verouderd zijn.",
     );
   } else if (clash2) {
     uitleg.push(
-      "De metingen spreken elkaar tegen: de motor kent hier meer wegdek dan de actuele kaarttags tonen. Het verschil zit vooral in ontbrekende tags — niet in aantoonbaar onverhard. Sparki kiest niet stil één bron: onbekend blijft eerlijk onbekend, de motor-meting staat er ter context naast.",
+      "De metingen spreken elkaar tegen: de motor kent hier meer wegdek dan de actuele kaarttags tonen. Het verschil zit vooral in ontbrekende tags — niet in aantoonbaar onverhard. Er wordt niet stil één bron gekozen: onbekend blijft eerlijk onbekend, de motor-meting staat er ter context naast.",
     );
   } else {
     uitleg.push("De twee metingen zijn met elkaar in lijn.");

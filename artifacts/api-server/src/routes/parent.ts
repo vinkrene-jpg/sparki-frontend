@@ -631,7 +631,7 @@ router.post("/athletes/:athleteId/reports", requireAuth, async (req, res) => {
       clerkId: athleteId,
       type: "parent_report",
       title: `Nieuwe ${kindLabel}`,
-      body: `Je ouder/verzorger heeft een ${kindLabel} gedaan. Sparki past niets automatisch aan — bekijk de melding.`,
+      body: `Je ouder/verzorger heeft een ${kindLabel} gedaan. Er wordt niets automatisch aangepast — bekijk de melding.`,
       priority: "high",
       athleteClerkId: athleteId,
       actionUrl: "/you?focus=connections",

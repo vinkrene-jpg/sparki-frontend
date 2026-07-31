@@ -162,7 +162,7 @@ export default function RouteListScreen() {
               Vraag een route aan
             </Text>
             <Text style={[styles.ridesSub, { color: c.mutedForeground }]}>
-              Sparki zoekt eerst je bekende routes, daarna nieuwe voorstellen
+              Eerst je bekende routes, daarna nieuwe voorstellen
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={c.mutedForeground} />

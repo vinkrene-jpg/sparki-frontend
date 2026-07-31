@@ -50,7 +50,7 @@ function FtpBars({
         compact
         showOrb={false}
         title="Nog geen FTP-tests"
-        description="Sparki heeft je FTP nodig om je vooruitgang te volgen. Stel je FTP in of log een test."
+        description="Je FTP is nodig om je vooruitgang te volgen. Stel je FTP in of log een test."
         targets={["ftp"]}
         returnTo="/lab"
       />
@@ -233,7 +233,7 @@ export default function LabPage() {
         ) : (
           <p className="mt-4 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/35">
             Nog te weinig gegevens voor je radar · Log sessies en check-ins zodat
-            Sparki je capaciteitsprofiel kan opbouwen.
+            je capaciteitsprofiel kan worden opgebouwd.
           </p>
         )}
         {!radarLoading && missingAxes.length > 0 && (

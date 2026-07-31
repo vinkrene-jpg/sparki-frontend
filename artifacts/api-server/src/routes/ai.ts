@@ -74,7 +74,7 @@ router.post("/brief", requireAuth, requireCommercialFeature("ai_observations"), 
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(500).json({ error: "Unexpected Sparki response" });
+      res.status(500).json({ error: "Er kwam een onverwacht antwoord terug. Probeer het opnieuw." });
       return;
     }
     const brief = block.text;
@@ -133,7 +133,7 @@ router.post("/brief", requireAuth, requireCommercialFeature("ai_observations"), 
       return;
     }
     req.log.error({ err }, "ai.brief failed");
-    res.status(500).json({ error: "Sparki service unavailable" });
+    res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
   }
 });
 
@@ -172,7 +172,7 @@ router.post("/ask", requireAuth, async (req, res) => {
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(500).json({ error: "Unexpected Sparki response" });
+      res.status(500).json({ error: "Er kwam een onverwacht antwoord terug. Probeer het opnieuw." });
       return;
     }
     const answer = block.text;
@@ -211,7 +211,7 @@ router.post("/ask", requireAuth, async (req, res) => {
       return;
     }
     req.log.error({ err }, "ai.ask failed");
-    res.status(500).json({ error: "Sparki service unavailable" });
+    res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
   }
 });
 
@@ -535,7 +535,7 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(500).json({ error: "Unexpected Sparki response" });
+      res.status(500).json({ error: "Er kwam een onverwacht antwoord terug. Probeer het opnieuw." });
       return;
     }
 
@@ -552,7 +552,7 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
 
     const short = typeof parsed?.short === "string" ? parsed.short.trim() : "";
     if (!short) {
-      res.status(502).json({ error: "Sparki could not form an explanation" });
+      res.status(502).json({ error: "Er kon geen uitleg worden gevormd. Probeer het opnieuw." });
       return;
     }
     res.json({ short });
@@ -562,7 +562,7 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
       return;
     }
     req.log.error({ err }, "ai.workout-explain failed");
-    res.status(500).json({ error: "Sparki service unavailable" });
+    res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
   }
 });
 
@@ -608,7 +608,7 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(500).json({ error: "Unexpected Sparki response" });
+      res.status(500).json({ error: "Er kwam een onverwacht antwoord terug. Probeer het opnieuw." });
       return;
     }
 
@@ -628,7 +628,7 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
       typeof parsed?.extended === "string" ? parsed.extended.trim() : "";
 
     if (!extended) {
-      res.status(502).json({ error: "Sparki could not form an explanation" });
+      res.status(502).json({ error: "Er kon geen uitleg worden gevormd. Probeer het opnieuw." });
       return;
     }
     res.json({ extended });
@@ -638,7 +638,7 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
       return;
     }
     req.log.error({ err }, "ai.workout-explain-extended failed");
-    res.status(500).json({ error: "Sparki service unavailable" });
+    res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
   }
 });
 
@@ -746,7 +746,7 @@ router.post("/workout-adjust", requireAuth, requireCommercialFeature("autonomous
         recommendation: "keep",
         title: "Overleg dit met je coach",
         message:
-          "Deze training staat in het schema van je coach. Sparki past coachtrainingen niet zelf aan. Je feedback ligt nu als voorstel bij je coach — die beslist of de training anders moet.",
+          "Deze training staat in het schema van je coach. Coachtrainingen worden niet automatisch aangepast. Je feedback ligt nu als voorstel bij je coach — die beslist of de training anders moet.",
         changes: null,
       };
       res.json({ proposal, coachOwned: true });
@@ -824,7 +824,7 @@ router.post("/workout-adjust", requireAuth, requireCommercialFeature("autonomous
     res.json({ proposal });
   } catch (err) {
     req.log.error({ err }, "ai.workout-adjust failed");
-    res.status(500).json({ error: "Sparki service unavailable" });
+    res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
   }
 });
 

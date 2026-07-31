@@ -588,7 +588,7 @@ export function WorkoutDetailDrawer({
               )}
               {(explain.isError || explainExtended.isError) && (
                 <p className="text-[12px] text-red-300/70">
-                  Sparki is even niet bereikbaar. Probeer het zo opnieuw.
+                  Even niet bereikbaar. Probeer het zo opnieuw.
                 </p>
               )}
             </section>
@@ -603,8 +603,8 @@ export function WorkoutDetailDrawer({
               />
               <p className="text-[12px] leading-relaxed text-white/45">
                 {isUpcoming
-                  ? "Deze training komt er nog aan. Klopt er iets niet of past het beter op een andere dag? Dan stemt Sparki je plan er vast op af."
-                  : "Laat weten hoe het ging — Sparki past je plan zo nodig aan."}
+                  ? "Deze training komt er nog aan. Klopt er iets niet of past het beter op een andere dag? Dan wordt je plan er vast op afgestemd."
+                  : "Laat weten hoe het ging — je plan wordt zo nodig aangepast."}
               </p>
               {!isUpcoming && (
                 <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
@@ -692,7 +692,7 @@ export function WorkoutDetailDrawer({
                 rows={2}
                 placeholder={
                   isUpcoming
-                    ? "Wat moet Sparki weten? (optioneel)…"
+                    ? "Wat is goed om te weten? (optioneel)…"
                     : "Toelichting (optioneel)…"
                 }
                 className="w-full resize-none rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
@@ -803,7 +803,7 @@ export function WorkoutDetailDrawer({
 
               {adjust.isError && (
                 <p className="text-[12px] text-red-300/70">
-                  Sparki kon nu geen voorstel maken. Je feedback is wel bewaard.
+                  Er kon nu geen voorstel worden gemaakt. Je feedback is wel bewaard.
                 </p>
               )}
 
@@ -878,7 +878,7 @@ export function WorkoutDetailDrawer({
                             day: "numeric",
                             month: "long",
                           })}{" "}
-                          binnenkomt, koppelt Sparki die automatisch — of koppel
+                          binnenkomt, wordt die automatisch gekoppeld — of koppel
                           hier zelf zodra die er is.
                         </p>
                       )

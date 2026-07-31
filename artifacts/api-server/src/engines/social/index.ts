@@ -848,7 +848,7 @@ export async function suggestJointTraining(
     return {
       available: false,
       reason:
-        "Stel eerst je beschikbare trainingsdagen in bij Training, dan kan Sparki maatjes matchen.",
+        "Stel eerst je beschikbare trainingsdagen in bij Training, dan kunnen maatjes gematcht worden.",
     };
 
   const friends = await listFriends(viewer);
@@ -857,7 +857,7 @@ export async function suggestJointTraining(
     return {
       available: false,
       reason:
-        "Selecteer eerst een paar trainingsmaatjes in je Circle, dan stelt Sparki samen trainen voor.",
+        "Selecteer eerst een paar trainingsmaatjes in je Circle, dan wordt samen trainen voorgesteld.",
     };
 
   // Match: same sport (when known) + overlapping available day.

@@ -119,8 +119,8 @@ export function PrepChecklist({ race }: { race: Race }) {
       {autoCount > 0 && (
         <p className="mt-3 flex items-center gap-1.5 text-[11.5px] leading-relaxed text-cyan-300/65">
           <Sparkles size={12} className="shrink-0" />
-          Sparki vinkte {autoCount} {autoCount === 1 ? "punt" : "punten"} alvast
-          af op basis van je recente materiaalcheck. Klopt het niet? Tik het uit.
+          {autoCount} {autoCount === 1 ? "punt is" : "punten zijn"} alvast
+          afgevinkt op basis van je recente materiaalcheck. Klopt het niet? Tik het uit.
         </p>
       )}
 
@@ -164,7 +164,7 @@ export function PrepChecklist({ race }: { race: Race }) {
                 <Sparkles
                   size={11}
                   className="shrink-0 text-cyan-300/70"
-                  aria-label="Door Sparki gecheckt"
+                  aria-label="Automatisch afgevinkt"
                 />
               )}
             </button>

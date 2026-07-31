@@ -86,7 +86,7 @@ function headlineFor(
         "Je bent fris vandaag, dus je kunt er een stevige training tegenaan gooien.",
       );
     case "thin_data":
-      return "Hou het vandaag rustig en log je rit en gevoel; dan kan Sparki je vanaf morgen beter inschatten.";
+      return "Hou het vandaag rustig en log je rit en gevoel; dan kan ik je vanaf morgen beter inschatten.";
     case "steady":
     default:
       return term(
@@ -147,7 +147,7 @@ export function generateAdvice(
 
   const watIkDenk = `Wat ik denk: ${thinkFor(driver, m)}${
     eased
-      ? " Bij dit weer levert een zware buitenrit meer risico dan rendement, dus Sparki temt vandaag de intensiteit."
+      ? " Bij dit weer levert een zware buitenrit meer risico dan rendement, dus ik tem vandaag de intensiteit."
       : ""
   }`;
 
@@ -158,7 +158,7 @@ export function generateAdvice(
   const alt =
     findings[0]?.description ??
     "een andere verklaring kan zijn dat een losse dag je beeld vertekent in plaats van een echte trend";
-  const watAlsHetAndersIs = `Wat als het anders is: ${alt}; daarom houdt Sparki ruimte om bij te sturen.`;
+  const watAlsHetAndersIs = `Wat als het anders is: ${alt}; daarom houd ik ruimte om bij te sturen.`;
 
   const watVerandertMijnAdvies = `Wat mijn advies verandert: ${changeFor(driver)}${
     eased ? " Klaart het weer op of ga je binnen trainen, dan kan de zware prikkel alsnog." : ""
@@ -255,7 +255,7 @@ function thinkFor(driver: Driver, m: SignalIntake["metrics"]): string {
     case "fresh":
       return "je bent goed hersteld, dus je kunt een zwaardere prikkel waarschijnlijk goed verwerken.";
     case "thin_data":
-      return "Sparki heeft nog te weinig van je gezien om iets stevigs te zeggen.";
+      return "Ik heb nog te weinig van je gezien om iets stevigs te zeggen.";
     case "steady":
     default:
       return "je signalen zien er gewoon uit; doorbouwen op je normale niveau ligt het meest voor de hand.";
@@ -276,7 +276,7 @@ function whyFor(driver: Driver): string {
     case "fresh":
       return "je vormbalans, gevoel en herstel wijzen samen op ruimte voor meer.";
     case "thin_data":
-      return "zonder genoeg gegevens kiest Sparki bewust de veilige, rustige kant.";
+      return "zonder genoeg gegevens kies ik bewust de veilige, rustige kant.";
     case "steady":
     default:
       return "geen enkel signaal vraagt om afwijken van je normale opbouw.";
@@ -286,9 +286,9 @@ function whyFor(driver: Driver): string {
 function changeFor(driver: Driver): string {
   switch (driver) {
     case "injured":
-      return "zodra je blessure pijnvrij is, bouwt Sparki je weer rustig op.";
+      return "zodra je blessure pijnvrij is, bouw ik je weer rustig op.";
     case "sick":
-      return "zodra je je weer gezond voelt en je rusthartslag normaliseert, pakt Sparki de draad op.";
+      return "zodra je je weer gezond voelt en je rusthartslag normaliseert, pak ik de draad op.";
     case "risk":
       return "als je risicosignalen dalen en je je hersteld voelt, mag de belasting weer omhoog.";
     case "taper":

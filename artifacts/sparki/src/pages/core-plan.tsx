@@ -1227,7 +1227,7 @@ function DoelkaartSection() {
             onClick={() => navigate("/you?focus=doelen")}
             className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2.5 text-left hover:bg-accent-cyan/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
           >
-            <p className="type-label text-accent-cyan uppercase tracking-wider mb-1">Sparki wil iets weten</p>
+            <p className="type-label text-accent-cyan uppercase tracking-wider mb-1">Nog even dit</p>
             <p className="type-body-sm text-white/75">{picture.nextQuestion.question}</p>
           </button>
         )}
@@ -1380,7 +1380,7 @@ function PatronenSection() {
         <DsCard>
           {runConnections.isPending ? (
             <p className="type-body text-content-secondary">
-              Sparki vergelijkt je belasting, herstel en gevoel op verbanden…
+              Je belasting, herstel en gevoel worden vergeleken op verbanden…
             </p>
           ) : readiness.data?.analyseMogelijk ? (
             <p className="type-body text-content-secondary">

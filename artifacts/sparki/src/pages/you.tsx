@@ -897,7 +897,7 @@ export default function YouPage() {
                   </p>
                   <p className="mt-1 text-[12px] leading-relaxed text-white/55">
                     Bepaal waar je naartoe wilt — recreatief, een toertocht, wedstrijden of
-                    hoger. Sparki weegt elk advies af tegen dat doel.
+                    hoger. Elk advies wordt afgewogen tegen dat doel.
                   </p>
                   <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors group-hover:text-cyan-300">
                     Doel kiezen →

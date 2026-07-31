@@ -22,7 +22,7 @@ router.get("/", requireAuth, async (req, res) => {
     res.json(state);
   } catch (err) {
     console.error("state analysis failed", err);
-    res.status(500).json({ error: "Sparki kon je toestand nu niet bepalen" });
+    res.status(500).json({ error: "Je toestand kon nu niet bepaald worden" });
   }
 });
 

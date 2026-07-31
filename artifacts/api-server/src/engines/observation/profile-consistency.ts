@@ -71,7 +71,7 @@ export function detectProfileInconsistencies(
       statement: `Je FTP staat op ${p.ftp} watt, maar ${proof} — je FTP is dus minstens ${f.floorWatts} watt.`,
       question: `Zullen we je FTP op ${f.floorWatts} watt zetten?`,
       because:
-        "met een te lage FTP rekent Sparki al je zones en belastingscores te licht",
+        "met een te lage FTP worden al je zones en belastingscores te licht berekend",
       tone: "concern",
       category: "training",
       severity: "important",
@@ -90,7 +90,7 @@ export function detectProfileInconsistencies(
       statement: `Je niveau staat op beginner, maar je reed de afgelopen weken zo'n ${p.medianHours} uur per week — dat past eerder bij een gevorderde renner.`,
       question: `Klopt "beginner" nog als jouw niveau?`,
       because:
-        "je niveau bepaalt hoe voorzichtig Sparki je belasting opbouwt en hoe je uitleg klinkt",
+        "je niveau bepaalt hoe voorzichtig je belasting wordt opgebouwd en hoe je uitleg klinkt",
       tone: "neutral",
       category: "planning",
       severity: "watch",
@@ -293,7 +293,7 @@ export async function applyProfileCorrection(
         return {
           applied: false,
           message:
-            "Niets aangepast: je FTP is net gewijzigd — Sparki kijkt er bij de volgende analyse opnieuw naar.",
+            "Niets aangepast: je FTP is net gewijzigd — bij de volgende analyse wordt er opnieuw naar gekeken.",
         };
       }
 

@@ -428,7 +428,7 @@ function main() {
   });
   scenario("copy: unpredictable state explains the gap in plain Dutch", () => {
     const p = buildPrediction({}, { targetTSS: null, structure: null });
-    assert(/Sparki kan het effect nog niet voorspellen/.test(p.headline), "honest headline");
+    assert(/Het effect is nog niet te voorspellen/.test(p.headline), "honest headline");
     assert(p.summary.length > 0 && bannedWord(p.summary) === null, "honest summary");
   });
 

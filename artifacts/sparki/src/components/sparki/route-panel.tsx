@@ -514,9 +514,9 @@ function NavigateInfoCard() {
                 <span className="font-medium text-white/85">Navigeer</span> om
                 deze route te openen en je positie onderweg te volgen.
               </p>
-              <p>Sparki registreert tijdens het navigeren ook je rit.</p>
+              <p>Tijdens het navigeren wordt ook je rit geregistreerd.</p>
               <p>
-                Op dit apparaat moet Sparki geopend blijven — met het scherm
+                Op dit apparaat moet de app geopend blijven — met het scherm
                 uit stopt het volgen.
               </p>
             </>
@@ -2623,7 +2623,7 @@ export function RouteGenerator({
                   </span>
                 </div>
                 <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
-                  Sparki kiest de kandidaat die hier het dichtst bij komt — een
+                  De kandidaat die hier het dichtst bij komt wordt gekozen — een
                   voorkeur, geen garantie op een exact aandeel onverhard.
                 </p>
               </>
@@ -2655,7 +2655,7 @@ export function RouteGenerator({
 
           {/* Vermijd drukke N-wegen (taak #462): expliciete keuze naast de
               onverhard-voorkeur. Voorkeur in de routemotor — geen garantie;
-              lukt het niet, dan meldt Sparki dat eerlijk bij het resultaat.
+              lukt het niet, dan staat dat eerlijk bij het resultaat.
               Vanaf de Go-weergaven; verborgen = telt niet mee. */}
           {heeft("nWegen") && (
           <div className="mt-4">
@@ -2673,9 +2673,9 @@ export function RouteGenerator({
               <span className="text-[12px] leading-relaxed text-white/70">
                 Vermijd drukke N-wegen
                 <span className="mt-0.5 block text-[11px] text-white/40">
-                  Sparki stuurt de route waar mogelijk om doorgaande wegen
+                  De route gaat waar mogelijk om doorgaande wegen
                   zonder vrijliggend fietspad heen — een voorkeur, geen
-                  garantie. Lukt het in dit gebied niet, dan zegt Sparki dat
+                  garantie. Lukt het in dit gebied niet, dan staat dat
                   erbij. Standaard staat dit uit: korte stukken N-weg zijn oké.
                 </span>
               </span>
@@ -3404,8 +3404,8 @@ export function RouteGenerator({
                 className="mt-4 w-full rounded-xl border border-white/[0.15] py-2.5 font-sans text-[13px] text-white/75 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50 lg:w-auto lg:px-5"
               >
                 {genPending
-                  ? "Sparki plant nieuwe voorstellen…"
-                  : "Maak óók nieuwe voorstellen van Sparki"}
+                  ? "Nieuwe voorstellen worden gemaakt…"
+                  : "Maak óók nieuwe voorstellen"}
               </button>
             )}
         </div>
@@ -3679,7 +3679,7 @@ export function RouteGenerator({
                 {candVerification.bron === "motor"
                   ? " volgens de routemotor"
                   : " — ook na controle op de officiële wegenkaart"}
-                . Sparki beveelt deze route daarom niet aan als
+                . Deze route wordt daarom niet aanbevolen als
                 racefietsroute; de onbekende stukken zijn grijs gemarkeerd op
                 de kaart. Er is geen volledig geverifieerd alternatief
                 gevonden — gebruiken kan alleen als jij daar expliciet voor
@@ -3833,7 +3833,7 @@ export function RouteGenerator({
           <Climbs climbs={candidate.climbs} />
 
           {/* Eerlijk vermijd-rapport (taak #462): lukte het vermijden van
-              N-wegen niet in dit gebied, dan zegt Sparki dat expliciet —
+              N-wegen niet in dit gebied, dan staat dat er expliciet bij —
               nooit stiekem toch N-weg rijden. */}
           {candidate.avoidReport?.nietMogelijk?.map((item, i) => (
             <p
@@ -4216,8 +4216,8 @@ export function RoutePanel({
         </p>
       ) : showGpx ? (
         <p className="mt-2 text-[12px] leading-relaxed text-white/35">
-          Upload een GPX-bestand (max 11 MB) — Sparki leest de echte lijn en het
-          hoogteprofiel en zet hem bij je bewaarde routes.
+          Upload een GPX-bestand (max 11 MB) — de echte lijn en het
+          hoogteprofiel worden ingelezen en bij je bewaarde routes gezet.
         </p>
       ) : null}
 

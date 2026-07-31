@@ -126,7 +126,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "School",
     detail: (p) =>
-      `Je vertelde dat school of een toets in de weg zat${p}. Sparki onthoudt dit en vraagt er later naar.`,
+      `Je vertelde dat school of een toets in de weg zat${p}. Dit wordt onthouden; er wordt later naar gevraagd.`,
     followUpQuestion: "Hoe ging het op school? En heb je weer ruimte om te trainen?",
     topic: "school / examen",
   },
@@ -138,7 +138,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 1,
     title: "Wedstrijd",
     detail: (p) =>
-      `Je hebt een wedstrijd${p}. Sparki houdt dit in de gaten en vraagt er na afloop naar.`,
+      `Je hebt een wedstrijd${p}. Dit wordt in de gaten gehouden; er wordt na afloop naar gevraagd.`,
     followUpQuestion: "Hoe ging je wedstrijd? Wat ging goed en wat was zwaar?",
     topic: "wedstrijd",
   },
@@ -150,7 +150,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Ziek",
     detail: (p) =>
-      `Je gaf aan je ziek of niet lekker te voelen${p}. Sparki vraagt later of je weer opgeknapt bent.`,
+      `Je gaf aan je ziek of niet lekker te voelen${p}. Er wordt later gevraagd of je weer opgeknapt bent.`,
     followUpQuestion: "Voel je je weer beter? Kun je rustig weer opbouwen?",
     topic: "ziekte",
   },
@@ -163,7 +163,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Blessure",
     detail: (p) =>
-      `Je gaf aan last te hebben van een blessure of pijn${p}. Sparki vraagt later hoe je eerste training weer ging.`,
+      `Je gaf aan last te hebben van een blessure of pijn${p}. Er wordt later gevraagd hoe je eerste training weer ging.`,
     followUpQuestion: "Hoe voelde je eerste training na je blessure? Was de pijn weg?",
     topic: "blessure / pijn",
   },
@@ -175,7 +175,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Werk",
     detail: (p) =>
-      `Werk zat je trainen in de weg${p}. Sparki onthoudt dit en vraagt later of er weer ruimte is.`,
+      `Werk zat je trainen in de weg${p}. Dit wordt onthouden; er wordt later gevraagd of er weer ruimte is.`,
     followUpQuestion: "Is het op werk weer rustiger? Lukt het om weer te trainen?",
     topic: "werk",
   },
@@ -187,7 +187,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Familie",
     detail: (p) =>
-      `Er speelde iets in de familie of thuis${p}. Sparki onthoudt dit voorzichtig en vraagt er later rustig naar.`,
+      `Er speelde iets in de familie of thuis${p}. Dit wordt voorzichtig onthouden; er wordt later rustig naar gevraagd.`,
     followUpQuestion: "Gaat het weer wat beter thuis?",
     topic: "familie / thuis",
   },
@@ -202,7 +202,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Slaap",
     detail: (p) =>
-      `Je sliep slecht${p}. Sparki checkt later of het beter gaat.`,
+      `Je sliep slecht${p}. Er wordt later gecheckt of het beter gaat.`,
     followUpQuestion: "Heb je daarna beter geslapen?",
     topic: "slaap",
   },
@@ -214,7 +214,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Spanning",
     detail: (p) =>
-      `Je voelde spanning of stress${p}. Sparki checkt later rustig of het wat is gezakt.`,
+      `Je voelde spanning of stress${p}. Er wordt later rustig gecheckt of het wat is gezakt.`,
     followUpQuestion: "Is de spanning wat gezakt? Gaat het weer wat rustiger?",
     topic: "spanning / stress",
   },
@@ -226,7 +226,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Motivatie",
     detail: (p) =>
-      `Je had even weinig zin of motivatie${p}. Sparki onthoudt dit en vraagt er later rustig naar.`,
+      `Je had even weinig zin of motivatie${p}. Dit wordt onthouden; er wordt later rustig naar gevraagd.`,
     followUpQuestion: "Heb je weer wat meer zin om te fietsen?",
     topic: "motivatie",
   },
@@ -236,7 +236,7 @@ const RULES: Rule[] = [
     defaultLeadDays: 7,
     followUpOffsetDays: 0,
     title: "Trainingskamp",
-    detail: (p) => `Je bent of gaat op trainingskamp of vakantie${p}. Sparki vraagt er na afloop naar.`,
+    detail: (p) => `Je bent of gaat op trainingskamp of vakantie${p}. Er wordt na afloop naar gevraagd.`,
     followUpQuestion: "Hoe was het? Hoeveel heb je kunnen trainen?",
     topic: "trainingskamp / vakantie",
   },
@@ -248,7 +248,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Materiaal",
     detail: (p) =>
-      `Je hebt iets aan je materiaal veranderd${p}. Sparki vraagt later hoe het bevalt.`,
+      `Je hebt iets aan je materiaal veranderd${p}. Er wordt later gevraagd hoe het bevalt.`,
     followUpQuestion: "Hoe bevalt je nieuwe materiaal? Voelt het fijn op de fiets?",
     topic: "materiaal / fiets",
   },
@@ -260,7 +260,7 @@ const RULES: Rule[] = [
     followUpOffsetDays: 0,
     title: "Zware training",
     detail: (p) =>
-      `Je training of herstel zat tegen${p}. Sparki vraagt later of je je weer fitter voelt.`,
+      `Je training of herstel zat tegen${p}. Er wordt later gevraagd of je je weer fitter voelt.`,
     followUpQuestion: "Voelen je benen weer wat frisser?",
     topic: "training / herstel",
   },

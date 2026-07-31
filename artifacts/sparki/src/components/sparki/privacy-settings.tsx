@@ -115,7 +115,7 @@ export function PrivacySettingsSection() {
             <Row
               icon={Brain}
               title="Sparki-geheugen"
-              desc="Sta Sparki toe om observaties over jouw training te onthouden en te gebruiken in toekomstige adviezen."
+              desc="Sta toe dat observaties over jouw training worden onthouden en gebruikt in toekomstige adviezen."
             >
               <Toggle
                 on={p.aiMemoryEnabled}

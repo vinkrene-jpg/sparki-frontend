@@ -80,9 +80,9 @@ function roundKm(km: number): number {
 function buildMessage(rule: WearRule, km: number, checked: boolean): string {
   const shown = roundKm(km);
   if (checked) {
-    return `Je hebt zo'n ${shown} km gereden sinds Sparki je ${rule.label} voor het laatst zag. ${rule.reason} — laat 'm eens zien?`;
+    return `Je hebt zo'n ${shown} km gereden sinds je ${rule.label} voor het laatst is bekeken. ${rule.reason} — laat 'm eens zien?`;
   }
-  return `Je hebt al zo'n ${shown} km in de benen en Sparki heeft je ${rule.label} nog nooit bekeken. ${rule.reason} — even laten checken?`;
+  return `Je hebt al zo'n ${shown} km in de benen en je ${rule.label} is nog nooit bekeken. ${rule.reason} — even laten checken?`;
 }
 
 function buildTitle(rule: WearRule): string {

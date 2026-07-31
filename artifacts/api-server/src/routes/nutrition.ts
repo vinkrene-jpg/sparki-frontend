@@ -1019,7 +1019,7 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(502).json({ error: "Sparki kon de dag nu niet beoordelen" });
+      res.status(502).json({ error: "De dag kon nu niet beoordeeld worden" });
       return;
     }
     let parsed: Record<string, unknown> | null = null;
@@ -1053,7 +1053,7 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
       : [];
 
     if (!summary || points.length === 0) {
-      res.status(502).json({ error: "Sparki kon de dag nu niet beoordelen" });
+      res.status(502).json({ error: "De dag kon nu niet beoordeeld worden" });
       return;
     }
 
@@ -1074,7 +1074,7 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.day-analysis failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 
@@ -1101,7 +1101,7 @@ function nextSeasonGoalQuestion(input: {
     return {
       field: "seasonStartDate",
       question: "Wanneer begint je wedstrijdseizoen?",
-      why: "Dan weet Sparki tegen wanneer je gewicht goed moet zitten en hoeveel tijd er is om rustig bij te sturen.",
+      why: "Dan is bekend tegen wanneer je gewicht goed moet zitten en hoeveel tijd er is om rustig bij te sturen.",
     };
   }
   if (input.peakDate == null) {
@@ -1201,7 +1201,7 @@ router.get("/season-goal", requireAuth, async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.season-goal get failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 
@@ -1295,7 +1295,7 @@ router.put("/season-goal", requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "nutrition.season-goal put failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 
@@ -1497,7 +1497,7 @@ Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen En
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(502).json({ error: "Sparki kon nu geen voedingsplan maken" });
+      res.status(502).json({ error: "Er kon nu geen voedingsplan gemaakt worden" });
       return;
     }
     let parsed: Record<string, unknown> | null = null;
@@ -1551,7 +1551,7 @@ Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen En
       : [];
 
     if (!summary || phases.length !== PHASE_ORDER.length) {
-      res.status(502).json({ error: "Sparki kon nu geen voedingsplan maken" });
+      res.status(502).json({ error: "Er kon nu geen voedingsplan gemaakt worden" });
       return;
     }
 
@@ -1574,7 +1574,7 @@ Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen En
     );
   } catch (err) {
     req.log.error({ err }, "nutrition.fueling-plan failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 
@@ -1601,7 +1601,7 @@ router.get("/preferences", requireAuth, async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.preferences.get failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 
@@ -1645,7 +1645,7 @@ router.put("/preferences", requireAuth, async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.preferences.put failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 
@@ -1710,7 +1710,7 @@ router.get("/session-targets", requireAuth, async (req, res) => {
     res.json({ targets: { date, ...targets } });
   } catch (err) {
     req.log.error({ err }, "nutrition.session-targets failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 
@@ -1803,14 +1803,14 @@ router.get("/guidance", requireAuth, async (req, res) => {
     if (topics.length === 0) {
       res
         .status(502)
-        .json({ error: "Sparki kon nu geen voedingsbegeleiding maken" });
+        .json({ error: "Er kon nu geen voedingsbegeleiding gemaakt worden" });
       return;
     }
 
     res.json({ guidance: { level, intro, topics } });
   } catch (err) {
     req.log.error({ err }, "nutrition.guidance failed");
-    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+    res.status(500).json({ error: "De dienst is even niet bereikbaar" });
   }
 });
 

@@ -49,7 +49,7 @@ export const COACHING_DIMENSIONS: DimensionDef[] = [
   {
     key: "behaviorStyle",
     prompt: "Hoe pak je je trainingen het liefst aan?",
-    help: "Zo weet Sparki hoeveel structuur je wil.",
+    help: "Zo is bekend hoeveel structuur je wilt.",
     basePriority: 30,
     options: [
       { value: "structured", label: "Met een vast, duidelijk plan" },
@@ -60,7 +60,7 @@ export const COACHING_DIMENSIONS: DimensionDef[] = [
   {
     key: "motivationType",
     prompt: "Wat drijft je het meest om te fietsen?",
-    help: "Sparki stemt zijn toon af op wat jou motiveert.",
+    help: "De toon wordt afgestemd op wat jou motiveert.",
     basePriority: 29,
     options: [
       { value: "intrinsic", label: "Het plezier en mezelf verbeteren" },
@@ -82,8 +82,8 @@ export const COACHING_DIMENSIONS: DimensionDef[] = [
   },
   {
     key: "communicationStyle",
-    prompt: "Hoe wil je dat Sparki met je praat?",
-    help: "De stijl waarin Sparki je coacht.",
+    prompt: "Hoe wil je aangesproken worden?",
+    help: "De stijl waarin je gecoacht wordt.",
     basePriority: 27,
     options: [
       { value: "direct", label: "Kort en recht voor z'n raap" },
@@ -94,7 +94,7 @@ export const COACHING_DIMENSIONS: DimensionDef[] = [
   {
     key: "learningPreference",
     prompt: "Hoe leer je het liefst iets nieuws bij?",
-    help: "Zo legt Sparki dingen uit op jouw manier.",
+    help: "Zo wordt alles uitgelegd op jouw manier.",
     basePriority: 24,
     options: [
       { value: "practical", label: "Door het gewoon te doen" },
@@ -106,18 +106,18 @@ export const COACHING_DIMENSIONS: DimensionDef[] = [
   {
     key: "decisionMaking",
     prompt: "Wie beslist over je training?",
-    help: "Bepaalt hoeveel Sparki zelf invult of aan jou voorlegt.",
+    help: "Bepaalt hoeveel er zelf wordt ingevuld of aan jou wordt voorgelegd.",
     basePriority: 23,
     options: [
-      { value: "autonomous", label: "Ik beslis zelf, Sparki adviseert" },
+      { value: "autonomous", label: "Ik beslis zelf, met advies" },
       { value: "collaborative", label: "We beslissen samen" },
-      { value: "directed", label: "Sparki bepaalt, ik volg" },
+      { value: "directed", label: "Het plan bepaalt, ik volg" },
     ],
   },
   {
     key: "mentalSupportNeed",
     prompt: "Hoeveel mentale steun heb je graag?",
-    help: "Sparki kan je extra bemoedigen op zware dagen.",
+    help: "Je krijgt extra bemoediging op zware dagen.",
     basePriority: 22,
     options: [
       { value: "high", label: "Veel — houd me mentaal scherp" },
@@ -128,7 +128,7 @@ export const COACHING_DIMENSIONS: DimensionDef[] = [
   {
     key: "goalOrientation",
     prompt: "Wanneer is een seizoen voor jou geslaagd?",
-    help: "Sparki weegt vooruitgang mee zoals jij dat ziet.",
+    help: "Vooruitgang wordt meegewogen zoals jij dat ziet.",
     basePriority: 21,
     options: [
       { value: "process", label: "Als ik trouw mijn proces volg" },

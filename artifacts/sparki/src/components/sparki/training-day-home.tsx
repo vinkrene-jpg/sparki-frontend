@@ -159,8 +159,8 @@ export function TrainingDayHome({
                       </p>
                     ) : (
                       <p className="mt-3 text-pretty text-[12px] italic leading-relaxed text-white/45">
-                        Geen notities van je coach — Sparki interpreteert het doel
-                        hieronder.
+                        Geen notities van je coach — het doel wordt hieronder
+                        geïnterpreteerd.
                       </p>
                     )}
                   </div>
@@ -343,8 +343,8 @@ export function TrainingDayHome({
                 </span>
               </div>
               <p className="mt-2 text-[13px] leading-relaxed text-white/35">
-                Geen training gepland — voeg een wedstrijd toe en Sparki plant je
-                opbouw.
+                Geen training gepland — voeg een wedstrijd toe, dan wordt je
+                opbouw ingepland.
               </p>
               <div className="mt-3">
                 <QuickActionButton action="race" />

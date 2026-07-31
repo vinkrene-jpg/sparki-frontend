@@ -142,7 +142,7 @@ export function ProfilePromptCard() {
             <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
           </div>
           <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/70">
-            Sparki wil weten
+            Nog even dit
           </span>
         </div>
         <button

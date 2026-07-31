@@ -170,7 +170,7 @@ router.post("/", requireAuth, async (req, res) => {
           mediaType,
           status: "failed",
           errorMessage:
-            "Sparki kon dit document niet lezen. Probeer een duidelijkere scan of een ander bestand.",
+            "Dit document kon niet gelezen worden. Probeer een duidelijkere scan of een ander bestand.",
         })
         .returning();
       // Zelfde contractvorm als het succespad: ook een failed record gaat

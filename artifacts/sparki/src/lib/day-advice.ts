@@ -223,7 +223,7 @@ export function computeDayAdvice(input: DayAdviceInput): DayAdvice | null {
       const was = kind
       kind = "endurance"
       const reason = isExtremeHeat && !isSevere ? "de hitte" : "het weer"
-      weatherNote = `Door ${reason} (${weatherText(w)}) zet Sparki je geplande ${was === "intervals" ? "intervallen" : "tempotraining"} om naar een rustigere duurrit; binnen op de trainer kun je wel intensief.`
+      weatherNote = `Door ${reason} (${weatherText(w)}) wordt je geplande ${was === "intervals" ? "intervallen" : "tempotraining"} omgezet naar een rustigere duurrit; binnen op de trainer kun je wel intensief.`
     } else if (w.advisory && w.advisory.severity !== "ok") {
       weatherNote = `Let op het weer: ${weatherText(w)}. ${w.advisory.suggestion ?? w.advisory.detail}`
     }

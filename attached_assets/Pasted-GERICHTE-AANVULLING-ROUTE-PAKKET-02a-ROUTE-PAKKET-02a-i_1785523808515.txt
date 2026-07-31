@@ -1,0 +1,56 @@
+GERICHTE AANVULLING — ROUTE_PAKKET_02a
+
+ROUTE_PAKKET_02a is inhoudelijk Mirror-goedgekeurd, maar René heeft de drie gemelde grensgevallen nu expliciet beslist.
+
+PRODUCTBESLUITEN
+
+1. Iedere succesvolle export van een route telt als routegebruik, ongeacht het ondersteunde exportformaat:
+   - GPX;
+   - TCX;
+   - eventuele andere bestaande route-exportformaten.
+   Dezelfde route telt binnen dezelfde kalendermaand maximaal één keer.
+
+2. Ook export van een nog niet opgeslagen routevoorstel telt.
+   Exporteren is daadwerkelijk gebruik en mag niet buiten de telling vallen doordat de route nog niet in de bibliotheek staat.
+
+3. Gebruik voor een nog niet opgeslagen routevoorstel een bestaande stabiele kandidaat-, versie- of route-identiteit.
+   Bouw geen parallel routesysteem.
+   Bestaat geen betrouwbare stabiele identiteit, meld dat als concrete technische blokkade voordat je iets verzint.
+
+4. Door de trainingsplanner automatisch genereren van een route telt niet.
+   De route telt pas wanneer de gebruiker hem opslaat, exporteert of — zodra die trigger betrouwbaar beschikbaar is — minimaal 20% aflegt.
+
+TE WIJZIGEN
+
+- Breid de centrale routegebruiksregistratie uit naar alle bestaande succesvolle route-exportpaden.
+- Zorg dat een succesvolle TCX-export dezelfde telregel gebruikt als GPX.
+- Zorg dat export van een nog niet opgeslagen routevoorstel via een stabiele identiteit wordt geregistreerd.
+- Een mislukte export telt nooit.
+- Dezelfde route in meerdere formaten exporteren telt samen één keer per maand.
+- Verander niets aan limieten, reserveringen, meldingen of blokkades uit 02b.
+- Niets uit 02c of 02d bouwen.
+
+TESTS
+
+1. Succesvolle GPX-export telt.
+2. Succesvolle TCX-export telt.
+3. GPX en TCX van dezelfde route tellen samen één keer.
+4. Export van een nog niet opgeslagen routevoorstel telt.
+5. Herhaalde export van hetzelfde voorstel telt niet dubbel.
+6. Mislukte export telt niet.
+7. Alleen genereren door de trainingsplanner telt niet.
+8. Opslaan of exporteren van zo’n plannerroute telt daarna wel normaal.
+9. Gratis kan nog steeds boven acht routes uitkomen zonder blokkade of melding.
+10. Alle regressietests van ROUTE_PAKKET_01 en 02a blijven groen.
+
+OPLEVERING
+
+- gewijzigde bestanden;
+- tests en exitcodes;
+- nieuwe commit-SHA;
+- live bewijs voor TCX-export;
+- live bewijs voor export van een niet-opgeslagen voorstel;
+- bevestiging dat niets uit 02b–02d is gebouwd.
+
+Daarna een gerichte Mirror-hertoets van alleen deze aanvulling.
+Na groen mag ROUTE_PAKKET_02b starten.

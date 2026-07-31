@@ -78,7 +78,7 @@ export function composeRaceAdvice(
         hs === "sick"
           ? "Starten met ziekteklachten is een gezondheidsrisico, geen tactische keuze. Overleg met je coach of een arts vóór je start; koorts of klachten onder de nek betekenen niet starten."
           : "Je staat geblesseerd gemeld. Bespreek met je coach of behandelaar of starten verantwoord is en wat je aanpast; een wedstrijd verergert een blessure sneller dan een training.",
-      basis: "Gezondheidsstatus uit je eigen melding — Sparki stelt geen diagnose.",
+      basis: "Gezondheidsstatus uit je eigen melding — dit is geen diagnose.",
     });
   }
 

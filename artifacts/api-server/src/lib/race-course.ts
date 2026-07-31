@@ -235,7 +235,7 @@ export function composeCourseAnalysis(
     F({
       key: "wind", label: "Windgevoeligheid", kind: "ontbreekt", value: null, origin: "route",
       explanation: "Zonder gekoppelde route met hoogteprofiel valt hier niets over te zeggen.",
-      question: "Koppel de parcoursroute; dan beoordeelt Sparki het profiel.",
+      question: "Koppel de parcoursroute; dan wordt het profiel beoordeeld.",
     });
   }
 

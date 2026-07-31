@@ -189,7 +189,7 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
       )}
       {hasGoal && advice?.kind === "rest" && (
         <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-[12px] leading-relaxed text-white/55">
-          Op basis van je signalen stelt Sparki vandaag rust voor. Zelf toch
+          Op basis van je signalen is rust vandaag het advies. Zelf toch
           iets plannen kan hieronder.
         </p>
       )}

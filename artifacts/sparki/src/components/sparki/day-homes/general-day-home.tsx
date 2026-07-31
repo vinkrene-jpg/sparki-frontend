@@ -189,8 +189,8 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
               ) : (
                 <div className="flex flex-col items-start gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
                   <p className="text-[13px] leading-relaxed text-white/70">
-                    Log je check-in van vandaag, dan zet Sparki hier een concreet
-                    advies neer op basis van je vorm, FTP en doel.
+                    Log je check-in van vandaag, dan verschijnt hier een concreet
+                    advies op basis van je vorm, FTP en doel.
                   </p>
                   <QuickActionButton action="checkin" />
                 </div>

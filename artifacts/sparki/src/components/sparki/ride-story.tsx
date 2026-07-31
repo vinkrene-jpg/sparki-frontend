@@ -154,7 +154,7 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
       })
       setProposal(res.proposal)
     } catch {
-      setError("Sparki kon nu geen voorstel maken. Probeer het zo nog eens.")
+      setError("Er kon nu geen voorstel worden gemaakt. Probeer het zo nog eens.")
     }
   }
 
@@ -367,7 +367,7 @@ export function RideStoryChapters({ story }: { story: RideStory }) {
             Vraag door over deze rit
           </span>
           <span className="mt-0.5 block text-[12px] text-white/45">
-            Sparki krijgt deze rit als context mee — dat zie je in het gesprek.
+            Deze rit gaat als context mee — dat zie je in het gesprek.
           </span>
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-white/25" />

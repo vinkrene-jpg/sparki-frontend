@@ -24,13 +24,13 @@ export const GO_FEATURE_COPY: Record<
   autonomous_training: {
     titel: "Trainingsplan-engine",
     uitleg:
-      "Automatische trainingsplannen die met je meegroeien — opbouw, aanpassing en herstel, door Sparki gepland.",
+      "Automatische trainingsplannen die met je meegroeien — opbouw, aanpassing en herstel, automatisch gepland.",
     pakket: "Sparki Compleet",
   },
   race_intel: {
     titel: "Race-intelligentie",
     uitleg:
-      "Wedstrijdvoorbereiding, voedingsplan en wedstrijddossier — Sparki denkt met je mee naar de startstreep.",
+      "Wedstrijdvoorbereiding, voedingsplan en wedstrijddossier — alles denkt met je mee naar de startstreep.",
     pakket: "Sparki Compleet",
   },
   ai_observations: {

@@ -87,11 +87,11 @@ export function compareExecution(
   }
   if (actualTssBasis === "estimated") {
     deviations.push(
-      "Er is geen exacte belasting (TSS) vastgelegd, dus Sparki schatte je werkelijke belasting grof uit de duur van de sessie.",
+      "Er is geen exacte belasting (TSS) vastgelegd, dus je werkelijke belasting is grof geschat uit de duur van de sessie.",
     );
   } else if (actualTssBasis === "missing") {
     deviations.push(
-      "Voor deze sessie is geen belasting én geen duur vastgelegd, dus Sparki kan het werkelijke effect alleen ruw inschatten.",
+      "Voor deze sessie is geen belasting én geen duur vastgelegd, dus het werkelijke effect is alleen ruw in te schatten.",
     );
   }
 

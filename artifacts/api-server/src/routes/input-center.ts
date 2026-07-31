@@ -135,7 +135,7 @@ router.post(
       res.json(result);
     } catch (err) {
       req.log.error({ err }, "input-center.messages failed");
-      res.status(500).json({ error: "Sparki kon niet antwoorden. Probeer het opnieuw." });
+      res.status(500).json({ error: "Er kon geen antwoord gegeven worden. Probeer het opnieuw." });
     }
   },
 );

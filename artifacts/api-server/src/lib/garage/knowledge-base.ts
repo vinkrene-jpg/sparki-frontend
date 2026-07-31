@@ -241,7 +241,7 @@ export function assessComponent(
       reason:
         brand || model
           ? "Nog niet in de kennisbank. Klopt merk en model? Anders helpt een foto."
-          : "Merk en model ontbreken nog — vul ze in, dan kan Sparki dit onderdeel beoordelen.",
+          : "Merk en model ontbreken nog — vul ze in, dan kan dit onderdeel beoordeeld worden.",
     };
   }
   return {

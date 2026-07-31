@@ -248,7 +248,7 @@ export function LogSessionForm({
       />
 
       <p className="text-[11px] leading-relaxed text-white/40">
-        Sparki koppelt deze training automatisch aan je geplande training van
+        Deze training wordt automatisch gekoppeld aan je geplande training van
         dezelfde dag. Heb je een FIT-, GPX- of TCX-bestand of sensordata? Gebruik
         dan &ldquo;Bestand importeren&rdquo; op de Training-pagina — dat geeft
         een completere analyse dan handmatig invoeren.
@@ -692,7 +692,7 @@ export function AddTrainingModal({
               "log",
               ClipboardCheck,
               "Uitgevoerde training registreren",
-              "Een training die al is gedaan en die Sparki nog niet heeft.",
+              "Een training die al is gedaan en die nog niet is geregistreerd.",
             )}
             {choice(
               "bouwen",

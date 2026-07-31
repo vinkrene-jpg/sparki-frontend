@@ -81,7 +81,7 @@ async function checkInItem(
     type: "checkin_reminder",
     dedupeKey: `reminder:checkin:${today}`,
     title: "Hoe voel je je vandaag?",
-    body: "Sparki heeft je avond-check-in nog niet. Een korte check-in (fris / oké / vermoeid) helpt Sparki je advies voor morgen scherp te krijgen.",
+    body: "Je avond-check-in ontbreekt nog. Een korte check-in (fris / oké / vermoeid) helpt je advies voor morgen scherp te krijgen.",
     emailSubject: "Sparki: hoe voel je je vandaag?",
     actionUrl: "/",
   };
@@ -104,9 +104,9 @@ async function followUpItem(clerkId: string): Promise<ReminderItem | null> {
     kind: "followups",
     type: "followup_question",
     dedupeKey: `reminder:followup:${analysisDate}`,
-    title: open === 1 ? "Sparki heeft een vraag voor je" : "Sparki heeft een paar vragen",
-    body: `Sparki heeft ${plural} openstaan om je advies preciezer te maken. Beantwoord ${open === 1 ? "die" : "ze"} kort in de app.`,
-    emailSubject: "Sparki heeft een vraag voor je",
+    title: open === 1 ? "Er staat een vraag voor je open" : "Er staan een paar vragen open",
+    body: `Er ${open === 1 ? "staat" : "staan"} ${plural} open om je advies preciezer te maken. Beantwoord ${open === 1 ? "die" : "ze"} kort in de app.`,
+    emailSubject: "Er staat een vraag voor je open",
     actionUrl: "/",
   };
 }
@@ -173,7 +173,7 @@ async function raceItems(clerkId: string, now: Date): Promise<ReminderItem[]> {
       type: "race_reminder" as NotificationType,
       dedupeKey: `reminder:race:${r.id}`,
       title: `Binnenkort: ${r.name}`,
-      body: `Je wedstrijd "${r.name}"${where} is op ${dutchDate(r.raceDate)}. Sparki helpt je met de voorbereiding in de app.`,
+      body: `Je wedstrijd "${r.name}"${where} is op ${dutchDate(r.raceDate)}. In de app vind je hulp bij de voorbereiding.`,
       emailSubject: `Sparki: ${r.name} komt eraan`,
       actionUrl: "/races",
     };
@@ -235,7 +235,7 @@ async function profileItem(
     missing.push({
       id: "ftp",
       title: "Wat is je FTP?",
-      body: "Met je FTP berekent Sparki je trainingszones en je belasting. Geef je FTP door — of laat 'm schatten als je 'm niet weet.",
+      body: "Met je FTP worden je trainingszones en je belasting berekend. Geef je FTP door — of laat 'm schatten als je 'm niet weet.",
       actionUrl: "/you?focus=ftp",
     });
   }
@@ -243,7 +243,7 @@ async function profileItem(
     missing.push({
       id: "weight",
       title: "Wat is je gewicht?",
-      body: "Met je gewicht volgt Sparki je vermogen per kilo (W/kg) en je voedingsadvies. Geef even je gewicht door.",
+      body: "Met je gewicht worden je vermogen per kilo (W/kg) en je voedingsadvies bijgehouden. Geef even je gewicht door.",
       actionUrl: "/you?focus=weight",
     });
   }
@@ -267,7 +267,7 @@ async function profileItem(
     missing.push({
       id: "birthyear",
       title: "In welk jaar ben je geboren?",
-      body: "Met je geboortejaar stemt Sparki je zones en advies af op je leeftijd. Geef even je geboortejaar door.",
+      body: "Met je geboortejaar worden je zones en advies afgestemd op je leeftijd. Geef even je geboortejaar door.",
       actionUrl: "/you?focus=birthYear",
     });
   }
@@ -275,7 +275,7 @@ async function profileItem(
     missing.push({
       id: "home",
       title: "Waar woon je?",
-      body: "Met je thuislocatie haalt Sparki het weer bij jou in de buurt op en stemt je training daarop af. Geef je thuislocatie door.",
+      body: "Met je thuislocatie wordt het weer bij jou in de buurt opgehaald en je training daarop afgestemd. Geef je thuislocatie door.",
       actionUrl: "/train?focus=homeLocation",
     });
   }

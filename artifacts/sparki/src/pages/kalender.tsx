@@ -353,7 +353,7 @@ function AddLifeEventCard({ onClose }: { onClose: () => void }) {
       <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
         <p className="text-[14px] font-medium text-white/90">Opgeslagen</p>
         <p className="mt-1 text-[12px] leading-relaxed text-white/50">
-          Sparki weegt dit mee zodra je schema opnieuw wordt opgebouwd. Wil je
+          Dit weegt mee zodra je schema opnieuw wordt opgebouwd. Wil je
           dat nu meteen doen?
         </p>
         <div className="mt-3 flex flex-wrap gap-2">

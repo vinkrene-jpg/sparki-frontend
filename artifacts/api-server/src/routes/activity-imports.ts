@@ -91,7 +91,7 @@ router.post("/", requireAuth, async (req, res) => {
   if (fileType === "unknown") {
     res.status(400).json({
       error:
-        "Dit bestandstype wordt niet ondersteund. Sparki leest FIT-, GPX- en TCX-bestanden.",
+        "Dit bestandstype wordt niet ondersteund. Ondersteund worden FIT-, GPX- en TCX-bestanden.",
     });
     return;
   }

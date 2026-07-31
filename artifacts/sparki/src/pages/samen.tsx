@@ -714,7 +714,7 @@ function FollowUpCard({ item }: { item: CircleFeedItem }) {
         </span>
         <div className="flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/70">
-            Sparki vraagt
+            Nog even dit
           </p>
           <p className="mt-1 text-pretty text-[14px] leading-relaxed text-white/90">
             {item.prompt ?? item.detail}
@@ -724,7 +724,7 @@ function FollowUpCard({ item }: { item: CircleFeedItem }) {
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={2}
-              placeholder="Vertel Sparki kort hoe het ging…"
+              placeholder="Vertel kort hoe het ging…"
               className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white/90 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
             />
             <div className="mt-2 flex items-center gap-2">
@@ -865,7 +865,7 @@ function CircleFeed() {
       ) : isEmpty ? (
         <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
           Nog niets te zien. Zodra je vrienden hun activiteit delen, je een
-          wedstrijd plant of Sparki iets wil weten, verschijnt het hier.
+          wedstrijd plant of er nog een vraag voor je is, verschijnt het hier.
         </p>
       ) : (
         <div className="mt-3 flex flex-col gap-2">
@@ -927,7 +927,7 @@ function TrainTogether() {
             <p className="text-pretty text-[13px] leading-relaxed text-white/50">
               {suggestion?.available === false
                 ? suggestion.reason
-                : "Sparki zoekt naar momenten om samen te trainen."}
+                : "Er wordt gezocht naar momenten om samen te trainen."}
             </p>
             {buddies.length > 0 && (
               <button

@@ -122,15 +122,15 @@ function EmptyTab({ active }: { active: FilterKey }) {
     Record<FilterKey, { text: string; href?: string; cta?: string }>
   > = {
     all: {
-      text: "Nog niets te tonen. Vul je dagelijkse check-in in zodat Sparki iets te melden heeft.",
+      text: "Nog niets te tonen. Vul je dagelijkse check-in in zodat er iets te melden is.",
       href: "/you?focus=checkin",
       cta: "Check-in invullen",
     },
     news: {
-      text: "Nog geen nieuws beschikbaar — Sparki stemt dit af op jouw sport en doelen zodra er iets relevants is.",
+      text: "Nog geen nieuws beschikbaar — dit wordt afgestemd op jouw sport en doelen zodra er iets relevants is.",
     },
     coach: {
-      text: "Sparki heeft nog te weinig gegevens om je te coachen. Vul je check-in in zodat er iets te analyseren is.",
+      text: "Er zijn nog te weinig gegevens om je te coachen. Vul je check-in in zodat er iets te analyseren is.",
       href: "/you?focus=checkin",
       cta: "Check-in invullen",
     },
@@ -441,7 +441,7 @@ export default function FeedPage() {
         {showPersonalNote && (
           <div className="mt-2 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/35">
             <SparkiCore size={14} accent={ACCENT} readiness={0.9} variant="orb" />
-            Door Sparki afgestemd op jouw sport en doelen
+            Afgestemd op jouw sport en doelen
           </div>
         )}
 

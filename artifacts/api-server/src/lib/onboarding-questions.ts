@@ -172,7 +172,7 @@ const FACTS: FactDef[] = [
   {
     key: "coachingMode",
     prompt: "Wie begeleidt jouw training?",
-    help: "Sparki kan je zelfstandig begeleiden, of je koppelt een menselijke coach.",
+    help: "Je kunt zelfstandig begeleid worden, of je koppelt een menselijke coach.",
     inputType: "choice",
     options: COACHING_OPTIONS,
     basePriority: 100,
@@ -198,7 +198,7 @@ const FACTS: FactDef[] = [
   {
     key: "ftp",
     prompt: "Ken je je FTP?",
-    help: "Je FTP — het vermogen dat je langdurig kunt volhouden — scherpt je trainingszones aan. Sparki gebruikt een schatting totdat je hem instelt.",
+    help: "Je FTP — het vermogen dat je langdurig kunt volhouden — scherpt je trainingszones aan. Tot je hem instelt wordt een schatting gebruikt.",
     inputType: "number",
     unit: "W",
     placeholder: "bijv. 250",
@@ -238,7 +238,7 @@ const FACTS: FactDef[] = [
   {
     key: "loadCapacity",
     prompt: "Hoe goed verwerk je trainingsbelasting?",
-    help: "Sparki past aan hoe stevig je week opbouwt.",
+    help: "Bepaalt hoe stevig je week wordt opgebouwd.",
     inputType: "choice",
     options: LOAD_OPTIONS,
     basePriority: 58,
@@ -275,7 +275,7 @@ const FACTS: FactDef[] = [
   {
     key: "competitionLevel",
     prompt: "Hoe competitief wil je zijn?",
-    help: "Sparki gebruikt dit om te bepalen wat het hierna vraagt en hoe het periodiseert.",
+    help: "Dit bepaalt wat er hierna wordt gevraagd en hoe er wordt geperiodiseerd.",
     inputType: "choice",
     options: COMPETITION_OPTIONS,
     basePriority: 52,
@@ -288,7 +288,7 @@ const FACTS: FactDef[] = [
   {
     key: "age",
     prompt: "Hoe oud ben je?",
-    help: "Leeftijd helpt Sparki intensiteit en herstel af te stemmen.",
+    help: "Leeftijd helpt om intensiteit en herstel af te stemmen.",
     inputType: "number",
     unit: "jr",
     placeholder: "bijv. 34",
@@ -315,8 +315,8 @@ const FACTS: FactDef[] = [
   },
   {
     key: "injuryHistory",
-    prompt: "Blessures of beperkingen die Sparki moet weten?",
-    help: "Helpt Sparki je plan veilig te houden. Zeg \"geen\" als alles oké is.",
+    prompt: "Blessures of beperkingen om rekening mee te houden?",
+    help: "Helpt je plan veilig te houden. Zeg \"geen\" als alles oké is.",
     inputType: "text",
     placeholder: "bijv. linkerknie zeurt op lange klimmen",
     basePriority: 43,

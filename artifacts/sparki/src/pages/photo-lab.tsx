@@ -218,7 +218,7 @@ export default function PhotoLabPage() {
                     style={{ borderTopColor: ACCENT }}
                   />
                   <span className="text-sm text-white/60">
-                    Sparki bewerkt je foto…
+                    Je foto wordt bewerkt…
                   </span>
                 </div>
               )}
@@ -235,7 +235,7 @@ export default function PhotoLabPage() {
                 <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.07] px-4 py-5">
                   <p className="text-sm leading-relaxed text-amber-100/90">
                     {result?.failureReason ??
-                      "Sparki kon de sfeer nu niet toepassen. Je originele foto blijft bruikbaar."}
+                      "De sfeer kon nu niet worden toegepast. Je originele foto blijft bruikbaar."}
                   </p>
                 </div>
               )}

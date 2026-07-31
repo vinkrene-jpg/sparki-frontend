@@ -696,7 +696,7 @@ export function buildDebrief(past: WorkoutFacts[]): MentalDebrief | null {
       outcome === "volbracht"
         ? "Afgemaakt zoals gepland. Wat je zelf noteerde hieronder is precies het soort signaal dat de cijfers niet laten zien — dat maakt het volgende advies scherper."
         : outcome === "ingekort"
-          ? "De rit werd korter dan gepland. Dankzij wat je zelf noteerde hoeft Sparki niet te gissen of het je lichaam of je hoofd was."
+          ? "De rit werd korter dan gepland. Dankzij wat je zelf noteerde hoeft er niet gegist te worden of het je lichaam of je hoofd was."
           : "Deze training is niet gereden. Wat je erover noteerde hieronder telt mee — geen oordeel, wel context voor de volgende keer.";
   } else {
     reflection =

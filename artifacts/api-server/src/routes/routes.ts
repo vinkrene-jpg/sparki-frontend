@@ -253,7 +253,7 @@ function applyBusyRoadReport(
     report.nietMogelijk.push({
       wens: "drukke N-wegen vermijden",
       reden:
-        "De routebron gaf voor deze route geen wegtype-meting terug, dus Sparki kan niet controleren of het vermijden gelukt is.",
+        "De routebron gaf voor deze route geen wegtype-meting terug, dus er kan niet gecontroleerd worden of het vermijden gelukt is.",
     });
     return;
   }

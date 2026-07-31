@@ -38,7 +38,7 @@ const HOOGTE_OPTIES: { value: ZoekCriteria["elevationPreference"]; label: string
 ];
 
 const FASE_LABEL: Record<string, string> = {
-  berekenen: "Sparki berekent nieuwe voorstellen…",
+  berekenen: "Nieuwe voorstellen worden berekend…",
   veiligheidscontrole: "Veiligheidscontrole van de voorstellen…",
 };
 
@@ -305,7 +305,7 @@ export default function RouteAanvraagScreen() {
           <View style={styles.busyRow}>
             <ActivityIndicator color={c.primary} />
             <Text style={[styles.honest, { color: c.mutedForeground }]}>
-              {FASE_LABEL[genFase ?? ""] ?? "Sparki berekent nieuwe voorstellen…"}
+              {FASE_LABEL[genFase ?? ""] ?? "Nieuwe voorstellen worden berekend…"}
             </Text>
           </View>
         ) : null}
