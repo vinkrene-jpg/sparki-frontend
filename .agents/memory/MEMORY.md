@@ -56,6 +56,7 @@
 - [Poort 5b sanity-check](sparki-poort-5b.md) — verplicht rapport in sanity-checks/ vóór elke praktijktest-oplevering; testerfout ⇒ afkeurregel+uitgevoerde test in kalibratie-YAML; `check:sanity-5b` fail-closed.
 - [AI-reviewgovernance v3](sparki-ai-review-governance.md) — bindende reviewketen-afspraak: claims-categorieën strikt scheiden, nooit eindgoedkeuring, docs/ canoniek (attached_assets = staging).
 - [Product Proof Doctrine](sparki-product-proof-doctrine.md) — GOVERNING: beloftegedreven bouwen, "gereed" = belofte objectief bewezen ≥9,0; geen uitbreiding op module <9; onafhankelijke proof.
+- [GitHub Actions CI-env](github-actions-ci-env.md) — connector mist workflow-scope (webeditor als uitweg); kale CI eist dummy Clerk/AI-vars + geseede dev-user of alles 500t.
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
