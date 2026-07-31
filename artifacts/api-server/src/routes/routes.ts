@@ -59,6 +59,10 @@ import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
 import { controlUnpavedShare } from "../lib/surface-control";
 import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
+// ROUTE_PAKKET_02A — maandtelling van routegebruik (alleen meten, nooit
+// blokkeren). Tellende gebeurtenissen: definitief opslaan + succesvolle
+// GPX-export. Plannen, aanpassen en bekijken roepen dit nooit aan.
+import { recordRouteUsageSafe } from "../lib/route-usage-metering";
 import {
   createRouteGenerationJob,
   finishJob,
@@ -1712,6 +1716,12 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
         engineSurface: route.engineSurface ?? null,
       })
       .returning({ id: routesTable.id });
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: saved!.id,
+      usageType: "SAVED",
+      source: "opslaan:bibliotheek",
+    });
     res.json({ routeId: saved!.id });
   } catch (err) {
     req.log.error({ err }, "routes.bibliotheek.gebruik failed");
@@ -2608,6 +2618,15 @@ router.get("/:id/gpx", requireAuth, async (req, res) => {
       "Content-Disposition",
       `attachment; filename="${safeName}.gpx"`,
     );
+    // Succesvolle GPX-export telt als routegebruik. Registratie vóór het
+    // versturen: alle faalpaden (404/422) zijn hierboven al gepasseerd, en zo
+    // is de teller al bijgewerkt op het moment dat de client het bestand heeft.
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route.id,
+      usageType: "GPX_EXPORTED",
+      source: "gpx-export",
+    });
     res.send(gpx);
   } catch (err) {
     req.log.error({ err }, "routes.gpx failed");
@@ -4444,6 +4463,12 @@ router.post("/", requireAuth, async (req, res) => {
           linkedPlannedWorkoutId,
         })
         .returning();
+      await recordRouteUsageSafe(req.log, {
+        clerkId,
+        routeId: route!.id,
+        usageType: "SAVED",
+        source: "opslaan:generated",
+      });
       res.status(201).json({ route });
     } catch (err) {
       req.log.error({ err }, "routes.create (generated) failed");
@@ -4522,6 +4547,12 @@ router.post("/", requireAuth, async (req, res) => {
         linkedActivityImportId,
       })
       .returning();
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route!.id,
+      usageType: "SAVED",
+      source: "opslaan:gpx-upload",
+    });
     res.status(201).json({ route });
   } catch (err) {
     req.log.error({ err }, "routes.create failed");
@@ -4630,6 +4661,12 @@ router.post(
         linkedActivityImportId: imp.id,
       })
       .returning();
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route!.id,
+      usageType: "SAVED",
+      source: "opslaan:rit",
+    });
     res.status(201).json({ route });
   } catch (err) {
     req.log.error({ err }, "routes.fromActivity failed");
@@ -4811,6 +4848,12 @@ router.post(
         meetpoints: (isOwner ? route.meetpoints : null) as never,
       })
       .returning();
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: copy!.id,
+      usageType: "SAVED",
+      source: "opslaan:duplicaat",
+    });
     res.status(201).json({ route: copy });
   } catch (err) {
     req.log.error({ err }, "routes.duplicate failed");

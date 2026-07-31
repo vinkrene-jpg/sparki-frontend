@@ -25,6 +25,7 @@ import activityImportsRouter from "./activity-imports";
 import routesRouter from "./routes";
 import routeProposalsRouter from "./route-proposals";
 import routeCandidatesRouter from "./route-candidates";
+import routeUsageRouter from "./route-usage";
 import volgautoRouter from "./volgauto";
 import navSettingsRouter from "./nav-settings";
 import trainingPlanRouter from "./training-plan";
@@ -149,6 +150,8 @@ router.use(
   activityImportsRouter,
 );
 router.use("/route-candidates", routeCandidatesRouter);
+// ROUTE_PAKKET_02A — uitleesbare teller van routegebruik (alleen meten).
+router.use("/route-usage", routeUsageRouter);
 router.use("/routes", routeProposalsRouter);
 router.use("/routes", volgautoRouter);
 router.use("/routes", routesRouter);

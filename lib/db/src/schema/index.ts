@@ -56,6 +56,7 @@ export * from "./support";
 export * from "./club";
 export * from "./release";
 export * from "./route-shares";
+export * from "./route-usage-registrations";
 export * from "./privacy-zones";
 export * from "./route-library";
 export * from "./route-candidates";

@@ -13,8 +13,8 @@ Statuswaarden: `MIRROR_PROVEN` · `AFGEKEURD MET CONCRETE BLOKKADE` ·
 
 | # | Onderdeel | Status (31-07) | Bewijs / reden |
 |---|---|---|---|
-| 1 | ROUTE_PAKKET_01 (hertoetsing na /zoek-herstel) | BIJ MIRROR | SHA `1114919a`; entitlements 27/27, tsc 0, live curl-bewijs Gratis /zoek 200 + poorten intact |
-| 2 | ROUTE_PAKKET_02a (telling navigatiesessies) | WACHT OP VOORGANGER | start automatisch na groene Mirror-toets 01 |
+| 1 | ROUTE_PAKKET_01 (hertoetsing na /zoek-herstel) | MIRROR_PROVEN | groen op SHA `1114919a` (bevestigd door René 31-07) |
+| 2 | ROUTE_PAKKET_02a (telling routegebruik) | BIJ MIRROR | tabel+endpoint+haakpunten gebouwd; test:route-usage 17/17, entitlements 27/27, stripe-billing 14/14, route-library-gates + route-candidates 13/13 groen, tsc 0; 20%-vlag uit (restpunt); docs/SPARKI_ROUTE_USAGE_LIMITS.md hfst 1 |
 | 3 | ROUTE_PAKKET_02b (limiet 8/maand + reserveringen) | WACHT OP VOORGANGER | na 02a |
 | 4 | ROUTE_PAKKET_02c (opslag/verval/downgrade; downgrade = alleen-lezen boven limiet, gebruiker kiest 3) | WACHT OP VOORGANGER | na 02b |
 | 5 | ROUTE_PAKKET_02d (admin/fair-use) | WACHT OP VOORGANGER | na 02c |

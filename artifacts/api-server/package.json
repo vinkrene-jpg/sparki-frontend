@@ -13,6 +13,7 @@
     "test:admin-smoke": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs admin-smoke",
     "test:route-library-gates": "node ./scripts/run-test.mjs route-library-gates",
     "test:route-candidates": "node ./scripts/run-test.mjs route-candidates",
+    "test:route-usage": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-usage",
     "test:loop-quality-gate": "node ./scripts/run-test.mjs loop-quality-gate",
     "test:route-alternates": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-alternates",
     "test:geocode-home-bias": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs geocode-home-bias",
