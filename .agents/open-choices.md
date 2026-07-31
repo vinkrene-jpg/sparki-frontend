@@ -61,7 +61,17 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
-15c. **Vrijgave CLUB_ONBOARDING_01 (pakket ontvangen 31-07-2026)** — clubinstroom
+15d. **Vrijgave CLUB_RECHTEN_01 (pakket 14, ontvangen 31-07-2026)** — definitief
+    rolmodel: elf rollen, club/team-niveau gescheiden, meerdere rollen per
+    persoon (vereniging van rechten), tijdelijke rollen met automatisch
+    auditbaar verval, eigendomsoverdracht. Gaat vóór CLUB_LEDEN_01 /
+    JEUGD_OUDER_01 / TRAINER_KOPPELING_01. Voorwaarden: ROUTE_PAKKET_01 +
+    DATA_TRUST_01 MIRROR_PROVEN; TRAINER_CLUB_01 mag niet gelijktijdig lopen.
+    NB: pakket zet als uitgangspunt `teammanager` → hernoemen naar
+    `ploegleider` (raakt eerdere open vraag over de ploegleiderrol).
+
+15c. **Vrijgave CLUB_ONBOARDING_01 (pakket 13, ontvangen 31-07-2026; variant 1
+    bevestigd als canoniek — bundel 13+14 bevat byte-identiek variant 1)** — clubinstroom
     van registratie tot actief (concept/actief-status, teams+seizoenen,
     transactionele ledenimport met bevestiging, hervatbare onboarding).
     Harde voorwaarde uit het pakket zelf: `DATA_TRUST_01` én `ROUTE_PAKKET_01`
