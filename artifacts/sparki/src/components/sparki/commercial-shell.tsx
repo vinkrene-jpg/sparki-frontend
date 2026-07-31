@@ -834,7 +834,16 @@ function TodayOrchestratorSection() {
     navigate(action.href)
   }
 
-  const blocks = [data.lead, data.insight, data.rotating].filter(
+  // Presentatie-dedupe: is de lead de geplande training, dan is de bestaande
+  // TrainingSection (met blokkenbalk en primaire actie) al de leidende kaart —
+  // dezelfde training niet twee keer tonen. De orchestrator blijft de selector;
+  // hier valt alleen de dubbele weergave weg.
+  const lead =
+    data.lead && data.lead.key.startsWith("lead:workout_today:")
+      ? null
+      : data.lead
+
+  const blocks = [lead, data.insight, data.rotating].filter(
     (i): i is TodayItem => i != null,
   )
   if (blocks.length === 0) return null
@@ -939,6 +948,14 @@ export function CommercialToday() {
   const today = useToday()
   const variant = today.data?.profile.variant ?? null
   const simpleFirst = variant === "jeugd" || variant === "beginner"
+  // Presentatie-dedupe (spiegel van TodayOrchestratorSection): voert de
+  // orchestrator een niet-training-lead aan (geen plan, of gezondheid wint),
+  // dan zegt de lead-kaart dat al — de TrainingSection zou daaronder dezelfde
+  // conclusie ("geen training" / de training die nu juist niet leidend is)
+  // herhalen en verdwijnt daarom.
+  const todayLead = today.data?.lead ?? null
+  const hideTraining =
+    todayLead != null && !todayLead.key.startsWith("lead:workout_today:")
 
   return (
     <CommercialShell actief="/vandaag">
@@ -952,13 +969,13 @@ export function CommercialToday() {
           <div>
             {simpleFirst ? (
               <>
-                <TrainingSection />
+                {!hideTraining && <TrainingSection />}
                 <WeekSection />
               </>
             ) : (
               <>
                 <WeekSection />
-                <TrainingSection />
+                {!hideTraining && <TrainingSection />}
               </>
             )}
           </div>

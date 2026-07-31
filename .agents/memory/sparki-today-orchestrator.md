@@ -9,5 +9,6 @@ description: Vandaag-startpagina orchestrator — ranking, weergavehistorie, pro
 - Dedupe-valkuil: insight-body mag NIET `state.status` zijn (staat al letterlijk in de CoachBoodschap) — gebruik het eerste why-signaal.
 - Profielvarianten (deriveTodayProfile): jeugd (<18, gaat vóór alles) · beginner (<5 sessies of exp=beginner) · wedstrijd/prestatie · recreatief. Jeugd: geen jargon, geen wedstrijd-rotatie; frontend zet training vóór weekbalk.
 - WP-T1 is bewust AI-loos; AI-formulering later alleen via centrale aiMessage-poort met dag+inputhash-cache, deterministische tekst blijft fallback.
-- Open: WP-T2 rolvarianten (trainer hergebruikt cockpit-data, ouder, club), WP-T3 debugweergave (passedOver is er al) + testmatrix §10 (17 scenario's, ≥6 profiel-screenshots).
-- Bewijs: `pnpm --filter @workspace/api-server run test:today-orchestrator` (7/7, echte DB).
+- Presentatie-dedupe is TWEEZIJDIG: workout-lead ⇒ orchestrator-kaart verbergen (TrainingSection is al de leider); niet-workout-lead ⇒ TrainingSection verbergen. Anders staat dezelfde conclusie dubbel.
+- Nieuwe tabellen horen óók als guarded SQL-migratie in lib/db/migrations/ (drizzle push alleen is niet genoeg voor migratie-opgebouwde omgevingen); day-queries met limit(1) altijd expliciet orderBy of de lead flikkert.
+- Open: WP-T2 rolvarianten (trainer hergebruikt cockpit-data, ouder, club), WP-T3 debugweergave (passedOver is er al) + volledige testmatrix.

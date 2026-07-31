@@ -103,6 +103,9 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
             ne(plannedWorkoutsTable.status, "cancelled"),
           ),
         )
+        // Deterministisch bij meerdere trainingen op één dag: laagste id wint,
+        // anders kan de lead-sleutel tussen requests wisselen (flikkeren).
+        .orderBy(asc(plannedWorkoutsTable.id))
         .limit(1),
       db
         .select({

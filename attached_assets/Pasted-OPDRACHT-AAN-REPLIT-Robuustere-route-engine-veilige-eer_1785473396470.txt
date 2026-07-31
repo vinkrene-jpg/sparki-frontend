@@ -1,0 +1,191 @@
+OPDRACHT AAN REPLIT — Robuustere route-engine, veilige eerste fase
+
+Doel
+Maak de bestaande Sparki-routeketen aantoonbaar robuuster zonder de routemotor te herschrijven en zonder nu al een eigen Overpass-infrastructuur of nieuwe parallelle verificatie-engine te bouwen.
+
+Taak #505 blijft afgerond en vormt de bestaande basis.
+Hergebruik de huidige fail-closed verificatie, tests, caching en GitHub-PR-governance.
+
+FASE 1 — Risicoanalyse vóór routingwijzigingen
+
+Voeg een verplichte risicoanalyse toe voor iedere nieuwe of gewijzigde harde routeregel.
+
+Leg minimaal vast:
+
+- betreffende regel;
+- verwachte werking;
+- mogelijke faalwijzen;
+- foutpositieven;
+- foutnegatieven;
+- gedrag bij timeout;
+- gedrag bij onbereikbare kaartbron;
+- gedrag bij gedeeltelijke data;
+- risico bij lange routes;
+- risico bij meerdere gelijktijdige routes;
+- counterexamples;
+- fail-closed gedrag;
+- benodigde regressietests.
+
+Maak hiervoor:
+
+docs/SPARKI_ROUTING_RISK_ANALYSIS_TEMPLATE.md
+
+Pas de governance zo aan dat een wijziging aan harde routeregels niet gebouwd of gemerged mag worden zonder ingevulde risicoanalyse.
+
+FASE 2 — Automatisch gegenereerde routingtests
+
+Voeg property-based of gegenereerde tests toe rond de bestaande routeketen.
+
+Genereer geldige variaties op minimaal:
+
+- racefiets;
+- gravel;
+- mountainbike;
+- gewone fiets;
+- verschillende afstanden;
+- korte en lange routes;
+- rondritten;
+- A-B-routes;
+- routepunten;
+- verschillende gebieden;
+- verschillende wegdekvoorkeuren;
+- verboden of geblokkeerde delen;
+- niet-verifieerbare kaartdata;
+- koude en warme cache;
+- meerdere gelijktijdige aanvragen.
+
+Belangrijkste invariant:
+
+Een route met een harde blokkade of een niet-afgeronde eindverificatie mag nooit als klaar, opslaanbaar of navigeerbaar worden teruggegeven.
+
+Andere invarianten:
+
+- `verified_clear` mag doorgaan;
+- `hard_blocked` moet worden geweigerd;
+- `unverifiable` moet eerlijk worden geweigerd;
+- `pending_verification` mag niet worden geleverd;
+- API en UI moeten dezelfde status respecteren;
+- herladen of navigatiestart mag de verificatie niet omzeilen.
+
+Gebruik reproduceerbare seeds zodat een mislukte willekeurige test exact opnieuw kan worden uitgevoerd.
+
+FASE 3 — Verplichte mergepoort
+
+Koppel de gegenereerde routingtests aan taak #507 en de GitHub-PR-controles.
+
+Een PR die routingcode, obstakelverificatie, routeopslag of navigatiestart raakt, mag niet worden gemerged wanneer:
+
+- de vaste regressiematrix faalt;
+- de gegenereerde tests falen;
+- een harde blokkade wordt doorgelaten;
+- een status niet fail-closed wordt afgehandeld;
+- de risicoanalyse ontbreekt.
+
+Voorkom extreem lange standaard-PR-runs.
+
+Werk daarom met:
+
+- een compacte, deterministische PR-suite;
+- een grotere periodieke of nachtelijke suite;
+- een handmatig startbare volledige stresstest.
+
+FASE 4 — Bestaande caching inventariseren
+
+Onderzoek eerst de huidige caching rond:
+
+- GraphHopper;
+- Overpass;
+- kaarttegels;
+- obstakelresultaten;
+- routekandidaten;
+- koude en warme aanvragen.
+
+Leg vast:
+
+- wat wordt gecachet;
+- waar;
+- met welke sleutel;
+- hoe lang;
+- hoe invalidatie werkt;
+- of resultaten gebruikersspecifiek zijn;
+- of verouderde kaartinformatie kan blijven hangen;
+- of negatieve resultaten worden gecachet;
+- hoe meerdere aanvragen dezelfde verificatie kunnen delen.
+
+Maak:
+
+docs/SPARKI_ROUTING_CACHE_INVENTORY.md
+
+Bouw in deze opdracht geen tweede cachesysteem.
+
+Geef na de inventarisatie een gericht voorstel voor verbeteringen, inclusief:
+
+- cachemodel;
+- invalidatie;
+- versie van kaartdata;
+- maximale ouderdom;
+- opslagkosten;
+- privacy;
+- foutgedrag;
+- meetbare prestatiewinst.
+
+NIET NU BOUWEN
+
+Bouw in deze fase nog niet:
+
+- een eigen self-hosted Overpass-server;
+- een eigen volledige kaartdatakopie;
+- nieuwe parallelle tegelverificatie;
+- een tweede routingengine;
+- een brede schaalarchitectuur voor duizenden gelijktijdige routes.
+
+Maak hiervoor alleen een later beslisdocument:
+
+docs/SPARKI_ROUTING_SCALE_OPTIONS.md
+
+Dit document vergelijkt:
+
+1. publieke Overpass blijven gebruiken;
+2. publieke diensten met gecontroleerde fallback;
+3. eigen regionale kaartbron;
+4. volledig zelf-gehoste kaartinfrastructuur;
+5. verificatie opdelen per tegel en gecontroleerd parallel uitvoeren.
+
+Neem per optie mee:
+
+- noodzaak;
+- kosten;
+- beheer;
+- kaartactualisatie;
+- capaciteit;
+- foutafhandeling;
+- vendor- en infrastructuurafhankelijkheid;
+- verwachte schaal;
+- moment waarop de optie werkelijk nodig wordt.
+
+Oplevering
+
+Rapporteer:
+
+- gewijzigde bestanden;
+- nieuwe risicoanalyse-template;
+- aantal gegenereerde scenario’s;
+- gebruikte seeds;
+- vaste en gegenereerde testresultaten;
+- GitHub Actions-wijzigingen;
+- duur van de compacte PR-suite;
+- cachinginventaris;
+- aangetroffen gaten;
+- schaalopties;
+- bekende beperkingen;
+- commit en PR.
+
+Harde grens
+
+Geen architectuuruitbreiding bouwen op basis van aannames.
+
+Stop en rapporteer wanneer de bestaande cache-, verificatie- of GitHub Actions-architectuur onvoldoende duidelijk is.
+
+Acceptatiecriterium
+
+Deze fase is geslaagd wanneer routingwijzigingen voortaan vooraf op faalwijzen worden beoordeeld, automatisch tegen onverwachte scenario’s worden getest en bij regressie niet kunnen worden gemerged — zonder dat een parallelle routemotor of onnodig zware infrastructuur is gebouwd.
