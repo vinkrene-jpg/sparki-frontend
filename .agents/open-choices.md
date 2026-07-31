@@ -5,25 +5,28 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-07-30.
+Laatst bijgewerkt: 2026-07-31.
 
 ## Wacht op jouw keuze
 
-11. **Volgorde niveaus-werk vs. taak #505** — René gaf akkoord op de routeplanner-4-niveaustabel
-    mét het meebouwen van de 'Compleet'-tier als onderdeel van dat werk. #505 (lusgeneratie
-    fail-closed) blijft per Master Plan-addendum de hoogste productprioriteit. Vraag: eerst
-    #505 afronden en dan het niveaus/Compleet-werk, of mag het niveaus-werk (geen route-engine,
-    wel weergave/abonnement) parallel starten?
+12. **KNWU-categorieën** — STATUS: WACHT OP VERIFICATIE RENÉ (besluitendocument 30-07-2026);
+    niet als norm coderen tot René de categorie-indeling geverifieerd heeft.
+13. **Ramp-rate-grenswaarden** — agent levert eerst een onderbouwd VOORSTEL (definitie,
+    wetenschap, leeftijd/ervaring-differentiatie, waarschuwingsniveaus, foutpositieven,
+    gebruikersteksten); bouwen pas na expliciete goedkeuring van René.
 
 
-
-
-
-### Herbeoordeeld 30-07-2026 — wachten nu op een concrete keuze
-9. **Samen-pagina volgorde** — huidige volgorde: mensen vinden → vrienden/netwerk → verzoeken → Voorstellen → Samen trainen → clubbanner → feed (onderaan). Keuze: (a) zo laten, (b) Voorstellen bovenaan, (c) Samen trainen bovenaan, (d) feed bovenaan.
-10. **Prominentie navigatie** — routeplanning is inmiddels prominent (mobiele tab "Rijden", 3e positie) — dat deel is opgelost. Restvraag: moet **Samen** een eigen plek op het eerste niveau krijgen (nu alleen via Meer), en zo ja ten koste van welke tab?
+### Herbeoordeeld 30/31-07-2026
+10. **Prominentie navigatie (rest van keuze 9/10)** — besloten 30-07: "Samen trainen" komt
+    bovenaan de Samen-pagina; hoofdnavigatie NIET wijzigen. Open blijft alleen: krijgt
+    **Samen** ooit een eigen plek op het eerste niveau, en zo ja ten koste van welke tab?
 
 ## Beslist (archief)
+- **2026-07-30/31 — Keuze 9 (Samen-volgorde): "Samen trainen" bovenaan** (besluitendocument
+  30-07); hoofdnav blijft ongewijzigd. Keuze 11 (volgorde niveaus-werk vs. #505) is vervallen:
+  de aanvullende opdracht van 30-07 legt de volgorde zelf vast (§15: eerst rechtenlek — gedaan
+  31-07 — dan besluiten→docs, routeplanner-weergaven incl. "Wedstrijd", externe coach, logging,
+  zones/PDC/koolhydraat, ramp-rate-voorstel); #505 en Vandaag-werk schuiven daarachter.
 - **2026-07-30 — Plan-pagina indeling: "Vandaag eerst".** Bovenaan de dagstaat van vandaag
   (training/rustdag/gat + reden), daaronder de kalender met fase-opbouw, onderaan verbanden
   en ontwikkeling; mobiel en desktop dezelfde volgorde. Taak #450 aangemaakt (Drafts).
