@@ -34,7 +34,8 @@ const TAB_INTRO: Record<RoutesView, string> = {
 // Rijden-hoofdscherm met tabbladen. Elke tab blijft deep-linkbaar via
 // ?view=…; deep-links (?nav=, ?ritopties=, ?route=) zonder view landen
 // automatisch op "Bewaard", waar de routekaarten leven. Zonder parameters
-// opent ook "Bewaard" — daar staat wat je het vaakst nodig hebt.
+// opent "Maken" (besluit René 31-07-2026): wie het hoofdstuk Rijden opent,
+// begint bij het plannen van een route.
 export default function RoutesPage() {
   const routePlannerEnabled = useFeatureFlag("route_planner")
   const search = useSearch()
@@ -43,7 +44,9 @@ export default function RoutesPage() {
   const rawView = params.get("view")
   const view: RoutesView = TABS.some((t) => t.id === rawView)
     ? (rawView as RoutesView)
-    : "bewaard"
+    : params.has("route") || params.has("nav") || params.has("ritopties")
+      ? "bewaard"
+      : "maken"
 
   // Tab-wissel schrijft alleen ?view= — oude deep-linkparameters (?route=…)
   // horen bij de vorige weergave en gaan niet mee.

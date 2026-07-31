@@ -1,0 +1,40 @@
+delivery: "Rijden opent op Maken; routebibliotheek: eigen kleur+lijnstijl per route met legenda; zoeken op plaats met plaatskeuze en 5 km-straal"
+date: 2026-07-31
+checked_by: "Replit Agent (main), vóór oplevering aan René"
+surfaces:
+  - "Web /routes (zonder parameters): opent nu op tabblad Maken; deep-links ?route=/?nav=/?ritopties= landen nog op Bewaard (gecontroleerd via screenshot en code)"
+  - "Web /routes?view=ontdek — Kant-en-klare routes: kaart, legenda, routekaartjes, zoekveld"
+  - "API GET /api/routes/bibliotheek — bbox-vorm én nieuwe straal-vorm (curl-gecontroleerd op echte Hengelo-data)"
+checks:
+  dead_controls:
+    status: geslaagd
+    notes: >-
+      Alle nieuwe knoppen doen echt iets: plaatskeuzelijst kiest en laadt,
+      "Zoek tot 10/20/50 km" herlaadt met de ruimere straal (alleen zichtbaar
+      als er niets binnen de huidige straal is), legenda is puur informatief
+      en niet klikbaar. "Laat hier de routes zien" schakelt terug naar
+      kaartgestuurd zoeken en wist de straal-stand.
+  context_nonsense:
+    status: geslaagd
+    notes: >-
+      Bij meerdere plaatsen met dezelfde naam (Hengelo OV/GLD) gokt de app
+      niet maar vraagt welke bedoeld is. Afstand "start op X km" verschijnt
+      alleen bij straal-zoeken (bbox-antwoorden hebben startAfstandKm null).
+      De straal wordt per zoekopdracht gekozen en nooit als voorkeur bewaard;
+      dat staat er ook eerlijk bij.
+  placeholder_as_result:
+    status: geslaagd
+    notes: >-
+      Geen routes binnen de straal is een eerlijke lege staat met de reden en
+      expliciete keuzes (verruimen, ander startpunt, gebied laten vullen) —
+      nooit stil verruimen of routes van verderop als "resultaat" tonen.
+      Afstanden komen uit een echte haversineberekening (regressietest
+      test:route-library-straal, uitgevoerd en groen); kleuren/lijnstijlen op
+      kaart en kaartjes komen uit één gedeelde stijlmodule, dus lijst en
+      kaart kunnen niet uiteenlopen.
+verdict: >-
+  Oplevering akkoord. Beperking eerlijk genoemd: de meerdere-routes-weergave
+  met kleuren en lijnstijlen is met code, typecheck en API-data gecontroleerd,
+  maar niet met een interactieve klik-sessie op een gevuld gebied; de
+  planner-tab (Maken) toont maar één kandidaatroute tegelijk op de kaart, dus
+  daar is geen meerdere-routes-onderscheid nodig.

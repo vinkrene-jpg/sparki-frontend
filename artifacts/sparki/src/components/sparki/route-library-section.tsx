@@ -5,8 +5,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Bike, Loader2, MapPinned, Search, Star } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { apiFetch } from "@/lib/api"
-import { useGeocode } from "@/hooks/use-routes"
+import { useGeocode, type GeocodeResult } from "@/hooks/use-routes"
 import { racefietsVerification } from "@/lib/racefiets-verification"
+import {
+  BIKE_DASH_LABEL,
+  bikeDash,
+  LijnVoorbeeld,
+  routeColorById,
+} from "@/lib/route-style"
 
 // Sparki-routebibliotheek op de Ontdek-tab: door Sparki zelf gegenereerde,
 // kant-en-klare routes per gebied. De gebruiker zoomt/schuift de kaart en
@@ -33,6 +39,10 @@ export type LibraryRoute = {
   // nieuwe route stuurde (null bij een gewone startset-route).
   improveNote: string | null
   generation: number
+  // Alleen bij zoeken rond een plaats: afstand (km) van het gekozen startpunt
+  // tot de start van deze route — zodat de gebruiker kan zien dat de route
+  // echt in de buurt begint.
+  startAfstandKm?: number | null
   // Motor-wegdekmeting (taak #492): stuurt de racefiets-verificatie.
   engineSurface?: {
     provider: string
@@ -51,31 +61,47 @@ const BIKE_LABEL: Record<string, string> = {
 
 type Bbox = { minLat: number; maxLat: number; minLon: number; maxLon: number }
 
-function useLibraryRoutes(bbox: Bbox | null) {
+// Zoekgebied: óf de zichtbare kaartuitsnede ("Laat hier de routes zien"),
+// óf een straal rond een gezochte plaats. Bij een plaats geldt standaard
+// 5 km; verruimen gebeurt alleen op expliciet verzoek van de gebruiker en
+// wordt nooit als voorkeur bewaard (correctie René 31-07-2026).
+type Gebied =
+  | { mode: "bbox"; bbox: Bbox }
+  | { mode: "straal"; lat: number; lon: number; radiusKm: number; label: string }
+
+function useLibraryRoutes(gebied: Gebied | null) {
   return useQuery({
-    queryKey: ["routes", "bibliotheek", bbox],
-    enabled: bbox != null,
+    queryKey: ["routes", "bibliotheek", gebied],
+    enabled: gebied != null,
     queryFn: () =>
       apiFetch<{ routes: LibraryRoute[] }>(
-        `/api/routes/bibliotheek?minLat=${bbox!.minLat}&maxLat=${bbox!.maxLat}&minLon=${bbox!.minLon}&maxLon=${bbox!.maxLon}`,
+        gebied!.mode === "bbox"
+          ? `/api/routes/bibliotheek?minLat=${gebied!.bbox.minLat}&maxLat=${gebied!.bbox.maxLat}&minLon=${gebied!.bbox.minLon}&maxLon=${gebied!.bbox.maxLon}`
+          : `/api/routes/bibliotheek?lat=${gebied!.lat}&lon=${gebied!.lon}&radiusKm=${gebied!.radiusKm}`,
       ),
   })
 }
 
 function LibraryMap({
   routes,
+  alleIds,
   selectedId,
   onSelect,
   onReady,
 }: {
   routes: LibraryRoute[]
+  // Ids van de VOLLEDIGE geladen set (ongefilterd): kleuren blijven zo
+  // stabiel wanneer de gebruiker op fietstype filtert.
+  alleIds: number[]
   selectedId: number | null
   onSelect: (id: number) => void
   onReady: (map: L.Map) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
-  const linesRef = useRef<Map<number, L.Polyline>>(new Map())
+  const linesRef = useRef<
+    Map<number, { casing: L.Polyline; line: L.Polyline }>
+  >(new Map())
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -103,36 +129,55 @@ function LibraryMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Elke route: eigen kleur (stabiel binnen de geladen set) + lijnstijl per
+  // fietstype, met een donkere onderlijn (casing) zodat overlappende routes
+  // op de lichte kaarttegels niet visueel samensmelten.
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    for (const line of linesRef.current.values()) line.remove()
+    for (const { casing, line } of linesRef.current.values()) {
+      casing.remove()
+      line.remove()
+    }
     linesRef.current.clear()
     for (const r of routes) {
       if (!r.geometry || r.geometry.length < 2) continue
+      const color = routeColorById(r.id, alleIds)
+      const casing = L.polyline(r.geometry, {
+        color: "#1b2430",
+        weight: 6,
+        opacity: 0.35,
+        interactive: false,
+      })
       const line = L.polyline(r.geometry, {
-        color: ACCENT,
+        color,
         weight: 3,
-        opacity: 0.55,
+        opacity: 0.85,
+        dashArray: bikeDash(r.bikeType),
       })
       line.on("click", () => onSelect(r.id))
+      casing.addTo(map)
       line.addTo(map)
-      linesRef.current.set(r.id, line)
+      linesRef.current.set(r.id, { casing, line })
     }
     // Bewust niet auto-fitten: de gebruiker bepaalt zelf de uitsnede.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routes])
+  }, [routes, alleIds])
 
+  // Selectie: de gekozen route wordt duidelijk prominenter; de rest blijft
+  // zichtbaar maar rustiger (correctie René 31-07-2026).
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    for (const [id, line] of linesRef.current) {
+    for (const [id, { casing, line }] of linesRef.current) {
       const active = id === selectedId
       line.setStyle({
-        weight: active ? 5 : 3,
-        opacity: active ? 0.95 : selectedId == null ? 0.55 : 0.3,
+        weight: active ? 6 : 3,
+        opacity: active ? 1 : selectedId == null ? 0.85 : 0.35,
       })
+      casing.setStyle({ opacity: active ? 0.55 : 0.25 })
       if (active) {
+        casing.bringToFront()
         line.bringToFront()
         map.fitBounds(line.getBounds(), { padding: [32, 32] })
       }
@@ -247,14 +292,17 @@ function CommentaarForm({ routeId }: { routeId: number }) {
 export function RouteLibrarySection() {
   const qc = useQueryClient()
   const mapInstance = useRef<L.Map | null>(null)
-  const [bbox, setBbox] = useState<Bbox | null>(null)
+  const [gebied, setGebied] = useState<Gebied | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [bikeFilter, setBikeFilter] = useState<string | null>(null)
   const [vulMelding, setVulMelding] = useState<string | null>(null)
   const [zoekQ, setZoekQ] = useState("")
   const [zoekFout, setZoekFout] = useState<string | null>(null)
+  // Meerdere plaatsen met dezelfde naam (bijv. Hengelo OV vs. Hengelo GLD):
+  // de gebruiker kiest zelf — we gokken nooit stilzwijgend.
+  const [plaatsKeuzes, setPlaatsKeuzes] = useState<GeocodeResult[] | null>(null)
   const geocode = useGeocode()
-  const { data, isLoading, isError } = useLibraryRoutes(bbox)
+  const { data, isLoading, isError } = useLibraryRoutes(gebied)
 
   const toonHier = () => {
     const map = mapInstance.current
@@ -262,30 +310,56 @@ export function RouteLibrarySection() {
     const b = map.getBounds()
     setSelectedId(null)
     setVulMelding(null)
-    setBbox({
-      minLat: b.getSouth(),
-      maxLat: b.getNorth(),
-      minLon: b.getWest(),
-      maxLon: b.getEast(),
+    setPlaatsKeuzes(null)
+    setGebied({
+      mode: "bbox",
+      bbox: {
+        minLat: b.getSouth(),
+        maxLat: b.getNorth(),
+        minLon: b.getWest(),
+        maxLon: b.getEast(),
+      },
     })
   }
 
-  // Plaats zoeken: kaart erheen en meteen de routes van dat gebied laden.
+  // Gekozen plaats: kaart erheen en alleen routes laden die binnen de straal
+  // rond dit startpunt BEGINNEN (standaard 5 km; verruimen is een expliciete
+  // keuze en wordt nooit als voorkeur bewaard).
+  const kiesPlaats = (hit: GeocodeResult, radiusKm = 5) => {
+    setPlaatsKeuzes(null)
+    setSelectedId(null)
+    setVulMelding(null)
+    setGebied({
+      mode: "straal",
+      lat: hit.lat,
+      lon: hit.lon,
+      radiusKm,
+      label: hit.label,
+    })
+    mapInstance.current?.setView([hit.lat, hit.lon], radiusKm <= 5 ? 12 : radiusKm <= 10 ? 11 : 10)
+  }
+
   const zoekPlaats = () => {
     const q = zoekQ.trim()
     if (q.length < 2 || geocode.isPending) return
     setZoekFout(null)
+    setPlaatsKeuzes(null)
     geocode.mutate(q, {
       onSuccess: (r) => {
-        const hit = r.results[0]
-        if (!hit) {
+        if (r.results.length === 0) {
           setZoekFout("Geen plaats gevonden — probeer een andere naam.")
           return
         }
-        const map = mapInstance.current
-        if (!map) return
-        map.setView([hit.lat, hit.lon], 11)
-        toonHier()
+        // Meerdere kandidaten met verschillende labels? Laat de gebruiker
+        // kiezen in plaats van stilzwijgend de eerste te nemen.
+        const uniek = r.results.filter(
+          (h, i) => r.results.findIndex((x) => x.label === h.label) === i,
+        )
+        if (uniek.length > 1) {
+          setPlaatsKeuzes(uniek)
+          return
+        }
+        kiesPlaats(uniek[0])
       },
       onError: () => setZoekFout("Zoeken lukte niet — probeer het opnieuw."),
     })
@@ -323,6 +397,8 @@ export function RouteLibrarySection() {
   const routes = (data?.routes ?? []).filter(
     (r) => bikeFilter == null || r.bikeType === bikeFilter,
   )
+  // Kleur is stabiel binnen de volledige geladen set, óók tijdens filteren.
+  const alleIds = (data?.routes ?? []).map((r) => r.id)
   const selected = routes.find((r) => r.id === selectedId) ?? null
 
   const gebruik = useMutation({
@@ -374,10 +450,39 @@ export function RouteLibrarySection() {
       {zoekFout && (
         <p className="mt-1.5 text-[12px] text-rose-300/80">{zoekFout}</p>
       )}
+      {plaatsKeuzes && (
+        <div className="mt-2 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3">
+          <p className="text-[12px] text-white/60">
+            Er zijn meerdere plaatsen met deze naam — welke bedoel je?
+          </p>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {plaatsKeuzes.map((h) => (
+              <button
+                key={h.label}
+                type="button"
+                onClick={() => kiesPlaats(h)}
+                className="rounded-lg border border-white/[0.12] px-3 py-1.5 text-left text-[13px] text-white/80 transition-colors hover:border-cyan-300/40"
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {gebied?.mode === "straal" && (
+        <p className="mt-2 text-[12px] text-white/55">
+          Routes die starten binnen{" "}
+          <span className="font-semibold text-white/80">
+            {gebied.radiusKm} km
+          </span>{" "}
+          van {gebied.label}. Deze straal geldt alleen voor deze zoekopdracht.
+        </p>
+      )}
 
       <div className="mt-3">
         <LibraryMap
           routes={routes}
+          alleIds={alleIds}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onReady={(m) => {
@@ -385,6 +490,25 @@ export function RouteLibrarySection() {
           }}
         />
       </div>
+
+      {/* Compacte legenda: lijnstijl per fietstype (kleur is per route en
+          staat op elk routekaartje — zo is de koppeling kaart↔lijst zonder
+          alleen op kleur te leunen). */}
+      {routes.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/50">
+          {(Object.keys(BIKE_LABEL) as string[])
+            .filter((b) => routes.some((r) => r.bikeType === b))
+            .map((b) => (
+              <span key={b} className="inline-flex items-center gap-1.5">
+                <LijnVoorbeeld color="rgba(255,255,255,0.75)" bikeType={b} />
+                {BIKE_LABEL[b]} ({BIKE_DASH_LABEL[b] ?? "eigen lijnstijl"})
+              </span>
+            ))}
+          <span className="text-white/35">
+            Elke route heeft daarnaast een eigen kleur.
+          </span>
+        </div>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
@@ -395,7 +519,7 @@ export function RouteLibrarySection() {
         >
           Laat hier de routes zien
         </button>
-        {bbox != null && !isLoading && !isError && routes.length === 0 && (
+        {gebied != null && !isLoading && !isError && routes.length === 0 && (
           <button
             type="button"
             onClick={() => vulGebied.mutate()}
@@ -431,15 +555,43 @@ export function RouteLibrarySection() {
           Kon de bibliotheek niet laden — probeer opnieuw.
         </p>
       )}
-      {bbox == null && (
+      {gebied == null && (
         <p className="mt-3 text-[13px] text-white/40">
           Nog geen gebied gekozen — schuif de kaart en druk op de knop.
         </p>
       )}
-      {bbox != null && !isLoading && !isError && routes.length === 0 && (
-        <p className="mt-3 text-[13px] text-white/40">
-          In dit gebied staan nog geen Sparki-routes.
-        </p>
+      {gebied != null && !isLoading && !isError && routes.length === 0 && (
+        <div className="mt-3">
+          <p className="text-[13px] text-white/40">
+            {gebied.mode === "straal"
+              ? `Geen Sparki-routes die binnen ${gebied.radiusKm} km van ${gebied.label} starten.`
+              : "In dit gebied staan nog geen Sparki-routes."}
+          </p>
+          {gebied.mode === "straal" && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {[10, 20, 50]
+                .filter((r) => r > gebied.radiusKm)
+                .map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() =>
+                      kiesPlaats(
+                        { lat: gebied.lat, lon: gebied.lon, label: gebied.label },
+                        r,
+                      )
+                    }
+                    className="rounded-full border border-white/[0.14] px-3 py-1.5 text-[12px] text-white/70 transition-colors hover:border-cyan-300/40"
+                  >
+                    Zoek tot {r} km
+                  </button>
+                ))}
+              <span className="text-[12px] text-white/35">
+                of kies een ander startpunt, of laat Sparki dit gebied vullen.
+              </span>
+            </div>
+          )}
+        </div>
       )}
 
       {routes.length > 0 && (
@@ -474,7 +626,14 @@ export function RouteLibrarySection() {
                 className="flex w-full items-start justify-between gap-2 text-left"
               >
                 <span>
-                  <span className="block text-[14px] font-medium text-white/90">
+                  <span className="flex items-center gap-2 text-[14px] font-medium text-white/90">
+                    {/* Zelfde kleur + lijnstijl als op de kaart: zo koppel je
+                        kaartlijn en kaartje in één oogopslag. */}
+                    <LijnVoorbeeld
+                      color={routeColorById(r.id, alleIds)}
+                      bikeType={r.bikeType}
+                      width={26}
+                    />
                     {r.name}
                   </span>
                   <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-white/45">
@@ -487,6 +646,11 @@ export function RouteLibrarySection() {
                     )}
                     {r.elevationGainM != null && (
                       <span>{Math.round(r.elevationGainM)} hm</span>
+                    )}
+                    {r.startAfstandKm != null && (
+                      <span className="text-cyan-200/70">
+                        start op {String(r.startAfstandKm).replace(".", ",")} km
+                      </span>
                     )}
                   </span>
                   {r.improveNote && (
