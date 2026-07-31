@@ -62,7 +62,10 @@ import { registerRouteUsage } from "../lib/route-usage";
 // ROUTE_PAKKET_02A — maandtelling van routegebruik (alleen meten, nooit
 // blokkeren). Tellende gebeurtenissen: definitief opslaan + succesvolle
 // GPX-export. Plannen, aanpassen en bekijken roepen dit nooit aan.
-import { recordRouteUsageSafe } from "../lib/route-usage-metering";
+import {
+  promoteCandidateUsage,
+  recordRouteUsageSafe,
+} from "../lib/route-usage-metering";
 import {
   createRouteGenerationJob,
   finishJob,
@@ -2690,6 +2693,16 @@ router.get("/:id/tcx", requireAuth, async (req, res) => {
       "Content-Disposition",
       `attachment; filename="${safeName}.tcx"`,
     );
+    // Aanvulling 02a: iedere succesvolle export telt, ongeacht formaat.
+    // Registratie vóór res.send zodat een mislukte verzending nooit als
+    // gebruik telt; GPX+TCX van dezelfde route tellen samen één keer
+    // (unieke sleutel per route per maand).
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route.id,
+      usageType: "TCX_EXPORTED",
+      source: "tcx-export",
+    });
     res.send(tcx);
   } catch (err) {
     req.log.error({ err }, "routes.tcx failed");
@@ -2736,6 +2749,16 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
 
   res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${safeName}.gpx"`);
+  // Aanvulling 02a: export van een nog niet opgeslagen voorstel telt óók —
+  // via de bestaande stabiele kandidaat-identiteit (geen parallel systeem).
+  // Registratie vóór res.send; herhaalde export van hetzelfde voorstel telt
+  // niet dubbel (unieke sleutel per kandidaat per maand).
+  await recordRouteUsageSafe(req.log, {
+    clerkId,
+    candidateKey: candidateId,
+    usageType: "GPX_EXPORTED",
+    source: "gpx-export:voorstel",
+  });
   res.send(gpx);
 });
 
@@ -2817,6 +2840,14 @@ router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
 
   res.setHeader("Content-Type", "application/vnd.garmin.tcx+xml; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${safeName}.tcx"`);
+  // Aanvulling 02a: TCX-export van een niet-opgeslagen voorstel telt via
+  // dezelfde kandidaat-identiteit — GPX+TCX samen maximaal één keer per maand.
+  await recordRouteUsageSafe(req.log, {
+    clerkId,
+    candidateKey: candidateId,
+    usageType: "TCX_EXPORTED",
+    source: "tcx-export:voorstel",
+  });
   res.send(tcx);
 });
 
@@ -4463,12 +4494,27 @@ router.post("/", requireAuth, async (req, res) => {
           linkedPlannedWorkoutId,
         })
         .returning();
-      await recordRouteUsageSafe(req.log, {
-        clerkId,
-        routeId: route!.id,
-        usageType: "SAVED",
-        source: "opslaan:generated",
-      });
+      // Aanvulling 02a: is dit voorstel deze maand al geteld via een export
+      // vóór opslaan, dan wordt die registratie gepromoveerd naar de
+      // definitieve route-id — dezelfde route telt nooit dubbel.
+      let promoted = false;
+      try {
+        promoted = await promoteCandidateUsage({
+          clerkId,
+          candidateKey: candidateId,
+          routeId: route!.id,
+        });
+      } catch (err) {
+        req.log.error({ err }, "route-usage promotie faalde");
+      }
+      if (!promoted) {
+        await recordRouteUsageSafe(req.log, {
+          clerkId,
+          routeId: route!.id,
+          usageType: "SAVED",
+          source: "opslaan:generated",
+        });
+      }
       res.status(201).json({ route });
     } catch (err) {
       req.log.error({ err }, "routes.create (generated) failed");

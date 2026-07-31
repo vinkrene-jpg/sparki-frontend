@@ -103,6 +103,37 @@ bouwt navigatiesessie-reserveringen — het logische moment).
    het trainingsplan zelf aanmaakt (`lib/plan-routes.ts`) zijn geen
    gebruikershandeling "opslaan"; alleen expliciete gebruikersacties tellen.
 
+### Aanvulling 02a (besluit René 31-07-2026)
+
+De drie grensgevallen zijn beslist en doorgevoerd:
+
+1. **Elke succesvolle export telt**, ongeacht het formaat. Naast GPX telt nu
+   ook TCX (`TCX_EXPORTED`); toekomstige formaten volgen hetzelfde patroon.
+   GPX en TCX van dezelfde route tellen samen één keer per kalendermaand
+   (zelfde unieke sleutel per route per maand). Een mislukte export
+   (bijv. 422 zonder geometrie) telt nooit: registratie gebeurt pas vlak vóór
+   het verzenden van een geslaagd antwoord.
+2. **Export van een niet-opgeslagen routevoorstel telt óók**, via de bestaande
+   stabiele kandidaat-identiteit (de server-vertrouwde `candidateId` uit de
+   kandidatenopslag — geen parallel routesysteem). Daarvoor is
+   `route_usage_registrations` additief uitgebreid: `route_id` is nu nullable,
+   er is een `candidate_key`-kolom, een CHECK dat precies één van beide is
+   gevuld, en partiële unieke indexen per route én per kandidaat
+   (migratie `lib/db/migrations/0009_route_usage_candidate_key.sql`).
+   Herhaalde export van hetzelfde voorstel telt niet dubbel. Wordt een eerder
+   geëxporteerd voorstel daarna opgeslagen, dan wordt de bestaande registratie
+   **gepromoveerd** naar de definitieve route-id (`promoteCandidateUsage`) —
+   dezelfde route telt dus nooit dubbel. Kanttekening: een kandidaat-id leeft
+   30 minuten; verloopt het voorstel en genereert de gebruiker opnieuw, dan is
+   dat een nieuw voorstel (en telt een export daarvan opnieuw). Dat is de
+   eerlijke consequentie van "geen parallel routesysteem".
+3. **Planmotor-generatie telt niet.** Alleen bij expliciet opslaan of
+   exporteren (of later, ≥20 % rijden) telt zo'n route — dat gedrag bestond al
+   en is met een extra test vastgelegd.
+
+Bewijzen: scenario's A2–A8 in `src/tests/route-usage.ts` (24/24 groen) plus
+live curl-bewijs van een TCX-export en een kandidaat-export.
+
 ## Hoofdstuk 2 — Limiet en reserveringen (02b)
 
 _Nog niet gebouwd._

@@ -37,6 +37,7 @@ import {
 import { eq, and, inArray } from "drizzle-orm";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
+import { putCandidate } from "../lib/route-candidates";
 import {
   amsterdamCalendarMonth,
   isRiddenTriggerEnabled,
@@ -88,7 +89,8 @@ const RUN = `test_rusage_${Date.now()}`;
 const gratisUser = `${RUN}_gratis`;
 const goUser = `${RUN}_go`;
 const proUser = `${RUN}_pro`;
-const ALL = [gratisUser, goUser, proUser];
+const aanvullingUser = `${RUN}_aanvulling`;
+const ALL = [gratisUser, goUser, proUser, aanvullingUser];
 
 async function apiReq(
   method: string,
@@ -412,9 +414,116 @@ async function main() {
         .where(inArray(routeUsageRegistrationsTable.clerkId, ALL));
       assert(rows.length > 0, "er horen registraties te bestaan");
       assert(
-        rows.every((r) => r.t === "SAVED" || r.t === "GPX_EXPORTED"),
-        "alleen SAVED/GPX_EXPORTED zijn toegestaan met de vlag uit",
+        rows.every(
+          (r) =>
+            r.t === "SAVED" || r.t === "GPX_EXPORTED" || r.t === "TCX_EXPORTED",
+        ),
+        "alleen SAVED/GPX_EXPORTED/TCX_EXPORTED zijn toegestaan met de vlag uit",
       );
+    });
+
+    // ── AANVULLING 02a (besluit René 31-07-2026): elk exportformaat telt; ──
+    // ── ook export van een niet-opgeslagen voorstel; samen max 1×/maand.  ──
+
+    const cand = (name: string) =>
+      putCandidate({
+        clerkId: aanvullingUser,
+        name,
+        surface: "verhard",
+        distanceKm: 25,
+        durationSec: 3600,
+        elevationGainM: 120,
+        profile: [10, 12, 11, 14],
+        climbs: [],
+        nav: [],
+        geometry: [
+          [52.09, 5.12],
+          [52.095, 5.13],
+          [52.1, 5.14],
+        ],
+        waypoints: [],
+        rationale: "testvoorstel",
+        plannedWorkoutId: null,
+        engineSurface: null,
+      });
+
+    await scenario("A2. succesvolle TCX-export telt", async () => {
+      const rid = await directRoute(aanvullingUser, { name: "tcx-route" });
+      const e = await apiReq("GET", `/api/routes/${rid}/tcx`, aanvullingUser);
+      assert(e.status === 200, `tcx-export gaf ${e.status}`);
+      const t = await teller(aanvullingUser);
+      assert(t.used === 1, `tcx-export hoort 1 te tellen, is ${t.used}`);
+      assert(
+        t.regs.find((r) => r.routeId === rid)?.usageType === "TCX_EXPORTED",
+        "registratie hoort TCX_EXPORTED te zijn",
+      );
+    });
+
+    await scenario("A3. GPX en TCX van dezelfde route tellen samen één keer", async () => {
+      const rid = await directRoute(aanvullingUser, { name: "beide-formaten" });
+      const g = await apiReq("GET", `/api/routes/${rid}/gpx`, aanvullingUser);
+      const x = await apiReq("GET", `/api/routes/${rid}/tcx`, aanvullingUser);
+      assert(g.status === 200 && x.status === 200, "beide exports horen te slagen");
+      const t = await teller(aanvullingUser);
+      assert(t.used === 2, `gpx+tcx horen samen 1 extra te tellen (totaal 2), is ${t.used}`);
+    });
+
+    await scenario("A4. export van een niet-opgeslagen voorstel telt", async () => {
+      const id = cand("voorstel-export");
+      const e = await apiReq("GET", `/api/routes/candidate/${id}/gpx`, aanvullingUser);
+      assert(e.status === 200, `voorstel-export gaf ${e.status}`);
+      const t = await teller(aanvullingUser);
+      assert(t.used === 3, `voorstel-export hoort te tellen (totaal 3), is ${t.used}`);
+    });
+
+    await scenario("A5. herhaalde export van hetzelfde voorstel telt niet dubbel", async () => {
+      const id = cand("voorstel-herhaald");
+      const g1 = await apiReq("GET", `/api/routes/candidate/${id}/gpx`, aanvullingUser);
+      const g2 = await apiReq("GET", `/api/routes/candidate/${id}/gpx`, aanvullingUser);
+      const x1 = await apiReq("GET", `/api/routes/candidate/${id}/tcx`, aanvullingUser);
+      assert(
+        g1.status === 200 && g2.status === 200 && x1.status === 200,
+        "alle exports horen te slagen",
+      );
+      const t = await teller(aanvullingUser);
+      assert(t.used === 4, `herhaald voorstel hoort 1× te tellen (totaal 4), is ${t.used}`);
+    });
+
+    await scenario("A6. mislukte export telt niet (TCX zonder geometrie)", async () => {
+      const bare = await directRoute(aanvullingUser, { geometry: false, name: "leeg-tcx" });
+      const e = await apiReq("GET", `/api/routes/${bare}/tcx`, aanvullingUser);
+      assert(e.status === 422, `tcx zonder geometrie hoort 422 te geven, gaf ${e.status}`);
+      const t = await teller(aanvullingUser);
+      assert(t.used === 4, `mislukte export veranderde teller naar ${t.used}`);
+    });
+
+    await scenario("A7. voorstel exporteren en daarna opslaan = samen één (promotie)", async () => {
+      const id = cand("voorstel-dan-opslaan");
+      const e = await apiReq("GET", `/api/routes/candidate/${id}/gpx`, aanvullingUser);
+      assert(e.status === 200, `voorstel-export gaf ${e.status}`);
+      const s = await apiReq("POST", "/api/routes", aanvullingUser, {
+        source: "generated",
+        candidateId: id,
+        name: "voorstel-dan-opslaan",
+      });
+      assert(s.status === 201, `opslaan gaf ${s.status}`);
+      const t = await teller(aanvullingUser);
+      assert(t.used === 5, `export+opslaan hoort samen 1 te tellen (totaal 5), is ${t.used}`);
+      const reg = t.regs.find((r) => r.routeId === s.json.route.id);
+      assert(reg, "registratie hoort gepromoveerd te zijn naar de route-id");
+      assert(reg.usageType === "GPX_EXPORTED", "eerste tellende gebeurtenis (export) blijft staan");
+    });
+
+    await scenario("A8. planner-analoge route telt pas bij opslaan/exporteren", async () => {
+      // Genereren door de planner schrijft rechtstreeks (buiten opslaan/
+      // export om) — dat telt niet (zie ook 16); daarna exporteren telt wél.
+      const rid = await directRoute(aanvullingUser, { name: "planner-route" });
+      let t = await teller(aanvullingUser);
+      assert(t.used === 5, `alleen genereren mag niet tellen, teller is ${t.used}`);
+      const e = await apiReq("GET", `/api/routes/${rid}/tcx`, aanvullingUser);
+      assert(e.status === 200, `export gaf ${e.status}`);
+      t = await teller(aanvullingUser);
+      assert(t.used === 6, `na export hoort teller 6 te zijn, is ${t.used}`);
     });
   } finally {
     await cleanup();

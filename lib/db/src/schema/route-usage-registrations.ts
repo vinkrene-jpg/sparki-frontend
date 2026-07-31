@@ -7,6 +7,7 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -36,9 +37,17 @@ export const routeUsageRegistrationsTable = pgTable(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    // Zachte verwijzing naar routes.id (zie boven).
-    routeId: integer("route_id").notNull(),
-    // SAVED | GPX_EXPORTED | RIDDEN_20_PERCENT — de EERSTE tellende
+    // Zachte verwijzing naar routes.id (zie boven). NULL wanneer het gebruik
+    // een nog niet opgeslagen routevoorstel betreft (dan is candidateKey
+    // gevuld). Aanvulling 02a (besluit René 31-07-2026): ook export van een
+    // niet-opgeslagen voorstel telt.
+    routeId: integer("route_id"),
+    // Stabiele kandidaat-identiteit (bestaande candidateId uit de server-
+    // vertrouwde kandidatenopslag) voor gebruik vóór opslaan. Precies één van
+    // routeId/candidateKey is gevuld (CHECK in de migratie). Bij opslaan wordt
+    // de rij gepromoveerd naar routeId zodat dezelfde route nooit dubbel telt.
+    candidateKey: text("candidate_key"),
+    // SAVED | GPX_EXPORTED | TCX_EXPORTED | RIDDEN_20_PERCENT — de EERSTE tellende
     // gebeurtenis in de maand wint; latere gebeurtenissen voor dezelfde
     // route in dezelfde maand veranderen de rij niet (onConflictDoNothing).
     usageType: text("usage_type").notNull(),
@@ -58,11 +67,14 @@ export const routeUsageRegistrationsTable = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("route_usage_reg_user_route_month_idx").on(
-      t.clerkId,
-      t.routeId,
-      t.calendarMonth,
-    ),
+    // Partieel: uniciteit per route wanneer de route-id bekend is …
+    uniqueIndex("route_usage_reg_user_route_month_idx")
+      .on(t.clerkId, t.routeId, t.calendarMonth)
+      .where(sql`route_id IS NOT NULL`),
+    // … en per kandidaat wanneer het voorstel nog niet is opgeslagen.
+    uniqueIndex("route_usage_reg_user_candidate_month_idx")
+      .on(t.clerkId, t.candidateKey, t.calendarMonth)
+      .where(sql`candidate_key IS NOT NULL`),
     index("route_usage_reg_user_month_idx").on(t.clerkId, t.calendarMonth),
   ],
 );
