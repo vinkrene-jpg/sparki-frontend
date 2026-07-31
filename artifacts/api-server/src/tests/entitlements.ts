@@ -29,6 +29,7 @@ import {
   routesTable,
   racesTable,
   racePointsTable,
+  documentAnalysesTable,
 } from "@workspace/db";
 import { eq, and, inArray, desc } from "drizzle-orm";
 import app from "../app";
@@ -713,6 +714,145 @@ async function main() {
     } finally {
       await db.delete(racesTable).where(eq(racesTable.id, race!.id)).catch(() => {});
       await db.delete(routesTable).where(eq(routesTable.id, route!.id)).catch(() => {});
+    }
+  });
+
+  await scenario("Productbesluit gids/course points: koppelen is Compleet-only en kandidaatpunten lekken niet", async () => {
+    // PRODUCTBESLUIT (René, 31-07-2026): documentanalyse blijft race_intel,
+    // maar het aanmaken/koppelen/tonen van course points is route_course_points.
+    // Gratis en Go: /link → 403 "Sparki Compleet" en er ontstaat GEEN verborgen
+    // race_point; kandidaatpunten worden in analyse-responses gemaskeerd
+    // (leeg + pointsLocked). Compleet ziet en koppelt wél.
+    const kandidaat = {
+      kind: "bevoorrading",
+      description: "Bevoorradingszone km 45",
+      page: 3,
+      raceKm: 45,
+      lat: null,
+      lng: null,
+      confidence: "high",
+    };
+    const [analyse] = await db
+      .insert(documentAnalysesTable)
+      .values({
+        clerkId: subUser,
+        fileName: "poorttest-gids.pdf",
+        mediaType: "application/pdf",
+        status: "analyzed",
+        summary: "Poorttest technische gids",
+        candidatePoints: [kandidaat],
+      })
+      .returning({ id: documentAnalysesTable.id });
+    const [race] = await db
+      .insert(racesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest gids-wedstrijd",
+        raceDate: "2027-08-01",
+        status: "gepland",
+      })
+      .returning({ id: racesTable.id });
+    try {
+      for (const variant of ["sparki_basic", "sparki_go"] as const) {
+        await db
+          .update(userProfilesTable)
+          .set({ productVariant: variant })
+          .where(eq(userProfilesTable.clerkId, subUser));
+        // Koppelen geweigerd met het juiste pakketlabel.
+        const link = await apiReq(
+          "POST",
+          `/api/document-analyses/${analyse!.id}/link`,
+          subUser,
+          { raceId: race!.id },
+        );
+        assert(link.status === 403, `${variant}: link verwacht 403, kreeg ${link.status}`);
+        assert(link.json?.feature === "route_course_points", `${variant}: feature was ${link.json?.feature}`);
+        assert(
+          typeof link.json?.error === "string" && link.json.error.includes("Sparki Compleet"),
+          `${variant}: 403-tekst moet Sparki Compleet noemen, was "${link.json?.error}"`,
+        );
+        // Geen verborgen race_points aangemaakt.
+        const stiekem = await db
+          .select({ id: racePointsTable.id })
+          .from(racePointsTable)
+          .where(eq(racePointsTable.raceId, race!.id));
+        assert(stiekem.length === 0, `${variant}: er zijn zonder recht ${stiekem.length} race_points aangemaakt`);
+        // Kandidaatpunten lekken niet via analyse-responses.
+        const detail = await apiReq("GET", `/api/document-analyses/${analyse!.id}`, subUser);
+        assert(detail.status === 200, `${variant}: analyse-detail verwacht 200, kreeg ${detail.status}`);
+        assert(
+          Array.isArray(detail.json?.analysis?.candidatePoints) &&
+            detail.json.analysis.candidatePoints.length === 0 &&
+            detail.json.analysis.pointsLocked === true,
+          `${variant}: kandidaatpunten moeten leeg + pointsLocked zijn, kreeg ${JSON.stringify({ candidatePoints: detail.json?.analysis?.candidatePoints, pointsLocked: detail.json?.analysis?.pointsLocked })}`,
+        );
+        const lijst = await apiReq("GET", "/api/document-analyses", subUser);
+        const rij = (lijst.json?.analyses ?? []).find((a: any) => a.id === analyse!.id);
+        assert(
+          rij && rij.candidatePoints.length === 0 && rij.pointsLocked === true,
+          `${variant}: lijst-response lekt kandidaatpunten`,
+        );
+        // POST /:id/answers — response is óók gemaskeerd.
+        const antwoorden = await apiReq(
+          "POST",
+          `/api/document-analyses/${analyse!.id}/answers`,
+          subUser,
+          { answers: {} },
+        );
+        assert(
+          antwoorden.status === 200 &&
+            antwoorden.json?.analysis?.candidatePoints?.length === 0 &&
+            antwoorden.json.analysis.pointsLocked === true,
+          `${variant}: answers-response lekt kandidaatpunten of mist pointsLocked`,
+        );
+        // POST / (upload, hier bewust het eerlijke faalpad met onleesbare
+        // inhoud — geen AI nodig): ook het failed record draagt pointsLocked.
+        const upload = await apiReq("POST", "/api/document-analyses", subUser, {
+          fileName: "poorttest-kapot.pdf",
+          mediaType: "application/pdf",
+          data: "bm9nZWVucG9vcnR0ZXN0",
+        });
+        assert(
+          upload.status === 201 && upload.json?.analysis?.pointsLocked === true,
+          `${variant}: upload-response (failed pad) mist pointsLocked, kreeg ${upload.status} ${JSON.stringify(upload.json?.analysis?.pointsLocked)}`,
+        );
+        await db
+          .delete(documentAnalysesTable)
+          .where(eq(documentAnalysesTable.id, upload.json.analysis.id))
+          .catch(() => {});
+      }
+      // Compleet: ziet kandidaatpunten én koppelt echt (punt "voorgesteld").
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: "sparki_pro" })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const open = await apiReq("GET", `/api/document-analyses/${analyse!.id}`, subUser);
+      assert(
+        open.json?.analysis?.candidatePoints?.length === 1 &&
+          open.json.analysis.pointsLocked === false,
+        `Compleet: verwacht 1 kandidaatpunt + pointsLocked false, kreeg ${JSON.stringify(open.json?.analysis?.candidatePoints)}`,
+      );
+      const link = await apiReq(
+        "POST",
+        `/api/document-analyses/${analyse!.id}/link`,
+        subUser,
+        { raceId: race!.id },
+      );
+      assert(link.status === 200, `Compleet: link verwacht 200, kreeg ${link.status} (${JSON.stringify(link.json)})`);
+      const punten = await db
+        .select({ id: racePointsTable.id, status: racePointsTable.status })
+        .from(racePointsTable)
+        .where(eq(racePointsTable.raceId, race!.id));
+      assert(
+        punten.length === 1 && punten[0]!.status === "voorgesteld",
+        `Compleet: verwacht 1 voorgesteld punt, kreeg ${JSON.stringify(punten)}`,
+      );
+    } finally {
+      await db.delete(racesTable).where(eq(racesTable.id, race!.id)).catch(() => {});
+      await db
+        .delete(documentAnalysesTable)
+        .where(eq(documentAnalysesTable.id, analyse!.id))
+        .catch(() => {});
     }
   });
 
