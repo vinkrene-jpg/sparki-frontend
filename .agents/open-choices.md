@@ -61,6 +61,14 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15f. **Vrijgave SPARKI_TRAINER_ABONNEMENT_01 (ontvangen 31-07-2026)** —
+    Trainer-abonnement €99/maand of €990/jaar (prijsbesluit in pakket),
+    op de bestaande Stripe/entitlements-architectuur; sporters koppelen,
+    rechten per sporter, levenscyclus + facturen. Voorwaarden §2: bestaande
+    billing/webhook-idempotentie/koppelmodel bruikbaar; afwijkingen vóór
+    bouw melden, nooit een parallel systeem. Raakt gedeelde lagen
+    (entitlements, webhooks) ⇒ volledige regressieset verplicht.
+
 15e. **Vrijgave bundel 19–23 (ontvangen 31-07-2026)** — vijf domeinpakketten:
     19 PLAN_MARKTPLAATS_01 (trainingsplannenmarktplaats, incl. verkoop/aankoop),
     20 CLUB_COMMUNICATIE_01 (rolgestuurde berichten in-app/push/e-mail),
