@@ -122,8 +122,13 @@ De drie grensgevallen zijn beslist en doorgevoerd:
    (migratie `lib/db/migrations/0009_route_usage_candidate_key.sql`).
    Herhaalde export van hetzelfde voorstel telt niet dubbel. Wordt een eerder
    geëxporteerd voorstel daarna opgeslagen, dan wordt de bestaande registratie
-   **gepromoveerd** naar de definitieve route-id (`promoteCandidateUsage`) —
-   dezelfde route telt dus nooit dubbel. Kanttekening: een kandidaat-id leeft
+   **gepromoveerd** naar de definitieve route-id (`settleCandidateOnSave`) —
+   dezelfde route telt dus nooit dubbel. Kandidaat-export en opslaan zijn
+   geserialiseerd met een advisory-transactielock per gebruiker+kandidaat, en
+   een opgeslagen kandidaat wordt gemarkeerd (`markCandidateSaved`) zodat een
+   latere export van hetzelfde voorstel onder de route-identiteit telt — ook
+   onder gelijktijdige verzoeken ontstaan er nooit twee telbare rijen voor
+   dezelfde route. Kanttekening: een kandidaat-id leeft
    30 minuten; verloopt het voorstel en genereert de gebruiker opnieuw, dan is
    dat een nieuw voorstel (en telt een export daarvan opnieuw). Dat is de
    eerlijke consequentie van "geen parallel routesysteem".

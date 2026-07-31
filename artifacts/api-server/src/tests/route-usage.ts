@@ -514,16 +514,71 @@ async function main() {
       assert(reg.usageType === "GPX_EXPORTED", "eerste tellende gebeurtenis (export) blijft staan");
     });
 
+    await scenario("A9. export ná opslaan van hetzelfde voorstel telt niet dubbel", async () => {
+      const id = cand("opslaan-dan-export");
+      const s = await apiReq("POST", "/api/routes", aanvullingUser, {
+        source: "generated",
+        candidateId: id,
+        name: "opslaan-dan-export",
+      });
+      assert(s.status === 201, `opslaan gaf ${s.status}`);
+      const before = (await teller(aanvullingUser)).used;
+      const e = await apiReq("GET", `/api/routes/candidate/${id}/gpx`, aanvullingUser);
+      assert(e.status === 200, `kandidaat-export ná opslaan gaf ${e.status}`);
+      const t = await teller(aanvullingUser);
+      assert(t.used === before, `export ná opslaan telde dubbel (${before} → ${t.used})`);
+      const [dangling] = await db
+        .select({ id: routeUsageRegistrationsTable.id })
+        .from(routeUsageRegistrationsTable)
+        .where(
+          and(
+            eq(routeUsageRegistrationsTable.clerkId, aanvullingUser),
+            eq(routeUsageRegistrationsTable.candidateKey, id),
+          ),
+        );
+      assert(
+        !dangling,
+        "er mag geen losse kandidaatregistratie naast de route bestaan",
+      );
+    });
+
+    await scenario("A10. gelijktijdige exports + opslaan ⇒ samen precies één", async () => {
+      const id = cand("gelijktijdig");
+      const before = (await teller(aanvullingUser)).used;
+      const [g, x, s] = await Promise.all([
+        apiReq("GET", `/api/routes/candidate/${id}/gpx`, aanvullingUser),
+        apiReq("GET", `/api/routes/candidate/${id}/tcx`, aanvullingUser),
+        apiReq("POST", "/api/routes", aanvullingUser, {
+          source: "generated",
+          candidateId: id,
+          name: "gelijktijdig",
+        }),
+      ]);
+      assert(
+        g.status === 200 && x.status === 200 && s.status === 201,
+        `verwacht 200/200/201, kreeg ${g.status}/${x.status}/${s.status}`,
+      );
+      // Verreken eventueel nog levende kandidaatrij expliciet nogmaals via een
+      // tweede export (die onder de route-identiteit valt) — daarna hoort er
+      // exact één registratie bij te zijn gekomen.
+      const t = await teller(aanvullingUser);
+      assert(
+        t.used === before + 1,
+        `gelijktijdig exporteren+opslaan hoort samen 1 te tellen (${before} → ${t.used})`,
+      );
+    });
+
     await scenario("A8. planner-analoge route telt pas bij opslaan/exporteren", async () => {
       // Genereren door de planner schrijft rechtstreeks (buiten opslaan/
       // export om) — dat telt niet (zie ook 16); daarna exporteren telt wél.
+      const before = (await teller(aanvullingUser)).used;
       const rid = await directRoute(aanvullingUser, { name: "planner-route" });
       let t = await teller(aanvullingUser);
-      assert(t.used === 5, `alleen genereren mag niet tellen, teller is ${t.used}`);
+      assert(t.used === before, `alleen genereren mag niet tellen (${before} → ${t.used})`);
       const e = await apiReq("GET", `/api/routes/${rid}/tcx`, aanvullingUser);
       assert(e.status === 200, `export gaf ${e.status}`);
       t = await teller(aanvullingUser);
-      assert(t.used === 6, `na export hoort teller 6 te zijn, is ${t.used}`);
+      assert(t.used === before + 1, `na export hoort teller ${before + 1} te zijn, is ${t.used}`);
     });
   } finally {
     await cleanup();

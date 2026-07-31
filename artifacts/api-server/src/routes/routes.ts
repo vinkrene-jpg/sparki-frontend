@@ -63,8 +63,9 @@ import { registerRouteUsage } from "../lib/route-usage";
 // blokkeren). Tellende gebeurtenissen: definitief opslaan + succesvolle
 // GPX-export. Plannen, aanpassen en bekijken roepen dit nooit aan.
 import {
-  promoteCandidateUsage,
+  recordCandidateExportUsageSafe,
   recordRouteUsageSafe,
+  settleCandidateOnSaveSafe,
 } from "../lib/route-usage-metering";
 import {
   createRouteGenerationJob,
@@ -92,6 +93,7 @@ import {
   buildTcx,
   putCandidate,
   getCandidate,
+  markCandidateSaved,
   updateCandidateRationale,
   getRoutingProvider,
   bikeSuitabilityConfigError,
@@ -2753,9 +2755,10 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
   // via de bestaande stabiele kandidaat-identiteit (geen parallel systeem).
   // Registratie vóór res.send; herhaalde export van hetzelfde voorstel telt
   // niet dubbel (unieke sleutel per kandidaat per maand).
-  await recordRouteUsageSafe(req.log, {
+  await recordCandidateExportUsageSafe(req.log, {
     clerkId,
     candidateKey: candidateId,
+    savedRouteId: stored.savedRouteId ?? null,
     usageType: "GPX_EXPORTED",
     source: "gpx-export:voorstel",
   });
@@ -2842,9 +2845,10 @@ router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
   res.setHeader("Content-Disposition", `attachment; filename="${safeName}.tcx"`);
   // Aanvulling 02a: TCX-export van een niet-opgeslagen voorstel telt via
   // dezelfde kandidaat-identiteit — GPX+TCX samen maximaal één keer per maand.
-  await recordRouteUsageSafe(req.log, {
+  await recordCandidateExportUsageSafe(req.log, {
     clerkId,
     candidateKey: candidateId,
+    savedRouteId: stored.savedRouteId ?? null,
     usageType: "TCX_EXPORTED",
     source: "tcx-export:voorstel",
   });
@@ -4494,27 +4498,18 @@ router.post("/", requireAuth, async (req, res) => {
           linkedPlannedWorkoutId,
         })
         .returning();
-      // Aanvulling 02a: is dit voorstel deze maand al geteld via een export
-      // vóór opslaan, dan wordt die registratie gepromoveerd naar de
-      // definitieve route-id — dezelfde route telt nooit dubbel.
-      let promoted = false;
-      try {
-        promoted = await promoteCandidateUsage({
-          clerkId,
-          candidateKey: candidateId,
-          routeId: route!.id,
-        });
-      } catch (err) {
-        req.log.error({ err }, "route-usage promotie faalde");
-      }
-      if (!promoted) {
-        await recordRouteUsageSafe(req.log, {
-          clerkId,
-          routeId: route!.id,
-          usageType: "SAVED",
-          source: "opslaan:generated",
-        });
-      }
+      // Aanvulling 02a: markeer de kandidaat als opgeslagen (latere exports
+      // van het voorstel tellen dan onder de route-identiteit) en verreken
+      // race-vrij onder de kandidaat-lock: bestaande export-registratie wordt
+      // gepromoveerd naar de route-id, anders telt een gewone SAVED —
+      // dezelfde route telt nooit dubbel.
+      markCandidateSaved(candidateId, clerkId, route!.id);
+      await settleCandidateOnSaveSafe(req.log, {
+        clerkId,
+        candidateKey: candidateId,
+        routeId: route!.id,
+        source: "opslaan:generated",
+      });
       res.status(201).json({ route });
     } catch (err) {
       req.log.error({ err }, "routes.create (generated) failed");

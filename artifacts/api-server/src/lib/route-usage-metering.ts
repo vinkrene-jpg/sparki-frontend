@@ -146,37 +146,179 @@ export async function recordRouteUsage(opts: {
 }
 
 /**
- * Kandidaat → opgeslagen route. Als het voorstel deze maand al telde (via een
- * export), wordt DIE rij gepromoveerd naar de definitieve route-id zodat de
- * route niet dubbel telt. Retourneert true wanneer een bestaande registratie
- * is gepromoveerd (de aanroeper hoeft dan geen SAVED-registratie meer te doen).
+ * Serialiseert alle tellingen rond één kandidaat van één gebruiker: een
+ * advisory-transactielock (één client, binnen de transactie) sluit de race
+ * tussen "voorstel exporteren" en "voorstel opslaan" uit.
  */
-export async function promoteCandidateUsage(opts: {
+function candidateLock(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], clerkId: string, candidateKey: string) {
+  return tx.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtext(${`route-usage:${clerkId}:${candidateKey}`}))`,
+  );
+}
+
+/**
+ * Kandidaat → opgeslagen route, race-vrij. Onder de kandidaat-lock:
+ *  - bestaat er deze maand een kandidaatregistratie én nog geen
+ *    routeregistratie → promoveer de kandidaatrij naar de route-id;
+ *  - bestaan beide (route al geteld) → verwijder de kandidaatrij
+ *    (normalisatie: nooit twee telbare rijen voor dezelfde route);
+ *  - bestaat er geen kandidaatrij → registreer een gewone SAVED-rij.
+ * Check-dan-handel is hier veilig: de lock serialiseert alle paden die deze
+ * kandidaat aanraken. Fouten worden NIET ingeslikt — de aanroeper gebruikt de
+ * Safe-variant die luid logt.
+ */
+export async function settleCandidateOnSave(opts: {
   clerkId: string;
   candidateKey: string;
   routeId: number;
+  source: string;
   occurredAt?: Date;
-}): Promise<boolean> {
-  const calendarMonth = amsterdamCalendarMonth(opts.occurredAt ?? new Date());
-  try {
-    const updated = await db
-      .update(routeUsageRegistrationsTable)
-      .set({ routeId: opts.routeId, candidateKey: null })
+}): Promise<void> {
+  const occurredAt = opts.occurredAt ?? new Date();
+  const calendarMonth = amsterdamCalendarMonth(occurredAt);
+  await db.transaction(async (tx) => {
+    await candidateLock(tx, opts.clerkId, opts.candidateKey);
+    const [candRow] = await tx
+      .select({ id: routeUsageRegistrationsTable.id })
+      .from(routeUsageRegistrationsTable)
       .where(
         and(
           eq(routeUsageRegistrationsTable.clerkId, opts.clerkId),
           eq(routeUsageRegistrationsTable.candidateKey, opts.candidateKey),
           eq(routeUsageRegistrationsTable.calendarMonth, calendarMonth),
         ),
-      )
-      .returning({ id: routeUsageRegistrationsTable.id });
-    return updated.length > 0;
-  } catch {
-    // Unieke-indexbotsing: de route zelf is deze maand al geteld. De
-    // kandidaatrij laten staan is dan dubbel — verwijder hem stilletjes niet;
-    // hij blijft historisch juist ("export vóór opslaan"), maar de teller
-    // gebruikt uniciteit per identiteit. Promotie is dan niet nodig.
-    return true;
+      );
+    const [routeRow] = await tx
+      .select({ id: routeUsageRegistrationsTable.id })
+      .from(routeUsageRegistrationsTable)
+      .where(
+        and(
+          eq(routeUsageRegistrationsTable.clerkId, opts.clerkId),
+          eq(routeUsageRegistrationsTable.routeId, opts.routeId),
+          eq(routeUsageRegistrationsTable.calendarMonth, calendarMonth),
+        ),
+      );
+    if (candRow && !routeRow) {
+      await tx
+        .update(routeUsageRegistrationsTable)
+        .set({ routeId: opts.routeId, candidateKey: null })
+        .where(eq(routeUsageRegistrationsTable.id, candRow.id));
+      return;
+    }
+    if (candRow && routeRow) {
+      // Route is deze maand al geteld — de kandidaatrij zou een tweede
+      // telbare rij voor dezelfde route zijn. Normaliseer.
+      await tx
+        .delete(routeUsageRegistrationsTable)
+        .where(eq(routeUsageRegistrationsTable.id, candRow.id));
+      return;
+    }
+    if (routeRow) return; // route al geteld, niets te doen
+    const ent = await resolveEntitlements(opts.clerkId);
+    await tx
+      .insert(routeUsageRegistrationsTable)
+      .values({
+        clerkId: opts.clerkId,
+        routeId: opts.routeId,
+        candidateKey: null,
+        usageType: "SAVED",
+        occurredAt,
+        calendarMonth,
+        subscriptionTier: ent.productVariant ?? ent.entitlementMode ?? "gratis",
+        source: opts.source,
+        idempotencyKey: `${opts.clerkId}:${opts.routeId}:${calendarMonth}`,
+      })
+      .onConflictDoNothing({
+        target: [
+          routeUsageRegistrationsTable.clerkId,
+          routeUsageRegistrationsTable.routeId,
+          routeUsageRegistrationsTable.calendarMonth,
+        ],
+        where: sql`route_id IS NOT NULL`,
+      });
+  });
+}
+
+/** Best-effort variant: opslaan mag nooit falen door de telling. */
+export async function settleCandidateOnSaveSafe(
+  log: LogLike,
+  opts: Parameters<typeof settleCandidateOnSave>[0],
+): Promise<void> {
+  try {
+    await settleCandidateOnSave(opts);
+  } catch (err) {
+    log.error(
+      { err, ...opts },
+      "route-usage kandidaat-promotie faalde (opslaan zelf is geslaagd)",
+    );
+  }
+}
+
+/**
+ * Registreer de export van een (nog) niet opgeslagen voorstel, race-vrij
+ * onder dezelfde kandidaat-lock. Is het voorstel intussen opgeslagen
+ * (savedRouteId bekend), dan wordt onder de route-identiteit geregistreerd
+ * zodat kandidaat- en route-telling nooit naast elkaar bestaan.
+ */
+export async function recordCandidateExportUsage(opts: {
+  clerkId: string;
+  candidateKey: string;
+  savedRouteId?: number | null;
+  usageType: RouteUsageType;
+  source: string;
+  occurredAt?: Date;
+}): Promise<void> {
+  if (opts.savedRouteId != null) {
+    await recordRouteUsage({
+      clerkId: opts.clerkId,
+      routeId: opts.savedRouteId,
+      usageType: opts.usageType,
+      source: opts.source,
+      occurredAt: opts.occurredAt,
+    });
+    return;
+  }
+  const occurredAt = opts.occurredAt ?? new Date();
+  const calendarMonth = amsterdamCalendarMonth(occurredAt);
+  const ent = await resolveEntitlements(opts.clerkId);
+  await db.transaction(async (tx) => {
+    await candidateLock(tx, opts.clerkId, opts.candidateKey);
+    await tx
+      .insert(routeUsageRegistrationsTable)
+      .values({
+        clerkId: opts.clerkId,
+        routeId: null,
+        candidateKey: opts.candidateKey,
+        usageType: opts.usageType,
+        occurredAt,
+        calendarMonth,
+        subscriptionTier: ent.productVariant ?? ent.entitlementMode ?? "gratis",
+        source: opts.source,
+        idempotencyKey: `${opts.clerkId}:${opts.candidateKey}:${calendarMonth}`,
+      })
+      .onConflictDoNothing({
+        target: [
+          routeUsageRegistrationsTable.clerkId,
+          routeUsageRegistrationsTable.candidateKey,
+          routeUsageRegistrationsTable.calendarMonth,
+        ],
+        where: sql`candidate_key IS NOT NULL`,
+      });
+  });
+}
+
+/** Best-effort variant: de export mag nooit falen door de telling. */
+export async function recordCandidateExportUsageSafe(
+  log: LogLike,
+  opts: Parameters<typeof recordCandidateExportUsage>[0],
+): Promise<void> {
+  try {
+    await recordCandidateExportUsage(opts);
+  } catch (err) {
+    log.error(
+      { err, ...opts },
+      "route-usage kandidaat-export-telling faalde (export zelf is geslaagd)",
+    );
   }
 }
 
