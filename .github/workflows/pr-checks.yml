@@ -79,6 +79,17 @@ jobs:
       # wordt hieronder als echte rij geseed; de test zelf bewijst onverminderd
       # eerst de strikte niet-admin-poort (isAdmin:false zonder SPARKI_ADMIN_IDS).
       DEV_AUTH_CLERK_ID: ci_admin_smoke
+      # CI heeft geen echte geheimen nodig: de app eist alleen dat deze
+      # variabelen bestaan (formaat-check bij het laden). De dev-bypass
+      # handelt de inlog af; er wordt in deze smoke-test nooit echt een
+      # AI-dienst of Clerk aangeroepen. Nep-waarden zijn hier dus eerlijk
+      # en veilig — er staat geen enkel echt geheim in deze workflow.
+      CLERK_SECRET_KEY: sk_test_ci-dummy-not-a-real-key
+      CLERK_PUBLISHABLE_KEY: pk_test_Y2ktZHVtbXkubm90LXJlYWwuY2xlcmsuYWNjb3VudHMuZGV2JA
+      AI_INTEGRATIONS_ANTHROPIC_BASE_URL: http://localhost:9/ci-dummy
+      AI_INTEGRATIONS_ANTHROPIC_API_KEY: ci-dummy
+      AI_INTEGRATIONS_GEMINI_BASE_URL: http://localhost:9/ci-dummy
+      AI_INTEGRATIONS_GEMINI_API_KEY: ci-dummy
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
