@@ -147,12 +147,20 @@ export default function RoutesPage() {
         ) : view === "bewaard" ? (
           <>
             {routePlannerEnabled ? <RoutePanel view="bewaard" /> : plannerUit}
-            {/* De routebibliotheek (beheren, delen, archiveren) stond op het
-                oude hoofdscherm en blijft — los van de planner-flag — hier
-                onder de bewaarde routes staan. */}
-            <section className="mt-8">
-              <RouteLibrary />
-            </section>
+            {/* Eén lijst (besluit René 30-07-2026): de routebibliotheek is dé
+                lijst van het Bewaard-tabblad — compact, alles ingeklapt. Zodra
+                één route open staat (?route=/?nav=/?ritopties=) verdwijnt de
+                lijst tijdelijk; de terugknop boven de routekaart brengt hem
+                terug. Zo staat elke route maar één keer op het scherm. */}
+            {!(
+              params.has("route") ||
+              params.has("nav") ||
+              params.has("ritopties")
+            ) && (
+              <section className="mt-8">
+                <RouteLibrary />
+              </section>
+            )}
           </>
         ) : routePlannerEnabled ? (
           <RoutePanel view={view} />

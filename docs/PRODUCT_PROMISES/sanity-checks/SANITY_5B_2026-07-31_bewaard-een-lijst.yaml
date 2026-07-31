@@ -1,0 +1,34 @@
+# Poort 5b sanity-check — Bewaard-tabblad: één lijst, alles ingeklapt, duidelijke routegrenzen
+# Opruimwerk expliciet door René gestart (antwoord routeplanner-vragen, 30/31-07-2026).
+
+delivery: "Routes/Bewaard: elke route staat nog maar één keer op het scherm. De compacte routebibliotheek (zoeken/sorteren/filters) is dé lijst — alles ingeklapt, elke route een eigen omkaderd kaartje. De grote routekaart (kaart, hoogteprofiel, acties) rendert alleen nog voor de éne geopende route (?route=/?nav=/?ritopties=), met een '← Alle routes'-terugknop; de lijst is dan tijdelijk verborgen. Kaartverkenner 'open route' gaat nu via ?route= i.p.v. scrollen naar een niet meer gerenderde kaart."
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "/routes?view=bewaard (echt scherm, dev — één compacte lijst met 8 routes, alles ingeklapt; screenshot docs/product/proof-evidence/poort5b-bewaard-lijst-2026-07-31.jpg)"
+  - "/routes?view=bewaard&route=265 (echt scherm — alleen de geopende route rendert de grote kaart; screenshot docs/product/proof-evidence/poort5b-bewaard-detail-2026-07-31.jpg)"
+  - "/routes?view=bewaard&ritopties=265 (echt scherm — Rit-opties-menu opent op de deep-link terwijl alleen de geselecteerde routekaart gemount is; screenshot docs/product/proof-evidence/poort5b-bewaard-ritopties-2026-07-31.jpg)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Lijstrij in de bibliotheek (Route bekijken/klik op kaartje): zet ?route=<id> en de grote routekaart van precies die route rendert (schermcontrole route 265). De kaartverkenner-knop 'open route' scrolde voorheen naar een kaart die in de nieuwe opzet niet meer bestaat — die zou dood zijn geweest; hij zet nu óók ?route=."
+        result: "pass"
+      - case: "'← Alle routes'-terugknop boven de geopende routekaart: wist route/nav/ritopties uit de URL en brengt de lijst terug (zelfde parameterwissing als de bestaande sluitpaden van Rit-opties). Deep-link ?ritopties=265 opent het Rit-opties-menu met werkende keuzes op het echte scherm."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Dubbele weergave was contextuele onzin: elke route stond twee keer op het Bewaard-tabblad (stapel volledig uitgeklapte routekaarten mét kaart/profiel + dezelfde routes nogmaals in de bibliotheeklijst). Nu één lijst; detail alleen op verzoek. Leegstaat-tekst van de bibliotheek verwees naar 'de routeplanner hierboven' die daar niet (meer) staat — verwijst nu naar de tabbladen Maken/GPX."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Lijst-, detail- en Rit-opties-weergave gecontroleerd op blijvende laad-/placeholdertekst: lijst toont echte routes met minikaartlijn, afstand/hm en bron; detail toont echte kaart + hoogteprofiel; onbekende/verwijderde ?route= toont eerlijk 'Deze route staat niet (meer) in je lijst.' in plaats van een lege of ladende kaart."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): bewijs = echte schermcontroles (drie screenshots,
+# dev) + tsc-typecheck groen; de terugknop-klik zelf is niet met een echte
+# muisklik doorlopen maar is dezelfde URL-parameterwissing die elders al werkt.
+# Veiligheidsinformatie (verificatiestatus, 'niet volledig geverifieerd'-badge)
+# blijft op beide niveaus zichtbaar — conform René's regel dat veiligheid nooit
+# wegvalt omwille van eenvoud.
+verdict: "deliverable"

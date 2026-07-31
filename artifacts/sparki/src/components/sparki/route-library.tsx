@@ -303,7 +303,7 @@ export function RouteLibrary() {
                 ? "Het archief is leeg."
                 : scope === "wedstrijd"
                   ? "Nog geen route aan een wedstrijd gekoppeld."
-                  : "Nog geen opgeslagen routes. Maak er een met de routeplanner hierboven."}
+                  : "Nog geen opgeslagen routes. Maak er een op het tabblad Maken, of upload een GPX op het tabblad GPX."}
         </p>
       ) : (
         <ul className="flex flex-col gap-3 pb-[env(safe-area-inset-bottom)]">
@@ -329,7 +329,7 @@ export function RouteLibrary() {
                     }
                   }}
                   aria-label={`Open route ${named.display}`}
-                  className="cursor-pointer rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+                  className="cursor-pointer rounded-2xl border border-white/[0.14] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
                 >
                   <div className="flex items-start gap-3">
                     <RoutePreview geometry={r.geometry} />

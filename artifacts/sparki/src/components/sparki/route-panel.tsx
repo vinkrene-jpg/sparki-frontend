@@ -3522,6 +3522,28 @@ export function RoutePanel({
     return pending
   })
   const [panelPath, setPanelLocation] = useLocation()
+  // Eén lijst, alles ingeklapt (besluit René 30-07-2026): het Bewaard-tabblad
+  // toont standaard alleen de compacte routebibliotheek (één lijst, elke route
+  // een eigen kaartje). De grote routekaart met kaart/hoogteprofiel/acties
+  // verschijnt uitsluitend voor de éne geopende route (?route=, ?nav= of
+  // ?ritopties=), met een terugknop naar de lijst. Zo staat elke route nog
+  // maar één keer op het scherm in plaats van twee keer (kaarten + lijst).
+  const panelSearch = useSearch()
+  const selParams = new URLSearchParams(panelSearch)
+  const selRaw =
+    selParams.get("nav") ?? selParams.get("ritopties") ?? selParams.get("route")
+  const selectedId =
+    view === "bewaard" && selRaw != null && Number.isFinite(Number(selRaw))
+      ? Number(selRaw)
+      : null
+  const clearSelection = () => {
+    const params = new URLSearchParams(window.location.search)
+    params.delete("route")
+    params.delete("nav")
+    params.delete("ritopties")
+    const q = params.toString()
+    setPanelLocation(`${panelPath}${q ? `?${q}` : ""}`)
+  }
 
   // Na een overdracht: de bouwer staat nu echt op het scherm — er naartoe
   // scrollen zodat de rijder ziet dat zijn routepunten geladen zijn.
@@ -3710,6 +3732,14 @@ export function RoutePanel({
           onClose={() => setShowExplorer(false)}
           onOpenRoute={(id) => {
             setShowExplorer(false)
+            if (view === "bewaard") {
+              // De lijst is ingeklapt — open de gekozen route echt via ?route=
+              // in plaats van naar een (niet meer gerenderde) kaart te scrollen.
+              const params = new URLSearchParams(window.location.search)
+              params.set("route", String(id))
+              setPanelLocation(`${panelPath}?${params.toString()}`)
+              return
+            }
             setHighlightId(id)
             setTimeout(() => {
               document
@@ -3835,12 +3865,34 @@ export function RoutePanel({
 
       {showBewaard && <RouteProposalsInbox />}
 
+      {/* Terugknop boven de geopende routekaart — de compacte lijst is de
+          standaardweergave, de grote kaart alleen voor de gekozen route. */}
+      {view === "bewaard" && selectedId != null && !isLoading && (
+        <button
+          type="button"
+          onClick={clearSelection}
+          className="mt-4 flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
+        >
+          ← Alle routes
+        </button>
+      )}
+
       {showBewaard && (
       <div className="mt-4 space-y-4">
-        {isLoading ? (
+        {isLoading && (view !== "bewaard" || selectedId != null) ? (
           <div className="h-40 w-full animate-pulse rounded-xl bg-white/[0.06]" />
+        ) : view === "bewaard" && selectedId == null ? null : view ===
+            "bewaard" && !routes.some((r) => r.id === selectedId) ? (
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <p className="text-[12px] leading-relaxed text-white/40">
+              Deze route staat niet (meer) in je lijst.
+            </p>
+          </div>
         ) : routes.length > 0 ? (
-          routes.map((r) => (
+          (view === "bewaard"
+            ? routes.filter((r) => r.id === selectedId)
+            : routes
+          ).map((r) => (
             <div
               key={r.id}
               id={`route-${r.id}`}

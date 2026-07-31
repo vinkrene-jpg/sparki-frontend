@@ -9,6 +9,12 @@ Laatst bijgewerkt: 2026-07-30.
 
 ## Wacht op jouw keuze
 
+11. **Volgorde niveaus-werk vs. taak #505** — René gaf akkoord op de routeplanner-4-niveaustabel
+    mét het meebouwen van de 'Compleet'-tier als onderdeel van dat werk. #505 (lusgeneratie
+    fail-closed) blijft per Master Plan-addendum de hoogste productprioriteit. Vraag: eerst
+    #505 afronden en dan het niveaus/Compleet-werk, of mag het niveaus-werk (geen route-engine,
+    wel weergave/abonnement) parallel starten?
+
 
 
 
