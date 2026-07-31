@@ -61,6 +61,17 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15e. **Vrijgave bundel 19–23 (ontvangen 31-07-2026)** — vijf domeinpakketten:
+    19 PLAN_MARKTPLAATS_01 (trainingsplannenmarktplaats, incl. verkoop/aankoop),
+    20 CLUB_COMMUNICATIE_01 (rolgestuurde berichten in-app/push/e-mail),
+    21 CLUB_PLANNING_01 (clubkalender + aanwezigheid + ouderbevestiging),
+    22 PLOEGLEIDER_01 (wedstrijdteamflow), 23 TEAM_MECHANIEKER_01
+    (teamvoorraad/wedstrijdmateriaal). Alle vijf: "start pas na vrijgave René";
+    generieke voorwaarden (auth, server-side context, rollen zonder
+    legacy_unrestricted-testpersona's, auditlog, data-trust). 22 en 23 steunen
+    inhoudelijk op het rolmodel uit CLUB_RECHTEN_01 (ploegleider/mechanieker).
+    Volgorde-advies nodig van René/ChatGPT zodra Mirror de wachtrij vrijmaakt.
+
 15d. **Vrijgave CLUB_RECHTEN_01 (pakket 14, ontvangen 31-07-2026)** — definitief
     rolmodel: elf rollen, club/team-niveau gescheiden, meerdere rollen per
     persoon (vereniging van rechten), tijdelijke rollen met automatisch
