@@ -196,3 +196,14 @@ C routeplanner vier weergaven incl. **Wedstrijd** → D externe coach + plan-upl
 vermogenszones, instelbaar PDC-venster, koolhydraat-pilot → G ramp-rate-VOORSTEL
 (bouwen pas na akkoord René) → H overige UX-/documentatiebewijzen.
 Open uitsluitend: KNWU-verificatie, Samen-nav-positie, ramp-rate-grens.
+
+**Bijsturing René 31-07-2026:** taak #505 (Bewaard-één-lijst/routeplanner-niveaus)
+is afgerond, getest, onafhankelijk beoordeeld en gepusht — niet meer open. Vandaag
+is naar voren gehaald: **WP-T1 geleverd 31-07** (Today Orchestrator `engines/today`
++ weergavehistorie `today_display_history` + atleet-profielvarianten + eerlijke
+lege toestanden; bewijs `test:today-orchestrator` 7/7; docs
+`SPARKI_TODAY_ORCHESTRATOR.md`/`SPARKI_TODAY_EXPERIENCE.md`). Vandaag is het
+persoonlijke etalagevenster van Sparki; visuele verbetering alleen is niet
+voldoende — niet als afgerond markeren vóór rollen/profielen aantoonbaar getest
+zijn (WP-T2 rolvarianten, WP-T3 debugweergave + testmatrix §10). Daarna volgen
+§15-C t/m H.

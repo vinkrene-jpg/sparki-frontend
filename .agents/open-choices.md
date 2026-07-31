@@ -26,7 +26,9 @@ Laatst bijgewerkt: 2026-07-31.
   30-07); hoofdnav blijft ongewijzigd. Keuze 11 (volgorde niveaus-werk vs. #505) is vervallen:
   de aanvullende opdracht van 30-07 legt de volgorde zelf vast (§15: eerst rechtenlek — gedaan
   31-07 — dan besluiten→docs, routeplanner-weergaven incl. "Wedstrijd", externe coach, logging,
-  zones/PDC/koolhydraat, ramp-rate-voorstel); #505 en Vandaag-werk schuiven daarachter.
+  zones/PDC/koolhydraat, ramp-rate-voorstel). BIJGESTUURD door René 31-07: taak #505 is al
+  afgerond/getest/onafhankelijk beoordeeld/gepusht; Vandaag WP-T1 is naar voren gehaald en
+  gebouwd 31-07; §15-C t/m H volgen daarna.
 - **2026-07-30 — Plan-pagina indeling: "Vandaag eerst".** Bovenaan de dagstaat van vandaag
   (training/rustdag/gat + reden), daaronder de kalender met fase-opbouw, onderaan verbanden
   en ontwikkeling; mobiel en desktop dezelfde volgorde. Taak #450 aangemaakt (Drafts).

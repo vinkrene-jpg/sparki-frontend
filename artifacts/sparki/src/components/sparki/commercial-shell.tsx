@@ -23,6 +23,12 @@ import { Link, useLocation } from "wouter"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useSparkiState } from "@/hooks/use-sparki-state"
 import { useRaces } from "@/hooks/use-races"
+import {
+  useToday,
+  useTodayInteraction,
+  type TodayAction,
+  type TodayItem,
+} from "@/hooks/use-today"
 import { cn } from "@/lib/utils"
 import {
   DsButton,
@@ -811,6 +817,98 @@ function SeasonBand() {
   )
 }
 
+// ── Today Orchestrator-blokken (WP-T1) ───────────────────────────────────────
+// De orchestrator (engines/today, deterministisch) bepaalt wát nu bovenaan
+// hoort: één hoofdboodschap met acties, één onderbouwing, één inzicht en één
+// wisselend blok. Alles komt uit bestaande engines; ontbreekt een slot, dan
+// wordt er niets gerenderd (eerlijke lege toestand, geen vulkaart).
+function TodayOrchestratorSection() {
+  const { data, isLoading, isError } = useToday()
+  const interact = useTodayInteraction()
+  const [, navigate] = useLocation()
+
+  if (isLoading || isError || !data) return null
+
+  const open = (item: TodayItem, action: TodayAction) => {
+    interact.mutate({ itemKey: item.key, action: "clicked" })
+    navigate(action.href)
+  }
+
+  const blocks = [data.lead, data.insight, data.rotating].filter(
+    (i): i is TodayItem => i != null,
+  )
+  if (blocks.length === 0) return null
+
+  return (
+    <section
+      aria-label="Nu belangrijk"
+      className="mx-auto w-full max-w-screen-xl px-5 pt-6 lg:px-10"
+    >
+      {data.lead && (
+        <DsCard
+          className={cn(
+            data.lead.urgent && "border-[color:var(--status-let-op,#b45309)]",
+          )}
+        >
+          <DsCardTitel>{data.lead.title}</DsCardTitel>
+          <p className="type-body mt-2 text-content-secondary">
+            {data.lead.body}
+          </p>
+          {data.support && (
+            <details className="mt-3">
+              <summary className="type-body cursor-pointer text-content-secondary">
+                {data.support.title}
+              </summary>
+              <p className="type-body mt-2 text-content-secondary">
+                {data.support.body}
+              </p>
+              <p className="type-caption mt-1 text-content-tertiary">
+                Bron: {data.support.source}
+              </p>
+            </details>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {data.lead.actions.map((a, idx) => (
+              <DsButton
+                key={a.id}
+                variant={idx === 0 ? "primair" : "tekst"}
+                onClick={() => open(data.lead!, a)}
+              >
+                {a.label}
+              </DsButton>
+            ))}
+          </div>
+        </DsCard>
+      )}
+      {(data.insight || data.rotating) && (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {[data.insight, data.rotating]
+            .filter((i): i is TodayItem => i != null)
+            .map((item) => (
+              <DsCard key={item.key}>
+                <DsCardTitel>{item.title}</DsCardTitel>
+                <p className="type-body mt-2 text-content-secondary">
+                  {item.body}
+                </p>
+                {item.actions[0] && (
+                  <div className="mt-3">
+                    <DsButton
+                      variant="tekst"
+                      onClick={() => open(item, item.actions[0]!)}
+                    >
+                      {item.actions[0].label}
+                      <IconChevron aria-hidden="true" />
+                    </DsButton>
+                  </div>
+                )}
+              </DsCard>
+            ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ── Vandaag in de commerciële schil ──────────────────────────────────────────
 export function CommercialToday() {
   const state = useSparkiState()
@@ -835,17 +933,34 @@ export function CommercialToday() {
     goalRaceIsToday: goalRace?.raceDate === todayISO,
   })
 
+  // WP-T1: profielvariant van de orchestrator stuurt de kaartvolgorde —
+  // jeugd/beginner zien eerst de training (eenvoud, één actie), daarna pas de
+  // weekbelasting; wedstrijd/prestatie/recreatief houden week eerst.
+  const today = useToday()
+  const variant = today.data?.profile.variant ?? null
+  const simpleFirst = variant === "jeugd" || variant === "beginner"
+
   return (
     <CommercialShell actief="/vandaag">
       <HeroVandaag presentation={presentation} planWeek={planWeek} />
+      <TodayOrchestratorSection />
       {/* Paginaspecifieke kolomindeling: op desktop twee kolommen (2:1),
           op mobiel ongewijzigd gestapeld. De CommercialShell-schil zelf
           blijft generiek — de kolomindeling leeft alleen in Vandaag. */}
       <div className="mx-auto w-full max-w-screen-xl px-5 lg:px-10">
         <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
           <div>
-            <WeekSection />
-            <TrainingSection />
+            {simpleFirst ? (
+              <>
+                <TrainingSection />
+                <WeekSection />
+              </>
+            ) : (
+              <>
+                <WeekSection />
+                <TrainingSection />
+              </>
+            )}
           </div>
           <div>
             <HerstelSection />
