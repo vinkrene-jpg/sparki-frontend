@@ -18,6 +18,17 @@ Laatst bijgewerkt: 2026-07-31.
     keuze), geschatte onboarding-FTP tonen als schatting (voorstel), PDF-bibliotheek-
     keuze (alleen melden vóór bouw).
 
+15. **Vrijgave drie extra pakketten (files_9, 31-07-2026)** — `ACTIVITEITEN_01`
+    (levenscyclus activiteiten; eist DATA_TRUST_01 eerst), `MECHANIEKER_01`
+    (materiaal/garage; eist DATA_TRUST_01 eerst; BikeFit bestaat niet → restpunt,
+    niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
+    zonder expliciete vrijgave.
+
+16. **Besluit D5 — ploegleiderrol (TRAINER_CLUB_01)** — clubRoles kent wél
+    `teammanager`, geen `ploegleider`. Keuze René: (a) ploegleider = teammanager
+    (term verdwijnt uit productcommunicatie) of (b) eigen rol met eigen rechten
+    (apart besluit). Tot die keuze: bouwen op `teammanager` en dat melden.
+
 ## Geparkeerd (48-uurs afbouwsprint, besluit René 31-07-2026)
 
 > Besluit 3 van de sprint: open punten #10, #12 en #13 blokkeren niet en zijn
