@@ -61,6 +61,15 @@ Laatst bijgewerkt: 2026-07-31.
     niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
     zonder expliciete vrijgave.
 
+15g. **Vrijgave bundel 30–34 (ontvangen 31-07-2026)** — vijf domeinpakketten:
+    30 PROFIEL_01 (centraal sportpaspoort/profielbeheer incl. privacy/export),
+    31 HELPDESK_01 (AI-helpdesk met triage, escalatie, audittrail),
+    32 ADMIN_OPERATIONS_01 (operationeel beheer zonder database-ingrepen),
+    33 CONTINUITEIT_01 (nood-/continuïteitsvoorzieningen: storing, vakantie,
+    kostenoverschrijding, ordelijke beëindiging), 34 TOEGANKELIJKHEID_01
+    (kernflows toegankelijk: toetsenbord, schermlezer, contrast, offline).
+    Alle vijf: start pas na vrijgave René; Mirror staat los van de bouw.
+
 15f. **Vrijgave SPARKI_TRAINER_ABONNEMENT_01 (ontvangen 31-07-2026)** —
     Trainer-abonnement €99/maand of €990/jaar (prijsbesluit in pakket),
     op de bestaande Stripe/entitlements-architectuur; sporters koppelen,
