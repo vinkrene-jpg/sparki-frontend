@@ -100,6 +100,7 @@ import {
 } from "../lib/route-library";
 import {
   filterOpStraal,
+  haversineKm,
   parseStraalCentrum,
   straalOphaalBbox,
   type StraalCentrum,
@@ -1138,7 +1139,29 @@ router.get("/geocode", requireAuth, async (req, res) => {
     return;
   }
   try {
-    const results = await provider.geocodeSearch(q, 6);
+    // Woonplaats-bewust zoeken (correctie René 31-07-2026): als het huisadres
+    // bekend is, krijgt de provider dat als voorkeurslocatie mee én sorteren
+    // we de kandidaten zelf deterministisch op afstand tot huis. Zo staat bij
+    // "Hengelo" Hengelo (OV/GLD) voorop en nooit Hengelo in Indonesië.
+    const home = await ownerHome(getClerkUserId(req)!);
+    let results = await provider.geocodeSearch(q, 6, home ?? undefined);
+    if (home) {
+      const met = results.map((r) => ({
+        r,
+        d: haversineKm(home.lat, home.lon, r.lat, r.lon),
+      }));
+      met.sort((a, b) => a.d - b.d);
+      // Alleen wanneer er een geloofwaardige kandidaat in de buurt is
+      // (≤300 km), laten we naamgenoten op andere continenten (>2000 km)
+      // weg — een keuzelijst met Indonesië naast Overijssel helpt niemand.
+      // Is er níets dichtbij, dan blijft alles staan (eerlijk: misschien
+      // zoekt de renner echt een verre plaats voor een trainingskamp).
+      const filtered =
+        met.length > 0 && met[0]!.d <= 300
+          ? met.filter((m) => m.d <= 2000)
+          : met;
+      results = filtered.map((m) => m.r);
+    }
     res.json({ results });
   } catch (err) {
     req.log.error({ err }, "routes.geocode failed");
