@@ -51,6 +51,24 @@ Doorgevoerd: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` + correctierapp
   gebouwd.
 - Taak #537 blijft staan en wordt niet als afgerond gemarkeerd (herbevestigd 01-08).
 
+## Aangenomen bouwopdrachten — SPARKI_INHAAL_01 (01-08-2026, IN UITVOERING)
+
+- **SPARKI_INHAAL_01** — volledige uitvoeringsvrijgave voor: pakket 01 afmaken
+  (restpunt BB-08 ✅ 01-08 + patch hoofdstuk B) → BUILD_02 werkobjectlaag (patch C;
+  41 sjablonen uit `docs/document-library/` zijn WEERGAVEN, geen 41 datamodellen;
+  offline buiten deze ronde) → BUILD_03 wedstrijd/team (patch D; BB-42 en BB-47
+  vervallen; meerdaags komt mee) → BUILD_04 trainer/facturatie (patch E; prijzen
+  €99/€990·€179/€1.790·€9,90 p/s; clubafname Compleet BUITEN scope — aparte opdracht,
+  net als ABONNEE_ADMIN_01). `SPARKI_BESLUITEN_PATCH_2026-08-01.md` is bindend en
+  gaat vóór de pakketten (staat in docs/build-packages/). Rapporteren per fase.
+  Niet doen: volledigheidsonderzoeken opvragen, ABONNEE_ADMIN_01 bouwen, #536
+  afronden, FUTUR_CONTROL_01 aanraken, fail-closed routecontrole versoepelen.
+- **Open besluiten uit de patch (J.1–J.5, wachten op René):** drempel "meervoudig
+  bevestigd" (2 of 3 bronnen) · wie keurt advieswijziging goed · afgekeurde
+  wetenschapssignalen bewaren · beginnummer factuurreeks per trainer · toets of de
+  zeven bewaartermijnen (patch F) de zes lege configuratiewaarden dekken.
+  Plus beslispunt H: app+browser uit één codebasis (advies Replit: ja).
+
 ## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
 
 - **ABONNEE_ADMIN_01** (files_10, 31-07-2026) — door René AANGENOMEN als volledige
