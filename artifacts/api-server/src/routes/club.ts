@@ -13,6 +13,9 @@ import {
   clubTrainingSignupsTable,
   clubRaceEventsTable,
   clubRaceSelectionsTable,
+  clubNoodinfoViewsTable,
+  emergencyContactsTable,
+  healthSafetyInfoTable,
   clubMessagesTable,
   clubMessageReadsTable,
   clubConsentsTable,
@@ -2289,12 +2292,23 @@ router.get("/:clubId/races", requireAuth, async (req, res) => {
             .where(inArray(clubRaceSelectionsTable.eventId, ids))
         : [];
     const names = await profilesByIds(selections.map((s) => s.clerkId));
+    // BUILD_03 Noodinformatie: het vrije veld availabilityNote wordt
+    // afgeschermd zodat medische redenen niet meelekken. Alleen het lid zelf
+    // en de noodinfo-gerechtigden (ploegleider, teammanager, medical_staff,
+    // beheer) zien de tekst; iedereen ziet wél de beschikbaarheidsstatus.
+    const magNote =
+      canManageClub(ctx) || hasClubRole(ctx, ["teammanager", "ploegleider", "medical_staff"]);
     res.json(
       events.map((e) => ({
         ...e,
         selections: selections
           .filter((s) => s.eventId === e.id)
-          .map((s) => ({ ...s, displayName: names.get(s.clerkId)?.displayName ?? null })),
+          .map((s) => ({
+            ...s,
+            availabilityNote:
+              magNote || s.clerkId === ctx.membership.clerkId ? s.availabilityNote : null,
+            displayName: names.get(s.clerkId)?.displayName ?? null,
+          })),
         mySelection: selections.find((s) => s.eventId === e.id && s.clerkId === ctx.membership.clerkId) ?? null,
       })),
     );
@@ -2542,6 +2556,106 @@ router.delete("/:clubId/races/:eventId/selection/:memberId", requireAuth, async 
   } catch (err) {
     req.log.error({ err }, "club race selection remove failed");
     res.status(500).json({ error: "Afmelden is niet gelukt." });
+  }
+});
+
+// ── Noodinformatie (besluitenpatch D) ────────────────────────────────────────
+// Zichtbaar voor ploegleider, teammanager en medical_staff (en beheer) —
+// uitdrukkelijk NIET voor mechanieker en soigneur. Altijd zichtbaar, niet
+// alleen rond de wedstrijddag. Elke inzage wordt gelogd; de sporter of ouder
+// ziet wie er keek en wanneer.
+function canViewNoodinfo(ctx: ClubContext): boolean {
+  return canManageClub(ctx) || hasClubRole(ctx, ["teammanager", "ploegleider", "medical_staff"]);
+}
+
+router.get("/:clubId/members/:memberId/noodinfo", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canViewNoodinfo(ctx)) {
+      res.status(403).json({
+        error: "Noodinformatie is alleen zichtbaar voor ploegleider, teammanager en medische staf.",
+      });
+      return;
+    }
+    const memberId = str(req.params["memberId"]);
+    if (!memberId) {
+      res.status(400).json({ error: "Ongeldig lid." });
+      return;
+    }
+    const memberCtx = await getClubContext(ctx.club.id, memberId);
+    if (!memberCtx) {
+      res.status(404).json({ error: "Dit lid is geen actief clublid." });
+      return;
+    }
+    const contacts = await db
+      .select()
+      .from(emergencyContactsTable)
+      .where(eq(emergencyContactsTable.athleteClerkId, memberId))
+      .orderBy(asc(emergencyContactsTable.priority));
+    const [safety] = await db
+      .select({
+        infoText: healthSafetyInfoTable.infoText,
+        updatedAt: healthSafetyInfoTable.updatedAt,
+      })
+      .from(healthSafetyInfoTable)
+      .where(eq(healthSafetyInfoTable.clerkId, memberId));
+    // Inzage LOGGEN — voor alle drie de rollen, vóór het antwoord.
+    await db.insert(clubNoodinfoViewsTable).values({
+      clubId: ctx.club.id,
+      memberClerkId: memberId,
+      viewerClerkId: ctx.membership.clerkId,
+      viewerRole: ctx.membership.role,
+    });
+    res.json({
+      contacts,
+      safetyInfo: safety ?? null,
+      // Eerlijk: leeg is leeg — er wordt niets afgeleid of verzonnen.
+    });
+  } catch (err) {
+    req.log.error({ err }, "club noodinfo failed");
+    res.status(500).json({ error: "Noodinformatie ophalen is niet gelukt." });
+  }
+});
+
+// Inzagelog: het lid zelf, of een gekoppelde ouder, ziet wie keek en wanneer.
+router.get("/:clubId/members/:memberId/noodinfo-log", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const memberId = str(req.params["memberId"]);
+    if (!memberId) {
+      res.status(400).json({ error: "Ongeldig lid." });
+      return;
+    }
+    const me = ctx.membership.clerkId;
+    const allowed = me === memberId || (await isLinkedParent(me, memberId));
+    if (!allowed) {
+      res.status(403).json({ error: "Het inzagelog is alleen voor de sporter zelf of de ouder." });
+      return;
+    }
+    const rows = await db
+      .select()
+      .from(clubNoodinfoViewsTable)
+      .where(
+        and(
+          eq(clubNoodinfoViewsTable.clubId, ctx.club.id),
+          eq(clubNoodinfoViewsTable.memberClerkId, memberId),
+        ),
+      )
+      .orderBy(desc(clubNoodinfoViewsTable.createdAt));
+    const names = await profilesByIds(rows.map((r) => r.viewerClerkId));
+    res.json(
+      rows.map((r) => ({
+        viewerClerkId: r.viewerClerkId,
+        viewerName: names.get(r.viewerClerkId)?.displayName ?? null,
+        viewerRole: r.viewerRole,
+        viewedAt: r.createdAt,
+      })),
+    );
+  } catch (err) {
+    req.log.error({ err }, "club noodinfo log failed");
+    res.status(500).json({ error: "Inzagelog ophalen is niet gelukt." });
   }
 });
 

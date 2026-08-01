@@ -560,6 +560,27 @@ export const clubConsentsTable = pgTable(
   (t) => [uniqueIndex("club_consents_unique").on(t.clubId, t.athleteClerkId, t.scope)],
 );
 
+// ── BUILD_03 Noodinformatie (besluitenpatch hoofdstuk D) ─────────────────────
+// Inzage in noodinformatie (noodcontacten + zelfgekozen veiligheidsinfo) is
+// beperkt tot ploegleider, teammanager en medical_staff — uitdrukkelijk niet
+// mechanieker/soigneur — en wordt voor ALLE drie gelogd. De sporter (of
+// ouder) ziet wie er keek en wanneer. Het log blijft zolang de koppeling
+// loopt (cascade met het clublidmaatschap via clubId+memberClerkId).
+export const clubNoodinfoViewsTable = pgTable(
+  "club_noodinfo_views",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    memberClerkId: text("member_clerk_id").notNull(),
+    viewerClerkId: text("viewer_clerk_id").notNull(),
+    viewerRole: text("viewer_role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_noodinfo_views_member_idx").on(t.clubId, t.memberClerkId)],
+);
+
 // ── CLUB_ONBOARDING_01: ledenimport ──────────────────────────────────────────
 // Import voegt nooit stilzwijgend toe: een batch staat eerst op
 // "wacht_op_bevestiging" en pas een expliciete bevestiging verwerkt de rijen
