@@ -51,7 +51,25 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Merkidentiteit (BRAND_IDENTITY_01) | DEFERRED — tot na Mobile UX | besluit 01-08-2026 (SPARKI-BESLUIT-2026-013): bliksemschicht is enige officiële identiteit; geen tussentijds logo-ontwerp; traject start pas na Mobile UX-documenten |
 | Futur Control (FUTUR_CONTROL_01) | DEFERRED / GEPAUZEERD | besluit 01-08-2026: inhoudelijk goedgekeurd, alleen F0 was vrijgeefbaar maar wordt voorlopig niet gestart; geen bouw gestart, geen code gewijzigd; FC-B05/06/07/09/10/11 geparkeerd; hervatting later bij F0 Inventarisatie; F1A start nooit automatisch; volledig documentpakket (20 docs) sinds 01-08-2026 in `docs/build-packages/FUTUR_CONTROL_01/` |
 
+## 2b. Mediaweergave en uitleglaag (MEDIA_UITLEG_01 — eerste echte statussen, F0 01-08-2026)
+
+| Onderdeel | Status | Bewijs |
+|---|---|---|
+| Reduced-motion (systeem) | AANWEZIG | `index.css` app-breed vangnet + `reduced-motion.test.ts` |
+| Sparki-instelling Verminder beweging | NIET GESTART | geen server-side voorkeur (F1) |
+| Herbruikbare mediaspeler / ondertiteling / posters | NIET GESTART | geen speler aangetroffen (F3) |
+| Contentmodel media (KENNIS_01-contract) | ONTBREEKT | `knowledge_items` mist blokkerende velden (O-1) |
+| Gebruikersstatus mediacontent | NIET GESTART | geen generieke statusrij (F4) |
+| Uitlegflow-basis | GEDEELTELIJK | uitleg-registry + UitlegDot bestaan; versievastheid ontbreekt (O-6) |
+| Academy-omgeving | NIET GESTART | route + Help-code herbruikbaar vastgesteld (F8) |
+| Niet-acute coachmelding-grond | AANWEZIG | decideCoach + CoachAnalysisCard (O-4 vervuld) |
+
 ## 3. Logboek
+
+- **01-08-2026** — MEDIA_UITLEG_01 **F0 (inventarisatie) opgeleverd**: vijf documenten
+  in `docs/build-packages/MEDIA_UITLEG_01/F0/`; nul regels productiecode; pilot
+  bevestigd op "Training voltooid"; O-4 en O-11 vervuld, O-3/O-6/O-13 blokkeren
+  resp. F3/F5/F10. Wacht op Mirror-toets + vrijgave F1 door René.
 
 - **01-08-2026 (aanvulling)** — Volledig FUTUR_CONTROL_01-documentpakket (20
   documenten, verbatim uit de definitieve Claude-export) opgeslagen in
