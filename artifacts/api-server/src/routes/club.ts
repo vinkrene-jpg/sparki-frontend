@@ -3463,6 +3463,10 @@ router.post("/:clubId/organogram", requireAuth, async (req, res) => {
       res.status(403).json({ error: "Alleen de eigenaar of beheerder mag de structuur kiezen." });
       return;
     }
+    if (ctx.club.organisationType !== "TEAM") {
+      res.status(409).json({ error: "Organogram-kaarten zijn er alleen voor teamorganisaties." });
+      return;
+    }
     if (!["concept", "actief"].includes(ctx.club.status)) {
       res.status(409).json({ error: "Deze organisatie kan nu geen structuurwijziging ontvangen." });
       return;
@@ -3473,6 +3477,9 @@ router.post("/:clubId/organogram", requireAuth, async (req, res) => {
       return;
     }
     const result = await db.transaction(async (tx) => {
+      // Concurrency-idempotentie: twee gelijktijdige toepassingen zouden anders
+      // beide dezelfde bestaande toestand lezen en duplicaten aanvullen.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(881101, ${ctx.club.id})`);
       const bestaandeTeams = await tx
         .select({ id: clubTeamsTable.id, name: clubTeamsTable.name })
         .from(clubTeamsTable)
@@ -3495,13 +3502,19 @@ router.post("/:clubId/organogram", requireAuth, async (req, res) => {
         })
         .from(organisationStaffSlotsTable)
         .where(eq(organisationStaffSlotsTable.clubId, ctx.club.id));
+      // Tellen per rol én (voor medische staf) per functietype: een bestaande
+      // fysiotherapeut-plek vervult nooit een vereiste arts-plek.
+      const slotKey = (role: string, specialty: string | null | undefined) =>
+        role === "medical_staff" ? `${role}|${specialty ?? ""}` : role;
       const perRol = new Map<string, number>();
       for (const s of bestaandeSlots) {
-        perRol.set(s.role, (perRol.get(s.role) ?? 0) + 1);
+        const k = slotKey(s.role, s.medicalSpecialty);
+        perRol.set(k, (perRol.get(k) ?? 0) + 1);
       }
       let slotsToegevoegd = 0;
       for (const staf of template.staf) {
-        const huidige = perRol.get(staf.role) ?? 0;
+        const k = slotKey(staf.role, staf.medicalSpecialty);
+        const huidige = perRol.get(k) ?? 0;
         for (let i = huidige; i < staf.aantal; i += 1) {
           await tx.insert(organisationStaffSlotsTable).values({
             clubId: ctx.club.id,
@@ -3511,7 +3524,7 @@ router.post("/:clubId/organogram", requireAuth, async (req, res) => {
           });
           slotsToegevoegd += 1;
         }
-        perRol.set(staf.role, Math.max(huidige, staf.aantal));
+        perRol.set(k, Math.max(huidige, staf.aantal));
       }
       await tx
         .update(clubsTable)
@@ -3569,6 +3582,10 @@ router.post("/:clubId/staff-slots", requireAuth, async (req, res) => {
     if (!ctx) return;
     if (!canManageClub(ctx)) {
       res.status(403).json({ error: "Alleen de eigenaar of beheerder mag stafplekken toevoegen." });
+      return;
+    }
+    if (ctx.club.organisationType !== "TEAM") {
+      res.status(409).json({ error: "Stafplekken zijn er alleen voor teamorganisaties." });
       return;
     }
     const role = str(req.body?.role);

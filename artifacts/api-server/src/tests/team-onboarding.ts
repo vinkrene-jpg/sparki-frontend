@@ -265,6 +265,46 @@ async function main() {
     assert(slot.status === 403, `vreemde maakte stafplek (${slot.status})`);
   });
 
+  await scenario("11. TEAM-gate: een CLUB kan geen organogram of stafplekken krijgen", async () => {
+    const kaart = await req("POST", `/api/clubs/${clubBId}/organogram`, vreemde, { template: "compact_wedstrijdteam" });
+    assert(kaart.status === 409, `club paste kaart toe (${kaart.status}), verwacht 409`);
+    const slot = await req("POST", `/api/clubs/${clubBId}/staff-slots`, vreemde, { role: "ploegleider" });
+    assert(slot.status === 409, `club maakte stafplek (${slot.status}), verwacht 409`);
+  });
+
+  await scenario("12. Medische plekken tellen per functietype: fysio vervult nooit de arts-plek", async () => {
+    const mk = await req("POST", "/api/clubs", owner, { name: `Etappeteam ${RUN}`, concept: true, organisationType: "TEAM" });
+    assert(mk.status === 201, `team C: ${mk.status}`);
+    const orgC = Number(mk.json["id"]);
+    cleanupIds.push(orgC);
+    const fysio = await req("POST", `/api/clubs/${orgC}/staff-slots`, owner, { role: "medical_staff", medicalSpecialty: "fysiotherapeut" });
+    assert(fysio.status === 201, `fysio-plek: ${fysio.status}`);
+    const kaart = await req("POST", `/api/clubs/${orgC}/organogram`, owner, { template: "etappe_koersorganisatie" });
+    assert(kaart.status === 200, `kaart: ${kaart.status}`);
+    const slots = await db.select().from(organisationStaffSlotsTable).where(eq(organisationStaffSlotsTable.clubId, orgC));
+    const medisch = slots.filter((s) => s.role === "medical_staff");
+    assert(medisch.some((s) => s.medicalSpecialty === "arts"), "arts-plek ontbreekt naast bestaande fysio-plek");
+    assert(medisch.some((s) => s.medicalSpecialty === "fysiotherapeut"), "fysio-plek verdween");
+    const nogmaals = await req("POST", `/api/clubs/${orgC}/organogram`, owner, { template: "etappe_koersorganisatie" });
+    assert(Number(nogmaals.json["slotsToegevoegd"]) === 0, `niet idempotent na functietype-aanvulling: ${JSON.stringify(nogmaals.json)}`);
+  });
+
+  await scenario("13. Gelijktijdig toepassen blijft idempotent (geen dubbele plekken)", async () => {
+    const mk = await req("POST", "/api/clubs", owner, { name: `Parallelteam ${RUN}`, concept: true, organisationType: "TEAM" });
+    assert(mk.status === 201, `team D: ${mk.status}`);
+    const orgD = Number(mk.json["id"]);
+    cleanupIds.push(orgD);
+    const [a, b] = await Promise.all([
+      req("POST", `/api/clubs/${orgD}/organogram`, owner, { template: "compact_wedstrijdteam" }),
+      req("POST", `/api/clubs/${orgD}/organogram`, owner, { template: "compact_wedstrijdteam" }),
+    ]);
+    assert(a.status === 200 && b.status === 200, `parallel: ${a.status}/${b.status}`);
+    const slots = await db.select().from(organisationStaffSlotsTable).where(eq(organisationStaffSlotsTable.clubId, orgD));
+    assert(slots.length === 4, `verwacht 4 stafplekken na parallel toepassen, kreeg ${slots.length}`);
+    const teams = await db.select().from(clubTeamsTable).where(eq(clubTeamsTable.clubId, orgD));
+    assert(teams.length === 1, `verwacht 1 selectie na parallel toepassen, kreeg ${teams.length}`);
+  });
+
   // ── Opruimen ──────────────────────────────────────────────────────────────
   for (const id of cleanupIds) {
     await db.delete(clubsTable).where(eq(clubsTable.id, id));
