@@ -236,11 +236,12 @@ function ClubCrest() {
 // aantallen of informatie uit niet-actieve contexten.
 function ContextRegel() {
   const { profile } = useUserProfile()
+  const rol = (profile?.activeRole as Role | undefined) ?? "athlete"
+  // Reviewfix F4: teamidentiteit is sporter-context — in een andere actieve
+  // rol niet tonen (geen context uit niet-actieve rollen).
   const { data } = useTeamIdentity()
-  const team = data?.team
-  const rolLabel =
-    ROLE_LABELS[(profile?.activeRole as Role | undefined) ?? "athlete"] ??
-    "Sporter"
+  const team = rol === "athlete" ? data?.team : null
+  const rolLabel = ROLE_LABELS[rol] ?? "Sporter"
   return (
     <DsContextRegel
       rolLabel={rolLabel}

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Bell } from "lucide-react"
 import { useLocation } from "wouter"
@@ -179,6 +179,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [, navigate] = useLocation()
   const { profile, switchRole } = useUserProfile()
+  const switching = useRef(false)
   const { data } = useNotifications()
   const markRead = useMarkNotificationRead()
   const markAll = useMarkAllNotificationsRead()
@@ -201,7 +202,17 @@ export function NotificationBell() {
       profile.activeRole !== vereist &&
       profile.roles.includes(vereist)
     ) {
-      void switchRole(vereist).then(() => navigate(n.actionUrl!))
+      // Reviewfix: één wissel tegelijk — nieuwe activaties tijdens een lopende
+      // rolwissel worden genegeerd, en bij een mislukte wissel navigeren we
+      // niet (anders land je in de verkeerde context).
+      if (switching.current) return
+      switching.current = true
+      switchRole(vereist)
+        .then(() => navigate(n.actionUrl!))
+        .catch(() => {})
+        .finally(() => {
+          switching.current = false
+        })
       return
     }
     navigate(n.actionUrl)

@@ -32,7 +32,12 @@ import {
 import { TodayDebugPanel } from "@/components/sparki/role-today"
 import { Users, Bell, ShieldCheck } from "lucide-react"
 import { useUserProfile } from "@/contexts/UserContext"
-import { COACH_NAV_ENTRIES, PARENT_NAV_ENTRIES, ROLE_LABELS } from "@/lib/chapters"
+import {
+  COACH_NAV_ENTRIES,
+  PARENT_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_NAV_ENTRIES,
+  ROLE_LABELS,
+} from "@/lib/chapters"
 import type { Role } from "@/contexts/UserContext"
 import { DsContextRegel } from "@/components/ds/context"
 import { useTeamIdentity } from "@/hooks/use-social"
@@ -138,7 +143,9 @@ function shellNavForRole(role: string | null | undefined): {
       ? COACH_NAV_ENTRIES
       : role === "parent"
         ? PARENT_NAV_ENTRIES
-        : null
+        : role === "nutrition_specialist"
+          ? NUTRITION_SPECIALIST_NAV_ENTRIES
+          : null
   if (!entries) return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: MOBILE_NAV_ITEMS }
   return {
     desktop: entries,
@@ -293,11 +300,12 @@ export function CommercialShell({
 // informatie uit niet-actieve contexten.
 function ShellContextRegel() {
   const { profile } = useUserProfile()
+  const rol = (profile?.activeRole as Role | undefined) ?? "athlete"
+  // Reviewfix F4: de teamidentiteit is sporter-context. In een andere actieve
+  // rol tonen we haar NIET — anders lekt context uit een niet-actieve rol.
   const { data } = useTeamIdentity()
-  const team = data?.team
-  const rolLabel =
-    ROLE_LABELS[(profile?.activeRole as Role | undefined) ?? "athlete"] ??
-    "Sporter"
+  const team = rol === "athlete" ? data?.team : null
+  const rolLabel = ROLE_LABELS[rol] ?? "Sporter"
   return (
     <DsContextRegel
       rolLabel={rolLabel}
