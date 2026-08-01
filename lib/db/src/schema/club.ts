@@ -134,6 +134,14 @@ export const clubMembersTable = pgTable(
     medicalSpecialty: text("medical_specialty"),
     // Vrij label, bv. "hoofdtrainer jeugd".
     label: text("label"),
+    // BB-11 (besluitenpatch 2026-08-01, versoepeld): VOG-registratie — alleen
+    // relevant voor STRUCTURELE functies die met jeugd werken. Geen upload;
+    // de club vinkt aan dat een VOG getoond is, mét afgiftedatum. Ouder dan
+    // 3 jaar ⇒ waarschuwing (afgeleid, niet opgeslagen). Gasten/incidentele
+    // vrijwilligers vallen erbuiten.
+    vogIssuedOn: date("vog_issued_on"),
+    vogRecordedAt: timestamp("vog_recorded_at", { withTimezone: true }),
+    vogRecordedByClerkId: text("vog_recorded_by_clerk_id"),
     joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
     endedReason: text("ended_reason"),

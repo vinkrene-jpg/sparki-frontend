@@ -14,6 +14,7 @@ import {
   Users,
   Bell,
   ShieldCheck,
+  Building2,
   Activity,
   Globe,
   HeartPulse,
@@ -41,9 +42,11 @@ import {
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_ACCOUNT_NAV,
   COMMERCIAL_MOBILE_NAV,
+  withClubNav,
 } from "@/lib/commercial-shell"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
+import { useMyClubs } from "@/hooks/use-club"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
@@ -101,7 +104,10 @@ const SHELL_MOBILE_NAV_ITEMS: DsNavItem[] = COMMERCIAL_MOBILE_NAV.map((item) => 
 
 // WP-R1: de schil is rol-bewust. Sporters houden de commerciële nav; coach en
 // ouder krijgen hun eigen hoofdnavigatie (chapters.ts is de SSOT van de items).
-function shellNavForRole(role: string | null | undefined): {
+function shellNavForRole(
+  role: string | null | undefined,
+  hasClubRole = false,
+): {
   desktop: { href: string; label: string }[]
   mobiel: DsNavItem[]
 } {
@@ -114,7 +120,16 @@ function shellNavForRole(role: string | null | undefined): {
           ? NUTRITION_SPECIALIST_NAV_ENTRIES
           : null
   if (!entries) {
-    return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: SHELL_MOBILE_NAV_ITEMS }
+    // Besluitenpatch 2026-08-01 (hoofdstuk B): actieve clubrol ⇒ "Club"
+    // vervangt de Analyse-positie — identiek aan CommercialShell.
+    return {
+      desktop: withClubNav(COMMERCIAL_DESKTOP_NAV, hasClubRole),
+      mobiel: withClubNav(COMMERCIAL_MOBILE_NAV, hasClubRole).map((item) => ({
+        href: item.href,
+        label: item.label,
+        icon: item.href === "/club" ? Building2 : (SHELL_MOBILE_NAV_ICONS[item.href] ?? IconMenu),
+      })),
+    }
   }
   return {
     desktop: entries,
@@ -355,7 +370,12 @@ export function ScreenShell({
   const [pathname, setLocation] = useLocation()
   const navRoots = navRootsForRole(profile?.activeRole)
   // WP-R1: rol-bewuste hoofdnavigatie (ouder/coach eigen onderbalk + zijbalk).
-  const shellNav = shellNavForRole(profile?.activeRole)
+  // Besluitenpatch 2026-08-01: actieve clubrol ⇒ "Club" vervangt Analyse.
+  const clubsQuery = useMyClubs()
+  const shellNav = shellNavForRole(
+    profile?.activeRole,
+    (clubsQuery.data ?? []).length > 0,
+  )
   const showAutoTerug = terug && !navRoots.has(pathname)
   const goBack = () => {
     if (window.history.length > 1) window.history.back()

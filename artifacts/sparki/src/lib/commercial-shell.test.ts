@@ -14,6 +14,7 @@ import {
   trainingPrimaryLabel,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
+  withClubNav,
   PRESENTATION_STATES,
   SEASON_PHASES,
   bandLabel,
@@ -669,6 +670,28 @@ scenario("sfeerlaag kent geen alarm-/roodtoestand en verzint geen conclusies", (
       goalRaceIsToday: false,
     }) === "recovery",
     "kwetsbaar blijft rustig (recovery)",
+  )
+})
+
+// ── Besluitenpatch 2026-08-01 (hoofdstuk B): Club vervangt Analyse ───────────
+scenario("withClubNav: actieve clubrol vervangt Analyse door Club (mobiel én desktop)", () => {
+  const mobiel = withClubNav(COMMERCIAL_MOBILE_NAV, true)
+  assert(mobiel.some((i) => i.href === "/club" && i.label === "Club"), "Club-item aanwezig")
+  assert(!mobiel.some((i) => i.href === "/analyse"), "Analyse vervangen")
+  assert(mobiel.length === COMMERCIAL_MOBILE_NAV.length, "aantal posities blijft gelijk")
+  const desktop = withClubNav(COMMERCIAL_DESKTOP_NAV, true)
+  assert(desktop.some((i) => i.href === "/club"), "Club op desktop")
+  assert(!desktop.some((i) => i.href === "/analyse"), "Analyse weg op desktop")
+})
+
+scenario("withClubNav: zonder clubrol blijft de navigatie exact ongewijzigd", () => {
+  assert(
+    JSON.stringify(withClubNav(COMMERCIAL_MOBILE_NAV, false)) === JSON.stringify(COMMERCIAL_MOBILE_NAV),
+    "mobiel ongewijzigd",
+  )
+  assert(
+    JSON.stringify(withClubNav(COMMERCIAL_DESKTOP_NAV, false)) === JSON.stringify(COMMERCIAL_DESKTOP_NAV),
+    "desktop ongewijzigd",
   )
 })
 

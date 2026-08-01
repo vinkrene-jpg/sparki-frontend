@@ -20,6 +20,7 @@ import { processDueAccountDeletions } from "./account-privacy";
 import { runLibraryBackfill } from "./library-backfill";
 import { runSurfaceBackfill } from "./surface-backfill";
 import { runScheduledObservationCleanup } from "../jobs/observation-cleanup";
+import { runParentAgeTransition } from "./parent-age-transition";
 
 let started = false;
 let inFlight = false;
@@ -174,6 +175,13 @@ export function startReminderScheduler(): void {
         }
       } catch (err) {
         logger.error({ err }, "in-process observation cleanup failed");
+      }
+      // Besluitenpatch 2026-08-01: ouderkoppeling stopt automatisch bij 18,
+      // met bericht één week vooraf (idempotent via dedupeKey + soft-end).
+      try {
+        await runParentAgeTransition();
+      } catch (err) {
+        logger.error({ err }, "parent age transition run failed");
       }
     } catch (err) {
       logger.error({ err, reminders: "scheduler" }, "in-process reminder run failed");

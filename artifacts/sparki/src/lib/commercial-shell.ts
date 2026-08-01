@@ -27,6 +27,19 @@ export const COMMERCIAL_MOBILE_NAV: CommercialNavItem[] = [
   { href: "/meer", label: "Meer" },
 ]
 
+// Besluitenpatch 2026-08-01 (hoofdstuk B): bij een ACTIEVE clubrol vervangt
+// "Club" de Analyse-positie in de vijf hoofdposities. Analyse blijft
+// bereikbaar via Meer. Pure functie zodat de nav-regressietest dit dekt.
+export function withClubNav(
+  items: CommercialNavItem[],
+  hasClubRole: boolean,
+): CommercialNavItem[] {
+  if (!hasClubRole) return items
+  return items.map((i) =>
+    i.href === "/analyse" ? { href: "/club", label: "Club" } : i,
+  )
+}
+
 // Beslisblok 01 (RENE_APPROVED_PATTERN, apparaat-eigen navigatie met
 // gegarandeerde kernset): Wedstrijd hoort ook op desktop logisch bereikbaar
 // te zijn, en desktop krijgt een duidelijk Meer-equivalent (zelfde inhoud als

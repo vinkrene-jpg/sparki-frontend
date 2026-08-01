@@ -893,17 +893,104 @@ router.get("/:clubId/members", requireAuth, async (req, res) => {
         const p = names.get(m.clerkId);
         const b = birthMap.get(m.clerkId);
         const age = b ? computeAge(b.birthDate, b.birthYear) : null;
+        // BB-11: afgeleide VOG-status voor beheer — "geldig", "verlopen"
+        // (afgifte > 3 jaar geleden ⇒ waarschuwing) of "ontbreekt". Nooit
+        // opgeslagen, altijd vers berekend.
+        const vogStatus =
+          !manage
+            ? undefined
+            : m.role === "alleen_lezen"
+              ? null // gast: geen VOG van toepassing
+              : m.vogIssuedOn == null
+                ? "ontbreekt"
+                : Date.now() - Date.parse(m.vogIssuedOn) > 3 * 365.25 * 24 * 3600 * 1000
+                  ? "verlopen"
+                  : "geldig";
         return {
           ...m,
           displayName: p?.displayName ?? null,
           email: manage ? p?.email ?? null : null,
           isYouth: manage ? (age != null ? age < 16 : null) : undefined,
+          vogStatus,
         };
       }),
     );
   } catch (err) {
     req.log.error({ err }, "club members failed");
     res.status(500).json({ error: "Ledenlijst ophalen is niet gelukt." });
+  }
+});
+
+// BB-11 (besluitenpatch 2026-08-01, versoepeld): VOG-registratie op een
+// lidmaatschap. Alleen clubbeheer; alleen aanvinken-met-afgiftedatum (geen
+// upload). Alleen zinvol voor structurele functies met jeugdcontact —
+// gasten/alleen_lezen vallen erbuiten. Datum in de toekomst is ongeldig.
+router.put("/:clubId/members/:memberId/vog", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen het clubbeheer kan een VOG registreren." });
+      return;
+    }
+    const memberId = intParam(req.params["memberId"]);
+    if (memberId == null) {
+      res.status(400).json({ error: "Ongeldig lid." });
+      return;
+    }
+    const [target] = await db
+      .select()
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.id, memberId), eq(clubMembersTable.clubId, ctx.club.id)));
+    if (!target || target.endedAt) {
+      res.status(404).json({ error: "Lid niet gevonden." });
+      return;
+    }
+    if (target.role === "alleen_lezen") {
+      res.status(400).json({ error: "Voor gasten wordt geen VOG geregistreerd." });
+      return;
+    }
+    const issuedOn = str(req.body?.issuedOn);
+    if (issuedOn === null && req.body?.issuedOn !== null) {
+      res.status(400).json({ error: "Afgiftedatum ontbreekt (JJJJ-MM-DD) of stuur null om te wissen." });
+      return;
+    }
+    if (issuedOn != null) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn) || Number.isNaN(Date.parse(issuedOn))) {
+        res.status(400).json({ error: "Ongeldige afgiftedatum (JJJJ-MM-DD)." });
+        return;
+      }
+      if (Date.parse(issuedOn) > Date.now()) {
+        res.status(400).json({ error: "De afgiftedatum kan niet in de toekomst liggen." });
+        return;
+      }
+    }
+    const [updated] = await db
+      .update(clubMembersTable)
+      .set(
+        issuedOn == null
+          ? { vogIssuedOn: null, vogRecordedAt: null, vogRecordedByClerkId: null, updatedAt: new Date() }
+          : {
+              vogIssuedOn: issuedOn,
+              vogRecordedAt: new Date(),
+              vogRecordedByClerkId: ctx.membership.clerkId,
+              updatedAt: new Date(),
+            },
+      )
+      .where(eq(clubMembersTable.id, memberId))
+      .returning();
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: issuedOn == null ? "vog_gewist" : "vog_geregistreerd",
+      targetType: "member",
+      targetId: memberId,
+      detail: { lid: target.clerkId, afgiftedatum: issuedOn },
+    });
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err }, "club member vog failed");
+    res.status(500).json({ error: "VOG registreren is niet gelukt." });
   }
 });
 

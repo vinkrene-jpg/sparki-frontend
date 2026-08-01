@@ -114,8 +114,19 @@ export async function effectiveParentAccess(
     parentMayEdit: tier === "u16",
   };
   // BB-09 (BUILD_01 F2): een beëindigde koppeling geeft nooit toegang.
-  if (link.status !== "accepted" || link.endedAt != null || level === "none")
-    return base;
+  if (link.status !== "accepted" || link.endedAt != null) return base;
+
+  // Besluitenpatch 2026-08-01 (hoofdstuk B): een MINDERJARIGE mag niet alles
+  // voor zijn ouder afschermen — gezondheid en herstel blijven altijd
+  // zichtbaar, ook met dataSharingParent="none". Onbekende leeftijd telt als
+  // strengste regime en dus als minderjarig. Voor een volwassen sporter (18+)
+  // blijft "none" wél de volledige kill-switch.
+  if (level === "none") {
+    if (tier === "adult") return base;
+    const safetyOnly = allOff();
+    for (const c of SAFETY_CATEGORIES) safetyOnly[c] = true;
+    return { ...base, permissions: safetyOnly };
+  }
 
   // Herbevestiging nodig wanneer de leeftijdscategorie is gewijzigd sinds de
   // laatste bevestiging. Een koppeling zonder bevestiging heeft nooit meer dan

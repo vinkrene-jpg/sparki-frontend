@@ -30,7 +30,8 @@ import {
   type TodayItem,
 } from "@/hooks/use-today"
 import { TodayDebugPanel } from "@/components/sparki/role-today"
-import { Users, Bell, ShieldCheck } from "lucide-react"
+import { Users, Bell, ShieldCheck, Building2 } from "lucide-react"
+import { useMyClubs } from "@/hooks/use-club"
 import { useUserProfile } from "@/contexts/UserContext"
 import {
   COACH_NAV_ENTRIES,
@@ -65,6 +66,7 @@ import {
   COMMERCIAL_COPY,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
+  withClubNav,
   SEASON_PHASES,
   bandLabel,
   bandStatusSoort,
@@ -134,7 +136,10 @@ const ROLE_NAV_ICONS: Record<string, LucideIcon> = {
   "/toestemmingen": ShieldCheck,
 }
 
-function shellNavForRole(role: string | null | undefined): {
+function shellNavForRole(
+  role: string | null | undefined,
+  hasClubRole = false,
+): {
   desktop: { href: string; label: string }[]
   mobiel: DsNavItem[]
 } {
@@ -146,7 +151,19 @@ function shellNavForRole(role: string | null | undefined): {
         : role === "nutrition_specialist"
           ? NUTRITION_SPECIALIST_NAV_ENTRIES
           : null
-  if (!entries) return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: MOBILE_NAV_ITEMS }
+  if (!entries) {
+    // Besluitenpatch 2026-08-01 (hoofdstuk B): actieve clubrol ⇒ "Club"
+    // vervangt de Analyse-positie (alleen in de sporterweergave; coach/ouder/
+    // voedingsdeskundige houden hun eigen vijf posities).
+    return {
+      desktop: withClubNav(COMMERCIAL_DESKTOP_NAV, hasClubRole),
+      mobiel: withClubNav(COMMERCIAL_MOBILE_NAV, hasClubRole).map((item) => ({
+        href: item.href,
+        label: item.label,
+        icon: item.href === "/club" ? Building2 : (MOBILE_NAV_ICONS[item.href] ?? IconMenu),
+      })),
+    }
+  }
   return {
     desktop: entries,
     mobiel: entries.map((e) => ({
@@ -193,7 +210,12 @@ export function CommercialShell({
   const [, navigate] = useLocation()
   // WP-R1: rol-bewuste hoofdnavigatie (ouder/coach eigen onderbalk + zijbalk).
   const { profile } = useUserProfile()
-  const shellNav = shellNavForRole(profile?.activeRole)
+  // Besluitenpatch 2026-08-01 (hoofdstuk B): actieve clubrol ⇒ "Club" vervangt
+  // Analyse in de vijf posities (alleen sporterweergave). Zolang de clubs nog
+  // laden geldt de standaardnav — nav mag nooit op de query wachten.
+  const clubsQuery = useMyClubs()
+  const hasClubRole = (clubsQuery.data ?? []).length > 0
+  const shellNav = shellNavForRole(profile?.activeRole, hasClubRole)
   // Prefix-match zodat ook diepere paden (/train/…, /routes/…) het juiste
   // nav-item actief markeren — zelfde gedrag op desktop en mobiel.
   const isActive = (href: string) =>
