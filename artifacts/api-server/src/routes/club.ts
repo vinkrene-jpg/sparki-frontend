@@ -43,6 +43,11 @@ import {
 import { billingSubscriptionsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { createNotification } from "../lib/notifications";
+import {
+  syncPersonalRaceForSelection,
+  removePersonalRaceForSelection,
+  propagateEventUpdate,
+} from "../lib/club-race-sync";
 import { isValidInterval } from "../lib/billing";
 import { getStripeGateway, TIER_PRICING } from "../lib/billing/stripe-gateway";
 import {
@@ -2200,6 +2205,16 @@ function canManageRaces(ctx: ClubContext): boolean {
   return hasClubRole(ctx, ["owner", "admin", "teammanager", "ploegleider"]);
 }
 
+// BUILD_03 (besluitenpatch D): de geactiveerde vervanger mag op DEZE wedstrijd
+// alles wat de ploegleider mag — nergens anders.
+function canManageRaceEvent(
+  ctx: ClubContext,
+  event: { deputyClerkId: string | null } | null | undefined,
+): boolean {
+  if (canManageRaces(ctx)) return true;
+  return event?.deputyClerkId != null && event.deputyClerkId === ctx.membership.clerkId;
+}
+
 router.post("/:clubId/races", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
@@ -2294,13 +2309,6 @@ router.put("/:clubId/races/:eventId", requireAuth, async (req, res) => {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
     if (!clubWritableOr409(ctx, res)) return;
-    // Mechanieker: mag ALLEEN de materiaalinformatie van een wedstrijd bijwerken.
-    const raceFullEdit = canManageRaces(ctx);
-    const raceMaterialOnly = !raceFullEdit && canEditMaterial(ctx);
-    if (!raceFullEdit && !raceMaterialOnly) {
-      res.status(403).json({ error: "Alleen beheer of een teammanager kan clubwedstrijden beheren." });
-      return;
-    }
     const eventId = intParam(req.params["eventId"]);
     const [event] = await db
       .select()
@@ -2308,6 +2316,14 @@ router.put("/:clubId/races/:eventId", requireAuth, async (req, res) => {
       .where(and(eq(clubRaceEventsTable.id, eventId ?? -1), eq(clubRaceEventsTable.clubId, ctx.club.id)));
     if (!event) {
       res.status(404).json({ error: "Wedstrijd niet gevonden." });
+      return;
+    }
+    // Mechanieker: mag ALLEEN de materiaalinformatie van een wedstrijd bijwerken.
+    // De geactiveerde vervanger telt op deze wedstrijd als ploegleider.
+    const raceFullEdit = canManageRaceEvent(ctx, event);
+    const raceMaterialOnly = !raceFullEdit && canEditMaterial(ctx);
+    if (!raceFullEdit && !raceMaterialOnly) {
+      res.status(403).json({ error: "Alleen beheer of een teammanager kan clubwedstrijden beheren." });
       return;
     }
     const patch: Record<string, unknown> = { updatedAt: new Date() };
@@ -2320,11 +2336,19 @@ router.put("/:clubId/races/:eventId", requireAuth, async (req, res) => {
     if (patch["name"] === null) delete patch["name"];
     if (!raceMaterialOnly && typeof req.body?.raceDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.body.raceDate))
       patch["raceDate"] = req.body.raceDate;
+    // BUILD_03: parcours koppelen is optioneel (routeId, expliciet null om te
+    // ontkoppelen).
+    if (!raceMaterialOnly && "routeId" in (req.body ?? {})) {
+      patch["routeId"] = req.body.routeId == null ? null : intParam(String(req.body.routeId));
+    }
     const [updated] = await db
       .update(clubRaceEventsTable)
       .set(patch)
       .where(eq(clubRaceEventsTable.id, event.id))
       .returning();
+    // "Eén wedstrijd voor iedereen": wijzigingen werken door in de
+    // gesynchroniseerde persoonlijke wedstrijden van de selectie.
+    if (updated) await propagateEventUpdate(updated);
     await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "wedstrijd_gewijzigd", targetType: "race", targetId: event.id });
     res.json(updated);
   } catch (err) {
@@ -2339,10 +2363,6 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
     if (!clubWritableOr409(ctx, res)) return;
-    if (!canManageRaces(ctx)) {
-      res.status(403).json({ error: "Alleen beheer of een teammanager beheert de selectie." });
-      return;
-    }
     const eventId = intParam(req.params["eventId"]);
     const clerkId = str(req.body?.clerkId);
     const role = str(req.body?.role) ?? "renner";
@@ -2356,6 +2376,10 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
       .where(and(eq(clubRaceEventsTable.id, eventId), eq(clubRaceEventsTable.clubId, ctx.club.id)));
     if (!event) {
       res.status(404).json({ error: "Wedstrijd niet gevonden." });
+      return;
+    }
+    if (!canManageRaceEvent(ctx, event)) {
+      res.status(403).json({ error: "Alleen beheer of een teammanager beheert de selectie." });
       return;
     }
     const memberCtx = await getClubContext(ctx.club.id, clerkId);
@@ -2431,6 +2455,10 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
         dedupeKey: `selectie-overrule:${eventId}:${clerkId}:${existing.role}->${role}`,
       });
     }
+    // BUILD_03: "één wedstrijd voor iedereen" — renner/reserve krijgt de
+    // wedstrijd meteen in de eigen wedstrijdomgeving; begeleider niet.
+    await syncPersonalRaceForSelection(event, clerkId, role);
+
     void createNotification({
       clerkId,
       type: "club_update",
@@ -2456,6 +2484,214 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
   } catch (err) {
     req.log.error({ err }, "club race selection failed");
     res.status(500).json({ error: "Selectie wijzigen is niet gelukt." });
+  }
+});
+
+// Selectie verwijderen (afmelding). De reserve schuift NIET automatisch door —
+// de ploegleider doet dat zelf (besluitenpatch D, Conflicten).
+router.delete("/:clubId/races/:eventId/selection/:memberId", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
+    const eventId = intParam(req.params["eventId"]);
+    const memberId = str(req.params["memberId"]);
+    if (eventId == null || !memberId) {
+      res.status(400).json({ error: "Ongeldige selectie." });
+      return;
+    }
+    const [event] = await db
+      .select()
+      .from(clubRaceEventsTable)
+      .where(and(eq(clubRaceEventsTable.id, eventId), eq(clubRaceEventsTable.clubId, ctx.club.id)));
+    if (!event) {
+      res.status(404).json({ error: "Wedstrijd niet gevonden." });
+      return;
+    }
+    if (!canManageRaceEvent(ctx, event)) {
+      res.status(403).json({ error: "Alleen beheer, teammanager of ploegleider beheert de selectie." });
+      return;
+    }
+    const [existing] = await db
+      .select()
+      .from(clubRaceSelectionsTable)
+      .where(and(eq(clubRaceSelectionsTable.eventId, eventId), eq(clubRaceSelectionsTable.clerkId, memberId)));
+    if (!existing) {
+      res.status(404).json({ error: "Deze persoon staat niet in de selectie." });
+      return;
+    }
+    if (existing.overruledAt != null && ctx.membership.role === "ploegleider") {
+      res.status(403).json({
+        error: "Deze selectie is door de teammanager vastgezet en kan door de ploegleider niet worden teruggedraaid.",
+      });
+      return;
+    }
+    await db
+      .delete(clubRaceSelectionsTable)
+      .where(eq(clubRaceSelectionsTable.id, existing.id));
+    await removePersonalRaceForSelection(eventId, memberId);
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "selectie_verwijderd",
+      targetType: "race",
+      targetId: eventId,
+      detail: { lid: memberId, rol: existing.role },
+    });
+    res.json({ removed: true });
+  } catch (err) {
+    req.log.error({ err }, "club race selection remove failed");
+    res.status(500).json({ error: "Afmelden is niet gelukt." });
+  }
+});
+
+// ── Vervanger voor de ploegleider (besluitenpatch D — Structuur) ──────────────
+// Handmatig geactiveerd door de teammanager, of door de ploegleider zelf als
+// er geen teammanager is. De vervanger mag alles wat de ploegleider mag; de
+// hele ploeg krijgt bericht. Terugkeer van de ploegleider (of afloop) wist het
+// veld — er blijft bewust GEEN spoor achter dat er een vervanger was.
+router.post("/:clubId/races/:eventId/deputy", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
+    const eventId = intParam(req.params["eventId"]);
+    const [event] = await db
+      .select()
+      .from(clubRaceEventsTable)
+      .where(and(eq(clubRaceEventsTable.id, eventId ?? -1), eq(clubRaceEventsTable.clubId, ctx.club.id)));
+    if (!event) {
+      res.status(404).json({ error: "Wedstrijd niet gevonden." });
+      return;
+    }
+    const actorRole = ctx.membership.role;
+    const isBeheer = canManageClub(ctx);
+    const isTeammanager = actorRole === "teammanager" || isBeheer;
+    if (!isTeammanager) {
+      // Ploegleider mag alleen zelf activeren als de club géén actieve
+      // teammanager heeft.
+      if (actorRole !== "ploegleider") {
+        res.status(403).json({ error: "Alleen de teammanager activeert een vervanger." });
+        return;
+      }
+      const [tm] = await db
+        .select({ id: clubMembersTable.id })
+        .from(clubMembersTable)
+        .where(
+          and(
+            eq(clubMembersTable.clubId, ctx.club.id),
+            eq(clubMembersTable.role, "teammanager"),
+            isNull(clubMembersTable.endedAt),
+          ),
+        );
+      if (tm) {
+        res.status(403).json({ error: "Er is een teammanager; alleen die activeert een vervanger." });
+        return;
+      }
+    }
+    const deputyClerkId = str(req.body?.deputyClerkId);
+    if (deputyClerkId === null && req.body?.deputyClerkId !== null) {
+      res.status(400).json({ error: "Geef de vervanger op, of null om te beëindigen." });
+      return;
+    }
+    if (deputyClerkId) {
+      const deputyCtx = await getClubContext(ctx.club.id, deputyClerkId);
+      if (!deputyCtx) {
+        res.status(400).json({ error: "De vervanger is geen actief clublid." });
+        return;
+      }
+    }
+    await db
+      .update(clubRaceEventsTable)
+      .set({ deputyClerkId: deputyClerkId ?? null, updatedAt: new Date() })
+      .where(eq(clubRaceEventsTable.id, event.id));
+    if (deputyClerkId) {
+      // De hele ploeg (selectie) krijgt bericht.
+      const selectie = await db
+        .select({ clerkId: clubRaceSelectionsTable.clerkId })
+        .from(clubRaceSelectionsTable)
+        .where(eq(clubRaceSelectionsTable.eventId, event.id));
+      const names = await profilesByIds([deputyClerkId]);
+      const naam = names.get(deputyClerkId) ?? "een vervanger";
+      for (const s of selectie) {
+        void createNotification({
+          clerkId: s.clerkId,
+          type: "club_update",
+          title: "Vervangende ploegleider",
+          body: `Voor "${event.name}" (${event.raceDate}) neemt ${naam} de rol van ploegleider waar.`,
+          actionUrl: "/club",
+          source: "club-races",
+          dedupeKey: `deputy:${event.id}:${deputyClerkId}:${s.clerkId}`,
+        });
+      }
+    }
+    // Bewust GEEN audit met de naam van de vervanger: na afloop mag niet meer
+    // zichtbaar zijn dat er een vervanger is geweest (besluitenpatch D).
+    res.json({ deputyClerkId: deputyClerkId ?? null });
+  } catch (err) {
+    req.log.error({ err }, "club race deputy failed");
+    res.status(500).json({ error: "Vervanger instellen is niet gelukt." });
+  }
+});
+
+// ── Conflictsignalering v1 (besluitenpatch D — Conflicten) ────────────────────
+// Detecteert UITSLUITEND persoonsdubbeling en waarschuwt — blokkeert nooit:
+// • dezelfde renner in twee wedstrijden op één dag
+// • dezelfde ploegleider (begeleider) op twee wedstrijden op één dag
+// Onbeschikbaarheid en onvolledige bezetting zijn bewust géén conflict (v1);
+// autoplaats- en taaktijd-conflicten volgen zodra vervoer/taaktijden bestaan.
+router.get("/:clubId/races/:eventId/conflicts", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const eventId = intParam(req.params["eventId"]);
+    const [event] = await db
+      .select()
+      .from(clubRaceEventsTable)
+      .where(and(eq(clubRaceEventsTable.id, eventId ?? -1), eq(clubRaceEventsTable.clubId, ctx.club.id)));
+    if (!event) {
+      res.status(404).json({ error: "Wedstrijd niet gevonden." });
+      return;
+    }
+    // Alle andere wedstrijden van deze club op dezelfde dag.
+    const sameDay = await db
+      .select()
+      .from(clubRaceEventsTable)
+      .where(
+        and(
+          eq(clubRaceEventsTable.clubId, ctx.club.id),
+          eq(clubRaceEventsTable.raceDate, event.raceDate),
+        ),
+      );
+    const otherIds = sameDay.filter((e) => e.id !== event.id).map((e) => e.id);
+    const warnings: { type: string; clerkId: string; message: string }[] = [];
+    if (otherIds.length > 0) {
+      const mySel = await db
+        .select()
+        .from(clubRaceSelectionsTable)
+        .where(eq(clubRaceSelectionsTable.eventId, event.id));
+      const otherSel = await db
+        .select()
+        .from(clubRaceSelectionsTable)
+        .where(inArray(clubRaceSelectionsTable.eventId, otherIds));
+      const names = await profilesByIds([...new Set([...mySel, ...otherSel].map((s) => s.clerkId))]);
+      const byEvent = new Map(sameDay.map((e) => [e.id, e.name]));
+      for (const s of mySel) {
+        const dubbel = otherSel.filter((o) => o.clerkId === s.clerkId);
+        for (const d of dubbel) {
+          const naam = names.get(s.clerkId) ?? s.clerkId;
+          warnings.push({
+            type: s.role === "begeleider" || d.role === "begeleider" ? "dubbele_begeleider" : "dubbele_renner",
+            clerkId: s.clerkId,
+            message: `${naam} staat op ${event.raceDate} ook in de selectie van "${byEvent.get(d.eventId) ?? "een andere wedstrijd"}".`,
+          });
+        }
+      }
+    }
+    res.json({ warnings });
+  } catch (err) {
+    req.log.error({ err }, "club race conflicts failed");
+    res.status(500).json({ error: "Conflictcontrole is niet gelukt." });
   }
 });
 

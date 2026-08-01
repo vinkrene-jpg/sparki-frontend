@@ -417,6 +417,15 @@ export const clubRaceEventsTable = pgTable(
     transportInfo: text("transport_info"),
     materialInfo: text("material_info"),
     notes: text("notes"),
+    // BUILD_03 (besluitenpatch hoofdstuk D — Structuur):
+    // Parcours koppelen is optioneel.
+    routeId: integer("route_id"),
+    // Vervanger voor de ploegleider: handmatig geactiveerd door de
+    // teammanager (of de ploegleider zelf als er geen teammanager is). Mag
+    // alles wat de ploegleider mag. Terugkeer of afloop wist het veld — na
+    // afloop is NIET meer zichtbaar dat er een vervanger was (bewust geen
+    // historie).
+    deputyClerkId: text("deputy_clerk_id"),
     resultSummary: text("result_summary"), // uitslag in gewone taal
     debrief: text("debrief"), // terugblik
     status: text("status").notNull().default("gepland"), // gepland | geannuleerd | afgerond

@@ -69,6 +69,12 @@ export const racesTable = pgTable("races", {
   teamInfo: text("team_info"),
   coachInstructions: text("coach_instructions"),
 
+  // BUILD_03 (besluitenpatch hoofdstuk D — "één wedstrijd voor iedereen"):
+  // een door de ploegleider aangemaakte clubwedstrijd verschijnt via deze
+  // koppeling meteen in de eigen wedstrijdomgeving van de geselecteerde
+  // renner. Gevuld door de selectie-sync; handmatige races laten dit leeg.
+  clubEventId: integer("club_event_id"),
+
   // Finished-race outcome (uitslag) — athlete-entered now, integration-ready so
   // a results feed (UCI/club/TrainingPeaks) can populate the same shape later.
   raceType: text("race_type"), // e.g. "wegwedstrijd", "criterium", "tijdrit"
