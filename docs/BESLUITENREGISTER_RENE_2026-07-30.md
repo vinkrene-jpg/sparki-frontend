@@ -240,3 +240,29 @@ ABONNEMENT_01 en de volledige gekoppelde keten (geen mock/seed/fallback zichtbaa
 rechten uitsluitend uit echte abonnementstoestand; Stripe-events deterministisch;
 dubbele webhooks veilig; typecheck/build/tests groen; negatieve tests uitgevoerd;
 audittrail compleet).
+
+---
+
+## SPARKI-BESLUIT-2026-013 — Brand-identity-voorbereiding (01-08-2026)
+
+- **Aanleiding:** forensisch Mirror-onderzoek naar het Sparki-beeldmerk.
+  Uitkomst: het enige bewezen productiebeeldmerk is de **bliksemschicht**; er
+  bestaat één S-concept in Figma (niet-geproduceerde mock-up); er is géén bewijs
+  voor een officiële Sparki-"S" opgebouwd uit richtingspijlen.
+- **Besluit (René):**
+  1. BRAND_IDENTITY_01 blijft tijdelijk gepauzeerd.
+  2. Er wordt niet verder gezocht naar een historisch beeldmerk.
+  3. Er wordt geen nieuw logo tussentijds ontworpen.
+  4. Na afronding van de Mobile UX-documenten start een afzonderlijk traject
+     "BRAND_IDENTITY_01".
+  5. Dat traject ontwerpt meerdere professionele logo-richtingen.
+  6. René kiest één definitieve merkidentiteit.
+  7. Pas daarna worden favicon, PWA-iconen, splashscreens, PDF-rapporten,
+     Academy, website, social media en overige merkuitingen aangepast.
+  8. Tot die tijd blijft het huidige productiebeeldmerk (bliksemschicht) de
+     enige officiële identiteit.
+- **Productregel:** geen enkele merkuiting wordt tussentijds gewijzigd of
+  "alvast" aangepast; de bliksemschicht is tot het BRAND_IDENTITY_01-besluit de
+  enige officiële identiteit.
+- **Status:** BRAND_IDENTITY_01 = DEFERRED tot na Mobile UX (zie statusregister
+  en docs/build-packages/BRAND_IDENTITY_01/).

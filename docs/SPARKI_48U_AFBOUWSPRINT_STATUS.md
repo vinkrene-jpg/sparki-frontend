@@ -48,8 +48,14 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Privacy, toestemming, accountverwijdering | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Desktop / PWA / mobiel | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Bedrijfscontinuïteit en support | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
+| Merkidentiteit (BRAND_IDENTITY_01) | DEFERRED — tot na Mobile UX | besluit 01-08-2026 (SPARKI-BESLUIT-2026-013): bliksemschicht is enige officiële identiteit; geen tussentijds logo-ontwerp; traject start pas na Mobile UX-documenten |
 
 ## 3. Logboek
+
+- **01-08-2026** — BRAND_IDENTITY_01 op DEFERRED gezet tot na de Mobile
+  UX-documenten (SPARKI-BESLUIT-2026-013). Forensisch Mirror-onderzoek:
+  bliksemschicht = enige bewezen productiebeeldmerk; Figma-S = niet-geproduceerde
+  mock-up; geen bewijs voor een pijlen-"S". Geen tussentijdse merkwijzigingen.
 
 - **31-07-2026** — Register aangemaakt. 01 opnieuw bij Mirror (SHA `1114919a`).
   Open punten #10/#12/#13 geparkeerd per sprintbesluit 3. Baseline-verificatie
