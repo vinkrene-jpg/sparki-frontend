@@ -9,7 +9,7 @@
 
 
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
-**Status:** voorbereid werk. Start pas na expliciete vrijgave door René.
+**Status:** voorbereid werk. Start pas zodra deze opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave).
 
 ## Doel
 Het sociale deel van Sparki wordt één samenhangend product: een feed die uitsluitend echte inhoud van echte mensen toont, vrienden en groepen met heldere privacy, challenges die eerlijk meten, en moderatie die werkt vóór er iets misgaat.

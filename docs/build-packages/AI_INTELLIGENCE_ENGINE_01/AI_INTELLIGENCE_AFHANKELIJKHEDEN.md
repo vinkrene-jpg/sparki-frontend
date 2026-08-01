@@ -12,7 +12,7 @@
 | F0 | inventarisatie van **alle bestaande adviesvormen en hun opslag** | ja | F0 |
 | F1 | **`F0 MIRROR_PROVEN`** — opgeleverd is niet genoeg | ja | F0 en Mirror |
 | F1 | hergebruikmatrix: welke engines, welke gateway, welke memorystructuur | ja | F0 |
-| F1 | **beoordeling van hergebruikmatrix, risico's en open besluiten door ChatGPT en René** — F1 start niet automatisch na F0 | ja | ChatGPT en René |
+| F1 | ~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0): beoordeling door ChatGPT en René als wachtpoort~~ — F1 gebruikt het **technische resultaat** van F0 (de hergebruikmatrix); dat is de enige afhankelijkheid | ja | F0 |
 | F1 | migratie- en overgangsplan voor bestaande adviezen | ja | F1 zelf, vóór activering |
 | F2 | F1 `MIRROR_PROVEN` | ja | F1 |
 | F2 | per brontype vastgestelde geldigheidsduur | ja | F0 en René |

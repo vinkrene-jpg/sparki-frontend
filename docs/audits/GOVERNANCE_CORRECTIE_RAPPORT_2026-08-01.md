@@ -1,6 +1,11 @@
 # Governance-correctierapport — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01 (01-08-2026)
 
 Uitvoering van het correctiepakket na de zes K-besluiten van René (K1=A · K2=B · K3=A · K4=A · K5=A · K6=A).
+
+> **Correctie 01-08-2026 (opdracht SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, beslisblok René): K2 = A, niet B.**
+> Een volgende opdracht in een reeks start níet vanzelf; `ROUTE_PAKKET_02c/02d` en taak #536 zijn
+> nog niet geautoriseerd. De K2=B-passages hieronder beschrijven de eerdere doorvoering en zijn
+> niet herschreven; het besluitregister en het governance-document zijn op K2=A gezet.
 Geldende regel: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
 
 ## §9-opleveringen

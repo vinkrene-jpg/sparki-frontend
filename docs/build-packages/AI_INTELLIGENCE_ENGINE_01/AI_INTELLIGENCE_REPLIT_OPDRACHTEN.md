@@ -47,7 +47,7 @@ de centrale AI-gateway (naam, signatuur, aanroepplaatsen) · **welke zeven Found
 
 **Mirror.** Formele poort. Steekproef: minimaal vijf "aanwezig"-bevindingen tegen code geverifieerd, minimaal drie "afwezig"-bevindingen waarbij Mirror **zelf zoekt**. De zeven engines zijn benoemd en kloppen. De bestaande adviesvormen en hun opslag zijn volledig in kaart.
 
-**Na F0: commit, push, vaste SHA, Mirror-toets — en stop.** F1 start niet automatisch en niet vanzelf.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Na F0: commit, push, vaste SHA, Mirror-toets — en stop.** F1 start niet automatisch en niet vanzelf.~~ Na F0 volgt commit, push en vaste SHA; Mirror toetst parallel en F1 bouwt door op de F0-resultaten.
 
 ---
 

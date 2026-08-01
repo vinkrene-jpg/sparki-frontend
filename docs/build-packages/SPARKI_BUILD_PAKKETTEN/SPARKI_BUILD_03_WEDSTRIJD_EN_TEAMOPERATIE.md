@@ -387,7 +387,7 @@ Per fase SHA en scenario's. Plus één integrale doorloop van een volledige weds
 
 ## 16. Productiepoort
 
-Alle fasen `MIRROR_PROVEN` · geen openstaande afkeurgrond · migratie omkeerbaar · **F12-bewijs geleverd voordat Team publiek wordt** · expliciete vrijgave door René.
+Productiepublicatie via de automatische technische poort: build groen · typecheck groen · verplichte tests groen · migraties gevalideerd (omkeerbaar) · rollback beschikbaar · geen actieve harde stop. **Productbesluit blijft staan: F12-bewijs geleverd voordat Team publiek wordt (René).** Mirror toetst parallel.
 
 ## 17. Rapportagevorm voor Replit
 

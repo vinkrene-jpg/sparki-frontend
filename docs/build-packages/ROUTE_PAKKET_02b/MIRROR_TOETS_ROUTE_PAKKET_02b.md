@@ -92,4 +92,4 @@ Noteer als eerste **de stand van de 20%-vlag** waarmee is opgeleverd. Die bepaal
 
 Per scenario: verwacht, werkelijk, oordeel. Begin met de stand van de 20%-vlag. Noem expliciet wat je **niet** hebt kunnen toetsen en waarom. Sluit af met één eindoordeel: **goedgekeurd** of **afgekeurd met concrete blokkade**.
 
-Bij goedkeuring: `ROUTE_PAKKET_02c` kan door René worden vrijgegeven — mits besluit D1 (downgrade bij meer dan drie bewaarde routes) dan genomen is.
+Bij goedkeuring: `ROUTE_PAKKET_02c` blijft wachten op zijn **eigen gegeven opdracht** (K2=A — een volgende opdracht in een reeks start niet vanzelf); besluit D1 (downgrade bij meer dan drie bewaarde routes) is inmiddels genomen (SPARKI-BESLUIT-2026-009).

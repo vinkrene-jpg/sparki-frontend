@@ -9,7 +9,7 @@
 
 
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
-**Status:** voorbereid werk. Start pas na expliciete vrijgave door René.
+**Status:** voorbereid werk. Start pas zodra deze opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave).
 **Verhouding tot andere pakketten:** `CLUB_ONBOARDING_01` bouwt de instroom, `CLUB_LEDEN_01` het lidmaatschapsbeheer, `TRAINER_CLUB_01` maakt de bestaande omgeving lekvrij. Dit pakket legt het **rolmodel zelf** vast. Alle andere pakketten steunen erop; het gaat daarom vóór.
 
 ## Doel

@@ -401,7 +401,7 @@ Per fase: SHA · scenario's · uitkomst · openstaande punten. Plus één integr
 
 ## 16. Productiepoort
 
-Naar productie **alleen** na: alle fasen `MIRROR_PROVEN` · geen openstaande directe herstelgrond · rollback aantoonbaar per fase · **expliciete vrijgave door René**. Geen wijziging op productie zonder die vrijgave.
+Productiepublicatie via de automatische technische poort: build groen · typecheck groen · verplichte tests groen · migraties gevalideerd · rollback beschikbaar · geen actieve harde stop. Mirror toetst parallel; ontbrekend bewijs is een herstelpunt, geen bouwstop.
 
 ## 17. Rapportagevorm voor Replit
 

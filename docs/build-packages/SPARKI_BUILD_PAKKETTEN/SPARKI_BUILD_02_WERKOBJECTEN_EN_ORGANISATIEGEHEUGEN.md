@@ -482,7 +482,7 @@ Per fase SHA, scenario's en uitkomst. Plus één integrale doorloop van de dagsc
 
 ## 16. Productiepoort
 
-Alle fasen `MIRROR_PROVEN` · geen openstaande afkeurgrond · migratie omkeerbaar aangetoond · **expliciete vrijgave door René**.
+Productiepublicatie via de automatische technische poort: build groen · typecheck groen · verplichte tests groen · migraties gevalideerd (omkeerbaar aangetoond) · rollback beschikbaar · geen actieve harde stop. Mirror toetst parallel.
 
 ## 17. Rapportagevorm voor Replit
 

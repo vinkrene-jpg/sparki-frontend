@@ -9,7 +9,7 @@
 
 
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
-**Status:** voorbereid werk. Start pas na expliciete vrijgave door René.
+**Status:** voorbereid werk. Start pas zodra deze opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave).
 **Grondslag:** `SPARKI-BESLUIT-2026-001` (autonomous_training = Compleet) · `SPARKI-BESLUIT-2026-014` (acuut versus niet-acuut)
 
 ## Doel

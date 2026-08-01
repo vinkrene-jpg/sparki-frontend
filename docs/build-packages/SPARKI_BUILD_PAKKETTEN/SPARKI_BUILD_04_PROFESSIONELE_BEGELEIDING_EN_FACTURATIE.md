@@ -408,7 +408,7 @@ Per fase SHA en scenario's. Plus één integrale doorloop: trainer registreert z
 
 ## 16. Productiepoort
 
-Alle fasen `MIRROR_PROVEN` · geen openstaande afkeurgrond · migratie omkeerbaar · **F9 betaallink pas na technische én juridische verificatie** · **prijsbesluit genomen vóór betaald gebruik wordt opengesteld** · bewaartermijnen bevestigd · expliciete vrijgave door René.
+Productiepublicatie via de automatische technische poort: build groen · typecheck groen · verplichte tests groen · migraties gevalideerd (omkeerbaar) · rollback beschikbaar · geen actieve harde stop. **Productbesluiten blijven staan (René): F9 betaallink pas na technische én juridische verificatie · prijsbesluit vóór betaald gebruik · bewaartermijnen bevestigd (hard stop 10).** Mirror toetst parallel.
 
 ## 17. Rapportagevorm voor Replit
 

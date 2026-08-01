@@ -22,7 +22,7 @@ uitsluitend in een Replit-, Claude- of ChatGPT-chat.
   er iets mee gebeurt. `attached_assets/` is alleen staging (originele zips).
 
 ## Status (per 31-07-2026)
-Uitvoering gebeurt uitsluitend na expliciete vrijgave door René, in de door
+Uitvoering start zodra de betreffende opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave), in de door
 hem bepaalde volgorde, en met inachtneming van de MIRROR_PROVEN-voorwaarden
 per pakket. Opgeleverd (BUILD_DELIVERED, wachten op Mirror): ROUTE_PAKKET-reeks,
 DATA_TRUST_01, ABONNEMENT_01. RELEASE_01 is het slotpakket.

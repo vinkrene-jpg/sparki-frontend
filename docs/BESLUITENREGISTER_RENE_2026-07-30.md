@@ -311,5 +311,7 @@ Conform dezelfde afspraak als MUX-B1 t/m B4: pas een definitief
 - `SPARKI-BESLUIT-2026-004` (bouwproces: één kleine opdracht tegelijk · volgende opdracht pas
   na expliciete vrijgave door René · Mirror bewijst elke opdracht) is **INGETROKKEN — BESLUIT
   RENÉ 01-08-2026**. De oorspronkelijke tekst blijft staan waar hij staat; de geldende regel is
-  `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` (K1=A · K2=B · K3=A · K4=A/elf hard
-  stops · K5=A/benoemde testset · K6=A/input≠toestemming).
+  `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` (K1=A · K2=A · K3=A · K4=A/elf hard
+  stops · K5=A/benoemde testset · K6=A/input≠toestemming). *(Correctie 01-08-2026: eerdere
+  doorvoering las K2 als B; René's definitieve beslisblok zegt K2=A — een volgende opdracht in
+  een reeks start niet vanzelf; `ROUTE_PAKKET_02c/02d` en taak #536 zijn nog niet geautoriseerd.)*

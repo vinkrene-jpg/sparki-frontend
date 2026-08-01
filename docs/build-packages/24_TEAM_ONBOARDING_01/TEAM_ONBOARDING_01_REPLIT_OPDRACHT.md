@@ -9,7 +9,7 @@
 
 
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
-**Status:** voorbereid werk. Start pas na expliciete vrijgave door René **én** na `CLUB_RECHTEN_01` Mirror-goedgekeurd.
+**Status:** voorbereid werk. Start zodra deze opdracht expliciet gegeven is (K2=A) — technische afhankelijkheid: het opgeleverde resultaat van `CLUB_RECHTEN_01` (rechtenmodel); Mirror toetst parallel.
 **Bindend brondocument:** `docs/SPARKI_BESLUITEN_EN_BOUWVERDELING_CLUB_TEAM_ROLLEN_2026-08-01.md` (commit `944f8c11`) plus de aanvullende besluiten van 1 augustus over organisatietypen, rolgestuurde start en pakketgrens.
 
 ## Doel

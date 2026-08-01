@@ -8,7 +8,7 @@
 > Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
 
 
-**Datum:** 31 juli 2026 · **Status:** voorbereid werk, geen enkel pakket start zonder vrijgave van René
+**Datum:** 31 juli 2026 · **Status:** voorbereid werk; geen enkel pakket start zonder **gegeven opdracht** (K2=A — de opdracht ís de vrijgave)
 
 ---
 

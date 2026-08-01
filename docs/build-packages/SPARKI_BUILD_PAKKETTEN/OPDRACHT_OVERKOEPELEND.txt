@@ -24,7 +24,7 @@ ALGEMENE REGELS
 - Geen tweede documentarchitectuur.
 - Geen tweede agenda-, taak-, notificatie-, contacten-, locatie-, bestanden-, zoek- of archiefarchitectuur.
 - Geen mock-, seed-, demo- of fallbackdata als persoonlijke waarheid.
-- Geen productiepublicatie zonder expliciete vrijgave door René.
+- Productiepublicatie via de automatische technische poort (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0); de Publish-klik op het platform blijft feitelijk bij René.
 - Mirror loopt parallel mee op vaste gepushte fase-SHA’s.
 - Iedere fase krijgt:
   - start-SHA;

@@ -14,7 +14,7 @@
 
 ## Hoe deze opdrachten werken
 
-Eén fase per opdracht. **Alleen F0 mag na documentgoedkeuring direct worden vrijgegeven.** Elke volgende fase vereist `MIRROR_PROVEN` van de vorige én expliciete vrijgave door René.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~Eén fase per opdracht. Alleen F0 mag direct worden vrijgegeven; elke volgende fase vereist MIRROR_PROVEN van de vorige én expliciete vrijgave door René.~~ De gegeven opdracht geeft de hele straat vrij; fasen volgen elkaar als technische afhankelijkheid en Mirror toetst parallel.
 
 Elke fase heeft twintig velden. Vier daarvan zijn voor alle fasen gelijk en staan hier één keer:
 

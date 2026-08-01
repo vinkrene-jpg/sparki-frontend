@@ -11,7 +11,7 @@
 **Uitvoerder:** Replit
 **Type:** breed domeinpakket
 **Startcommit:** actuele `main`; bevestig de SHA in je eindrapport
-**Status:** voorbereid werk. **Start pas na expliciete vrijgave door René.**
+**Status:** voorbereid werk. **Start pas zodra deze opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave).**
 **Botst niet met:** `ROUTE_PAKKET_02a`/`02b` — die raken de tellinglogica, dit pakket raakt billing en entitlements. Wél overlap op `resolveEntitlements`: zie afhankelijkheden.
 
 ## Doel

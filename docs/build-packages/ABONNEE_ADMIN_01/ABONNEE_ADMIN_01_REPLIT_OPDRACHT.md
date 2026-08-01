@@ -11,7 +11,7 @@
 **Uitvoerder:** Replit
 **Type:** breed domeinpakket
 **Startcommit:** actuele `main`; bevestig de SHA in je eindrapport
-**Status:** voorbereid werk. **Start pas na expliciete vrijgave door René.**
+**Status:** voorbereid werk. **Start pas zodra deze opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave).**
 **Verhouding tot `ABONNEMENT_01`:** dat pakket maakt de betaalflow en de rechten kloppend. Dit pakket voegt de **administratieve laag** toe: identificatie, register, levenscyclus, bewaartermijnen, privacyverzoeken en uitzonderingen. **Geen tweede abonnementsarchitectuur.**
 
 ## Doel

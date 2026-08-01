@@ -36,7 +36,7 @@ wordt**; er is geen inhoudelijke menselijke goedkeuring meer tussen groen en mel
 | # | Besluit | Gevolg |
 |---|---|---|
 | K1 = **A** | Futur Control uitgezonderd | `FUTUR_CONTROL_01` en `FUTUR_CONTROL_MUTATION_GATE.md` blijven ongewijzigd: mutatiepoort + René-vrijgave blijven daar staan. Control blijft observatie-eerst. |
-| K2 = **B** | Reeksen lopen door | Ook de **volgende opdracht in een reeks** start zonder nieuw sein van René. Concreet: `ROUTE_PAKKET_02c/02d` en taak #536 (wandelen) zijn hiermee geautoriseerd zodra hun technische afhankelijkheden vervuld zijn. |
+| K2 = **A** | Alleen gegeven opdrachten lopen door | Alleen een **expliciet gegeven opdracht** loopt volledig door; een volgende opdracht in een reeks start **niet** vanzelf. Concreet: `ROUTE_PAKKET_02c/02d` en taak #536 (wandelen) zijn **nog niet geautoriseerd** — dat zijn opdrachten die nog niet gegeven zijn. *(Correctie 01-08-2026: eerdere doorvoering las hier B; René's definitieve beslisblok in `SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01` zegt A.)* |
 | K3 = **A** | `RENE_APPROVED` uit de deployketen | Statusketen wordt BUILT → TESTED → MIRROR_PROVEN → DEPLOYED. `RENE_APPROVED` blijft uitsluitend bestaan als **product**besluit (release, prijs, merk), nooit als bouwgoedkeuring. |
 | K4 = **A** | **Elf** hard stops | Zie §3. De blokkade op betaalde publieke release blijft aan de zes onbepaalde bewaartermijnen hangen (hard stop 10). |
 | K5 = **A** | Verplichte tests = benoemde set | Zie §2. Rood = geen publicatie. |

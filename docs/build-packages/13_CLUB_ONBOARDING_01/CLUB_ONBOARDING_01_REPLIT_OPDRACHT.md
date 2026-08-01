@@ -9,7 +9,7 @@
 
 
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
-**Status:** voorbereid werk. Start pas na expliciete vrijgave door René.
+**Status:** voorbereid werk. Start pas zodra deze opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave).
 **Verhouding tot `TRAINER_CLUB_01`:** dat pakket maakt rechten en lekken sluitend in de bestaande omgeving. Dit pakket bouwt de **instroom**: hoe een club ontstaat en actief wordt. Geen overlap, geen tweede clubmodel.
 
 ## Doel

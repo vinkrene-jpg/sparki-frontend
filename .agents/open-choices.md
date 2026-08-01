@@ -18,9 +18,9 @@ Laatst bijgewerkt: 2026-08-01.
 
 ## Beslist 01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01 (K1–K6, René)
 
-K1=A (Futur Control uitgezonderd, mutatiepoort blijft) · **K2=B (ook reeks-vervolg start
-automatisch — 02c/02d en taak #536 zijn hiermee geautoriseerd zodra hun technische
-afhankelijkheden vervuld zijn)** · K3=A (RENE_APPROVED uit deployketen, blijft productbesluit) ·
+K1=A (Futur Control uitgezonderd, mutatiepoort blijft) · **K2=A (gecorrigeerd 01-08:
+alleen expliciet gegeven opdrachten lopen door; reeks-vervolg start níet vanzelf —
+02c/02d en taak #536 zijn NOG NIET geautoriseerd)** · K3=A (RENE_APPROVED uit deployketen, blijft productbesluit) ·
 K4=A (elf hard stops) · K5=A (benoemde verplichte testset) · K6=A (input≠toestemming).
 Doorgevoerd: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` + correctierapport
 `docs/audits/GOVERNANCE_CORRECTIE_RAPPORT_2026-08-01.md` + flag-inventaris.

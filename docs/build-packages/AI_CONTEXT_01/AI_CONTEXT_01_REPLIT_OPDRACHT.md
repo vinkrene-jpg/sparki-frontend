@@ -9,7 +9,7 @@
 
 
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
-**Status:** voorbereid werk. Start pas na expliciete vrijgave door René.
+**Status:** voorbereid werk. Start pas zodra deze opdracht expliciet gegeven is (K2=A — de opdracht ís de vrijgave).
 **Herkomst:** deel 2 van de opsplitsing van `AI_GOVERNANCE_01`. Dekt geheugen en personalisatie, toestemming, toolgebruik en acties, logging en bewaartermijnen.
 
 ## Doel

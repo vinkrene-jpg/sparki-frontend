@@ -10,7 +10,7 @@
 
 **Uitvoerder:** Replit
 **Startcommit:** de eindcommit van `ROUTE_PAKKET_02a` — bevestig die SHA in je eindrapport
-**Start pas na:** Mirror-goedkeuring van `02a` én expliciete vrijgave door René
+**Technische afhankelijkheid:** het opgeleverde resultaat van `02a` (tellinglogica) — Mirror toetst parallel; de gegeven opdracht ís de vrijgave (K2=A)
 **Grondslag:** `SPARKI-BESLUIT-2026-003`
 **Basisdocument:** `SPARKI_ROUTE_PAKKET_BOUWREEKS_01-02d_v2.md`, hoofdstuk `ROUTE_PAKKET_02b`
 
