@@ -1,0 +1,555 @@
+REPLIT — INTEGRALE AUDITBEVINDINGEN HERSTELLEN EN ONTBREKENDE PRODUCTDELEN AFBOUWEN
+Technische code: SPARKI_AUDIT_RECOVERY_AND_COMPLETION_01
+
+DOEL
+
+Verwerk alle nog openstaande concrete bevindingen uit eerdere Mirror-audits, codeaudits, UX-audits en productaudits.
+
+Voorkom dat bevindingen alleen in rapporten blijven staan.
+
+Werk bestaande oplossingen af, herstel defecten, bouw aantoonbaar ontbrekende onderdelen en lever per bevinding bewijs dat deze is:
+
+- hersteld;
+- getest;
+- gepubliceerd;
+- en waar mogelijk door Mirror hertoetsbaar.
+
+Gebruik de actuele repository en GitHub main als bron van waarheid.
+
+Geen complete herschrijving.
+Geen tweede architectuur.
+Geen dubbele agenda-, documenten-, rechten-, notificatie-, taak-, bestand-, contact-, locatie-, facturatie- of werkobjectlaag.
+
+====================================================
+A. EERST: ACTUELE OPEN-PUNTENMATRIX
+====================================================
+
+Lees alle beschikbare audit- en statusbronnen, minimaal:
+
+- docs/audits/
+- docs/build-packages/
+- docs/reports/
+- evidence-mappen
+- pakket-README’s
+- .agents/open-choices.md
+- Queue
+- GitHub PR’s
+- commitgeschiedenis
+- Mirror-rapporten met:
+  - HERSTEL NODIG
+  - AFGEKEURD
+  - OPEN
+  - PARTIAL
+  - NIET BEWIJSBAAR
+  - BUILT_UNPROVEN
+  - WACHTEND OP PUBLICATIE
+
+Maak of actualiseer:
+
+docs/audits/MIRROR_FINDINGS_REGISTER.csv
+docs/audits/MIRROR_OPEN_FIXES.md
+docs/audits/SPARKI_AUDIT_RECOVERY_STATUS.md
+
+Per bevinding:
+
+- finding-ID;
+- bron;
+- pakket/fase;
+- bron-SHA;
+- huidig codebewijs;
+- al hersteld ja/nee;
+- bestaande herstelopdracht;
+- prioriteit;
+- geraakte module;
+- benodigde test;
+- benodigde hertoets;
+- productie-status.
+
+Voorkom dubbele opdrachten.
+
+====================================================
+B. P0 — VEILIGHEID, RECHTEN EN DATA
+====================================================
+
+Controleer en herstel eerst:
+
+1. Consent en jeugd
+- centrale consentservice overal gebruiken;
+- minderjarige kan geen ouderlijke toestemming geven;
+- minderjarige kan verplicht toezicht niet uitschakelen;
+- één centrale leeftijdsdefinitie;
+- frontend/backend-statussen gelijk;
+- ingetrokken en beëindigde relaties verliezen direct toegang.
+
+2. Relatiehistorie
+- coach-, ouder-, vriend-, trainer-, club- en teamrelaties respecteren endedAt;
+- geen toegang van ex-ouder, ex-trainer of ex-team;
+- historie blijft bestaan;
+- heropening maakt nieuwe periode.
+
+3. Rol-URL
+- /rol-start/<rol> alleen toegankelijk wanneer gebruiker die rol bezit;
+- anders eerlijke “geen toegang”-toestand;
+- geen rolstructuur of navigatielabels lekken.
+
+4. DATA_TRUST_01
+- rond volledige testmatrix af;
+- herstel ieder gevonden data-, privacy-, consent- of cross-accountprobleem;
+- voeg ontbrekende veilige fixtures toe;
+- nooit echte persoonsgegevens in bewijsrapporten opnemen.
+
+5. ABONNEMENT_01
+- volledige entitlementmatrix testen;
+- client- en servercontrole gelijk;
+- fail-closed voor onbekende/onvolledige status;
+- geen hogere-tierdata in lagere tier;
+- Stripe test/live strikt gescheiden.
+
+6. Migratie 0017
+- meenemen naar productie;
+- idempotentie controleren;
+- backup en rollback;
+- productiecontrole na migratie.
+
+====================================================
+C. P1 — DIRECT ZICHTBARE PRODUCTDEFECTEN
+====================================================
+
+1. Rolstartschermen
+- onbekende rolnaam correct tonen;
+- lege/null/speciale routeparameters veilig afhandelen;
+- bestaande sporter/trainer/ouder desktopregressie testen.
+
+2. Mobiele routeplanner
+- mobiele wizard standaardgedrag op telefoon;
+- geen tijdelijke vrijgaveflag;
+- desktop houdt eigen passende compositie;
+- dezelfde state, handlers en route-engine;
+- bewijs op 375, 412 en desktop.
+
+3. Wandelen/Hiken
+- alle resterende fases uitvoeren;
+- voet-specifieke veiligheid en geschiktheid;
+- trappen, privépad, afgesloten pad, ondergrond en moeilijkheid correct;
+- sportfamilie opslaan op route;
+- zichtbaar in activiteitkeuze;
+- GPX, hoogteprofiel, navigatie en opslag;
+- fietsregressie volledig groen.
+
+4. Routegeneratie
+- iedere job eindigt in succes of expliciete fout;
+- geen onbeperkte veiligheidscontrole;
+- timeout/no-candidate/blokkadepoort afhandelen;
+- fout op actieve stap;
+- invoer blijft behouden;
+- retry mogelijk.
+
+5. Analyse mobiel
+- brede desktoptafel vervangen door echte mobiele compositie;
+- geen horizontale overflow;
+- details naar apart scherm/bottom sheet;
+- kernwaarden en primaire actie bovenaan.
+
+6. Productieversie
+- /version.json en /api/version tonen:
+  - commit-SHA;
+  - buildtijd;
+  - omgeving;
+  - service;
+- geen gevoelige configuratie;
+- desktop, telefoon en API rapporteren dezelfde build.
+
+7. Status-PR’s
+- herstel waarom CI voor PR #2, #3 en #4 niet start;
+- normale checks laten draaien;
+- mergen bij groen;
+- documentatie gelijk aan codewerkelijkheid.
+
+====================================================
+D. MEDIA_UITLEG_01
+====================================================
+
+1. Bouw F3/CMP-41 mediaspeler volledig:
+- video/audio/animatie waar toegestaan;
+- ondertiteling;
+- transcript;
+- tekstalternatief;
+- pauzeren;
+- snelheid;
+- toegankelijkheid;
+- rechten/licentie;
+- mobiel en desktop.
+
+2. Sluit F4 media-status correct aan:
+- gebruikte contentversie;
+- bekeken/voltooid;
+- leeftijd en consent;
+- acute inhoud nooit stil onderdrukken;
+- versieherbevestiging;
+- geen onnodige persoonsgegevens.
+
+3. Integreer met:
+- Help;
+- uitlegflows;
+- documenten;
+- oefeningen;
+- onboarding.
+
+4. Geen aparte tweede Academy bouwen.
+
+====================================================
+E. PRODUCTERVARING EN ENTITLEMENTS
+====================================================
+
+Rond PRODUCT_EXPERIENCE_REALITY_01 af en herstel direct.
+
+Test en herstel minimaal:
+
+- Gratis;
+- Go;
+- Compleet;
+- Trainer;
+- Ouder;
+- Jeugd;
+- Clubbeheerder;
+- Hoofdtrainer;
+- Ploegleider;
+- Mechanieker;
+- Voedingsdeskundige;
+- Medical Staff.
+
+Per menu-item:
+
+- hoort zichtbaar te zijn?
+- volledig bruikbaar?
+- nuttige preview?
+- verbergen?
+- doodlopende ingang?
+- juiste upgradeflow?
+- server-side recht?
+- deep-link/API-blokkade?
+- mobiel/desktop?
+
+Harde productregel:
+
+Iedere versie voelt als een eigen compleet product, niet als een grote applicatie met veel verboden deuren.
+
+Herstel:
+
+- onterechte menu-items;
+- dode ingangen;
+- misleidende previews;
+- verkeerde upgradecopy;
+- functies die alleen client-side geblokkeerd zijn;
+- rolcontextfouten.
+
+====================================================
+F. CENTRALE FUNDAMENTEN
+====================================================
+
+Bouw of voltooi één gedeelde laag voor:
+
+1. Active context
+- rol;
+- organisatie;
+- team/groep;
+- server-side geldig;
+- zichtbaar;
+- notificaties openen juiste context;
+- geen opnieuw inloggen.
+
+2. Agenda
+3. Taken
+4. Inbox/notificaties
+5. Contacten/relaties
+6. Locaties
+7. Bestanden/media
+8. Zoeken
+9. Goedkeuringen
+10. Templates
+11. Archief/bewaarmatrix
+12. Import/export
+13. Gebruikershistorie
+
+Bestaande delen hergebruiken.
+
+====================================================
+G. HERHALENDE TRAININGEN, VOG EN COMMUNICATIE
+====================================================
+
+1. Herhalende trainingen
+- dagelijks/wekelijks;
+- weekdagen;
+- reeks;
+- uitzondering;
+- één/deze-en-volgende/hele reeks;
+- tijdzone/zomertijd;
+- meldingen zonder duplicaten.
+
+2. VOG
+- status;
+- datum;
+- hercontrole;
+- bewijsreferentie;
+- jeugdgroepkoppeling fail-closed;
+- audit.
+
+3. Communicatie/bijlagen
+- bestanden;
+- afbeeldingen;
+- links;
+- virusscan;
+- typecontrole;
+- rechten;
+- retentie;
+- ingetrokken bestand;
+- veilige pushtekst.
+
+====================================================
+H. WERKOBJECTEN EN ORGANISATIEGEHEUGEN
+====================================================
+
+Bouw SPARKI_BUILD_02 volledig af:
+
+- centrale levende werkobjecten;
+- status en versies;
+- publiceren/intrekken;
+- taken/opmerkingen;
+- rollen;
+- goedkeuring;
+- PDF als momentopname;
+- dupliceren;
+- hergebruik;
+- evaluatie;
+- plan versus uitvoering;
+- werkelijk tijdstip;
+- lessons learned;
+- AI-concept met bronnen en menselijke bevestiging;
+- seizoens- en organisatiegeheugen.
+
+Eerste complete pilot:
+
+- dagschema;
+- ploegleider;
+- mechanieker;
+- soigneur;
+- renner;
+- mobiel;
+- versie;
+- notificatie;
+- uitvoering;
+- evaluatie;
+- hergebruik.
+
+====================================================
+I. CLUB, TEAM EN WEDSTRIJDOPERATIE
+====================================================
+
+Bouw SPARKI_BUILD_03 en ontbrekende oudere pakketten af:
+
+- CLUB_RECHTEN_01;
+- PLOEGLEIDER_01;
+- TEAM_MECHANIEKER_01;
+- resterende Club/Team-operatie.
+
+Minimaal:
+
+- race_assignments;
+- renners/reserves apart van staf;
+- organisatie-event gekoppeld aan persoonlijke wedstrijd;
+- staf per wedstrijd;
+- voertuigen;
+- bestuurders;
+- materiaal;
+- voeding;
+- dagschema;
+- taken;
+- conflicten;
+- afmelding en reserveherstel;
+- persoonlijke briefings;
+- staf-wedstrijddagmodus;
+- noodcontact en inzetbaarheid zonder medische reden;
+- parallelle wedstrijden;
+- Team aantoonbaar meerwaarde boven Club.
+
+====================================================
+J. DOCUMENTENBIBLIOTHEEK
+====================================================
+
+Bouw één centrale plek:
+
+Meer → Documenten
+
+Met contextuele ingangen.
+
+Documenten zijn geen lege formulieren.
+
+Vul voor met:
+
+- onboarding;
+- profiel;
+- rollen;
+- team;
+- wedstrijd;
+- route;
+- planning;
+- materiaal;
+- voertuigen;
+- eerdere plannen;
+- evaluaties;
+- organisatiegeheugen.
+
+AI:
+
+- maakt concept;
+- toont bronnen;
+- toont ontbrekende gegevens;
+- wijzigt geen bekende feiten;
+- publiceert nooit zelfstandig;
+- blijft optioneel: zonder AI volledig bruikbaar.
+
+Implementeer de vastgelegde catalogi voor:
+
+- clubbeheer;
+- teammanager;
+- ploegleider;
+- mechanieker;
+- soigneur;
+- voedingsdeskundige;
+- trainer;
+- hoofdtrainer;
+- medical staff;
+- ouder;
+- sporter;
+- zelfstandige trainer.
+
+====================================================
+K. PROFESSIONELE TRAINER EN FACTURATIE
+====================================================
+
+Bouw SPARKI_BUILD_04 volledig af.
+
+Facturatie & Administratie:
+
+- dashboard;
+- klanten;
+- sporters;
+- betalers;
+- diensten;
+- terugkerende coachingfacturen;
+- aanvullende diensten;
+- factuurnummering;
+- btw/KOR;
+- briefpapier;
+- PDF;
+- verzonden/betaald/te laat/gecrediteerd;
+- creditnota;
+- bankoverschrijving;
+- eigen betaalaccount;
+- Excel/CSV;
+- bulk-PDF;
+- read-only archief na opzegging.
+
+Geen:
+
+- grootboek;
+- inkoopadministratie;
+- btw-aangifte;
+- jaarrekening;
+- loonadministratie.
+
+====================================================
+L. STATUSCONSISTENTIE
+====================================================
+
+Per pakket moeten overeenkomen:
+
+- README;
+- commits;
+- productcode;
+- migraties;
+- evidence;
+- Queue;
+- Mirror-status;
+- live status.
+
+Corrigeer alle bekende mismatches, waaronder:
+
+- TEAM_ONBOARDING_01;
+- MEDIA_UITLEG_01;
+- BUILD_DELIVERED zonder bewijs;
+- gebouwd maar als niet gestart vermeld;
+- docs-only maar als gebouwd beschouwd.
+
+====================================================
+M. TESTFIXTURES
+====================================================
+
+Maak uitsluitend veilige testfixtures voor ontbrekende rollen/scenario’s:
+
+- nutrition_specialist;
+- medical_staff;
+- beëindigde ouderrelatie;
+- providerfout;
+- geïmporteerde providerdata zonder echte persoonsgegevens;
+- club met twee teams;
+- gekoppelde/niet-gekoppelde trainer;
+- tierwissel/downgrade;
+- mislukte betaling.
+
+Geen productiepersoonsdata gebruiken.
+
+====================================================
+N. UITVOERING EN RAPPORTAGE
+====================================================
+
+Voer zelfstandig door.
+
+Per herstelblok:
+
+- start-SHA;
+- eind-SHA;
+- finding-ID’s;
+- gewijzigde bestanden;
+- migraties;
+- tests en exitcodes;
+- screenshots/evidence;
+- rollback;
+- productiebevestiging;
+- Mirror-hertoets.
+
+Rapporteer, maar wacht niet.
+
+Mirror toetst parallel.
+
+Alleen het direct afhankelijke blok stopt bij:
+
+- dataverlies;
+- cross-account/cross-team/consentlek;
+- verzonnen persoonlijke gegevens;
+- onveilige jeugd-/medische werking;
+- destructieve migratiefout zonder rollback;
+- betaalstromen onbedoeld via Sparki;
+- blijvend rode verplichte tests;
+- werkelijk nieuw onoplosbaar productbesluit.
+
+Onafhankelijke blokken gaan door.
+
+====================================================
+O. EINDCRITERIUM
+====================================================
+
+Deze totaalopdracht is pas afgerond wanneer:
+
+- iedere historische negatieve bevinding een status heeft;
+- ieder code-/UX-defect is hersteld;
+- iedere fix een herstel-SHA heeft;
+- Mirror iedere fix heeft kunnen hertoetsen;
+- open productbesluiten expliciet zijn geregistreerd;
+- geen afgeronde functionaliteit onnodig verborgen blijft;
+- documentatie en code dezelfde werkelijkheid beschrijven;
+- telefoon en desktop passende, aantoonbare ervaringen tonen;
+- Gratis/Go/Compleet en alle rollen alleen relevante functies zien;
+- alle vier hoofd-bouwpakketten volledig zijn uitgevoerd;
+- productie de juiste build en configuratie toont;
+- MIRROR_OPEN_FIXES.md geen P0/P1 meer bevat.

@@ -120,7 +120,7 @@ import {
   type CandidateEnvironment,
 } from "../engines/route";
 import { getRoadObjectsAlongRoute } from "../engines/road-objects";
-import { isSportActive } from "@workspace/feature-flags";
+import { isRouteSportActive } from "@workspace/feature-flags";
 import { getHourlyForecast } from "../lib/weather/open-meteo";
 import {
   computeGradeSplit,
@@ -1765,6 +1765,8 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
         // wegdekmeting blijft de racefiets-verificatie sturen in de eigen
         // bibliotheek en bij Navigeer.
         engineSurface: route.engineSurface ?? null,
+        // Bibliotheekroutes zijn fietsroutes (bikeType-gestuurd).
+        sport: "cycling",
       })
       .returning({ id: routesTable.id });
     await recordRouteUsageSafe(req.log, {
@@ -3156,6 +3158,7 @@ async function buildLoopCandidate(
     rationale,
     plannedWorkoutId: ctx.plannedWorkoutId,
     engineSurface,
+    sport: ctx.sport ?? null,
   });
 
   // Fire background enrichment — does NOT block the response.
@@ -3201,6 +3204,7 @@ async function buildLoopCandidate(
       rationale: altRationale,
       plannedWorkoutId: ctx.plannedWorkoutId,
       engineSurface: engineSurfaceOf(r),
+      sport: ctx.sport ?? null,
     });
     scheduleEnrichment(
       altId,
@@ -3544,13 +3548,14 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       : body.mode === "waypoints"
         ? "waypoints"
         : "loop";
-  // Phased rollout: route generation is only available for active sports
-  // (currently cycling). Validate the RAW input before coercion — coerceSport
-  // would otherwise silently map an explicit inactive sport (e.g. "triathlon",
-  // "running") to cycling and let it through. Absent sport defaults to cycling.
+  // Phased rollout: route generation is available for active ROUTE families
+  // (cycling + walking + hiking — MOBILE_ROUTE_WALKING_01). Validate the RAW
+  // input before coercion — coerceSport would otherwise silently map an
+  // explicit inactive sport (e.g. "triathlon", "running") to cycling and let
+  // it through. Absent sport defaults to cycling.
   if (
     typeof body.sport === "string" &&
-    !isSportActive(body.sport.toLowerCase())
+    !isRouteSportActive(body.sport.toLowerCase())
   ) {
     res
       .status(400)
@@ -4060,6 +4065,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         rationale,
         plannedWorkoutId,
         engineSurface: engineSurfaceOf(geom),
+        sport,
       });
 
       // Hybride voorstellen behouden hun deterministische motivering-met-
@@ -4293,7 +4299,7 @@ const generateOptionsHandler: import("express").RequestHandler = async (
 
   if (
     typeof body.sport === "string" &&
-    !isSportActive(body.sport.toLowerCase())
+    !isRouteSportActive(body.sport.toLowerCase())
   ) {
     res
       .status(400)
@@ -4634,6 +4640,7 @@ router.post("/", requireAuth, async (req, res) => {
           meetpoints: meetpoints.length > 0 ? meetpoints : null,
           rationale: stored.rationale,
           engineSurface: stored.engineSurface,
+          sport: stored.sport ?? null,
           source: "generated",
           linkedActivityImportId: null,
           linkedPlannedWorkoutId,
@@ -5018,6 +5025,7 @@ router.post(
         name: `${route.name} (kopie)`,
         source: route.source,
         surface: route.surface as RouteSurface,
+        sport: (route as { sport?: string | null }).sport ?? null,
         visibility: "prive",
         status: "ready",
         distanceKm: route.distanceKm,

@@ -83,6 +83,11 @@ export const routesTable = pgTable("routes", {
     .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   name: text("name").notNull(),
   surface: text("surface").notNull().default("unknown"),
+  // Sportfamilie van de route (MOBILE_ROUTE_WALKING_01): "cycling" |
+  // "walking" | "hiking". Expliciet opgeslagen bij generatie; null voor
+  // oudere/geïmporteerde routes waarvan de sport niet bewijsbaar bekend is
+  // (eerlijk onbekend — nooit gegokt).
+  sport: text("sport"),
   status: text("status").notNull().default("ready"),
   visibility: text("visibility").notNull().default("private"),
   distanceKm: real("distance_km"),

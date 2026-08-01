@@ -1036,6 +1036,14 @@ export type RouteObstacles = {
   // Aantoonbaar onverharde/ruwe vakken (Overpass, remarkslaag).
   // Harde afkeur voor racefiets (cycling-road): PO-01 §5.2, taak #437.
   unpavedSegments: number;
+  // ── Voet-specifieke tellers (MOBILE_ROUTE_WALKING_01) ──────────────────
+  // Voor wandel-/hikeprofielen gelden andere regels: een trap of een
+  // fietsverbod (bicycle=no) is voor een wandelaar géén blokkade. Wat WEL
+  // blokkeert: access=no/private (geldt voor iedereen zonder uitzondering)
+  // en een poort die op slot of privé is (locked=yes / access=no|private).
+  // Alleen expliciete tags — nooit een aanname.
+  forbiddenFoot: number; // wegvakken met access=no/private (ook te voet dicht)
+  blockedGatesFoot: number; // poorten aantoonbaar dicht voor voetgangers
 };
 
 /**
@@ -1064,7 +1072,14 @@ export function countRouteObstacles(remarks: RouteRemark[]): RouteObstacles {
     blockedGates: 0,
     gates: 0,
     unpavedSegments: 0,
+    forbiddenFoot: 0,
+    blockedGatesFoot: 0,
   };
+  // Voet-blokkade uit de letterlijke tag-evidence: access=no/private geldt
+  // voor iedereen; locked=yes is fysiek dicht. bicycle=no telt NIET te voet.
+  const footBlockedEvidence = (evidence: string): boolean =>
+    /(^|[,\s])access=(no|private)\b/.test(evidence) ||
+    /(^|[,\s])locked=yes\b/.test(evidence);
   for (const r of remarks) {
     if (r.kind === "trap") out.steps += 1;
     else if (r.kind === "beperkte_toegang") {
@@ -1072,10 +1087,17 @@ export function countRouteObstacles(remarks: RouteRemark[]): RouteObstacles {
       // fietsuitzondering (René, 30-07-2026). Alleen wanneer de
       // parallelle-fietspad-correctie de melding op uncertain heeft gezet
       // (aantoonbaar fietspad ernaast) telt hij niet als verbod.
-      if (!r.uncertain) out.forbidden += 1;
+      if (!r.uncertain) {
+        out.forbidden += 1;
+        // Te voet alleen hard bij access=no/private — een fietsverbod
+        // (bicycle=no) is voor een wandelaar geen blokkade.
+        if (footBlockedEvidence(r.evidence)) out.forbiddenFoot += 1;
+      }
     } else if (r.kind === "poort") {
-      if (r.label.startsWith("Afgesloten poort")) out.blockedGates += 1;
-      else out.gates += 1;
+      if (r.label.startsWith("Afgesloten poort")) {
+        out.blockedGates += 1;
+        if (footBlockedEvidence(r.evidence)) out.blockedGatesFoot += 1;
+      } else out.gates += 1;
     } else if (r.kind === "onverhard" || r.kind === "slecht_wegdek") {
       // Onverhard/ruw wegdek: harde afkeur voor racefiets (PO-01 §5.2, taak #437).
       out.unpavedSegments += 1;

@@ -16,8 +16,32 @@ import {
 import {
   classifyGatePassage,
   classifyRemarkTags,
+  countRouteObstacles,
   type RouteObstacles,
+  type RouteRemark,
 } from "../route-remarks";
+
+// Minimale echte remark voor de tellertests (voetfamilie): alleen de velden
+// die countRouteObstacles gebruikt zijn inhoudelijk; de rest is neutraal.
+function remark(
+  kind: RouteRemark["kind"],
+  label: string,
+  evidence: string,
+): RouteRemark {
+  return {
+    id: `way/${Math.floor(Math.random() * 1e6)}`,
+    kind,
+    label,
+    detail: label,
+    lat: 52,
+    lon: 5,
+    routeKm: 1,
+    endKm: null,
+    offRouteM: 0,
+    uncertain: false,
+    evidence,
+  };
+}
 import type { LoopRequest, RouteResult, RoutingProvider } from "./types";
 
 // Rechte, niet-overlappende lijn zodat overlap ~0 is en de poort het enige is
@@ -79,6 +103,8 @@ function obstacles(partial: Partial<RouteObstacles>): RouteObstacles {
     blockedGates: 0,
     gates: 0,
     unpavedSegments: 0,
+    forbiddenFoot: 0,
+    blockedGatesFoot: 0,
     ...partial,
   };
 }
@@ -176,6 +202,54 @@ async function run() {
       { candidates: 1, obstaclesOf: async () => obstacles({ unpavedSegments: 5, gates: 2 }) },
     );
     assert.equal(route.distanceKm, 50, "MTB onverhard mag niet afkeuren");
+  }
+
+  // ── Voetfamilie (MOBILE_ROUTE_WALKING_01): wandelen/hiken ────────────────
+  // 8a) Trap + fietsverbod zijn te voet GEEN blokkade ⇒ route wordt geleverd
+  //     (foot-walking én foot-hiking); ook onverhard keurt te voet nooit af.
+  for (const profile of ["foot-walking", "foot-hiking"] as const) {
+    const route = await generateVariedLoop(
+      fakeProvider(makeResult(50)),
+      { ...baseReq, profile },
+      {
+        candidates: 1,
+        obstaclesOf: async () =>
+          obstacles({ steps: 2, forbidden: 1, blockedGates: 1, unpavedSegments: 3 }),
+      },
+    );
+    assert.equal(
+      route.distanceKm,
+      50,
+      `${profile}: trap/fietsverbod/onverhard mag te voet niet afkeuren`,
+    );
+  }
+  // 8b) access=no/private (ook te voet dicht) ⇒ harde afkeur voor voet.
+  await expectHardReject(
+    obstacles({ forbidden: 1, forbiddenFoot: 1 }),
+    "voet privépad (access=private)",
+    "foot-walking",
+  );
+  // 8c) Op-slot/privé-poort die óók te voet dicht is ⇒ harde afkeur.
+  await expectHardReject(
+    obstacles({ blockedGates: 1, blockedGatesFoot: 1 }),
+    "voet afgesloten poort (locked=yes)",
+    "foot-hiking",
+  );
+  // 8d) Voet-tellers: bicycle=no telt NIET als voetblokkade; access=private
+  //     en locked=yes wél — rechtstreeks uit de letterlijke tag-evidence.
+  {
+    const counted = countRouteObstacles([
+      remark("beperkte_toegang", "Fietsen hier niet toegestaan", "bicycle=no"),
+      remark("beperkte_toegang", "Privéterrein", "access=private"),
+      remark("poort", "Afgesloten poort / privéterrein", "barrier=gate, locked=yes"),
+      remark("poort", "Afgesloten poort / privéterrein", "barrier=gate, bicycle=no"),
+      remark("trap", "Trap op de route", "highway=steps"),
+    ]);
+    assert.equal(counted.forbidden, 2, "fiets: beide toegangsblokken tellen");
+    assert.equal(counted.forbiddenFoot, 1, "voet: alleen access=private telt");
+    assert.equal(counted.blockedGates, 2, "fiets: beide poorten dicht");
+    assert.equal(counted.blockedGatesFoot, 1, "voet: alleen locked=yes-poort dicht");
+    assert.equal(counted.steps, 1, "trap blijft eerlijk geteld (als opmerking)");
   }
 
   // 9) OSM-tag → harde classificatie: de drie brontags uit de testeropdracht

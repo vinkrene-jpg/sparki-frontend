@@ -144,9 +144,29 @@ async function buildAll() {
       : ALL_ENTRIES;
   await rm(distDir, { recursive: true, force: true });
 
+  // Versie-identificatie (/api/version): bak commit-SHA en buildtijd in de
+  // bundel, zodat productie (waar git ontbreekt) zichzelf eerlijk kan
+  // identificeren. Faalt git, dan blijft de runtime-fallback "onbekend".
+  let buildSha = process.env.SPARKI_BUILD_SHA ?? "";
+  if (!buildSha) {
+    try {
+      const { execSync } = await import("node:child_process");
+      buildSha = execSync("git rev-parse --short HEAD", {
+        stdio: ["ignore", "pipe", "ignore"],
+      })
+        .toString()
+        .trim();
+    } catch {
+      buildSha = "";
+    }
+  }
   await esbuild({
     entryPoints,
     platform: "node",
+    define: {
+      "process.env.SPARKI_BUILD_SHA": JSON.stringify(buildSha),
+      "process.env.SPARKI_BUILD_TIME": JSON.stringify(new Date().toISOString()),
+    },
     bundle: true,
     format: "esm",
     // Keep output layout stable (dist/tests/<name>.mjs, dist/index.mjs) whether

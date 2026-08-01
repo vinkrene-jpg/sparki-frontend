@@ -29,6 +29,10 @@ export type StoredCandidate = {
   // Bewaard zodat het routescherm motor- en kaartmeting eerlijk naast elkaar
   // kan leggen — bij tegenspraak wordt uitgelegd, nooit stil één bron gekozen.
   engineSurface: RouteEngineSurface | null;
+  // Sportfamilie waarvoor deze kandidaat is gegenereerd ("cycling" |
+  // "walking" | "hiking") — server-side vastgelegd bij generatie zodat de
+  // opgeslagen route nooit een client-gegokte sport krijgt.
+  sport: string | null;
   createdAt: number;
   // Gezet zodra dit voorstel als route is opgeslagen (aanvulling 02a):
   // latere exports van het voorstel tellen dan onder de route-identiteit,

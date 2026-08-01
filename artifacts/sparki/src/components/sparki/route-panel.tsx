@@ -43,7 +43,7 @@ import { plannerViewHas, type PlannerFeature } from "@/lib/planner-view"
 import { PlannerViewSwitcher } from "@/components/sparki/planner-view-switcher"
 import { useFriends } from "@/hooks/use-social"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
-import { isSportActive } from "@workspace/feature-flags"
+import { isRouteSportActive } from "@workspace/feature-flags"
 import { racefietsVerification } from "@/lib/racefiets-verification"
 import { zoekCriteriaKey } from "@/lib/route-search-criteria"
 import { useClimbSearchNearby, useClimbDetail } from "@/hooks/use-climbs"
@@ -232,7 +232,10 @@ const ALL_SPORT_OPTIONS: { value: Sport; label: string; hint: string }[] = [
   { value: "walking", label: "Wandelen", hint: "verhard" },
   { value: "hiking", label: "Hiken", hint: "paden" },
 ]
-const SPORT_OPTIONS = ALL_SPORT_OPTIONS.filter((s) => isSportActive(s.value))
+// Routefamilies (MOBILE_ROUTE_WALKING_01): wandelen/hiken zijn actief als
+// ROUTEsport (voetprofielen + voet-geschiktheid), los van de trainingsfamilie
+// "running" die nog coming_soon is. Het gedeelde register is de enige poort.
+const SPORT_OPTIONS = ALL_SPORT_OPTIONS.filter((s) => isRouteSportActive(s.value))
 
 const BIKE_OPTIONS: { value: BikeType; label: string; hint: string }[] = [
   { value: "racefiets", label: "Racefiets", hint: "asfalt" },
