@@ -1,0 +1,161 @@
+VERSNELDE UITVOERING — MEDIA_UITLEG_01
+
+Vanwege het beschikbare tijdsslot vervalt de regel dat Replit na iedere fase op afzonderlijke vrijgave door René moet wachten.
+
+Replit mag F0 t/m F11 achtereenvolgens uitvoeren, onder onderstaande harde voorwaarden.
+
+1. FASES BLIJVEN GESCHEIDEN
+
+Per fase verplicht:
+
+- uitsluitend de scope van die fase;
+- afzonderlijke commit;
+- push naar GitHub;
+- vaste fase-SHA;
+- tests en exitcodes;
+- opleverrapport;
+- rollback- of herstelbewijs;
+- fasebewijs voor Mirror.
+
+Geen grote eindcommit.
+Geen bewijs uit verschillende SHA’s samenvoegen.
+
+2. MIRROR LOOPT PARALLEL MEE
+
+Zodra een fase is gepusht:
+
+- meld direct fase en vaste SHA aan Mirror;
+- Mirror beoordeelt die fase onafhankelijk;
+- Replit mag ondertussen aan de volgende technisch onafhankelijke fase werken;
+- Mirror beoordeelt nooit lokale, ongepushte of actief veranderende code.
+
+Mirror gebruikt per fase:
+
+- MIRROR_PROVEN;
+- HERSTEL NODIG;
+- AFGEKEURD;
+- NIET BEWIJSBAAR.
+
+3. AUTOMATISCHE STOPCONDITIES
+
+Replit stopt de volledige bouwstraat onmiddellijk wanneer:
+
+- Mirror een blokkerende afkeuring geeft;
+- een migratie geen veilige terugweg heeft;
+- een centrale rechten-, content- of mediaarchitectuur zou worden gedupliceerd;
+- applicatiecode buiten de fasescope moet worden gewijzigd;
+- echte gebruikersdata, veiligheid of privacy gevaar loopt;
+- een benodigde externe afhankelijkheid ontbreekt;
+- tests, typecheck of build niet groen worden;
+- de fase alleen met mock-, demo- of verzonnen persoonlijke data kan worden voltooid.
+
+Bij herstel:
+
+- herstel uitsluitend de afgekeurde fase;
+- nieuwe herstelcommit en SHA;
+- volledige fasetoets opnieuw;
+- pas daarna de bouwstraat hervatten.
+
+4. BLOKKERENDE AFHANKELIJKHEDEN
+
+Niet omzeilen:
+
+- F3 start niet zonder aantoonbaar rechtenvrij testmediabestand;
+- oefeningen worden niet gepubliceerd zonder bevoegde inhoudelijke en leeftijdscontrole;
+- F7 bouwt geen coachmelding zonder echte adviesgrond;
+- definitieve uitlegvideo’s worden niet gemaakt voor instabiele of niet-Mirror-bewezen schermen;
+- KENNIS_01 blijft eigenaar van inhoud, bronnen, licenties en beoordeling;
+- entitlementlaag blijft eigenaar van Gratis/Compleet-toegang.
+
+Wanneer een fase hierdoor blokkeert:
+
+- markeer die fase OPEN/BLOCKED;
+- bouw geen placeholderoplossing;
+- ga alleen verder met latere fasen die aantoonbaar onafhankelijk zijn;
+- rapporteer exact wat ontbreekt.
+
+5. FEATURE FLAGS
+
+Nieuwe zichtbare onderdelen blijven achter afzonderlijke feature flags totdat de volledige keten is bewezen.
+
+Minimaal afzonderlijk:
+
+- dieptekaart;
+- mediaspeler;
+- uitlegflow;
+- oefenkaart;
+- coachmelding;
+- Uitleg en Academy.
+
+Standaard uit voor gewone productiegebruikers totdat de betreffende fase en integratie zijn goedgekeurd.
+
+6. GEEN PRODUCTIEPUBLICATIE
+
+Replit mag:
+
+- bouwen;
+- testen;
+- committen;
+- pushen;
+- een toetsbare dev-/testomgeving bijwerken.
+
+Replit mag niet zelfstandig:
+
+- productie publiceren;
+- databasewijzigingen voor productie goedkeuren;
+- feature flags voor productiegebruikers activeren;
+- pilotmedia publiek publiceren.
+
+Productievrijgave blijft uitsluitend aan René.
+
+7. BOUWVOLGORDE
+
+Werk in deze volgorde:
+
+F0 — inventarisatie
+F1 — gedeelde motion- en toegankelijkheidsbasis
+F2 — CMP-40 diepte-/zweefkaart
+F3 — CMP-41 mediaspeler
+F4 — contentbinding en gebruikersstatus
+F5 — CMP-42 uitlegflow
+F6 — CMP-43 oefenkaart
+F7 — CMP-44 niet-acute coachmelding
+F8 — Uitleg en Academy
+F9 — pilotinhoud en rolintegratie
+F10 — mobiel, desktop en performance
+F11 — eindbewijs en beheer
+
+Een fase mag alleen worden overgeslagen wanneer hij aantoonbaar geblokkeerd is. Noteer dan de blokkade en bouw uitsluitend onafhankelijke vervolgdelen.
+
+8. TUSSENRAPPORTAGE
+
+Na iedere fase kort rapporteren:
+
+- fase;
+- start-SHA;
+- eind-SHA;
+- gewijzigde bestanden;
+- hergebruikte onderdelen;
+- tests en exitcodes;
+- feature-flagstatus;
+- bekende blokkades;
+- Mirror-toets aangevraagd;
+- volgende fase die wordt gestart.
+
+Geen lange verhalen zolang alles groen is.
+
+9. EINDPOORT
+
+De volledige reeks is pas gereed wanneer:
+
+- iedere uitgevoerde fase een vaste SHA heeft;
+- alle fasetests groen zijn;
+- alle Mirror-blokkades zijn hersteld;
+- de eind-SHA integraal is getest;
+- mobiel en desktop bewezen zijn;
+- reduced motion en volledige animatie-uitstand bewezen zijn;
+- mediarechten bewezen zijn;
+- geen mock- of placeholderinhoud publiek zichtbaar is;
+- René de productievrijgave expliciet geeft.
+
+Start nu met F0 en ga daarna volgens deze versnelde bouwstraat zelfstandig door.

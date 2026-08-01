@@ -1,0 +1,436 @@
+REPLIT — BOUW AI_INTELLIGENCE_ENGINE_01 VOLLEDIG
+Technische code: AI_INTELLIGENCE_ENGINE_01
+
+DOEL
+
+Bouw het volledige AI_INTELLIGENCE_ENGINE_01-pakket gefaseerd uit op basis van de definitieve 21-documenten ZIP.
+
+Hergebruik verplicht:
+
+- bestaande 7-engine Foundation;
+- bestaande orchestrator;
+- centrale AI-gateway;
+- bestaande state-engine;
+- bestaande AI-memory- en observatiestructuur;
+- bestaande doelen, planning, herstel, activiteiten en feedback;
+- bestaande rechten-, consent- en jeugdregels;
+- bestaande KENNIS_01-structuur;
+- bestaande Data Trust-regels;
+- bestaande “Waarom dit advies?”-weergave.
+
+Geen tweede AI-architectuur.
+Geen tweede memory.
+Geen tweede kennisbank.
+Geen tweede rechtenlaag.
+Geen directe AI-providercalls buiten de centrale gateway.
+
+====================================================
+1. WERKWIJZE
+====================================================
+
+Voer F0 t/m F13 achtereenvolgens uit.
+
+Per fase verplicht:
+
+- eigen scope;
+- eigen commit;
+- push naar GitHub;
+- vaste fase-SHA;
+- tests en exitcodes;
+- opleverrapport;
+- rollback- of herstelbewijs;
+- fasebewijs voor Mirror.
+
+Geen grote eindcommit.
+Geen bewijs uit verschillende SHA’s samenvoegen.
+
+Mirror loopt parallel mee en toetst iedere vaste fase-SHA.
+
+====================================================
+2. F0 — WERKELIJKHEID EN HERGEBRUIK
+====================================================
+
+Inventariseer aantoonbaar:
+
+- alle bestaande engines;
+- orchestrator;
+- gateway;
+- huidige AI-purposes;
+- prompts;
+- memory;
+- observaties;
+- adviesvormen;
+- opslag;
+- doelen;
+- dataflows;
+- rechten;
+- consent;
+- kennisfuncties;
+- live en niet-live onderdelen;
+- legacy-adviezen;
+- directe providercalls;
+- huidige testdekking.
+
+Lever minimaal:
+
+- hergebruikmatrix;
+- codepaden;
+- risico’s;
+- open besluiten;
+- legacy-adviesinventarisatie;
+- voorstel welke adviezen een volledig dossier kunnen krijgen;
+- voorstel welke adviezen `LEGACY_NIET_VOLLEDIG_HERLEIDBAAR` blijven.
+
+F0 mag geen productcode wijzigen.
+
+====================================================
+3. F1 — CENTRAAL ADVIESDOSSIER
+====================================================
+
+Bouw centrale adviesherleidbaarheid.
+
+Nieuwe adviezen krijgen altijd een volledig adviesdossier met:
+
+- advies-ID;
+- gebruiker;
+- rol;
+- tijdstip;
+- actief doel;
+- gebruikte databronnen;
+- gebruikte periode;
+- datakwaliteit;
+- engines;
+- deterministisch of taalmodel;
+- kennisbronnen;
+- confidence;
+- onzekerheid;
+- waarom dit advies;
+- waarom alternatief niet gekozen is;
+- ontbrekende informatie;
+- aanbevolen actie;
+- menselijke bevestiging;
+- vervolgactie;
+- latere uitkomst.
+
+Legacy:
+
+- niet aanvullen met verzonnen waarden;
+- markeer `LEGACY_NIET_VOLLEDIG_HERLEIDBAAR`;
+- toon dit eerlijk waar relevant;
+- geen regressie van bestaande deterministische adviezen.
+
+====================================================
+4. F2 — CONFIDENCE EN DATAKWALITEIT
+====================================================
+
+Bouw één centrale confidence-standaard op basis van:
+
+- aantal bronnen;
+- actualiteit;
+- consistentie;
+- datakwaliteit;
+- historische dekking;
+- kennisrelevantie;
+- menselijke input;
+- betrouwbaarheid van regel/model.
+
+Geen willekeurige percentages.
+Geen model dat zelf confidence verzint.
+
+====================================================
+5. F3 — ORCHESTRATIE OVER BESTAANDE ENGINES
+====================================================
+
+Breid de bestaande orchestrator uit zonder intelligentie te dupliceren.
+
+De orchestrator bepaalt:
+
+- benodigde bronnen;
+- benodigde engines;
+- benodigde kennis;
+- of taalmodel nodig is;
+- rol en toestemming;
+- veiligheidsgrens;
+- menselijk oordeel.
+
+Geen conclusies buiten bestaande engines en gevalideerde kennis.
+
+====================================================
+6. F4 — DOELBEWAKING
+====================================================
+
+Bouw scenario’s voor:
+
+- gewijzigd doel;
+- wedstrijd dichterbij;
+- belasting achter;
+- belasting te snel;
+- gemiste training;
+- extra ongeplande rit;
+- trainer plant zwaar bij slecht herstel;
+- sporter negeert advies;
+- botsende doelen;
+- onvoldoende data.
+
+AI mag signaleren, uitleggen en voorstellen.
+Geen definitieve planwijziging zonder bevoegde bevestiging.
+
+====================================================
+7. F5 — GEHEUGEN EN HERGEBRUIK
+====================================================
+
+Bouw aantoonbaar:
+
+- opslag;
+- deduplicatie;
+- actualiteitsregels;
+- hergebruik;
+- outcome tracking;
+- audit;
+- confidence-aanpassing;
+- onderscheid feit/hypothese/patroon/voorkeur/chat.
+
+Geen taalmodel dat geheugen rechtstreeks wijzigt.
+Geen fout advies als nieuwe waarheid.
+
+====================================================
+8. F6 — TRAINER–SPORTERCOMMUNICATIE
+====================================================
+
+Bouw één gedeelde waarheid met rolgerichte uitleg.
+
+Test:
+
+- gekoppelde sporter/trainer;
+- ontkoppeling;
+- toestemming;
+- meerdere trainers;
+- meerdere teams;
+- minderjarige;
+- ouder/verzorger;
+- notificatie naar juiste context;
+- cross-account en cross-team fail-closed.
+
+Ploegleider/teammanager ziet alleen inzetbaarheid en operationele status.
+Medical Staff alleen binnen consent.
+
+====================================================
+9. F7 — MULTI-BRONCONFLICT EN DUPLICATEN
+====================================================
+
+Bouw:
+
+- conflictdetectie;
+- beide bronwaarden;
+- bron;
+- tijdstip;
+- actualiteit;
+- betrouwbaarheid;
+- geen stille merge;
+- geen advies op betwist gegeven;
+- menselijke bevestigingsvraag;
+- duplicaatdetectie;
+- synchronisatieherstel.
+
+Automatische bronkeuze en conflictbeslechting pas na expliciet besluit O-2.
+
+====================================================
+10. F8 — REDACTIONELE KENNISGRENS
+====================================================
+
+Maak zichtbaar onderscheid tussen:
+
+- redactionele KENNIS_01-inhoud;
+- algemene modelkennis;
+- live wetenschappelijk onderzoek.
+
+Geen claim op live wetenschap als die laag niet bestaat.
+
+====================================================
+11. F9 — LIVE LITERATUURZOEKLAAG
+====================================================
+
+Bouw uitsluitend wanneer technisch en inhoudelijk verantwoord.
+
+Per bron:
+
+- auteur;
+- jaar;
+- publicatie;
+- onderzoekstype;
+- populatie;
+- deelnemers;
+- relevantie;
+- kwaliteit;
+- beperkingen;
+- consensus;
+- toepasbaarheid;
+- klikbare citatie.
+
+Geen verzonnen citaties.
+Geen losse studie als consensus.
+
+====================================================
+12. F10 — GATEWAY GOVERNANCE EN OBSERVABILITY
+====================================================
+
+Bouw centraal:
+
+- purpose;
+- gebruiker;
+- rol;
+- model;
+- promptversie;
+- contextselectie;
+- kosten;
+- privacyfilter;
+- responsevalidatie;
+- timeout;
+- retry;
+- fallback;
+- logging;
+- providerstatus;
+- modelwijziging.
+
+Geen directe providercall buiten gateway.
+
+====================================================
+13. F11 — VEILIGHEID EN JEUGD
+====================================================
+
+Test en bouw:
+
+- geen diagnose;
+- geen advies buiten consent;
+- geen verborgen modelactie;
+- geen AI-onderbreking tijdens actieve taak;
+- acute melding niet permanent onderdrukbaar;
+- minderjarige kan veiligheidsmelding niet negeren;
+- AI-fout blokkeert kernfunctie niet;
+- trainer blijft leidend waar besloten.
+
+====================================================
+14. F12 — INTEGRALE PILOT
+====================================================
+
+Bouw minimaal deze pilots:
+
+1. wedstrijddoel + planning + herstel;
+2. gemiste training + extra rit;
+3. slecht herstel versus zware trainerstraining;
+4. conflicterende bronnen;
+5. dubbele activiteit;
+6. verouderde hersteldata;
+7. trainer past voorstel aan;
+8. sporter negeert advies;
+9. eerdere observatie hergebruikt;
+10. vraag buiten kennisbank;
+11. minderjarige veiligheidsmelding;
+12. toestemming ingetrokken.
+
+Gebruik gecontroleerde testdata.
+Geen publiek zichtbare mockdata.
+
+====================================================
+15. F13 — EINDBEWIJS
+====================================================
+
+Lever:
+
+- volledige testmatrix;
+- vaste eind-SHA;
+- alle fasecommits;
+- adviestraceability;
+- rechtenbewijs;
+- consentbewijs;
+- jeugdveiligheidsbewijs;
+- wetenschapscitaties;
+- memory-hergebruik;
+- multi-bronconflict;
+- rollbackbewijs;
+- bekende beperkingen;
+- productieadvies.
+
+====================================================
+16. PARALLELLE MIRROR-TOETS
+====================================================
+
+Na iedere fase:
+
+- meld start-SHA;
+- meld eind-SHA;
+- meld tests;
+- meld gewijzigde bestanden;
+- meld opleverrapport;
+- meld feature flags;
+- meld blokkades.
+
+Mirror geeft per fase:
+
+- MIRROR_PROVEN
+- HERSTEL NODIG
+- AFGEKEURD
+- NIET BEWIJSBAAR
+
+Replit mag aan een volgende technisch onafhankelijke fase werken terwijl Mirror toetst.
+
+Bij blokkerende afkeuring:
+
+- stop afhankelijke fasen;
+- herstel de foutieve fase;
+- nieuwe herstel-SHA;
+- volledige fasetoets opnieuw.
+
+====================================================
+17. HARD STOPPEN BIJ
+====================================================
+
+- verzonnen persoonlijke data;
+- verzonnen bron of citatie;
+- advies zonder herleidbare basis;
+- confidence zonder berekening;
+- taalmodel overschrijft deterministische waarheid;
+- ontbrekende bron stil vervangen;
+- medische diagnose;
+- consentlek;
+- cross-account- of cross-teamdata;
+- minderjarige kan acute waarschuwing negeren;
+- planwijziging zonder bevoegde bevestiging;
+- geheugen stil gewijzigd;
+- verouderde observatie als actueel;
+- modelkennis gepresenteerd als live wetenschap;
+- directe providercall buiten gateway;
+- zichtbaar succes zonder serveropslag;
+- advies blokkeert kernfunctie bij AI-fout.
+
+====================================================
+18. PRODUCTIE
+====================================================
+
+Replit mag:
+
+- bouwen;
+- testen;
+- committen;
+- pushen;
+- testomgeving bijwerken.
+
+Replit mag niet zelfstandig:
+
+- productie publiceren;
+- productiemigraties goedkeuren;
+- feature flags publiek activeren;
+- echte gebruikersdata gebruiken zonder toestemming.
+
+Productievrijgave blijft uitsluitend aan René.
+
+====================================================
+19. NU UITVOEREN
+====================================================
+
+Gebruik de bijgevoegde definitieve AI_INTELLIGENCE_ENGINE_01-ZIP als bindende bron.
+
+Start met F0 en ga daarna gefaseerd door volgens deze opdracht.
+
+Na iedere fase kort rapporteren.
+Niet wachten op aanvullende productkeuzes behalve waar het pakket expliciet een harde blokkade noemt.
