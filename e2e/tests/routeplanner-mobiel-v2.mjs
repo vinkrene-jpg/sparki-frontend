@@ -73,13 +73,29 @@ async function geenHorizontaleOverflow(page) {
   });
 }
 
+// Flagconfiguratie vastleggen (AANVULLING F1): oude en nieuwe waarden in het
+// rapport, zodat bewijsbaar is dat alleen de testidentiteit is geraakt.
+function flagSnapshot(clerkId) {
+  const globaal = psql(
+    `SELECT key, enabled_globally FROM feature_flags WHERE key IN ('commercial_shell','mobile_routeplanner_v2') ORDER BY key;`,
+  ).trim();
+  const overrides = psql(
+    `SELECT clerk_id, flag_key, enabled FROM user_flag_overrides WHERE flag_key IN ('commercial_shell','mobile_routeplanner_v2') AND clerk_id = :'cid' ORDER BY flag_key;`,
+    { cid: clerkId },
+  ).trim();
+  return { globaal, overridesTestidentiteit: overrides };
+}
+const flagConfig = {};
+
 const { server, baseUrl } = await startProdServer();
 const browser = await launchBrowser();
 try {
   const userId = await ensureE2eUser();
+  flagConfig.voor = flagSnapshot(userId);
 
   // ---- Flag AAN: vier telefoon-viewports ----
   setOverride(userId, true);
+  flagConfig.tijdensTest = flagSnapshot(userId);
   for (const [naam, viewport] of Object.entries(PHONE_VIEWPORTS)) {
     const run = new TestRun({
       browser,
@@ -109,6 +125,17 @@ try {
     );
     const balk = page.locator('[data-testid="mobiele-actiebalk"]');
     log(`${naam}: actiebalk aanwezig`, (await balk.count()) === 1);
+
+    // AANVULLING F1: de bestaande mobiele shell (commercial_shell, globaal
+    // aan) moet zichtbaar zijn NAAST de nieuwe wizard — onderbalk met de
+    // commerciële nav-items op hetzelfde scherm.
+    const onderNav = page.locator("nav.fixed.bottom-0");
+    log(
+      `${naam}: mobiele shell (onderbalk) zichtbaar naast wizard`,
+      (await onderNav.isVisible()) &&
+        (await onderNav.getByText("Vandaag").isVisible()) &&
+        (await onderNav.getByText("Rijden").isVisible()),
+    );
 
     // Primaire actie binnen het zichtbare scherm (sticky), zonder te scrollen.
     const verder = page.getByRole("button", { name: "Verder →" }).first();
@@ -238,7 +265,11 @@ try {
   // Testoverride niet aan laten staan.
   try {
     const userId = await ensureE2eUser();
-    psql(`DELETE FROM user_flag_overrides WHERE clerk_id='${userId}' AND flag_key='mobile_routeplanner_v2';`);
+    psql(
+      `DELETE FROM user_flag_overrides WHERE clerk_id = :'cid' AND flag_key = 'mobile_routeplanner_v2';`,
+      { cid: userId },
+    );
+    flagConfig.na = flagSnapshot(userId);
   } catch {}
   await browser.close();
   server.close();
@@ -246,7 +277,7 @@ try {
 
 writeFileSync(
   path.join(EVIDENCE, "rapport.json"),
-  JSON.stringify({ stappen, exitCode, t: new Date().toISOString() }, null, 2),
+  JSON.stringify({ stappen, flagConfig, exitCode, t: new Date().toISOString() }, null, 2),
 );
 console.log(`\nKlaar — exitcode ${exitCode} (${stappen.length} checks)`);
 process.exit(exitCode);
