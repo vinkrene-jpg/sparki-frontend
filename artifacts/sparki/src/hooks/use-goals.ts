@@ -127,6 +127,68 @@ export type TranslateResult =
       fallback: boolean;
     };
 
+/* ── DOELEN_01: trainer- en ouderkant ─────────────────────────────────── */
+
+// Welke doelsoorten mag DEZE sporter krijgen? (DOE-16: het trainerscherm
+// rendert alleen wat de sporterband toelaat.)
+export function useTrainerGoalPolicy(athleteId: string | null) {
+  return useQuery({
+    queryKey: ["goals", "trainer-policy", athleteId] as const,
+    queryFn: () => apiFetch<GoalPolicy>(`/api/goals/trainer/${athleteId}/policy`),
+    enabled: !!athleteId,
+    staleTime: STALE.session,
+  });
+}
+
+// Doelinzage voor de voorstellende trainer (DOE-32/36/37). 403 = geen
+// bestaand trainerdoel → eerlijk uitgelegd, geen inzage.
+export function useTrainerAthleteGoals(athleteId: string | null) {
+  return useQuery({
+    queryKey: ["goals", "trainer-view", athleteId] as const,
+    queryFn: () => apiFetch<{ goals: Goal[] }>(`/api/goals/trainer/${athleteId}`),
+    enabled: !!athleteId,
+    retry: false,
+    staleTime: STALE.session,
+  });
+}
+
+export function useProposeGoalToAthlete(athleteId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      kind: string;
+      title: string;
+      description?: string | null;
+      measure?: string | null;
+      targetValue?: string | null;
+      targetDate?: string | null;
+      reasoning?: string | null;
+      theme?: string | null;
+    }) =>
+      apiFetch<{ proposal: GoalProposal }>(`/api/goals/trainer/${athleteId}/proposals`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["goals", "trainer-view", athleteId] });
+    },
+  });
+}
+
+// Ouder-meekijk (DOE-38/39): alleen lezen, geen acties.
+export function useParentChildGoals(childId: string | null) {
+  return useQuery({
+    queryKey: ["goals", "parent-view", childId] as const,
+    queryFn: () =>
+      apiFetch<{ goals: Goal[]; events: { id: number; eventType: string; note: string | null; createdAt: string }[]; readOnly: true }>(
+        `/api/goals/parent/${childId}`,
+      ),
+    enabled: !!childId,
+    retry: false,
+    staleTime: STALE.session,
+  });
+}
+
 export function useTranslateGoal() {
   return useMutation({
     mutationFn: (input: {

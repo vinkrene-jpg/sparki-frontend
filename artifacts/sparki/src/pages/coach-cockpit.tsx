@@ -42,6 +42,11 @@ import {
   type CoachWorkout,
   type CoachProposal,
 } from "@/hooks/use-coach-cockpit"
+import {
+  useTrainerGoalPolicy,
+  useTrainerAthleteGoals,
+  useProposeGoalToAthlete,
+} from "@/hooks/use-goals"
 
 const CARD =
   "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
@@ -814,6 +819,229 @@ export default function CoachCockpitPage() {
 
   if (!athleteId) return null
 
+  return <CockpitBody athleteId={athleteId} name={name} signals={signals} signalsLoading={signalsLoading} signalsError={signalsError} proposals={proposals} decidedProposals={decidedProposals} reviewed={reviewed} />
+}
+
+// ── DOELEN_01 F6/F7 — doelen voorstellen + doelinzage ───────────────────────
+// Een voorstel is géén doel: de sporter beslist. Inzage in de doelen bestaat
+// alleen zolang er een geaccepteerd (niet verwijderd) doelvoorstel van deze
+// trainer is — de server dwingt dat af, dit blok legt het alleen eerlijk uit.
+function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) {
+  const { data: policy } = useTrainerGoalPolicy(athleteId)
+  const view = useTrainerAthleteGoals(athleteId)
+  const propose = useProposeGoalToAthlete(athleteId)
+  const [openForm, setOpenForm] = useState(false)
+  const [kind, setKind] = useState<string | null>(null)
+  const [title, setTitle] = useState("")
+  const [measure, setMeasure] = useState("")
+  const [targetDate, setTargetDate] = useState("")
+  const [reasoning, setReasoning] = useState("")
+  const [theme, setTheme] = useState<string | null>(null)
+
+  const sliderOnly = policy?.form === "slider"
+
+  const submit = () => {
+    if (sliderOnly ? !theme : !kind || !title.trim()) return
+    propose.mutate(
+      sliderOnly
+        ? {
+            kind: "slider",
+            title: policy!.themes.find((t) => t.key === theme)?.label ?? "",
+            theme,
+            reasoning: reasoning.trim() || null,
+          }
+        : {
+            kind: kind!,
+            title: title.trim(),
+            measure: measure.trim() || null,
+            targetDate: targetDate || null,
+            reasoning: reasoning.trim() || null,
+          },
+      {
+        onSuccess: () => {
+          setOpenForm(false)
+          setTitle("")
+          setMeasure("")
+          setTargetDate("")
+          setReasoning("")
+          setKind(null)
+          setTheme(null)
+        },
+      },
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="-mt-3 text-[13px] text-white/45">
+        Jij stelt voor, {name} beslist. Je ziet de doelen zolang een door jou
+        voorgesteld doel bestaat.
+      </p>
+
+      {view.isSuccess ? (
+        view.data.goals.length === 0 ? (
+          <div className={CARD}>
+            <p className="text-[13px] text-white/55">Nog geen doelen vastgelegd.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {view.data.goals.map((g) => (
+              <div key={g.id} className={CARD}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[14px] tracking-tight text-white/90">{g.title}</p>
+                  {g.priority === 1 && (
+                    <span className="shrink-0 rounded-full bg-cyan-300/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-cyan-300/80">
+                      Hoofddoel
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[12px] text-white/45">
+                  {[g.measure, g.targetValue, g.targetDate ? fmtDay(g.targetDate) : null]
+                    .filter(Boolean)
+                    .join(" · ") || "Zonder meetlat"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )
+      ) : view.isError ? (
+        <div className={CARD}>
+          <p className="text-[13px] leading-relaxed text-white/55">
+            Je hebt nu geen doelinzage bij {name}. Die ontstaat zodra {name} een
+            doelvoorstel van jou accepteert — en verdwijnt weer als dat doel weg is.
+          </p>
+        </div>
+      ) : (
+        <div className="h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+      )}
+
+      {!openForm ? (
+        <button
+          type="button"
+          onClick={() => setOpenForm(true)}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] px-3 py-2 text-[12px] text-white/60 hover:bg-white/[0.05]"
+        >
+          <Plus className="h-3.5 w-3.5" /> Doel voorstellen
+        </button>
+      ) : (
+        <div className={CARD}>
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+              Doelvoorstel voor {name}
+            </span>
+            <button type="button" onClick={() => setOpenForm(false)} aria-label="Sluiten" className="text-white/40 hover:text-white/70">
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
+          {policy && (
+            <p className="mt-2 text-[12px] text-white/45">{policy.description}</p>
+          )}
+          {sliderOnly ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(policy?.themes ?? []).map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTheme(t.key)}
+                  className={`rounded-full px-3 py-1.5 text-[12px] ring-1 transition-colors ${
+                    theme === t.key
+                      ? "bg-cyan-300/15 text-cyan-300 ring-cyan-300/40"
+                      : "text-white/55 ring-white/15 hover:text-white/80"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(policy?.kinds ?? []).map((k) => (
+                  <button
+                    key={k.key}
+                    type="button"
+                    onClick={() => setKind(k.key)}
+                    title={k.uitleg}
+                    className={`rounded-full px-3 py-1.5 text-[12px] ring-1 transition-colors ${
+                      kind === k.key
+                        ? "bg-cyan-300/15 text-cyan-300 ring-cyan-300/40"
+                        : "text-white/55 ring-white/15 hover:text-white/80"
+                    }`}
+                  >
+                    {k.label}
+                  </button>
+                ))}
+              </div>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Welk doel stel je voor?"
+                className="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+              />
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <input
+                  value={measure}
+                  onChange={(e) => setMeasure(e.target.value)}
+                  placeholder="Waaraan merk je dat het gelukt is?"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+                />
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white focus:border-cyan-300/40 focus:outline-none [color-scheme:dark]"
+                />
+              </div>
+            </>
+          )}
+          <textarea
+            value={reasoning}
+            onChange={(e) => setReasoning(e.target.value)}
+            rows={2}
+            placeholder="Waarom stel je dit voor? (ziet de sporter)"
+            className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+          />
+          {propose.isError && (
+            <p className="mt-2 text-[12px] text-rose-300">
+              {(propose.error as Error)?.message?.includes("409") || (propose.error as Error)?.message?.toLowerCase().includes("al voorgesteld")
+                ? "Je hebt dit doel al voorgesteld."
+                : "Voorstel opslaan lukte niet — mogelijk past het niet bij de leeftijd van de sporter."}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={submit}
+            disabled={(sliderOnly ? !theme : !kind || !title.trim()) || propose.isPending}
+            className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+          >
+            {propose.isPending ? "Bezig…" : "Voorstel versturen"}
+          </button>
+          {propose.isSuccess && !openForm && null}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CockpitBody({
+  athleteId,
+  name,
+  signals,
+  signalsLoading,
+  signalsError,
+  proposals,
+  decidedProposals,
+  reviewed,
+}: {
+  athleteId: string
+  name: string
+  signals: CoachSignal[]
+  signalsLoading: boolean
+  signalsError: boolean
+  proposals: CoachProposal[]
+  decidedProposals: CoachProposal[]
+  reviewed: ReturnType<typeof useMarkReviewed>
+}) {
   return (
     <ScreenShell section="Coach" terug={false} bg="/atmosphere/wedstrijd-renster-bergen.webp">
       <div className="space-y-6">
@@ -895,7 +1123,10 @@ export default function CoachCockpitPage() {
         <SectionLabel n="05" title="Afspraken & context" />
         <ContextSection athleteId={athleteId} />
 
-        <SectionLabel n="06" title="Privénotities" />
+        <SectionLabel n="06" title="Doelen" />
+        <GoalsSection athleteId={athleteId} name={name} />
+
+        <SectionLabel n="07" title="Privénotities" />
         <PrivateNotesSection athleteId={athleteId} />
 
         <Link

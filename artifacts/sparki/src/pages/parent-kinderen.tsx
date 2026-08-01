@@ -18,6 +18,53 @@ import {
   useSelectedChild,
   effectiveChildId,
 } from "@/lib/parent-selected-child"
+import { useParentChildGoals } from "@/hooks/use-goals"
+
+// DOELEN_01 F8 — ouder-meekijk op doelen: alléén lezen. Geen bezwaar- of
+// intrekactie (besluit O-2 staat open); wijzigingen zijn zichtbaar via de
+// doelhistorie. De server dwingt de ouderkoppeling + minderjarigheid af.
+function DoelenBlock({ athleteClerkId }: { athleteClerkId: string }) {
+  const { data, isLoading, isError } = useParentChildGoals(athleteClerkId)
+  if (isLoading)
+    return <div className="mt-3 h-5 w-40 animate-pulse rounded bg-white/[0.06]" />
+  if (isError)
+    return (
+      <p className="mt-3 text-[12px] text-white/35">
+        Doelen zijn hier niet beschikbaar.
+      </p>
+    )
+  if (!data) return null
+  return (
+    <div className="mt-3" data-testid="ouder-doelen">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+        Doelen (meekijken)
+      </p>
+      {data.goals.length === 0 ? (
+        <p className="mt-1.5 text-[12px] text-white/35">Nog geen doelen vastgelegd.</p>
+      ) : (
+        <ul className="mt-1.5 space-y-1">
+          {data.goals.map((g) => (
+            <li key={g.id} className="text-[12px] text-white/60">
+              <span className="text-white/80">{g.title}</span>
+              {g.priority === 1 && (
+                <span className="ml-1.5 text-[10px] text-cyan-200/70">hoofddoel</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {data.events.length > 0 && (
+        <p className="mt-1.5 text-[11px] text-white/30">
+          Laatste wijziging:{" "}
+          {new Date(data.events[0].createdAt).toLocaleDateString("nl-NL", {
+            day: "numeric",
+            month: "long",
+          })}
+        </p>
+      )}
+    </div>
+  )
+}
 
 const tierLabel: Record<string, string> = {
   u16: "jonger dan 16 — jij beheert het delen",
@@ -116,6 +163,7 @@ function KindCard({
         )}
       </div>
       <TrainerBlock athleteClerkId={child.athleteClerkId} />
+      {selected && <DoelenBlock athleteClerkId={child.athleteClerkId} />}
       {selected && (
         <Link
           href="/vandaag"
