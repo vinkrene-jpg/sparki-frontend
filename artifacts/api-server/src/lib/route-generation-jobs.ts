@@ -36,6 +36,25 @@ export type RouteGenerationJob = {
 
 const JOBS = new Map<string, RouteGenerationJob>();
 const JOB_TTL_MS = 30 * 60 * 1000;
+
+// KETEN_FIETS_01 (01-08-2026), harde eis 1: iedere routegeneratietaak eindigt.
+// De deadline geldt voor de TAAK, niet voor de veiligheidscontrole: verloopt
+// de taak, dan is de uitkomst eerlijk "geen route geleverd" (fail-closed) —
+// nooit "route geleverd zonder controle". Bewust korter dan de klant-timeout
+// van 6 minuten (use-routes.ts), zodat de klant een eerlijke serveruitkomst
+// ziet in plaats van zelf te moeten opgeven.
+const JOB_DEADLINE_MS = 5 * 60 * 1000;
+
+function expireIfPastDeadline(job: RouteGenerationJob): void {
+  if (job.done || Date.now() - job.createdAt <= JOB_DEADLINE_MS) return;
+  // Idempotent via finishJob: komt de echte berekening later alsnog klaar,
+  // dan telt deze einduitslag — de klant heeft "verlopen" mogelijk al gezien.
+  finishJob(job, 504, {
+    error:
+      "Geen route geleverd: de berekening is niet binnen 5 minuten afgerond. De veiligheidscontrole is niet overgeslagen. Probeer het opnieuw — je keuzes zijn bewaard.",
+    code: "GENERATION_DEADLINE",
+  });
+}
 let lastSweep = 0;
 
 function sweep(): void {
@@ -93,5 +112,6 @@ export function getRouteGenerationJob(
   sweep();
   const job = JOBS.get(id);
   if (!job || job.clerkId !== clerkId) return null;
+  expireIfPastDeadline(job);
   return job;
 }

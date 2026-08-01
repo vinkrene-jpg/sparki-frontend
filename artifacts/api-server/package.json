@@ -196,7 +196,8 @@
     "test:team-onboarding": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs team-onboarding",
     "test:route-climb-check": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-climb-check",
     "test:consent-service": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs consent-service",
-    "test:route-generation-errors": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-generation-errors"
+    "test:route-generation-errors": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-generation-errors",
+    "test:route-job-deadline": "node ./scripts/run-test.mjs route-job-deadline"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
