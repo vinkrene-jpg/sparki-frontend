@@ -156,6 +156,7 @@ try {
   await run.shot("stap6-navigatie-gestart");
 
   // ── Foutscenario: onmogelijke aanvraag (Noordzee) ─────────────────────
+  if (process.env.SKIP_FOUT) throw { message: "__SKIP_FOUT__", skip: true };
   await run.context.setGeolocation({ latitude: 54.0, longitude: 3.0 });
   await page.goto(`${BASE}/routes?nav=maken`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
