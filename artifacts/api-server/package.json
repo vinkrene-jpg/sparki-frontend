@@ -128,6 +128,7 @@
     "test:today-matrix": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-matrix",
     "test:mental": "node ./scripts/run-test.mjs mental",
     "test:parent-age-transition": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs parent-age-transition",
+    "test:club-selection-overrule": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-selection-overrule",
     "test:today-orchestrator": "node ./scripts/run-test.mjs today-orchestrator",
     "test:terugblik": "node ./scripts/run-test.mjs terugblik",
     "test:nav-sanitize": "node ./scripts/run-test.mjs nav-sanitize",

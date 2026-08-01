@@ -427,6 +427,46 @@ async function main() {
     assert(unknown.status === 403, `leeftijd onbekend zelf: verwacht 403, kreeg ${unknown.status}`);
   });
 
+  // 14b. Besluitenpatch 2026-08-01 (hoofdstuk B): clubbeheer registreert een
+  // buiten de app gegeven oudertoestemming — expliciet pad, verplichte
+  // vastlegging; intrekken namens ouder kan de club niet; lid zonder beheer 403.
+  await scenario("consent namens ouder: alleen beheer, vastlegging verplicht, intrekken geblokkeerd", async () => {
+    const zonderVelden = await req("POST", `/api/clubs/${clubId}/consents`, clerkOwner, {
+      action: "grant",
+      athleteClerkId: clerkYouth,
+      namensOuder: true,
+    });
+    assert(zonderVelden.status === 400, `zonder vastlegging: verwacht 400, kreeg ${zonderVelden.status}`);
+    const lid = await req("POST", `/api/clubs/${clubId}/consents`, clerkAdult, {
+      action: "grant",
+      athleteClerkId: clerkYouth,
+      namensOuder: true,
+      ouderNaam: "P. Test",
+      wijze: "schriftelijk formulier",
+    });
+    assert(lid.status === 403, `gewoon lid namens ouder: verwacht 403, kreeg ${lid.status}`);
+    const ok = await req("POST", `/api/clubs/${clubId}/consents`, clerkOwner, {
+      action: "grant",
+      athleteClerkId: clerkYouth,
+      namensOuder: true,
+      ouderNaam: "P. Test",
+      wijze: "schriftelijk formulier",
+    });
+    assert(
+      ok.status === 200 && ok.json?.grantedByRelation === "club_namens_ouder",
+      `beheer namens ouder: verwacht 200/club_namens_ouder, kreeg ${ok.status}/${ok.json?.grantedByRelation}`,
+    );
+    assert(String(ok.json?.grantedNote ?? "").includes("P. Test"), "vastlegging ontbreekt in de rij");
+    const revoke = await req("POST", `/api/clubs/${clubId}/consents`, clerkOwner, {
+      action: "revoke",
+      athleteClerkId: clerkYouth,
+      namensOuder: true,
+      ouderNaam: "P. Test",
+      wijze: "schriftelijk",
+    });
+    assert(revoke.status === 400, `club trekt namens ouder in: verwacht 400, kreeg ${revoke.status}`);
+  });
+
   // 15. Export zonder sportdata + audit aanwezig; lid 403.
   await scenario("export: beheer-only, zonder sportdata, audit geschreven", async () => {
     const deny = await req("GET", `/api/clubs/${clubId}/export`, clerkAdult);

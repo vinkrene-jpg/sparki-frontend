@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import {
   X,
@@ -14,7 +14,8 @@ import { useLocation } from "wouter"
 import { useClerk } from "@clerk/react"
 import { useFeedback } from "@/contexts/FeedbackContext"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
-import { useClubMembership } from "@/hooks/use-club"
+import { useClubMembership, useMyClubs } from "@/hooks/use-club"
+import { roleStartFor } from "@/lib/role-start"
 import { useAdminWhoami } from "@/hooks/use-bug-reports"
 import { chaptersForRole, ROLE_LABELS } from "@/lib/chapters"
 
@@ -48,6 +49,9 @@ export function MainMenu({
   const role = profile?.activeRole as Role | undefined
   // Club-poort: alleen een GEACCEPTEERDE trainerkoppeling telt. Nooit gefingeerd.
   const { isMember } = useClubMembership()
+  const { data: myClubs } = useMyClubs()
+  const [wisselOpen, setWisselOpen] = useState(false)
+  const [contextFilter, setContextFilter] = useState("")
   // Admin-ingang: alleen zichtbaar wanneer de server bevestigt dat dit account
   // admin is (whoami) — de echte poort blijft server-side op elke admin-route.
   const { data: adminWho } = useAdminWhoami()
@@ -83,11 +87,37 @@ export function MainMenu({
     onClose()
     setLocation(href)
   }
-  const cycleRole = () => {
-    const idx = roles.indexOf(active)
-    const next = roles[(idx + 1) % roles.length]
-    if (next && next !== active) void switchRole(next)
-  }
+
+  // Besluitenpatch 2026-08-01 (hoofdstuk B): de rolwisselaar toont een lijst
+  // van ALLE contexten (accountrollen + clubcontexten). Bij meer dan vijf
+  // contexten verschijnt een zoekveld. De actieve context blijft daarnaast
+  // permanent zichtbaar in de schilkop (DsContextRegel).
+  const contexts = useMemo(() => {
+    const items: { key: string; label: string; onSelect: () => void; actief: boolean }[] =
+      roles.map((r) => ({
+        key: `rol:${r}`,
+        label: `Rol: ${ROLE_LABEL[r] ?? r}`,
+        actief: r === active,
+        onSelect: () => {
+          if (r !== active) void switchRole(r)
+        },
+      }))
+    for (const row of myClubs ?? []) {
+      const clubRolLabel = roleStartFor(row.membership.role)?.label ?? row.membership.role
+      items.push({
+        key: `club:${row.membership.clubId}`,
+        label: `${row.club?.name ?? "Club"} — ${clubRolLabel}`,
+        actief: false,
+        onSelect: () => go("/club"),
+      })
+    }
+    return items
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roles.join(","), active, myClubs])
+  const toonZoekveld = contexts.length > 5
+  const zichtbareContexts = contextFilter.trim()
+    ? contexts.filter((c) => c.label.toLowerCase().includes(contextFilter.trim().toLowerCase()))
+    : contexts
 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex flex-col overflow-y-auto overscroll-contain">
@@ -241,16 +271,57 @@ export function MainMenu({
             <MessageSquarePlus className="h-4 w-4" strokeWidth={1.75} />
             Feedback of bug melden
           </button>
-          {roles.length > 1 && (
-            <button
-              type="button"
-              onClick={cycleRole}
-              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-              title="Wissel van rol"
-            >
-              <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
-              Rol: {ROLE_LABEL[active]}
-            </button>
+          {contexts.length > 1 && (
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={() => setWisselOpen((v) => !v)}
+                aria-expanded={wisselOpen}
+                className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+                title="Wissel van context"
+              >
+                <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
+                Context: {ROLE_LABEL[active]}
+              </button>
+              {wisselOpen && (
+                <div className="mt-2 space-y-1 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
+                  {toonZoekveld && (
+                    <input
+                      type="search"
+                      value={contextFilter}
+                      onChange={(e) => setContextFilter(e.target.value)}
+                      placeholder="Zoek een context…"
+                      aria-label="Zoek een context"
+                      className="mb-1 w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-cyan-300/50"
+                    />
+                  )}
+                  {zichtbareContexts.map((c) => (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => {
+                        setWisselOpen(false)
+                        c.onSelect()
+                      }}
+                      className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${
+                        c.actief
+                          ? "text-cyan-300"
+                          : "text-white/75 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      aria-current={c.actief ? "true" : undefined}
+                    >
+                      {c.label}
+                      {c.actief && <span className="ml-2 text-[11px] text-white/45">actief</span>}
+                    </button>
+                  ))}
+                  {zichtbareContexts.length === 0 && (
+                    <p className="px-3 py-2 text-[13px] text-white/45">
+                      Geen context gevonden voor deze zoekterm.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           {profile && (
             <button

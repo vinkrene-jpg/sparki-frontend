@@ -2363,14 +2363,74 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
       res.status(400).json({ error: "Deze persoon is geen actief clublid." });
       return;
     }
+
+    // Besluitenpatch 2026-08-01 (hoofdstuk B): de teammanager staat bij
+    // wedstrijden boven de ploegleider en mag diens selectiebesluit overrulen.
+    // Een overrule is DEFINITIEF: de ploegleider kan hem niet terugdraaien
+    // (beheer/owner/teammanager wél). Geldt uitsluitend hier, bij
+    // wedstrijdselecties — nergens anders.
+    const actorRole = ctx.membership.role;
+    const [existing] = await db
+      .select()
+      .from(clubRaceSelectionsTable)
+      .where(
+        and(
+          eq(clubRaceSelectionsTable.eventId, eventId),
+          eq(clubRaceSelectionsTable.clerkId, clerkId),
+        ),
+      );
+    if (
+      existing?.overruledAt != null &&
+      actorRole === "ploegleider" &&
+      existing.role !== role
+    ) {
+      res.status(403).json({
+        error:
+          "Deze selectie is door de teammanager vastgezet en kan door de ploegleider niet worden teruggedraaid.",
+      });
+      return;
+    }
+    const isOverrule =
+      actorRole === "teammanager" &&
+      existing != null &&
+      existing.selectedByRole === "ploegleider" &&
+      existing.role !== role;
+
     const [row] = await db
       .insert(clubRaceSelectionsTable)
-      .values({ eventId, clerkId, role })
+      .values({
+        eventId,
+        clerkId,
+        role,
+        selectedByClerkId: ctx.membership.clerkId,
+        selectedByRole: actorRole,
+      })
       .onConflictDoUpdate({
         target: [clubRaceSelectionsTable.eventId, clubRaceSelectionsTable.clerkId],
-        set: { role, updatedAt: new Date() },
+        set: {
+          role,
+          selectedByClerkId: ctx.membership.clerkId,
+          selectedByRole: actorRole,
+          ...(isOverrule
+            ? { overruledAt: new Date(), overruledByClerkId: ctx.membership.clerkId }
+            : {}),
+          updatedAt: new Date(),
+        },
       })
       .returning();
+
+    if (isOverrule && existing.selectedByClerkId) {
+      // Bericht mét diff aan de overrulede ploegleider — eerlijk en volledig.
+      void createNotification({
+        clerkId: existing.selectedByClerkId,
+        type: "club_update",
+        title: "Je selectiebesluit is door de teammanager gewijzigd",
+        body: `Voor "${event.name}" (${event.raceDate}) is de rol van dit clublid gewijzigd van ${existing.role} naar ${role}. Dit besluit van de teammanager is definitief.`,
+        athleteClerkId: clerkId,
+        source: "club-races",
+        dedupeKey: `selectie-overrule:${eventId}:${clerkId}:${existing.role}->${role}`,
+      });
+    }
     void createNotification({
       clerkId,
       type: "club_update",
@@ -2378,7 +2438,20 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
       body: `Je staat als ${role} in de selectie voor "${event.name}" op ${event.raceDate}. Geef je beschikbaarheid door in de club.`,
       actionUrl: "/club",
     });
-    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "selectie_gewijzigd", targetType: "race", targetId: eventId, detail: { lid: clerkId, rol: role } });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: isOverrule ? "selectie_overruled" : "selectie_gewijzigd",
+      targetType: "race",
+      targetId: eventId,
+      detail: {
+        lid: clerkId,
+        rol: role,
+        ...(isOverrule
+          ? { van: existing.role, ploegleider: existing.selectedByClerkId }
+          : {}),
+      },
+    });
     res.status(201).json(row);
   } catch (err) {
     req.log.error({ err }, "club race selection failed");
@@ -2728,7 +2801,8 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
     }
     const self = athleteClerkId === clerkId;
     const minor = await isMinorForClub(athleteClerkId);
-    let grantedByRelation: "self" | "parent";
+    let grantedByRelation: "self" | "parent" | "club_namens_ouder";
+    let grantedNote: string | null = null;
     if (self) {
       if (minor) {
         res.status(403).json({
@@ -2740,11 +2814,42 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
       grantedByRelation = "self";
     } else {
       const parentOk = await isLinkedParent(clerkId, athleteClerkId);
-      if (!parentOk) {
+      if (parentOk) {
+        grantedByRelation = "parent";
+      } else if (req.body?.namensOuder === true) {
+        // Besluitenpatch 2026-08-01 (hoofdstuk B): clubbeheer registreert een
+        // BUITEN de app gegeven oudertoestemming — expliciet gescheiden pad,
+        // alleen voor beheer, met verplichte vastlegging van wie en hoe.
+        // Intrekken namens de ouder kan de club NIET: dat blijft bij ouder of
+        // (volwassen) sporter zelf.
+        const actorCtx = await getClubContext(clubId, clerkId);
+        if (!actorCtx || !canManageClub(actorCtx)) {
+          res.status(403).json({
+            error: "Alleen clubbeheer kan een oudertoestemming namens de ouder registreren.",
+          });
+          return;
+        }
+        if (action !== "grant") {
+          res.status(400).json({
+            error: "Intrekken kan alleen de ouder of de sporter zelf, niet de club.",
+          });
+          return;
+        }
+        const ouderNaam = str(req.body?.ouderNaam);
+        const wijze = str(req.body?.wijze); // bijv. "schriftelijk formulier d.d. …"
+        if (!ouderNaam || !wijze) {
+          res.status(400).json({
+            error:
+              "Registreren namens de ouder vereist de naam van de ouder én hoe de toestemming is gegeven.",
+          });
+          return;
+        }
+        grantedByRelation = "club_namens_ouder";
+        grantedNote = `Ouder/verzorger: ${ouderNaam}; wijze: ${wijze}`;
+      } else {
         res.status(403).json({ error: "Alleen een gekoppelde ouder kan dit voor deze sporter regelen." });
         return;
       }
-      grantedByRelation = "parent";
     }
 
     const now = new Date();
@@ -2757,6 +2862,7 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
         status: action === "grant" ? "granted" : "revoked",
         grantedByClerkId: clerkId,
         grantedByRelation,
+        grantedNote,
         grantedAt: now,
         revokedAt: action === "revoke" ? now : null,
         revokedByClerkId: action === "revoke" ? clerkId : null,
@@ -2769,6 +2875,7 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
                 status: "granted",
                 grantedByClerkId: clerkId,
                 grantedByRelation,
+                grantedNote,
                 grantedAt: now,
                 revokedAt: null,
                 revokedByClerkId: null,
@@ -2783,7 +2890,11 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
       action: action === "grant" ? "consent_gegeven" : "consent_ingetrokken",
       targetType: "consent",
       targetId: athleteClerkId,
-      detail: { relatie: grantedByRelation, scope },
+      detail: {
+        relatie: grantedByRelation,
+        scope,
+        ...(grantedNote ? { vastlegging: grantedNote } : {}),
+      },
     });
     res.json(row);
   } catch (err) {

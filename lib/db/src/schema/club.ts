@@ -446,6 +446,14 @@ export const clubRaceSelectionsTable = pgTable(
     availability: text("availability").notNull().default("onbekend"), // beschikbaar | niet_beschikbaar | onbekend
     availabilityNote: text("availability_note"),
     resultNote: text("result_note"),
+    // Besluitenpatch 2026-08-01 (hoofdstuk B): wie de selectiebeslissing als
+    // laatste nam (voor de teammanager-overrule van een ploegleiderbesluit).
+    selectedByClerkId: text("selected_by_clerk_id"),
+    selectedByRole: text("selected_by_role"),
+    // Overrule door de teammanager: definitief — de ploegleider kan dit niet
+    // terugdraaien. Alleen bij wedstrijdselecties, nergens anders.
+    overruledAt: timestamp("overruled_at", { withTimezone: true }),
+    overruledByClerkId: text("overruled_by_clerk_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -529,7 +537,11 @@ export const clubConsentsTable = pgTable(
     scope: text("scope").notNull().default("training_summary"),
     status: text("status").notNull().default("granted"), // granted | revoked
     grantedByClerkId: text("granted_by_clerk_id").notNull(),
-    grantedByRelation: text("granted_by_relation").notNull(), // self | parent
+    // self | parent | club_namens_ouder (besluitenpatch 2026-08-01, hoofdstuk B:
+    // clubbeheer registreert een buiten de app gegeven oudertoestemming).
+    grantedByRelation: text("granted_by_relation").notNull(),
+    // Alleen bij club_namens_ouder: wie de toestemming gaf en hoe (verplicht).
+    grantedNote: text("granted_note"),
     grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     revokedByClerkId: text("revoked_by_clerk_id"),
