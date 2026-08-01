@@ -18,6 +18,7 @@ export const FEATURE_KEYS = [
   "stripe_webhooks",
   "stripe_portal",
   "media_uitleg_motion",
+  "media_uitleg_dieptekaart",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -58,6 +59,8 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "Stripe Customer Portal (TESTMODUS) — facturen/betaalmethoden/annuleren voor allowlist-accounts. Default uit",
   media_uitleg_motion:
     "MEDIA_UITLEG_01 F1 — gedeelde motionbasis: instelling 'Verminder beweging' (server-side bewaard) + centrale animatie-uitschakelaar en testpagina. Default uit",
+  media_uitleg_dieptekaart:
+    "MEDIA_UITLEG_01 F2 — diepte-/zweefkaart (CMP-40) op het ene vrijgegeven moment 'training voltooid'; subtiele kanteling alleen tijdens aanraking. Default uit",
 };
 
 export * from "./sports";

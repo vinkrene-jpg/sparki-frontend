@@ -56,7 +56,8 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Onderdeel | Status | Bewijs |
 |---|---|---|
 | Reduced-motion (systeem) | AANWEZIG | `index.css` app-breed vangnet + `reduced-motion.test.ts` |
-| Sparki-instelling Verminder beweging | NIET GESTART | geen server-side voorkeur (F1) |
+| Sparki-instelling Verminder beweging | GEBOUWD (F1, flag uit) | `ui_preferences` + `/api/ui-preferences` + toggle in Instellingen; `test:motion` 4/4, `test:ui-preferences` 4/4; SHA `58bef0db` |
+| Dieptecomponent (CMP-40, zweefkaart) | GEBOUWD (F2, flag uit) | DsCard-uitbreiding `diepte` + moment "training voltooid" in TodayLayer; `test:zweefkaart` 5/5; flag `media_uitleg_dieptekaart` |
 | Herbruikbare mediaspeler / ondertiteling / posters | NIET GESTART | geen speler aangetroffen (F3) |
 | Contentmodel media (KENNIS_01-contract) | ONTBREEKT | `knowledge_items` mist blokkerende velden (O-1) |
 | Gebruikersstatus mediacontent | NIET GESTART | geen generieke statusrij (F4) |
@@ -65,6 +66,18 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Niet-acute coachmelding-grond | AANWEZIG | decideCoach + CoachAnalysisCard (O-4 vervuld) |
 
 ## 3. Logboek
+
+- **01-08-2026** — MEDIA_UITLEG_01 **F1 opgeleverd** (versnelde uitvoering): bevroren
+  motionconfig (120/240/400 ms, één in-/uit-easing), centrale uitschakelaar
+  `data-motion="off"` (direct eindtoestand, geen layoutshift), tabel `ui_preferences`
+  + migratie 0015, `/api/ui-preferences`, instelling "Verminder beweging" (OR met
+  systeem), testpagina `/_dev/motion`. Flag `media_uitleg_motion` DEFAULT UIT.
+  Tests groen (motion 4/4, ui-preferences 4/4, typecheck). SHA `58bef0db`.
+  **F2 opgeleverd**: CMP-40 diepte-/zweefkaart als uitbreiding van bestaande DsCard
+  (geen nieuwe kaart), uitsluitend moment "training voltooid" (TodayLayer);
+  kanteling alleen tijdens aanraking, geclampt ±4°, puur transform; beweging-uit ⇒
+  gewone kaart. Flag `media_uitleg_dieptekaart` DEFAULT UIT. `test:zweefkaart` 5/5.
+  Mirror-toetsen F1/F2 aangevraagd.
 
 - **01-08-2026** — MEDIA_UITLEG_01 **F0 (inventarisatie) opgeleverd**: vijf documenten
   in `docs/build-packages/MEDIA_UITLEG_01/F0/`; nul regels productiecode; pilot

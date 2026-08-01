@@ -19,6 +19,10 @@ import {
   Sparkles,
 } from "lucide-react"
 import type { WorkoutBlock } from "@/lib/athlete-types"
+import { DsCard } from "@/components/ds/card"
+import { useFeatureFlag } from "@/hooks/use-feature-flag"
+import { useMotionPreference } from "@/hooks/use-motion-preference"
+import { shouldEnableDiepte } from "@/lib/zweefkaart"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -57,6 +61,12 @@ export function TodayLayer() {
   const isPending =
     workout?.status === "planned" || workout?.status === "modified"
   const isCompleted = workout?.status === "completed"
+  // MEDIA_UITLEG_01 F2 (CMP-40) — het ene vrijgegeven moment: "training
+  // voltooid". Flag default uit; verminder-beweging wint altijd.
+  const diepteFlag = useFeatureFlag("media_uitleg_dieptekaart")
+  const { motionOff } = useMotionPreference()
+  const diepte =
+    isCompleted && shouldEnableDiepte(diepteFlag, motionOff, "training_voltooid")
   const markComplete = () => {
     if (workout?.id) updateWorkout.mutate({ id: workout.id, status: "completed" })
   }
@@ -85,7 +95,7 @@ export function TodayLayer() {
         <>
         {/* Core-voorspelpaneel — Sparki's effect-forecast boven elke training. */}
         <CorePredictionPanel workoutId={workout.id} />
-        <div className={`${cardClass} flex flex-col gap-4`}>
+        <DsCard diepte={diepte} className={`${cardClass} flex flex-col gap-4`}>
           {/* Session header */}
           <div>
             {isPending && (
@@ -313,7 +323,7 @@ export function TodayLayer() {
             </div>
           )}
 
-        </div>
+        </DsCard>
         </>
       ) : (
         <div className={cardClass}>
