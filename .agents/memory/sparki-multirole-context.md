@@ -10,3 +10,8 @@ description: Vaste vijf nav-posities per rol, contextregel in de shells, en cont
 - CommercialShell `shellNavForRole` moet ELKE rol expliciet dekken; onbekende rol valt terug op sporter-nav — nieuwe rol vergeten = verkeerde onderbalk.
 - Meldingen: `roleForPath` in notification-bell wisselt eerst de rol (zonder herlogin) vóór navigatie; wissels geserialiseerd (ref-guard), mislukte wissel ⇒ niet navigeren.
 - Server-side is PUT /api/auth/me/role al fail-closed (403 bij rol buiten roles[]).
+
+## Rolstart-registry (01-08-2026)
+- `/rol-start/<rol>` heeft een fail-closed rolbezit-poort: globale rollen (UserContext) ∪ actieve clubrollen (`useMyClubs({ authzFresh: true })` — staleTime 0, isFetching telt als "nog niet bewezen"). Autorisatie-UI mag nooit op stale React-Query-cache leunen.
+- role-start.ts hrefs zaten NIET in de nav-regressietest → twee dode links ontstonden ongemerkt (/club-beheer vs /club/beheer; /coach-cockpit is een per-sporter-parameterroute, geen landing). test:navigation heeft nu een integrale menu-matrixtest (alle rolstartprofielen + chaptersForRole × club aan/uit); nieuwe rol-ingangen moeten daar doorheen.
+- e2e-fixtures die clubrollen toekennen moeten de negatieve preconditie hard maken (alle actieve memberships eerst beëindigen), anders laat een eerdere run toegang achter.
