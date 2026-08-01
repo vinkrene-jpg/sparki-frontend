@@ -110,11 +110,19 @@ try {
   // ── Stap 3: opslaan ───────────────────────────────────────────────────
   // Zoeklaag "bekend-eerst": eerst de voorstel-kaart aantikken vóór de
   // detailweergave met bewaarknoppen verschijnt.
-  const voorstel = page.getByText(/^OP MAAT$/).first();
-  if (await voorstel.isVisible().catch(() => false)) {
-    await voorstel.click();
+  const kies = page.getByRole("button", { name: "Kies deze route" }).first();
+  if (await kies.isVisible().catch(() => false)) {
+    await kies.click();
     await page.waitForTimeout(1500);
     await run.shot("stap2b-voorstel-gekozen");
+  }
+  // Niet volledig geverifieerd wegdek: de bewaarknoppen zijn dan bewust
+  // uitgeschakeld tot de rijder expliciet kiest — dat vinkje zetten we hier
+  // net als een echte gebruiker.
+  const bewusteKeuze = page.getByText(/Ik kies er bewust voor/).first();
+  if (await bewusteKeuze.isVisible().catch(() => false)) {
+    await bewusteKeuze.click();
+    await page.waitForTimeout(400);
   }
   const naamveld = page.locator('input[type="text"]').last();
   const naam = `KETEN_FIETS_01 ${VIEWNAME} ${new Date().toISOString().slice(0, 16)}`;
@@ -134,8 +142,11 @@ try {
   const uitgelogd = await page.evaluate(async () => (await fetch("/api/auth/me", { credentials: "include" })).status);
   log("stap4-uitgelogd", uitgelogd === 401 || uitgelogd === 403 ? "OK" : "FOUT", `auth/me=${uitgelogd}`);
   await login(run);
-  await page.goto(`${BASE}/routes/${mijnRoute.id}`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(2500);
+  // De app heeft geen /routes/<id>-pagina (die geeft 404). Bewaarde routes
+  // leven op het "Bewaard"-tabblad; een deep-link met ?view=bewaard&route=<id>
+  // opent en licht de juiste routekaart op (zie route-panel.tsx r.4842-4861).
+  await page.goto(`${BASE}/routes?view=bewaard&route=${mijnRoute.id}`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(3000);
   const naamZichtbaar = await page.getByText("KETEN_FIETS_01", { exact: false }).first().isVisible().catch(() => false);
   const kaart2 = await page.locator(".leaflet-container").first().isVisible().catch(() => false);
   log("stap4-heropenen", naamZichtbaar && kaart2 ? "OK" : "FOUT", `naam=${naamZichtbaar} kaart=${kaart2}`);
@@ -153,7 +164,11 @@ try {
   await run.shot("stap5-gpx-context");
 
   // ── Stap 6: navigatie starten ─────────────────────────────────────────
-  const rijd = page.getByRole("button", { name: /Rijd|Navigeer|Start/ }).first();
+  // Scope op de kaart van juist déze route (id="route-<id>"); valt terug op
+  // de eerste knop als het element (nog) niet bestaat.
+  const kaartScope = page.locator(`#route-${mijnRoute.id}`);
+  const scopeAanwezig = await kaartScope.first().isVisible().catch(() => false);
+  const rijd = (scopeAanwezig ? kaartScope : page).getByRole("button", { name: /Rijd|Navigeer|Start/ }).first();
   if (await rijd.isVisible().catch(() => false)) await rijd.click();
   await page.waitForTimeout(2500);
   const startNav = page.getByText("Start navigatie", { exact: false }).first();

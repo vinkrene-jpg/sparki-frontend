@@ -1,25 +1,73 @@
 {
-  "sha": "ae836745",
+  "sha": "dd87d361",
   "viewport": "mobiel-375",
   "stappen": [
     {
       "stap": "versiecontrole",
       "status": "OK",
-      "detail": "web=ae836745 api=ae836745 apiStart=2026-08-01T17:51:58.618Z",
-      "t": "2026-08-01T18:26:27.447Z"
+      "detail": "web=dd87d361 api=dd87d361 apiStart=2026-08-01T19:24:10.931Z",
+      "t": "2026-08-01T20:00:16.045Z"
     },
     {
       "stap": "login",
       "status": "OK",
       "detail": "identiteit geverifieerd via /api/auth/me",
-      "t": "2026-08-01T18:26:46.036Z"
+      "t": "2026-08-01T20:00:25.591Z"
+    },
+    {
+      "stap": "stap1-genereren",
+      "status": "OK",
+      "detail": "route na 254s",
+      "t": "2026-08-01T20:04:46.582Z"
+    },
+    {
+      "stap": "stap2-beoordelen",
+      "status": "OK",
+      "detail": "kaart=true hoogteprofiel-tekst=false",
+      "t": "2026-08-01T20:04:46.763Z"
+    },
+    {
+      "stap": "stap3-opslaan",
+      "status": "OK",
+      "detail": "routeId=21 naam=\"KETEN_FIETS_01 mobiel-375 2026-08-01T20:04\"",
+      "t": "2026-08-01T20:04:53.168Z"
+    },
+    {
+      "stap": "stap4-uitgelogd",
+      "status": "OK",
+      "detail": "auth/me=401",
+      "t": "2026-08-01T20:04:56.258Z"
+    },
+    {
+      "stap": "login",
+      "status": "OK",
+      "detail": "identiteit geverifieerd via /api/auth/me",
+      "t": "2026-08-01T20:05:02.684Z"
+    },
+    {
+      "stap": "stap4-heropenen",
+      "status": "FOUT",
+      "detail": "naam=false kaart=false",
+      "t": "2026-08-01T20:05:07.574Z"
+    },
+    {
+      "stap": "stap5-gpx",
+      "status": "OK",
+      "detail": "status=200 bytes=138638",
+      "t": "2026-08-01T20:05:08.130Z"
+    },
+    {
+      "stap": "stap6-navigatie",
+      "status": "CONTROLEER",
+      "detail": "startknop=false kaart=false",
+      "t": "2026-08-01T20:05:10.671Z"
     },
     {
       "stap": "FATAAL",
       "status": "FOUT",
-      "detail": "Generatie gaf een fout (na 210120ms) — zie screenshot",
-      "t": "2026-08-01T18:30:23.356Z"
+      "detail": "__SKIP_FOUT__",
+      "t": "2026-08-01T20:05:10.710Z"
     }
   ],
-  "fataal": "Generatie gaf een fout (na 210120ms) — zie screenshot"
+  "fataal": "__SKIP_FOUT__"
 }
