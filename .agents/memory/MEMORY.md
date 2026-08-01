@@ -1,6 +1,6 @@
 - [Sparki monitoring & business-mode infra](sparki-monitoring.md) — system_business_mode singleton + admin_ops_log + /admin/ops; lib/db build vereist na schema-wijziging.
 - [Sparki Clerk auth wiring](sparki-clerk-auth.md) — cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc ([dev preview](sparki-dev-preview.md): bypass eist NODE_ENV!=production ÉN DEV_AUTH_BYPASS=true, fails closed).
-- [Sparki feature flags](sparki-feature-flags.md) — DB tables, precedence, composite-PK onConflict; one-shot /api/flags 403 tijdens Clerk-settling schakelt ALLES uit — retry ([race](sparki-flag-fetch-race.md)).
+- [Sparki feature flags](sparki-feature-flags.md) — DB tables, precedence; REGEL 01-08: géén per-account-overrides meer, flags globaal aan/uit (details in topic); one-shot /api/flags 403 tijdens Clerk-settling schakelt ALLES uit — retry ([race](sparki-flag-fetch-race.md)).
 - [Sparki testers](sparki-head-tester.md) — early access has-row flags; override = kill-switch ([QR](sparki-tester-qr.md): ?redirect_url=, nooit null-clobber, [overview](sparki-tester-overview.md); [invites](sparki-invitations.md): accept atomair in tx).
 - Vite traps: [font var()](vite-font-var-trap.md) altijd @fontsource, nooit Next-var(--font-…); zie ook [PORT/BASE_PATH build trap](vite-config-build-port-trap.md).
 - [Sparki Route Planner restoration](sparki-route-planner.md) — legacy restore: real GPX-only data, client FK ids ownership-checked ([Insights origin](sparki-insights-origin.md): Next.js-bron in `.migration-backup/` is content-SSOT).

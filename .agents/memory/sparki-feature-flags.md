@@ -64,3 +64,8 @@ return <LegacyPage />;
 ## Nieuwe flag-keys en e2e (01-08-2026)
 - Nieuwe FEATURE_KEYS in lib/feature-flags werken pas na `pnpm --filter @workspace/feature-flags run build` ÉN een api-server-herstart — de server resolvet flags uit zijn eigen geladen kopie; anders blijft de key onzichtbaar in /api/flags en faalt e2e stil.
 - E2e-flagactivatie per testidentiteit: seed feature_flags-rij + user_flag_overrides via psql (zie e2e/tests/routeplanner-mobiel-v2.mjs); override na afloop opruimen.
+
+## Bindende regel René (01-08-2026): geen per-account-verschillen
+- **Regel:** flags staan aan voor iedereen of uit voor iedereen. `user_flag_overrides` niet meer gebruiken; geen rol-/groep-/rollout-differentiatie tijdens de bouwfase. Verschil mag alleen bestaan tussen omgevingen (preview vs. productie).
+- **Why:** René kan onduidelijke verschillen tussen accounts (testaccount vs. eigen account) niet hebben — iedereen bouwt en test hetzelfde product.
+- **How to apply:** feature af + bewezen ⇒ direct `enabled_globally=true` (of key helemaal verwijderen zoals bij mobile_routeplanner_v2). E2e-tests die een flag nodig hebben zetten hem GLOBAAL en herstellen de oude waarde in finally — nooit een override per testidentiteit achterlaten. Op 01-08 zijn alle 11 dev-overrides verwijderd en rit_verhaal + media_uitleg_motion + media_uitleg_dieptekaart globaal aangezet; prod had 0 overrides.
