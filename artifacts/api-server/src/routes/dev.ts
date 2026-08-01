@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { isNull, and } from "drizzle-orm";
 import { isAdmin } from "../lib/flags";
+import { computeAge } from "../lib/age";
 import { resolvePersonality } from "../engines/observation";
 import { PREVIEW_PERSONAS } from "../lib/preview-athletes";
 
@@ -25,23 +26,7 @@ const VARIANT_LABELS: Record<string, string> = {
   sparki_pro: "Pro",
 };
 
-function computeAgeFrom(birthDate: string | null, birthYear: number | null): number | null {
-  if (birthDate) {
-    const d = new Date(`${birthDate}T00:00:00`);
-    if (!Number.isNaN(d.getTime())) {
-      const now = new Date();
-      let age = now.getFullYear() - d.getFullYear();
-      if (
-        now.getMonth() < d.getMonth() ||
-        (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())
-      )
-        age -= 1;
-      return age;
-    }
-  }
-  if (birthYear) return new Date().getFullYear() - birthYear;
-  return null;
-}
+// F-P0-01: één leeftijdsdefinitie — lib/age.computeAge, geen eigen kopie.
 
 // GET /api/dev/preview-athletes — the seeded preview gebruikers that actually
 // exist, in canonical order and grouped (Atleten / Abonnement / Rol &
@@ -98,7 +83,7 @@ router.get("/preview-athletes", async (req, res) => {
       if (isAdmin(r.clerkId)) parts.push("admin");
       if (r.isHeadTester) parts.push("hoofdtester");
       // Leeftijd (alleen tonen als bekend; jeugdregels hangen hieraan)
-      const age = computeAgeFrom(r.birthDate, r.birthYear);
+      const age = computeAge(r.birthDate, r.birthYear);
       if (age != null && r.activeRole === "athlete") parts.push(`${age} jr`);
       // Entitlement
       if (r.entitlementMode === "subscription") {

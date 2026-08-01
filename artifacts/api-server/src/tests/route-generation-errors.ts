@@ -83,14 +83,15 @@ async function main() {
     const { jobId } = (await start.json()) as { jobId: string };
     assert(typeof jobId === "string" && jobId.length > 0, "geen jobId");
 
-    let laatste: { done: boolean; status?: number; body?: { error?: string } } | null = null;
+    type PollUitslag = { done: boolean; status?: number; body?: { error?: string } };
+    let laatste: PollUitslag | null = null;
     const deadline = Date.now() + 30_000;
     while (Date.now() < deadline) {
       const poll = await fetch(`${baseUrl}/api/routes/generate-jobs/${jobId}`, {
         headers: head(USER_A),
       });
       assert(poll.status === 200, `poll hoort 200, was ${poll.status}`);
-      laatste = (await poll.json()) as typeof laatste;
+      laatste = (await poll.json()) as PollUitslag;
       if (laatste?.done) break;
       await new Promise((r) => setTimeout(r, 500));
     }
