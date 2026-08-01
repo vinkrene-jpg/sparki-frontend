@@ -43,6 +43,12 @@ De bibliotheek mag bij eerste opening niet leeg zijn. Vier bronnen tegelijk:
 
 De Strava-koppeling is daarmee geen bijzaak maar een dragend onderdeel van de routeplanner.
 
+**Routes van andere gebruikers zijn openbaar voor iedereen** — niet alleen voor vrienden, en niet per route in te stellen.
+
+**Begin en eind van een openbare route worden afgekapt**, zodat het huisadres van de maker niet zichtbaar is. Dat geldt voor iedereen, niet alleen voor jeugd — één regel is eenvoudiger dan een leeftijdscontrole.
+
+**Wie geen Strava koppelt en zelf nog niets heeft gereden**, ziet routes uit de buurt van anderen plus door Sparki samengestelde routes. Er wordt **niet** meteen om koppelen gevraagd: eerst zien waar het over gaat, dan pas wat koppelen oplevert.
+
 ---
 
 ## 4. De training stuurt de route
@@ -55,7 +61,7 @@ Dit is het onderscheid met elke andere routeplanner. Voor gebruikers met Complee
 | **Duurtraining** | mag een recreatieve route zijn, met leuke bezienswaardigheden onderweg |
 | **Herstel** | zeker geen heuvels |
 
-**Vaste regel, ongeacht training: geen woonwijken.** Dat is geen filter maar een eigenschap van elke Sparki-route.
+**Vaste regel, ongeacht training: geen woonwijken.** Dat is geen filter maar een eigenschap van elke Sparki-route — het geldt dus **ook bij een vrije rit zonder trainingstype**. De gebruiker hoeft er niets voor in te stellen.
 
 ---
 
@@ -119,6 +125,8 @@ Het tweede onderscheid: zien waar je vrienden fietsen, live én achteraf.
 - alleen **wederzijds geaccepteerde** vrienden
 - **standaard uit**, en aan te zetten **per vriend afzonderlijk** — je kunt dus zichtbaar zijn voor één vriend en voor niemand anders
 - **jeugdleden komen hier niet in voor.** De functie bestaat voor hen niet
+- **alleen tijdens een rit.** Daarna stopt het vanzelf — geen nalooptijd, geen schakelaar die aan blijft staan
+- **grofmazig, geen precieze positie.** Een vriend ziet globaal in welke hoek je rijdt, niet zo gedetailleerd dat hij naar je toe kan rijden. Dus een gebied, geen punt. Grof genoeg dat de route er ook niet uit af te leiden is door een tijdje te kijken hoe het gebied verschuift
 
 De overweging achter de per-vriend-instelling: live zichtbaar zijn ligt voor mannen en vrouwen verschillend, en niemand hoort ergens in te belanden door één vinkje dat hij ooit aanzette.
 
@@ -158,7 +166,8 @@ Voorstel, van meeste opbrengst naar minste:
 
 ## 12. Nog te beslissen
 
-1. wat de bibliotheek toont als iemand Strava niet koppelt en zelf nog niets heeft gereden
-2. of routes van andere gebruikers openbaar zijn of alleen van vrienden
-3. of "vrije rit" zonder trainingstype dezelfde route-eisen krijgt (geen woonwijken) — vermoedelijk ja
-4. hoe lang live zichtbaarheid aanblijft: alleen tijdens een rit, of ook daarna
+De vier punten uit de eerste versie zijn beantwoord en verwerkt in de hoofdstukken hierboven. Wat resteert is technisch, niet productmatig:
+
+1. hoe grof "grofmazig" precies is bij live zichtbaarheid — een gebied van welke omvang, en hoe vaak het ververst
+2. welke kaartbron de bezienswaardigheden levert, en welke soorten daaruit worden getoond
+3. hoe een geïmporteerde Strava-rit een bruikbare route wordt: automatisch omzetten, of pas bij gebruik
