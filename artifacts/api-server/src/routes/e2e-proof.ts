@@ -70,4 +70,55 @@ router.post("/proof-ticket", async (req, res) => {
   }
 });
 
+// Netwerk-diagnose vanuit de productieomgeving zelf: wat geven de
+// Overpass-mirrors terug aan DIT uitgaande IP? Zelfde token-poort als het
+// ticket-endpoint; antwoordt alleen statuscodes/tijden, nooit inhoud.
+router.post("/proof-net", async (req, res) => {
+  if (!process.env.E2E_PROOF_TOKEN || !tokenOk(req.header("x-e2e-proof-token"))) {
+    res.status(404).json({ error: "Niet gevonden" });
+    return;
+  }
+  const mirrors = [
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+  ];
+  const query = `[out:json][timeout:10];node["highway"="traffic_signals"](51.90,5.65,51.91,5.66);out;`;
+  const results = await Promise.all(
+    mirrors.map(async (endpoint) => {
+      const t0 = Date.now();
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 20_000);
+        let r: Response;
+        try {
+          r = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "User-Agent": "Sparki/1.0 (cycling training app)",
+              Accept: "application/json",
+            },
+            body: `data=${encodeURIComponent(query)}`,
+            signal: ctrl.signal,
+          });
+        } finally {
+          clearTimeout(timer);
+        }
+        const text = await r.text();
+        return {
+          endpoint,
+          status: r.status,
+          ms: Date.now() - t0,
+          bodyStart: text.slice(0, 120),
+        };
+      } catch (err) {
+        return { endpoint, error: String(err), ms: Date.now() - t0 };
+      }
+    }),
+  );
+  logger.info({ e2eProof: "netprobe", results }, "e2e-netwerkprobe uitgevoerd");
+  res.json({ results });
+});
+
 export default router;
