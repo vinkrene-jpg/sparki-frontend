@@ -68,6 +68,7 @@ import engagementRouter from "./engagement";
 import clubRouter from "./club";
 import workObjectsRouter from "./work-objects";
 import clubRaceLogisticsRouter from "./club-race-logistics";
+import clubRaceDayRouter, { raceGuestPublicRouter } from "./club-race-day";
 import rideStoryRouter from "./ride-story";
 import sprintsRouter from "./sprints";
 import climbsRouter from "./climbs";
@@ -220,6 +221,14 @@ router.use(
   killSwitchGuard("club_features"),
   clubRaceLogisticsRouter,
 );
+// BUILD_03: briefings, opdrachten, uitslag, evaluatie en gasten.
+router.use(
+  "/clubs/:clubId/races/:eventId",
+  killSwitchGuard("club_features"),
+  clubRaceDayRouter,
+);
+// Publieke gastweergave (zonder account) — token is de enige sleutel.
+router.use("/race-guest", killSwitchGuard("club_features"), raceGuestPublicRouter);
 router.use("/release", releaseRouter);
 router.use("/entitlements", entitlementsRouter);
 router.use("/billing", billingRouter);

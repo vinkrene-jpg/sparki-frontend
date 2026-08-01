@@ -560,6 +560,82 @@ export const clubConsentsTable = pgTable(
   (t) => [uniqueIndex("club_consents_unique").on(t.clubId, t.athleteClerkId, t.scope)],
 );
 
+// ── BUILD_03 Wedstrijddag-inhoud (besluitenpatch hoofdstuk D) ────────────────
+// Briefings per rol (renners/staf/iedereen), opdrachten per renner (iedereen
+// in de selectie ziet elkaars opdracht; wijziging op de dag ⇒ renner direct
+// bericht, het origineel wordt NIET bewaard), handmatige uitslag (ook door de
+// renner zelf; komt in de persoonlijke historie), ploegevaluatie (iedereen
+// schrijft mee, sluit een week na de wedstrijd) en gasten via e-mail/link
+// zonder account (vervalt na de wedstrijd, intrekbaar; historie toont dát er
+// een gast was).
+export const clubRaceBriefingsTable = pgTable("club_race_briefings", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+  audience: text("audience").notNull().default("iedereen"), // renners | staf | iedereen
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  createdByClerkId: text("created_by_clerk_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const clubRaceAssignmentsTable = pgTable(
+  "club_race_assignments",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+    riderClerkId: text("rider_clerk_id").notNull(),
+    body: text("body").notNull(), // origineel wordt bij wijziging NIET bewaard
+    updatedByClerkId: text("updated_by_clerk_id").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("club_race_assignments_unique").on(t.eventId, t.riderClerkId)],
+);
+
+export const clubRaceResultsTable = pgTable(
+  "club_race_results",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+    riderClerkId: text("rider_clerk_id").notNull(),
+    position: integer("position"), // handmatig; eerlijk leeg als onbekend
+    note: text("note"),
+    enteredByClerkId: text("entered_by_clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("club_race_results_unique").on(t.eventId, t.riderClerkId)],
+);
+
+export const clubRaceEvaluationsTable = pgTable("club_race_evaluations", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+  authorClerkId: text("author_clerk_id").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const clubRaceGuestsTable = pgTable("club_race_guests", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  token: text("token").notNull().unique(),
+  invitedByClerkId: text("invited_by_clerk_id").notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ── BUILD_03 Dagschema & logistiek (besluitenpatch hoofdstuk D) ──────────────
 // Dagschema is optioneel, maar als het er is: PER PERSOON, met verplichte
 // vertrektijd en verzamelpunt; terugkeertijd optioneel. Een staflid ziet ook

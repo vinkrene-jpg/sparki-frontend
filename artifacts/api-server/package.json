@@ -128,6 +128,7 @@
     "test:today-matrix": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-matrix",
     "test:mental": "node ./scripts/run-test.mjs mental",
     "test:parent-age-transition": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs parent-age-transition",
+    "test:club-race-day": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-race-day",
     "test:club-race-logistics": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-race-logistics",
     "test:club-noodinfo": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-noodinfo",
     "test:club-race-structure": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-race-structure",

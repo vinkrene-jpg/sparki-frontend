@@ -103,6 +103,10 @@ export const workObjectTasksTable = pgTable("work_object_tasks", {
   assigneeClerkId: text("assignee_clerk_id").notNull(),
   createdByClerkId: text("created_by_clerk_id").notNull(),
   doneAt: timestamp("done_at", { withTimezone: true }),
+  // BUILD_03: weigeren mag, maar alleen met reden; de taak BLIJFT open en de
+  // ploegleider krijgt bericht. Weigeren is dus een signaal, geen afsluiting.
+  declinedAt: timestamp("declined_at", { withTimezone: true }),
+  declineReason: text("decline_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

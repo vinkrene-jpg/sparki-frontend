@@ -626,6 +626,74 @@ router.post("/:objectId/tasks", requireAuth, async (req, res) => {
   }
 });
 
+// Weigeren: mag, maar alleen MET reden; de taak blijft open en de ploegleider
+// krijgt bericht (BUILD_03, besluitenpatch hoofdstuk D).
+router.post("/:objectId/tasks/:taskId/decline", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const objectId = intParam(req.params["objectId"]);
+    const taskId = intParam(req.params["taskId"]);
+    const obj = objectId != null ? await loadObject(ctx.club.id, objectId) : null;
+    if (!obj || taskId == null) {
+      res.status(404).json({ error: "Plan niet gevonden." });
+      return;
+    }
+    const [task] = await db
+      .select()
+      .from(workObjectTasksTable)
+      .where(and(eq(workObjectTasksTable.id, taskId), eq(workObjectTasksTable.objectId, obj.id)));
+    if (!task) {
+      res.status(404).json({ error: "Taak niet gevonden." });
+      return;
+    }
+    if (task.assigneeClerkId !== ctx.membership.clerkId) {
+      res.status(403).json({ error: "Alleen degene die de taak heeft kan hem weigeren." });
+      return;
+    }
+    if (task.doneAt != null) {
+      res.status(409).json({ error: "Deze taak is al afgevinkt." });
+      return;
+    }
+    const reason = str(req.body?.reason);
+    if (!reason) {
+      res.status(400).json({ error: "Weigeren kan alleen met een reden." });
+      return;
+    }
+    const [row] = await db
+      .update(workObjectTasksTable)
+      .set({ declinedAt: new Date(), declineReason: reason })
+      .where(eq(workObjectTasksTable.id, task.id))
+      .returning();
+    await history(obj.id, ctx.membership.clerkId, "taak_geweigerd", { titel: task.title, reden: reason });
+    const leiders = await db
+      .select({ clerkId: clubMembersTable.clerkId })
+      .from(clubMembersTable)
+      .where(
+        and(
+          eq(clubMembersTable.clubId, ctx.club.id),
+          isNull(clubMembersTable.endedAt),
+          eq(clubMembersTable.role, "ploegleider"),
+        ),
+      );
+    for (const l of leiders) {
+      void createNotification({
+        clerkId: l.clerkId,
+        type: "club_update",
+        title: "Taak geweigerd",
+        body: `"${task.title}" in "${obj.title}" is geweigerd: ${reason}. De taak blijft open.`,
+        actionUrl: "/club",
+        source: "work-objects",
+        dedupeKey: `task-declined:${task.id}`,
+      });
+    }
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "work object task decline failed");
+    res.status(500).json({ error: "Taak weigeren is niet gelukt." });
+  }
+});
+
 // Afvinken: verplicht door degene die de taak heeft; ploegleider krijgt bericht.
 router.post("/:objectId/tasks/:taskId/done", requireAuth, async (req, res) => {
   try {
