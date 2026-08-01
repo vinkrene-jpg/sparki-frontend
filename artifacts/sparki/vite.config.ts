@@ -121,6 +121,12 @@ export default defineConfig(({ command }) => {
     base: basePath,
     define: {
       __SPARKI_BUILD_SHA__: JSON.stringify(buildSha),
+      // Acceptatiemodus (TESTDEPLOY_SYNC_01): alleen true wanneer de build in de
+      // toetsomgeving met SPARKI_ACCEPT_MODE=true is gemaakt; de publicatiebuild
+      // heeft die variabele niet en bakt dus false in.
+      __SPARKI_ACCEPT_MODE__: JSON.stringify(
+        process.env.SPARKI_ACCEPT_MODE === "true",
+      ),
     },
     plugins: [
       react(),

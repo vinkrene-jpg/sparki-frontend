@@ -1,8 +1,13 @@
 // Development Preview Mode flag.
-// True only in the Vite dev server (`import.meta.env.DEV`); always false in
-// production builds. Used to bypass auth/onboarding gates so the v0 frontend is
-// directly visible without signing in. Never gate production behavior on this.
-export const DEV_PREVIEW = import.meta.env.DEV;
+// True in the Vite dev server (`import.meta.env.DEV`) én in een acceptatiebuild
+// (TESTDEPLOY_SYNC_01: bevroren productiebuild in de toetsomgeving, ingebakken
+// via SPARKI_ACCEPT_MODE bij het bouwen). Altijd false in de echte
+// productiepublicatie. De server blijft fail-closed: de `x-dev-clerk-id`-header
+// wordt alleen gehonoreerd met NODE_ENV!=production én DEV_AUTH_BYPASS=true,
+// dus deze client-vlag kan productie nooit beïnvloeden.
+export const DEV_PREVIEW =
+  import.meta.env.DEV ||
+  (typeof __SPARKI_ACCEPT_MODE__ === "boolean" && __SPARKI_ACCEPT_MODE__);
 
 // Dev-only selected preview athlete. Persisted so a full reload (used when
 // switching athletes) keeps the choice. The clerkId is sent as the
