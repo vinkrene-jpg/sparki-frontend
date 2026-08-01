@@ -17,6 +17,7 @@ export const FEATURE_KEYS = [
   "stripe_checkout",
   "stripe_webhooks",
   "stripe_portal",
+  "media_uitleg_motion",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -55,6 +56,8 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "Stripe-webhookendpoint (TESTMODUS) — idempotente eventverwerking volgens het fase-1-webhookcontract. Default uit",
   stripe_portal:
     "Stripe Customer Portal (TESTMODUS) — facturen/betaalmethoden/annuleren voor allowlist-accounts. Default uit",
+  media_uitleg_motion:
+    "MEDIA_UITLEG_01 F1 — gedeelde motionbasis: instelling 'Verminder beweging' (server-side bewaard) + centrale animatie-uitschakelaar en testpagina. Default uit",
 };
 
 export * from "./sports";

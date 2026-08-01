@@ -296,6 +296,35 @@ optgroup {
   }
 }
 
+/* ------------------------------------------------------------------------
+   MEDIA_UITLEG_01 F1 — centrale motionlaag.
+   Eén bron voor duur en easing (architectuur F-2/F-3); waarden spiegelen
+   src/lib/motion.ts en zijn per component NIET aanpasbaar. */
+:root {
+  --motion-duur-kort: 120ms;    /* drukken */
+  --motion-duur-normaal: 240ms; /* verschijnen · openen */
+  --motion-duur-traag: 400ms;   /* alleen waar een overgang anders onbegrijpelijk wordt */
+  --motion-easing-in: cubic-bezier(0, 0, 0.2, 1);
+  --motion-easing-uit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Centrale uitschakelaar (T-2/T-3). Wordt gezet door de motionlaag
+   (data-motion="off" op <html>) zodra de systeeminstelling OF de
+   Sparki-instelling "Verminder beweging" aanstaat. Iedere animatie en
+   transitie springt dan direct naar de eindtoestand: geen snellere animatie,
+   geen andere layout, geen functieverlies. Componenten kunnen dit niet per
+   element overschrijven (!important + hoogste specificiteit op attribuut). */
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* Kaartvermelding (licentie-plicht OpenStreetMap/CARTO) — zo subtiel mogelijk:
    klein, halfdoorzichtig, donker, geen witte balk in het donkere ontwerp. */
 .leaflet-control-attribution {

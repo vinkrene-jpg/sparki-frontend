@@ -9,6 +9,7 @@
     "build:deploy": "DEPLOY_BUILD=true node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
+    "test:ui-preferences": "node ./scripts/run-test.mjs ui-preferences",
     "test:smoke": "node ./scripts/run-test.mjs smoke",
     "test:admin-smoke": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs admin-smoke",
     "test:route-library-gates": "node ./scripts/run-test.mjs route-library-gates",

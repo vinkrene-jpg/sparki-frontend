@@ -75,6 +75,8 @@ import { FeatureFlagProvider, useFeatureFlags } from "@/contexts/FeatureFlagCont
 import { GoGateSwitch } from "@/components/sparki/go-gate";
 import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import { DevPreview } from "@/components/sparki/dev-preview";
+import { MotionPreferenceSync } from "@/hooks/use-motion-preference";
+import DevMotionPage from "@/pages/dev-motion";
 import { UpdateBanner } from "@/components/sparki/update-banner";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { STALE } from "@/lib/query-keys";
@@ -652,6 +654,7 @@ function AppRouter() {
             <SoundProvider>
             <ErrorBoundary>
               <VersionBlockScreen />
+              <MotionPreferenceSync />
               <UpdateBanner />
               <ScrollToTop />
               {DEV_PREVIEW ? (
@@ -718,6 +721,11 @@ function AppRouter() {
                 </Route>
                 <Route path="/geluid">
                   <ProtectedPage component={GeluidPage} />
+                </Route>
+                {/* MEDIA_UITLEG_01 F1 — testpagina, alleen voor toetsing;
+                    nergens gelinkt en achter de flag media_uitleg_motion. */}
+                <Route path="/_dev/motion">
+                  <ProtectedPage component={DevMotionPage} />
                 </Route>
                 <Route path="/lichaam">
                   <ProtectedPage component={LichaamPage} />
