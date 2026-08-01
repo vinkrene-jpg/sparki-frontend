@@ -105,7 +105,11 @@ Geen van deze punten wordt hier beslist.
 3. **De pilotset oefeningen** (circa zes) is als idee vastgelegd maar nog niet als inhoudsopdracht.
 4. **Merkafhankelijkheid.** Kleur, typografie, iconografie en de vormtaal van de diepte komen uit `BRAND_IDENTITY_01`, dat nog wacht op het definitieve beeldmerk. De componenten zijn beschreven in gedrag en zijn daardoor niet geblokkeerd; de definitieve vormgeving wel.
 5. **Toestemmingsvraag bij mobiele data.** Het mechanisme ligt vast (geen download zonder toestemming); waar die toestemming wordt gevraagd en of hij per keer of per apparaat geldt, is nog open.
-6. **Uitleg en Academy als omgeving.** Structuur is beschreven; de plaats in de hoofdnavigatie is nog niet bepaald — en de hoofdnavigatie kent maximaal vijf items die voor alle rollen gelijk zijn (MUX-14).
+~~6. Uitleg en Academy als omgeving.~~ **Beslist door René op 1 augustus 2026** (zie besluitregister, tijdelijk besluit MUX-B5): Uitleg en Academy wordt **geen** zesde hoofdnavigatie-item — de vijf vaste hoofditems blijven intact (MUX-14). De omgeving krijgt zijn definitieve plaats onder **Hulp & ondersteuning → Uitleg en Academy**, met daarbinnen twee delen:
+   - **Sparki gebruiken** (gratis): productuitleg, onboarding, routeplanner, GPX, navigatie, training, analyses, instellingen, abonnementen, veiligheid, toegankelijkheid.
+   - **Beter fietsen en trainen** (Sparki Compleet): FTP, zones, herstel, intervaltraining, klimmen, dalen, voeding, wedstrijdvoorbereiding, kracht, mobiliteit.
+
+   Er komt geen nieuwe navigatiearchitectuur; de toegangsgrens gratis/Compleet komt uitsluitend uit de centrale entitlementlaag, nooit uit de weergavelaag zelf.
 
 ---
 

@@ -282,3 +282,24 @@ afspraak van 01-08-2026 krijgen deze besluiten pas een definitief
 | MUX-B2 | Offline betekent in v1 uitsluitend dat een gestarte navigatie doorloopt. Geen offline schrijfacties, geen wachtrij, geen lokale bevestiging zonder server. Uitgebreidere offlinelaag = afzonderlijk toekomstig pakket. |
 | MUX-B3 | Geen rolgestuurd scherm bouwen voordat de rolwaarde server-side bestaat. Vooruit ontwerpen mag wel. |
 | MUX-B4 | `MOBILE_UX_STANDARD_01` is bindend voor alle mobiele schermen. Afwijken alleen met expliciete productgoedkeuring van René, vastgelegd met vermelding van de MUX-code. |
+
+---
+
+## Tijdelijk besluit MUX-B5 — Plaats van Uitleg en Academy (01-08-2026, bewust ONGENUMMERD)
+
+Conform dezelfde afspraak als MUX-B1 t/m B4: pas een definitief
+`SPARKI-BESLUIT-2026-nnn`-nummer nadat de reeks is opgeschoond.
+
+- **Besluit (René):** Uitleg en Academy wordt **geen** extra (zesde)
+  hoofdnavigatie-item; de vijf vaste hoofditems blijven intact (MUX-14).
+  Definitieve plaats: **Hulp & ondersteuning → Uitleg en Academy**, daarbinnen:
+  1. **Sparki gebruiken** — gratis: productuitleg, onboarding, routeplanner,
+     GPX, navigatie, training, analyses, instellingen, abonnementen,
+     veiligheid, toegankelijkheid.
+  2. **Beter fietsen en trainen** — Sparki Compleet: FTP, zones, herstel,
+     intervaltraining, klimmen, dalen, voeding, wedstrijdvoorbereiding,
+     kracht, mobiliteit.
+- **Harde regels:** geen nieuwe navigatiearchitectuur; de grens gratis/Compleet
+  komt uitsluitend uit de centrale entitlementlaag.
+- **Doorwerking:** `docs/product/SPARKI_MEDIA_UITLEG_PRODUCTBESLUIT.md`
+  (open afhankelijkheid 6 vervallen).
