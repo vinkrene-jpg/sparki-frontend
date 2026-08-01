@@ -782,7 +782,7 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
       </div>
       <UitlegRegel k="slaap" />
       {reeks.length < 2 ? (
-        <MissingInputNotice compact showOrb={false}
+        <MissingInputNotice compact showOrb={false} tone="light"
           title="Nog geen slaapdata"
           description="Koppel een platform dat slaap registreert — direct (zoals Garmin) of indirect (zoals Google Health) — of vul je slaap in bij de dagelijkse check-in."
           targets={["checkin"]}
@@ -1131,7 +1131,7 @@ function BelastingTab({
             </p>
           </>
         ) : (
-          <MissingInputNotice compact showOrb={false}
+          <MissingInputNotice compact showOrb={false} tone="light"
             title="Nog geen readiness-trend"
             description="Log je dagelijkse check-in om je readiness te volgen."
             targets={["checkin"]}
@@ -1173,7 +1173,7 @@ function BelastingTab({
             )}
           </>
         ) : (
-          <MissingInputNotice compact showOrb={false}
+          <MissingInputNotice compact showOrb={false} tone="light"
             title="Nog geen HRV-data"
             description="Voer je HRV in bij de dagelijkse check-in."
             targets={["checkin"]}
@@ -1447,7 +1447,7 @@ function ProgressieTab({
         {ftp.isLoading ? (
           <Skel className="h-24 w-full" />
         ) : weergave == null || weergave.getoond == null ? (
-          <MissingInputNotice compact showOrb={false}
+          <MissingInputNotice compact showOrb={false} tone="light"
             title="Nog geen FTP-tests"
             description="Stel je FTP in of log een test om je vermogensontwikkeling te volgen."
             targets={["ftp"]}
@@ -1719,7 +1719,7 @@ function SessiesTab({
   }
   if (lijst.length === 0) {
     return (
-      <MissingInputNotice compact showOrb={false}
+      <MissingInputNotice compact showOrb={false} tone="light"
         title="Nog geen sessies gelogd"
         description="Log een training om je sessie-overzicht op te bouwen."
         actions={[{ label: "Ga naar Trainen", onClick: () => navigate("/train") }]}

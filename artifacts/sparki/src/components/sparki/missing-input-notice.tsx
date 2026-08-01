@@ -39,6 +39,9 @@ interface MissingInputNoticeProps {
   primary?: ManualAction;
   /** Slim inline variant for small empty-states. */
   compact?: boolean;
+  /** Kleurtoon: "dark" (standaard, glaskaart op foto) of "light" voor de witte
+   *  datapagina's zoals Analyse. */
+  tone?: "dark" | "light";
   /** Show the Sparki orb (full variant only). Default true. */
   showOrb?: boolean;
   icon?: ReactNode;
@@ -49,19 +52,27 @@ function SecondaryButton({
   onClick,
   loading,
   disabled,
-}: ManualAction) {
+  tone = "dark",
+}: ManualAction & { tone?: "dark" | "light" }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 font-sans text-[13px] font-medium text-white/80 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/90 disabled:opacity-40"
+      className={
+        tone === "light"
+          ? "flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-sans text-[13px] font-medium text-slate-700 transition-colors hover:border-cyan-500/40 hover:text-cyan-700 disabled:opacity-40"
+          : "flex items-center justify-between gap-2 rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 font-sans text-[13px] font-medium text-white/80 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/90 disabled:opacity-40"
+      }
     >
       <span>{label}</span>
       {loading ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
-        <ChevronRight className="h-3.5 w-3.5 text-white/30" strokeWidth={2} />
+        <ChevronRight
+          className={tone === "light" ? "h-3.5 w-3.5 text-slate-400" : "h-3.5 w-3.5 text-white/30"}
+          strokeWidth={2}
+        />
       )}
     </button>
   );
@@ -94,6 +105,7 @@ export function MissingInputNotice({
   compact = false,
   showOrb = true,
   icon,
+  tone = "dark",
 }: MissingInputNoticeProps) {
   const startFix = useStartFix();
   const missing = missingTargets(targets, profile);
@@ -106,14 +118,20 @@ export function MissingInputNotice({
 
   if (compact) {
     return (
-      <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] px-4 py-3.5 backdrop-blur-md">
-        <p className="font-sans text-[13px] font-light text-white/80">{title}</p>
-        <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+      <div
+        className={
+          tone === "light"
+            ? "rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5"
+            : "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] px-4 py-3.5 backdrop-blur-md"
+        }
+      >
+        <p className={tone === "light" ? "font-sans text-[13px] font-medium text-slate-800" : "font-sans text-[13px] font-light text-white/80"}>{title}</p>
+        <p className={tone === "light" ? "mt-1 text-[12px] leading-relaxed text-slate-500" : "mt-1 text-[12px] leading-relaxed text-white/45"}>
           {description}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {allSecondary.map((b, i) => (
-            <SecondaryButton key={i} {...b} />
+            <SecondaryButton key={i} {...b} tone={tone} />
           ))}
           {primary && <PrimaryButton {...primary} />}
         </div>
@@ -122,20 +140,26 @@ export function MissingInputNotice({
   }
 
   return (
-    <div className="flex flex-col items-center gap-5 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-6 py-10 text-center backdrop-blur-md">
+    <div
+      className={
+        tone === "light"
+          ? "flex flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-10 text-center"
+          : "flex flex-col items-center gap-5 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-6 py-10 text-center backdrop-blur-md"
+      }
+    >
       {icon ?? (showOrb && (
         <SparkiCore size={40} accent={ACCENT} readiness={0.85} variant="orb" />
       ))}
       <div>
-        <p className="font-sans text-[15px] font-light text-white/85">{title}</p>
-        <p className="mt-1.5 max-w-[28rem] text-[13px] leading-relaxed text-white/45">
+        <p className={tone === "light" ? "font-sans text-[15px] font-medium text-slate-800" : "font-sans text-[15px] font-light text-white/85"}>{title}</p>
+        <p className={tone === "light" ? "mt-1.5 max-w-[28rem] text-[13px] leading-relaxed text-slate-500" : "mt-1.5 max-w-[28rem] text-[13px] leading-relaxed text-white/45"}>
           {description}
         </p>
       </div>
       {allSecondary.length > 0 && (
         <div className="flex w-full max-w-xs flex-col gap-2">
           {allSecondary.map((b, i) => (
-            <SecondaryButton key={i} {...b} />
+            <SecondaryButton key={i} {...b} tone={tone} />
           ))}
         </div>
       )}
