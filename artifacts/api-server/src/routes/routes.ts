@@ -2200,7 +2200,12 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
       geometry.push([la, lo]);
     }
     const budgeted = await withPreviewBudget(getRouteRemarks(geometry), req.log);
-    const remarks = budgeted === PREVIEW_PENDING ? null : budgeted;
+    // footOnly-meldingen zijn puur meet-intern voor voetprofielen; in de
+    // opmerkingen-weergave (fietsgerichte copy) tonen we ze niet.
+    const remarks =
+      budgeted === PREVIEW_PENDING
+        ? null
+        : (budgeted?.filter((r) => r.footOnly !== true) ?? budgeted);
     if (remarks == null) {
       res.status(502).json({
         error:
@@ -2401,7 +2406,9 @@ router.get("/:id/remarks", requireAuth, async (req, res) => {
     // klant). De klant toont KLAAR/NAVIGEER uitsluitend bij verified_clear.
     const verification = hard ? "hard_blocked" : "verified_clear";
     res.json({
-      remarks,
+      // footOnly-meldingen zijn meet-intern voor voetprofielen; de
+      // opmerkingenlijst (fietsgerichte copy) toont ze niet.
+      remarks: remarks.filter((r) => r.footOnly !== true),
       dataRemarks,
       blockage,
       verification,
@@ -4166,16 +4173,21 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         });
         return true;
       }
-      if (
-        obs != null &&
-        (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0)
-      ) {
+      // Voetprofielen hebben eigen blokkaderegels: een trap of fietsverbod is
+      // te voet géén blokkade; access=no/private en op-slot-poorten wél —
+      // exact dezelfde semantiek als de lusgeneratiepoort (loop-quality).
+      const isFootProfile = profile.startsWith("foot-");
+      const hardBlocked = isFootProfile
+        ? obs.forbiddenFoot > 0 || obs.blockedGatesFoot > 0
+        : obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0;
+      if (hardBlocked) {
         console.log(
-          `[generate.${mode}] harde afkeur handmatige route: forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates}`,
+          `[generate.${mode}] harde afkeur handmatige route (${profile}): forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates} forbiddenFoot=${obs.forbiddenFoot} blockedGatesFoot=${obs.blockedGatesFoot}`,
         );
         res.status(422).json({
-          error:
-            "Deze route loopt over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen.",
+          error: isFootProfile
+            ? "Deze route loopt over een harde blokkade voor voetgangers (privéterrein of een afgesloten poort) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen."
+            : "Deze route loopt over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen.",
           code: "NO_SUITABLE_ROUTE",
           blockage: obs,
         });

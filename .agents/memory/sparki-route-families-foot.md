@@ -28,6 +28,13 @@ req.body gegokt. Imports/oude routes = eerlijk null. Bibliotheekkopieën = "cycl
 gebakken via esbuild `define` in build.mjs (git ontbreekt in het deploy-image);
 runtime-fallback is letterlijk "onbekend".
 
+**footOnly-meting (review-fix 01-08):** classifyRemarkTags onderdrukt
+access=no/private en poorten bij fietsuitzondering — die zouden anders uit de
+voetmeting verdwijnen. Oplossing: `footOnly: true`-remarks (tellen alleen in
+forbiddenFoot/blockedGatesFoot, gefilterd uit fiets-weergaven en uit de
+parallel-fietspad-correctie). Ook de PTP/waypoint-poort (rejectIfBlocked in
+routes.ts) moet profielbewust zijn, niet alleen de lusgeneratie.
+
 **E2e-valkuil:** Overpass-mirrors zijn soms tijdelijk onbereikbaar ⇒ eerlijke
 UnverifiableRouteError; generatietests moeten die uitkomst herkennen en één keer
 opnieuw proberen. Desktop-sportkeuze staat óók in stap 2 (eerst "Verder" klikken).

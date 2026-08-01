@@ -78,8 +78,13 @@ scenario("poort naar privéterrein = afgesloten, fiets-uitzondering wint", () =>
   const priv = classifyRemarkTags({ barrier: "gate", access: "private" });
   assert(priv && priv.label.startsWith("Afgesloten poort"), `label: ${priv?.label}`);
   assert(priv!.evidence.includes("access=private"), "evidence mist access=private");
+  // Fiets-uitzondering wint voor fietsers, maar te voet blijft privé dicht:
+  // dat komt terug als footOnly-meting (telt nooit in de fietspoort en wordt
+  // in fiets-weergaven weggefilterd), nooit als fietsmelding.
   const exc = classifyRemarkTags({ barrier: "gate", access: "private", bicycle: "yes" });
-  assert(exc === null, `fiets-uitzondering hoort niet gemeld, kreeg: ${exc?.label}`);
+  assert(exc != null && exc.footOnly === true, `fiets-uitzondering hoort footOnly te zijn, kreeg: ${exc?.label}`);
+  const excFoot = classifyRemarkTags({ barrier: "gate", access: "private", bicycle: "yes", foot: "yes" });
+  assert(excFoot === null, `voet- én fietsuitzondering hoort niet gemeld, kreeg: ${excFoot?.label}`);
 });
 
 scenario("poort zonder doorgang-tags wordt NIET gemeld (besluit René 30-07)", () => {
@@ -107,20 +112,24 @@ scenario("access=private zónder fietsuitzondering is HARD (geen indicatie)", ()
   assert(c!.label === "Privéterrein", `label: ${c!.label}`);
 });
 
-scenario("access=private mét bicycle=designated/permissive geeft GEEN opmerking", () => {
+scenario("access=private mét bicycle=designated/permissive geeft GEEN fietsopmerking (wel footOnly)", () => {
   for (const bicycle of ["designated", "permissive"] as const) {
     const c = classifyRemarkTags({ highway: "service", access: "private", bicycle });
-    assert(c === null, `bicycle=${bicycle} is een expliciete fietsuitzondering`);
+    // Voor fietsers geen melding; te voet blijft privé zonder voetuitzondering
+    // dicht ⇒ footOnly-meting (nooit zichtbaar in fiets-weergaven).
+    assert(c != null && c.footOnly === true, `bicycle=${bicycle}: verwacht footOnly, kreeg ${c?.label ?? "null"}`);
+    const withFoot = classifyRemarkTags({ highway: "service", access: "private", bicycle, foot: "yes" });
+    assert(withFoot === null, `bicycle=${bicycle}+foot=yes hoort géén melding te zijn`);
   }
 });
 
-scenario("access=private mét bicycle=yes geeft GEEN opmerking", () => {
+scenario("access=private mét bicycle=yes geeft GEEN fietsopmerking (wel footOnly)", () => {
   const c = classifyRemarkTags({
     highway: "service",
     access: "private",
     bicycle: "yes",
   });
-  assert(c === null, "fietsers expliciet toegestaan ⇒ geen waarschuwing");
+  assert(c != null && c.footOnly === true, "fietsers expliciet toegestaan ⇒ hooguit footOnly-meting");
 });
 
 scenario("natuurgebied is altijd een indicatie (geknipte grens)", () => {

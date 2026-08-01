@@ -267,8 +267,19 @@ async function run() {
     assert.ok(priv && priv.kind === "beperkte_toegang" && !priv.uncertain,
       "access=private zonder fietsuitzondering moet een zeker (niet-uncertain) blok zijn");
     const privBikeOk = classifyRemarkTags({ highway: "track", access: "private", bicycle: "yes" });
-    assert.ok(privBikeOk == null || privBikeOk.kind !== "beperkte_toegang",
-      "access=private mét bicycle=yes mag geen blok zijn");
+    // Fiets: geen blok (expliciete fietsuitzondering). Te voet blijft dit wél
+    // hard dicht — dat mag alleen als footOnly-meting terugkomen, nooit als
+    // fietsmelding.
+    assert.ok(privBikeOk == null || privBikeOk.footOnly === true,
+      "access=private mét bicycle=yes mag geen fietsblok zijn (hooguit footOnly)");
+    assert.ok(privBikeOk != null && privBikeOk.footOnly === true,
+      "access=private mét bicycle=yes zonder voetuitzondering moet te voet als footOnly-blok meetellen");
+    const privFootOk = classifyRemarkTags({ highway: "track", access: "private", bicycle: "yes", foot: "yes" });
+    assert.ok(privFootOk == null,
+      "access=private met fiets- én voetuitzondering is geen obstakel");
+    const bikeGateLocked = classifyRemarkTags({ barrier: "gate", bicycle: "yes", locked: "yes" });
+    assert.ok(bikeGateLocked != null && bikeGateLocked.footOnly === true && bikeGateLocked.kind === "poort",
+      "doorfietsbare poort met locked=yes moet te voet als footOnly-poortblok meetellen");
   }
 
   // 10) Kandidaatselectie: één geblokkeerde en één schone kandidaat ⇒ de
