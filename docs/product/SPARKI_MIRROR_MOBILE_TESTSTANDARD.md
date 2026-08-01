@@ -169,7 +169,7 @@ Naast de dimensies loopt Mirror de antipatronen uit `SPARKI_MOBILE_PATTERNS.md` 
 
 ## 7. Afkeurgronden
 
-**MTS-38 — Directe afkeur.** Onafhankelijk van de rest van de uitkomst:
+**MTS-38 — Directe afkeur.** Onafhankelijk van de rest van de uitkomst. Voor pakketten met mediacomponenten geldt MTS-69 aanvullend:
 
 1. Een noodhandeling die zonder verbinding stil faalt (MUX-96h).
 2. Een actie die offline als geslaagd wordt getoond (MUX-55).
@@ -234,10 +234,46 @@ Naast de dimensies loopt Mirror de antipatronen uit `SPARKI_MOBILE_PATTERNS.md` 
 
 ---
 
-## 10. Consistentiecontrole
+## 10. Media, beweging en uitleg
+
+Toegevoegd door `MOBILE_MEDIA_COMPONENTS_01`. Van toepassing op elk pakket dat CMP-40 t/m CMP-44 gebruikt.
+
+**MTS-50 — Animatie aan en uit.** Beide standen doorlopen.
+**MTS-51 — Verminder beweging.** Systeeminstelling aan: geen kanteling, geen drukanimatie, geen overgangsafhankelijkheid (PAT-33).
+**MTS-52 — Geen functieverlies zonder animatie.** Elke flow uit de rolflows is met animatie uit identiek uitvoerbaar — geen extra tik, geen omweg, geen verdwenen knop (PAT-39).
+**MTS-53 — Lage bandbreedte.** Posterbeeld direct, lage-resolutievariant beschikbaar, scherm volledig bruikbaar zonder dat de video ooit laadt.
+**MTS-54 — Mobiele data zonder toestemming.** Geen enkele mediadownload zonder expliciete toestemming.
+**MTS-55 — Uitlegflow.** Vraag vooraf, ondertiteling, zonder geluid begrijpelijk, pauzeren en overslaan mogelijk, eindigt met een uitvoerbare eerste actie.
+**MTS-56 — Bekeken of overgeslagen.** De keuze wordt onthouden en gerespecteerd; de vraag komt niet terug; de uitleg blijft vindbaar via Help.
+**MTS-57 — Ontbrekende media.** Vier verplichte elementen, tekstvariant als vervolgstap, onderliggend scherm blijft werken.
+**MTS-58 — Ondertiteling, tekstalternatief en schermlezer.** De tekstvariant is gelijkwaardig, geen samenvatting; elke spelerknop heeft een leesbare naam.
+**MTS-59 — Geen media tijdens een actieve taak.** Navigatie, training, wedstrijddagmodus, onboarding, formulier en acute flows: geen start, en een lopende video pauzeert.
+**MTS-60 — Leeftijdsgeschikte inhoud.** Een minderjarige krijgt geen gewichtsdoel, geen 1RM-doel en geen zwaar belastingvoorschrift; leeftijdsclassificatie en stopregel bij pijn zijn zichtbaar.
+**MTS-61 — Uitleg toont de echte interface.** Geen nagebouwd of verouderd scherm.
+**MTS-62 — Oefenkaart compleet.** Begin- en eindpositie, aandachtspunten, veelgemaakte fouten, stopregel — ook in de tekstvariant.
+**MTS-63 — Coachmelding onderbreekt niet.** Verschijnt alleen op een rustmoment, bevat reden, gegevens en onzekerheid, en blokkeert de primaire actie niet.
+**MTS-64 — Acute melding.** Niet permanent onderdrukbaar; bij een minderjarige niet negeerbaar; alleen te sluiten nadat de inhoud is gelezen; de verantwoordelijke blijft geïnformeerd.
+**MTS-65 — Afgebroken download.** Posterbeeld en tekstvariant blijven; opnieuw proberen is een zichtbare keuze; geen eindeloze laadanimatie.
+**MTS-66 — Speler blokkeert niets.** Een mediafout laat het onderliggende scherm volledig bruikbaar.
+**MTS-67 — Rechten en versie.** Van elk getoond mediabestand zijn bron, maker, licentie, leeftijdsgeschiktheid, versie en publicatiestatus aantoonbaar via `KENNIS_01`.
+**MTS-68 — Verbruik en zwaarte.** Batterij- en dataverbruik blijven redelijk; geen zware 3D-engine.
+
+**MTS-69 — Directe afkeur, media.** Naast MTS-38:
+
+1. Autoplay tijdens navigatie of wedstrijddag.
+2. Een functie die zonder animatie onbruikbaar is.
+3. Media zonder aantoonbare rechten.
+4. Coachadvies uit mock- of verzonnen persoonlijke gegevens.
+5. Een acute melding die permanent onderdrukbaar is.
+6. Een minderjarige die een ongeschikte oefening krijgt.
+7. Een mediafout die het onderliggende scherm blokkeert.
+
+---
+
+## 11. Consistentiecontrole
 
 - Alle genoemde MUX-codes bestaan in `SPARKI_MOBILE_UX_STANDARD_v1.4.md`.
-- Alle genoemde CMP-codes bestaan in de componentbibliotheek; alle PAT-codes in het patronendocument (PAT-01 t/m PAT-27).
+- Alle genoemde CMP-codes bestaan in de componentbibliotheek (CMP-00 t/m CMP-44); alle PAT-codes in het patronendocument (PAT-01 t/m PAT-39).
 - De achttien dimensies uit MUX-81 zijn één op één gedekt door MTS-09 t/m MTS-27.
 - De afkeurgronden uit MUX-82 zijn volledig opgenomen in MTS-38 en MTS-39, met de zwaarste twee als directe afkeur.
 - Geen nieuwe MUX-, CMP- of PAT-codes toegevoegd; geen productbesluiten genomen.

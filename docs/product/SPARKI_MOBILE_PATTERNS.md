@@ -290,7 +290,169 @@ Een patroon is geen nieuwe regel. Het is de afgesproken manier waarop bestaande 
 
 ---
 
-## 8. Patroonregister
+## 8. Diepte, media en uitleg
+
+Toegevoegd door `MOBILE_MEDIA_COMPONENTS_01`. Deze twaalf patronen dragen een uitgebreider veldenschema, omdat media meer faalvormen kent dan een gewoon scherm: bandbreedte, rechten, ontbrekende bestanden en toegankelijkheid komen er allemaal bij.
+
+### PAT-28 — Subtiele diepte zonder drukte
+**Doel:** een moment laten opvallen zonder de app onrustig te maken.
+**Startconditie:** een van de zeven toegestane momenten van CMP-40.
+**Stappen:** kaart komt subtiel los → gebruiker raakt aan → lichte kanteling en drukanimatie → openen naar detail → sluiten via de zichtbare terugactie.
+**Verwijzingen:** CMP-40; MUX-93 (niets verandert onaangekondigd), MUX-98c (blokkeert de kernbediening niet), MUX-88d (terugweg in het scherm).
+**Succes:** het moment valt op, en de rest van de app voelt niet drukker.
+**Fout:** diepte-effect faalt → de kaart wordt een gewone kaart, met identieke functie.
+**Offline:** geen invloed; diepte is weergave, geen data.
+**Toegankelijkheid:** systeeminstelling "verminder beweging" schakelt kanteling en drukanimatie uit.
+**Verboden:** continue beweging, kanteling zonder aanraking, gebruik op lijstitems of formulieren, gebruik tijdens navigatie of een acute melding.
+**Antipatroon:** diepte overal, "omdat het mooi staat". Dan valt niets meer op en is het effect alleen nog een prestatiekost.
+**Mirror:** MTS-50, MTS-52.
+
+### PAT-29 — Bewegende uitleg op eerste gebruik
+**Doel:** een nieuwe functie in 20–45 seconden begrijpelijk maken.
+**Startconditie:** eerste opening van die functie, buiten een actieve taak.
+**Stappen:** vraag stellen → gebruiker kiest → uitleg speelt met ondertiteling → pauzeren of overslaan kan → eindigt met een uitvoerbare eerste actie.
+**Verwijzingen:** CMP-42, CMP-41; MUX-90 (nooit tijdens een taak), MUX-100 (eindigt met één eerste actie), MUX-88.
+**Succes:** de gebruiker doet daarna de eerste actie zelf.
+**Fout:** uitleg niet beschikbaar → de vraag verschijnt niet; de functie opent gewoon.
+**Offline:** geen uitleg aanbieden; de functie werkt zonder.
+**Toegankelijkheid:** zonder geluid volledig begrijpelijk; tekstvariant altijd beschikbaar.
+**Verboden:** automatisch starten, herhalen bij elke opening, verouderde of nagebouwde schermen tonen.
+**Antipatroon:** een verplichte rondleiding van vijf schermen bij eerste login. Iedereen tikt hem weg, en daarna weet niemand meer dat er uitleg bestaat.
+**Mirror:** MTS-55, MTS-56, MTS-61.
+
+### PAT-30 — Video met poster en tekstfallback
+**Doel:** dezelfde informatie overbrengen, ongeacht of de video speelt.
+**Startconditie:** een scherm met video- of animatie-inhoud.
+**Stappen:** posterbeeld staat er → gebruiker start zelf → speler laadt lazy → ondertiteling aan → tekstvariant altijd bereikbaar.
+**Verwijzingen:** CMP-41; MUX-48 (lege toestand), MUX-98 (blokkeert de kernbediening niet).
+**Succes:** wie de video niet ziet, mist geen informatie.
+**Fout:** speler faalt → fouttoestand binnen de speler, tekstvariant blijft, onderliggend scherm blijft bruikbaar.
+**Offline:** posterbeeld en tekstvariant; geen laadpoging die blijft draaien.
+**Toegankelijkheid:** ondertiteling, tekstalternatief, schermlezerbediening, 0,5×-snelheid.
+**Verboden:** autoplay; video als enige drager van informatie.
+**Antipatroon:** de tekstvariant is een samenvatting in plaats van een gelijkwaardig alternatief. Dan is "toegankelijk" een vinkje geworden.
+**Mirror:** MTS-53, MTS-57, MTS-58.
+
+### PAT-31 — Oefening bekijken en uitvoeren
+**Doel:** een oefening veilig laten uitvoeren, ook zonder beeld.
+**Startconditie:** een oefening in een plan, of gedeeld door een trainer.
+**Stappen:** oefenkaart openen → beeld of poster → begin- en eindpositie → aandachtspunten → veelgemaakte fouten → uitvoeren → afvinken.
+**Verwijzingen:** CMP-43, CMP-41; MUX-99 (hoort bij een hoofdtaak), MUX-88.
+**Succes:** de gebruiker voert de oefening uit en weet waar hij op moet letten.
+**Fout:** media ontbreekt → tekstvariant met begin- en eindpositie blijft volledig bruikbaar.
+**Offline:** tekstvariant beschikbaar; video niet.
+**Toegankelijkheid:** ondertiteling, tekstalternatief, 0,5×, stopregel bij pijn permanent zichtbaar.
+**Verboden bij minderjarigen:** gewichtsdoelen, 1RM-doelen, zware belastingvoorschriften. Voor iedereen: blessurerevalidatie zonder bevoegde begeleiding.
+**Antipatroon:** de oefening tonen als losse video zonder aandachtspunten en zonder stopregel. Dat is geen instructie maar een filmpje.
+**Mirror:** MTS-60, MTS-62.
+
+### PAT-32 — Coachmelding op rustmoment
+**Doel:** een belangrijke niet-acute melding overbrengen zonder te storen.
+**Startconditie:** einde van een rit, afronding van een stap, of terugkeer op een overzicht.
+**Stappen:** melding zweeft rustig binnen → reden, gegevens en onzekerheid staan erbij → actieknoppen, sluiten of uitstellen.
+**Verwijzingen:** CMP-44, CMP-35; MUX-89, MUX-90, MUX-91.
+**Succes:** de melding wordt gelezen en beantwoord in plaats van weggetikt.
+**Fout:** onderliggende gegevens ontbreken → geen melding tonen, alleen de reden waarom er niets te zeggen valt.
+**Offline:** geen coachmelding; er is geen actuele grond.
+**Toegankelijkheid:** geen geluid als enige drager; sluiten met een tikvlak van 48 dp.
+**Verboden:** verschijnen tijdens navigatie, training, wedstrijd, onboarding of formulier; "niet meer tonen" bij een acute melding of bij een minderjarige.
+**Antipatroon:** de melding als banner boven de primaire actie. De gebruiker mist zijn knop en leert de melding wegtikken.
+**Mirror:** MTS-59, MTS-63, MTS-64.
+
+### PAT-33 — Verminder beweging
+**Doel:** de app volledig bruikbaar houden voor wie beweging niet verdraagt of niet wil.
+**Startconditie:** systeeminstelling "verminder beweging" aan, of de eigen instelling in Sparki.
+**Stappen:** kantelingen uit → drukanimaties uit → overgangen worden directe wisselingen → alle functies blijven op dezelfde plek.
+**Verwijzingen:** CMP-40, CMP-41; MUX-66 t/m MUX-71.
+**Succes:** geen enkele functie is verdwenen, geen enkele stap is langer geworden.
+**Fout:** niet van toepassing — dit is zelf de veilige toestand.
+**Offline:** geen invloed.
+**Toegankelijkheid:** dit patroon *is* de toegankelijkheidseis.
+**Verboden:** een functie die alleen via een animatie bereikbaar is; een overgang die niet uitgeschakeld kan worden.
+**Antipatroon:** animatie uitzetten en de bijbehorende knop meenemen. Dan is de instelling een straf geworden.
+**Mirror:** MTS-51, MTS-52.
+
+### PAT-34 — Media op lage bandbreedte
+**Doel:** bruikbaar blijven op een trage of dure verbinding.
+**Startconditie:** merkbaar trage verbinding, of mobiele data zonder toestemming voor media.
+**Stappen:** posterbeeld direct → lage-resolutievariant aanbieden → gebruiker kiest zelf of hij laadt → tekstvariant blijft altijd bereikbaar.
+**Verwijzingen:** CMP-41; MUX-94, MUX-98.
+**Succes:** het scherm werkt volledig, ook als de video nooit laadt.
+**Fout:** download breekt af → posterbeeld en tekstvariant blijven; opnieuw proberen is een zichtbare keuze.
+**Offline:** geen laadpoging; tekstvariant.
+**Toegankelijkheid:** ongewijzigd.
+**Verboden:** laden via mobiele data zonder toestemming; een laadanimatie die blijft draaien zonder uitweg (MUX-57).
+**Antipatroon:** de video toch alvast op de achtergrond ophalen "voor de zekerheid". Dat kost de gebruiker geld dat hij niet heeft toegezegd.
+**Mirror:** MTS-53, MTS-54, MTS-65.
+
+### PAT-35 — Media ontbreekt
+**Doel:** eerlijk zijn als er geen beeld is.
+**Startconditie:** media niet aanwezig, verwijderd, of niet vrijgegeven.
+**Stappen:** lege toestand met de vier elementen → tekstvariant als eerstvolgende actie → onderliggend scherm blijft volledig werken.
+**Verwijzingen:** CMP-41, CMP-43, CMP-29; MUX-48, MUX-51.
+**Succes:** de gebruiker weet wat ontbreekt, wie het oplost, en kan door.
+**Fout:** dit patroon *is* de foutafhandeling.
+**Offline:** hetzelfde gedrag, met de verbinding als oorzaak.
+**Toegankelijkheid:** de tekstvariant is volwaardig, geen samenvatting.
+**Verboden:** een lege speler tonen; een plaatsvervangend filmpje van iets anders; voorbeelddata.
+**Antipatroon:** een grijs vlak met een gebroken-beeldicoon. Technisch correct, en de gebruiker denkt dat de app stuk is.
+**Mirror:** MTS-57, MTS-66.
+
+### PAT-36 — Mediarechten en versie
+**Doel:** nooit media tonen waarvan de herkomst niet vaststaat.
+**Startconditie:** elke opname van media in een scherm.
+**Stappen:** `KENNIS_01` levert bron, maker, licentie, leeftijdsgeschiktheid, versie en publicatiestatus → de weergavelaag toont wat is vrijgegeven → wat niet is vrijgegeven, verschijnt niet.
+**Verwijzingen:** CMP-41, CMP-43; grens met `KENNIS_01`.
+**Succes:** van elk getoond mediabestand is aantoonbaar wie het maakte en onder welke voorwaarden.
+**Fout:** rechten onbekend → media wordt niet getoond, PAT-35 neemt het over.
+**Offline:** geen invloed op de rechtenvraag.
+**Toegankelijkheid:** ondertiteling en tekstalternatief horen bij de rechtencontrole — media zonder alternatief is niet vrijgegeven.
+**Verboden:** media zonder aantoonbare rechten; media uit een andere versie dan de gepubliceerde.
+**Antipatroon:** "we halen de rechten later wel na". Dat is het moment waarop een oefenvideo van een derde in productie staat.
+**Mirror:** MTS-67.
+
+### PAT-37 — Uitleg bekeken of overgeslagen
+**Doel:** de uitleg één keer aanbieden en daarna respecteren wat de gebruiker koos.
+**Startconditie:** eerste opening van een functie.
+**Stappen:** vraag → keuze wordt per gebruiker onthouden (bekeken · overgeslagen · opnieuw bekijken) → uitleg blijft vindbaar via Help.
+**Verwijzingen:** CMP-42; MUX-89d (genegeerd komt niet terug als herhaalde vraag), MUX-93.
+**Succes:** niemand krijgt dezelfde uitleg twee keer ongevraagd.
+**Fout:** status niet opgeslagen → uitleg wordt niet opnieuw aangeboden; hij blijft alleen via Help bereikbaar.
+**Offline:** de keuze wordt niet lokaal bevestigd zonder server (MUX-55).
+**Toegankelijkheid:** ongewijzigd.
+**Verboden:** de vraag opnieuw stellen na "overgeslagen"; de uitleg onvindbaar maken na overslaan.
+**Antipatroon:** de uitleg terugbrengen "omdat de gebruiker hem toch niet heeft gezien". Dat is de app die het beter weet.
+**Mirror:** MTS-56.
+
+### PAT-38 — Geen video tijdens actieve taak
+**Doel:** aandacht beschermen op het moment dat die ergens anders hoort.
+**Startconditie:** navigatie, actieve training, wedstrijddagmodus, onboarding, formulier, of een acute medische of veiligheidsflow.
+**Stappen:** media wordt niet aangeboden en niet afgespeeld → uitleg blijft bewaard voor daarna → de taak loopt door.
+**Verwijzingen:** CMP-41, CMP-42; MUX-90, MUX-96j.
+**Succes:** geen enkele mediastart tijdens een van deze zes situaties.
+**Fout:** een reeds spelende video wordt gepauzeerd zodra de taak begint, niet doorgespeeld op de achtergrond.
+**Offline:** ongewijzigd.
+**Toegankelijkheid:** ongewijzigd.
+**Verboden:** autoplay tijdens navigatie of wedstrijddag — dit is een directe afkeurgrond.
+**Antipatroon:** "een korte uitleg terwijl de route laadt". Precies het moment waarop de gebruiker wegrijdt.
+**Mirror:** MTS-59, MTS-64.
+
+### PAT-39 — Animatie uit, functionaliteit gelijk
+**Doel:** bewijzen dat beweging versiering is en geen functie.
+**Startconditie:** alle animatie uitgeschakeld.
+**Stappen:** elke flow uit de rolflows wordt doorlopen → elke stap is bereikbaar → geen extra tik, geen omweg, geen verdwenen knop.
+**Verwijzingen:** CMP-40, CMP-41; MUX-66 t/m MUX-71, PAT-33.
+**Succes:** identieke uitkomst met en zonder animatie.
+**Fout:** een functie blijkt alleen via een overgang bereikbaar → afkeur, niet repareren met een extra knop achteraf.
+**Offline:** ongewijzigd.
+**Toegankelijkheid:** dit is de sluitsteen van hoofdstuk 10 van de standaard.
+**Verboden:** een functie die animatie nodig heeft om te bestaan.
+**Antipatroon:** de animatie-uitstand bouwen als aparte, minder complete variant van de app. Dan is er stilletjes een tweede product ontstaan.
+**Mirror:** MTS-51, MTS-52.
+
+---
+
+## 9. Patroonregister
 
 | Code | Patroon | Kernregels |
 |---|---|---|
@@ -321,10 +483,22 @@ Een patroon is geen nieuwe regel. Het is de afgesproken manier waarop bestaande 
 | PAT-25 | Terug uit de modus | MUX-96l, 88 |
 | PAT-26 | Progressieve onthulling | MUX-08, 15, 20, 37, 47, 72 |
 | PAT-27 | Altijd een volgende stap | MUX-88, 48, 100g |
+| PAT-28 | Subtiele diepte zonder drukte | CMP-40, MUX-93, 98c |
+| PAT-29 | Bewegende uitleg op eerste gebruik | CMP-42, MUX-90, 100 |
+| PAT-30 | Video met poster en tekstfallback | CMP-41, MUX-48, 98 |
+| PAT-31 | Oefening bekijken en uitvoeren | CMP-43, MUX-99 |
+| PAT-32 | Coachmelding op rustmoment | CMP-44, MUX-89, 90, 91 |
+| PAT-33 | Verminder beweging | MUX-66–71 |
+| PAT-34 | Media op lage bandbreedte | CMP-41, MUX-94, 98 |
+| PAT-35 | Media ontbreekt | CMP-29, MUX-48, 51 |
+| PAT-36 | Mediarechten en versie | grens `KENNIS_01` |
+| PAT-37 | Uitleg bekeken of overgeslagen | CMP-42, MUX-89d |
+| PAT-38 | Geen video tijdens actieve taak | MUX-90, 96j |
+| PAT-39 | Animatie uit, functionaliteit gelijk | MUX-66–71, PAT-33 |
 
 ---
 
-## 9. Gebruik door bouwpakketten
+## 10. Gebruik door bouwpakketten
 
 - De paragraaf "Mobiele uitwerking" (MUX-85) noemt de toegepaste PAT-codes naast de CMP- en MUX-codes.
 - Een patroon wordt niet in een bouwpakket bedacht. Ontbreekt er een situatie, dan wordt dit document eerst uitgebreid met een nieuwe PAT-code.

@@ -441,7 +441,91 @@ De wedstrijddagmodus (MUX-96) is geen apart ontwerp maar een **variant** van bes
 
 ---
 
-## 9. Verboden en vervallen
+## 9. Diepte, media en uitleg
+
+Toegevoegd door `MOBILE_MEDIA_COMPONENTS_01`. Deze vijf componenten regelen uitsluitend de **weergavelaag**. De inhoud — lessen, oefeningen, bronvermelding, maker, licentie, leeftijdsgeschiktheid, versie en publicatiestatus — wordt beheerd door `KENNIS_01`. Geen dubbele contentarchitectuur.
+
+### CMP-40 — Diepte-/zweefkaart
+**Doel:** een kaart of paneel subtiel laten loskomen van de achtergrond, zonder zware 3D en zonder visuele drukte.
+**Wanneer:** persoonlijk record · training voltooid · route opgeslagen of gestart · route-, klim- of trainingsdetail · wedstrijddag · belangrijke niet-acute coachmelding · eerste uitleg van een nieuwe functie.
+**Wanneer niet:** actieve navigatie · actieve training · acute veiligheidsmelding · medische waarschuwing · elk lijstitem · elk standaardformulier · elk scherm waar snelheid en rust leidend zijn.
+**Eisen:**
+- Subtiele diepte; lichte kanteling **alleen** bij directe aanraking; geen continue beweging.
+- Lichte drukanimatie; vloeiend openen naar detail of volledig scherm; duidelijke sluit- en terugactie (MUX-88d — de terugweg staat in het scherm zelf).
+- Veilige schermranden; werkt in licht en donker thema; geen springende layout (MUX-93d).
+- **Volledig bruikbaar zonder animatie.** Zonder beweging blijft elke functie identiek bereikbaar.
+- Respecteert de systeeminstelling "verminder beweging"; dan geen kanteling en geen drukanimatie.
+- Geen zware 3D-engine; blokkeert nooit de kernbediening (MUX-98c).
+- Kleur, schaduwdiepte en vormtaal komen uit `BRAND_IDENTITY_01`.
+**Lege toestand:** een zweefkaart zonder inhoud bestaat niet — dan is het CMP-29.
+**Wedstrijddag:** alleen op de wedstrijddagkaart zelf (CMP-39), nergens anders in de modus.
+**Sparki:** "Persoonlijk record op de Cauberg" na een rit.
+
+### CMP-41 — Toegankelijke mediaspeler
+**Doel:** video of animatie afspelen zonder dat de gebruiker afhankelijk wordt van beeld, geluid of bandbreedte.
+**Wanneer:** binnen CMP-42, CMP-43 en de omgeving Uitleg en Academy.
+**Wanneer niet:** tijdens navigatie · actieve training · wedstrijddagmodus · onboarding · formulieren · acute medische of veiligheidsflows.
+**Eisen:**
+- Posterbeeld · ondertiteling · tekstalternatief · pauze · hervatten · opnieuw afspelen · snelheid 1× en 0,5×.
+- **Geen autoplay**, en geen afspelen via mobiele data zonder toestemming.
+- Lazy loading en een lage-resolutievariant.
+- Eigen fouttoestand en eigen ontbrekende-mediatoestand — een mediafout blokkeert nooit het onderliggende scherm (MUX-98g).
+- **Volledig bruikbare tekstvariant zonder video.** Wie de video niet kan of wil zien, mist geen informatie.
+- Speler is bedienbaar met een schermlezer; elke knop heeft een leesbare naam (MUX-69).
+**Lege toestand:** ontbrekende media toont wat er zou staan, waarom het er niet is, wie dat oplost, en de tekstvariant als eerstvolgende actie (MUX-48).
+**Wedstrijddag:** niet aanwezig.
+**Sparki:** uitleg bij het hoogteprofiel in de routeplanner.
+
+### CMP-42 — Uitlegflow
+**Doel:** in 20 tot 45 seconden laten zien hoe een functie werkt, op het moment dat de gebruiker die functie voor het eerst opent.
+**Wanneer:** bij eerste opening van een functie, als vraag — nooit als opgelegde rondleiding.
+**Wanneer niet:** tijdens een actieve taak; en niet opnieuw bij elke volgende opening.
+**Eisen:**
+- Begint met een vraag ("Zal ik je kort laten zien hoe dit werkt?"), niet met afspelen (MUX-90d).
+- Toont de echte interface of een exacte simulatie daarvan — geen verzonnen scherm, geen verouderde opname.
+- Laat de handelingen zien die ertoe doen: tikken, swipen, openen, bewaren, teruggaan.
+- Ondertiteling; **zonder geluid volledig begrijpelijk**.
+- Pauzeren en overslaan altijd mogelijk; later opnieuw te openen via Help.
+- Per gebruiker onthouden: bekeken · overgeslagen · opnieuw bekijken. Verschijnt niet telkens opnieuw.
+- **Eindigt met een uitvoerbare eerste actie** (MUX-88, MUX-100).
+**Lege toestand:** ontbreekt de uitleg, dan verschijnt de vraag niet — er komt geen lege speler in beeld.
+**Wedstrijddag:** niet aanwezig.
+**Sparki:** eerste opening van de routeplanner.
+
+### CMP-43 — Oefenkaart
+**Doel:** één oefening zo tonen dat iemand hem veilig kan uitvoeren.
+**Wanneer:** binnen kracht- en mobiliteitsinhoud, en waar een trainer een oefening deelt.
+**Wanneer niet:** als vervanging van begeleiding bij blessureherstel.
+**Eisen:**
+- Naam · korte video of animatie via CMP-41 · beginpositie · eindpositie · herhalingen of tijd · aandachtspunten · veelgemaakte fouten.
+- Pauze · opnieuw afspelen · 0,5× snelheid · ondertiteling · posterbeeld · tekstalternatief.
+- Eerlijke lege toestand bij ontbrekende media (CMP-29) — de oefening blijft dan als tekst bruikbaar.
+- Leeftijdsclassificatie en veiligheidswaarschuwing zichtbaar bij de oefening zelf.
+- **Stopregel bij pijn**, altijd zichtbaar en niet weg te klikken.
+**Harde grenzen bij minderjarigen:** geen gewichtsdoelen, geen 1RM-doelen, geen zware belastingvoorschriften. En voor iedereen: geen blessurerevalidatie zonder bevoegde begeleiding.
+**Lege toestand:** zonder media blijft de tekstvariant volledig; zonder tekstvariant verschijnt de oefening niet.
+**Wedstrijddag:** niet aanwezig.
+**Sparki:** plank, squat, glute bridge in de pilotset.
+
+### CMP-44 — Zwevende coachmelding
+**Doel:** een belangrijke maar **niet-acute** coachmelding rustig presenteren.
+**Wanneer:** op een rustmoment, na afronding van een taak of bij terugkeer op een overzichtsscherm.
+**Wanneer niet:** tijdens navigatie · training · wedstrijd · onboarding · formulier (MUX-90).
+**Eisen:**
+- Tekst, eventueel geluid; **geen autoplay**.
+- Bevat altijd: de reden dat de melding verschijnt · de gebruikte gegevens · de onzekerheid (MUX-91, CMP-35).
+- Relevante actieknoppen, plus sluiten en uitstellen.
+- "Niet meer tonen" bestaat **uitsluitend** bij niet-acute meldingen, en **niet voor minderjarigen**.
+- Blokkeert geen belangrijke appfunctie; verschijnt nooit boven op de primaire actie (MUX-12).
+- Alle inhoud komt uit echte gebruikersgegevens. Coachadvies uit mock- of verzonnen data wordt niet getoond (MUX-51).
+**Acute meldingen — apart regime:** nooit permanent onderdrukbaar · bij minderjarigen niet negeerbaar · alleen te sluiten nadat de inhoud is gelezen · de passende verantwoordelijke blijft geïnformeerd. Een acute melding gebruikt dit component dus niet als "rustige" variant.
+**Lege toestand:** geen melding betekent geen component in beeld.
+**Wedstrijddag:** zwijgt volledig (MUX-96j).
+**Sparki:** voorstel om de zware sessie van morgen te verplaatsen na drie zware dagen.
+
+---
+
+## 10. Verboden en vervallen
 
 | Niet gebruiken | Reden |
 |---|---|
@@ -457,10 +541,17 @@ De wedstrijddagmodus (MUX-96) is geen apart ontwerp maar een **variant** van bes
 | Detailscherm zonder vervolgstap of terugweg | MUX-88, MUX-99 |
 | AI-melding tijdens navigatie, training, wedstrijd, onboarding of formulier | MUX-90 |
 | AI-advies zonder onderbouwing | MUX-91 |
+| Autoplay van media, in welke situatie dan ook | CMP-41 |
+| Media die afspeelt tijdens navigatie, training, wedstrijddag, onboarding of formulier | CMP-41, MUX-90 |
+| Functie die zonder animatie onbruikbaar wordt | CMP-40 |
+| Continue beweging of kanteling zonder aanraking | CMP-40 |
+| "Niet meer tonen" op een acute melding, of bij een minderjarige | CMP-44 |
+| Mediafout die het onderliggende scherm blokkeert | CMP-41 |
+| Gewichts-, 1RM- of zware belastingdoelen bij minderjarigen | CMP-43 |
 
 ---
 
-## 10. Componentregister
+## 11. Componentregister
 
 | Code | Component | Belangrijkste regels |
 |---|---|---|
@@ -504,10 +595,15 @@ De wedstrijddagmodus (MUX-96) is geen apart ontwerp maar een **variant** van bes
 | CMP-37 | Wedstrijddagtaakregel | MUX-96b–g |
 | CMP-38 | Noodhandeling | MUX-96h, MUX-54, MUX-55 |
 | CMP-39 | Wedstrijddagkop | MUX-96a, l |
+| CMP-40 | Diepte-/zweefkaart | MUX-93, 98c |
+| CMP-41 | Toegankelijke mediaspeler | MUX-48, 69, 98g |
+| CMP-42 | Uitlegflow | MUX-88, 90d, 100 |
+| CMP-43 | Oefenkaart | MUX-48, 51 |
+| CMP-44 | Zwevende coachmelding | MUX-89, 90, 91 |
 
 ---
 
-## 11. Gebruik door bouwpakketten
+## 12. Gebruik door bouwpakketten
 
 - Ieder pakket dat een scherm oplevert, noemt in zijn paragraaf "Mobiele uitwerking" (MUX-85) welke CMP-codes het gebruikt.
 - Een nieuw component wordt niet in een bouwpakket bedacht. Ontbreekt er iets, dan wordt deze bibliotheek eerst uitgebreid met een nieuwe CMP-code.

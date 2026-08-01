@@ -1,8 +1,8 @@
-# SPARKI — ROLGESTUURDE MOBIELE FLOWS v1.1
+# SPARKI — ROLGESTUURDE MOBIELE FLOWS v1.2
 
 **Technische code:** `MOBILE_ROLE_FLOWS_01` — oplevering 3 van 5
 **Hoort bij:** `SPARKI_MOBILE_UX_STANDARD_v1.4.md` en `SPARKI_MOBILE_COMPONENT_LIBRARY.md` (beide bindend)
-**Versie:** v1.1 — gericht herstel van rolstatussen en pakketgrens (1 augustus 2026)
+**Versie:** v1.2 — media- en uitlegaanvullingen per rol (1 augustus 2026)
 **Status:** BINDEND, afgeleid. Geen nieuwe MUX-regels, geen nieuwe componenten, geen productbesluiten.
 **Datum:** 1 augustus 2026
 
@@ -535,7 +535,30 @@ Dit document beschrijft hoe iedere rol Sparki op de telefoon ervaart. Het bedenk
 
 ---
 
-## 4. Live-informatie
+## 4. Media- en uitlegaanvullingen per rol
+
+Toegevoegd door `MOBILE_MEDIA_COMPONENTS_01`. Alleen de aanvullingen; al het overige per rol blijft ongewijzigd. De inhoud zelf komt uit `KENNIS_01`; hier staat alleen waar en wanneer die in de rolomgeving verschijnt.
+
+| Rol | Aanvulling | Grens |
+|---|---|---|
+| **Sporter** | uitleg routeplanner (CMP-42) · uitleg navigatie starten · zweefkaart bij training voltooid en bij een persoonlijk record (CMP-40) · oefenkaart (CMP-43) · uitleg om de analyse te begrijpen | geen uitleg of media tijdens de rit of de training (PAT-38); bij een minderjarige geen gewichts-, 1RM- of zware belastingdoelen (CMP-43) |
+| **Trainer** | uitleg training plannen · oefening delen met een sporter · coachmelding op een rustmoment (CMP-44) | geen video tijdens een lopende training; gedeelde oefening draagt de leeftijdsclassificatie mee |
+| **Hoofdtrainer** | uitleg groepsbeheer en jaarplanning | geen coachmelding over een individuele sporter — die hoort bij de trainer |
+| **Clubbeheerder** | uitleg onboarding, rollen en uitnodigingen | geen mediacomponenten in de inrichtingswizard (MUX-90) |
+| **Teammanager** | uitleg seizoen en bezetting | idem |
+| **Ploegleider** | wedstrijddagkaart met diepte (CMP-40, uitsluitend op CMP-39) · uitleg alleen vooraf of achteraf | tijdens de operatie geen animatie, geen media, geen coachmelding (MUX-96j, PAT-38) |
+| **Mechanieker** | korte materiaalinstructie via CMP-41 | handen-vrij: posterbeeld en tekstvariant volstaan altijd; in de modus geen media |
+| **Soigneur** | oefen- en verzorgingsinstructie | **geen individuele voedingsvideo voor minderjarigen** zonder passende bron en inhoudelijke controle via `KENNIS_01`; blijft naast de bestaande grens op gewicht en calorieën |
+| **Medical Staff** | uitlegmedia uitsluitend bij niet-acute begeleiding, en met toestemming | geen speelse animatie of diepte bij een acute of medische waarschuwing (CMP-40, "wanneer niet") |
+| **Ouder** | uitleg toestemming geven en afmelden | **geen gepersonaliseerd coachadvies over het kind**; algemene uitleg mag, advies niet |
+| **Gast** | korte productuitleg · routeplanneruitleg · introductie op Uitleg en Academy | geen persoonlijke inhoud, geen coachmelding |
+| **Admin** | geen aanvulling | media speelt geen rol in incidentafhandeling |
+
+**Vaste regels voor alle rollen.** Media en uitleg verschijnen nooit tijdens navigatie, actieve training, wedstrijddagmodus, onboarding, een formulier of een acute flow (PAT-38). Elke rolomgeving blijft volledig bruikbaar met animatie uit (PAT-39). Media zonder aantoonbare rechten verschijnt niet (PAT-36).
+
+---
+
+## 5. Live-informatie
 
 Sommige gegevens veranderen terwijl de gebruiker kijkt. Dat is toegestaan, maar niet vrijblijvend.
 
@@ -561,7 +584,7 @@ Sommige gegevens veranderen terwijl de gebruiker kijkt. Dat is toegestaan, maar 
 
 ---
 
-## 5. Productketens
+## 6. Productketens
 
 Iedere functie hoort bij een hoofdtaak (MUX-99). Mirror toetst de keten, niet het losse scherm.
 
@@ -583,7 +606,7 @@ Een verkennings- of inspiratiepagina mag bestaan, maar eindigt altijd in één v
 
 ---
 
-## 6. Consistentiecontrole
+## 7. Consistentiecontrole
 
 Uitgevoerd op dit document:
 
@@ -597,7 +620,11 @@ Uitgevoerd op dit document:
 
 ---
 
-## 7. Wijzigingslog
+## 8. Wijzigingslog
+
+### v1.2 — 1 augustus 2026 (`MOBILE_MEDIA_COMPONENTS_01`)
+
+Nieuw hoofdstuk 4: media- en uitlegaanvullingen per rol, met per rol de aanvulling én de grens. Daaropvolgende hoofdstukken doorgenummerd naar 5 t/m 8. Verder niets gewijzigd; geen nieuwe MUX-regels.
 
 ### v1.1 — 1 augustus 2026 (gericht herstel `MOBILE_ROLE_FLOWS_01`)
 
