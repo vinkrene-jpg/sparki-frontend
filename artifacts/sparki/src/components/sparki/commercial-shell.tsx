@@ -390,8 +390,14 @@ function CoachBoodschap({ presentation }: { presentation: PresentationState }) {
 // sectie verdwijnt dan (geen dubbele foutkaarten, geen fallbackdata).
 function WeekSection() {
   const { data, isLoading, isError } = useAthleteDashboard()
+  const [, navigate] = useLocation()
 
   if (isError) return null
+
+  const dagen =
+    data && data.weekTSS.length > 0
+      ? buildWeekDays(data.weekTSS, localISODate(), data.todayWorkout != null)
+      : []
 
   return (
     <section className="mt-8" aria-label={COMMERCIAL_COPY.weekTitle}>
@@ -412,11 +418,14 @@ function WeekSection() {
       ) : (
         <DsWeek
           className="mt-3"
-          dagen={buildWeekDays(
-            data.weekTSS,
-            localISODate(),
-            data.todayWorkout != null,
-          )}
+          dagen={dagen}
+          // Dag-tik opent die dag in de trainingskalender — nooit stil
+          // niets-doen (gericht herstel 01-08-2026, punt 1).
+          onSelecteer={(idx) => {
+            const dag = dagen[idx]
+            if (dag) navigate(`/train?dag=${dag.date}`)
+          }}
+          selectieLabel="Open een dag van deze week in je trainingskalender"
         />
       )}
     </section>

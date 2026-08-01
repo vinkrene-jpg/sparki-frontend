@@ -1,0 +1,32 @@
+# Poort 5b sanity-check — Gericht herstel Trainen/Rijden athlete + auth-frustratietest (opdracht René 01-08-2026)
+
+delivery: "Vandaag 'Deze week' dag-tabs zijn echte knoppen die de gekozen dag in de trainingskalender openen (/train?dag=…); Trainen leest ?dag= voor dag/week/maand-initialisatie; Afgemaakt?-, RPE- en feedback-tag-knoppen dragen aria-pressed (schermlezer-zichtbare selectiestatus); auth-veldvalidatie (ongeldig/leeg e-mail, zwak wachtwoord) aantoonbaar zichtbaar via bestaande Clerk/HTML5-validatie — geen tweede regelset toegevoegd."
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "Vandaag (mobiel + desktop, prod-build): weektabs, weekpijlen; Trainen: dagtabs, week-/maandpijlen, trainingsdetail (Afgemaakt?/RPE/tags/toelichting) — e2e/tests/trainen-rijden-herstel.mjs, echte browserkliks, 16/16 OK"
+  - "Inloggen /sign-in en registratie /sign-up (mobiel + desktop, prod-build) — e2e/tests/auth-validatie.mjs, 10/10 OK"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Elke dag-tab in 'Deze week' op Vandaag navigeert aantoonbaar naar /train?dag=<iso> (was: statische lijstitems die stil niets deden — de gemelde fout 1); weekpijlen mobiel en maandpijlen desktop wisselen zichtbaar van periode (fouten 2 uit de melding: op HEAD al werkend, opnieuw bewezen)"
+        result: "pass"
+      - case: "Afgemaakt?-knoppen, RPE-schaal en feedback-tags tonen selectie zichtbaar (rand + aria-pressed=true) en dubbelklik veroorzaakt geen dubbele actie (tags disabled tijdens verwerken); toelichtingsveld accepteert en behoudt invoer (fouten 3–5: op HEAD al werkend, aria-pressed toegevoegd voor schermlezers)"
+        result: "pass"
+      - case: "Doorgaan-knop op /sign-in blijft na een afgewezen invoer bruikbaar (niet 'dood'); dubbelklik geeft geen dubbele actie of crash"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "?dag= op /train wordt alleen vertrouwd bij geldig ISO-datumformaat; onzin of ontbrekende parameter valt terug op vandaag (geen crash, geen rare week/maand)"
+        result: "pass"
+      - case: "Rechtstreekse dev-preview: hang op 'Sparki wordt geladen…' (gemelde fout 6) is op HEAD niet reproduceerbaar — de dev-preview rendert de testcontext direct; eerlijk zo gemeld i.p.v. een niet-bestaande fout 'gefixt'"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Ongeldig en leeg e-mailadres op /sign-in geven directe, zichtbare veldvalidatie (validatieballon in de browsertaal + focus op het veld) — geen stil falen; bewijs-screenshots in e2e/evidence/auth-validatie/"
+        result: "pass"
+      - case: "Zwak wachtwoord op registratie toont de concrete eisen die falen ('minstens 8 tekens', 'minstens 1 speciaal teken') in het Nederlands vóór verzenden — bestaande Clerk-validatie, geen eigen tweede regelset; uitgelogd blijven /vandaag en /admin naar /sign-in sturen (redirect-regressie)"
+        result: "pass"
+
+verdict: "deliverable"
