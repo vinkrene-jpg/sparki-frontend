@@ -560,6 +560,85 @@ export const clubConsentsTable = pgTable(
   (t) => [uniqueIndex("club_consents_unique").on(t.clubId, t.athleteClerkId, t.scope)],
 );
 
+// ── BUILD_03 Dagschema & logistiek (besluitenpatch hoofdstuk D) ──────────────
+// Dagschema is optioneel, maar als het er is: PER PERSOON, met verplichte
+// vertrektijd en verzamelpunt; terugkeertijd optioneel. Een staflid ziet ook
+// de tijden van de anderen. Verschuiven gaat via een expliciete bevestiging
+// van de ploegleider, waarna de HELE ploeg (incl. renners) bericht krijgt.
+export const clubRaceDayScheduleTable = pgTable(
+  "club_race_day_schedule",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+    clerkId: text("clerk_id").notNull(),
+    departTime: text("depart_time").notNull(), // "HH:MM" — verplicht
+    meetPoint: text("meet_point").notNull(), // verplicht
+    returnTime: text("return_time"), // optioneel
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("club_race_day_schedule_unique").on(t.eventId, t.clerkId)],
+);
+
+// Vervoer per voertuig; chauffeur optioneel; een renner ziet de hele indeling.
+export const clubRaceVehiclesTable = pgTable("club_race_vehicles", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // bv. "Bus 1", "Volgauto"
+  seats: integer("seats"), // optioneel; nodig voor de autoplaats-waarschuwing
+  driverClerkId: text("driver_clerk_id"), // chauffeur optioneel
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const clubRaceVehicleSeatsTable = pgTable(
+  "club_race_vehicle_seats",
+  {
+    id: serial("id").primaryKey(),
+    vehicleId: integer("vehicle_id")
+      .notNull()
+      .references(() => clubRaceVehiclesTable.id, { onDelete: "cascade" }),
+    clerkId: text("clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("club_race_vehicle_seats_unique").on(t.vehicleId, t.clerkId)],
+);
+
+// Materiaal per renner (optioneel): de mechanieker vult de lijst en kan een
+// eigen sjabloon vastleggen; afvinkbaar bij inladen; ploegleider ziet dat.
+export const clubRaceMaterialItemsTable = pgTable("club_race_material_items", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+  riderClerkId: text("rider_clerk_id").notNull(),
+  item: text("item").notNull(),
+  loadedAt: timestamp("loaded_at", { withTimezone: true }), // afgevinkt bij inladen
+  loadedByClerkId: text("loaded_by_clerk_id"),
+  createdByClerkId: text("created_by_clerk_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Materiaalsjabloon van de mechanieker (per club, herbruikbaar).
+export const clubMaterialTemplatesTable = pgTable(
+  "club_material_templates",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    items: jsonb("items").notNull(), // ["reservewielen", "bidons", ...]
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("club_material_templates_unique").on(t.clubId, t.name)],
+);
+
 // ── BUILD_03 Noodinformatie (besluitenpatch hoofdstuk D) ─────────────────────
 // Inzage in noodinformatie (noodcontacten + zelfgekozen veiligheidsinfo) is
 // beperkt tot ploegleider, teammanager en medical_staff — uitdrukkelijk niet

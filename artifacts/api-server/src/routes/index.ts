@@ -67,6 +67,7 @@ import goalsRouter from "./goals";
 import engagementRouter from "./engagement";
 import clubRouter from "./club";
 import workObjectsRouter from "./work-objects";
+import clubRaceLogisticsRouter from "./club-race-logistics";
 import rideStoryRouter from "./ride-story";
 import sprintsRouter from "./sprints";
 import climbsRouter from "./climbs";
@@ -212,6 +213,12 @@ router.use(
   "/clubs/:clubId/work-objects",
   killSwitchGuard("club_features"),
   workObjectsRouter,
+);
+// BUILD_03: dagschema, vervoer en materiaal per clubwedstrijd.
+router.use(
+  "/clubs/:clubId/races/:eventId",
+  killSwitchGuard("club_features"),
+  clubRaceLogisticsRouter,
 );
 router.use("/release", releaseRouter);
 router.use("/entitlements", entitlementsRouter);
