@@ -49,9 +49,16 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Desktop / PWA / mobiel | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Bedrijfscontinuïteit en support | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Merkidentiteit (BRAND_IDENTITY_01) | DEFERRED — tot na Mobile UX | besluit 01-08-2026 (SPARKI-BESLUIT-2026-013): bliksemschicht is enige officiële identiteit; geen tussentijds logo-ontwerp; traject start pas na Mobile UX-documenten |
-| Futur Control (FUTUR_CONTROL_01) | DEFERRED / GEPAUZEERD | besluit 01-08-2026: inhoudelijk goedgekeurd, alleen F0 was vrijgeefbaar maar wordt voorlopig niet gestart; geen bouw gestart, geen code gewijzigd; FC-B05/06/07/09/10/11 geparkeerd; hervatting later bij F0 Inventarisatie; F1A start nooit automatisch |
+| Futur Control (FUTUR_CONTROL_01) | DEFERRED / GEPAUZEERD | besluit 01-08-2026: inhoudelijk goedgekeurd, alleen F0 was vrijgeefbaar maar wordt voorlopig niet gestart; geen bouw gestart, geen code gewijzigd; FC-B05/06/07/09/10/11 geparkeerd; hervatting later bij F0 Inventarisatie; F1A start nooit automatisch; volledig documentpakket (20 docs) sinds 01-08-2026 in `docs/build-packages/FUTUR_CONTROL_01/` |
 
 ## 3. Logboek
+
+- **01-08-2026 (aanvulling)** — Volledig FUTUR_CONTROL_01-documentpakket (20
+  documenten, verbatim uit de definitieve Claude-export) opgeslagen in
+  `docs/build-packages/FUTUR_CONTROL_01/` + README met pauzestatus. Gemeld:
+  los wijzigingslog/eindcontrole-document ontbrak in de export;
+  `FUTUR_CONTROL_MUTATION_GATE.md` was extra t.o.v. de minimaal-lijst.
+  Status blijft DEFERRED / GEPAUZEERD; niets gebouwd.
 
 - **01-08-2026** — FUTUR_CONTROL_01 op DEFERRED / GEPAUZEERD gezet (besluit René).
   Pakket inhoudelijk goedgekeurd; alleen F0 was vrijgeefbaar maar wordt voorlopig

@@ -21,11 +21,11 @@
 
 ## Repositorystand
 
-De inhoudelijke FUTUR_CONTROL_01-pakketdocumenten zijn (nog) niet in deze
-repository aangeleverd; dit statusdocument is op dit moment de enige
-FUTUR_CONTROL-bron in de repo. Zodra de pakketdocumenten worden aangeleverd,
-worden ze hier naast dit statusdocument geplaatst — de pauzestatus blijft
-daarbij leidend tot René hervatting vrijgeeft.
+**Bijgewerkt 01-08-2026 (later dezelfde dag):** het volledige documentpakket
+(20 documenten) is verbatim uit de definitieve Claude-export in deze map
+geplaatst — zie `README.md` voor de inhoud en de gemelde afwijkingen
+(wijzigingslog/eindcontrole-document ontbrak in de export). De pauzestatus
+blijft leidend tot René hervatting vrijgeeft.
 
 ## Hervattingsvoorwaarde
 

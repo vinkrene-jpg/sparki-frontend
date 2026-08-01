@@ -7,7 +7,10 @@ _Last updated: 2026-06-22 — end of the "AI Memory & Core Data Foundation" spri
 > voorlopig niet gestart. Geen Replit-bouw gestart, geen code gewijzigd. Open
 > besluiten FC-B05/06/07/09/10/11 blijven geparkeerd. Hervatting begint later bij
 > F0 Inventarisatie; F1A mag nooit automatisch starten. Documenten en pakketten
-> blijven behouden. Zie `docs/build-packages/FUTUR_CONTROL_01/FUTUR_CONTROL_01_STATUS.md`.
+> blijven behouden. Het volledige documentpakket (20 documenten) staat sinds
+> 01-08-2026 in `docs/build-packages/FUTUR_CONTROL_01/` (zie README en
+> `FUTUR_CONTROL_01_STATUS.md`); het bestaat als compleet documentpakket maar is
+> voorlopig gepauzeerd.
 
 > **Statuswijziging 2026-07-31 — Bordjes sprinten: Gestopt — veiligheidsrisico op
 > openbare weg.** De functie stimuleerde sprintgedrag op de openbare weg en kan
