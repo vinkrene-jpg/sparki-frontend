@@ -97,8 +97,31 @@ export function bboxAroundPath(
   return { south: s - padDeg, west: w - padDeg, north: n + padDeg, east: e + padDeg };
 }
 
+// Beleefde herkansing bij intermitterende burst-rate-limits (zie
+// lib/route-remarks.ts): één extra ronde na een ruime pauze, kleine pauze
+// tussen mirrors. Na twee mislukte rondes blijft het antwoord eerlijk null.
+const RETRY_ROUNDS = 2;
+const RETRY_PAUSE_MS = 15_000;
+const MIRROR_PAUSE_MS = 1_000;
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
 async function runQuery(ql: string): Promise<OverpassElement[] | null> {
+  for (let round = 0; round < RETRY_ROUNDS; round++) {
+    if (round > 0) await sleep(RETRY_PAUSE_MS);
+    const res = await runQueryOnce(ql, round);
+    if (res != null) return res;
+  }
+  return null;
+}
+
+async function runQueryOnce(
+  ql: string,
+  round: number,
+): Promise<OverpassElement[] | null> {
+  let first = true;
   for (const endpoint of ENDPOINTS) {
+    if (!first || round > 0) await sleep(MIRROR_PAUSE_MS);
+    first = false;
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), OVERPASS_TIMEOUT_MS);

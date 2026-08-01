@@ -441,8 +441,35 @@ export type OverpassElement = {
   tags?: Record<string, string>;
 };
 
+// Beleefde herkansing (KETEN_FIETS_01-praktijktest, 01-08-2026): tijdens een
+// routegeneratie vuren we tientallen queries kort na elkaar af en dan
+// rate-limiten de mirrors intermitterend — dezelfde query slaagt seconden
+// later wél. Eén extra ronde na een ruime pauze voorkomt dat de fail-closed
+// blokkadepoort een hele generatie afkeurt om een tijdelijke burst-limiet.
+// Blijft eerlijk: na twee mislukte rondes is het antwoord alsnog null.
+const OVERPASS_RETRY_ROUNDS = 2;
+const OVERPASS_RETRY_PAUSE_MS = 15_000;
+const OVERPASS_MIRROR_PAUSE_MS = 1_000;
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
 async function runOverpass(query: string): Promise<OverpassElement[] | null> {
+  for (let round = 0; round < OVERPASS_RETRY_ROUNDS; round++) {
+    if (round > 0) await sleep(OVERPASS_RETRY_PAUSE_MS);
+    const res = await runOverpassOnce(query, round);
+    if (res != null) return res;
+  }
+  return null;
+}
+
+async function runOverpassOnce(
+  query: string,
+  round: number,
+): Promise<OverpassElement[] | null> {
+  let first = true;
   for (const endpoint of ENDPOINTS) {
+    // Kleine pauze tussen mirrors: niet dezelfde burst doorschuiven.
+    if (!first || round > 0) await sleep(OVERPASS_MIRROR_PAUSE_MS);
+    first = false;
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), OVERPASS_TIMEOUT_MS);

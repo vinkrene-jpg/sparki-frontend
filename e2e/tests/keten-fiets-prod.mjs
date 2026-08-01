@@ -108,6 +108,14 @@ try {
   await run.shot("stap2-kaart-hoogteprofiel");
 
   // ── Stap 3: opslaan ───────────────────────────────────────────────────
+  // Zoeklaag "bekend-eerst": eerst de voorstel-kaart aantikken vóór de
+  // detailweergave met bewaarknoppen verschijnt.
+  const voorstel = page.getByText(/^OP MAAT$/).first();
+  if (await voorstel.isVisible().catch(() => false)) {
+    await voorstel.click();
+    await page.waitForTimeout(1500);
+    await run.shot("stap2b-voorstel-gekozen");
+  }
   const naamveld = page.locator('input[type="text"]').last();
   const naam = `KETEN_FIETS_01 ${VIEWNAME} ${new Date().toISOString().slice(0, 16)}`;
   if (await naamveld.isVisible().catch(() => false)) await naamveld.fill(naam);
