@@ -34,6 +34,16 @@ const fresh = createRouteGenerationJob("test_user");
 const freshPolled = getRouteGenerationJob(fresh.id, "test_user");
 check("verse job niet done", freshPolled?.done === false);
 
+
+// 4 (reviewronde): late einduitslag VÓÓR de eerste poll mag nooit een succes
+// vastleggen — finishJob zelf is deadline-bewust.
+const stale = createRouteGenerationJob("test_user");
+(stale as { createdAt: number }).createdAt = Date.now() - 6 * 60 * 1000;
+finishJob(stale, 200, { route: "te laat, vóór poll" });
+check("late finish vóór poll ⇒ toch 504", stale.status === 504 && stale.done === true);
+const staleBody = stale.body as { code?: string } | null;
+check("late finish vóór poll ⇒ code GENERATION_DEADLINE", staleBody?.code === "GENERATION_DEADLINE");
+
 if (failed > 0) { console.error(`${failed} checks gefaald`); process.exit(1); }
-console.log("ALLE CHECKS GROEN (8)");
+console.log("ALLE CHECKS GROEN (10)");
 process.exit(0);
