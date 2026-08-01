@@ -78,6 +78,8 @@ export default defineConfig(({ command }) => {
           JSON.stringify({
             sha: buildSha,
             builtAt: new Date().toISOString(),
+            environment: process.env.NODE_ENV === "production" ? "production" : "development",
+            service: "web",
           }),
         );
       } catch {

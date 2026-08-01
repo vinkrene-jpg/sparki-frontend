@@ -11,6 +11,8 @@ import { ArrowRight, CircleAlert } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel } from "@/components/sparki/ui"
 import { roleStartFor } from "@/lib/role-start"
+import { useUserProfile } from "@/contexts/UserContext"
+import { useMyClubs } from "@/hooks/use-club"
 
 export default function RolStartPage() {
   const params = useParams<{ rol: string }>()
@@ -20,6 +22,51 @@ export default function RolStartPage() {
   const rol =
     params.rol ?? decodeURIComponent(location.split("/rol-start/")[1]?.split(/[/?#]/)[0] ?? "")
   const start = roleStartFor(rol)
+
+  // F-P0-03 — rolbezit-poort (fail-closed). Het startscherm van een rol is
+  // alleen zichtbaar voor wie die rol werkelijk bezit: globale rollen uit het
+  // server-side profiel, clubrollen uit actieve club_members-lidmaatschappen.
+  // Zonder bezit tonen we een eerlijke geen-toegang-toestand die géén
+  // rolstructuur of navigatielabels lekt.
+  const { profile, isLoading: profileLoading } = useUserProfile()
+  const clubsQuery = useMyClubs()
+  const ownedRoles = new Set<string>([
+    ...(profile?.roles ?? []),
+    ...(clubsQuery.data ?? [])
+      .map((row) => row?.membership?.role as string | undefined)
+      .filter((r): r is string => typeof r === "string"),
+  ])
+  const ownershipLoading = profileLoading || clubsQuery.isLoading
+
+  if (start && ownershipLoading) {
+    return (
+      <ScreenShell section="Startpunt">
+        <p className="text-sm text-white/40" data-testid="rolstart-laden">
+          Startpunt wordt geladen…
+        </p>
+      </ScreenShell>
+    )
+  }
+
+  if (start && !ownedRoles.has(start.role)) {
+    return (
+      <ScreenShell section="Geen toegang">
+        <div
+          className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+          data-testid="rolstart-geen-toegang"
+        >
+          <p className="text-sm text-white/70">
+            Dit startscherm hoort bij een rol die niet aan jouw account is
+            gekoppeld. Er wordt daarom niets van getoond.
+          </p>
+          <p className="mt-2 text-sm text-white/40">
+            Denk je dat dit een fout is? De clubbeheerder of jouw trainer ziet
+            welke rol er werkelijk aan jouw account hangt.
+          </p>
+        </div>
+      </ScreenShell>
+    )
+  }
 
   if (!start) {
     return (
