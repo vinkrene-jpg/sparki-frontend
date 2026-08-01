@@ -123,9 +123,11 @@ export async function gatherSourceInput(
       .where(
         and(
           eq(coachAthleteLinksTable.athleteClerkId, clerkId),
+          // BB-09: ended_at geldt voor élke statusvariant, dus buiten de or().
+          isNull(coachAthleteLinksTable.endedAt),
           or(
             eq(coachAthleteLinksTable.status, "active"),
-            eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
+            eq(coachAthleteLinksTable.status, "accepted"),
           ),
         ),
       ),

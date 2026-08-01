@@ -215,6 +215,28 @@ async function main() {
     assert(r.status === 403, `verlenen vreemde: ${r.status}`);
   });
 
+  await scenario("7b. beëindigde ouder (endedAt gezet): inzage, verlenen en intrekken geweigerd", async () => {
+    // Beëindig de relatie van ouder 2 (BB-09: rij blijft, toegang direct weg).
+    await db
+      .update(parentAthleteLinksTable)
+      .set({ endedAt: new Date() })
+      .where(
+        and(
+          eq(parentAthleteLinksTable.parentClerkId, PARENT2),
+          eq(parentAthleteLinksTable.athleteClerkId, MINOR),
+        ),
+      );
+    const view = await req("GET", `/api/consent/${MINOR}`, PARENT2);
+    assert(view.status === 403, `inzage beëindigde ouder: ${view.status}`);
+    const g = await req("POST", "/api/consent/grant", PARENT2, {
+      subjectClerkId: MINOR,
+      type: "data_sharing",
+    });
+    assert(g.status === 403, `verlenen beëindigde ouder: ${g.status}`);
+    const rv = await req("POST", "/api/consent/revoke", PARENT2, { grantId });
+    assert(rv.status === 403 || rv.status === 404, `intrekken beëindigde ouder: ${rv.status}`);
+  });
+
   await scenario("8. volwassene geeft zichzelf data_sharing → toegestaan", async () => {
     const r = await req("POST", "/api/consent/grant", ADULT, {
       subjectClerkId: ADULT,

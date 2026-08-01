@@ -5,7 +5,7 @@
 // fail-closed (BB-10).
 
 import { Router } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db, parentAthleteLinksTable, consentGrantTypes } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
@@ -27,6 +27,8 @@ async function mayViewSubject(actor: string, subject: string): Promise<boolean> 
       and(
         eq(parentAthleteLinksTable.parentClerkId, actor),
         eq(parentAthleteLinksTable.athleteClerkId, subject),
+        // BB-09: beëindigde ouderrelatie = geen inzage meer.
+        isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return row?.status === "accepted";

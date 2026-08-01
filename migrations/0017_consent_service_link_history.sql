@@ -25,7 +25,7 @@ INSERT INTO consent_grants (subject_clerk_id, grantor_clerk_id, type, status, gr
 SELECT l.athlete_clerk_id, l.parent_clerk_id, 'parental_consent', 'granted', l.consent_confirmed_at,
        'ouderlijk gezag', 'migratie:parent_athlete_links'
 FROM parent_athlete_links l
-WHERE l.status = 'accepted' AND l.consent_confirmed_at IS NOT NULL
+WHERE l.status = 'accepted' AND l.ended_at IS NULL AND l.consent_confirmed_at IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM consent_grants g
     WHERE g.subject_clerk_id = l.athlete_clerk_id

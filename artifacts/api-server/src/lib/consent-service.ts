@@ -18,7 +18,7 @@
 // bevestigde ouder-koppelingen naar consent_grants) is omkeerbaar met
 // `DELETE FROM consent_grants WHERE source = 'migratie:parent_athlete_links'`.
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
@@ -100,6 +100,8 @@ async function isAcceptedParentOf(
       and(
         eq(parentAthleteLinksTable.parentClerkId, parentClerkId),
         eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
+        // BB-09: een beëindigde koppeling geeft nooit meer bevoegdheid.
+        isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return row?.status === "accepted";
