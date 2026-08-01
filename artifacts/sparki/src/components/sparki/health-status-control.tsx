@@ -15,7 +15,7 @@ export function HealthStatusControl() {
         VOEL JE JE NIET FIT?
       </span>
       <p className="mt-1 text-[12px] leading-relaxed text-white/45">
-        Markeer je status — Sparki schakelt dan over naar een rustige
+        Markeer je status — dan schakelt de begeleiding over naar een rustige
         herstelmodus en blokkeert trainingsdruk.
       </p>
       <div className="mt-3 flex gap-2">

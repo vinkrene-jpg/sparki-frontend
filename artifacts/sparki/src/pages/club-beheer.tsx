@@ -20,9 +20,24 @@ import {
   useCreateClubTraining,
   useCreateClubRace,
   useClubSubscription,
+  useTeamSubscription,
+  useStartTeamCheckout,
   useSetClubPackage,
   useCreateClubInvite,
   useUpdateClub,
+  useClubOnboarding,
+  useActivateClub,
+  useSetClubLogo,
+  useAddOnboardingManager,
+  useCreateClubImport,
+  useConfirmClubImport,
+  useCancelClubImport,
+  useOrganogramTemplates,
+  useApplyOrganogram,
+  useStaffSlots,
+  useAddStaffSlot,
+  useDeleteStaffSlot,
+  type ClubImportRow,
   useRegenerateJoinCode,
   useClubLocations,
   useCreateClubLocation,
@@ -45,11 +60,24 @@ const ROLE_LABELS: Record<ClubRole, string> = {
   trainer: "Trainer",
   assistent: "Assistent-trainer",
   teammanager: "Teammanager",
+  ploegleider: "Ploegleider",
+  soigneur: "Soigneur",
+  medical_staff: "Medische staf",
   mechanieker: "Mechanieker",
   vrijwilliger: "Vrijwilliger",
-  alleen_lezen: "Alleen lezen",
+  alleen_lezen: "Gast",
   parent: "Ouder",
-  member: "Lid",
+  member: "Sporter",
+}
+
+// Beschrijvend functietype voor medische staf — geeft geen rechten.
+const MEDICAL_SPECIALTY_LABELS: Record<string, string> = {
+  arts: "Arts",
+  fysiotherapeut: "Fysiotherapeut",
+  dietist: "Diëtist",
+  sportpsycholoog: "Sportpsycholoog",
+  inspanningsfysioloog: "Inspanningsfysioloog",
+  overig: "Overig",
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -530,7 +558,12 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
                 {m.isYouth === true && <span className="ml-1.5 text-[10px] text-amber-300/80">jeugd</span>}
                 {m.isYouth === null && <span className="ml-1.5 text-[10px] text-white/35">leeftijd onbekend</span>}
               </p>
-              <p className="text-[11px] text-white/40">{ROLE_LABELS[m.role]}</p>
+              <p className="text-[11px] text-white/40">
+                {ROLE_LABELS[m.role]}
+                {m.role === "medical_staff" && m.medicalSpecialty && (
+                  <span className="text-white/30"> · {MEDICAL_SPECIALTY_LABELS[m.medicalSpecialty] ?? m.medicalSpecialty}</span>
+                )}
+              </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               {m.role !== "owner" && (
@@ -550,6 +583,25 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
                     .map((r) => (
                       <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                     ))}
+                </select>
+              )}
+              {m.role === "medical_staff" && (
+                <select
+                  value={m.medicalSpecialty ?? ""}
+                  onChange={(e) => {
+                    setError(null)
+                    setRole.mutate(
+                      { memberId: m.id, role: m.role, medicalSpecialty: e.target.value || null },
+                      { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
+                    )
+                  }}
+                  className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+                  title="Functietype (beschrijvend, geeft geen rechten)"
+                >
+                  <option value="">Functietype…</option>
+                  {Object.entries(MEDICAL_SPECIALTY_LABELS).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
                 </select>
               )}
               {m.role !== "owner" && (
@@ -735,6 +787,77 @@ function BeheerSignalen({ clubId }: { clubId: number }) {
   )
 }
 
+// TEAM_ABONNEMENT_01: Sparki Team — centrale facturatie door de eigenaar.
+// Toont uitsluitend server-geresolvede staat; de knop start alleen een
+// Stripe-checkout (testmodus), rechten worden nooit in de UI toegekend.
+function TeamSubscriptionSection({ clubId, isOwner }: { clubId: number; isOwner: boolean }) {
+  const { data } = useTeamSubscription(clubId)
+  const checkout = useStartTeamCheckout(clubId)
+  const [error, setError] = useState<string | null>(null)
+  if (!data) return null
+  const eur = (cents: number) => `€${(cents / 100).toLocaleString("nl-NL")}`
+  const start = (interval: "month" | "year") => {
+    setError(null)
+    checkout.mutate(interval, {
+      onSuccess: (r) => { window.location.href = r.url },
+      onError: (err) => setError(err instanceof Error ? err.message : "Checkout starten is niet gelukt."),
+    })
+  }
+  return (
+    <section aria-label="Sparki Team">
+      <h2 className={H2}><Package className="h-3 w-3" /> Sparki Team</h2>
+      <div className={CARD}>
+        {data.isTeam ? (
+          <>
+            <p className="text-[13px] text-white/85">
+              Team-abonnement {data.billing?.status === "active" || data.subscription?.status === "active" ? "actief" : `status: ${data.subscription?.status ?? "onbekend"}`}
+            </p>
+            <p className="mt-0.5 text-[11px] text-white/45">
+              {data.counts.members} van {data.subscription?.maxMembers ?? "—"} actieve leden
+              {data.billing?.currentPeriodEnd
+                ? ` · loopt t/m ${new Date(data.billing.currentPeriodEnd).toLocaleDateString("nl-NL")}`
+                : ""}
+            </p>
+            {data.subscription?.status === "blocked" && (
+              <p className="mt-1 text-[11px] text-amber-200/85">
+                De betaling is niet actueel. Nieuwe leden toevoegen is geblokkeerd; bestaande gegevens blijven volledig bewaard.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-[13px] text-white/85">
+              Eén abonnement voor de hele ploeg: tot 50 actieve leden, teams, rollen en centrale facturatie.
+            </p>
+            <p className="mt-0.5 text-[11px] text-white/45">
+              {eur(data.pricing.monthCents)} per maand of {eur(data.pricing.yearCents)} per jaar.
+            </p>
+            {isOwner && data.checkoutAvailable ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <button onClick={() => start("month")} disabled={checkout.isPending}
+                  className="rounded-lg border border-cyan-300/50 bg-cyan-300/10 px-2.5 py-1 text-[11px] text-cyan-200">
+                  Start — {eur(data.pricing.monthCents)}/maand
+                </button>
+                <button onClick={() => start("year")} disabled={checkout.isPending}
+                  className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] text-white/60 hover:border-white/30">
+                  Start — {eur(data.pricing.yearCents)}/jaar
+                </button>
+              </div>
+            ) : isOwner ? (
+              <p className="mt-1.5 text-[11px] text-white/40">
+                Afsluiten kan zodra de betaalomgeving voor dit account is opengesteld.
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[11px] text-white/40">Alleen de eigenaar kan dit abonnement afsluiten.</p>
+            )}
+          </>
+        )}
+        {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      </div>
+    </section>
+  )
+}
+
 function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean }) {
   const { data } = useClubSubscription(clubId)
   const setPkg = useSetClubPackage(clubId)
@@ -780,6 +903,409 @@ function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean 
           </div>
         )}
         {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      </div>
+    </section>
+  )
+}
+
+// ── CLUB_ONBOARDING_01: club in oprichting — stappen met zichtbare voortgang.
+// Alles wordt server-side bewaard: weggaan en later verdergaan kan altijd.
+// TEAM_ONBOARDING_01: organogram-kaarten als onboardinghulp. Een kaart maakt
+// alleen conceptstructuur (selecties + stafplekken) aan — nooit rechten,
+// nooit personen, nooit destructief. Rolplekken tonen rollen, geen namen.
+function TeamStructuurBlock({ clubId, organogramGekozen }: { clubId: number; organogramGekozen: boolean }) {
+  const { data: tpl } = useOrganogramTemplates()
+  const apply = useApplyOrganogram(clubId)
+  const { data: slotsData } = useStaffSlots(clubId)
+  const addSlot = useAddStaffSlot(clubId)
+  const deleteSlot = useDeleteStaffSlot(clubId)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [slotRole, setSlotRole] = useState<string>("ploegleider")
+  const [slotSpecialty, setSlotSpecialty] = useState<string>("")
+
+  const slots = slotsData?.slots ?? []
+  const bezetting = slotsData?.bezetting ?? {}
+
+  return (
+    <div className="space-y-3 border-t border-white/10 pt-3">
+      <div>
+        <p className="text-[12px] text-white/70">Structuur kiezen (organogram-kaarten)</p>
+        <p className="mt-0.5 text-[11px] text-white/45">
+          Een kaart zet selecties en stafplekken voor je klaar als startpunt. Dit is een
+          hulpmiddel: het bepaalt geen rechten en verwijdert nooit iets dat er al staat.
+          Namen verschijnen pas zodra iemand echt is toegewezen of een uitnodiging accepteert.
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {(tpl?.templates ?? []).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setMsg(null)
+                apply.mutate(
+                  { template: t.key },
+                  {
+                    onSuccess: (r: unknown) => {
+                      const res = r as { selectiesToegevoegd: number; slotsToegevoegd: number }
+                      setMsg(`Kaart toegepast: ${res.selectiesToegevoegd} selectie(s) en ${res.slotsToegevoegd} stafplek(ken) toegevoegd.`)
+                    },
+                    onError: (e) => setMsg(e instanceof Error ? e.message : "Toepassen is niet gelukt."),
+                  },
+                )
+              }}
+              disabled={apply.isPending}
+              className="rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-left hover:border-cyan-300/40 disabled:opacity-40"
+            >
+              <p className="text-[13px] text-white/85">{t.naam}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-white/45">{t.beschrijving}</p>
+              <p className="mt-1 text-[11px] text-white/55">
+                {t.selecties.length > 0 ? `Selecties: ${t.selecties.join(", ")}` : "Geen voorgestelde selecties"}
+              </p>
+              {t.staf.length > 0 && (
+                <p className="text-[11px] text-white/55">
+                  Rolplekken: {t.staf.map((s) => `${s.aantal}× ${ROLE_LABELS[s.role as ClubRole] ?? s.role}`).join(" · ")}
+                </p>
+              )}
+            </button>
+          ))}
+        </div>
+        {organogramGekozen && (
+          <p className="mt-1 text-[11px] text-emerald-300/80">Er is al een structuur gekozen — opnieuw kiezen voegt alleen ontbrekende onderdelen toe.</p>
+        )}
+        {msg && <p className="mt-1 text-[11px] text-white/60">{msg}</p>}
+      </div>
+
+      <div>
+        <p className="text-[12px] text-white/70">Stafplekken</p>
+        {slots.length === 0 ? (
+          <p className="mt-0.5 text-[11px] text-white/45">
+            Nog geen stafplekken. Kies hierboven een kaart of voeg er hieronder zelf één toe.
+          </p>
+        ) : (
+          <ul className="mt-1 space-y-1">
+            {slots.map((s) => (
+              <li key={s.id} className="flex items-center gap-2 text-[12px]">
+                <span className="text-white/75">{ROLE_LABELS[s.role as ClubRole] ?? s.role}</span>
+                {s.medicalSpecialty && (
+                  <span className="text-white/45">({MEDICAL_SPECIALTY_LABELS[s.medicalSpecialty] ?? s.medicalSpecialty})</span>
+                )}
+                <span className="text-[11px] text-white/40">
+                  {(bezetting[s.role] ?? 0) > 0 ? "rol al vervuld in de staf" : "nog open"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteSlot.mutate(s.id)}
+                  className="ml-auto rounded border border-white/15 px-2 py-0.5 text-[11px] text-white/50 hover:text-white/80"
+                >
+                  Plek verwijderen
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form
+          className="mt-2 flex flex-col gap-2 sm:flex-row"
+          onSubmit={(e) => {
+            e.preventDefault()
+            addSlot.mutate({
+              role: slotRole,
+              ...(slotRole === "medical_staff" && slotSpecialty ? { medicalSpecialty: slotSpecialty } : {}),
+            })
+          }}
+        >
+          <select value={slotRole} onChange={(e) => setSlotRole(e.target.value)} className={`${INPUT} sm:w-44`} aria-label="Rol voor stafplek">
+            {(["teammanager", "ploegleider", "trainer", "hoofdtrainer", "mechanieker", "soigneur", "medical_staff"] as const).map((r) => (
+              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+            ))}
+          </select>
+          {slotRole === "medical_staff" && (
+            <select value={slotSpecialty} onChange={(e) => setSlotSpecialty(e.target.value)} className={`${INPUT} sm:w-44`} aria-label="Functietype medische staf">
+              <option value="">Functietype (optioneel)</option>
+              {Object.entries(MEDICAL_SPECIALTY_LABELS).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          )}
+          <button type="submit" disabled={addSlot.isPending} className={BTN}>Stafplek toevoegen</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function OnboardingSection({ clubId }: { clubId: number }) {
+  const { data: ob } = useClubOnboarding(clubId)
+  const activate = useActivateClub(clubId)
+  const setLogo = useSetClubLogo(clubId)
+  const addManager = useAddOnboardingManager(clubId)
+  const createImport = useCreateClubImport(clubId)
+  const confirmImport = useConfirmClubImport(clubId)
+  const cancelImport = useCancelClubImport(clubId)
+
+  const [logoError, setLogoError] = useState<string | null>(null)
+  const [mgrEmail, setMgrEmail] = useState("")
+  const [mgrRole, setMgrRole] = useState<string>("trainer")
+  const [mgrSpecialty, setMgrSpecialty] = useState<string>("")
+  const [mgrMsg, setMgrMsg] = useState<string | null>(null)
+  const [batch, setBatch] = useState<{ id: number; rows: ClubImportRow[]; klaar: number } | null>(null)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [activateMsg, setActivateMsg] = useState<string[] | null>(null)
+
+  async function onLogoFile(file: File) {
+    setLogoError(null)
+    try {
+      const contentType = file.type || "application/octet-stream"
+      if (!["image/jpeg", "image/png", "image/webp", "image/svg+xml"].includes(contentType)) {
+        setLogoError("Dit bestandstype kan niet als logo. Gebruik JPG, PNG, WebP of SVG.")
+        return
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setLogoError("Het logobestand is te groot (maximaal 5 MB). Verklein het en probeer opnieuw.")
+        return
+      }
+      const { apiFetch } = await import("@/lib/api")
+      const { uploadURL, objectPath } = (await apiFetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        body: JSON.stringify({ name: file.name, size: file.size, contentType }),
+      })) as { uploadURL: string; objectPath: string }
+      const put = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": contentType }, body: file })
+      if (!put.ok) throw new Error("Uploaden van het logobestand is mislukt.")
+      await setLogo.mutateAsync({ logoUrl: objectPath, contentType, size: file.size })
+    } catch (e) {
+      setLogoError(e instanceof Error ? e.message : "Logo opslaan is niet gelukt.")
+    }
+  }
+
+  function parseCsv(text: string): { email: string; name?: string }[] {
+    // Eenvoudig en eerlijk: één rij per regel, e-mail + optioneel naam,
+    // gescheiden door ; of , — kopregel wordt herkend en overgeslagen.
+    return text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => {
+        const parts = l.split(/[;,]/).map((p) => p.trim())
+        const email = parts.find((p) => p.includes("@")) ?? parts[0] ?? ""
+        const name = parts.filter((p) => p !== email && !/^e-?mail$/i.test(p)).join(" ") || undefined
+        return { email, name }
+      })
+      .filter((r) => !/^e-?mail$/i.test(r.email))
+  }
+
+  async function onImportFile(file: File) {
+    setImportMsg(null)
+    setBatch(null)
+    const rows = parseCsv(await file.text())
+    if (rows.length === 0) {
+      setImportMsg("Het bestand bevat geen rijen om te importeren.")
+      return
+    }
+    createImport.mutate(
+      { fileName: file.name, rows },
+      {
+        onSuccess: (r) => setBatch({ id: r.batch.id, rows: r.rows, klaar: r.klaar }),
+        onError: (e) => setImportMsg(e instanceof Error ? e.message : "Import klaarzetten is niet gelukt."),
+      },
+    )
+  }
+
+  // TEAM_ONBOARDING_01: teamvariant van dezelfde hervatbare onboarding.
+  const isTeam = ob?.organisationType === "TEAM"
+  const steps: { label: string; done: boolean; hint?: string }[] = ob
+    ? isTeam
+      ? [
+          { label: "Teamnaam", done: ob.steps.profiel },
+          { label: "Contactgegevens", done: ob.steps.contact, hint: "e-mailadres of telefoonnummer, hieronder bij Profiel" },
+          { label: "Structuur gekozen (optioneel)", done: ob.steps.organogram, hint: "kies hieronder een organogram-kaart" },
+          { label: "Minstens één selectie", done: ob.steps.teams > 0, hint: "via een organogram-kaart of hieronder bij Seizoenen & teams" },
+          { label: "Logo (optioneel)", done: ob.steps.logo },
+        ]
+      : [
+          { label: "Clubnaam", done: ob.steps.profiel },
+          { label: "Contactgegevens", done: ob.steps.contact, hint: "e-mailadres of telefoonnummer, hieronder bij Clubprofiel" },
+          { label: "Logo (optioneel)", done: ob.steps.logo },
+          { label: "Seizoen (aanbevolen)", done: ob.steps.seizoen, hint: "hieronder bij Seizoenen & teams" },
+          { label: "Minstens één team", done: ob.steps.teams > 0, hint: "hieronder bij Seizoenen & teams" },
+        ]
+    : []
+
+  return (
+    <section aria-label={isTeam ? "Team in oprichting" : "Club in oprichting"}>
+      <h2 className={H2}><Settings2 className="h-3 w-3" /> {isTeam ? "Team in oprichting" : "Club in oprichting"}</h2>
+      <div className={`${CARD} space-y-4`}>
+        <p className="text-[12px] text-white/60">
+          Doorloop de stappen in je eigen tempo — alles wordt direct bewaard, dus je kunt
+          altijd weggaan en later verdergaan. Zolang de {isTeam ? "teamorganisatie" : "club"} in
+          oprichting is, zijn leden voor niemand anders zichtbaar en vertrekt er geen uitnodiging.
+        </p>
+
+        {/* Voortgang */}
+        <ul className="space-y-1.5">
+          {steps.map((s) => (
+            <li key={s.label} className="flex items-center gap-2 text-[13px]">
+              <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${s.done ? "border-emerald-300/50 bg-emerald-300/15 text-emerald-200" : "border-white/20 text-white/25"}`}>
+                {s.done ? <IconCheck className="h-2.5 w-2.5" /> : null}
+              </span>
+              <span className={s.done ? "text-white/80" : "text-white/50"}>{s.label}</span>
+              {!s.done && s.hint && <span className="text-[11px] text-white/35">— {s.hint}</span>}
+            </li>
+          ))}
+        </ul>
+
+        {/* TEAM_ONBOARDING_01: organogram-kaarten + stafplekken */}
+        {isTeam && <TeamStructuurBlock clubId={clubId} organogramGekozen={Boolean(ob?.steps.organogram)} />}
+
+        {/* Logo */}
+        <div>
+          <p className="mb-1 text-[12px] text-white/60">{isTeam ? "Teamlogo" : "Clublogo"} (JPG, PNG, WebP of SVG, max 5 MB)</p>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/svg+xml"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void onLogoFile(f) }}
+            className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-cyan-300/40 file:bg-cyan-300/10 file:px-3 file:py-1.5 file:text-[12px] file:text-cyan-200"
+          />
+          {setLogo.isPending && <p className="mt-1 text-[11px] text-white/45">Logo wordt opgeslagen…</p>}
+          {logoError && <p className="mt-1 text-[11px] text-rose-300/85">{logoError}</p>}
+        </div>
+
+        {/* Eerste beheerders en trainers */}
+        <div>
+          <p className="mb-1 text-[12px] text-white/60">
+            {isTeam
+              ? "Vaste seizoensstaf — direct toewijzen aan een bestaand account (uitnodigen van nieuwe accounts kan na activatie)."
+              : "Eerste beheerders en trainers — direct toewijzen aan een bestaand account (uitnodigen van nieuwe accounts kan na activatie)."}
+          </p>
+          <form
+            className="flex flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setMgrMsg(null)
+              if (!mgrEmail.trim()) return
+              addManager.mutate(
+                {
+                  email: mgrEmail.trim(),
+                  role: mgrRole,
+                  ...(mgrRole === "medical_staff" && mgrSpecialty ? { medicalSpecialty: mgrSpecialty } : {}),
+                },
+                {
+                  onSuccess: () => { setMgrMsg("Toegevoegd."); setMgrEmail("") },
+                  onError: (err) => setMgrMsg(err instanceof Error ? err.message : "Niet gelukt."),
+                },
+              )
+            }}
+          >
+            <input value={mgrEmail} onChange={(e) => setMgrEmail(e.target.value)} placeholder="E-mailadres van bestaand account" className={INPUT} />
+            <select value={mgrRole} onChange={(e) => setMgrRole(e.target.value)} className={`${INPUT} sm:w-44`}>
+              <option value="admin">Beheerder</option>
+              <option value="hoofdtrainer">Hoofdtrainer</option>
+              <option value="trainer">Trainer</option>
+              {isTeam && (
+                <>
+                  <option value="teammanager">Teammanager</option>
+                  <option value="ploegleider">Ploegleider</option>
+                  <option value="mechanieker">Mechanieker</option>
+                  <option value="soigneur">Soigneur</option>
+                  <option value="medical_staff">Medische staf</option>
+                </>
+              )}
+            </select>
+            {isTeam && mgrRole === "medical_staff" && (
+              <select value={mgrSpecialty} onChange={(e) => setMgrSpecialty(e.target.value)} className={`${INPUT} sm:w-44`} aria-label="Functietype medische staf">
+                <option value="">Functietype (optioneel)</option>
+                {Object.entries(MEDICAL_SPECIALTY_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            )}
+            <button type="submit" disabled={addManager.isPending} className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40">
+              Toewijzen
+            </button>
+          </form>
+          {mgrMsg && <p className="mt-1 text-[11px] text-white/60">{mgrMsg}</p>}
+        </div>
+
+        {/* Ledenimport */}
+        <div>
+          <p className="mb-1 text-[12px] text-white/60">
+            Ledenimport (CSV: e-mailadres, optioneel naam). Er wordt pas iets toegevoegd
+            na jouw bevestiging.
+          </p>
+          <input
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void onImportFile(f) }}
+            className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-white/20 file:bg-white/5 file:px-3 file:py-1.5 file:text-[12px] file:text-white/70"
+          />
+          {importMsg && <p className="mt-1 text-[11px] text-rose-300/85">{importMsg}</p>}
+          {batch && (
+            <div className="mt-2 space-y-2">
+              <p className="text-[12px] text-white/70">
+                {batch.rows.length} rijen gelezen — {batch.klaar} klaar om toe te voegen,{" "}
+                {batch.rows.length - batch.klaar} niet (per rij hieronder). Nog niets toegevoegd.
+              </p>
+              <ul className="max-h-44 space-y-1 overflow-y-auto">
+                {batch.rows.map((r) => (
+                  <li key={r.id} className="flex items-baseline gap-2 text-[11px]">
+                    <span className="text-white/35">#{r.rowNumber}</span>
+                    <span className="text-white/70">{r.email ?? "—"}</span>
+                    <span className={r.status === "klaar" || r.status === "toegevoegd" ? "text-emerald-300/80" : "text-amber-300/80"}>
+                      {r.status === "klaar" ? "klaar" : r.message ?? r.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex gap-2">
+                <button
+                  onClick={() =>
+                    confirmImport.mutate(batch.id, {
+                      onSuccess: (r) => { setImportMsg(null); setBatch(null); setMgrMsg(null); setActivateMsg(null); setImportMsg(`Import afgerond: ${r.toegevoegd} toegevoegd, ${r.nietVerwerkt} niet verwerkt.`) },
+                      onError: (e) => setImportMsg(e instanceof Error ? e.message : "Bevestigen is niet gelukt."),
+                    })
+                  }
+                  disabled={confirmImport.isPending || batch.klaar === 0}
+                  className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-emerald-200 disabled:opacity-40"
+                >
+                  Bevestig import ({batch.klaar})
+                </button>
+                <button
+                  onClick={() => cancelImport.mutate(batch.id, { onSettled: () => setBatch(null) })}
+                  className="rounded-lg border border-white/20 px-3 py-1.5 text-[12px] text-white/70"
+                >
+                  Annuleren
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Activatie */}
+        <div className="border-t border-white/10 pt-3">
+          {ob && !ob.klaarVoorActivatie && (
+            <p className="mb-2 text-[12px] text-amber-200/85">
+              Nog nodig voor activatie: {ob.missing.join(" · ")}
+            </p>
+          )}
+          <button
+            onClick={() => {
+              setActivateMsg(null)
+              activate.mutate(undefined, {
+                onError: (e) => {
+                  const anyErr = e as Error & { ontbreekt?: string[] }
+                  setActivateMsg(anyErr.ontbreekt ?? [anyErr.message ?? "Activeren is niet gelukt."])
+                },
+              })
+            }}
+            disabled={activate.isPending}
+            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-[13px] font-medium text-emerald-200 disabled:opacity-40"
+          >
+            {isTeam ? "Team activeren" : "Club activeren"}
+          </button>
+          {activateMsg && (
+            <ul className="mt-2 space-y-0.5 text-[12px] text-rose-300/85">
+              {activateMsg.map((m) => <li key={m}>{m}</li>)}
+            </ul>
+          )}
+        </div>
       </div>
     </section>
   )
@@ -835,15 +1361,28 @@ export default function ClubBeheerPage() {
           </section>
         )}
 
+        {mine.club?.status === "concept" && <OnboardingSection clubId={clubId} />}
+
         <BeheerSignalen clubId={clubId} />
         {mine.club && <ClubSettingsSection club={mine.club} isOwner={myRole === "owner"} />}
         {mine.club && <JoinCodeSection club={mine.club} />}
-        <InviteSection clubId={clubId} />
+        {mine.club?.status === "concept" ? (
+          <section aria-label="Uitnodigingen">
+            <h2 className={H2}><Link2 className="h-3 w-3" /> Uitnodigingen</h2>
+            <p className={`${CARD} text-[12px] text-white/50`}>
+              Zolang de club in oprichting is, vertrekt er geen enkele uitnodiging.
+              Activeer de club eerst; daarna kun je leden uitnodigen.
+            </p>
+          </section>
+        ) : (
+          <InviteSection clubId={clubId} />
+        )}
         <LocationsSection clubId={clubId} />
         <MembersSection clubId={clubId} myRole={myRole} />
         <SeasonsTeamsSection clubId={clubId} />
         <PlanTrainingSection clubId={clubId} />
         <PlanRaceSection clubId={clubId} />
+        <TeamSubscriptionSection clubId={clubId} isOwner={myRole === "owner"} />
         <PackageSection clubId={clubId} isOwner={myRole === "owner"} />
 
         <section aria-label="Logboek">

@@ -82,7 +82,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         confidence: 0.8,
         fallbackTitle: "Herstel gaat voor",
         fallbackMessage:
-          "Je meldt pijn. Sparki maakt hier een rustige hersteltraining van — korter en licht. Houdt de pijn aan, sla dan liever over en laat ernaar kijken.",
+          "Je meldt pijn. Hier wordt een rustige hersteltraining van gemaakt — korter en licht. Houdt de pijn aan, sla dan liever over en laat ernaar kijken.",
       };
     }
     case "tired": {
@@ -105,7 +105,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         confidence: heavyRpe ? 0.85 : 0.75,
         fallbackTitle: "Vandaag rustig herstellen",
         fallbackMessage:
-          "Je bent niet hersteld genoeg voor de geplande belasting. Sparki stelt een kortere hersteltraining voor, zodat je morgen weer verder kunt bouwen.",
+          "Je bent niet hersteld genoeg voor de geplande belasting. Een kortere hersteltraining wordt voorgesteld, zodat je morgen weer verder kunt bouwen.",
       };
     }
     case "too_hard": {
@@ -118,7 +118,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         const changes: AdjustChanges = { intensity: "herstel" };
         if (dur != null) changes.targetDurationMin = round5(dur * 0.6);
         if (tss != null) changes.targetTSS = Math.max(10, Math.round(tss * 0.5));
-        basis.push("Bij RPE 9–10 kiest Sparki voor herstel in plaats van bijschaven.");
+        basis.push("Bij RPE 9–10 gaat de keuze naar herstel in plaats van bijschaven.");
         return {
           recommendation: "recovery",
           changes,
@@ -126,7 +126,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
           confidence: 0.85,
           fallbackTitle: "Even gas terug",
           fallbackMessage:
-            "Dit was op het randje. Sparki zet de volgende prikkel om naar herstel zodat je lichaam de zware sessie kan verwerken.",
+            "Dit was op het randje. De volgende prikkel wordt omgezet naar herstel zodat je lichaam de zware sessie kan verwerken.",
         };
       }
       const changes: AdjustChanges = {};
@@ -148,7 +148,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         confidence: rpe != null ? 0.8 : 0.7,
         fallbackTitle: "Iets lichter bijgesteld",
         fallbackMessage:
-          "Te zwaar is een eerlijk signaal. Sparki stelt ongeveer 20% minder belasting voor, zodat je de training wél goed kunt afmaken.",
+          "Te zwaar is een eerlijk signaal. Er wordt ongeveer 20% minder belasting voorgesteld, zodat je de training wél goed kunt afmaken.",
       };
     }
     case "too_light": {
@@ -160,7 +160,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         basis.push(`Belasting omhoog: ${tss} → ${changes.targetTSS} TSS (+15%).`);
       } else {
         changes.targetTSS = 60;
-        basis.push("Geen belastingsdoel bekend — Sparki start voorzichtig op 60 TSS.");
+        basis.push("Geen belastingsdoel bekend — er wordt voorzichtig gestart op 60 TSS.");
       }
       if (dur != null) {
         changes.targetDurationMin = round5(dur * 1.1);
@@ -173,7 +173,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         confidence: 0.75,
         fallbackTitle: "Volgende keer iets zwaarder",
         fallbackMessage:
-          "Goed teken dat dit makkelijk voelde. Sparki verhoogt de belasting met een kleine, veilige stap — groot genoeg om te prikkelen, klein genoeg om te herstellen.",
+          "Goed teken dat dit makkelijk voelde. De belasting gaat met een kleine, veilige stap omhoog — groot genoeg om te prikkelen, klein genoeg om te herstellen.",
       };
     }
     case "move": {
@@ -187,7 +187,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         confidence: 0.7,
         fallbackTitle: "Training verplaatst",
         fallbackMessage:
-          "Sparki schuift de training één dag op. Komt die dag ook niet uit, kies dan zelf een andere datum — de inhoud blijft gelijk.",
+          "De training schuift één dag op. Komt die dag ook niet uit, kies dan zelf een andere datum — de inhoud blijft gelijk.",
       };
     }
     case "missed": {
@@ -201,7 +201,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         confidence: 0.7,
         fallbackTitle: "Opnieuw ingepland",
         fallbackMessage:
-          "Een gemiste training haal je niet in door te stapelen. Sparki zet dezelfde training op morgen; de rest van de week blijft in balans.",
+          "Een gemiste training haal je niet in door te stapelen. Dezelfde training komt op morgen; de rest van de week blijft in balans.",
       };
     }
     default: {
@@ -215,7 +215,7 @@ export function decideAdjustment(input: AdjustInput): AdjustDecision {
         confidence: 0.9,
         fallbackTitle: "Lekker bezig — plan blijft staan",
         fallbackMessage:
-          "Deze training is goed uitgevoerd. Sparki verandert niets; het schema klopt zo.",
+          "Deze training is goed uitgevoerd. Er verandert niets; het schema klopt zo.",
       };
     }
   }

@@ -18,6 +18,14 @@ export const TIER_PRICING: Record<
     trialDays: 14,
     productName: "sparki_complete_tier",
   },
+  // TEAM_ABONNEMENT_01: Sparki Team — €149/maand of €1.490/jaar, centrale
+  // facturatie voor een teamorganisatie (prijzen in eurocenten).
+  TEAM: {
+    month: 14900,
+    year: 149000,
+    trialDays: 14,
+    productName: "sparki_team_tier",
+  },
 };
 
 export interface SubscriptionState {
@@ -31,6 +39,7 @@ export interface SubscriptionState {
   tier: string | null; // uit metadata.tier
   interval: string | null;
   clerkId: string | null; // uit metadata.clerk_id
+  clubId?: number | null; // uit metadata.club_id (TEAM_ABONNEMENT_01, centrale facturatie)
 }
 
 export interface InvoiceState {
@@ -49,6 +58,14 @@ export interface ChargeState {
   amountRefunded: number; // CUMULATIEF — besluit nooit op het eventdelta
 }
 
+// TEAM_ABONNEMENT_01: club_id-metadata is alleen geldig als positief geheel
+// getal; al het andere is expliciet null (fail-closed: geen club-koppeling).
+export function parseClubIdMeta(raw: unknown): number | null {
+  if (typeof raw !== "string" || !/^\d+$/.test(raw)) return null;
+  const n = Number(raw);
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}
+
 export interface StripeGateway {
   isConfigured(): boolean;
   createCheckoutSession(args: {
@@ -57,6 +74,7 @@ export interface StripeGateway {
     interval: BillingInterval;
     successUrl: string;
     cancelUrl: string;
+    clubId?: number; // TEAM: koppelt de subscription aan één teamorganisatie
   }): Promise<{ id: string; url: string }>;
   createPortalSession(args: {
     customerId: string;
@@ -148,9 +166,12 @@ class RealStripeGateway implements StripeGateway {
     interval: BillingInterval;
     successUrl: string;
     cancelUrl: string;
+    clubId?: number;
   }): Promise<{ id: string; url: string }> {
     const stripe = this.stripe();
     const priceId = await this.ensurePrice(args.tier, args.interval);
+    const clubMeta: Record<string, string> =
+      args.clubId != null ? { club_id: String(args.clubId) } : {};
     // Zonder Stripe-trial: de proef is Sparki-zijdig (user_entitlements).
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -164,9 +185,16 @@ class RealStripeGateway implements StripeGateway {
         interval: args.interval,
         app: "sparki",
         phase: "test",
+        ...clubMeta,
       },
       subscription_data: {
-        metadata: { clerk_id: args.clerkId, tier: args.tier, app: "sparki", phase: "test" },
+        metadata: {
+          clerk_id: args.clerkId,
+          tier: args.tier,
+          app: "sparki",
+          phase: "test",
+          ...clubMeta,
+        },
       },
     });
     if (!session.url) throw new Error("Stripe gaf geen checkout-URL terug");
@@ -199,6 +227,7 @@ class RealStripeGateway implements StripeGateway {
         tier: (s.metadata?.tier as string | undefined) ?? null,
         interval: item?.price?.recurring?.interval ?? null,
         clerkId: (s.metadata?.clerk_id as string | undefined) ?? null,
+        clubId: parseClubIdMeta(s.metadata?.club_id),
       };
     } catch (err) {
       if ((err as { statusCode?: number }).statusCode === 404) return null;

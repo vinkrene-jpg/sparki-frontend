@@ -34,17 +34,40 @@ export const clubRoles = [
   "trainer",
   "assistent", // helpt bij trainingen (aanwezigheid), geen sportdata-inzage
   "teammanager",
+  // HERSTEL TEAM_ABONNEMENT_01: ploegleider is een APARTE server-side rol
+  // (eerdere aanname ploegleider==teammanager is vervallen/SUPERSEDED).
+  "ploegleider",
   "mechanieker", // mag materiaalvelden bijwerken, verder alleen-lezen
-  "member", // lid (renner)
+  "member", // lid (renner) — gebruikersnaam "Sporter"
   "parent", // ouder/verzorger
   "vrijwilliger", // leest kalender/berichten, geen beheer
-  "alleen_lezen", // strikt alleen-lezen
+  "alleen_lezen", // strikt alleen-lezen — gebruikersnaam "Gast"
+  // TEAM_ABONNEMENT_01: begeleidende teamrollen. Least privilege — geen
+  // beheerrechten, geen automatische sportdata-inzage (consent blijft leidend).
+  "soigneur", // verzorger: kalender/berichten, geen beheer of sportdata
+  // HERSTEL TEAM_ABONNEMENT_01: "medic" heet nu "medical_staff" (met
+  // beschrijvend functietype zonder zelfstandige rechten).
+  "medical_staff", // medische staf: kalender/berichten; sportdata alleen via consent
 ] as const;
 export type ClubRole = (typeof clubRoles)[number];
 
+// Beschrijvend functietype voor medical_staff. Geeft GEEN zelfstandige
+// rechten — puur label voor wie welke medische functie vervult.
+export const medicalSpecialties = [
+  "arts",
+  "fysiotherapeut",
+  "dietist",
+  "sportpsycholoog",
+  "inspanningsfysioloog",
+  "overig",
+] as const;
+export type MedicalSpecialty = (typeof medicalSpecialties)[number];
+
 // Clubstatus (commerciële voorbereiding): beperkt = geen nieuwe toevoegingen,
 // geschorst/beeindigd = alleen-lezen voor iedereen behalve eigenaar/beheer.
-export const clubStatuses = ["actief", "beperkt", "geschorst", "beeindigd"] as const;
+// CLUB_ONBOARDING_01: "concept" = club in oprichting — geen uitnodigingen,
+// geen leden zichtbaar voor anderen, activatie zet hem op "actief".
+export const clubStatuses = ["concept", "actief", "beperkt", "geschorst", "beeindigd"] as const;
 export type ClubStatus = (typeof clubStatuses)[number];
 
 // Beschikbare modules per club (aan/uit); default alles aan.
@@ -80,6 +103,14 @@ export const clubsTable = pgTable("clubs", {
   // WP-03: soort organisatie (club | vereniging | ploeg | school | anders).
   // Additief; bestaande rijen blijven gewoon "club".
   organisationKind: text("organisation_kind").notNull().default("club"),
+  // TEAM_ONBOARDING_01 (besluitendoc 01-08-2026): organisatietype op de
+  // BESTAANDE container — géén tweede organisatie-entiteit. "CLUB" =
+  // clubomgeving, "TEAM" = zelfstandige wedstrijdteam-organisatie.
+  // organisationKind blijft het beschrijvende subtype.
+  organisationType: text("organisation_type").notNull().default("CLUB"),
+  // Gekozen organogram-kaart tijdens de team-onboarding. Puur conceptstructuur:
+  // de kaart leidt NOOIT rechten af en is nooit destructief (bindende regels §3).
+  organogramTemplate: text("organogram_template"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -98,6 +129,9 @@ export const clubMembersTable = pgTable(
       .notNull()
       .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     role: text("role").notNull().default("member"),
+    // Alleen voor rol medical_staff: beschrijvend functietype (arts,
+    // fysiotherapeut, …). Geen zelfstandige rechten.
+    medicalSpecialty: text("medical_specialty"),
     // Vrij label, bv. "hoofdtrainer jeugd".
     label: text("label"),
     joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
@@ -497,10 +531,80 @@ export const clubConsentsTable = pgTable(
   (t) => [uniqueIndex("club_consents_unique").on(t.clubId, t.athleteClerkId, t.scope)],
 );
 
+// ── CLUB_ONBOARDING_01: ledenimport ──────────────────────────────────────────
+// Import voegt nooit stilzwijgend toe: een batch staat eerst op
+// "wacht_op_bevestiging" en pas een expliciete bevestiging verwerkt de rijen
+// in één transactie (alles of niets). Rijen bevatten persoonsgegevens en
+// worden na een configureerbare bewaartermijn opgeschoond (purgeAfter).
+export const clubImportBatchStatuses = [
+  "wacht_op_bevestiging",
+  "bevestigd",
+  "geannuleerd",
+  "verlopen",
+] as const;
+export type ClubImportBatchStatus = (typeof clubImportBatchStatuses)[number];
+
+// Rijstatus vóór bevestiging: klaar | dubbel | ongeldig | geen_account.
+// Ná bevestiging: toegevoegd (klaar-rijen). Dubbel = geverifieerd e-mailadres
+// is al actief lid (nooit op naam). geen_account = geen bestaand account met
+// dit e-mailadres; uitnodigen kan pas ná activatie (CLUB_LEDEN_01).
+export const clubImportRowStatuses = [
+  "klaar",
+  "dubbel",
+  "ongeldig",
+  "geen_account",
+  "toegevoegd",
+] as const;
+export type ClubImportRowStatus = (typeof clubImportRowStatuses)[number];
+
+export const clubImportBatchesTable = pgTable(
+  "club_import_batches",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    fileName: text("file_name"),
+    status: text("status").notNull().default("wacht_op_bevestiging"),
+    totalRows: integer("total_rows").notNull().default(0),
+    okRows: integer("ok_rows").notNull().default(0),
+    failedRows: integer("failed_rows").notNull().default(0),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    // Bewaartermijn persoonsgegevens (besluitpunt; configureerbaar via env).
+    purgeAfter: timestamp("purge_after", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_import_batches_club_idx").on(t.clubId)],
+);
+export type ClubImportBatch = typeof clubImportBatchesTable.$inferSelect;
+
+export const clubImportRowsTable = pgTable(
+  "club_import_rows",
+  {
+    id: serial("id").primaryKey(),
+    batchId: integer("batch_id")
+      .notNull()
+      .references(() => clubImportBatchesTable.id, { onDelete: "cascade" }),
+    rowNumber: integer("row_number").notNull(),
+    email: text("email"),
+    name: text("name"),
+    role: text("role").notNull().default("member"),
+    status: text("status").notNull().default("ongeldig"),
+    message: text("message"),
+    // Gevonden account (user_profiles.clerkId) bij een e-mailmatch.
+    matchedClerkId: text("matched_clerk_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_import_rows_batch_idx").on(t.batchId)],
+);
+export type ClubImportRow = typeof clubImportRowsTable.$inferSelect;
+
 // ── Commerciële clubadministratie (geen boekhouding) ─────────────────────────
 // Pakket + limieten + status. Overschrijding blokkeert nieuwe toevoegingen,
 // verwijdert nooit data. Configureerbaar en klaar voor latere facturatie.
-export const clubPackages = ["proef", "start", "basis", "groei"] as const;
+export const clubPackages = ["proef", "start", "basis", "groei", "team"] as const;
 export type ClubPackage = (typeof clubPackages)[number];
 
 export const clubSubscriptionsTable = pgTable("club_subscriptions", {
@@ -537,6 +641,36 @@ export const clubAuditLogTable = pgTable(
   (t) => [index("club_audit_club_idx").on(t.clubId, t.createdAt)],
 );
 
+// ── TEAM_ONBOARDING_01: stafplekken (conceptstructuur, GEEN rechten) ─────────
+// Een organogram-kaart of beheerder maakt "rolplekken" aan: welke stafrollen
+// de organisatie wil invullen. Een plek is puur structuur — er hangt geen
+// persoon, recht of zichtbaarheid aan. Echte namen en rechten ontstaan
+// uitsluitend via club_members (na directe toewijzing of geaccepteerde
+// uitnodiging). Een plek verwijderen raakt dus nooit een persoon of rol.
+export const organisationStaffSlotsTable = pgTable(
+  "organisation_staff_slots",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    // Optioneel gebonden aan één selectie/subteam (club_teams).
+    teamId: integer("team_id").references(() => clubTeamsTable.id, { onDelete: "cascade" }),
+    // Bestaande server-side rolwaarde (clubRoles) — kaarten tonen uitsluitend
+    // rollen die echt bestaan.
+    role: text("role").notNull(),
+    // Alleen betekenisvol bij role="medical_staff": beschrijvend functietype
+    // zonder eigen rechten (medicalSpecialties).
+    medicalSpecialty: text("medical_specialty"),
+    // Vrij label, bv. "Ploegleider voorjaarsblok". Nooit een persoonsnaam
+    // vóór acceptatie — namen komen uit club_members.
+    label: text("label"),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("organisation_staff_slots_club_idx").on(t.clubId)],
+);
+
 // ── Zod & types ───────────────────────────────────────────────────────────────
 export const insertClubSchema = createInsertSchema(clubsTable).omit({ id: true });
 export const selectClubSchema = createSelectSchema(clubsTable);
@@ -556,3 +690,8 @@ export type ClubMessageRead = typeof clubMessageReadsTable.$inferSelect;
 export type ClubConsent = typeof clubConsentsTable.$inferSelect;
 export type ClubSubscription = typeof clubSubscriptionsTable.$inferSelect;
 export type ClubAuditEntry = typeof clubAuditLogTable.$inferSelect;
+export type OrganisationStaffSlot = typeof organisationStaffSlotsTable.$inferSelect;
+
+// TEAM_ONBOARDING_01: organisatietypen op de bestaande container.
+export const organisationTypes = ["CLUB", "TEAM"] as const;
+export type OrganisationType = (typeof organisationTypes)[number];

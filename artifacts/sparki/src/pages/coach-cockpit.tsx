@@ -869,7 +869,7 @@ export default function CoachCockpitPage() {
           <>
             <SectionLabel n="02" title="Voorstellen van Sparki" />
             <p className="-mt-3 text-[13px] text-white/45">
-              Sparki past jouw trainingen nooit zelf aan — jij beslist.
+              Jouw trainingen worden nooit automatisch aangepast — jij beslist.
             </p>
             <div className="space-y-3">
               {proposals.map((p) => (

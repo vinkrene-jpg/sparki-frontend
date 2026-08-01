@@ -94,8 +94,8 @@ export function ImportFromCalendar({
   return (
     <div className="space-y-5">
       <p className="text-[12.5px] leading-relaxed text-white/45">
-        Kies een kalender, zoek je wedstrijd en tik erop. Sparki vult het
-        formulier voor je in — je controleert daarna alles zelf.
+        Kies een kalender, zoek je wedstrijd en tik erop. Het
+        formulier wordt automatisch ingevuld — je controleert daarna alles zelf.
       </p>
 
       {/* Source selector */}

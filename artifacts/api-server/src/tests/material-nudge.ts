@@ -180,8 +180,8 @@ async function main() {
       "checked nudge should carry lastCheckedAt",
     );
     assert(
-      /voor het laatst zag/.test(nudge!.message),
-      "checked message should reference the last time Sparki saw it",
+      /voor het laatst is bekeken/.test(nudge!.message),
+      "checked message should reference the last check moment",
     );
   });
 

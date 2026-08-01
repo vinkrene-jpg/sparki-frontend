@@ -103,3 +103,19 @@ export function getSubdisciplines(type: string): SportSubdiscipline[] {
 export function isValidSubdiscipline(type: string, value: string): boolean {
   return getSubdisciplines(type).some((d) => d.value === value);
 }
+
+// ── Routefamilies (MOBILE_ROUTE_WALKING_01) ─────────────────────────────────
+// Een ROUTEFAMILIE is los van een TRAININGSFAMILIE (registerbesluit F0 R1):
+// wandelen en hiken hebben een volledige route-engine (foot-walking /
+// foot-hiking profielen + voet-specifieke geschiktheid), maar géén
+// trainings-/zones-/advies-engine. Daarom zijn ze hier actief als routesport
+// terwijl "running" als trainingssport op coming_soon blijft.
+// Besluit René 01-08-2026: geen vrijgaveflags (walking_routes/hiking_routes);
+// dit register is de enige poort, net als bij de trainingssporten.
+export const ROUTE_SPORTS = ["cycling", "walking", "hiking"] as const;
+export type RouteSportFamily = (typeof ROUTE_SPORTS)[number];
+
+/** Is deze sport beschikbaar voor ROUTEplanning (niet per se voor training)? */
+export function isRouteSportActive(type: string): boolean {
+  return (ROUTE_SPORTS as readonly string[]).includes(type);
+}

@@ -1,0 +1,74 @@
+**Besluit verwerkt.**
+
+### 1. Keuze 17 — Geschatte FTP
+
+Vastgelegd.
+
+Een **geschatte FTP** mag worden gebruikt voor **voorlopige trainingszones en een voorlopig trainingsplan**, onder de volgende voorwaarden:
+
+* altijd zichtbaar als **Geschatte FTP**;
+* bron, datum en betrouwbaarheid vastleggen;
+* nooit presenteren als gemeten of bevestigde FTP;
+* gebruiker kan bevestigen, aanpassen of vervangen;
+* nieuwe betrouwbare data levert een wijzigingsvoorstel op, geen stille wijziging;
+* bij gekoppelde trainer blijft de trainer leidend;
+* onvoldoende betrouwbare data ⇒ vraag om FTP-test of handmatige invoer.
+
+**Productregel:**
+
+> Een geschatte FTP mag Sparki bruikbaar maken, maar nooit een sportfeit suggereren dat niet bewezen is.
+
+---
+
+### 2. Keuze 18 — Legacy-migratie
+
+Vastgelegd.
+
+Legacy-migratie gebeurt **per account**, niet als één globale migratie.
+
+Verplicht:
+
+* inventarisatie + dry-run per account;
+* preview van over te nemen gegevens;
+* volledige herleidbaarheid naar bron;
+* idempotent;
+* nooit nieuwere of betrouwbaardere data overschrijven;
+* conflicten zichtbaar houden;
+* migratiestatus per account;
+* auditlog + herstelmogelijkheid;
+* gefaseerde uitrol na bewezen test.
+
+**Productregel:**
+
+> Migratie is een gecontroleerde accounttransformatie, geen database-import.
+
+---
+
+### 3. ABONNEE_ADMIN_01
+
+`ABONNEE_ADMIN_01` blijft voorlopig **geblokkeerd**.
+
+Vrijgave volgt pas na een succesvolle Mirror-hertoets van:
+
+* DATA_TRUST_01;
+* ABONNEMENT_01;
+* de volledige gekoppelde keten.
+
+Mirror moet aantonen dat:
+
+* geen mock-, seed- of fallbackdata zichtbaar is;
+* rechten uitsluitend uit echte abonnementstoestand komen;
+* Stripe-events deterministisch verwerkt worden;
+* dubbele webhooks veilig zijn;
+* typecheck, build en tests groen zijn;
+* negatieve tests zijn uitgevoerd;
+* audittrail compleet is.
+
+Pas daarna wordt `ABONNEE_ADMIN_01` vrijgegeven.
+
+Ga nu verder met:
+
+1. Hoofdstuk J verwerken met de definitieve Team/Club-besluiten.
+2. `TEAM_ONBOARDING_01` volledig uitschrijven.
+3. `PLOEGLEIDER_01` volledig uitschrijven.
+4. Daarna de Mirror-bewijsset voorbereiden voor `DATA_TRUST_01` en `ABONNEMENT_01`.

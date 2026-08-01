@@ -92,7 +92,7 @@ export function assessConsequence(input: ConsequenceInput): ConsequenceResult {
       const label = FEEDBACK_LABELS_NL[negative] ?? negative;
       return {
         status: "voorstel",
-        reason: `Omdat je na deze rit "${label}" aangaf, kan Sparki een aanpassing van je schema voorstellen.`,
+        reason: `Omdat je na deze rit "${label}" aangaf, kan een aanpassing van je schema worden voorgesteld.`,
         causeLine: `Op basis van jouw feedback ("${label}") op deze training.`,
         missing: [],
         canPropose: true,
@@ -115,7 +115,7 @@ export function assessConsequence(input: ConsequenceInput): ConsequenceResult {
       const richting = diff > 0 ? "zwaarder" : "lichter";
       return {
         status: "onbekend",
-        reason: `Je reed duidelijk ${richting} dan gepland (belasting ${session.tss} om ${workout.targetTSS}). Of je schema aanpassing nodig heeft hangt af van hoe het voelde — geef je feedback op deze training, dan bepaalt Sparki het gevolg.`,
+        reason: `Je reed duidelijk ${richting} dan gepland (belasting ${session.tss} om ${workout.targetTSS}). Of je schema aanpassing nodig heeft hangt af van hoe het voelde — geef je feedback op deze training, dan wordt het gevolg bepaald.`,
         causeLine: null,
         missing: ["feedback"],
         canPropose: true,
@@ -149,7 +149,7 @@ export function assessConsequence(input: ConsequenceInput): ConsequenceResult {
     return {
       status: "onbekend",
       reason:
-        "Nog niet te bepalen: er zijn geen vergelijkbare belastingcijfers (gepland én gereden). Geef je feedback op deze training, dan bepaalt Sparki het gevolg.",
+        "Nog niet te bepalen: er zijn geen vergelijkbare belastingcijfers (gepland én gereden). Geef je feedback op deze training, dan wordt het gevolg bepaald.",
       causeLine: null,
       missing: ["feedback"],
       canPropose: true,

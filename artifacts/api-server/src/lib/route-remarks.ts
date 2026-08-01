@@ -41,6 +41,11 @@ export type RouteRemark = {
   // De letterlijke OSM-tagwaarde(n) waarop deze opmerking is gebaseerd, zodat
   // de renner (en wij) kunnen zien wáárom dit wordt gemeld.
   evidence: string;
+  // true = alleen relevant voor voetprofielen (wandelen/hiken): het wegvak of
+  // de poort is voor fietsers expliciet toegestaan maar te voet dicht
+  // (bv. access=private met bicycle=yes). Telt NIET mee in de fietspoort en
+  // wordt in fiets-weergaven niet getoond.
+  footOnly?: boolean;
 };
 
 export type RouteRemarksResult = {
@@ -195,6 +200,7 @@ type Classified = {
   detail: string;
   uncertain: boolean;
   evidence: string;
+  footOnly?: boolean;
 };
 
 export function classifyRemarkTags(
@@ -235,6 +241,36 @@ export function classifyRemarkTags(
   }
   if (tags.barrier && GATE_BARRIERS.has(tags.barrier)) {
     const passage = classifyGatePassage(tags);
+    // Voetcontrole vóór de fietsgerichte onderdrukking: een poort die voor
+    // fietsers expliciet doorfietsbaar is getagd kan te voet alsnog dicht
+    // zijn (locked=yes, of access=no/private zonder voetuitzondering). Zo'n
+    // poort mag niet stilletjes uit de meting verdwijnen — hij telt als
+    // voet-blokkade (footOnly) maar blijft voor fietsers onzichtbaar.
+    const footAllowedGate =
+      tags.foot === "yes" ||
+      tags.foot === "designated" ||
+      tags.foot === "permissive";
+    const footHardGate =
+      tags.locked === "yes" ||
+      ((tags.access === "no" || tags.access === "private") &&
+        !footAllowedGate);
+    if ((passage === "doorfietsbaar" || passage === "onbekend") && footHardGate) {
+      const bits = [
+        tags.locked === "yes" ? "locked=yes" : null,
+        tags.access ? `access=${tags.access}` : null,
+        tags.bicycle ? `bicycle=${tags.bicycle}` : null,
+        tags.foot ? `foot=${tags.foot}` : null,
+      ].filter((b): b is string => b != null);
+      return {
+        kind: "poort",
+        label: `Afgesloten poort / privéterrein (te voet)${named}`,
+        detail:
+          "Volgens de kaartgegevens is deze poort te voet dicht (op slot of privéterrein zonder voetuitzondering).",
+        uncertain: false,
+        evidence: `barrier=${tags.barrier}, ${bits.join(", ")}`,
+        footOnly: true,
+      };
+    }
     // Acceptatiegrens René (30-07-2026): een poort waar je volgens de
     // kaartgegevens als fietser gewoon door kunt, is geen probleem en wordt
     // niet gemeld — benoemen zorgt alleen voor twijfel.
@@ -307,6 +343,28 @@ export function classifyRemarkTags(
           : "Dit wegvak is volgens de kaartgegevens afgesloten (access=no) zonder fietsuitzondering. Hier mag je waarschijnlijk niet rijden — deze route hoort niet aangeboden te worden.",
       uncertain: false,
       evidence: `access=${access}`,
+    };
+  }
+  // Voet-tak: een fietsuitzondering (bicycle=yes/designated/permissive) op
+  // access=no/private geldt NIET automatisch te voet. Zonder expliciete
+  // voetuitzondering blijft dit wegvak voor wandelen/hiken hard dicht —
+  // gemeten als footOnly, zodat de fietspoort en fiets-weergaven er niets
+  // van merken.
+  const footAllowedWay =
+    tags.foot === "yes" ||
+    tags.foot === "designated" ||
+    tags.foot === "permissive";
+  if ((access === "no" || access === "private") && bikeAllowed && !footAllowedWay) {
+    return {
+      kind: "beperkte_toegang",
+      label: access === "private" ? "Privéterrein (te voet)" : "Beperkte toegang (te voet)",
+      detail:
+        "Dit wegvak heeft volgens de kaartgegevens een fietsuitzondering, maar te voet geen toestemming (access=" +
+        access +
+        " zonder voetuitzondering).",
+      uncertain: false,
+      evidence: `access=${access}, bicycle=${bicycle}`,
+      footOnly: true,
     };
   }
   if (
@@ -690,6 +748,7 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
       offRouteM: Math.round(bestM),
       uncertain: cls.uncertain,
       evidence: cls.evidence,
+      ...(cls.footOnly ? { footOnly: true } : {}),
       _kmEnd: toKm,
       _count: 1,
     });
@@ -702,7 +761,11 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
   // voor fietsers toegankelijk fietspad/pad ligt; zo ja, dan vervalt de
   // melding. Mislukt deze extra controle, dan blijven de meldingen staan —
   // liever een mogelijk overbodige waarschuwing dan een verzwegen verbod.
-  const accessRaws = raws.filter((r) => r.kind === "beperkte_toegang");
+  // footOnly-meldingen doen niet mee: een parallel fietspad maakt een
+  // voetverbod niet legaal — die correctie is puur fietsgericht.
+  const accessRaws = raws.filter(
+    (r) => r.kind === "beperkte_toegang" && !r.footOnly,
+  );
   if (accessRaws.length > 0) {
     const around = accessRaws
       .map(
@@ -727,7 +790,7 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
         cyclePts.some((p) => haversineM(p, [r.lat, r.lon]) <= 35);
       for (let i = raws.length - 1; i >= 0; i--) {
         const r = raws[i]!;
-        if (r.kind === "beperkte_toegang" && hasParallelPath(r)) {
+        if (r.kind === "beperkte_toegang" && !r.footOnly && hasParallelPath(r)) {
           raws.splice(i, 1);
         }
       }
@@ -737,7 +800,7 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
       // van als feit — nooit met zekerheid "hier mag je niet fietsen" roepen
       // terwijl de renner waarschijnlijk gewoon op het fietspad ernaast rijdt.
       for (const r of raws) {
-        if (r.kind === "beperkte_toegang" && !r.uncertain) {
+        if (r.kind === "beperkte_toegang" && !r.footOnly && !r.uncertain) {
           r.uncertain = true;
           r.detail = r.detail
             ? `${r.detail} Mogelijk ligt hier een apart fietspad naast de weg.`
@@ -1036,6 +1099,14 @@ export type RouteObstacles = {
   // Aantoonbaar onverharde/ruwe vakken (Overpass, remarkslaag).
   // Harde afkeur voor racefiets (cycling-road): PO-01 §5.2, taak #437.
   unpavedSegments: number;
+  // ── Voet-specifieke tellers (MOBILE_ROUTE_WALKING_01) ──────────────────
+  // Voor wandel-/hikeprofielen gelden andere regels: een trap of een
+  // fietsverbod (bicycle=no) is voor een wandelaar géén blokkade. Wat WEL
+  // blokkeert: access=no/private (geldt voor iedereen zonder uitzondering)
+  // en een poort die op slot of privé is (locked=yes / access=no|private).
+  // Alleen expliciete tags — nooit een aanname.
+  forbiddenFoot: number; // wegvakken met access=no/private (ook te voet dicht)
+  blockedGatesFoot: number; // poorten aantoonbaar dicht voor voetgangers
 };
 
 /**
@@ -1064,18 +1135,40 @@ export function countRouteObstacles(remarks: RouteRemark[]): RouteObstacles {
     blockedGates: 0,
     gates: 0,
     unpavedSegments: 0,
+    forbiddenFoot: 0,
+    blockedGatesFoot: 0,
   };
+  // Voet-blokkade uit de letterlijke tag-evidence: access=no/private geldt
+  // voor iedereen; locked=yes is fysiek dicht. bicycle=no telt NIET te voet.
+  const footBlockedEvidence = (evidence: string): boolean =>
+    /(^|[,\s])access=(no|private)\b/.test(evidence) ||
+    /(^|[,\s])locked=yes\b/.test(evidence);
   for (const r of remarks) {
     if (r.kind === "trap") out.steps += 1;
-    else if (r.kind === "beperkte_toegang") {
+    else if (r.footOnly === true) {
+      // Alleen-te-voet-meting: telt uitsluitend in de voetcounters, nooit in
+      // de fietspoort (het wegvak/de poort is voor fietsers expliciet vrij).
+      if (r.kind === "beperkte_toegang" && !r.uncertain) {
+        if (footBlockedEvidence(r.evidence)) out.forbiddenFoot += 1;
+      } else if (r.kind === "poort" && footBlockedEvidence(r.evidence)) {
+        out.blockedGatesFoot += 1;
+      }
+    } else if (r.kind === "beperkte_toegang") {
       // Hard: fietsverbod (bicycle=no/private) ÉN access=no/private zonder
       // fietsuitzondering (René, 30-07-2026). Alleen wanneer de
       // parallelle-fietspad-correctie de melding op uncertain heeft gezet
       // (aantoonbaar fietspad ernaast) telt hij niet als verbod.
-      if (!r.uncertain) out.forbidden += 1;
+      if (!r.uncertain) {
+        out.forbidden += 1;
+        // Te voet alleen hard bij access=no/private — een fietsverbod
+        // (bicycle=no) is voor een wandelaar geen blokkade.
+        if (footBlockedEvidence(r.evidence)) out.forbiddenFoot += 1;
+      }
     } else if (r.kind === "poort") {
-      if (r.label.startsWith("Afgesloten poort")) out.blockedGates += 1;
-      else out.gates += 1;
+      if (r.label.startsWith("Afgesloten poort")) {
+        out.blockedGates += 1;
+        if (footBlockedEvidence(r.evidence)) out.blockedGatesFoot += 1;
+      } else out.gates += 1;
     } else if (r.kind === "onverhard" || r.kind === "slecht_wegdek") {
       // Onverhard/ruw wegdek: harde afkeur voor racefiets (PO-01 §5.2, taak #437).
       out.unpavedSegments += 1;

@@ -5,9 +5,173 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-07-31.
+Laatst bijgewerkt: 2026-08-01.
 
-## Wacht op jouw keuze
+## Beslist 01-08-2026 — BREDE VRIJGAVE (René)
+
+- De al gegeven opdrachten voor de VIER bouwpakketten (DATA_TRUST_01, ABONNEMENT_01,
+  DOCUMENTEN_COMMUNICATIE_01, ABONNEE_ADMIN_01), MOBILE UX en WANDELEN/HIKEN
+  (MOBILE_ROUTE_WALKING_01 F2–F6) zijn VOLLEDIG vrijgegeven. Geen hernieuwde
+  toestemming per fase nodig; na groene geautomatiseerde controles mag ook naar
+  productie worden doorgezet. (Kanttekening: de Publish-knop zelf kan alleen René
+  klikken — Replit meldt wanneer een productie-push klaarstaat.)
+
+## Beslist 01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01 (K1–K6, René)
+
+K1=A (Futur Control uitgezonderd, mutatiepoort blijft) · **K2=A (gecorrigeerd 01-08:
+alleen expliciet gegeven opdrachten lopen door; reeks-vervolg start níet vanzelf —
+02c/02d en taak #536 zijn NOG NIET geautoriseerd)** · K3=A (RENE_APPROVED uit deployketen, blijft productbesluit) ·
+K4=A (elf hard stops) · K5=A (benoemde verplichte testset) · K6=A (input≠toestemming).
+Doorgevoerd: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` + correctierapport
+`docs/audits/GOVERNANCE_CORRECTIE_RAPPORT_2026-08-01.md` + flag-inventaris.
+
+
+## Besluiten René 01-08-2026 — BUILD_01-navigatie en nutrition_specialist
+
+- **Coach-navigatielabels positie 2–4:** NIET vastleggen in ABONNEMENT_01 of in code.
+  Positie 1 (= eerste mobiele prioriteit MUX-76a) en positie 5 ("Meer") liggen vast.
+  Labels 2–4 zijn een voorstel (MRU-22); MULTIROLE_CONTEXT_01 is eigenaar en stelt ze
+  definitief vast in MRC-F1. Doorgevoerd: labels komen uit
+  `artifacts/sparki/src/config/role-nav-labels.json` (voorlopige waarden).
+- **nutrition_specialist commerciële plaatsing:** OPEN. Configureerbaar gebouwd met
+  lege waarde (`NUTRITION_SPECIALIST_TIER`, default leeg): geen tier gehardcodeerd,
+  geen prijs aangenomen, geen terugval op trainer- of Complete-rechten. Zodra René
+  een tier kiest wordt alleen de configuratie gevuld.
+- F5 van SPARKI_BUILD_01 gaat door; geen van beide keuzes blokkeert.
+- Taak #537 (ABONNEE_ADMIN_01) blijft ongemoeid en niet afgerond (herbevestigd 01-08).
+
+## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
+
+- **ABONNEE_ADMIN_01** (files_10, 31-07-2026) — door René AANGENOMEN als volledige
+  bouwopdracht. Uitvoeren integraal zodra DATA_TRUST_01 én ABONNEMENT_01 door Mirror
+  zijn goedgekeurd. Bindende regels René: geen tweede abonnements-/rechtensysteem;
+  bestaande Clerk/Stripe/billing/support/privacy/audit hergebruiken; alle
+  niet-geblokkeerde onderdelen uitvoeren; open product-/juridische besluiten apart
+  melden (J-1…J-6, P-1…P-5, T-1…T-3 in files_10_uitgepakt); configureerbare
+  bewaartermijnen bouwen zonder zelf juridische waarden vast te stellen; opdracht
+  niet verkleinen of opsplitsen; eindrapport met tests, migratiebewijzen, exitcodes
+  en eindcommit.
+
+## Open (wachten op René)
+
+(17 en 18 beslist 01-08-2026 — zie archief.)
+
+14. **Vrijgave drie voorbereide pakketten (31-07-2026)** — `DATA_TRUST_01` (aangevuld
+    met herstelprotocol/afhankelijkheden uit files_8), `ABONNEMENT_01` en
+    `DOCUMENTEN_COMMUNICATIE_01` staan klaar; geadviseerde volgorde: data-trust →
+    abonnement (na Mirror 02b) → documenten. Geen enkel pakket start zonder
+    expliciete vrijgave. Bijbehorende productpunten die t.z.t. bevestiging vragen:
+    legacy_unrestricted-dry-run (akkoord per account), degraded-gedrag (veiligheids-
+    keuze), geschatte onboarding-FTP tonen als schatting (voorstel), PDF-bibliotheek-
+    keuze (alleen melden vóór bouw).
+
+15. **Vrijgave drie extra pakketten (files_9, 31-07-2026)** — `ACTIVITEITEN_01`
+    (levenscyclus activiteiten; eist DATA_TRUST_01 eerst), `MECHANIEKER_01`
+    (materiaal/garage; eist DATA_TRUST_01 eerst; BikeFit bestaat niet → restpunt,
+    niet bouwen) en `TRAINER_CLUB_01` (rollen/club/ploeg). Geen pakket start
+    zonder expliciete vrijgave.
+
+15l. **Vrijgave SOCIAL_01 (ontvangen 31-07-2026)** — feed, vrienden, groepen,
+    challenges, reacties, moderatie, privacy; hergebruikt bestaande
+    world-social/feed-engines, "geen tweede feed/deelmechanisme/toegangs-
+    controle". Clubomgeving expliciet buiten scope. Harde voorwaarden
+    MIRROR_PROVEN vóór start: DATA_TRUST_01 · ACTIVITEITEN_01 (pakket nog
+    niet ontvangen) · TRAINER_CLUB_01 · JEUGD_OUDER_01 (nog niet ontvangen) ·
+    ROUTE_PAKKET_01. Start pas na vrijgave René.
+
+15k. **Vrijgave AI_ENGINE_01 (ontvangen 31-07-2026)** — één centrale technische
+    AI-engine voor álle AI-functies: domeinrol per verzoek, herleidbare
+    context, deterministisch/AI-uitleg gescheiden, server-side pakket/rol/
+    privacy/jeugdregels, tool-bevoegdheidslaag, kosten- en besluitlogging,
+    failover zonder stille kwaliteitsverlaging, prompt-injection-preventie.
+    Grondslag AI_GOVERNANCE_01 (beleid, nog niet ontvangen als pakket).
+    Sluit aan op bestaande aiMessage()-gateway. Start pas na vrijgave René.
+
+15j. **Vrijgave bundel NOTIFICATIES/INTEGRATIES/LAB (ontvangen 31-07-2026)** —
+    NOTIFICATIES_01 (één centrale notificatielaag voor in-app/push/e-mail/
+    operationele waarschuwingen, web+PWA+native), INTEGRATIES_01 (alle externe
+    sport-/apparaatkoppelingen productiegeschikt vanuit één integratiehub,
+    incl. toestemming intrekken en herkomst), LAB_01 (Performance Lab
+    pakketgestuurd, alleen echte data, elke grafiek uitgelegd).
+    Start pas na vrijgave René; Mirror staat los van de bouw.
+
+15i. **RELEASE_01 (slotpakket, ontvangen 31-07-2026)** — afwijkend pakket:
+    niets nieuws bouwen, alleen de app volledig en reproduceerbaar toetsbaar
+    maken voor één integrale Mirror-doorloop; defecten gaan terug naar hun
+    domeinpakket. Start pas als ALLE domeinpakketten MIRROR_PROVEN zijn.
+    De voorwaardenlijst noemt ook pakketten die nog niet zijn ontvangen:
+    CLUB_LEDEN_01 · JEUGD_OUDER_01 · TRAINER_KOPPELING_01 · ACTIVITEITEN_01 ·
+    MECHANIEKER_01 · COACH_ADAPTIEF_01 · WEDSTRIJD_01 · VOEDING_01 · EBIKE_01 ·
+    ANALYSE_01 · AI_GRENZEN_01 · AI_CONTEXT_01 · AI_KWALITEIT_01 · WANDELEN_01.
+    Stripe-livegang blijft een apart besluit van René.
+
+15h. **Vrijgave TRAINING_FLOW_01 (ontvangen 31-07-2026)** — training van
+    ontwerp tot evaluatie (bouwer, inplannen, uitvoeren, automatisch koppelen
+    aan gereden activiteit, gepland-naast-uitgevoerd, feedback). Bouwt op
+    bestaande training-plan-engine + planned_workouts/training_sessions.
+    Harde voorwaarden: `ACTIVITEITEN_01` (pakket nog niet ontvangen!),
+    `DATA_TRUST_01` en `ROUTE_PAKKET_01` MIRROR_PROVEN vóór start.
+
+15g. **Vrijgave bundel 30–34 (ontvangen 31-07-2026)** — vijf domeinpakketten:
+    30 PROFIEL_01 (centraal sportpaspoort/profielbeheer incl. privacy/export),
+    31 HELPDESK_01 (AI-helpdesk met triage, escalatie, audittrail),
+    32 ADMIN_OPERATIONS_01 (operationeel beheer zonder database-ingrepen),
+    33 CONTINUITEIT_01 (nood-/continuïteitsvoorzieningen: storing, vakantie,
+    kostenoverschrijding, ordelijke beëindiging), 34 TOEGANKELIJKHEID_01
+    (kernflows toegankelijk: toetsenbord, schermlezer, contrast, offline).
+    Alle vijf: start pas na vrijgave René; Mirror staat los van de bouw.
+
+15f. **Vrijgave SPARKI_TRAINER_ABONNEMENT_01 (ontvangen 31-07-2026)** —
+    Trainer-abonnement €99/maand of €990/jaar (prijsbesluit in pakket),
+    op de bestaande Stripe/entitlements-architectuur; sporters koppelen,
+    rechten per sporter, levenscyclus + facturen. Voorwaarden §2: bestaande
+    billing/webhook-idempotentie/koppelmodel bruikbaar; afwijkingen vóór
+    bouw melden, nooit een parallel systeem. Raakt gedeelde lagen
+    (entitlements, webhooks) ⇒ volledige regressieset verplicht.
+
+15e. **Vrijgave bundel 19–23 (ontvangen 31-07-2026)** — vijf domeinpakketten:
+    19 PLAN_MARKTPLAATS_01 (trainingsplannenmarktplaats, incl. verkoop/aankoop),
+    20 CLUB_COMMUNICATIE_01 (rolgestuurde berichten in-app/push/e-mail),
+    21 CLUB_PLANNING_01 (clubkalender + aanwezigheid + ouderbevestiging),
+    22 PLOEGLEIDER_01 (wedstrijdteamflow), 23 TEAM_MECHANIEKER_01
+    (teamvoorraad/wedstrijdmateriaal). Alle vijf: "start pas na vrijgave René";
+    generieke voorwaarden (auth, server-side context, rollen zonder
+    legacy_unrestricted-testpersona's, auditlog, data-trust). 22 en 23 steunen
+    inhoudelijk op het rolmodel uit CLUB_RECHTEN_01 (ploegleider/mechanieker).
+    Volgorde-advies nodig van René/ChatGPT zodra Mirror de wachtrij vrijmaakt.
+
+15d. **Vrijgave CLUB_RECHTEN_01 (pakket 14, ontvangen 31-07-2026)** — definitief
+    rolmodel: elf rollen, club/team-niveau gescheiden, meerdere rollen per
+    persoon (vereniging van rechten), tijdelijke rollen met automatisch
+    auditbaar verval, eigendomsoverdracht. Gaat vóór CLUB_LEDEN_01 /
+    JEUGD_OUDER_01 / TRAINER_KOPPELING_01. Voorwaarden: ROUTE_PAKKET_01 +
+    DATA_TRUST_01 MIRROR_PROVEN; TRAINER_CLUB_01 mag niet gelijktijdig lopen.
+    NB: pakket zet als uitgangspunt `teammanager` → hernoemen naar
+    `ploegleider` (raakt eerdere open vraag over de ploegleiderrol).
+
+15c. **Vrijgave CLUB_ONBOARDING_01 (pakket 13, ontvangen 31-07-2026; variant 1
+    bevestigd als canoniek — bundel 13+14 bevat byte-identiek variant 1)** — clubinstroom
+    van registratie tot actief (concept/actief-status, teams+seizoenen,
+    transactionele ledenimport met bevestiging, hervatbare onboarding).
+    Harde voorwaarde uit het pakket zelf: `DATA_TRUST_01` én `ROUTE_PAKKET_01`
+    moeten MIRROR_PROVEN zijn vóór de start; daarnaast expliciete vrijgave
+    door René. Twee configureerbare besluitpunten (geen blokkade): standaard
+    seizoensperiode en bewaartermijn geïmporteerd ledenbestand.
+
+15b. **Vrijgave drie AI-pakketten (files_11, 31-07-2026)** — opsplitsing van
+    AI_GOVERNANCE_01: `AI_GRENZEN_01` (veiligheidsgrenzen/weigeringen; DATA_TRUST_01
+    sterk aanbevolen vóóraf), `AI_CONTEXT_01` (geheugen, toestemming, toolgebruik,
+    logging; bewaartermijnen configureerbaar, niet zelf vaststellen) en
+    `AI_KWALITEIT_01` (bronvermelding, onzekerheid, taal/toon; DATA_TRUST_01
+    blokkerend — zonder herkomst geen bronvermelding). Geen pakket start zonder
+    expliciete vrijgave.
+
+(16 beslist 01-08-2026: ploegleider = eigen rolwaarde — SPARKI-BESLUIT-2026-010; zie archief.)
+
+## Geparkeerd (48-uurs afbouwsprint, besluit René 31-07-2026)
+
+> Besluit 3 van de sprint: open punten #10, #12 en #13 blokkeren niet en zijn
+> geparkeerd tot na de sprint. Niet elke beurt meer voorleggen; wel bewaren.
 
 12. **Wielercategorieën — mappingvalidatie** — bronhiërarchie is BESLOTEN (31-07-2026:
     UCI leidend → UEC Europese context → KNWU nationale licentievertaling; gescheiden
@@ -26,6 +190,24 @@ Laatst bijgewerkt: 2026-07-31.
     **Samen** ooit een eigen plek op het eerste niveau, en zo ja ten koste van welke tab?
 
 ## Beslist (archief)
+- **2026-08-01 — Keuze 17 (geschatte FTP): beslist.** Geschatte FTP mag voorlopige
+  zones/plan voeden onder harde voorwaarden (altijd "Geschatte FTP"-label, herkomst
+  vastgelegd, wijzigingsvoorstel i.p.v. stille wijziging, trainer leidend, bij te
+  dunne data om test/handmatige invoer vragen). SPARKI-BESLUIT-2026-011.
+- **2026-08-01 — Keuze 18 (legacy-migratie): beslist.** Per account, nooit globaal;
+  dry-run+preview+herleidbaarheid+idempotent+auditlog verplicht; nooit betrouwbaardere
+  data overschrijven; gefaseerde uitrol na bewezen test. SPARKI-BESLUIT-2026-012.
+  Welke accounts wanneer migreren blijft een per-account-akkoord van René.
+- **2026-08-01 — Keuze 19 (degraded-gedrag rechtenlaag): beslist — A.** Fail-closed
+  per bron: onleesbare bronnen voegen nooit rechten toe, leesbare bronnen blijven
+  gelden. Aanvullende eisen René: `degraded:true` verplicht loggen (bestond),
+  zichtbaar voor beheer/support (toegevoegd aan GET /api/admin/entitlements/:clerkId)
+  en automatisch herstel zodra de bron weer leesbaar is (per-verzoek-resolutie,
+  geen cache — herstelt vanzelf). Vastgelegd in docs/SPARKI_ABONNEMENTSFLOW.md §3.
+- **2026-08-01 — Keuze 16/D5 (ploegleiderrol): beslist.** Eigen server-side rolwaarde
+  `ploegleider` naast `teammanager` (niet samenvoegen/hernoemen); medic→medical_staff
+  met beschrijvend functietype. SPARKI-BESLUIT-2026-010; 15m daarmee SUPERSEDED
+  voor de rolmapping ploegleider/medic.
 - **2026-07-30/31 — Keuze 9 (Samen-volgorde): "Samen trainen" bovenaan** (besluitendocument
   30-07); hoofdnav blijft ongewijzigd. Keuze 11 (volgorde niveaus-werk vs. #505) is vervallen:
   de aanvullende opdracht van 30-07 legt de volgorde zelf vast (§15: eerst rechtenlek — gedaan
@@ -134,3 +316,22 @@ Laatst bijgewerkt: 2026-07-31.
   toestemming opslaan/analyseren (privacy-gated, geen fabricatie).
 - **2026-06-28 — V2-dekkingsaudit:** afgerond, opgeleverd als `SPARKI_V1_COVERAGE_AUDIT.md`.
 - [geparkeerd, na release] Lichte look app-breed (wens Dylan/René, 28-7-2026): pas oppakken als de release achter de rug is; aanpakroute (alles licht / instelling / alleen leesschermen) dan opnieuw voorleggen.
+
+15m. **TEAM_ABONNEMENT_01 rolmapping (besloten 31-07-2026, door Replit, te bekrachtigen door René):**
+   de elf gevraagde teamrollen zijn gemapt op het bestaande rolmodel (Eigenaar=owner,
+   Teammanager/Ploegleider=teammanager, Assistent-trainer=assistent, Ouder=parent,
+   Renner=member, Gast=alleen_lezen) met slechts twee additieve rollen: soigneur en medic
+   (least privilege). Aparte "ploegleider"-rolnaam wacht bewust op CLUB_RECHTEN_01/pakket 14
+   om een rollenconflict te voorkomen. Terugdraaien of hernoemen kan daar alsnog.
+
+15n. **CLUB_ONBOARDING_01 — Variant 1 bindend (besloten 31-07-2026 door René).**
+   Startvoorwaarde uit het pakket zelf: DATA_TRUST_01 én ROUTE_PAKKET_01 moeten
+   MIRROR_PROVEN zijn. ROUTE_PAKKET_01 is dat; DATA_TRUST_01 nog niet (register:
+   "nog geen Mirror-oordeel"). OPEN: René kiest — eerst Mirror-toets DATA_TRUST_01,
+   of expliciete ontheffing van deze voorwaarde.
+   → BESLOTEN 01-08-2026: René verleende expliciete ontheffing; CLUB_ONBOARDING_01
+   is volledig uitgevoerd (BUILD_DELIVERED). DATA_TRUST_01 blijft een apart
+   traject; bevindingen daaruit volgen later als gerichte herstelactie.
+   Nog open besluitpunten uit de uitvoering (defaults gekozen, af te stemmen):
+   - Bewaartermijn importrijen: 30 dagen (SPARKI_IMPORT_RETENTION_DAYS).
+   - Clublogo-limieten: 5 MB, JPG/PNG/WebP/SVG (raakvlak DOCUMENTEN_COMMUNICATIE_01).

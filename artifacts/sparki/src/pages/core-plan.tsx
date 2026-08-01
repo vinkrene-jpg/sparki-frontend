@@ -750,16 +750,39 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
   const { data: plan } = useTrainingPlan();
   const raceDateISO = plan?.inputs?.nextRace?.raceDate ?? null;
 
-  const [selectedDate, setSelectedDate] = useState(todayISO);
+  // Deep-link: /train?dag=YYYY-MM-DD (o.a. de weektabs op Vandaag) opent die
+  // dag direct. Alleen een geldig ISO-datumformaat wordt vertrouwd; anders
+  // gewoon vandaag. Eénmalig gelezen bij mount.
+  const [dagParam] = useState(() => {
+    const raw = new URLSearchParams(window.location.search).get("dag");
+    if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+    // Strikt kalender-geldig: Date normaliseert onzin als 2026-02-31 stil
+    // naar 3 maart — round-trip-vergelijking wijst zulke datums af.
+    const d = new Date(raw + "T12:00:00");
+    const [y, m, dd] = raw.split("-").map(Number);
+    return d.getFullYear() === y && d.getMonth() + 1 === m && d.getDate() === dd
+      ? raw
+      : null;
+  });
+  const startDate = dagParam ?? todayISO;
+  const startDateObj = new Date(startDate + "T12:00:00");
+
+  const [selectedDate, setSelectedDate] = useState(startDate);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [openSessie, setOpenSessie] = useState<TrainingSession | null>(null);
 
   // Mobile: week offset (no limits — negative = past weeks)
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(() =>
+    Math.round(
+      (startOfLocalWeek(startDateObj).getTime() -
+        startOfLocalWeek(todayDate).getTime()) /
+        (7 * 86400000),
+    ),
+  );
 
   // Desktop: month navigation
-  const [viewYear, setViewYear] = useState(todayDate.getFullYear());
-  const [viewMonth, setViewMonth] = useState(todayDate.getMonth()); // 0-indexed
+  const [viewYear, setViewYear] = useState(startDateObj.getFullYear());
+  const [viewMonth, setViewMonth] = useState(startDateObj.getMonth()); // 0-indexed
 
   // Generous fetch range covering both views with buffer
   const weekCenter = addDagenLocal(todayDate, weekOffset * 7);
@@ -1227,7 +1250,7 @@ function DoelkaartSection() {
             onClick={() => navigate("/you?focus=doelen")}
             className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2.5 text-left hover:bg-accent-cyan/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
           >
-            <p className="type-label text-accent-cyan uppercase tracking-wider mb-1">Sparki wil iets weten</p>
+            <p className="type-label text-accent-cyan uppercase tracking-wider mb-1">Nog even dit</p>
             <p className="type-body-sm text-white/75">{picture.nextQuestion.question}</p>
           </button>
         )}
@@ -1380,7 +1403,7 @@ function PatronenSection() {
         <DsCard>
           {runConnections.isPending ? (
             <p className="type-body text-content-secondary">
-              Sparki vergelijkt je belasting, herstel en gevoel op verbanden…
+              Je belasting, herstel en gevoel worden vergeleken op verbanden…
             </p>
           ) : readiness.data?.analyseMogelijk ? (
             <p className="type-body text-content-secondary">

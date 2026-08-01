@@ -22,6 +22,7 @@ import {
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { routeObstaclesOf } from "../lib/route-remarks";
 import { scanRouteCandidatesForUser } from "../lib/ridden-route-candidates";
+import { recordRouteUsageSafe } from "../lib/route-usage-metering";
 
 const router: IRouter = Router();
 
@@ -283,6 +284,14 @@ router.post("/:id/save", requireAuth, async (req, res) => {
       .update(routeCandidatesTable)
       .set({ savedRouteId: route!.id, updatedAt: new Date() })
       .where(eq(routeCandidatesTable.id, cand.id));
+
+    // ROUTE_PAKKET_02A — definitief opslaan telt als routegebruik (meten).
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route!.id,
+      usageType: "SAVED",
+      source: "opslaan:ritkandidaat",
+    });
 
     res.status(201).json({ route });
   } catch (err) {

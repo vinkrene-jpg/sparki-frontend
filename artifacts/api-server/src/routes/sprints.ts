@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gte, or, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, or, inArray, isNull } from "drizzle-orm";
 import {
   db,
   sprintResultsTable,
@@ -98,7 +98,7 @@ router.get("/season", requireAuth, async (req, res) => {
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           eq(friendLinksTable.requesterClerkId, clerkId),
           eq(friendLinksTable.addresseeClerkId, clerkId),

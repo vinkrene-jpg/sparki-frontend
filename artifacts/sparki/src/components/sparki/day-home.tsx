@@ -160,7 +160,7 @@ function HealthMomentBlock() {
       </p>
       <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-white/60">
         Er komt nu geen trainingsdruk bij. Rust, slaap, hydratatie en voeding
-        gaan voor. Meld je weer beter zodra het kan, dan bouwt Sparki rustig op.
+        gaan voor. Meld je weer beter zodra het kan, dan bouwt je plan rustig op.
       </p>
       <button
         type="button"

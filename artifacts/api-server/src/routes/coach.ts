@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 import {
   db,
   coachAthleteLinksTable,
@@ -77,7 +77,7 @@ router.get("/athletes", requireAuth, async (req, res) => {
       .where(
         and(
           eq(coachAthleteLinksTable.coachClerkId, coachId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       );
     // Unie van directe koppelingen en geldige club/teamtoewijzingen; toegang

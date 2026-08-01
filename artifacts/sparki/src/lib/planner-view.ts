@@ -46,11 +46,20 @@ export type PlannerFeature =
   | "onverhard" // onverhard-percentage schuifbalk
   | "wens" // vrije-tekst routewens
   | "training" // trainingstype + koppeling aan geplande training
+  | "klimmen" // klimmen toevoegen (voorkeur of specifieke klim in de lus)
 
 const FEATURES: Record<PlannerView, readonly PlannerFeature[]> = {
-  gratis: ["samen"],
-  go_fietser: ["samen", "hoogte", "nWegen"],
-  go_sport: ["samen", "hoogte", "nWegen", "eigenRoute", "onverhard", "wens"],
+  gratis: ["samen", "klimmen"],
+  go_fietser: ["samen", "hoogte", "nWegen", "klimmen"],
+  go_sport: [
+    "samen",
+    "hoogte",
+    "nWegen",
+    "eigenRoute",
+    "onverhard",
+    "wens",
+    "klimmen",
+  ],
   wedstrijd: [
     "samen",
     "hoogte",
@@ -59,6 +68,7 @@ const FEATURES: Record<PlannerView, readonly PlannerFeature[]> = {
     "onverhard",
     "wens",
     "training",
+    "klimmen",
   ],
 }
 

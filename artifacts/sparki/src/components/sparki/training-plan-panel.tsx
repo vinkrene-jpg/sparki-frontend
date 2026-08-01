@@ -347,7 +347,7 @@ function RaceWeatherCard({ rw }: { rw: RaceWeather }) {
         : rw.reason === "no_location"
           ? "Voeg een locatie toe aan je wedstrijd om het weer ter plaatse te checken."
           : rw.reason === "geocode_failed"
-            ? "Sparki kon de wedstrijdlocatie niet op de kaart vinden — controleer de plaatsnaam."
+            ? "De wedstrijdlocatie kon niet op de kaart worden gevonden — controleer de plaatsnaam."
             : "Nog geen weersverwachting beschikbaar voor de wedstrijdlocatie."
     return (
       <div className="mt-3 flex items-start gap-1.5 border-t border-white/[0.06] pt-3 font-mono text-[10px] leading-relaxed text-white/35">
@@ -882,8 +882,8 @@ export function TrainingPlanPanel() {
             strokeWidth={1.75}
           />
           <p className="text-[12px] leading-relaxed text-white/65">
-            Je hebt een coach. Sparki schrijft je trainingen niet zelf, maar geeft
-            een <span className="text-white/85">vrijblijvend advies</span> dat je
+            Je hebt een coach. Je trainingen worden hier niet zelf geschreven, wel
+            krijg je een <span className="text-white/85">vrijblijvend advies</span> dat je
             met je coach kunt bespreken.
           </p>
         </div>

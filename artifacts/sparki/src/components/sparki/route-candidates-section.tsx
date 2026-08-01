@@ -126,7 +126,7 @@ export function RouteCandidatesSection() {
         Uit jouw ritten
       </h2>
       <p className="mt-0.5 text-[12px] leading-relaxed text-white/40">
-        Routes die Sparki herkende in je geïmporteerde ritgeschiedenis. Bewaren
+        Routes die herkend zijn in je geïmporteerde ritgeschiedenis. Bewaren
         of starten gaat altijd door de actuele blokkadecontrole — een eerder
         gereden route is niet automatisch nog veilig.
       </p>

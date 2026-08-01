@@ -1,0 +1,151 @@
+[
+  {
+    "file": "artifacts/api-server/src/lib/legal-texts.ts",
+    "reason": "Juridische documenten en voorwaarden: merknaam functioneel nodig."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/version-gate.ts",
+    "contains": "Deze versie van Sparki",
+    "reason": "Appnaam: de app als product benoemen bij een verplichte update."
+  },
+  {
+    "file": "artifacts/sparki/src/components/sparki/version-block-screen.tsx",
+    "contains": "Deze versie van Sparki",
+    "reason": "Appnaam bij verplichte update."
+  },
+  {
+    "file": "artifacts/sparki/src/lib/api.ts",
+    "contains": "Deze versie van Sparki",
+    "reason": "Appnaam bij verplichte update."
+  },
+  {
+    "file": "artifacts/sparki/src/App.tsx",
+    "contains": "Sparki wordt geladen",
+    "reason": "Laadscherm: appnaam, geen derde-persoons coachzin."
+  },
+  {
+    "file": "artifacts/sparki/src/components/consent-gate.tsx",
+    "contains": "Voordat je Sparki kunt gebruiken",
+    "reason": "Appnaam: gebruik van de app, juridische akkoordvraag."
+  },
+  {
+    "file": "artifacts/sparki/src/components/sparki/insights-section.tsx",
+    "contains": "kennismaking met Sparki",
+    "reason": "Product als geheel (onboarding-kennismaking)."
+  },
+  {
+    "file": "artifacts/sparki/src/components/sparki/connections-section.tsx",
+    "contains": "Sparki is goedgekeurd",
+    "reason": "Organisatie: goedkeuring van de app door externe partij (Garmin/Wahoo)."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/landing.tsx",
+    "contains": "with Sparki coaching",
+    "reason": "Merk-tagline op de landingspagina."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/samen.tsx",
+    "contains": "Sparki nieuws",
+    "reason": "Bronnaam-label van de nieuwsfeed."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/samen.tsx",
+    "contains": "op Sparki gevonden",
+    "reason": "Appnaam: aanwezigheid van contacten op het platform."
+  },
+  {
+    "file": "artifacts/sparki/src/hooks/use-push.ts",
+    "contains": "je Sparki eerst toevoegt",
+    "reason": "Appnaam: app op het beginscherm zetten (iOS-instructie)."
+  },
+  {
+    "file": "artifacts/sparki-mobile/app/(app)/instellingen.tsx",
+    "contains": "Nieuws over Sparki",
+    "reason": "Product/organisatie als geheel (nieuwsbriefopt-in)."
+  },
+  {
+    "file": "artifacts/sparki-mobile/app/(app)/instellingen.tsx",
+    "contains": "Sparki versie",
+    "reason": "Appnaam + versienummer."
+  },
+  {
+    "file": "artifacts/api-server/src/engines/data-origin/index.ts",
+    "contains": "Sparki mobiel",
+    "reason": "Databron-/appnaamlabel."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/ai/gateway.ts",
+    "contains": "vraag van Sparki",
+    "reason": "Prompt-interne systeeminstructie, geen UI-tekst."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/connectors/registry.ts",
+    "contains": "ligt niet aan Sparki",
+    "reason": "Organisatie: extern goedkeuringsproces van de app."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/document-analysis/analyze.ts",
+    "contains": "Je bent Sparki",
+    "reason": "LLM-promptidentiteit, geen UI-tekst."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/gpx-parse.ts",
+    "contains": "Sparki route",
+    "reason": "Standaard bestandsnaam-label bij export (appnaam)."
+  },
+  {
+    "file": "artifacts/api-server/src/routes/ai.ts",
+    "contains": "Atleetcontext:",
+    "reason": "Prompt-interne tekst richting het model, geen UI-tekst."
+  },
+  {
+    "file": "artifacts/sparki/src/components/sparki/feedback-sheet.tsx",
+    "contains": "Wat zou Sparki beter of slimmer kunnen doen",
+    "reason": "Feedback over het product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/components/sparki/feedback-sheet.tsx",
+    "contains": "Help Sparki beter worden",
+    "reason": "Feedback over het product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/tester-welcome.tsx",
+    "contains": "waar Sparki naartoe groeit",
+    "reason": "Testercontext: product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/tester-welcome.tsx",
+    "contains": "Sparki echt op de proef stelt",
+    "reason": "Testercontext: product als geheel."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/tester-welcome.tsx",
+    "contains": "Sparki scherper te maken",
+    "reason": "Testercontext: product als geheel."
+  },
+  {
+    "file": "artifacts/api-server/src/engines/reminders/deliver.ts",
+    "contains": "Open Sparki om verder te gaan",
+    "reason": "Formele e-mail: appnaam."
+  },
+  {
+    "file": "artifacts/api-server/src/engines/reminders/deliver.ts",
+    "contains": "in Sparki onder Profiel",
+    "reason": "Formele e-mail: appnaam als vindplaats."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/health/checks.ts",
+    "contains": "Controleert of Sparki slimme samenvattingen",
+    "reason": "Admin-healthcheck: systeem als geheel."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/health/checks.ts",
+    "contains": "Sparki en coaches missen de feedback",
+    "reason": "Admin-healthcheck: systeem als geheel."
+  },
+  {
+    "file": "artifacts/api-server/src/lib/health/checks.ts",
+    "contains": "door Sparki gebouwde onderdelen",
+    "reason": "Admin-healthcheck: systeem als geheel."
+  }
+]

@@ -288,7 +288,7 @@ export function SparkiInputCenter({
       setShowLink(false)
       setPending([])
     } catch {
-      setError("Sparki kon niet antwoorden. Probeer het opnieuw.")
+      setError("Er kon geen antwoord komen. Probeer het opnieuw.")
     }
   }
 
@@ -324,9 +324,9 @@ export function SparkiInputCenter({
               </span>
             </div>
             <p className="text-[13px] leading-relaxed text-white/60">
-              Geef Sparki een foto, afbeelding, PDF, bestand of link, of stel je
-              vraag. Je begint elke keer met een schoon gesprek — Sparki onthoudt
-              wel alles uit eerdere gesprekken om je beter te leren kennen.
+              Deel een foto, afbeelding, PDF, bestand of link, of stel je
+              vraag. Je begint elke keer met een schoon gesprek — alles uit
+              eerdere gesprekken wordt wel onthouden om je beter te leren kennen.
             </p>
           </div>
         )}
@@ -463,7 +463,7 @@ export function SparkiInputCenter({
           <div className="flex items-end gap-2">
             <textarea
               className="max-h-40 min-h-[56px] flex-1 resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
-              placeholder="Stel Sparki een vraag of beschrijf wat je deelt…"
+              placeholder="Stel een vraag of beschrijf wat je deelt…"
               rows={2}
               value={text}
               onChange={(e) => setText(e.target.value)}

@@ -29,7 +29,15 @@ export type StoredCandidate = {
   // Bewaard zodat het routescherm motor- en kaartmeting eerlijk naast elkaar
   // kan leggen — bij tegenspraak wordt uitgelegd, nooit stil één bron gekozen.
   engineSurface: RouteEngineSurface | null;
+  // Sportfamilie waarvoor deze kandidaat is gegenereerd ("cycling" |
+  // "walking" | "hiking") — server-side vastgelegd bij generatie zodat de
+  // opgeslagen route nooit een client-gegokte sport krijgt.
+  sport: string | null;
   createdAt: number;
+  // Gezet zodra dit voorstel als route is opgeslagen (aanvulling 02a):
+  // latere exports van het voorstel tellen dan onder de route-identiteit,
+  // zodat kandidaat- en route-telling nooit naast elkaar bestaan.
+  savedRouteId?: number | null;
 };
 
 const TTL_MS = 30 * 60 * 1000; // candidates are ephemeral proposals (30 min)
@@ -74,6 +82,18 @@ export function updateCandidateRationale(
     return;
   }
   store.set(id, { ...c, rationale });
+}
+
+// Markeer een kandidaat als opgeslagen (owner-gescoped). No-op wanneer de
+// kandidaat al verlopen is.
+export function markCandidateSaved(
+  id: string,
+  clerkId: string,
+  routeId: number,
+): void {
+  const c = store.get(id);
+  if (!c || c.clerkId !== clerkId) return;
+  store.set(id, { ...c, savedRouteId: routeId });
 }
 
 // Look up a candidate by id, scoped to its owner. Returns null when missing,

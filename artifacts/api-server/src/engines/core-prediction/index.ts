@@ -340,7 +340,7 @@ async function attachComparison(
         actualEnd: null,
         actualPath,
         deviations: [
-          "Deze training is afgerond, maar er is nog geen rit aan gekoppeld — zodra je de sessie koppelt vergelijkt Sparki voorspeld met werkelijk.",
+          "Deze training is afgerond, maar er is nog geen rit aan gekoppeld — zodra je de sessie koppelt wordt voorspeld met werkelijk vergeleken.",
         ],
         reboundStatus: "pending",
         reboundNote: "Koppel je rit om de werkelijke terugveer te kunnen aflezen.",

@@ -32,6 +32,7 @@ import {
   useCreateClub,
   useJoinClub,
   useHoofdtrainerOverview,
+  useRoleStart,
   type ClubTraining,
 } from "@/hooks/use-club"
 import { usePlanWindow } from "@/hooks/use-training-plan"
@@ -168,7 +169,7 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
             {conflicts.map((c) => c.title).join(", ")}.
             {conflicts.some((c) => c.source === "coach")
               ? " Die is door je coach klaargezet en wordt nooit automatisch vervangen — overleg met je coach."
-              : " Sparki past niets automatisch aan; kies zelf wat je doet."}
+              : " Er wordt niets automatisch aangepast; kies zelf wat je doet."}
           </p>
         </div>
       )}
@@ -185,6 +186,53 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
         <p className="mt-2 text-[11px] text-white/40">Staat in je schema.</p>
       )}
     </div>
+  )
+}
+
+// TEAM_ONBOARDING_01 addendum: rolgestuurde start. Elke rol krijgt bovenaan
+// een eigen startblok met óf één begrijpelijke eerste actie, óf een eerlijke
+// lege toestand (wat ontbreekt · waarom · wie · vervolgstap) — server-side
+// afgeleid uit de werkelijke inrichting.
+function RolStartBlock({ clubId }: { clubId: number }) {
+  const { data: start } = useRoleStart(clubId)
+  const [, navigate] = useLocation()
+  if (!start) return null
+  return (
+    <section
+      aria-label="Jouw start"
+      className="rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-3.5"
+    >
+      <p className="text-[11px] uppercase tracking-wide text-white/40">
+        Jouw rol: <span className="text-white/70">{start.rolLabel}</span>
+      </p>
+      <p className="mt-1 text-[13px] text-white/75">{start.werkgebied}</p>
+      {start.eersteActie ? (
+        <button
+          onClick={() => {
+            const doel = start.eersteActie?.doel
+            if (doel === "trainingen") {
+              document.getElementById("club-trainingen")?.scrollIntoView({ behavior: "smooth", block: "start" })
+            } else {
+              // onboarding · leden · teams: alles leeft op de beheerpagina.
+              navigate("/club/beheer")
+            }
+          }}
+          className="mt-2.5 flex w-full items-center justify-between rounded-xl border border-cyan-300/25 bg-cyan-300/[0.08] px-3.5 py-2.5 text-left"
+        >
+          <span>
+            <span className="block text-[13px] font-semibold text-cyan-100">{start.eersteActie.label}</span>
+            <span className="block text-[12px] text-white/60">{start.eersteActie.uitleg}</span>
+          </span>
+        </button>
+      ) : start.legeToestand ? (
+        <div className="mt-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-[12px] leading-relaxed text-white/65">
+          <p className="font-medium text-white/80">{start.legeToestand.watOntbreekt}</p>
+          <p>{start.legeToestand.waarom}</p>
+          <p className="text-white/50">Wie kan dit oplossen: {start.legeToestand.wie}</p>
+          <p className="mt-1 text-white/75">{start.legeToestand.vervolgstap}</p>
+        </div>
+      ) : null}
+    </section>
   )
 }
 
@@ -240,6 +288,8 @@ function RealClubView({ clubId }: { clubId: number }) {
         )}
       </header>
 
+      <RolStartBlock clubId={clubId} />
+
       {canManage && (dash.signals?.length ?? 0) > 0 && (
         <section aria-label="Signalen" className="space-y-1.5">
           {dash.signals!.map((s, i) => (
@@ -278,7 +328,7 @@ function RealClubView({ clubId }: { clubId: number }) {
         </section>
       )}
 
-      <section aria-label="Clubtrainingen">
+      <section aria-label="Clubtrainingen" id="club-trainingen">
         <h2 className={H2}><CalendarDays className="h-3 w-3" /> Clubtrainingen</h2>
         {(trainings ?? []).length === 0 ? (
           <p className={EMPTY}>Er staan nog geen clubtrainingen gepland.</p>
@@ -561,21 +611,25 @@ function StartClubCard() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [location, setLocation] = useState("")
+  // TEAM_ONBOARDING_01: één startpunt voor beide organisatietypen — een
+  // clubomgeving of een zelfstandige teamorganisatie (wedstrijdteam).
+  const [orgType, setOrgType] = useState<"CLUB" | "TEAM">("CLUB")
   const [error, setError] = useState<string | null>(null)
 
   return (
     <div className={CARD}>
-      <p className="text-[13px] text-white/85">Start een clubomgeving</p>
+      <p className="text-[13px] text-white/85">Start een club- of teamomgeving</p>
       <p className="mt-0.5 text-[12px] text-white/50">
-        Beheer leden, teams, clubtrainingen, wedstrijden en communicatie op één plek.
-        Je start met een gratis proefperiode van 30 dagen (tot 15 leden).
+        Een club beheert leden, teams, clubtrainingen en communicatie. Een zelfstandig
+        team is een wedstrijdploeg met selecties en vaste seizoensstaf. Je start met een
+        gratis proefperiode van 30 dagen (tot 15 leden).
       </p>
       {!open ? (
         <button
           onClick={() => setOpen(true)}
           className="mt-2 flex items-center gap-1.5 rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-[12px] text-cyan-200"
         >
-          <Plus className="h-3.5 w-3.5" /> Club aanmaken
+          <Plus className="h-3.5 w-3.5" /> Aanmaken
         </button>
       ) : (
         <form
@@ -583,17 +637,41 @@ function StartClubCard() {
           onSubmit={(e) => {
             e.preventDefault()
             setError(null)
-            if (!name.trim()) { setError("Geef de club een naam."); return }
+            if (!name.trim()) { setError(orgType === "TEAM" ? "Geef het team een naam." : "Geef de club een naam."); return }
             create.mutate(
-              { name: name.trim(), location: location.trim() || undefined },
+              // Nieuwe organisaties starten in oprichting ("concept"): eerst
+              // inrichten en activeren, dan pas uitnodigen.
+              {
+                name: name.trim(),
+                location: location.trim() || undefined,
+                concept: true,
+                organisationType: orgType,
+              },
               { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
             )
           }}
         >
+          <div className="flex gap-2" role="radiogroup" aria-label="Soort organisatie">
+            {([
+              ["CLUB", "Club"],
+              ["TEAM", "Zelfstandig team"],
+            ] as const).map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                role="radio"
+                aria-checked={orgType === val}
+                onClick={() => setOrgType(val)}
+                className={`rounded-lg border px-3 py-1.5 text-[12px] ${orgType === val ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Clubnaam"
+            placeholder={orgType === "TEAM" ? "Teamnaam" : "Clubnaam"}
             className="w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
           />
           <input

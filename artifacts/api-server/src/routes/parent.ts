@@ -54,7 +54,7 @@ router.get("/athletes", requireAuth, async (req, res) => {
       .where(
         and(
           eq(parentAthleteLinksTable.parentClerkId, parentId),
-          eq(parentAthleteLinksTable.status, "accepted"),
+          eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
         ),
       );
     if (links.length === 0) {
@@ -162,7 +162,7 @@ router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
   const athleteId = String(req.params.athleteId);
   try {
     const link = await getParentLink(parentId, athleteId);
-    if (!link || link.status !== "accepted") {
+    if (!link || link.status !== "accepted" || link.endedAt != null) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -201,7 +201,7 @@ async function requireParentAccess(
 ): Promise<{ link: ParentAthleteLink; access: EffectiveParentAccess } | null> {
   if (!(await hasRole(parentId, "parent"))) return null;
   const link = await getParentLink(parentId, athleteId);
-  if (!link || link.status !== "accepted") return null;
+  if (!link || link.status !== "accepted" || link.endedAt != null) return null;
   const access = await effectiveParentAccess(link);
   return { link, access };
 }
@@ -221,7 +221,7 @@ router.get("/overview", requireAuth, async (req, res) => {
       .where(
         and(
           eq(parentAthleteLinksTable.parentClerkId, parentId),
-          eq(parentAthleteLinksTable.status, "accepted"),
+          eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
         ),
       );
     const today = todayISO();
@@ -574,7 +574,7 @@ router.get("/athletes/:athleteId/trainers", requireAuth, async (req, res) => {
       .where(
         and(
           eq(coachAthleteLinksTable.athleteClerkId, athleteId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       );
     res.json({
@@ -631,7 +631,7 @@ router.post("/athletes/:athleteId/reports", requireAuth, async (req, res) => {
       clerkId: athleteId,
       type: "parent_report",
       title: `Nieuwe ${kindLabel}`,
-      body: `Je ouder/verzorger heeft een ${kindLabel} gedaan. Sparki past niets automatisch aan — bekijk de melding.`,
+      body: `Je ouder/verzorger heeft een ${kindLabel} gedaan. Er wordt niets automatisch aangepast — bekijk de melding.`,
       priority: "high",
       athleteClerkId: athleteId,
       actionUrl: "/you?focus=connections",
@@ -647,7 +647,7 @@ router.post("/athletes/:athleteId/reports", requireAuth, async (req, res) => {
         .where(
           and(
             eq(coachAthleteLinksTable.athleteClerkId, athleteId),
-            eq(coachAthleteLinksTable.status, "accepted"),
+            eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
           ),
         );
       for (const c of coaches) {
@@ -1065,7 +1065,7 @@ router.get("/reports/for-coach", requireAuth, async (req, res) => {
       .where(
         and(
           eq(coachAthleteLinksTable.coachClerkId, coachId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       );
     const visible: string[] = [];

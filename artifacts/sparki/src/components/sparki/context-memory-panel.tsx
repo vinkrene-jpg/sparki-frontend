@@ -200,14 +200,14 @@ export function ContextMemoryPanel() {
       onSuccess: (res) => {
         if (res.detected && res.memory) {
           setText("")
-          setFeedback("Sparki onthoudt dit en vraagt er later naar.")
+          setFeedback("Dit wordt onthouden en komt later terug.")
         } else if (res.detected && res.gated) {
           setFeedback(
-            "Sparki herkende dit, maar je geheugen staat uit. Zet het aan bij Profiel.",
+            "Dit is herkend, maar je geheugen staat uit. Zet het aan bij Profiel.",
           )
         } else {
           setFeedback(
-            "Sparki kon hier geen vervolgmoment in herkennen. Probeer bijvoorbeeld: \u201cik heb een wedstrijd dit weekend\u201d.",
+            "Hier kon geen vervolgmoment in worden herkend. Probeer bijvoorbeeld: \u201cik heb een wedstrijd dit weekend\u201d.",
           )
         }
       },
@@ -217,11 +217,11 @@ export function ContextMemoryPanel() {
 
   return (
     <section>
-      <SectionLabel n="09" title="Sparki onthoudt" />
+      <SectionLabel n="09" title="Wat er speelt" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-        Vertel Sparki wat er speelt — school, werk, familie, een wedstrijd, een
-        blessure of een slechte nacht. Sparki onthoudt het en vraagt er op het
-        juiste moment rustig naar. Jij houdt de regie: delen, pauzeren of
+        Vertel wat er speelt — school, werk, familie, een wedstrijd, een
+        blessure of een slechte nacht. Het wordt onthouden en komt op het
+        juiste moment rustig terug. Jij houdt de regie: delen, pauzeren of
         verwijderen kan altijd.
       </p>
 
@@ -243,7 +243,7 @@ export function ContextMemoryPanel() {
             onClick={submit}
             className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/70 transition hover:border-cyan-400/40 hover:text-cyan-300 disabled:opacity-40"
           >
-            {capture.isPending ? "Sparki luistert\u2026" : "Vertel Sparki"}
+            {capture.isPending ? "Bezig\u2026" : "Vertel het"}
           </button>
           {feedback && (
             <span className="text-[11px] leading-snug text-white/45">
@@ -264,7 +264,7 @@ export function ContextMemoryPanel() {
         </div>
       ) : memories.length === 0 ? (
         <p className="mt-4 text-[13px] text-white/35">
-          Nog niets onthouden · Vertel Sparki hierboven wat er speelt
+          Nog niets onthouden · Vertel hierboven wat er speelt
         </p>
       ) : (
         <div className="mt-4 space-y-2.5">

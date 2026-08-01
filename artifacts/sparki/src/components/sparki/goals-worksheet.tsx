@@ -19,7 +19,7 @@ function GoalsEmptyWaarom() {
         <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
           Er staan nog geen doelen in je profiel en er zijn geen aankomende
           A/B-wedstrijden om een doel uit af te leiden. Met een doel of
-          wedstrijd meet Sparki je opbouw af aan waar je naartoe wilt.
+          wedstrijd wordt je opbouw gemeten aan waar je naartoe wilt.
         </p>
       )}
     </div>
@@ -517,7 +517,7 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
                 <Plus className="h-3 w-3" strokeWidth={2.5} /> Leg je doel vast
               </button>
               <p className="mt-2 text-[12px] leading-relaxed text-white/55">
-                Dan meet Sparki je training daaraan af.
+                Dan wordt je training daaraan gemeten.
               </p>
               <GoalsEmptyWaarom />
             </div>

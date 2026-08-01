@@ -60,7 +60,11 @@ import {
   ATHLETE_NAV_ENTRIES,
   COACH_NAV_ENTRIES,
   PARENT_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_NAV_ENTRIES,
+  ROLE_LABELS,
 } from "@/lib/chapters"
+import type { Role } from "@/contexts/UserContext"
+import { DsContextRegel } from "@/components/ds/context"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
@@ -106,7 +110,9 @@ function shellNavForRole(role: string | null | undefined): {
       ? COACH_NAV_ENTRIES
       : role === "parent"
         ? PARENT_NAV_ENTRIES
-        : null
+        : role === "nutrition_specialist"
+          ? NUTRITION_SPECIALIST_NAV_ENTRIES
+          : null
   if (!entries) {
     return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: SHELL_MOBILE_NAV_ITEMS }
   }
@@ -222,6 +228,28 @@ function ClubCrest() {
         {team.shirtBadge || team.clubName}
       </span>
     </span>
+  )
+}
+
+// F4 (SPARKI_BUILD_01): actieve rol, organisatie en team/groep permanent
+// zichtbaar in de schil. Toont uitsluitend de ACTIEVE context — nooit
+// aantallen of informatie uit niet-actieve contexten.
+function ContextRegel() {
+  const { profile } = useUserProfile()
+  const rol = (profile?.activeRole as Role | undefined) ?? "athlete"
+  // Reviewfix F4: teamidentiteit is sporter-context — in een andere actieve
+  // rol niet tonen (geen context uit niet-actieve rollen).
+  const { data } = useTeamIdentity()
+  const team = rol === "athlete" ? data?.team : null
+  const rolLabel = ROLE_LABELS[rol] ?? "Sporter"
+  return (
+    <DsContextRegel
+      rolLabel={rolLabel}
+      clubNaam={team?.clubName ?? null}
+      teamNaam={team?.teamName ?? null}
+      clubKleur={team?.primaryColor ?? null}
+      clubLogoUrl={team?.logoUrl ?? null}
+    />
   )
 }
 
@@ -446,7 +474,9 @@ export function ScreenShell({
             <SectionIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="font-mono text-[10px] tracking-[0.28em] uppercase">{sectionLabel}</span>
           </span>
-          {(isHome || sectionKey === "start") && <ClubCrest />}
+          {/* F4: actieve rol, organisatie en team permanent zichtbaar —
+              alleen de actieve context, nooit aantallen uit andere contexten. */}
+          <ContextRegel />
         </div>
 
         {/* Automatische top-anchored Terug op diepere pagina's. */}

@@ -1,0 +1,77 @@
+OPDRACHT — BEOORDEEL EN SCHOON ALLE REPLIT-DRAFTS OP
+
+Doel:
+Beoordeel alle 162 drafts in de Replit-werkruimte en maak daar één betrouwbare, opgeschoonde werkvoorraad van.
+
+WERKWIJZE
+
+1. Exporteer eerst alle drafts met minimaal:
+   - taaknummer;
+   - titel;
+   - huidige status;
+   - aanmaakdatum;
+   - eventuele blokkades;
+   - gekoppelde opdracht of commit;
+   - korte inhoud.
+
+2. Laat daarna Mirror iedere draft beoordelen tegen:
+   - de actuele main-branch;
+   - de afbouwmatrix;
+   - het besluitregister;
+   - de routepakket-reeks 01–02d;
+   - bestaande commits;
+   - bestaande Mirror-rapporten;
+   - geannuleerde taken;
+   - actuele productbesluiten.
+
+3. Mirror classificeert iedere draft als precies één van deze categorieën:
+   - AFGEROND — aantoonbaar gebouwd én bewezen;
+   - INGEHAALD — vervangen door een nieuwere opdracht of besluit;
+   - DUPLICAAT — inhoud zit al in een andere taak;
+   - SAMENVOEGEN — hoort thuis in een grotere domeinopdracht;
+   - BEHOUDEN — nog zelfstandig relevant;
+   - BLOKKADE — noodzakelijk voor actieve of eerstvolgende bouw;
+   - NIET BEOORDEELBAAR — onvoldoende informatie.
+
+4. Per draft levert Mirror:
+   - nummer;
+   - titel;
+   - classificatie;
+   - reden;
+   - bewijsbron;
+   - gekoppelde huidige domeinopdracht;
+   - advies: archiveren, behouden, samenvoegen of direct oppakken.
+
+5. Mirror wijzigt geen code en start geen taken.
+
+6. Replit voert pas na de volledige beoordeling de administratieve opschoning uit:
+   - AFGEROND → Done;
+   - INGEHAALD en DUPLICAAT → Archive;
+   - SAMENVOEGEN → koppelen aan de juiste domeinopdracht en uit Drafts verwijderen;
+   - BEHOUDEN → Planned;
+   - BLOKKADE → Ready of Active, alleen als dat past bij de actuele bouwvolgorde;
+   - NIET BEOORDELBAAR → apart overzicht voor René.
+
+7. Verwijder niets permanent.
+   Alles wat uit Drafts verdwijnt moet terug te vinden zijn in een archieflijst met reden.
+
+EINDRESULTAAT
+
+Lever op:
+- volledige lijst van alle 162 beoordeelde drafts;
+- archieflijst;
+- lijst met dubbelen;
+- lijst met samengevoegde taken;
+- lijst met echte blokkades;
+- opgeschoonde queue met maximaal:
+  - 1 Active;
+  - 3 Ready;
+  - 10 Planned;
+- bevestiging dat geen taak is gestart en geen code is gewijzigd.
+
+Belangrijk:
+- niet raden;
+- niet op titel alleen besluiten als de inhoud onduidelijk is;
+- bij twijfel: NIET BEOORDELBAAR;
+- actuele besluiten winnen van oude drafts;
+- Mirror beoordeelt, Replit voert alleen de administratieve opschoning uit.

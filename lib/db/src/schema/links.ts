@@ -19,6 +19,12 @@ export const coachAthleteLinksTable = pgTable(
     // Wanneer de coach deze atleet voor het laatst bewust heeft beoordeeld
     // (dashboardknop "Beoordeeld"). Null = nog nooit.
     lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
+    // SPARKI_BUILD_01 F2 (BB-09): relatiehistorie. endedAt gezet = relatie
+    // beëindigd — verliest onmiddellijk actuele toegang, rij blijft bestaan.
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.coachClerkId, t.athleteClerkId] })],
 );
@@ -53,6 +59,11 @@ export const parentAthleteLinksTable = pgTable(
     consentConfirmedAt: timestamp("consent_confirmed_at", {
       withTimezone: true,
     }),
+    // SPARKI_BUILD_01 F2 (BB-09): relatiehistorie, zie coach_athlete_links.
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.parentClerkId, t.athleteClerkId] })],
 );

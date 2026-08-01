@@ -355,7 +355,7 @@ function buildFactors(
     key: "weather",
     label: "Weer en temperatuur",
     availability: availFromSignal(signals, "weather"),
-    reading: "niet beschikbaar — weerdata is nog niet aan Sparki gekoppeld",
+    reading: "niet beschikbaar — er is nog geen weerdata gekoppeld",
     impact: "",
   });
 
@@ -407,9 +407,9 @@ export function computePrediction(input: PredictInput): CorePrediction {
       factors,
       confidence: clamp01(Math.min(confidence, 0.3)),
       confidenceLabel: "te weinig om te voorspellen",
-      headline: "Sparki kan het effect nog niet voorspellen",
+      headline: "Het effect is nog niet te voorspellen",
       summary:
-        "Er is nog geen geplande belasting of opbouw voor deze training. Vul de belasting of de blokken in, dan voorspelt Sparki het effect op hoe je ervoor staat.",
+        "Er is nog geen geplande belasting of opbouw voor deze training. Vul de belasting of de blokken in, dan wordt het effect op hoe je ervoor staat voorspeld.",
       predictable: false,
       comparison: null,
     };

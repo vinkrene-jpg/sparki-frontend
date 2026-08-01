@@ -1,0 +1,361 @@
+REPLIT — BOUW MEDIA_UITLEG_01 VOLLEDIG
+Doel: realiseer de volledige mobiele diepte-, animatie-, video-, uitleg- en Academy-laag van Sparki.
+
+Gebruik de definitieve MEDIA_UITLEG_01-documentreeks als bindende bron.
+
+HARD
+
+- Bestaande architectuur, schermen, API’s en componenten behouden.
+- Eerst inventariseren en hergebruiken.
+- Geen zware 3D-engine.
+- Geen tweede content-, rechten-, media- of Academy-architectuur.
+- Geen mock-, demo- of verzonnen persoonlijke gegevens.
+- Iedere fase apart committen en pushen.
+- Na iedere fase: tests, vaste SHA en Mirror-toets.
+- Volgende fase pas na MIRROR_PROVEN en expliciete vrijgave door René.
+- Start nu uitsluitend met F0.
+
+==================================================
+F0 — INVENTARISATIE
+==================================================
+
+Onderzoek aantoonbaar:
+
+- huidige animatie- en gesturebibliotheken;
+- bestaande videospeler;
+- bestaande Help-omgeving;
+- bestaande coachmeldingen;
+- bestaande oefenweergave;
+- gebruikersvoorkeuren;
+- Reduce Motion;
+- voortgangsstatus;
+- contentmodel;
+- opslag/CDN;
+- ondertiteling;
+- posterbeelden;
+- entitlementcontrole;
+- jeugd- en toestemmingsregels;
+- relevante bestaande schermen.
+
+Lever:
+
+- MEDIA_UITLEG_INVENTARISATIE.md
+- MEDIA_UITLEG_HERGEBRUIKMATRIX.md
+- MEDIA_UITLEG_RISICOS.md
+- MEDIA_UITLEG_PILOTSELECTIE.md
+- MEDIA_UITLEG_OPEN_AFHANKELIJKHEDEN.md
+
+Geen applicatiecode in F0.
+
+==================================================
+F1 — GEDEELDE MOTION- EN TOEGANKELIJKHEIDSBASIS
+==================================================
+
+Bouw één centrale motionlaag:
+
+- systeeminstelling Verminder beweging respecteren;
+- Sparki-instelling Verminder beweging;
+- animaties volledig uitschakelbaar;
+- directe eindtoestand zonder functieverlies;
+- centrale duur- en easingklassen;
+- maximaal twee gelijktijdig bewegende elementen;
+- geen continue parallax;
+- geen layoutverschuiving;
+- geen beweging tijdens actieve taak;
+- logging van motionfouten zonder persoonlijke inhoud.
+
+==================================================
+F2 — CMP-40 DIEPTE-/ZWEEFKAART
+==================================================
+
+Bouw één herbruikbaar component voor:
+
+- subtiele diepte;
+- lichte kanteling bij directe aanraking;
+- vloeiend openen naar detail;
+- duidelijke sluiten- en terugactie;
+- lichte drukanimatie;
+- veilige schermranden;
+- licht en donker thema;
+- reduced-motion-eindtoestand;
+- mobiel en desktop.
+
+Niet gebruiken bij standaardlijsten, formulieren, acute meldingen of actieve navigatie.
+
+Eerste zichtbare toepassing:
+
+- bestaand scherm “Training voltooid”.
+
+==================================================
+F3 — CMP-41 TOEGANKELIJKE MEDIASPELER
+==================================================
+
+Bouw pas wanneer één aantoonbaar rechtenvrij testasset beschikbaar is.
+
+Ondersteun:
+
+- posterbeeld;
+- video/animatie;
+- ondertiteling;
+- volwaardig tekstalternatief;
+- pauze;
+- hervatten;
+- opnieuw afspelen;
+- 1× en 0,5×;
+- lage-resolutievariant;
+- lazy loading;
+- afgebroken download;
+- ontbrekende media;
+- ingetrokken media;
+- geen blokkade van onderliggend scherm.
+
+Mobiele data:
+
+- standaard geen videodownload;
+- gebruiker kan dit per apparaat bewust toestaan;
+- instelling later uitschakelbaar;
+- geen stille prefetch of autoplay.
+
+==================================================
+F4 — CONTENTBINDING EN GEBRUIKERSSTATUS
+==================================================
+
+Hergebruik KENNIS_01 en bestaande gebruikersopslag.
+
+Sla server-side op:
+
+- aangeboden;
+- gestart;
+- bekeken;
+- voltooid;
+- overgeslagen;
+- uitgesteld;
+- opnieuw geopend;
+- laatste positie;
+- afspeelsnelheid;
+- contentversie;
+- reduced-motionvoorkeur.
+
+Geen cross-accounttoegang.
+Geen fictieve voortgang.
+Geen client-only succes.
+
+==================================================
+F5 — CMP-42 UITLEGFLOW
+==================================================
+
+Bouw:
+
+- “Zal ik je kort laten zien hoe dit werkt?”;
+- pauzeren;
+- overslaan;
+- opnieuw openen via Help;
+- per gebruiker onthouden;
+- ondertiteling;
+- tekstalternatief;
+- versievaste interface-uitleg;
+- eindigen met echte uitvoerbare actie.
+
+Geen placeholderuitleg in productie.
+Definitieve video pas na Mirror-bewijs van het doelscherm.
+
+==================================================
+F6 — CMP-43 OEFENKAART
+==================================================
+
+Bouw de weergavelaag voor:
+
+- naam;
+- poster/video;
+- begin- en eindpositie;
+- herhalingen of tijd;
+- aandachtspunten;
+- veelgemaakte fouten;
+- veiligheidswaarschuwing;
+- pauze;
+- 0,5×;
+- ondertiteling;
+- tekstalternatief;
+- ontbrekende-media-status.
+
+KENNIS_01 blijft eigenaar van inhoud, bron, licentie en beoordeling.
+
+Jeugd:
+
+- leeftijdsclassificatie verplicht;
+- geen 1RM;
+- geen gewichts- of caloriedoelen;
+- geen zware belastingvoorschriften;
+- geen blessurerevalidatie zonder bevoegde begeleiding;
+- pijn betekent stoppen en melden.
+
+==================================================
+F7 — CMP-44 NIET-ACUTE COACHMELDING
+==================================================
+
+Bouw uitsluitend niet-acute coachmeldingen:
+
+- reden;
+- gebruikte data;
+- gebruikte periode;
+- onzekerheid;
+- relevante actie;
+- sluiten;
+- uitstellen;
+- niet meer tonen alleen waar toegestaan;
+- geen automatische actie;
+- geen mockadvies.
+
+Alleen bouwen met een echte adviesgrond.
+
+Acute en medische meldingen blijven volledig in de bestaande veiligheidslaag en lopen nooit via CMP-44.
+
+==================================================
+F8 — UITLEG EN ACADEMY
+==================================================
+
+Plaats definitief onder:
+
+Hulp & ondersteuning
+→ Uitleg en Academy
+
+Onderdelen:
+
+1. Sparki gebruiken — gratis
+2. Beter fietsen en trainen — Sparki Compleet
+
+Bouw:
+
+- startpagina;
+- categorieën;
+- zoeken;
+- voortgang;
+- laatst bekeken;
+- deeplinks;
+- terugkeer naar oorspronkelijke functie;
+- server-side entitlementcontrole;
+- eerlijke lege toestanden.
+
+Geen zesde hoofdmenu-item.
+
+==================================================
+F9 — PILOTINHOUD EN ROLINTEGRATIE
+==================================================
+
+Maak de samengestelde pilot:
+
+- Training voltooid;
+- subtiele dieptekaart;
+- echte niet-acute coachmelding;
+- Reduce Motion;
+- tekstfallback;
+- lage-bandbreedtegedrag;
+- ontbrekende-mediaflow.
+
+Voeg daarnaast alleen aantoonbaar geschikte pilotinhoud toe:
+
+- één productuitleg;
+- twee oefeningen met geldige rechten en inhoudelijke beoordeling.
+
+Rolgericht testen voor:
+
+- sporter;
+- trainer;
+- ouder;
+- ploegleider;
+- mechanieker;
+- soigneur;
+- medical_staff;
+- gast.
+
+==================================================
+F10 — MOBIEL, DESKTOP EN PERFORMANCE
+==================================================
+
+Test op echte apparaten:
+
+- kleine en grote iPhone;
+- kleine en grote Android;
+- PWA;
+- desktop;
+- 200% tekst;
+- schermlezer;
+- Reduce Motion;
+- animaties uit;
+- wifi;
+- mobiele data;
+- lage bandbreedte;
+- offline;
+- afgebroken download.
+
+Meet objectief:
+
+- downloadvolume;
+- schermtijd;
+- batterijverbruik;
+- CPU/GPU waar meetbaar;
+- animatie aan versus uit;
+- video versus tekstvariant.
+
+“Lijkt soepel” is geen bewijs.
+
+==================================================
+F11 — EINDBEWIJS EN BEHEER
+==================================================
+
+Lever:
+
+- volledige testmatrix;
+- vaste eind-SHA;
+- alle commits per fase;
+- mobiel bewijs;
+- desktopbewijs;
+- toegankelijkheidsbewijs;
+- mediarechtenbewijs;
+- entitlementbewijs;
+- jeugdveiligheidsbewijs;
+- performancebewijs;
+- rollbackbewijs;
+- beheerdocumentatie;
+- bekende beperkingen;
+- fase-2-advies.
+
+==================================================
+DIRECT AFKEUREN BIJ
+==================================================
+
+- video of afleidende animatie tijdens navigatie, training, wedstrijddag, onboarding, formulier, acute of medische flow;
+- functie werkt niet zonder animatie;
+- autoplay;
+- mobiele download zonder toestemming;
+- media zonder rechtenbewijs;
+- geen ondertiteling of gelijkwaardig tekstalternatief;
+- mockpersoonlijk advies;
+- CMP-44 gebruikt voor acute melding;
+- ongeschikte jeugdinhoud;
+- mediafout blokkeert het scherm;
+- zware 3D-engine;
+- layoutverschuiving;
+- client-only entitlement;
+- cross-accountdata;
+- hardcoded content;
+- tweede content- of rechtenarchitectuur;
+- zichtbaar succes zonder serveropslag;
+- doodlopende uitlegflow.
+
+==================================================
+NU UITVOEREN
+==================================================
+
+Start nu uitsluitend F0.
+
+Na F0:
+
+- commit;
+- push;
+- vaste SHA;
+- opleverrapport;
+- Mirror-toets;
+- stop.
+
+Start F1 niet automatisch.

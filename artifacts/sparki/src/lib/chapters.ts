@@ -93,6 +93,15 @@ export const PARENT_CHAPTERS: Chapter[] = [
   { href: "/feed", icon: Radio, label: "Nieuws", hint: "Wat er speelt" },
 ]
 
+// BB-14: voedingsdeskundige — eigen (dunne) rolomgeving, Voeding eerst.
+// Nooit terugvallen op de sporterweergave: zolang er geen gekoppelde sporters
+// zijn, toont het startscherm de eerlijke lege toestand.
+export const NUTRITION_SPECIALIST_CHAPTERS: Chapter[] = [
+  { href: "/", icon: HeartPulse, label: "Voeding", hint: "Jouw sporters & voeding" },
+  { href: "/you", icon: User, label: "Profiel", hint: "Jouw gegevens" },
+  { href: "/support", icon: LifeBuoy, label: "Hulp", hint: "Vragen & ondersteuning" },
+]
+
 // Hoofdnavigatie (onderbalk) — pure data zodat de navigatieregressietest dit
 // zonder React kan importeren. Sporter: precies vijf hoofdkeuzes.
 export type NavEntry = { href: string; label: string }
@@ -105,10 +114,36 @@ export const ATHLETE_NAV_ENTRIES: NavEntry[] = [
   { href: "/meer", label: "Meer" },
 ]
 
+// F4 (BB-06): vaste vijf posities met vaste betekenis voor élke rol —
+// 1 startpunt · 2 hoofdonderwerp · 3 uitvoeren · 4 terugkijken · 5 Meer.
+// Labels 1–4 mogen per rol verschillen; aantal, volgorde en betekenis niet.
+// Positie 5 heet altijd "Meer". Nooit een zesde hoofditem (BB-07).
+//
+// Besluit René 01-08-2026: de labels voor positie 2–4 zijn een VOORSTEL
+// (MRU-22) en worden definitief vastgesteld in MRC-F1 van MULTIROLE_CONTEXT_01
+// (eigenaar). Daarom komen ze uit configuratie (config/role-nav-labels.json)
+// en liggen ze hier niet in code vast. Positie 1 (MUX-76a) en 5 ("Meer")
+// liggen wél vast.
+import roleNavLabels from "../config/role-nav-labels.json"
+
+type RoleNavConfigEntry = { positie: number; href: string; label: string }
+
+function middenPosities(rol: "coach" | "nutrition_specialist"): NavEntry[] {
+  const cfg = (roleNavLabels as Record<string, unknown>)[rol]
+  const entries = Array.isArray(cfg) ? (cfg as RoleNavConfigEntry[]) : []
+  return [2, 3, 4].map((positie) => {
+    const e = entries.find((x) => x && x.positie === positie && x.href && x.label)
+    // Ontbrekende configuratie ⇒ generiek positielabel (MRU-23), nooit een
+    // gat of een zesde item.
+    if (!e) return { href: "/meer", label: positie === 2 ? "Onderwerp" : positie === 3 ? "Uitvoeren" : "Overzicht" }
+    return { href: e.href, label: e.label }
+  })
+}
+
 export const COACH_NAV_ENTRIES: NavEntry[] = [
-  { href: "/", label: "Vandaag" },
-  { href: "/invitations", label: "Uitnodigen" },
-  { href: "/you", label: "Profiel" },
+  { href: "/", label: "Vandaag" }, // 1 startpunt (MUX-76a)
+  ...middenPosities("coach"), // 2–4 uit configuratie (voorstel MRU-22)
+  { href: "/meer", label: "Meer" }, // 5 Meer (vast)
 ]
 
 // WP-R1 bindende ouderonderbalk (besluit 31-07-2026).
@@ -120,11 +155,29 @@ export const PARENT_NAV_ENTRIES: NavEntry[] = [
   { href: "/meer", label: "Meer" },
 ]
 
+// BB-14: onderbalk voedingsdeskundige — Voeding eerst; BB-06: vijf posities.
+// Posities 2–4 uit configuratie (zelfde regel als coach, besluit 01-08-2026).
+export const NUTRITION_SPECIALIST_NAV_ENTRIES: NavEntry[] = [
+  { href: "/", label: "Voeding" }, // 1 startpunt (MUX-76a)
+  ...middenPosities("nutrition_specialist"),
+  { href: "/meer", label: "Meer" }, // 5 Meer (vast)
+]
+
+// F4: één bron van waarheid voor het zichtbare rollabel in de contextregel
+// en het hoofdmenu.
+export const ROLE_LABELS: Record<Role, string> = {
+  athlete: "Sporter",
+  coach: "Coach",
+  parent: "Ouder",
+  nutrition_specialist: "Voedingsdeskundige",
+}
+
 export function chaptersForRole(
   role: Role | null | undefined,
   hasClub: boolean,
 ): Chapter[] {
   if (role === "coach") return COACH_CHAPTERS
   if (role === "parent") return PARENT_CHAPTERS
+  if (role === "nutrition_specialist") return NUTRITION_SPECIALIST_CHAPTERS
   return hasClub ? [...ATHLETE_CHAPTERS, CLUB_CHAPTER] : ATHLETE_CHAPTERS
 }

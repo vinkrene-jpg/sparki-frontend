@@ -21,6 +21,14 @@ import {
   type NewComputationTrace,
 } from "@workspace/db";
 import { logger } from "../../lib/logger";
+import {
+  classifyValue,
+  klasseMeta,
+  type DataTrustClass,
+  type KlasseMeta,
+} from "./classification";
+
+export * from "./classification";
 
 export const ONVOLDOENDE = "Onvoldoende gegevens beschikbaar.";
 
@@ -60,6 +68,8 @@ export interface OriginMeta {
   veldBronnen: Record<string, string> | null;
   handmatigeVelden: string[] | null;
   conflicten: number;
+  /** Centrale data-trust-classificatie (DATA_TRUST_01) — additief. */
+  klasse: DataTrustClass;
 }
 
 type SessionRow = typeof trainingSessionsTable.$inferSelect;
@@ -93,6 +103,10 @@ export function sessionOrigin(
     veldBronnen: session.fieldSources ?? null,
     handmatigeVelden: session.manualFields ?? null,
     conflicten: mergeLog.length,
+    klasse: classifyValue({
+      ownerClerkId: session.clerkId,
+      source: session.source,
+    }),
   };
 }
 
@@ -153,6 +167,8 @@ export interface ExplainPayload {
   betrouwbaarheid: string;
   ontbrekend: string[];
   melding: string | null; // ONVOLDOENDE wanneer er niets herleidbaars is
+  /** Centrale data-trust-classificatie (DATA_TRUST_01) — additief. */
+  trust: KlasseMeta;
 }
 
 /** Uitleg voor één sessie (owner-scoped door de aanroepende route). */
@@ -237,6 +253,10 @@ export async function explainSession(
     betrouwbaarheid: session.source === "manual" ? "handmatig" : "gemeten",
     ontbrekend: [],
     melding: null,
+    trust: klasseMeta({
+      ownerClerkId: session.clerkId,
+      source: session.source,
+    }),
   };
 }
 
@@ -293,6 +313,11 @@ export async function explainObservation(
       : obs.confidence,
     ontbrekend: missing,
     melding: heeftVerantwoording ? null : ONVOLDOENDE,
+    trust: klasseMeta({
+      ownerClerkId: obs.clerkId,
+      source: heeftVerantwoording ? "derived" : null,
+      hasComputationTrace: Boolean(heeftVerantwoording),
+    }),
   };
 }
 
@@ -329,6 +354,12 @@ export async function explainComputation(
     betrouwbaarheid: trace.reliability,
     ontbrekend: [],
     melding: inputs.length === 0 ? ONVOLDOENDE : null,
+    trust: klasseMeta({
+      ownerClerkId: trace.clerkId,
+      source: "derived",
+      hasComputationTrace: inputs.length > 0,
+      estimated: trace.reliability === "geschat",
+    }),
   };
 }
 

@@ -60,9 +60,9 @@ function fmtDuration(min: number): string {
 }
 
 const STATUS_LEARNING: Record<string, string> = {
-  dnf: "Je hebt niet gefinisht (DNF). Noteer wat er gebeurde (lek, val, of de benen) zodat Sparki dat meeweegt.",
+  dnf: "Je hebt niet gefinisht (DNF). Noteer wat er gebeurde (lek, val, of de benen) zodat dat meegewogen wordt.",
   dns: "Je bent niet gestart (DNS). Als er een reden was (ziekte, materiaal), helpt het om die te noteren.",
-  dsq: "Je bent gediskwalificeerd (DSQ). Noteer kort wat er speelde zodat Sparki er rekening mee houdt.",
+  dsq: "Je bent gediskwalificeerd (DSQ). Noteer kort wat er speelde zodat daar rekening mee gehouden wordt.",
 };
 
 // Pure evaluation over a race + the athlete + already-fetched matched activity.
@@ -114,7 +114,7 @@ export function composeRaceEvaluation(
         {
           key: "timing",
           label: "Wedstrijd nog niet geweest",
-          question: "Na de wedstrijd vergelijkt Sparki je resultaat met de verwachting.",
+          question: "Na de wedstrijd wordt je resultaat met de verwachting vergeleken.",
         },
       ],
     };
@@ -139,7 +139,7 @@ export function composeRaceEvaluation(
         {
           key: "result",
           label: "Uitslag",
-          question: `Hoe ging ${race.name}? Vul je uitslag in zodat Sparki ervan leert.`,
+          question: `Hoe ging ${race.name}? Vul je uitslag in zodat er van geleerd kan worden.`,
         },
       ],
     };
@@ -182,7 +182,7 @@ export function composeRaceEvaluation(
     gaps.push({
       key: "afstand",
       label: "Afstand",
-      question: "Vul de afstand in zodat Sparki je tijd met een verwachting kan vergelijken.",
+      question: "Vul de afstand in zodat je tijd met een verwachting vergeleken kan worden.",
     });
   }
 

@@ -15,3 +15,8 @@ description: Go-only onderdelen, UpgradeNudge, commercial gate patterns, and the
 
 ## Bad-merge corruptie in admin.ts (juli 2026)
 Een handmatige merge (Stripe fase 2) plakte één fout blok (`db.select().from(billingTestAccountsTable)` + entitlement-revoke-update + users-search-SQL) over ±10 verschillende handlers in `routes/admin.ts` (health/run, health/resolve, testers, feedback, failed-imports, data-provenance, data-trust/cleanup…). Herstelpatroon: originele hunks terughalen uit de parent-commit (`git show <merge>~1:pad`) en alleen de kapotte hunks terugzetten, legitieme toevoegingen laten staan. **Les:** na een menselijke merge in dit repo eerst `tsc --noEmit` op api-server draaien; identieke foutblokken op meerdere plekken = zoek-vervang-corruptie, herstel uit git-historie, niet uit het hoofd.
+
+## ROUTE_PAKKET_01 lessen (31-07-2026)
+- Course-points-poort moet ELKE payload dekken die punten meedraagt: GET /api/routes/:id (wedstrijdroute-detail) bouwde race.points los van de gepoorte /api/races/:id/points — architect-review ving dit lek. Regel: bij een nieuwe commerciële feature-key grep op de onderliggende tabel (racePointsTable) en poort elk leespad; detail levert nu points:[] + pointsLocked:true zonder recht.
+- race-points/race-exports routers mounten op /api/races/... (niet /api/route...): poort-tests moeten dat pad gebruiken.
+- e2e-klikbewijs vereist eerst een herstart van de api-server-workflow na routewijzigingen — de draaiende dev-server serveert anders oude poortcode en het bewijs is waardeloos.

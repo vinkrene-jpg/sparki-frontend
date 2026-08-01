@@ -206,7 +206,7 @@ export default function GpxImportScreen() {
               Geen GPX-bestand gevonden
             </Text>
             <Text style={[styles.stateBody, { color: c.mutedForeground }]}>
-              Open een .gpx-bestand met Sparki vanuit een e-mail, chat of je
+              Open een .gpx-bestand met deze app vanuit een e-mail, chat of je
               bestanden — dan verschijnt het hier om op te slaan en te navigeren.
             </Text>
             <Pressable

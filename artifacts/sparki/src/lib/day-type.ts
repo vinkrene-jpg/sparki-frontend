@@ -143,7 +143,7 @@ export const dayTypeRegistry: Record<
   emergency: () => ({
     eyebrow: "HERSTEL VEREIST",
     title: "Gezondheid eerst",
-    why: "Sparki heeft een gezondheidssignaal opgepikt. Training is vandaag geblokkeerd tot je hersteld bent.",
+    why: "Er is een gezondheidssignaal opgepikt. Training is vandaag geblokkeerd tot je hersteld bent.",
     primary: { label: "Bekijk herstel", href: "/you" },
     tone: "alert",
   }),
@@ -201,7 +201,7 @@ export const dayTypeRegistry: Record<
   sparki_training: (ctx) => ({
     eyebrow: "SPARKI-TRAINING",
     title: ctx.todayWorkout?.title || "Training van vandaag",
-    why: "Sparki heeft deze sessie afgestemd op je vorm en herstel.",
+    why: "Deze sessie is afgestemd op je vorm en herstel.",
     primary: { label: "Start training", href: "/train" },
     tone: "train",
   }),

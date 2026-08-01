@@ -6,6 +6,8 @@ import { StateCard } from "@/components/sparki/state-card"
 import { PerformanceNumbers } from "@/components/sparki/performance-numbers"
 import { SportPassport } from "@/components/sparki/sport-passport"
 import { ProfileSettings } from "@/components/sparki/profile-settings"
+import { useFeatureFlag } from "@/hooks/use-feature-flag"
+import { useMotionPreference } from "@/hooks/use-motion-preference"
 import { HoofdstukTabs, type HoofdstukTab } from "@/components/sparki/hoofdstuk-tabs"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useClearPhotoDecor } from "@/hooks/use-photo-style"
@@ -897,7 +899,7 @@ export default function YouPage() {
                   </p>
                   <p className="mt-1 text-[12px] leading-relaxed text-white/55">
                     Bepaal waar je naartoe wilt — recreatief, een toertocht, wedstrijden of
-                    hoger. Sparki weegt elk advies af tegen dat doel.
+                    hoger. Elk advies wordt afgewogen tegen dat doel.
                   </p>
                   <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors group-hover:text-cyan-300">
                     Doel kiezen →
@@ -1239,10 +1241,56 @@ export default function YouPage() {
                 Open
               </span>
             </button>
+            <VerminderBewegingInstelling />
             <ProfileSettings focus={focus} onCompleteFix={onCompleteFix} />
           </div>
         </div>
       )}
     </ScreenShell>
+  )
+}
+
+// MEDIA_UITLEG_01 F1 — instelling "Verminder beweging" (T-4: vindbare plek in
+// de instellingen, server-side bewaard). Achter de flag media_uitleg_motion
+// totdat de keten is bewezen. Werkt onafhankelijk van de systeeminstelling:
+// staat één van beide aan, dan is beweging uit.
+function VerminderBewegingInstelling() {
+  const enabled = useFeatureFlag("media_uitleg_motion")
+  const { sparkiReduced, sparkiReducedLoaded, setSparkiReduced, saving, systemReduced } =
+    useMotionPreference()
+  if (!enabled) return null
+  return (
+    <div className="mb-6 flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3.5 backdrop-blur-md">
+      <span>
+        <span className="block text-sm font-medium text-white">
+          Verminder beweging
+        </span>
+        <span className="block text-xs text-white/50">
+          {systemReduced
+            ? "Je systeem staat al op verminderde beweging; deze instelling geldt daarnaast op al je apparaten."
+            : "Zet animaties uit; alles blijft gewoon werken. Geldt op al je apparaten."}
+        </span>
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={sparkiReduced}
+        aria-label="Verminder beweging"
+        disabled={saving || !sparkiReducedLoaded}
+        onClick={() => setSparkiReduced(!sparkiReduced)}
+        className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-50 ${
+          sparkiReduced
+            ? "border-cyan-300/40 bg-cyan-300/30"
+            : "border-white/15 bg-white/[0.06]"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white transition-transform ${
+            sparkiReduced ? "translate-x-[22px]" : "translate-x-0.5"
+          }`}
+          style={{ height: 18, width: 18 }}
+        />
+      </button>
+    </div>
   )
 }

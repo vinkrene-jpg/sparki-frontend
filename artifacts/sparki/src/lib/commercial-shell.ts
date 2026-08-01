@@ -329,6 +329,8 @@ export type WeekDay = {
   label: string
   status: "training" | "leeg"
   actief: boolean
+  /** Markeert de echte vandaag-dag (aria-current in de selecteerbare DsWeek). */
+  vandaag: boolean
   waarde: string
 }
 
@@ -343,6 +345,7 @@ export function buildWeekDays(
     status:
       d.value !== "—" || (d.isToday && hasTodayWorkout) ? "training" : "leeg",
     actief: d.isToday,
+    vandaag: d.isToday,
     waarde: d.value,
   }))
 }

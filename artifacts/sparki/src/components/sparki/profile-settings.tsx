@@ -419,9 +419,9 @@ function SparkiStyleSection({ autoOpen, onSaved }: EditorProps = {}) {
     <section ref={ref}>
       <SectionLabel n="03b" title="Sparki-stijl" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-        Hoeveel droge humor mag Sparki gebruiken? Dit geldt overal in de app.
+        Hoeveel droge humor mag er zijn? Dit geldt overal in de app.
         Bij medische signalen, veiligheid, privacy en andere serieuze momenten
-        blijft Sparki altijd zakelijk — ongeacht deze instelling.
+        blijft de toon altijd zakelijk — ongeacht deze instelling.
       </p>
       <div className="mt-3 space-y-2">
         <div className="flex items-center gap-3">
@@ -650,7 +650,7 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
         {hrvSupplier && !hrvManual ? (
           <div className="flex flex-col gap-1.5 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3.5 py-2.5">
             <span className="text-[13px] text-white/70">
-              Sparki haalt je HRV automatisch op uit {hrvSupplier.displayName}
+              Je HRV wordt automatisch opgehaald uit {hrvSupplier.displayName}
               {formatLastSync(hrvSupplier.lastSyncAt)
                 ? ` — laatste sync ${formatLastSync(hrvSupplier.lastSyncAt)}`
                 : ""}
@@ -944,7 +944,7 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           {profile?.weightKg ? `${profile.weightKg} kg` : "Nog niet gesynct"}
         </span>
         <span className="text-[10px] text-white/30">
-          Sparki haalt dit op uit {weightSupplier.displayName}
+          Dit wordt opgehaald uit {weightSupplier.displayName}
           {lastSync ? ` · ${lastSync}` : ""}
         </span>
         <button
@@ -1251,6 +1251,11 @@ function BillingSection() {
     expired: "Verlopen",
     blocked: "Geblokkeerd",
     free: "Gratis",
+    // ABONNEMENT_01 §1.1 — eerlijke labels voor de nieuwe statussen.
+    incomplete: "Betaling niet afgerond",
+    paused: "Gepauzeerd",
+    unknown: "Status onbekend — veilig teruggezet naar Gratis",
+    legacy_unrestricted: "Volledige toegang (bestaand account)",
   }
 
   const btn =
@@ -1359,14 +1364,42 @@ export function ProfileSettings({
 
   useEffect(() => {
     if (!focus) return undefined
-    const el = document.getElementById(`cfg-${focus}`)
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" })
-      setHlToken(focus)
-      const t = setTimeout(() => setHlToken(null), 2600)
-      return () => clearTimeout(t)
+    // Secties laden asynchroon (abonnement wacht bijv. op billing-status) en de
+    // sheet animeert open — één keer scrollen mist het doel dan. Blijf ~2,5s
+    // her-scrollen tot de positie stabiel is (zelfde patroon als de Kompas-
+    // deep-link in you.tsx), anders "belandt" de gebruiker bovenaan de sheet.
+    let lastTop: number | null = null
+    let stableTicks = 0
+    let highlighted = false
+    const started = Date.now()
+    let hlTimer: ReturnType<typeof setTimeout> | undefined
+    const tick = () => {
+      const el = document.getElementById(`cfg-${focus}`)
+      if (el) {
+        if (!highlighted) {
+          highlighted = true
+          setHlToken(focus)
+          hlTimer = setTimeout(() => setHlToken(null), 2600)
+        }
+        const top = el.getBoundingClientRect().top
+        if (lastTop === null || Math.abs(top - lastTop) > 4) {
+          el.scrollIntoView({ behavior: "auto", block: "center" })
+          stableTicks = 0
+        } else {
+          stableTicks += 1
+        }
+        lastTop = el.getBoundingClientRect().top
+      }
+      if (stableTicks >= 3 || Date.now() - started > 2500) {
+        window.clearInterval(interval)
+      }
     }
-    return undefined
+    const interval = window.setInterval(tick, 250)
+    tick()
+    return () => {
+      window.clearInterval(interval)
+      if (hlTimer) clearTimeout(hlTimer)
+    }
   }, [focus])
 
   const configRows: {
@@ -1542,7 +1575,7 @@ export function ProfileSettings({
 
       {/* HOE SPARKI KLINKT */}
       <section>
-        <SectionLabel n="04" title="Hoe Sparki klinkt" />
+        <SectionLabel n="04" title="Hoe de app klinkt" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Sparki's toon groeit mee naarmate jullie elkaar beter leren kennen
         </p>

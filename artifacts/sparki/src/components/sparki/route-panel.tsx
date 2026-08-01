@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
+import { useEffect, useRef, useState, type ComponentProps, type Dispatch, type ReactNode, type SetStateAction } from "react"
+import { createPortal } from "react-dom"
 import { DsStatus, IconCheck } from "@/components/ds"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
@@ -41,9 +42,12 @@ import { usePlannerView } from "@/hooks/use-planner-view"
 import { plannerViewHas, type PlannerFeature } from "@/lib/planner-view"
 import { PlannerViewSwitcher } from "@/components/sparki/planner-view-switcher"
 import { useFriends } from "@/hooks/use-social"
-import { isSportActive } from "@workspace/feature-flags"
+import { useFeatureFlag } from "@/hooks/use-feature-flag"
+import { isRouteSportActive } from "@workspace/feature-flags"
 import { racefietsVerification } from "@/lib/racefiets-verification"
 import { zoekCriteriaKey } from "@/lib/route-search-criteria"
+import { useClimbSearchNearby, useClimbDetail } from "@/hooks/use-climbs"
+import { KIND_LABEL, type ClimbHit } from "@/lib/climb-types"
 import { ArrowLeft, MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon, Lock } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
@@ -228,7 +232,10 @@ const ALL_SPORT_OPTIONS: { value: Sport; label: string; hint: string }[] = [
   { value: "walking", label: "Wandelen", hint: "verhard" },
   { value: "hiking", label: "Hiken", hint: "paden" },
 ]
-const SPORT_OPTIONS = ALL_SPORT_OPTIONS.filter((s) => isSportActive(s.value))
+// Routefamilies (MOBILE_ROUTE_WALKING_01): wandelen/hiken zijn actief als
+// ROUTEsport (voetprofielen + voet-geschiktheid), los van de trainingsfamilie
+// "running" die nog coming_soon is. Het gedeelde register is de enige poort.
+const SPORT_OPTIONS = ALL_SPORT_OPTIONS.filter((s) => isRouteSportActive(s.value))
 
 const BIKE_OPTIONS: { value: BikeType; label: string; hint: string }[] = [
   { value: "racefiets", label: "Racefiets", hint: "asfalt" },
@@ -514,9 +521,9 @@ function NavigateInfoCard() {
                 <span className="font-medium text-white/85">Navigeer</span> om
                 deze route te openen en je positie onderweg te volgen.
               </p>
-              <p>Sparki registreert tijdens het navigeren ook je rit.</p>
+              <p>Tijdens het navigeren wordt ook je rit geregistreerd.</p>
               <p>
-                Op dit apparaat moet Sparki geopend blijven — met het scherm
+                Op dit apparaat moet de app geopend blijven — met het scherm
                 uit stopt het volgen.
               </p>
             </>
@@ -562,6 +569,187 @@ function NavigateInfoCard() {
             {more ? "− minder" : "+ Meer over navigeren"}
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Klimmen toevoegen (Route maken) ─────────────────────────────────────────
+// Zoeker: klimmen rond de gekozen startlocatie (geen geocodeerstap). Alleen
+// echte treffers — leeg is eerlijk leeg.
+function KlimZoeker({
+  start,
+  naamFilter,
+  setNaamFilter,
+  onKies,
+}: {
+  start: { lat: number; lon: number }
+  naamFilter: string
+  setNaamFilter: (v: string) => void
+  onKies: (k: ClimbHit) => void
+}) {
+  const zoek = useClimbSearchNearby(start, naamFilter, 30, true)
+  const hits = zoek.data?.climbs ?? []
+  return (
+    <div data-testid="klim-zoeker">
+      <input
+        type="text"
+        value={naamFilter}
+        onChange={(e) => setNaamFilter(e.target.value)}
+        placeholder="Filter op naam (optioneel)"
+        aria-label="Klimnaam filteren"
+        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 placeholder:text-white/30 focus:border-accent-cyan/40 focus:outline-none"
+      />
+      {zoek.isLoading && (
+        <p className="mt-2 text-[12px] text-white/45">
+          Klimmen zoeken rond je startpunt…
+        </p>
+      )}
+      {zoek.error != null && (
+        <p className="mt-2 text-[12px] text-amber-300/80">
+          {zoek.error instanceof Error
+            ? zoek.error.message
+            : "Klimmen zoeken is nu niet beschikbaar."}
+        </p>
+      )}
+      {zoek.data && hits.length === 0 && (
+        <p className="mt-2 text-[12px] text-white/45">
+          Geen klimmen gevonden binnen {zoek.data.radiusKm} km rond je start
+          {naamFilter.trim() ? " met deze naam" : ""}. Vlak gebied is eerlijk
+          vlak — probeer een ander startpunt of een andere naam.
+        </p>
+      )}
+      {hits.length > 0 && (
+        <div className="mt-2 flex max-h-56 flex-col overflow-y-auto rounded-xl border border-white/[0.08]">
+          {hits.slice(0, 12).map((k) => (
+            <button
+              key={k.osmId}
+              type="button"
+              onClick={() => onKies(k)}
+              className="flex min-h-11 items-baseline gap-3 border-b border-white/[0.05] px-3 py-2.5 text-left last:border-0 hover:bg-white/[0.04]"
+            >
+              <span className="flex-1 text-[13px] text-white/85">{k.name}</span>
+              <span className="font-mono text-[10px] text-white/40">
+                {KIND_LABEL[k.kind]}
+                {k.elevationM != null ? ` · ${Math.round(k.elevationM)} m` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Gekozen klim: kaart + hoogteprofiel laden pas hier (ná selectie). Vervangen
+// of verwijderen kan altijd, zonder verlies van de andere invoer.
+function GekozenKlimKaart({
+  klim,
+  detail,
+  onVervang,
+  onVerwijder,
+}: {
+  klim: ClimbHit
+  detail: {
+    data?: import("@/lib/climb-types").ClimbDetail
+    isLoading: boolean
+    error: unknown
+  }
+  onVervang: () => void
+  onVerwijder: () => void
+}) {
+  const p = detail.data?.profile ?? null
+  return (
+    <div
+      className="mt-2.5 rounded-2xl border border-accent-cyan/25 bg-accent-cyan/[0.06] p-3"
+      data-testid="gekozen-klim"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[13px] font-medium text-white/90">
+          {klim.name}
+        </span>
+        <span className="font-mono text-[10px] text-white/40">
+          {KIND_LABEL[klim.kind]}
+        </span>
+      </div>
+      {detail.isLoading && (
+        <p className="mt-2 text-[12px] text-white/45">
+          Klimprofiel en kaart laden…
+        </p>
+      )}
+      {!detail.isLoading && detail.data && p && (
+        <>
+          <p className="mt-1.5 font-mono text-[11px] tabular-nums text-white/55">
+            {p.lengthKm} km · {p.elevationGainM} hm · gem. {p.avgGradePct}% ·
+            max {p.maxGradePct}%
+          </p>
+          <div className="mt-2 overflow-hidden rounded-xl">
+            <RouteMap
+              geometry={p.points}
+              center={[klim.lat, klim.lon]}
+              meetpoints={[
+                { name: klim.name, lat: klim.lat, lon: klim.lon, note: null },
+              ]}
+              height={160}
+            />
+          </div>
+          <svg
+            viewBox="0 0 100 24"
+            preserveAspectRatio="none"
+            className="mt-2 h-12 w-full"
+            aria-label={`Hoogteprofiel van ${klim.name}`}
+          >
+            <polyline
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              className="text-accent-cyan/80"
+              points={(() => {
+                const vals = p.profile
+                if (vals.length < 2) return ""
+                const min = Math.min(...vals)
+                const max = Math.max(...vals)
+                const span = Math.max(max - min, 1)
+                return vals
+                  .map(
+                    (v, i) =>
+                      `${(i / (vals.length - 1)) * 100},${22 - ((v - min) / span) * 20}`,
+                  )
+                  .join(" ")
+              })()}
+            />
+          </svg>
+        </>
+      )}
+      {!detail.isLoading && detail.data && !p && (
+        <p className="mt-2 text-[12px] leading-relaxed text-amber-300/80">
+          {detail.data.profileUnavailableReason ??
+            "Voor deze klim is geen betrouwbaar klimprofiel beschikbaar."}{" "}
+          Deze klim kan daardoor niet in de route worden gelegd — vervang of
+          verwijder hem.
+        </p>
+      )}
+      {!detail.isLoading && detail.error != null && (
+        <p className="mt-2 text-[12px] text-amber-300/80">
+          Klimdetails konden niet geladen worden — probeer het opnieuw of
+          vervang de klim.
+        </p>
+      )}
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={onVervang}
+          className="min-h-11 flex-1 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+        >
+          Vervangen
+        </button>
+        <button
+          type="button"
+          onClick={onVerwijder}
+          className="min-h-11 flex-1 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+        >
+          Verwijderen
+        </button>
       </div>
     </div>
   )
@@ -1548,6 +1736,233 @@ function sampleWaypointsFromGeometry(
 
 // Export voor de node-page-test van de racefiets-verificatiegate
 // (route-panel-verification-gate.test.tsx) — geen app-gebruik buiten RoutePanel.
+// ── MOBILE_ROUTE_WALKING_01 F2: mobiele route-detailcompositie ───────────────
+// Bottom sheet voor de detailpanelen van een routevoorstel op telefoonformaat.
+// Portal naar body + z-[80] (boven de onderbalk-z-50 — zie modal-layering-les);
+// desktop toont dezelfde panelen gewoon inline. Eén JSX-bron (CandidateDetails),
+// dus geen tweede routeflow — puur een andere presentatie van dezelfde data.
+function MobielDetailSheet({
+  title,
+  onClose,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  children: ReactNode
+}) {
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  // Echte modal-semantiek: achtergrond scrollt niet mee, Escape sluit, focus
+  // gaat de sheet in en bij sluiten terug naar de knop die hem opende.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    const vorigeOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    panelRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation()
+        onClose()
+        return
+      }
+      // Eenvoudige focus-trap: Tab blijft binnen de sheet.
+      if (e.key === "Tab" && panelRef.current) {
+        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+        )
+        if (focusables.length === 0) return
+        const eerste = focusables[0]!
+        const laatste = focusables[focusables.length - 1]!
+        const actief = document.activeElement
+        if (e.shiftKey && (actief === eerste || actief === panelRef.current)) {
+          e.preventDefault()
+          laatste.focus()
+        } else if (!e.shiftKey && actief === laatste) {
+          e.preventDefault()
+          eerste.focus()
+        } else if (actief && !panelRef.current.contains(actief)) {
+          e.preventDefault()
+          eerste.focus()
+        }
+      }
+    }
+    document.addEventListener("keydown", onKey, true)
+    return () => {
+      document.removeEventListener("keydown", onKey, true)
+      document.body.style.overflow = vorigeOverflow
+      opener?.focus?.()
+    }
+  }, [onClose])
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-end justify-center lg:hidden">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-white/[0.1] bg-[#070d16] outline-none"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        data-testid="route-detail-sheet"
+      >
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+          <p className="text-[15px] font-medium text-white/90">{title}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/[0.12] px-3 py-1.5 text-[12px] text-white/60 transition-colors hover:border-white/25"
+          >
+            Sluiten
+          </button>
+        </div>
+        <div className="overflow-y-auto px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-1">
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+// Detailpanelen van een routevoorstel — één bron voor desktop (inline) en
+// mobiel (bottom sheet). Alle data en handlers komen van de ouder; dit
+// component bevat geen eigen state of fetches.
+function CandidateDetails({
+  candidate,
+  surfacesData,
+  surfacesLoading,
+  surfacesError,
+  surfaceKind,
+  onSelectSurfaceKind,
+  preferredBike,
+  remarksData,
+  remarksLoading,
+  remarksError,
+  posKm,
+  onPosChange,
+  enrichFailed,
+}: {
+  candidate: RouteCandidate
+  surfacesData: ComponentProps<typeof RouteSurfacesPanel>["data"]
+  surfacesLoading: boolean
+  surfacesError: boolean
+  surfaceKind: ComponentProps<typeof RouteSurfacesPanel>["selectedKind"]
+  onSelectSurfaceKind: ComponentProps<typeof RouteSurfacesPanel>["onSelectKind"]
+  preferredBike: ComponentProps<typeof RouteSurfacesPanel>["preferredBike"]
+  remarksData: ComponentProps<typeof RouteRemarksPanel>["data"]
+  remarksLoading: boolean
+  remarksError: boolean
+  posKm: number | null
+  onPosChange: (km: number | null) => void
+  enrichFailed: boolean
+}) {
+  return (
+    <>
+      {candidate.profile.length > 0 && (
+        <InteractiveElevationProfile
+          profile={candidate.profile}
+          distanceKm={candidate.distanceKm}
+          markers={
+            candidate.distanceKm != null && candidate.distanceKm > 0
+              ? [
+                  { km: 0, label: "Start", kind: "start" },
+                  {
+                    km: candidate.distanceKm,
+                    label: "Finish",
+                    kind: "finish",
+                  },
+                  ...candidate.climbs
+                    .filter((c) => Number.isFinite(c.summitKm))
+                    .map((c) => ({
+                      km: c.summitKm as number,
+                      label: `Top: ${c.name}`,
+                      kind: "klim" as const,
+                    })),
+                ]
+              : []
+          }
+          positionKm={posKm}
+          onPositionChange={onPosChange}
+        />
+      )}
+
+      {candidate.geometry.length > 1 && (
+        <RouteSurfacesPanel
+          data={surfacesData}
+          isLoading={surfacesLoading}
+          isError={surfacesError}
+          selectedKind={surfaceKind}
+          onSelectKind={onSelectSurfaceKind}
+          preferredBike={preferredBike}
+          className="mt-4"
+        />
+      )}
+
+      {candidate.geometry.length > 1 && (
+        <RouteRemarksPanel
+          data={remarksData}
+          isLoading={remarksLoading}
+          isError={remarksError}
+          className="mt-4"
+        />
+      )}
+
+      <Climbs climbs={candidate.climbs} />
+
+      {/* Eerlijk vermijd-rapport (taak #462): lukte het vermijden van
+          N-wegen niet in dit gebied, dan staat dat er expliciet bij —
+          nooit stiekem toch N-weg rijden. */}
+      {candidate.avoidReport?.nietMogelijk?.map((item, i) => (
+        <p
+          key={`avoid-nm-${i}`}
+          className="mt-4 rounded-lg border border-warning/25 bg-warning/[0.07] px-3 py-2 text-[12px] leading-relaxed text-warning/90"
+        >
+          Niet gelukt: {item.wens} — {item.reden}
+        </p>
+      ))}
+      {(candidate.avoidReport?.toegepast?.length ?? 0) > 0 && (
+        <p className="mt-4 text-[11px] leading-relaxed text-positive/70">
+          Toegepast: {candidate.avoidReport!.toegepast.join(" · ")}
+        </p>
+      )}
+
+      <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
+        {candidate.rationale}
+      </p>
+      {enrichFailed && (
+        <p className="mt-1.5 text-[11px] text-white/30">
+          De uitgebreide routetoelichting kon niet worden gegenereerd.
+        </p>
+      )}
+
+      {candidate.nav.length > 0 && (
+        <details className="mt-4">
+          <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-accent-cyan/80">
+            STAP-VOOR-STAP ({candidate.nav.length}) — toon
+          </summary>
+          <div className="mt-2 max-h-64 overflow-y-auto pr-1">
+            {candidate.nav.map((n, i) => (
+              <div
+                key={i}
+                className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
+              >
+                <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
+                  {n.km}
+                </span>
+                <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-white/85">
+                  {n.dir}
+                </span>
+                <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
+                  {n.note}
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </>
+  )
+}
+
 export function RouteGenerator({
   onClose,
   initialElevation = null,
@@ -1594,6 +2009,13 @@ export function RouteGenerator({
   // gaat ook niet mee in de aanvraag (effectieve waarden hieronder).
   const plannerView = usePlannerView()
   const heeft = (f: PlannerFeature) => plannerViewHas(plannerView.view, f)
+  // MOBILE_ROUTE_WALKING_01 F1 — telefoon-gerichte compositie achter een
+  // aparte flag (default uit). Zelfde state, handlers en route-engine als
+  // desktop: dit is uitsluitend presentatie (geen tweede flowlogica).
+  // Besluit René 01-08-2026 ("stop met die stomme flags"): de mobiele
+  // wizard-compositie is standaardgedrag, niet langer flag-gebonden. De
+  // constante blijft zodat de flag-uit-paden (desktopweergave) intact zijn.
+  const mobielV2 = true
   const save = useSaveGeneratedRoute()
   // RequestId guard: prevents a slow in-flight request from overwriting a newer one.
   const generateReqId = useRef(0)
@@ -1693,6 +2115,38 @@ export function RouteGenerator({
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
   const [wish, setWish] = useState("")
+  // Klimmen toevoegen (alleen lus): voorkeur of een specifieke, aantoonbaar
+  // op de route gelegde klim. Deep-link vanuit de Klimmenverkenner
+  // (?klim=<osmId>&klimNaam=&klimLat=&klimLon=) start direct met die klim.
+  const klimParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : "",
+  )
+  const klimDeepLink = ((): ClimbHit | null => {
+    const osmId = klimParams.get("klim")
+    const naam = klimParams.get("klimNaam")
+    const lat = Number(klimParams.get("klimLat"))
+    const lon = Number(klimParams.get("klimLon"))
+    if (!osmId || !naam || !Number.isFinite(lat) || !Number.isFinite(lon))
+      return null
+    // Bereikvalidatie: onzinnige coördinaten in de link nooit overnemen. De
+    // deep-link is bovendien alleen de startselectie — naam, top en voet voor
+    // de echte controle komen canoniek uit het serverdetail (osmId).
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null
+    return {
+      osmId,
+      name: naam,
+      lat,
+      lon,
+      elevationM: null,
+      kind: "road",
+      hasDescription: false,
+    }
+  })()
+  const [klimKeuze, setKlimKeuze] = useState<
+    "geen" | "enkele" | "max" | "specifiek"
+  >(klimDeepLink ? "specifiek" : "geen")
+  const [gekozenKlim, setGekozenKlim] = useState<ClimbHit | null>(klimDeepLink)
+  const [klimNaamFilter, setKlimNaamFilter] = useState("")
   const [destination, setDestination] = useState("")
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
   // De ECHTE positie van de rijder (alleen gezet na geslaagde geolocatie) —
@@ -1722,6 +2176,8 @@ export function RouteGenerator({
   // Interactief hoogteprofiel voor de voorgestelde route (kaartklik blijft in
   // de bouwer voor verzamelpunten — positie kiezen gaat hier via het profiel).
   const [candPosKm, setCandPosKm] = useState<number | null>(null)
+  // F2: bottom sheet met detailpanelen op telefoonformaat (desktop inline).
+  const [detailsOpen, setDetailsOpen] = useState(false)
   // Routeopmerkingen-voorproef op de echte kandidaat-geometrie.
   const candRemarks = useRouteRemarksPreview(candidate?.geometry ?? null)
   // Wegtypen-voorproef + geschiktheid per fietstype op de kandidaat.
@@ -1883,6 +2339,31 @@ export function RouteGenerator({
   const effectiefVermijdN = heeft("nWegen") && avoidBusyRoads
   const effectieveHoogte = heeft("hoogte") ? elevationPreference : "any"
   const effectiefTrainingstype = heeft("training") ? trainingType : "duurtraining"
+  // Klimmen toevoegen: alleen in de lus-modus en wanneer de weergave de optie
+  // toont — verborgen keuzes sturen nooit stiekem mee.
+  const klimActief = mode === "loop" && heeft("klimmen")
+  const effectieveKlimKeuze = klimActief ? klimKeuze : "geen"
+  const effectieveKlim =
+    effectieveKlimKeuze === "specifiek" ? gekozenKlim : null
+  // Kaart en hoogteprofiel van de klim worden pas geladen ná selectie (het
+  // detail levert ook de voet van de klim voor de via-punten).
+  const klimDetail = useClimbDetail(effectieveKlim?.osmId ?? null)
+  const klimVoet: [number, number] | null =
+    klimDetail.data?.profile?.points?.[0] ?? null
+  // Hoogtevoorkeur-doorwerking van de klimkeuze: "enkele"/"zoveel mogelijk"
+  // sturen de echte kandidaatselectie; een specifieke klim stuurt via de
+  // via-punten en laat de hoogtevoorkeur ongemoeid.
+  const effectieveHoogteMetKlim =
+    effectieveKlimKeuze === "enkele" || effectieveKlimKeuze === "max"
+      ? "hilly"
+      : effectieveHoogte
+  const klimHoogtedoel = (() => {
+    if (effectieveKlimKeuze !== "max") return undefined
+    const d = parseInt(distance)
+    if (!Number.isFinite(d) || d <= 0) return undefined
+    // Eerlijk doel, geen garantie: ~20 hm per km als rangschikkingsdoel.
+    return Math.min(Math.round(d * 20), 10000)
+  })()
 
   // Contract "eerst bekend, dán nieuw": de bekende-routes-lijst hoort bij
   // PRECIES één set zoekcriteria. Wijzigt een zoek-bepalend gegeven (start,
@@ -1912,6 +2393,14 @@ export function RouteGenerator({
     setBekend(null)
     setBekendFilter("alles")
   }, [zoekKey])
+
+  // Klimkeuze is óók zoek-bepalend: wijzigt de keuze of de gekozen klim, dan
+  // vervalt de bekende-routes-lijst en doorloopt een nieuwe aanvraag opnieuw
+  // de verplichte zoekstap.
+  useEffect(() => {
+    setBekend(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectieveKlimKeuze, effectieveKlim?.osmId])
 
   // Weergave omlaag gezet terwijl de eigen routebouwer actief was? Dan terug
   // naar Lus — een verborgen modus mag nooit stilletjes waypoints meesturen.
@@ -2024,6 +2513,60 @@ export function RouteGenerator({
     )
   }
 
+  // ROUTE_CLIMB_ERROR_FEEDBACK_01 — één eerlijke afhandeling voor een mislukte
+  // routegeneratie. De server stuurt JSON {error, code}; hier wordt dat een
+  // begrijpelijke fouttekst voor de rijder, terwijl de technische servercode
+  // in de console wordt gelogd. Alle gekozen invoer (klim incl.) blijft staan.
+  function failGenerate(e: unknown) {
+    const raw = e instanceof Error ? e.message : String(e)
+    let code: string | null =
+      e instanceof Error && typeof (e as { code?: unknown }).code === "string"
+        ? ((e as { code?: string }).code ?? null)
+        : null
+    let serverText: string | null = null
+    try {
+      const p = JSON.parse(raw) as { error?: unknown; code?: unknown }
+      if (p && typeof p === "object") {
+        if (typeof p.code === "string") code = p.code
+        if (typeof p.error === "string" && p.error.trim()) serverText = p.error
+      }
+    } catch {
+      // geen JSON — de boodschap kan een eerlijke Nederlandse zin zijn (bijv.
+      // de time-outmelding van de jobpolling) of een technische netwerkfout.
+      const technisch =
+        !raw.trim() ||
+        raw === "Routegeneratie mislukt. Probeer het opnieuw." ||
+        /^(TypeError|Failed to fetch|NetworkError|Load failed|fetch failed|AbortError)/i.test(
+          raw,
+        )
+      if (!technisch) serverText = raw
+    }
+    // Technische log — de rijder ziet de begrijpelijke tekst, de code staat hier.
+    console.error(
+      `[route-generatie] mislukt — code=${code ?? "ONBEKEND"}`,
+      raw,
+    )
+    if (serverText) {
+      setError(serverText)
+      return
+    }
+    if (code === "NO_SUITABLE_ROUTE") {
+      setError(
+        "Er kon geen veilige route worden gemaakt met deze instellingen. Pas je wensen aan of kies een andere klim.",
+      )
+      return
+    }
+    if (code === "CLIMB_NOT_ON_ROUTE") {
+      setError(
+        "De gekozen klim kon niet betrouwbaar in de route worden opgenomen. Kies een andere klim of pas het startpunt aan.",
+      )
+      return
+    }
+    setError(
+      "De route kon niet worden gemaakt. Je instellingen zijn bewaard. Probeer opnieuw of pas je wensen aan.",
+    )
+  }
+
   // De eigenlijke nieuwe-voorstellen-generatie (lus, 3 afstandsvarianten) —
   // start pas ná de zoeklaag, of via de expliciete "nieuwe voorstellen"-knop.
   function doGenerateOptions() {
@@ -2036,7 +2579,8 @@ export function RouteGenerator({
         startLon: start.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference: effectieveHoogte,
+        targetElevationGainM: klimHoogtedoel,
+        elevationPreference: effectieveHoogteMetKlim,
         trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
@@ -2049,8 +2593,7 @@ export function RouteGenerator({
       },
       {
         onSuccess: (data) => setOptions(data.options),
-        onError: (e) =>
-          setError(e instanceof Error ? e.message : "Routegeneratie mislukt"),
+        onError: (e) => failGenerate(e),
       },
     )
   }
@@ -2124,6 +2667,15 @@ export function RouteGenerator({
     // a newer one when the user taps again before the first result arrives.
     generateReqId.current += 1
     const myReqId = generateReqId.current
+    // Gekozen klim: de lus wordt als echte wegroute door voet + top gelegd en
+    // de server verifieert aantoonbaar dat de top op de route ligt. Naam en
+    // top komen CANONIEK uit het serverdetail (opgehaald op osmId) — nooit uit
+    // deep-link-parameters, die zijn alleen de startselectie.
+    const klimCanoniek = klimDetail.data ?? null
+    const klimVia: [number, number][] | undefined =
+      mode === "loop" && effectieveKlim && klimCanoniek && klimVoet
+        ? [klimVoet, [klimCanoniek.lat, klimCanoniek.lon]]
+        : undefined
     generate.mutate(
       {
         mode,
@@ -2131,7 +2683,18 @@ export function RouteGenerator({
         startLon: start?.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference: effectieveHoogte,
+        viaPoints: klimVia,
+        climbCheck:
+          klimVia && klimCanoniek
+            ? {
+                osmId: klimCanoniek.osmId,
+                name: klimCanoniek.name,
+                summitLat: klimCanoniek.lat,
+                summitLon: klimCanoniek.lon,
+              }
+            : undefined,
+        targetElevationGainM: klimHoogtedoel,
+        elevationPreference: effectieveHoogteMetKlim,
         trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
@@ -2153,8 +2716,10 @@ export function RouteGenerator({
           if (generateReqId.current !== myReqId) return // stale response
           setCandidate(data.candidate)
         },
-        onError: (e) =>
-          setError(e instanceof Error ? e.message : "Routegeneratie mislukt"),
+        onError: (e) => {
+          if (generateReqId.current !== myReqId) return // stale response
+          failGenerate(e)
+        },
       },
     )
   }
@@ -2298,9 +2863,64 @@ export function RouteGenerator({
           het resultaatscherm toont voor iedereen dezelfde eerlijke controle. */}
       {!showResult && <PlannerViewSwitcher />}
 
+      {/* MOBILE_ROUTE_WALKING_01 F1 — mobiele voortgangskop: één hoofdtaak
+          per scherm, voortgang altijd zichtbaar, grote tikvlakken. Alleen op
+          telefoonformaat en alleen met de flag aan; desktop blijft de
+          bestaande stappenteller gebruiken. */}
+      {mobielV2 && !showResult && (
+        <div className="mt-4 lg:hidden" data-testid="mobiele-wizard-kop">
+          <div className="flex items-center justify-between">
+            <span className="font-sans text-[13px] font-medium text-white/85">
+              {step === 1
+                ? "Waar rijd je?"
+                : step === 2
+                  ? "Fiets & training"
+                  : step === 3
+                    ? "Wensen & samen"
+                    : "Controleren"}
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-white/45">
+              Stap {step} van 4
+            </span>
+          </div>
+          {/* Toegankelijkheid: de voortgang zelf is een aparte (onzichtbare)
+              progressbar; de tikbare segmenten zijn gewone knoppen in een
+              groep. Interactieve elementen mogen geen descendants van een
+              progressbar zijn (ARIA maakt die presentational). */}
+          <div
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={4}
+            aria-valuenow={step}
+            aria-label={`Stap ${step} van 4`}
+            className="sr-only"
+          />
+          <div
+            className="mt-2 flex gap-1.5"
+            role="group"
+            aria-label="Stapnavigatie"
+          >
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                type="button"
+                disabled={n >= step}
+                onClick={() => n < step && setStep(n)}
+                aria-label={n < step ? `Terug naar stap ${n}` : undefined}
+                className={`h-1.5 min-w-0 flex-1 rounded-full ${
+                  n <= step ? "bg-accent-cyan/80" : "bg-white/10"
+                } ${n < step ? "cursor-pointer" : ""}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Stappenteller — vier duidelijke stappen, resultaat apart */}
       {!showResult && (
-        <div className="mt-4 flex items-center gap-2">
+        <div
+          className={`mt-4 items-center gap-2 ${mobielV2 ? "hidden lg:flex" : "flex"}`}
+        >
           {[1, 2, 3, 4].map((n) => (
             <button
               key={n}
@@ -2623,7 +3243,7 @@ export function RouteGenerator({
                   </span>
                 </div>
                 <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
-                  Sparki kiest de kandidaat die hier het dichtst bij komt — een
+                  De kandidaat die hier het dichtst bij komt wordt gekozen — een
                   voorkeur, geen garantie op een exact aandeel onverhard.
                 </p>
               </>
@@ -2655,7 +3275,7 @@ export function RouteGenerator({
 
           {/* Vermijd drukke N-wegen (taak #462): expliciete keuze naast de
               onverhard-voorkeur. Voorkeur in de routemotor — geen garantie;
-              lukt het niet, dan meldt Sparki dat eerlijk bij het resultaat.
+              lukt het niet, dan staat dat eerlijk bij het resultaat.
               Vanaf de Go-weergaven; verborgen = telt niet mee. */}
           {heeft("nWegen") && (
           <div className="mt-4">
@@ -2673,9 +3293,9 @@ export function RouteGenerator({
               <span className="text-[12px] leading-relaxed text-white/70">
                 Vermijd drukke N-wegen
                 <span className="mt-0.5 block text-[11px] text-white/40">
-                  Sparki stuurt de route waar mogelijk om doorgaande wegen
+                  De route gaat waar mogelijk om doorgaande wegen
                   zonder vrijliggend fietspad heen — een voorkeur, geen
-                  garantie. Lukt het in dit gebied niet, dan zegt Sparki dat
+                  garantie. Lukt het in dit gebied niet, dan staat dat
                   erbij. Standaard staat dit uit: korte stukken N-weg zijn oké.
                 </span>
               </span>
@@ -2703,6 +3323,80 @@ export function RouteGenerator({
             </button>
           ))}
         </div>
+      </div>
+      )}
+
+      {/* Klimmen toevoegen — ná startlocatie en afstand: voorkeur of een
+          specifieke klim die aantoonbaar in de route komt te liggen. Alleen
+          in de lus-modus; kaart en hoogteprofiel van de klim laden pas na
+          selectie. */}
+      {stepVisible(2) && klimActief && (
+      <div className="mt-4" data-testid="klimmen-toevoegen">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          KLIMMEN TOEVOEGEN
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              { value: "geen", label: "Geen voorkeur" },
+              { value: "enkele", label: "Enkele klimmen" },
+              { value: "max", label: "Zoveel mogelijk" },
+              { value: "specifiek", label: "Specifieke klim zoeken" },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => {
+                setKlimKeuze(o.value)
+                if (o.value !== "specifiek") setGekozenKlim(null)
+              }}
+              className={`min-h-11 rounded-xl border px-3 py-2.5 text-[13px] transition-colors ${klimKeuze === o.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {klimKeuze === "enkele" && (
+          <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+            De echte kandidaat met wat klimwerk wint — een voorkeur, geen
+            garantie in vlak gebied.
+          </p>
+        )}
+        {klimKeuze === "max" && (
+          <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+            De route met de meeste echte hoogtemeters rond je start wint — een
+            eerlijke keuze uit echte kandidaten, geen garantie.
+          </p>
+        )}
+        {klimKeuze === "specifiek" && !gekozenKlim && (
+          <div className="mt-2.5">
+            {!start ? (
+              <p className="text-[12px] leading-relaxed text-white/50">
+                Kies eerst een startpunt (stap 1) — Sparki zoekt dan klimmen in
+                de buurt van je start.
+              </p>
+            ) : (
+              <KlimZoeker
+                start={start}
+                naamFilter={klimNaamFilter}
+                setNaamFilter={setKlimNaamFilter}
+                onKies={(k) => setGekozenKlim(k)}
+              />
+            )}
+          </div>
+        )}
+        {klimKeuze === "specifiek" && gekozenKlim && (
+          <GekozenKlimKaart
+            klim={gekozenKlim}
+            detail={klimDetail}
+            onVervang={() => setGekozenKlim(null)}
+            onVerwijder={() => {
+              setGekozenKlim(null)
+              setKlimKeuze("geen")
+            }}
+          />
+        )}
       </div>
       )}
 
@@ -2966,39 +3660,6 @@ export function RouteGenerator({
       )}
 
       {stepVisible(3) && (<>
-      {error && (
-        <div className="mt-3 rounded-2xl border border-negative/25 bg-negative/[0.06] p-3">
-          <p className="text-[12px] leading-relaxed text-negative/85">{error}</p>
-          {/* WP-1: geen doodlopende fout — duidelijke vervolgacties. */}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() =>
-                mode === "loop" ? runGenerateOptions() : runGenerate()
-              }
-              disabled={genPending}
-              className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30 disabled:opacity-50"
-            >
-              Opnieuw proberen
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setError(null)
-                setStep(1)
-              }}
-              className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
-            >
-              Startpunt of afstand aanpassen
-            </button>
-          </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-            Je keuzes zijn bewaard — pas gerust één ding aan (korter, ander
-            startpunt of soepelere voorkeuren) en probeer opnieuw.
-          </p>
-        </div>
-      )}
-
       {/* Samen rijden? — de plek waar je je maten kiest. (Bordjes-sprint is
           gestopt — veiligheidsrisico op openbare weg, besluit 31-07-2026.) */}
       <div className="mt-4 border-t border-white/[0.08] pt-4">
@@ -3136,6 +3797,18 @@ export function RouteGenerator({
                 {effectieveWens}
               </p>
             )}
+            {klimActief && effectieveKlimKeuze !== "geen" && (
+              <p>
+                <span className="text-white/40">Klimmen: </span>
+                {effectieveKlimKeuze === "enkele"
+                  ? "enkele klimmen (voorkeur)"
+                  : effectieveKlimKeuze === "max"
+                    ? "zoveel mogelijk klimmen (voorkeur)"
+                    : effectieveKlim
+                      ? `via ${effectieveKlim.name}`
+                      : "specifieke klim — nog niet gekozen"}
+              </p>
+            )}
             <p>
               <span className="text-white/40">Gezelschap: </span>
               {withOthers
@@ -3150,12 +3823,86 @@ export function RouteGenerator({
         </div>
       )}
 
+      {/* ROUTE_CLIMB_ERROR_FEEDBACK_01 — de foutmelding hoort op de stap waar
+          de actie is gestart (dus óók op stap 4 "Controleren", waar Genereer
+          route staat). Eén blok, geen dubbele melding; role="alert" zodat een
+          schermlezer de fout direct aankondigt. Blijft staan tot de rijder
+          opnieuw probeert, teruggaat of iets aanpast. Gekozen klim en overige
+          invoer blijven onaangeroerd. */}
+      {!showResult && error && (
+        <div
+          role="alert"
+          className="mt-3 rounded-2xl border border-negative/25 bg-negative/[0.06] p-3"
+        >
+          <p className="text-[12px] leading-relaxed text-negative/85">{error}</p>
+          {/* Geen doodlopende fout — duidelijke vervolgacties (op stap 4:
+              opnieuw proberen, terug naar wensen, of terug naar het begin). */}
+          {step >= 3 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  mode === "loop" ? runGenerateOptions() : runGenerate()
+                }
+                disabled={genPending}
+                className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30 disabled:opacity-50"
+              >
+                Opnieuw proberen
+              </button>
+              {step === 4 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null)
+                    setStep(3)
+                  }}
+                  className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
+                >
+                  Wensen aanpassen (stap 3)
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null)
+                  setStep(1)
+                }}
+                className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
+              >
+                Startpunt of afstand aanpassen
+              </button>
+            </div>
+          )}
+          {step >= 3 && (
+            <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+              Je keuzes zijn bewaard — pas gerust één ding aan (korter, ander
+              startpunt of soepelere voorkeuren) en probeer opnieuw.
+            </p>
+          )}
+        </div>
+      )}
+
       {!showResult && (
-        <div className="mx-auto mt-4 flex w-full max-w-md gap-3">
+        <div
+          className={`mx-auto mt-4 flex w-full max-w-md gap-3 ${
+            mobielV2
+              ? // F1: primaire actie altijd bereikbaar op telefoon — vaste balk
+                // onderaan het paneel, met veilige schermrand. Desktop
+                // ongewijzigd (lg:static).
+                "sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 -mx-5 w-auto max-w-none rounded-2xl bg-map-panel/95 px-5 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-md lg:static lg:z-auto lg:mx-auto lg:w-full lg:max-w-md lg:rounded-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+              : ""
+          }`}
+          data-testid={mobielV2 ? "mobiele-actiebalk" : undefined}
+        >
           {step > 1 && (
             <button
               type="button"
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
+              onClick={() => {
+                // Teruggaan is een bewuste gebruikersactie — de foutmelding
+                // mag dan weg en blokkeert de terugweg nooit.
+                setError(null)
+                setStep((s) => Math.max(1, s - 1))
+              }}
               className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Terug
@@ -3165,10 +3912,12 @@ export function RouteGenerator({
             <button
               type="button"
               onClick={() => {
+                // Verdergaan is een bewuste gebruikersactie — een oude
+                // foutmelding mag dan weg.
+                setError(null)
                 // Eerlijke controle vóór het doorgaan: zonder plek op de kaart
                 // valt er niets te berekenen.
                 if (step === 1) {
-                  setError(null)
                   if (mode === "waypoints") {
                     if (allPoints.length < 2) {
                       setError(
@@ -3193,9 +3942,28 @@ export function RouteGenerator({
           ) : (
             <button
               type="button"
-              onClick={() =>
-                mode === "loop" ? runGenerateOptions() : runGenerate()
-              }
+              onClick={() => {
+                // Specifieke klim: één voorstel via voet + top (via-punten) —
+                // de 3-afstanden-kiezer kan geen via-punten meesturen.
+                if (effectieveKlim) {
+                  if (klimDetail.isLoading) {
+                    setError(
+                      "Het klimprofiel wordt nog geladen — probeer het zo weer.",
+                    )
+                    return
+                  }
+                  if (!klimVoet) {
+                    setError(
+                      "Voor deze klim is geen betrouwbaar klimprofiel beschikbaar — vervang of verwijder de klim.",
+                    )
+                    return
+                  }
+                  runGenerate()
+                  return
+                }
+                if (mode === "loop") runGenerateOptions()
+                else runGenerate()
+              }}
               disabled={genPending}
               className="min-w-0 flex-1 rounded-2xl bg-accent-cyan py-3.5 font-sans text-[13px] font-semibold text-on-accent disabled:opacity-50"
             >
@@ -3404,8 +4172,8 @@ export function RouteGenerator({
                 className="mt-4 w-full rounded-xl border border-white/[0.15] py-2.5 font-sans text-[13px] text-white/75 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50 lg:w-auto lg:px-5"
               >
                 {genPending
-                  ? "Sparki plant nieuwe voorstellen…"
-                  : "Maak óók nieuwe voorstellen van Sparki"}
+                  ? "Nieuwe voorstellen worden gemaakt…"
+                  : "Maak óók nieuwe voorstellen"}
               </button>
             )}
         </div>
@@ -3520,6 +4288,82 @@ export function RouteGenerator({
               ? `Gebaseerd op jouw eerdere route “${candidate.hybride.baseRouteName}”`
               : "Nieuw voorstel van Sparki"}
           </p>
+
+          {/* Klimmen op deze route — vóór bevestiging (eis: aantal klimmen,
+              totale hoogtemeters, zwaarste klim, extra afstand). Alleen echte
+              gemeten waarden; de gekozen klim draagt zijn meetkundige
+              verificatie zichtbaar mee. */}
+          {klimActief && effectieveKlimKeuze !== "geen" && (
+            <div
+              className="mt-3 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-3.5"
+              data-testid="klim-resultaat"
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+                Klimmen op deze route
+              </span>
+              {candidate.climbInclusion && (
+                <p
+                  className={`mt-1.5 text-[12px] leading-relaxed ${candidate.climbInclusion.verified ? "text-emerald-300/85" : "text-amber-300/85"}`}
+                >
+                  {candidate.climbInclusion.verified
+                    ? `✓ ${candidate.climbInclusion.name} ligt aantoonbaar op deze route (top ${candidate.climbInclusion.offsetM} m van de routelijn).`
+                    : `${candidate.climbInclusion.name} kon niet op de route worden geverifieerd.`}
+                </p>
+              )}
+              <div className="mt-2 flex flex-col gap-1 font-mono text-[12px] tabular-nums text-white/70">
+                <span>
+                  Aantal klimmen: {candidate.climbs.length}
+                </span>
+                <span>
+                  Totale hoogtemeters:{" "}
+                  {candidate.elevationGainM != null
+                    ? `${Math.round(candidate.elevationGainM)} m`
+                    : "onbekend"}
+                </span>
+                <span>
+                  Zwaarste klim:{" "}
+                  {(() => {
+                    if (candidate.climbs.length === 0)
+                      return "geen gedetecteerde klim"
+                    const zwaarste = [...candidate.climbs].sort(
+                      (a, b) =>
+                        b.lengthKm * b.avgGradePct - a.lengthKm * a.avgGradePct,
+                    )[0]!
+                    return `${zwaarste.name} (${zwaarste.lengthKm} km · ${zwaarste.avgGradePct}%)`
+                  })()}
+                </span>
+                <span>
+                  Extra afstand t.o.v. je doel:{" "}
+                  {(() => {
+                    const doel = parseInt(distance)
+                    if (
+                      candidate.distanceKm == null ||
+                      !Number.isFinite(doel) ||
+                      doel <= 0
+                    )
+                      return "onbekend"
+                    const delta = candidate.distanceKm - doel
+                    return `${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(1)} km (${Math.round(candidate.distanceKm)} km i.p.v. ${doel} km doel)`
+                  })()}
+                </span>
+              </div>
+              {effectieveKlim && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Terug naar de stappen om de klim te vervangen of te
+                    // verwijderen — alle andere invoer blijft staan.
+                    setCandidate(null)
+                    setOptions(null)
+                    setStep(2)
+                  }}
+                  className="mt-2.5 min-h-11 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+                >
+                  Klim vervangen of verwijderen
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Andere echte voorstellen uit dezelfde generatieronde — de motor
               bouwde meerdere lussen; wissel gerust, de huidige blijft kiesbaar. */}
@@ -3679,7 +4523,7 @@ export function RouteGenerator({
                 {candVerification.bron === "motor"
                   ? " volgens de routemotor"
                   : " — ook na controle op de officiële wegenkaart"}
-                . Sparki beveelt deze route daarom niet aan als
+                . Deze route wordt daarom niet aanbevolen als
                 racefietsroute; de onbekende stukken zijn grijs gemarkeerd op
                 de kaart. Er is geen volledig geverifieerd alternatief
                 gevonden — gebruiken kan alleen als jij daar expliciet voor
@@ -3781,107 +4625,56 @@ export function RouteGenerator({
             downloaden (GPX/TCX) en delen naar je fietscomputer-app.
           </p>
 
-          {candidate.profile.length > 0 && (
-            <InteractiveElevationProfile
-              profile={candidate.profile}
-              distanceKm={candidate.distanceKm}
-              markers={
-                candidate.distanceKm != null && candidate.distanceKm > 0
-                  ? [
-                      { km: 0, label: "Start", kind: "start" },
-                      {
-                        km: candidate.distanceKm,
-                        label: "Finish",
-                        kind: "finish",
-                      },
-                      ...candidate.climbs
-                        .filter((c) => Number.isFinite(c.summitKm))
-                        .map((c) => ({
-                          km: c.summitKm as number,
-                          label: `Top: ${c.name}`,
-                          kind: "klim" as const,
-                        })),
-                    ]
-                  : []
-              }
-              positionKm={candPosKm}
-              onPositionChange={setCandPosKm}
-            />
-          )}
-
-          {candidate.geometry.length > 1 && (
-            <RouteSurfacesPanel
-              data={candSurfaces.data}
-              isLoading={candSurfaces.isLoading}
-              isError={candSurfaces.isError}
-              selectedKind={candSurfaceKind}
-              onSelectKind={setCandSurfaceKind}
+          {/* F2 — detailcompositie: desktop toont de panelen inline
+              (ongewijzigd); op telefoonformaat gaan ze achter één knop in een
+              bottom sheet. Zelfde CandidateDetails-bron, dus geen tweede flow. */}
+          <div className="hidden lg:block">
+            <CandidateDetails
+              candidate={candidate}
+              surfacesData={candSurfaces.data}
+              surfacesLoading={candSurfaces.isLoading}
+              surfacesError={candSurfaces.isError}
+              surfaceKind={candSurfaceKind}
+              onSelectSurfaceKind={setCandSurfaceKind}
               preferredBike={preferredBikeFromSurface(candidate.bikeType)}
-              className="mt-4"
+              remarksData={candRemarks.data}
+              remarksLoading={candRemarks.isLoading}
+              remarksError={candRemarks.isError}
+              posKm={candPosKm}
+              onPosChange={setCandPosKm}
+              enrichFailed={enrich.data?.failed === true}
             />
-          )}
-
-          {candidate.geometry.length > 1 && (
-            <RouteRemarksPanel
-              data={candRemarks.data}
-              isLoading={candRemarks.isLoading}
-              isError={candRemarks.isError}
-              className="mt-4"
-            />
-          )}
-
-          <Climbs climbs={candidate.climbs} />
-
-          {/* Eerlijk vermijd-rapport (taak #462): lukte het vermijden van
-              N-wegen niet in dit gebied, dan zegt Sparki dat expliciet —
-              nooit stiekem toch N-weg rijden. */}
-          {candidate.avoidReport?.nietMogelijk?.map((item, i) => (
-            <p
-              key={`avoid-nm-${i}`}
-              className="mt-4 rounded-lg border border-warning/25 bg-warning/[0.07] px-3 py-2 text-[12px] leading-relaxed text-warning/90"
+          </div>
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(true)}
+            data-testid="route-details-knop"
+            className="mt-4 w-full rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-white/25 lg:hidden"
+          >
+            Details van deze route — hoogteprofiel, wegdek, opmerkingen
+            {candidate.climbs.length > 0 ? ", klimmen" : ""}
+          </button>
+          {detailsOpen && (
+            <MobielDetailSheet
+              title="Details van deze route"
+              onClose={() => setDetailsOpen(false)}
             >
-              Niet gelukt: {item.wens} — {item.reden}
-            </p>
-          ))}
-          {(candidate.avoidReport?.toegepast?.length ?? 0) > 0 && (
-            <p className="mt-4 text-[11px] leading-relaxed text-positive/70">
-              Toegepast: {candidate.avoidReport!.toegepast.join(" · ")}
-            </p>
-          )}
-
-          <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
-            {candidate.rationale}
-          </p>
-          {enrich.data?.failed && (
-            <p className="mt-1.5 text-[11px] text-white/30">
-              De uitgebreide routetoelichting kon niet worden gegenereerd.
-            </p>
-          )}
-
-          {candidate.nav.length > 0 && (
-            <details className="mt-4">
-              <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-accent-cyan/80">
-                STAP-VOOR-STAP ({candidate.nav.length}) — toon
-              </summary>
-              <div className="mt-2 max-h-64 overflow-y-auto pr-1">
-                {candidate.nav.map((n, i) => (
-                  <div
-                    key={i}
-                    className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
-                  >
-                    <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
-                      {n.km}
-                    </span>
-                    <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-white/85">
-                      {n.dir}
-                    </span>
-                    <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
-                      {n.note}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </details>
+              <CandidateDetails
+                candidate={candidate}
+                surfacesData={candSurfaces.data}
+                surfacesLoading={candSurfaces.isLoading}
+                surfacesError={candSurfaces.isError}
+                surfaceKind={candSurfaceKind}
+                onSelectSurfaceKind={setCandSurfaceKind}
+                preferredBike={preferredBikeFromSurface(candidate.bikeType)}
+                remarksData={candRemarks.data}
+                remarksLoading={candRemarks.isLoading}
+                remarksError={candRemarks.isError}
+                posKm={candPosKm}
+                onPosChange={setCandPosKm}
+                enrichFailed={enrich.data?.failed === true}
+              />
+            </MobielDetailSheet>
           )}
 
           {candidate.plannedWorkoutId != null && (
@@ -4216,8 +5009,8 @@ export function RoutePanel({
         </p>
       ) : showGpx ? (
         <p className="mt-2 text-[12px] leading-relaxed text-white/35">
-          Upload een GPX-bestand (max 11 MB) — Sparki leest de echte lijn en het
-          hoogteprofiel en zet hem bij je bewaarde routes.
+          Upload een GPX-bestand (max 11 MB) — de echte lijn en het
+          hoogteprofiel worden ingelezen en bij je bewaarde routes gezet.
         </p>
       ) : null}
 

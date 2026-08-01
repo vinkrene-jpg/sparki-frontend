@@ -60,14 +60,25 @@ router.get("/search", requireAuth, requireClimbFlag, async (req, res) => {
   const limit = Number.isFinite(limitRaw) ? limitRaw : undefined;
   const radiusRaw = Number(req.query.radiusKm);
   const radiusKm = Number.isFinite(radiusRaw) ? radiusRaw : undefined;
-  if (!q) {
+  // Direct rond coördinaten zoeken (Route maken: klimmen nabij de start) —
+  // geen geocodeerstap; q is dan optioneel.
+  const latRaw = Number(req.query.lat);
+  const lonRaw = Number(req.query.lon);
+  const at =
+    Number.isFinite(latRaw) &&
+    Number.isFinite(lonRaw) &&
+    Math.abs(latRaw) <= 90 &&
+    Math.abs(lonRaw) <= 180
+      ? { lat: latRaw, lon: lonRaw, label: q || null }
+      : null;
+  if (!q && !at) {
     res
       .status(400)
       .json({ error: "Geef een gebied of plaats op om te zoeken." });
     return;
   }
   try {
-    const result = await searchClimbs({ q, name, limit, radiusKm });
+    const result = await searchClimbs({ q, name, limit, radiusKm, at });
     res.json(result);
   } catch (err) {
     if (err instanceof ClimbSourceError) {

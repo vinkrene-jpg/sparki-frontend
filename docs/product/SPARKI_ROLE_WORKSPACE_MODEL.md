@@ -81,7 +81,8 @@ Iedere belangrijke gebruikersclaim over een rolwerkruimte wordt getoetst aan **d
 - **Afhankelijkheid:** productbesluit René over materiaal-gegevensdeling is er nog niet — bouwen vóór dat besluit is verboden (WP-R5).
 
 ## 9. Ploegleider
-- **Technisch bestaat er geen aparte ploegleidersrol** — het is een coach-functie (wedstrijddagcontext in de trainerweergave, getest in de Vandaag-matrix). Geen nieuwe rol bouwen (opdrachtregel §9); WP-S8 bepaalt of wedstrijddag een eigen desktopweergave binnen de trainersomgeving krijgt.
+- **SUPERSEDED (01-08-2026, HERSTEL TEAM_ABONNEMENT_01 / SPARKI-BESLUIT-2026-010):** de onderstaande aanname is vervallen. Er bestaat nu WÉL een aparte server-side clubrol `ploegleider` (naast `teammanager`), met trainings-/wedstrijd- en team-scoped rechten maar zonder clubbeheer. Tevens: `medic` → `medical_staff` met beschrijvend functietype zonder rechten; gebruikersnamen `member`="Sporter", `alleen_lezen`="Gast".
+- ~~**Technisch bestaat er geen aparte ploegleidersrol** — het is een coach-functie (wedstrijddagcontext in de trainerweergave, getest in de Vandaag-matrix). Geen nieuwe rol bouwen (opdrachtregel §9).~~ WP-S8 bepaalt of wedstrijddag een eigen desktopweergave binnen de trainersomgeving krijgt.
 
 ## 10. Admin — status: `broken`/`partially_working` (kliktest 31-07-2026)
 - **Feitelijk vastgesteld:** er is géén echte aparte admin/testerworkspace; de ADMIN-link werkt niet (navigeert niet weg van `/`); testfuncties en interne labels ("ONDERBOUWING (TESTER)", "undefined · rol: athlete") zitten in gewone gebruikersschermen.

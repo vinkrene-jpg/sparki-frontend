@@ -180,7 +180,7 @@ router.post("/analyze", requireAuth, async (req, res) => {
     req.log.error({ err }, "material.analyze failed");
     res
       .status(502)
-      .json({ error: "Sparki kon de foto nu niet beoordelen. Probeer opnieuw." });
+      .json({ error: "De foto kon nu niet beoordeeld worden. Probeer opnieuw." });
   }
 });
 
@@ -271,7 +271,7 @@ router.post("/:id/photo", requireAuth, async (req, res) => {
     req.log.error({ err }, "material.addPhoto failed");
     res
       .status(502)
-      .json({ error: "Sparki kon de extra foto nu niet beoordelen." });
+      .json({ error: "De extra foto kon nu niet beoordeeld worden." });
   }
 });
 

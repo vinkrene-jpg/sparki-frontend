@@ -119,7 +119,11 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
   if (rows.length === 0) return { updated: 0, skipped: 0 };
 
   const [profile] = await db
-    .select({ ftp: athleteProfilesTable.ftp })
+    .select({
+      ftp: athleteProfilesTable.ftp,
+      // DATA_TRUST_01: geschatte FTP is geen brondata voor de backfill.
+      estimated: athleteProfilesTable.ftpEstimated,
+    })
     .from(athleteProfilesTable)
     .where(eq(athleteProfilesTable.clerkId, clerkId))
     .limit(1);
@@ -143,7 +147,11 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
   let updated = 0;
   let skipped = 0;
   for (const row of rows) {
-    const ftp = ftpAtDate(history, row.sessionDate, profile?.ftp ?? null);
+    const ftp = ftpAtDate(
+      history,
+      row.sessionDate,
+      profile && profile.estimated !== true ? (profile.ftp ?? null) : null,
+    );
     const derived = deriveTss({
       durationMin: row.durationMin,
       normalizedPower: row.normalizedPower,

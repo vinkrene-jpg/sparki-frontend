@@ -5,7 +5,7 @@
 // computeScore / scoreToTier are pure (no DB) so they are exhaustively unit-tested.
 // computeTrust reads the real signals from the database.
 
-import { and, count, eq, or, inArray } from "drizzle-orm";
+import { and, count, eq, or, inArray, isNull } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -121,7 +121,7 @@ export async function computeTrust(clerkId: string): Promise<TrustProfile> {
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           eq(friendLinksTable.requesterClerkId, clerkId),
           eq(friendLinksTable.addresseeClerkId, clerkId),

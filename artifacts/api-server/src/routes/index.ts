@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import e2eProofRouter from "./e2e-proof";
 import authRouter from "./auth";
 import flagsRouter from "./flags";
 import athleteRouter from "./athlete";
@@ -10,6 +11,7 @@ import invitationsRouter from "./invitations";
 import aiRouter from "./ai";
 import memoryRouter from "./memory";
 import privacyRouter from "./privacy";
+import consentRouter from "./consent";
 import onboardingRouter from "./onboarding";
 import connectorsRouter from "./connectors";
 import deviceSyncRouter from "./device-sync";
@@ -25,8 +27,11 @@ import activityImportsRouter from "./activity-imports";
 import routesRouter from "./routes";
 import routeProposalsRouter from "./route-proposals";
 import routeCandidatesRouter from "./route-candidates";
+import routeUsageRouter from "./route-usage";
 import volgautoRouter from "./volgauto";
 import navSettingsRouter from "./nav-settings";
+import uiPreferencesRouter from "./ui-preferences";
+import mediaStatusRouter from "./media-status";
 import trainingPlanRouter from "./training-plan";
 import bugReportsRouter from "./bug-reports";
 import supportRouter from "./support";
@@ -112,6 +117,7 @@ router.use("/invitations", invitationsRouter);
 router.use("/ai", killSwitchGuard("ai_processing"), aiRouter);
 router.use("/memory", memoryRouter);
 router.use("/privacy", privacyRouter);
+router.use("/consent", consentRouter);
 router.use("/account", accountRouter);
 router.use("/legal", legalRouter);
 router.use("/analysis-feedback", analysisFeedbackRouter);
@@ -121,6 +127,8 @@ router.use("/search", searchRouter);
 router.use("/foundation", aiFoundationRouter);
 router.use("/journey", journeyRouter);
 router.use("/health-flow", healthFlowRouter);
+// Bewijs-endpoint (fail-closed: 404 zonder E2E_PROOF_TOKEN/E2E_PROOF_EMAIL)
+router.use("/e2e", e2eProofRouter);
 router.use("/passport", passportRouter);
 router.use("/onboarding", onboardingRouter);
 router.use("/connectors", connectorsRouter);
@@ -149,10 +157,14 @@ router.use(
   activityImportsRouter,
 );
 router.use("/route-candidates", routeCandidatesRouter);
+// ROUTE_PAKKET_02A — uitleesbare teller van routegebruik (alleen meten).
+router.use("/route-usage", routeUsageRouter);
 router.use("/routes", routeProposalsRouter);
 router.use("/routes", volgautoRouter);
 router.use("/routes", routesRouter);
 router.use("/nav-settings", navSettingsRouter);
+router.use("/ui-preferences", uiPreferencesRouter);
+router.use("/media-status", mediaStatusRouter);
 router.use("/training-plan", trainingPlanRouter);
 router.use("/bug-reports", bugReportsRouter);
 router.use("/support", supportRouter);

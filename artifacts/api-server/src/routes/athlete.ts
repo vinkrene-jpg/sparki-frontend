@@ -813,7 +813,7 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
     if (current.source === "coach" && touchesContent) {
       res.status(403).json({
         error:
-          "Deze training komt van je coach. Sparki past die niet aan — bespreek een wijziging met je coach.",
+          "Deze training komt van je coach. Die wordt niet automatisch aangepast — bespreek een wijziging met je coach.",
         coachOwned: true,
       });
       return;
@@ -944,7 +944,7 @@ router.delete("/workouts/:id", requireAuth, async (req, res) => {
     if (current.source === "coach") {
       res.status(403).json({
         error:
-          "Deze training komt van je coach. Sparki annuleert die niet — bespreek dit met je coach.",
+          "Deze training komt van je coach. Die wordt niet automatisch geannuleerd — bespreek dit met je coach.",
         coachOwned: true,
       });
       return;
@@ -1395,7 +1395,7 @@ router.post("/plan/generate", requireAuth, requireCommercialFeature("autonomous_
       res.status(422).json({
         error: "profile_incomplete",
         message:
-          "Stel eerst je FTP en wekelijkse uren in zodat Sparki een schema kan opbouwen.",
+          "Stel eerst je FTP en wekelijkse uren in zodat er een schema opgebouwd kan worden.",
       });
       return;
     }

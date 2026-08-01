@@ -13,7 +13,7 @@
 //   commercieel recht. Een fout in deze laag zet nooit alles aan.
 
 import type { Request, Response, NextFunction, RequestHandler } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -77,6 +77,55 @@ export interface ResolvedEntitlements {
   degraded: boolean;
 }
 
+// ── Vastgelegd degraded-gedrag (ABONNEMENT_01 §1.2, veiligheidskeuze) ────────
+// Bij een leesfout in de entitlementlaag (degraded=true):
+//  • wat NIET gelezen kon worden telt niet mee (fail-closed per bron) — een
+//    storing kan dus nooit rechten TOEVOEGEN;
+//  • wat WÉL gelezen kon worden (bv. variantrechten terwijl de persoonlijke
+//    rechten faalden) blijft gewoon gelden — een tijdelijke storing is geen
+//    bewijs dat een recht vervallen is, en een betalende gebruiker mag niet
+//    buitengesloten raken door een databasefout aan onze kant;
+//  • legacy_unrestricted blijft volledig werken (hangt niet van deze tabellen
+//    af — bestaande carve-out).
+// Motivatie: beschikbaarheid voor betalende gebruikers weegt zwaarder dan het
+// theoretische risico dat een storing een zojuist-ingetrokken recht enkele
+// minuten langer laat doorlopen; intrekking loopt bovendien via dezelfde
+// tabellen, dus een leesfout maskeert hooguit kortstondig. Gedocumenteerd in
+// docs/SPARKI_ABONNEMENTSFLOW.md; afgedekt in test:entitlements.
+let forcedEntitlementReadError = false;
+/** Alleen voor tests: forceer een leesfout op user_entitlements. */
+export function __setEntitlementsReadFailureForTests(v: boolean): void {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "__setEntitlementsReadFailureForTests is uitgeschakeld in productie",
+    );
+  }
+  forcedEntitlementReadError = v;
+}
+
+// ── BB-14: commerciële plaatsing nutrition_specialist ────────────────────────
+// Besluit René 01-08-2026: de rolwaarde bestaat (BB-14), maar de commerciële
+// plaatsing is NIET besloten. Configureerbaar met lege waarde: geen tier
+// hardcoderen, geen prijs aannemen, geen terugval op trainer- of
+// Complete-rechten. Leeg (default) = geen commerciële voorwaarde — de rol
+// volgt dan uitsluitend het bestaande regime (rolbezit + entitlementmodus).
+// Zodra een geldige tier is geconfigureerd (NUTRITION_SPECIALIST_TIER), eist
+// wisselen naar deze rol in subscription-modus precies die tier.
+export function nutritionSpecialistRequiredTier(): CommercialTier | null {
+  const raw = (process.env.NUTRITION_SPECIALIST_TIER ?? "").trim();
+  if (!raw) return null;
+  if ((COMMERCIAL_TIERS as readonly string[]).includes(raw)) {
+    return raw as CommercialTier;
+  }
+  // Ongeldige configuratie mag nooit stil een recht verzinnen of blokkeren
+  // op een verzonnen tier: behandelen als "niet besloten" en luid loggen.
+  logger.warn(
+    { waarde: raw },
+    "NUTRITION_SPECIALIST_TIER ongeldig — genegeerd (plaatsing blijft onbeslist)",
+  );
+  return null;
+}
+
 function isEntitlementActive(e: UserEntitlement, now: Date): boolean {
   if (e.status !== "active") return false; // onbekende status ⇒ fail-closed
   if (e.startsAt && e.startsAt > now) return false;
@@ -138,6 +187,7 @@ export async function resolveEntitlements(
   let rows: UserEntitlement[] = [];
   let degraded = false;
   try {
+    if (forcedEntitlementReadError) throw new Error("test: geforceerde leesfout");
     rows = await db
       .select()
       .from(userEntitlementsTable)
@@ -275,36 +325,83 @@ export async function resolveEntitlements(
   };
 }
 
-// ── Go-onderdelen (taak 385) ─────────────────────────────────────────────────
-// Productbesluit (René): deze vier onderdelen zijn Sparki Go-only. Alles wat
-// hier NIET staat blijft gratis (routeplanner, navigatie, materiaalcoach,
-// kennisbank, …). Veiligheids-/gezondheidskritieke informatie valt nooit onder
-// een commerciële poort. De sleutels leven als commerciële feature-keys in
-// variant_feature_grants; operationele flags blijven daarnaast met EN gelden.
-export const GO_FEATURE_KEYS = [
+// ── Commerciële onderdelen per variant ───────────────────────────────────────
+// Productbesluiten: Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001, structuur
+// Go/Compleet) + Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-002, grens
+// gratis/Go/Compleet op routes & navigatie — grenslijst door René bevestigd,
+// incl. verduidelijking "beheer-extra's"):
+//   GRATIS blijft: route plannen/genereren, aanpassen (afstand/tijd/wegtype/
+//   hoogte/wind), GPX/TCX-export, afslag-voor-afslag navigatie, spraak-
+//   aanwijzingen, hoogteprofiel, route bekijken, route OPSLAAN, eigen lijst
+//   bekijken (simpel, nieuwste eerst), route openen en verwijderen.
+//   GO: de bibliotheek-beheer-extra's (route_library_manage).
+//   COMPLEET: course points/wedstrijdinformatie in routes en vrienden/ploeg
+//   live op de kaart, bovenop alles van Go.
+// Veiligheids-/gezondheidskritieke informatie valt nooit onder een commerciële
+// poort (blokkadeverificatie op routes blijft dus voor iedereen gelden). De
+// sleutels leven als commerciële feature-keys in variant_feature_grants;
+// operationele flags blijven daarnaast met EN gelden.
+export const COMPLEET_FEATURE_KEYS = [
   "autonomous_training", // Trainingsplan-engine — automatische plannen & aanpassingen
   "race_intel", // Race-intelligentie — wedstrijdvoorbereiding, voeding, dossier
   "ai_observations", // Coach-observaties & dagelijkse briefing
   "performance_lab", // Performance Lab — diepe analyse & trends
+  "route_course_points", // Course points & wedstrijdinformatie in routes (Besluit 2026-002)
+  "live_friends_map", // Vrienden & ploeg live op de kaart (Besluit 2026-002)
 ] as const;
-export type GoFeatureKey = (typeof GO_FEATURE_KEYS)[number];
+export type CompleetFeatureKey = (typeof COMPLEET_FEATURE_KEYS)[number];
 
-export const GO_FEATURE_LABELS: Record<GoFeatureKey, string> = {
+// Go-sleutels (Besluit 2026-002): alleen de bibliotheek-beheer-extra's.
+// Opslaan, eigen lijst (simpel), openen en verwijderen blijven gratis —
+// zoeken, sorteren, filter-scopes, hernoemen/bewerken, dupliceren en
+// route-uit-rit maken horen bij Sparki Go.
+export const GO_FEATURE_KEYS = ["route_library_manage"] as const;
+export type GoOnlyFeatureKey = (typeof GO_FEATURE_KEYS)[number];
+
+// Alle commerciële sleutels samen.
+export type CommercialFeatureKey = CompleetFeatureKey | GoOnlyFeatureKey;
+// Bestaande signatuur van requireCommercialFeature blijft hierop steunen.
+export type GoFeatureKey = CommercialFeatureKey;
+
+export const GO_FEATURE_LABELS: Record<CommercialFeatureKey, string> = {
   autonomous_training: "Trainingsplan-engine",
   race_intel: "Race-intelligentie",
   ai_observations: "Coach-observaties & dagelijkse briefing",
   performance_lab: "Performance Lab",
+  route_library_manage: "Routebibliotheek-beheer",
+  route_course_points: "Course points & wedstrijdinformatie",
+  live_friends_map: "Vrienden & ploeg live op de kaart",
 };
 
 /**
- * Productlijn (bindend besluit): Gratis · Sparki Go · Sparki Compleet.
- * Sparki Compleet ERFT alle Go-rechten — een Compleet-gebruiker mag nooit naar
- * Go worden verwezen voor een Go-onderdeel. In de database heet de
- * Compleet-variant historisch "sparki_pro". "sparki_basic" en
- * "sparki_performance" zijn oude interne testtiers (géén productaanbod) en
- * blijven bewust zonder rechten (fail-closed).
+ * Klantlabel van het goedkoopste pakket dat dit onderdeel bevat — voor
+ * eerlijke 403-teksten: een Compleet-onderdeel mag nooit "hoort bij Sparki
+ * Go" claimen (Go-kopen zou het dan niet oplossen).
  */
-export const GO_INHERITING_VARIANTS = ["sparki_go", "sparki_pro"] as const;
+export function featurePackageLabel(featureKey: CommercialFeatureKey): string {
+  return (GO_FEATURE_KEYS as readonly string[]).includes(featureKey)
+    ? "Sparki Go"
+    : "Sparki Compleet";
+}
+
+/**
+ * Productlijn (bindend besluit): Gratis · Sparki Go · Sparki Compleet.
+ * Expliciete toewijzing per variant (Besluit René 31-07-2026,
+ * SPARKI-BESLUIT-2026-001): sparki_go krijgt de Go-sleutels; sparki_pro
+ * (klantlabel: Sparki Compleet) krijgt de Go-sleutels PLUS de
+ * Compleet-sleutels — Compleet is daarmee aantoonbaar een superset van Go en
+ * een Compleet-gebruiker mag nooit naar Go worden verwezen voor een
+ * Go-onderdeel. "sparki_basic" en "sparki_performance" zijn oude interne
+ * testtiers (géén productaanbod) en blijven bewust zonder rechten
+ * (fail-closed).
+ */
+export const VARIANT_FEATURE_KEYS: Record<
+  "sparki_go" | "sparki_pro",
+  readonly CommercialFeatureKey[]
+> = {
+  sparki_go: GO_FEATURE_KEYS,
+  sparki_pro: [...GO_FEATURE_KEYS, ...COMPLEET_FEATURE_KEYS],
+};
 
 /**
  * Klantveilige weergave van een bron-string (bv. "variant:sparki_go").
@@ -336,21 +433,50 @@ export function customerProductLabel(resolved: ResolvedEntitlements): string {
 }
 
 /**
- * Idempotente seed van de Go-variantrechten: sparki_go én sparki_pro
- * (= Sparki Compleet, erft alle Go-rechten) krijgen de vier Go-onderdelen;
- * interne tiers bewust niets (afwezigheid = geen recht, fail-closed).
+ * Idempotente seed van de variantrechten volgens de expliciete toewijzing in
+ * VARIANT_FEATURE_KEYS (Besluit René 31-07-2026, SPARKI-BESLUIT-2026-001):
+ * sparki_go = Go-sleutels, sparki_pro (Sparki Compleet) = Go + Compleet.
+ * Interne tiers bewust niets (afwezigheid = geen recht, fail-closed).
  * onConflictDoNothing — een latere beheerbeslissing (bijv. enabled=false
  * zetten) wordt nooit overschreven.
+ *
+ * Migratie in dezelfde functie (idempotent): de oude seed gaf sparki_go de
+ * vier Compleet-sleutels; die rijen worden hier verwijderd zolang sparki_go
+ * die sleutels niet in zijn eigen verzameling heeft. Het aantal verwijderde
+ * rijen wordt gelogd (na de eerste run: 0).
  */
 export async function ensureGoVariantGrantSeed(): Promise<void> {
-  await db
-    .insert(variantFeatureGrantsTable)
-    .values(
-      GO_INHERITING_VARIANTS.flatMap((productVariant) =>
-        GO_FEATURE_KEYS.map((featureKey) => ({ productVariant, featureKey })),
-      ),
-    )
-    .onConflictDoNothing();
+  const values = (
+    Object.entries(VARIANT_FEATURE_KEYS) as Array<
+      [string, readonly CommercialFeatureKey[]]
+    >
+  ).flatMap(([productVariant, keys]) =>
+    keys.map((featureKey) => ({ productVariant, featureKey })),
+  );
+  if (values.length > 0) {
+    await db
+      .insert(variantFeatureGrantsTable)
+      .values(values)
+      .onConflictDoNothing();
+  }
+  const staleGoKeys = COMPLEET_FEATURE_KEYS.filter(
+    (k) => !VARIANT_FEATURE_KEYS.sparki_go.includes(k),
+  );
+  if (staleGoKeys.length > 0) {
+    const removed = await db
+      .delete(variantFeatureGrantsTable)
+      .where(
+        and(
+          eq(variantFeatureGrantsTable.productVariant, "sparki_go"),
+          inArray(variantFeatureGrantsTable.featureKey, staleGoKeys),
+        ),
+      )
+      .returning({ featureKey: variantFeatureGrantsTable.featureKey });
+    logger.info(
+      { removed: removed.length, keys: removed.map((r) => r.featureKey) },
+      "variant_feature_grants-migratie (Besluit 31-07-2026): oude sparki_go-rijen verwijderd",
+    );
+  }
 }
 
 /**
@@ -389,7 +515,9 @@ export function requireCommercialFeature(
         return;
       }
       res.status(403).json({
-        error: `${GO_FEATURE_LABELS[featureKey]} hoort bij Sparki Go.`,
+        // Eerlijk pakketlabel: Go-onderdeel ⇒ "Sparki Go", Compleet-onderdeel
+        // ⇒ "Sparki Compleet" (Besluit 2026-002).
+        error: `${GO_FEATURE_LABELS[featureKey]} hoort bij ${featurePackageLabel(featureKey)}.`,
         code: "upgrade_required",
         feature: featureKey,
       });

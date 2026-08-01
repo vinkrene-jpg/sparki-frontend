@@ -10,6 +10,7 @@ import {
   type PrivacySettings,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { getAgeClass, isMinorClass } from "../lib/consent-service";
 
 const router = Router();
 
@@ -105,6 +106,28 @@ router.put("/", requireAuth, async (req, res) => {
   }
 
   try {
+    // BB-03 (SPARKI_BUILD_01 F1): een minderjarige kan nooit zelf verplicht
+    // oudertoezicht uitschakelen of zijn eigen ouderlijke-toestemmingsstatus
+    // zetten. Onbekende leeftijd = strengste regime. Poging wordt gelogd.
+    const touchesOversight =
+      updates.parentConsentRequired === false || "parentConsentStatus" in updates;
+    if (touchesOversight && isMinorClass(await getAgeClass(clerkId))) {
+      await db.insert(consentAuditLogTable).values({
+        clerkId,
+        field: "oudertoezicht_wijziging_geweigerd",
+        oldValue: null,
+        newValue: JSON.stringify({
+          parentConsentRequired: updates.parentConsentRequired ?? null,
+          parentConsentStatus: updates.parentConsentStatus ?? null,
+        }),
+        changedBy: clerkId,
+      });
+      res.status(403).json({
+        error:
+          "Een minderjarige kan oudertoezicht of ouderlijke toestemming niet zelf wijzigen; een ouder/verzorger moet dat doen.",
+      });
+      return;
+    }
     const [existing] = await db
       .select()
       .from(privacySettingsTable)

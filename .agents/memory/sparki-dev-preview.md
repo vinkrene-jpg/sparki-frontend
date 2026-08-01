@@ -76,3 +76,6 @@ Signed-in users go through the real router and DO get the flag-routed variant.
 DevPreview vervangt de hele App.tsx-Switch (incl. flag-switch pages). Nieuwe of hernoemde routes MOETEN ook in dev-preview.tsx worden bijgewerkt, anders valt de route in de StartPage-fallback of rendert de oude pagina — wat eruitziet als "feature flag staat uit" terwijl /api/flags gewoon true teruggeeft.
 **Why:** commercial_shell-verificatie leek te falen op /analyse en /activiteiten; de vlag was in orde, de dev-preview route-tabel was verouderd.
 **How to apply:** bij elk nieuw flag-switch-scherm: check zowel App.tsx als dev-preview.tsx.
+
+## Persona-screenshots headless (audit-patroon)
+Playwright + Nix-chromium met `addInitScript` die `localStorage["sparki.dev.previewAthlete"]` op een governor-fixture-clerkId zet vóór page.goto → apiFetch stuurt `x-dev-clerk-id` mee en alle schermen renderen als die rol. Werkt voor rol-audits zonder Clerk-login; kanttekening in bewijs: dev-preview-routetabel + head-tester-flags kunnen afwijken van echte sessie.

@@ -63,5 +63,14 @@ export const selectUserProfileSchema = createSelectSchema(userProfilesTable);
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfilesTable.$inferSelect;
 
-export const validRoles = ["athlete", "coach", "parent"] as const;
+// BB-14 (SPARKI_BUILD_01 F3): nutrition_specialist is een echte server-side
+// rolwaarde met een eigen rolcontext en startscherm (eerste prioriteit:
+// Voeding). Toekenning loopt via de bestaande admin-roluitnodiging
+// (relationship "none" + targetRole) — geen tweede toekenningspad.
+export const validRoles = [
+  "athlete",
+  "coach",
+  "parent",
+  "nutrition_specialist",
+] as const;
 export type Role = (typeof validRoles)[number];

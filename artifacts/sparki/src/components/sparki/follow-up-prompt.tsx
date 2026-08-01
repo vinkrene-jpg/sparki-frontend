@@ -73,7 +73,7 @@ export function FollowUpPrompt() {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
           </span>
           <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/45">
-            Sparki vraagt na
+            Nog een vraag
           </span>
         </div>
 
@@ -89,7 +89,7 @@ export function FollowUpPrompt() {
           onChange={(e) => setResponse(e.target.value)}
           rows={3}
           autoFocus
-          placeholder="Vertel Sparki hoe het ging…"
+          placeholder="Vertel hoe het ging…"
           className="mt-3 w-full resize-none rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] leading-relaxed text-white/85 placeholder:text-white/25 focus:border-cyan-400/40 focus:outline-none"
         />
 

@@ -83,7 +83,7 @@ export async function getShareCapabilities(
     const startTime = await getSessionStartTime(clerkId, session.id);
     if (!startTime) {
       reason =
-        "Van deze rit is geen echte starttijd bekend. Strava heeft een starttijd nodig en die verzint Sparki niet.";
+        "Van deze rit is geen echte starttijd bekend. Strava heeft een starttijd nodig en die wordt niet verzonnen.";
     }
   }
 

@@ -187,7 +187,7 @@ export default function GeluidPage() {
               <div>
                 <p className="text-sm font-medium text-white">Wekker aan</p>
                 <p className="text-xs text-white/50">
-                  Wekt je op de ingestelde tijd terwijl Sparki openstaat.
+                  Wekt je op de ingestelde tijd terwijl de app openstaat.
                 </p>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function GeluidPage() {
 
           <p className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] p-3 text-[11px] leading-relaxed text-amber-100/70">
             Let op: een website kan je telefoon niet wekken als het scherm op slot
-            staat of Sparki dicht is. Deze wekker werkt nu volledig zolang Sparki
+            staat of de app dicht is. Deze wekker werkt nu volledig zolang de app
             openstaat. Een melding bij gesloten app volgt in een latere stap.
           </p>
         </Card>

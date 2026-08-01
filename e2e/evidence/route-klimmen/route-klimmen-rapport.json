@@ -1,0 +1,153 @@
+{
+  "baseUrl": "http://127.0.0.1:44453",
+  "geo": {
+    "latitude": 50.865,
+    "longitude": 5.83
+  },
+  "stappen": [
+    {
+      "stap": "login",
+      "status": "OK",
+      "detail": "auth/me=200",
+      "t": "2026-08-01T11:21:45.824Z"
+    },
+    {
+      "stap": "planner-zichtbaar",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:21:48.418Z"
+    },
+    {
+      "stap": "startpunt",
+      "status": "OK",
+      "detail": "Valkenburg vastgeklikt",
+      "t": "2026-08-01T11:21:48.549Z"
+    },
+    {
+      "stap": "klimblok-na-start-afstand",
+      "status": "OK",
+      "detail": "KLIMMEN TOEVOEGEN zichtbaar in stap 2",
+      "t": "2026-08-01T11:21:48.989Z"
+    },
+    {
+      "stap": "geen-detail-voor-selectie",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:21:49.084Z"
+    },
+    {
+      "stap": "klim-gekozen",
+      "status": "OK",
+      "detail": "Hoscheit",
+      "t": "2026-08-01T11:21:49.193Z"
+    },
+    {
+      "stap": "vervangen",
+      "status": "OK",
+      "detail": "zoeker terug zonder invoerverlies",
+      "t": "2026-08-01T11:21:58.684Z"
+    },
+    {
+      "stap": "samenvatting-klimregel",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:21:59.680Z"
+    },
+    {
+      "stap": "resultaat",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.733Z"
+    },
+    {
+      "stap": "klim-verificatie",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.738Z"
+    },
+    {
+      "stap": "feit: Aantal klimmen:",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.740Z"
+    },
+    {
+      "stap": "feit: Totale hoogtemeters:",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.742Z"
+    },
+    {
+      "stap": "feit: Zwaarste klim:",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.744Z"
+    },
+    {
+      "stap": "feit: Extra afstand",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.746Z"
+    },
+    {
+      "stap": "F2: details-knop zichtbaar (mobiel)",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.833Z"
+    },
+    {
+      "stap": "F2: bottom sheet opent",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.912Z"
+    },
+    {
+      "stap": "F2: sheet bevat stap-voor-stap-paneel",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.918Z"
+    },
+    {
+      "stap": "F2: achtergrond-scroll vergrendeld",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:07.921Z"
+    },
+    {
+      "stap": "F2: Escape sluit sheet",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:08.284Z"
+    },
+    {
+      "stap": "F2: scroll weer vrij na sluiten",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:08.284Z"
+    },
+    {
+      "stap": "F2: Sluiten-knop sluit sheet",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:08.665Z"
+    },
+    {
+      "stap": "F2: details-knop NIET op desktop",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:09.101Z"
+    },
+    {
+      "stap": "F2: detailpanelen inline op desktop",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T11:22:09.107Z"
+    },
+    {
+      "stap": "bewaard",
+      "status": "OK",
+      "detail": "http://127.0.0.1:44453/routes?view=bewaard&route=578",
+      "t": "2026-08-01T11:22:09.932Z"
+    }
+  ]
+}

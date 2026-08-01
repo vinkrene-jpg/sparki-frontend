@@ -15,6 +15,11 @@ import {
   explainComputation,
   ONVOLDOENDE,
 } from "../engines/data-origin";
+import {
+  bepaalDataState,
+  DATA_STATE_DOMEINEN,
+  type DataStateDomein,
+} from "../engines/data-origin/data-state";
 
 const router: IRouter = Router();
 
@@ -93,6 +98,25 @@ router.get("/explain/computation/:type", requireAuth, async (req, res) => {
     res.json(payload);
   } catch (err) {
     req.log.error({ err }, "data-origin.explainComputation failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/data-origin/state/:domein ──────────────────────────────────────
+// Zeven-toestandencontract (DATA_TRUST_01 §4): één server-side bepaling van
+// geen_data / onvoldoende_data / verouderd / sync_bezig / providerfout / ok.
+// Rechtenproblemen (403) en technische fouten (5xx) blijven HTTP-statussen.
+router.get("/state/:domein", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const domein = String(req.params["domein"]);
+  if (!(DATA_STATE_DOMEINEN as readonly string[]).includes(domein)) {
+    res.status(400).json({ error: "Onbekend domein" });
+    return;
+  }
+  try {
+    res.json(await bepaalDataState(clerkId, domein as DataStateDomein));
+  } catch (err) {
+    req.log.error({ err }, "data-origin.dataState failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

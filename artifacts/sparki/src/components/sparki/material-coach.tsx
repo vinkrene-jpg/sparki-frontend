@@ -221,7 +221,7 @@ export function AnalysisResult({
         <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-3.5">
           <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-amber-200/80">
             <HelpCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Sparki wil een extra foto
+            Een extra foto is nodig
           </p>
           <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
             {analysis.followUpQuestion}
@@ -302,7 +302,7 @@ export function UploadPanel({
       {
         onSuccess: (res) => onDone(res.analysis),
         onError: () =>
-          setError("Sparki kon de foto nu niet beoordelen. Probeer opnieuw."),
+          setError("De foto kon nu niet worden beoordeeld. Probeer opnieuw."),
       },
     )
   }

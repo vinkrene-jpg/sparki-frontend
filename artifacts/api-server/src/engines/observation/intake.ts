@@ -516,7 +516,7 @@ export function buildSignals(m: IntakeMetrics): IntakeSignal[] {
       reason:
         w?.reason === "no_forecast"
           ? "geen weersverwachting beschikbaar voor vandaag"
-          : "geen thuislocatie ingesteld; Sparki kan het weer niet ophalen",
+          : "geen thuislocatie ingesteld; het weer kan niet opgehaald worden",
       dataPoints: 0,
     });
   }

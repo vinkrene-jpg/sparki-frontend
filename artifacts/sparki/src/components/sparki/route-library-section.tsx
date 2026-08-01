@@ -400,8 +400,8 @@ export function RouteLibrarySection() {
         r.status === "klaar"
           ? "Dit gebied is al gevuld — druk op 'Laat hier de routes zien'."
           : r.status === "limiet"
-            ? "Sparki heeft vandaag het maximum aan nieuwe gebieden bereikt — probeer het morgen opnieuw."
-            : "Sparki maakt op de achtergrond routes voor dit gebied. Kom over een paar minuten terug en druk dan opnieuw op 'Laat hier de routes zien'.",
+            ? "Het maximum aan nieuwe gebieden is vandaag bereikt — probeer het morgen opnieuw."
+            : "Er worden op de achtergrond routes gemaakt voor dit gebied. Kom over een paar minuten terug en druk dan opnieuw op 'Laat hier de routes zien'.",
       )
       void qc.invalidateQueries({ queryKey: ["routes", "bibliotheek"] })
     },
@@ -440,11 +440,11 @@ export function RouteLibrarySection() {
       <div className="flex items-center gap-2">
         <MapPinned className="h-4 w-4" style={{ color: ACCENT }} />
         <h2 className="text-[15px] font-semibold text-white/90">
-          Kant-en-klare routes van Sparki
+          Kant-en-klare routes
         </h2>
       </div>
       <p className="mt-1 text-[12px] leading-relaxed text-white/45">
-        Sparki maakt per gebied uitgewerkte routes voor racefiets, gravel, MTB
+        Per gebied worden uitgewerkte routes gemaakt voor racefiets, gravel, MTB
         en gewone fiets. Zoom of schuif de kaart naar een gebied en druk op de
         knop — alleen dat gebied wordt geladen.
       </p>
@@ -550,7 +550,7 @@ export function RouteLibrarySection() {
             disabled={vulGebied.isPending}
             className="rounded-xl border border-white/[0.14] px-4 py-2 text-[13px] text-white/70 disabled:opacity-50"
           >
-            {vulGebied.isPending ? "Starten…" : "Vraag Sparki dit gebied te vullen"}
+            {vulGebied.isPending ? "Starten…" : "Vul dit gebied met routes"}
           </button>
         )}
         {(Object.keys(BIKE_LABEL) as string[]).map((b) => (
@@ -626,7 +626,7 @@ export function RouteLibrarySection() {
                   </button>
                 ))}
               <span className="text-[12px] text-white/35">
-                of kies een ander startpunt, of laat Sparki dit gebied vullen.
+                of kies een ander startpunt, of vul dit gebied met routes.
               </span>
             </div>
           )}
@@ -727,8 +727,8 @@ export function RouteLibrarySection() {
                         {verification!.onbekendPct != null
                           ? `${String(verification!.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
                           : "Een deel van het wegdek is onbekend"}{" "}
-                        volgens de routemotor. Sparki beveelt deze route
-                        daarom niet aan als racefietsroute — overnemen kan
+                        volgens de routemotor. Deze route wordt
+                        daarom niet aanbevolen als racefietsroute — overnemen kan
                         alleen als jij daar expliciet voor kiest.
                       </p>
                       <label className="mt-2 flex cursor-pointer items-center gap-2 text-[12px] text-white/75">

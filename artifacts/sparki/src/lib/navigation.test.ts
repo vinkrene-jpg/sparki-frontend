@@ -7,6 +7,8 @@ import {
   ATHLETE_NAV_ENTRIES,
   COACH_NAV_ENTRIES,
   PARENT_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_CHAPTERS,
   ATHLETE_CHAPTERS,
   ATHLETE_MEER_CHAPTERS,
   COACH_CHAPTERS,
@@ -58,6 +60,7 @@ test("elke hoofdnav-link wijst naar een bestaande route", () => {
     ...ATHLETE_NAV_ENTRIES,
     ...COACH_NAV_ENTRIES,
     ...PARENT_NAV_ENTRIES,
+    ...NUTRITION_SPECIALIST_NAV_ENTRIES,
   ]) {
     assert.ok(routeExists(e.href), `route ontbreekt voor nav-link ${e.href}`)
   }
@@ -69,6 +72,7 @@ test("alle hoofdstukken en Meer-onderdelen blijven bereikbaar", () => {
     ...ATHLETE_MEER_CHAPTERS,
     ...COACH_CHAPTERS,
     ...PARENT_CHAPTERS,
+    ...NUTRITION_SPECIALIST_CHAPTERS,
     CLUB_CHAPTER,
   ]
   for (const c of all) {
@@ -83,10 +87,58 @@ test("Meer bevat de verplichte onderdelen", () => {
   }
 })
 
+// F4 (BB-06/BB-07): vaste vijf posities voor élke rol, positie 5 heet altijd
+// "Meer", nooit een zesde hoofditem.
+test("BB-06: elke rol heeft precies vijf posities en positie 5 is Meer", () => {
+  const perRol: Record<string, { href: string; label: string }[]> = {
+    athlete: ATHLETE_NAV_ENTRIES,
+    coach: COACH_NAV_ENTRIES,
+    parent: PARENT_NAV_ENTRIES,
+    nutrition_specialist: NUTRITION_SPECIALIST_NAV_ENTRIES,
+  }
+  for (const [rol, entries] of Object.entries(perRol)) {
+    assert.equal(entries.length, 5, `${rol}: precies vijf posities (BB-06/BB-07)`)
+    assert.equal(entries[4]!.label, "Meer", `${rol}: positie 5 heet Meer`)
+    assert.equal(entries[4]!.href, "/meer", `${rol}: positie 5 wijst naar /meer`)
+  }
+})
+
+// F-P2-02 (SPARKI_AUDIT_RECOVERY_AND_COMPLETION_01): integrale menu-matrix.
+// Élke rol (globaal + club) × élk menu-item/startfunctie moet naar een echt
+// geregistreerde route wijzen — niets in enige rolomgeving mag doodlopen.
+test("menu-matrix: elk item van elke rol wijst naar een bestaande route", async () => {
+  const { GLOBAL_ROLE_STARTS, CLUB_ROLE_STARTS } = await import("./role-start")
+  const rollen = [...GLOBAL_ROLE_STARTS, ...CLUB_ROLE_STARTS]
+  assert.ok(rollen.length >= 8, `verwacht ≥8 rolstartprofielen, gevonden ${rollen.length}`)
+  for (const rol of rollen) {
+    for (const f of rol.functies) {
+      assert.ok(routeExists(f.href), `rol ${rol.role}: functie ${f.href} (${f.label}) heeft geen route`)
+    }
+    if (rol.leeg?.vervolgstap) {
+      assert.ok(
+        routeExists(rol.leeg.vervolgstap.href),
+        `rol ${rol.role}: lege-toestand-vervolgstap ${rol.leeg.vervolgstap.href} heeft geen route`,
+      )
+    }
+  }
+  // Hoofdstukken per rol, mét en zonder clubkoppeling (beide varianten reëel).
+  for (const rolNaam of ["athlete", "coach", "parent", "nutrition_specialist"] as const) {
+    for (const metClub of [true, false]) {
+      for (const c of chaptersForRole(rolNaam, metClub)) {
+        assert.ok(
+          routeExists(c.href),
+          `chaptersForRole(${rolNaam}, club=${metClub}): ${c.href} (${c.label}) heeft geen route`,
+        )
+      }
+    }
+  }
+})
+
 test("coach en ouder behouden hun bestaande navigatie", () => {
   assert.deepEqual(
     COACH_NAV_ENTRIES.map((e) => e.href),
-    ["/", "/invitations", "/you"],
+    // F4 (BB-06): coach op vijf vaste posities.
+    ["/", "/invitations", "/samen", "/you", "/meer"],
   )
   assert.deepEqual(
     PARENT_NAV_ENTRIES.map((e) => e.href),

@@ -24,7 +24,7 @@ const STATUS_NOTICE: Partial<
 > = {
   triaged: {
     title: "Je melding is opgepakt",
-    body: (s) => `Sparki is met je melding aan de slag: "${s}"`,
+    body: (s) => `Je melding wordt bekeken: "${s}"`,
   },
   fixed: {
     title: "Je melding is opgelost",
@@ -32,7 +32,7 @@ const STATUS_NOTICE: Partial<
   },
   rejected: {
     title: "Je melding is afgehandeld",
-    body: (s) => `Sparki pakt deze melding niet verder op: "${s}"`,
+    body: (s) => `Deze melding wordt niet verder opgepakt: "${s}"`,
   },
 };
 
@@ -354,7 +354,7 @@ router.post("/:id/comments", requireAuth, async (req, res) => {
       await createNotification({
         clerkId: access.report.clerkId,
         type: "system",
-        title: "Sparki heeft op je melding gereageerd",
+        title: "Er is op je melding gereageerd",
         body: `Er staat een nieuw bericht bij je melding: "${snippetOf(
           access.report.description,
         )}"`,

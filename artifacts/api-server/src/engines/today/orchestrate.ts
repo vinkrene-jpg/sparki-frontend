@@ -182,7 +182,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
       title: ziek ? "Eerst beter worden" : "Eerst herstellen",
       body: ziek
         ? "Je staat op ziek. Trainen wacht; rust is nu de snelste weg terug."
-        : "Je staat op geblesseerd. Volg je herstelplan; Sparki plant niets in tot je hersteld gemeld bent.",
+        : "Je staat op geblesseerd. Volg je herstelplan; er wordt niets ingepland tot je hersteld gemeld bent.",
       actions: [
         { id: "health", label: "Bekijk je herstelstatus", href: "/vandaag?zelf=1" },
       ],
@@ -240,7 +240,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
       title: jeugd ? "Vrije dag" : "Geen training gepland",
       body: parts.join(" "),
       actions: [
-        { id: "propose", label: "Laat Sparki een training voorstellen", href: "/trainen/toevoegen" },
+        { id: "propose", label: "Laat een training voorstellen", href: "/trainen/toevoegen" },
         { id: "rest", label: "Kies bewust voor herstel", href: "/vandaag?zelf=1" },
       ],
       source: "planned_workouts + state-engine + races",
@@ -255,7 +255,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
     support = {
       key: `support:state:${state.band}`,
       slot: "support",
-      title: "Waarom Sparki dit zegt",
+      title: "Waarom dit advies?",
       body: state.why.map((w) => w.reading).join(" · "),
       actions: [],
       source: "state-engine (echte signalen)",
@@ -305,7 +305,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
       key: `rotating:last_ride:${lastSession.id}`,
       slot: "rotating",
       title: "Je laatste rit",
-      body: `${lastSession.title ?? "Activiteit"} (${lastSession.sessionDate})${lastSession.tss != null ? ` · belasting ${lastSession.tss}` : ""}. Bekijk wat Sparki erin zag.`,
+      body: `${lastSession.title ?? "Activiteit"} (${lastSession.sessionDate})${lastSession.tss != null ? ` · belasting ${lastSession.tss}` : ""}. Bekijk wat erin te zien was.`,
       actions: [{ id: "open", label: "Open de analyse", href: `/activiteiten/${lastSession.id}` }],
       source: "training_sessions",
       confidence: null,
@@ -328,7 +328,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
     key: "rotating:route_suggestion",
     slot: "rotating",
     title: "Route voor als je gaat rijden",
-    body: "Laat Sparki een route voorstellen die past bij je fiets en je tijd.",
+    body: "Laat een route voorstellen die past bij je fiets en je tijd.",
     actions: [{ id: "routes", label: "Naar de routeplanner", href: "/routes" }],
     source: "route-engine (op aanvraag)",
     confidence: null,

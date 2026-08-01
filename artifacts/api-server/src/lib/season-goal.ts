@@ -127,7 +127,7 @@ export function seasonGoalIneligible(
       eligible: false,
       reason: "too_young",
       message:
-        "Sturen op gewicht doet Sparki bewust niet onder de 17. Op jouw leeftijd geldt: genoeg en gevarieerd eten, op tijd rond je trainingen — je lichaam is nog volop in ontwikkeling.",
+        "Onder de 17 wordt er bewust niet op gewicht gestuurd. Op jouw leeftijd geldt: genoeg en gevarieerd eten, op tijd rond je trainingen — je lichaam is nog volop in ontwikkeling.",
     };
   }
   return null;
@@ -164,7 +164,7 @@ export function buildSeasonGoalLine(
   if (richting === "onbekend") {
     // Eerlijk gat: zonder huidig gewicht valt de richting/het tempo niet te
     // berekenen — nooit doen alsof de sporter "op gewicht" zit.
-    return `${kern}: zonder je huidige gewicht kan Sparki richting en tempo nog niet berekenen — vul je gewicht in bij je profiel. Trainingen blijven altijd volledig gevoed.`;
+    return `${kern}: zonder je huidige gewicht zijn richting en tempo nog niet te berekenen — vul je gewicht in bij je profiel. Trainingen blijven altijd volledig gevoed.`;
   }
   if (richting === "behoud") {
     return `${kern}: je zit op gewicht, dus de sturing is behoud — genoeg eten voor je trainingen, niet minder.`;
@@ -173,7 +173,7 @@ export function buildSeasonGoalLine(
     steering?.requiredKgPerWeek != null
       ? steering.feasible
         ? ` in een rustig tempo van ~${steering.requiredKgPerWeek.toString().replace(".", ",")} kg per week`
-        : ` — let op: het gevraagde tempo is hoger dan het veilige maximum van ${SAFE_KG_PER_WEEK.toString().replace(".", ",")} kg per week, dus Sparki stuurt niet sneller dan dat`
+        : ` — let op: het gevraagde tempo is hoger dan het veilige maximum van ${SAFE_KG_PER_WEEK.toString().replace(".", ",")} kg per week, dus er wordt niet sneller gestuurd dan dat`
       : "";
   return `${kern}: bijsturen gebeurt via je gewone maaltijden op rustige momenten${tempo}. Trainingen blijven altijd volledig gevoed.`;
 }

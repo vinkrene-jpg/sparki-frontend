@@ -60,7 +60,7 @@ function ConfidencePill({ confidence }: { confidence: Confidence }) {
   return (
     <span
       className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] ${tone}`}
-      title="Hoe zeker Sparki is — nooit 100%"
+      title="Hoe zeker deze analyse is — nooit 100%"
     >
       zekerheid {confidence.score}%
     </span>
@@ -239,7 +239,7 @@ function FollowUp({ q }: { q: FollowUpQuestion }) {
       </div>
       {answer.isError && (
         <p className="mt-2 text-xs text-rose-300/80">
-          Sparki kon je antwoord niet verwerken. Probeer het zo nog eens.
+          Je antwoord kon niet worden verwerkt. Probeer het zo nog eens.
         </p>
       )}
     </div>
@@ -303,7 +303,7 @@ function PersonalityLine({ personality }: { personality: Personality }) {
     : ""
   return (
     <p className="mt-3 text-sm text-white/70">
-      Sparki coacht je als{" "}
+      Je wordt gecoacht als{" "}
       <span className="text-cyan-200/90">{personality.label}</span>.
       {basis && <span className="text-white/45"> {basis}.</span>}
     </p>
@@ -394,7 +394,7 @@ export function CoachAnalysisCard({
     return (
       <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
         <p className="text-sm text-white/55">
-          Sparki kon je analyse nu niet samenstellen. Probeer het later opnieuw.
+          Je analyse kon nu niet worden samengesteld. Probeer het later opnieuw.
         </p>
         <button
           type="button"
@@ -442,7 +442,7 @@ export function CoachAnalysisCard({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-cyan-300" strokeWidth={2} />
               <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/60">
-                Sparki vandaag
+                Vandaag
               </h2>
             </div>
             <button
@@ -494,7 +494,7 @@ export function CoachAnalysisCard({
           >
             <span className="flex items-center gap-2 text-sm text-white/75">
               <HelpCircle className="h-4 w-4 text-cyan-300/80" />
-              Waarom zegt Sparki dit?
+              Waarom dit advies?
             </span>
             <ChevronDown className="h-4 w-4 -rotate-90 text-white/40" />
           </button>
@@ -533,7 +533,7 @@ export function CoachAnalysisCard({
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-cyan-300" strokeWidth={2} />
         <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/60">
-          Sparki vandaag
+          Vandaag
         </h2>
       </div>
 
@@ -558,7 +558,7 @@ export function CoachAnalysisCard({
       >
         <span className="flex items-center gap-2 text-sm text-white/75">
           <HelpCircle className="h-4 w-4 text-cyan-300/80" />
-          Waarom zegt Sparki dit?
+          Waarom dit advies?
         </span>
         <ChevronDown
           className={`h-4 w-4 text-white/40 transition-transform ${showWhy ? "rotate-180" : ""}`}
@@ -579,7 +579,7 @@ export function CoachAnalysisCard({
       {data.followUps.length > 0 && (
         <div className="mt-4 space-y-2.5">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
-            Sparki wil dit nog van je weten
+            Dit is nog nodig van jou
           </p>
           {data.followUps.map((q) => (
             <FollowUp key={q.id} q={q} />

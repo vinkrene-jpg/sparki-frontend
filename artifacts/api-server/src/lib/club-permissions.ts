@@ -76,7 +76,10 @@ export function canManageClub(ctx: ClubContext): boolean {
 
 // Trainingen/wedstrijden aanmaken en aanwezigheid registreren.
 export function canManageTrainings(ctx: ClubContext): boolean {
-  return canManageClub(ctx) || hasClubRole(ctx, ["hoofdtrainer", "trainer", "teammanager"]);
+  // HERSTEL TEAM_ABONNEMENT_01: ploegleider is een aparte rol met dezelfde
+  // operationele trainings-/wedstrijdrechten als teammanager (het centrale
+  // rollenmodel blijft eigendom van CLUB_RECHTEN_01).
+  return canManageClub(ctx) || hasClubRole(ctx, ["hoofdtrainer", "trainer", "teammanager", "ploegleider"]);
 }
 
 // Aanwezigheid registreren mag ook een assistent.
@@ -132,6 +135,9 @@ export const CLUB_PACKAGES: Record<
   start: { label: "Start", maxMembers: 30, maxTrainers: 4 },
   basis: { label: "Basis", maxMembers: 75, maxTrainers: 10 },
   groei: { label: "Groei", maxMembers: 200, maxTrainers: 25 },
+  // TEAM_ABONNEMENT_01: Sparki Team-abonnement — maximaal 50 actieve leden
+  // (per club configureerbaar via club_subscriptions.maxMembers).
+  team: { label: "Sparki Team", maxMembers: 50, maxTrainers: 10 },
 };
 
 type DbExecutor = Pick<typeof db, "select" | "insert" | "update" | "execute">;
@@ -325,7 +331,7 @@ export async function isLinkedParent(
       and(
         eq(parentAthleteLinksTable.parentClerkId, parentClerkId),
         eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
-        eq(parentAthleteLinksTable.status, "accepted"),
+        eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return !!row;

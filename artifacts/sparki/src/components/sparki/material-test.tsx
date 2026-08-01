@@ -101,7 +101,7 @@ export function MaterialTest() {
         <h2 className="text-lg font-semibold text-white">Vergelijkingstest</h2>
         <p className="mt-1 text-sm text-white/55">
           Test een upgrade: twee ritten op dezelfde route — één met je huidige
-          opstelling, één met de nieuwe. Sparki zet de metingen naast elkaar.
+          opstelling, één met de nieuwe. De metingen worden naast elkaar gezet.
         </p>
         <p className="mt-2 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-white/60">
           Let op: een vergelijkingstest is alleen zinvol op dezelfde dag, op

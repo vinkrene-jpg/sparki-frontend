@@ -1,0 +1,28 @@
+# Poort 5b sanity-check — Aanvulling gericht herstel: gedeelde interactiecomponenten Analyse (opdracht René 01-08-2026)
+
+delivery: "Hertoets van de gemelde klachten (Analyse-subtabs reageren niet; knop 'Uitleg' reageert niet; toggle rechtsboven reageert niet) op de productiebuild van HEAD, plus permanent e2e-script voor het gedeelde tabcomponent (HoofdstukTabs) en de Uitleg-toggle. Uitkomst: geen van de drie klachten is op HEAD reproduceerbaar — geen broncode gewijzigd, eerlijk zo gerapporteerd."
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "Analyse (/analyse, mobiel + desktop, prod-build): subtabs Overzicht/Belasting/Progressie/Doelen/Sessies, Uitleg-toggle rechtsboven — e2e/tests/analyse-tabs-herstel.mjs, echte browserkliks, 24/24 OK"
+  - "Jij (/you): zelfde broncomponent HoofdstukTabs (donkere variant); Meer (/meer): navigatie-regressie"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Alle vijf Analyse-subtabs wisselen zichtbaar (aria-selected=true + exact het bijbehorende tabpanel zichtbaar, andere panelen verborgen); de subtabs zijn échte buttons met onClick in het gedeelde component hoofdstuk-tabs.tsx — één bron, ook gebruikt op Jij en Routes"
+        result: "pass"
+      - case: "Uitleg-toggle rechtsboven wisselt zichtbaar (aria-pressed false→true, label 'Uitleg'→'Uitleg aan'); toetsenbord (focus + Enter) activeert een subtab; dubbelklik op subtab en toggle geeft een nette, voorspelbare toestand"
+        result: "pass"
+      - case: "Regressie: navigatie in Meer blijft werken (klik navigeert echt weg van /meer); tabs op Jij (zelfde broncomponent) wisselen met correcte aria-selected"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Er is niets 'hersteld' dat niet stuk was: de klachten reproduceren niet op HEAD (testbasis van de melder was vermoedelijk een oudere SHA, zelfde patroon als de eerdere zes-punten-melding waar 5 van 6 al werkten); broncomponent ongewijzigd gelaten conform opdracht 'bouw niets stilzwijgend bij'"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Bewijs is een echte browserrun tegen de productiebuild (geen dev-preview), met screenshots per stap in e2e/evidence/analyse-tabs-herstel/ en gearchiveerd in bewijsarchief/"
+        result: "pass"
+
+verdict: "deliverable"

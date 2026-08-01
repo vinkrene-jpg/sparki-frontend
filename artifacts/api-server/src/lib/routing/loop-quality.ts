@@ -464,8 +464,12 @@ export async function generateVariedLoop(
     // kwaliteitsafweging verslaat (basisstraf + oplopend), zodat een schone
     // kandidaat praktisch altijd wint. Zonder meting (ORS, te veel onbekend
     // wegdek) telt dit niet mee: nooit gokken, alleen echte data rangschikken.
+    // Wandelen (foot-walking) is de "verhard"-voetfamilie: gemeten onverhard
+    // weegt als zachte voorkeur mee (nooit een harde afkeur — een stukje
+    // pad is te voet prima). Hiken (foot-hiking) zoekt juist paden: geen straf.
     const unpavedShare =
-      req.profile === "cycling-road" && result.pavedFraction != null
+      (req.profile === "cycling-road" || req.profile === "foot-walking") &&
+      result.pavedFraction != null
         ? 1 - result.pavedFraction
         : 0;
     const surfacePenalty =
@@ -639,7 +643,7 @@ export async function generateVariedLoop(
   // afkeurpoort hieronder ze opnieuw kan gebruiken zonder extra Overpass-call.
   const obstaclesMeasured = new Map<
     RouteResult,
-    { steps: number; forbidden: number; blockedGates: number; gates: number; unpavedSegments: number } | null
+    { steps: number; forbidden: number; blockedGates: number; gates: number; unpavedSegments: number; forbiddenFoot: number; blockedGatesFoot: number } | null
   >();
   // MTB-regressie (René, 30-07-2026): de obstakelpoort gold alleen voor
   // cycling-road/cycling-regular; een MTB-route met fietsverbod, privéterrein
@@ -648,11 +652,18 @@ export async function generateVariedLoop(
   // alleen de onverhard-grens blijft racefiets/gewone fiets.
   const unpavedIsHard =
     req.profile === "cycling-road" || req.profile === "cycling-regular";
-  // De obstakelmeting is fiets-specifiek (fietsverbod, trap, afgesloten
-  // poort); voor een eventueel niet-fietsprofiel zou dezelfde poort ten
-  // onrechte afkeuren (een trap is geen blokkade voor een wandelaar).
+  // De obstakelmeting kent twee families (MOBILE_ROUTE_WALKING_01):
+  // fiets (fietsverbod, trap en afgesloten poort zijn hard) en voet
+  // (alleen access=no/private en op-slot-poorten zijn hard — een trap of
+  // fietsverbod is voor een wandelaar géén blokkade en blijft alleen een
+  // eerlijke routeopmerking).
   const isCyclingProfile = req.profile.startsWith("cycling-");
-  if (isCyclingProfile && opts?.obstaclesOf != null && pool.length > 1) {
+  const isFootProfile = req.profile.startsWith("foot-");
+  if (
+    (isCyclingProfile || isFootProfile) &&
+    opts?.obstaclesOf != null &&
+    pool.length > 1
+  ) {
     const measured = new Set<(typeof pool)[number]>();
     const applyPenalties = async (cands: typeof pool) => {
       const fresh = cands.filter((c) => !measured.has(c));
@@ -668,9 +679,15 @@ export async function generateVariedLoop(
         obstaclesMeasured.set(fresh[i]!.result, o ?? null);
         if (o == null) continue;
         let penalty = 0;
-        if (o.steps > 0) penalty += 1000;
-        if (o.forbidden > 0) penalty += 1000;
-        if (o.blockedGates > 0) penalty += 1000;
+        if (isFootProfile) {
+          // Voetfamilie: alleen echte voet-blokkades zijn hard.
+          if (o.forbiddenFoot > 0) penalty += 1000;
+          if (o.blockedGatesFoot > 0) penalty += 1000;
+        } else {
+          if (o.steps > 0) penalty += 1000;
+          if (o.forbidden > 0) penalty += 1000;
+          if (o.blockedGates > 0) penalty += 1000;
+        }
         // Racefiets én gewone fiets (cycling-regular, taak #441): onverhard/
         // ruw in de remarkslaag is gelijkwaardig aan een verbod —
         // acceptatiegrens is NUL aantoonbaar onverhard (PO-01 §5.2).
@@ -729,8 +746,12 @@ export async function generateVariedLoop(
     // fietsverbod, trap én afgesloten poort/privéterrein. blockedGates zat
     // eerder alleen in de +1000-scorestraf en ontbrak hier — precies het gat
     // waardoor een MTB-route met afgesloten poorten toch "KLAAR" werd.
-    const hasForbidden =
-      obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0;
+    // Voetfamilie (MOBILE_ROUTE_WALKING_01): een trap of fietsverbod is te
+    // voet geen blokkade — alleen access=no/private en op-slot-poorten zijn
+    // hard. Voor alle fietsprofielen blijft de bestaande regel staan.
+    const hasForbidden = isFootProfile
+      ? obs.forbiddenFoot > 0 || obs.blockedGatesFoot > 0
+      : obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0;
     // Onverhard=0-grens geldt voor racefiets (taak #437) ÉN gewone fiets
     // (cycling-regular, taak #441) — René: 0% onverhard is voor beide van
     // belang. Gravel/MTB mogen wél onverhard rijden.

@@ -67,20 +67,40 @@ export async function searchClimbs(opts: {
   name?: string | null;
   limit?: number;
   radiusKm?: number | null;
+  // Direct zoeken rond bekende coördinaten (bv. de startlocatie in Route
+  // maken) — slaat de geocodeerstap over. `q` mag dan leeg zijn; het label
+  // wordt alleen voor presentatie gebruikt.
+  at?: { lat: number; lon: number; label?: string | null } | null;
 }): Promise<ClimbSearchResult> {
   // 1. Gebied bepalen — met DB-cache op de genormaliseerde zoekterm zodat een
   //    herhaalde zoekopdracht ook Nominatim overslaat. Alleen échte successen
   //    worden gecachet; "niet gevonden" blijft altijd een live antwoord.
-  const geoKey = `geo:${opts.q.trim().toLowerCase()}`;
-  let area = await cacheGetDb<GeoArea>(geoKey, GEOCODE_CACHE_TTL_MS);
-  if (!area) {
-    area = await geocodeArea(opts.q).catch(() => {
-      throw new ClimbSourceError("geocode_unreachable", "unreachable");
-    });
-    if (!area) {
-      throw new ClimbSourceError("area_not_found", "area_not_found");
+  let area: GeoArea;
+  if (opts.at) {
+    // Punt-gebied: de echte zoek-bbox wordt hieronder uit de straal berekend;
+    // de eigen bbox van dit "gebied" is dus gewoon het punt zelf.
+    area = {
+      label: opts.at.label?.trim() || "startlocatie",
+      lat: opts.at.lat,
+      lon: opts.at.lon,
+      south: opts.at.lat,
+      west: opts.at.lon,
+      north: opts.at.lat,
+      east: opts.at.lon,
+    };
+  } else {
+    const geoKey = `geo:${opts.q.trim().toLowerCase()}`;
+    let found = await cacheGetDb<GeoArea>(geoKey, GEOCODE_CACHE_TTL_MS);
+    if (!found) {
+      found = await geocodeArea(opts.q).catch(() => {
+        throw new ClimbSourceError("geocode_unreachable", "unreachable");
+      });
+      if (!found) {
+        throw new ClimbSourceError("area_not_found", "area_not_found");
+      }
+      await cachePutDb(geoKey, found);
     }
-    await cachePutDb(geoKey, area);
+    area = found;
   }
   // Echte straal rond het centrum — de bbox van de plaats zelf is voor een
   // dorpskern veel te klein (dan vind je rond Valkenburg bijna niets).

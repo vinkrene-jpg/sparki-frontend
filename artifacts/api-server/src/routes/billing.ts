@@ -79,7 +79,8 @@ router.post("/trial", requireAuth, async (req, res) => {
       return;
     }
     const tier = (req.body as { tier?: unknown })?.tier;
-    if (!isPaidTier(tier)) {
+    // TEAM is club-facturatie; persoonlijke trial is daarvoor niet zinnig.
+    if (!isPaidTier(tier) || tier === "TEAM") {
       res.status(400).json({ error: "Ongeldige tier (GO of COMPLETE)" });
       return;
     }
@@ -117,7 +118,9 @@ router.post("/checkout", requireAuth, async (req, res) => {
       return;
     }
     const body = req.body as { tier?: unknown; interval?: unknown };
-    if (!isPaidTier(body?.tier) || !isValidInterval(body?.interval)) {
+    // TEAM loopt uitsluitend via de club-checkout (centrale facturatie met
+    // club-koppeling); persoonlijk afsluiten zou een team zonder organisatie geven.
+    if (!isPaidTier(body?.tier) || body.tier === "TEAM" || !isValidInterval(body?.interval)) {
       res.status(400).json({ error: "Ongeldige tier of interval" });
       return;
     }
@@ -186,7 +189,8 @@ router.post("/change", requireAuth, async (req, res) => {
       return;
     }
     const body = req.body as { tier?: unknown; interval?: unknown };
-    if (!isPaidTier(body?.tier)) {
+    // TEAM kan hier niet als doel (alleen via club-checkout) …
+    if (!isPaidTier(body?.tier) || body.tier === "TEAM") {
       res.status(400).json({ error: "Ongeldige tier (GO of COMPLETE)" });
       return;
     }
@@ -198,6 +202,12 @@ router.post("/change", requireAuth, async (req, res) => {
       .limit(1);
     if (!sub || (sub.status !== "active" && sub.status !== "grace")) {
       res.status(409).json({ error: "Geen actief abonnement om te wijzigen" });
+      return;
+    }
+    // … en een gekoppeld TEAM-abonnement kan hier niet als bron worden
+    // weggewijzigd — dat zou de club actief laten op een persoonlijke tier.
+    if (sub.tier === "TEAM") {
+      res.status(409).json({ error: "Een Team-abonnement wijzig je via het clubbeheer." });
       return;
     }
     if (sub.tier === body.tier) {

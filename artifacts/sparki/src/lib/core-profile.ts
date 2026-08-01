@@ -454,7 +454,7 @@ function computeLoadFactors(
     return {
       ok: false,
       reason:
-        "Sparki heeft minstens een paar weken aan ritten nodig om dit betrouwbaar in te schatten. Koppel je sportdata of log meer ritten.",
+        "Er zijn minstens een paar weken aan ritten nodig om dit betrouwbaar in te schatten. Koppel je sportdata of log meer ritten.",
     };
   }
 
@@ -577,7 +577,7 @@ export function deriveBelastbaarheid(
         ? "Je hebt een redelijke basis, maar er is nog ruimte om steviger te worden. Bouw rustig op en houd je regelmaat vast voordat je de belasting flink verhoogt."
         : "Je basis is nog dun of je ritme wisselt sterk. Eerst regelmaat en geleidelijke opbouw — grote sprongen in belasting zijn nu het grootste risico.";
   const meaning = healthCapped
-    ? `${baseMeaning} Omdat je nu ${profile?.healthStatus === "injured" ? "geblesseerd" : "ziek"} bent, houdt Sparki je belastbaarheid bewust laag tot je hersteld bent.`
+    ? `${baseMeaning} Omdat je nu ${profile?.healthStatus === "injured" ? "geblesseerd" : "ziek"} bent, wordt je belastbaarheid bewust laag gehouden tot je hersteld bent.`
     : baseMeaning;
 
   const factors: { label: string; value: string }[] = [
@@ -717,7 +717,7 @@ export function deriveBandbreedte(
   // Honest gate: a slope needs at least two real measurements.
   if (ftps.length < 2) {
     return EMPTY(
-      "Sparki heeft minstens twee FTP-metingen nodig om je groeiruimte in te schatten. Doe een FTP-test of koppel je sportdata zodat metingen binnenkomen.",
+      "Er zijn minstens twee FTP-metingen nodig om je groeiruimte in te schatten. Doe een FTP-test of koppel je sportdata zodat metingen binnenkomen.",
     );
   }
 

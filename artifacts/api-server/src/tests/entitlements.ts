@@ -26,6 +26,10 @@ import {
   variantFeatureGrantsTable,
   featureFlagsTable,
   securityAuditLogTable,
+  routesTable,
+  racesTable,
+  racePointsTable,
+  documentAnalysesTable,
 } from "@workspace/db";
 import { eq, and, inArray, desc } from "drizzle-orm";
 import app from "../app";
@@ -35,7 +39,10 @@ import {
   resolveEntitlements,
   hasCommercialFeature,
   ensureGoVariantGrantSeed,
+  __setEntitlementsReadFailureForTests,
   GO_FEATURE_KEYS,
+  COMPLEET_FEATURE_KEYS,
+  VARIANT_FEATURE_KEYS,
 } from "../lib/entitlements";
 
 type Status = "pass" | "fail";
@@ -195,27 +202,55 @@ async function main() {
     }
   });
 
-  // Taak 385: de Go-verdeling is een bewust productbesluit — sparki_go krijgt
-  // de vier Go-onderdelen, sparki_basic niets. Seed is idempotent.
+  // Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001): Compleet (sparki_pro)
+  // krijgt de vier Compleet-sleutels; sparki_go alleen de (nu nog lege)
+  // Go-verzameling. De seed migreert oude sparki_go-rijen weg en is idempotent.
   await ensureGoVariantGrantSeed();
   await ensureGoVariantGrantSeed(); // tweede aanroep mag niets veranderen
 
-  await scenario("variant_feature_grants: sparki_go én sparki_pro (Compleet) = de vier Go-onderdelen; interne tiers = niets", async () => {
+  await scenario("variant_feature_grants: sparki_pro (Compleet) = Go+Compleet-sleutels; sparki_go = alleen Go-sleutels; interne tiers = niets", async () => {
     const rows = await db.select().from(variantFeatureGrantsTable);
-    for (const variant of ["sparki_go", "sparki_pro"] as const) {
-      const v = rows.filter((r) => r.productVariant === variant && r.enabled);
-      assert(
-        v.length === GO_FEATURE_KEYS.length,
-        `verwacht ${GO_FEATURE_KEYS.length} ${variant}-rijen, kreeg ${v.length}`,
-      );
-      for (const key of GO_FEATURE_KEYS) {
-        assert(v.some((r) => r.featureKey === key), `${variant} mist ${key}`);
+    const pro = rows.filter((r) => r.productVariant === "sparki_pro" && r.enabled);
+    assert(
+      pro.length === VARIANT_FEATURE_KEYS.sparki_pro.length,
+      `verwacht ${VARIANT_FEATURE_KEYS.sparki_pro.length} sparki_pro-rijen, kreeg ${pro.length}`,
+    );
+    for (const key of VARIANT_FEATURE_KEYS.sparki_pro) {
+      assert(pro.some((r) => r.featureKey === key), `sparki_pro mist ${key}`);
+    }
+    // Besluit 31-07-2026: de vier Compleet-sleutels zijn bij sparki_go
+    // weggemigreerd; sparki_go heeft uitsluitend zijn eigen Go-sleutels.
+    const go = rows.filter((r) => r.productVariant === "sparki_go");
+    for (const key of COMPLEET_FEATURE_KEYS) {
+      if (!VARIANT_FEATURE_KEYS.sparki_go.includes(key)) {
+        assert(!go.some((r) => r.featureKey === key), `sparki_go mag ${key} niet meer hebben (gemigreerd)`);
       }
     }
+    assert(
+      go.length === VARIANT_FEATURE_KEYS.sparki_go.length,
+      `verwacht ${VARIANT_FEATURE_KEYS.sparki_go.length} sparki_go-rijen, kreeg ${go.length}`,
+    );
     const basic = rows.filter((r) => r.productVariant === "sparki_basic");
     const perf = rows.filter((r) => r.productVariant === "sparki_performance");
     assert(basic.length === 0, `sparki_basic (interne tier) moet leeg zijn, kreeg ${basic.length}`);
     assert(perf.length === 0, `sparki_performance (interne tier) moet leeg zijn, kreeg ${perf.length}`);
+  });
+
+  await scenario("superset-invariant: Compleet bezit élke Go-sleutel (Besluit 31-07-2026)", async () => {
+    for (const key of GO_FEATURE_KEYS) {
+      assert(
+        VARIANT_FEATURE_KEYS.sparki_pro.includes(key),
+        `Compleet mist Go-sleutel ${key} — superset-invariant geschonden`,
+      );
+    }
+    // Ook in de database zelf: elke enabled sparki_go-rij bestaat als sparki_pro-rij.
+    const rows = await db.select().from(variantFeatureGrantsTable);
+    const proKeys = new Set(
+      rows.filter((r) => r.productVariant === "sparki_pro" && r.enabled).map((r) => r.featureKey),
+    );
+    for (const r of rows.filter((x) => x.productVariant === "sparki_go" && x.enabled)) {
+      assert(proKeys.has(r.featureKey), `DB: Compleet mist Go-sleutel ${r.featureKey}`);
+    }
   });
 
   // ── Legacy-gedrag: flags blijven exact bepalend ────────────────────────────
@@ -450,37 +485,58 @@ async function main() {
     assert(basic.length === 0, "sparki_basic moet leeg blijven");
   });
 
-  // ── Taak 385: Gratis vs Go zichtbaar — Go-onderdelen + routepoorten ────────
-  await scenario("sparki_go-abonnee heeft commercieel recht op de vier Go-onderdelen", async () => {
-    const resolved = await resolveEntitlements(subUser); // subscription + sparki_go
-    for (const key of GO_FEATURE_KEYS) {
-      assert(hasCommercialFeature(resolved, key), `go mist recht op ${key}`);
+  // ── Besluit 31-07-2026 (was taak 385): Go ≠ Compleet — rechten + poorten ───
+  // Omgezet per Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-001): de vier
+  // onderdelen zijn nu Compleet-only; sparki_go heeft ze NIET meer. Dit is een
+  // bewuste omzetting van het oude besluit (taak 385), geen reparatie.
+  await scenario("sparki_go-abonnee heeft GEEN recht meer op de vier Compleet-onderdelen; Compleet wél", async () => {
+    const goResolved = await resolveEntitlements(subUser); // subscription + sparki_go
+    for (const key of COMPLEET_FEATURE_KEYS) {
+      assert(!hasCommercialFeature(goResolved, key), `go mag ${key} niet meer hebben (Compleet-only)`);
+    }
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_pro" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    const compleet = await resolveEntitlements(subUser);
+    for (const key of COMPLEET_FEATURE_KEYS) {
+      assert(hasCommercialFeature(compleet, key), `Compleet mist recht op ${key}`);
       assert(
-        resolved.commercialFeatures[key]?.source === "variant:sparki_go",
-        `source van ${key} was ${resolved.commercialFeatures[key]?.source}`,
+        compleet.commercialFeatures[key]?.source === "variant:sparki_pro",
+        `source van ${key} was ${compleet.commercialFeatures[key]?.source}`,
       );
     }
-    // Niet-Go-onderdelen blijven zonder recht (fail-closed).
-    assert(!hasCommercialFeature(resolved, "route_planner"), "route_planner mag geen variantrecht zijn");
+    // Niet-toegekende onderdelen blijven zonder recht (fail-closed).
+    // Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-002): route plannen/
+    // genereren blijft GRATIS — route_planner wordt dus bewust GEEN
+    // variantrecht (afwijking van het oorspronkelijke opdrachtdocument,
+    // dat r464 wilde omzetten; René's definitieve grenslijst gaat voor).
+    assert(!hasCommercialFeature(compleet, "route_planner"), "route_planner mag geen variantrecht zijn");
+    // Terug naar sparki_go voor de vervolgscenario's.
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_go" })
+      .where(eq(userProfilesTable.clerkId, subUser));
   });
 
-  await scenario("sparki_basic-abonnee heeft géén Go-rechten; legacy alles", async () => {
+  await scenario("sparki_basic-abonnee heeft géén Compleet-rechten; legacy alles", async () => {
     await db
       .update(userProfilesTable)
       .set({ productVariant: "sparki_basic" })
       .where(eq(userProfilesTable.clerkId, subUser));
     const basic = await resolveEntitlements(subUser);
-    for (const key of GO_FEATURE_KEYS) {
+    for (const key of COMPLEET_FEATURE_KEYS) {
       assert(!hasCommercialFeature(basic, key), `basic mag ${key} niet hebben`);
     }
     const legacy = await resolveEntitlements(legacyUser);
-    for (const key of GO_FEATURE_KEYS) {
+    for (const key of COMPLEET_FEATURE_KEYS) {
       assert(hasCommercialFeature(legacy, key), `legacy moet ${key} behouden`);
     }
   });
 
-  await scenario("Go-routes zijn fail-closed voor basic (403 upgrade_required), open voor go en legacy", async () => {
-    // subUser staat nu op sparki_basic.
+  await scenario("Compleet-routes zijn fail-closed voor basic én go (403 upgrade_required), open voor Compleet en legacy", async () => {
+    // subUser staat nu op sparki_basic. Besluit 31-07-2026: ook sparki_go
+    // heeft geen recht meer op deze onderdelen — alleen Compleet en legacy.
     const paths = [
       ["GET", "/api/training-plan"],
       ["GET", "/api/races/insight"],
@@ -499,9 +555,484 @@ async function main() {
       .where(eq(userProfilesTable.clerkId, subUser));
     for (const [method, path] of paths) {
       const r = await apiReq(method, path, subUser);
-      assert(r.status !== 403, `${path}: go-abonnee kreeg onterecht 403`);
+      assert(r.status === 403, `${path}: go-abonnee moet nu 403 krijgen (Compleet-only), kreeg ${r.status}`);
+      assert(r.json?.code === "upgrade_required", `${path}: code was ${r.json?.code}`);
+    }
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_pro" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    for (const [method, path] of paths) {
+      const r = await apiReq(method, path, subUser);
+      assert(r.status !== 403, `${path}: Compleet-abonnee kreeg onterecht 403`);
       const l = await apiReq(method, path, legacyUser);
       assert(l.status !== 403, `${path}: legacy kreeg onterecht 403`);
+    }
+  });
+
+  // ── Besluit René 31-07-2026 (SPARKI-BESLUIT-2026-002): poorten op routes ──
+  // Go = bibliotheek-beheer-extra's (route_library_manage); Compleet = course
+  // points (route_course_points) en live vrienden/ploeg (live_friends_map).
+  // Gratis basis (opslaan, simpele lijst, openen, verwijderen, plannen,
+  // GPX/TCX, navigatie) blijft bewust ongepoort.
+  await scenario("Besluit 2026-002: bibliotheek-extra's 403 zonder Go; gratis basis blijft open", async () => {
+    // subUser staat op sparki_pro na het vorige scenario ⇒ eerst naar een
+    // recht-loze variant (gedraagt zich als Gratis: geen variantrechten).
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_basic" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    const extras = [
+      ["GET", "/api/routes?sort=afstand"],
+      ["GET", "/api/routes?q=test"],
+      ["GET", "/api/routes?scope=favoriet"],
+      ["PUT", "/api/routes/999999"],
+      ["POST", "/api/routes/999999/duplicate"],
+      ["POST", "/api/routes/from-activity"],
+    ] as const;
+    for (const [method, path] of extras) {
+      const r = await apiReq(method, path, subUser, method === "GET" ? undefined : {});
+      assert(r.status === 403, `${method} ${path}: verwacht 403 zonder Go, kreeg ${r.status}`);
+      assert(r.json?.code === "upgrade_required", `${path}: code was ${r.json?.code}`);
+      assert(r.json?.feature === "route_library_manage", `${path}: feature was ${r.json?.feature}`);
+    }
+    // Gratis basis blijft open: simpele lijst (nieuwste eerst) en verwijderen.
+    const lijst = await apiReq("GET", "/api/routes", subUser);
+    assert(lijst.status === 200, `simpele lijst moet gratis blijven, kreeg ${lijst.status}`);
+    const del = await apiReq("DELETE", "/api/routes/999999", subUser);
+    assert(del.status !== 403, `verwijderen moet gratis blijven, kreeg 403`);
+  });
+
+  await scenario("Besluit 2026-002: bibliotheek-extra's open voor Go, Compleet en legacy", async () => {
+    for (const variant of ["sparki_go", "sparki_pro"] as const) {
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: variant })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const r = await apiReq("GET", "/api/routes?sort=afstand&scope=favoriet&q=x", subUser);
+      assert(r.status === 200, `${variant}: extras-lijst verwacht 200, kreeg ${r.status}`);
+      // Achterliggende validatie neemt het over (404 = poort gepasseerd).
+      const dup = await apiReq("POST", "/api/routes/999999/duplicate", subUser, {});
+      assert(dup.status === 404, `${variant}: duplicate verwacht 404 (poort voorbij), kreeg ${dup.status}`);
+    }
+    const l = await apiReq("GET", "/api/routes?sort=afstand", legacyUser);
+    assert(l.status === 200, `legacy: verwacht 200, kreeg ${l.status}`);
+  });
+
+  await scenario("Besluit 2026-002: course points & live-kaart zijn Compleet-only (Go krijgt 403)", async () => {
+    const compleetPaths = [
+      ["GET", "/api/races/999999/points", "route_course_points"],
+      ["GET", "/api/live-location/friends", "live_friends_map"],
+      ["GET", "/api/live-location/group-options", "live_friends_map"],
+    ] as const;
+    for (const variant of ["sparki_basic", "sparki_go"] as const) {
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: variant })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      for (const [method, path, feature] of compleetPaths) {
+        const r = await apiReq(method, path, subUser);
+        assert(r.status === 403, `${variant} ${path}: verwacht 403, kreeg ${r.status}`);
+        assert(r.json?.feature === feature, `${path}: feature was ${r.json?.feature}`);
+        // Eerlijk pakketlabel: een Compleet-onderdeel mag nooit "Sparki Go" claimen.
+        assert(
+          typeof r.json?.error === "string" && r.json.error.includes("Sparki Compleet"),
+          `${path}: 403-tekst moet naar Sparki Compleet verwijzen, was "${r.json?.error}"`,
+        );
+      }
+    }
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_pro" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    for (const [method, path] of compleetPaths) {
+      const r = await apiReq(method, path, subUser);
+      assert(r.status !== 403, `Compleet ${path}: kreeg onterecht 403 (${r.status})`);
+      const l = await apiReq(method, path, legacyUser);
+      assert(l.status !== 403, `legacy ${path}: kreeg onterecht 403 (${l.status})`);
+    }
+  });
+
+  await scenario("Mirror-herstel 31-07: POST /api/routes/zoek is gratis routeplanning, geen beheer-extra", async () => {
+    // Mirror stelde vast dat /zoek ten onrechte achter route_library_manage
+    // stond: het is de bekend-eerst zoeklaag van de gratis criteria-gestuurde
+    // routeplanning. Gratis moet er dus doorheen kunnen en kandidaten kunnen
+    // ontvangen — anders valt de planner stilzwijgend terug op nieuwe
+    // generatie omdat /zoek onterecht 403 gaf.
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_basic" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    // Eigen bewaarde route mét geometrie nabij het startpunt, zodat de
+    // kandidatenpijplijn echt iets te doorzoeken heeft.
+    const geometry = Array.from({ length: 30 }, (_, i) => [
+      52.09 + i * 0.001,
+      5.12 + (i % 2) * 0.001,
+    ]);
+    const [route] = await db
+      .insert(routesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest zoek-kandidaat",
+        distanceKm: 40,
+        geometry,
+      })
+      .returning({ id: routesTable.id });
+    try {
+      const zoek = await apiReq("POST", "/api/routes/zoek", subUser, {
+        startLat: 52.09,
+        startLon: 5.12,
+        targetDistanceKm: 40,
+      });
+      assert(zoek.status !== 403, `Gratis /zoek mag nooit 403 geven, kreeg 403 (${JSON.stringify(zoek.json)})`);
+      assert(zoek.status === 200, `Gratis /zoek verwacht 200, kreeg ${zoek.status} (${JSON.stringify(zoek.json)})`);
+      assert(
+        Array.isArray(zoek.json?.bekend),
+        `Gratis /zoek moet een kandidatenlijst (bekend[]) teruggeven, kreeg ${JSON.stringify(zoek.json)}`,
+      );
+      assert(
+        zoek.json?.criteria?.targetDistanceKm === 40,
+        `Gratis /zoek moet de criteria terugmelden, kreeg ${JSON.stringify(zoek.json?.criteria)}`,
+      );
+      // Lege body blijft gewone validatie (400), geen commerciële poort.
+      const leeg = await apiReq("POST", "/api/routes/zoek", subUser, {});
+      assert(leeg.status === 400, `Gratis /zoek zonder startpunt verwacht 400, kreeg ${leeg.status}`);
+    } finally {
+      await db.delete(routesTable).where(eq(routesTable.id, route!.id)).catch(() => {});
+    }
+  });
+
+  await scenario("Besluit 2026-002: route-detail lekt geen wedstrijdpunten zonder Compleet", async () => {
+    // Regressie (architect-review 31-07-2026): GET /api/routes/:id bouwde de
+    // puntenlijst van een gekoppelde wedstrijd altijd op — een omweg om de
+    // gepoorte /api/races/:id/points. Zonder route_course_points moet de
+    // detail-payload een lege puntenlijst + pointsLocked geven; mét recht de
+    // echte actieve punten.
+    const [route] = await db
+      .insert(routesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest wedstrijdroute",
+        usageType: "wedstrijd",
+      })
+      .returning({ id: routesTable.id });
+    const [race] = await db
+      .insert(racesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest wedstrijd",
+        raceDate: "2027-06-01",
+        status: "gepland",
+        routeId: route!.id,
+      })
+      .returning({ id: racesTable.id });
+    await db.insert(racePointsTable).values({
+      raceId: race!.id,
+      clerkId: subUser,
+      kind: "bevoorrading",
+      pointClass: "verzorging",
+      label: "Poorttest punt",
+      raceKm: 10,
+      status: "bevestigd",
+    });
+    try {
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: "sparki_basic" })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const locked = await apiReq("GET", `/api/routes/${route!.id}`, subUser);
+      assert(locked.status === 200, `detail (basic) verwacht 200, kreeg ${locked.status}`);
+      assert(locked.json?.race, "detail (basic): wedstrijd-metadata moet meegaan");
+      assert(
+        Array.isArray(locked.json.race.points) && locked.json.race.points.length === 0,
+        `detail (basic): puntenlijst moet leeg zijn, was ${JSON.stringify(locked.json.race.points)}`,
+      );
+      assert(locked.json.race.pointsLocked === true, "detail (basic): pointsLocked moet true zijn");
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: "sparki_pro" })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const open = await apiReq("GET", `/api/routes/${route!.id}`, subUser);
+      assert(open.status === 200, `detail (pro) verwacht 200, kreeg ${open.status}`);
+      assert(
+        open.json?.race?.points?.length === 1 && open.json.race.pointsLocked === false,
+        `detail (pro): verwacht 1 actief punt + pointsLocked false, kreeg ${JSON.stringify(open.json?.race)}`,
+      );
+    } finally {
+      await db.delete(racesTable).where(eq(racesTable.id, race!.id)).catch(() => {});
+      await db.delete(routesTable).where(eq(routesTable.id, route!.id)).catch(() => {});
+    }
+  });
+
+  await scenario("Productbesluit gids/course points: koppelen is Compleet-only en kandidaatpunten lekken niet", async () => {
+    // PRODUCTBESLUIT (René, 31-07-2026): documentanalyse blijft race_intel,
+    // maar het aanmaken/koppelen/tonen van course points is route_course_points.
+    // Gratis en Go: /link → 403 "Sparki Compleet" en er ontstaat GEEN verborgen
+    // race_point; kandidaatpunten worden in analyse-responses gemaskeerd
+    // (leeg + pointsLocked). Compleet ziet en koppelt wél.
+    const kandidaat = {
+      kind: "bevoorrading",
+      description: "Bevoorradingszone km 45",
+      page: 3,
+      raceKm: 45,
+      lat: null,
+      lng: null,
+      confidence: "high",
+    };
+    const [analyse] = await db
+      .insert(documentAnalysesTable)
+      .values({
+        clerkId: subUser,
+        fileName: "poorttest-gids.pdf",
+        mediaType: "application/pdf",
+        status: "analyzed",
+        summary: "Poorttest technische gids",
+        candidatePoints: [kandidaat],
+      })
+      .returning({ id: documentAnalysesTable.id });
+    const [race] = await db
+      .insert(racesTable)
+      .values({
+        clerkId: subUser,
+        name: "Poorttest gids-wedstrijd",
+        raceDate: "2027-08-01",
+        status: "gepland",
+      })
+      .returning({ id: racesTable.id });
+    try {
+      for (const variant of ["sparki_basic", "sparki_go"] as const) {
+        await db
+          .update(userProfilesTable)
+          .set({ productVariant: variant })
+          .where(eq(userProfilesTable.clerkId, subUser));
+        // Koppelen geweigerd met het juiste pakketlabel.
+        const link = await apiReq(
+          "POST",
+          `/api/document-analyses/${analyse!.id}/link`,
+          subUser,
+          { raceId: race!.id },
+        );
+        assert(link.status === 403, `${variant}: link verwacht 403, kreeg ${link.status}`);
+        assert(link.json?.feature === "route_course_points", `${variant}: feature was ${link.json?.feature}`);
+        assert(
+          typeof link.json?.error === "string" && link.json.error.includes("Sparki Compleet"),
+          `${variant}: 403-tekst moet Sparki Compleet noemen, was "${link.json?.error}"`,
+        );
+        // Geen verborgen race_points aangemaakt.
+        const stiekem = await db
+          .select({ id: racePointsTable.id })
+          .from(racePointsTable)
+          .where(eq(racePointsTable.raceId, race!.id));
+        assert(stiekem.length === 0, `${variant}: er zijn zonder recht ${stiekem.length} race_points aangemaakt`);
+        // Kandidaatpunten lekken niet via analyse-responses.
+        const detail = await apiReq("GET", `/api/document-analyses/${analyse!.id}`, subUser);
+        assert(detail.status === 200, `${variant}: analyse-detail verwacht 200, kreeg ${detail.status}`);
+        assert(
+          Array.isArray(detail.json?.analysis?.candidatePoints) &&
+            detail.json.analysis.candidatePoints.length === 0 &&
+            detail.json.analysis.pointsLocked === true,
+          `${variant}: kandidaatpunten moeten leeg + pointsLocked zijn, kreeg ${JSON.stringify({ candidatePoints: detail.json?.analysis?.candidatePoints, pointsLocked: detail.json?.analysis?.pointsLocked })}`,
+        );
+        const lijst = await apiReq("GET", "/api/document-analyses", subUser);
+        const rij = (lijst.json?.analyses ?? []).find((a: any) => a.id === analyse!.id);
+        assert(
+          rij && rij.candidatePoints.length === 0 && rij.pointsLocked === true,
+          `${variant}: lijst-response lekt kandidaatpunten`,
+        );
+        // POST /:id/answers — response is óók gemaskeerd.
+        const antwoorden = await apiReq(
+          "POST",
+          `/api/document-analyses/${analyse!.id}/answers`,
+          subUser,
+          { answers: {} },
+        );
+        assert(
+          antwoorden.status === 200 &&
+            antwoorden.json?.analysis?.candidatePoints?.length === 0 &&
+            antwoorden.json.analysis.pointsLocked === true,
+          `${variant}: answers-response lekt kandidaatpunten of mist pointsLocked`,
+        );
+        // POST / (upload, hier bewust het eerlijke faalpad met onleesbare
+        // inhoud — geen AI nodig): ook het failed record draagt pointsLocked.
+        const upload = await apiReq("POST", "/api/document-analyses", subUser, {
+          fileName: "poorttest-kapot.pdf",
+          mediaType: "application/pdf",
+          data: "bm9nZWVucG9vcnR0ZXN0",
+        });
+        assert(
+          upload.status === 201 && upload.json?.analysis?.pointsLocked === true,
+          `${variant}: upload-response (failed pad) mist pointsLocked, kreeg ${upload.status} ${JSON.stringify(upload.json?.analysis?.pointsLocked)}`,
+        );
+        await db
+          .delete(documentAnalysesTable)
+          .where(eq(documentAnalysesTable.id, upload.json.analysis.id))
+          .catch(() => {});
+      }
+      // Compleet: ziet kandidaatpunten én koppelt echt (punt "voorgesteld").
+      await db
+        .update(userProfilesTable)
+        .set({ productVariant: "sparki_pro" })
+        .where(eq(userProfilesTable.clerkId, subUser));
+      const open = await apiReq("GET", `/api/document-analyses/${analyse!.id}`, subUser);
+      assert(
+        open.json?.analysis?.candidatePoints?.length === 1 &&
+          open.json.analysis.pointsLocked === false,
+        `Compleet: verwacht 1 kandidaatpunt + pointsLocked false, kreeg ${JSON.stringify(open.json?.analysis?.candidatePoints)}`,
+      );
+      const link = await apiReq(
+        "POST",
+        `/api/document-analyses/${analyse!.id}/link`,
+        subUser,
+        { raceId: race!.id },
+      );
+      assert(link.status === 200, `Compleet: link verwacht 200, kreeg ${link.status} (${JSON.stringify(link.json)})`);
+      const punten = await db
+        .select({ id: racePointsTable.id, status: racePointsTable.status })
+        .from(racePointsTable)
+        .where(eq(racePointsTable.raceId, race!.id));
+      assert(
+        punten.length === 1 && punten[0]!.status === "voorgesteld",
+        `Compleet: verwacht 1 voorgesteld punt, kreeg ${JSON.stringify(punten)}`,
+      );
+    } finally {
+      await db.delete(racesTable).where(eq(racesTable.id, race!.id)).catch(() => {});
+      await db
+        .delete(documentAnalysesTable)
+        .where(eq(documentAnalysesTable.id, analyse!.id))
+        .catch(() => {});
+    }
+  });
+
+  await scenario("01 §3 bewaaktest: de zeven gratis functies dragen nooit een commerciële poort", async () => {
+    // ROUTE_PAKKET_01 §3 (v2): deze test moet FALEN zodra één van de zeven
+    // gratis functies achter requireCommercialFeature schuift. Hij bewijst
+    // bereikbaarheid voor een account ZONDER enig commercieel recht — niet
+    // alleen dat er geen sleutel bestaat. Alleen een 403 met code
+    // "upgrade_required" is een overtreding; validatie-4xx betekent juist dat
+    // de (niet-bestaande) poort is gepasseerd.
+    // Spraakaanwijzingen zijn client-side afgeleid van de nav-cues in het
+    // route-detail; het hoogteprofiel zit in detail (profile) + /insight.
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_basic" }) // gedraagt zich als Gratis: nul rechten
+      .where(eq(userProfilesTable.clerkId, subUser));
+    const [vrij] = await db
+      .insert(routesTable)
+      .values({ clerkId: subUser, name: "Gratis-bewaaktest route" })
+      .returning({ id: routesTable.id });
+    try {
+      const gratisFuncties = [
+        // 1. Route plannen en genereren
+        ["POST", "/api/routes/generate/options", {}],
+        ["POST", "/api/routes/generate", {}],
+        // 2. Route aanpassen (afstand/tijd/wegtype/hoogte/wind = generate-opties)
+        ["POST", "/api/routes/generate/start", {}],
+        // 3. GPX exporteren
+        ["GET", `/api/routes/${vrij!.id}/gpx`, undefined],
+        // 4. Afslag-voor-afslag navigatie (start + nav-cues in detail)
+        ["POST", `/api/routes/${vrij!.id}/navigatie-start`, {}],
+        // 5. Spraakaanwijzingen — server-side bron: nav-cues in route-detail
+        // 6. Hoogteprofiel met schuifbalk
+        ["GET", `/api/routes/${vrij!.id}/insight`, undefined],
+        // 7. Een route bekijken (detail bevat nav + profile)
+        ["GET", `/api/routes/${vrij!.id}`, undefined],
+      ] as const;
+      for (const [method, path, body] of gratisFuncties) {
+        const r = await apiReq(method, path, subUser, body);
+        assert(
+          !(r.status === 403 && r.json?.code === "upgrade_required"),
+          `${method} ${path}: gratis functie kreeg een commerciële poort (403 upgrade_required) — overtreding van ROUTE_PAKKET_01 §3`,
+        );
+      }
+    } finally {
+      await db.delete(routesTable).where(eq(routesTable.id, vrij!.id)).catch(() => {});
+    }
+  });
+
+  // ABONNEMENT_01 §1.2 — vastgelegd degraded-gedrag: een leesfout op de
+  // persoonlijke rechten (a) zet degraded=true, (b) laat wél-leesbare bronnen
+  // (variantrechten) intact, (c) voegt nooit rechten toe.
+  await scenario("ABONNEMENT_01 §1.2: degraded is fail-closed per bron, leesbare bron blijft gelden", async () => {
+    const degUser = `${RUN}_degraded`;
+    await ensureAccount(degUser, `${degUser}@test.sparki.local`, degUser, silentLogger);
+    await db
+      .update(userProfilesTable)
+      .set({ entitlementMode: "subscription", productVariant: "sparki_go" })
+      .where(eq(userProfilesTable.clerkId, degUser));
+    await ensureGoVariantGrantSeed();
+    // Persoonlijk recht dat bij de leesfout NIET meegeteld mag worden.
+    await db.insert(userEntitlementsTable).values({
+      clerkId: degUser,
+      entitlementKey: "knowledge_base",
+      entitlementType: "permanent_addon",
+      status: "active",
+      source: "test",
+      createdBy: "test:degraded",
+    });
+    try {
+      const normal = await resolveEntitlements(degUser);
+      assert(!normal.degraded, "zonder storing mag degraded niet true zijn");
+      assert(normal.commercialFeatures["knowledge_base"], "voorbereiding: persoonlijk recht ontbreekt");
+      assert(normal.commercialFeatures[GO_FEATURE_KEYS[0]], "voorbereiding: variantrecht ontbreekt");
+
+      __setEntitlementsReadFailureForTests(true);
+      const degraded = await resolveEntitlements(degUser);
+      assert(degraded.degraded === true, "leesfout zette degraded niet");
+      // (b) leesbare bron (variant) blijft gelden — betalende gebruiker niet
+      // buitensluiten door een storing aan onze kant.
+      assert(degraded.commercialFeatures[GO_FEATURE_KEYS[0]], "leesbare variantbron viel weg");
+      // (a)+(c) onleesbare bron telt niet mee; er komt nooit iets bij.
+      assert(!degraded.commercialFeatures["knowledge_base"], "onleesbare bron telde tóch mee");
+      assert(degraded.activeEntitlements.length === 0, "degraded verzon entitlement-rijen");
+    } finally {
+      __setEntitlementsReadFailureForTests(false);
+      await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, degUser));
+    }
+  });
+
+  await scenario("ABONNEMENT_01 §1.10 parity: directe API weigert identiek aan de UI per gepoorte functie", async () => {
+    // De UI leest /api/entitlements en verbergt gepoorte functies; de directe
+    // API-aanroep moet voor dezelfde gebruiker met precies dezelfde
+    // upgrade_required-weigering en featuresleutel antwoorden — anders zou de
+    // API meer toestaan dan de UI toont (of andersom).
+    const parUser = `${RUN}_parity`;
+    await ensureAccount(parUser, `${parUser}@test.sparki.local`, parUser, silentLogger);
+    await db
+      .update(userProfilesTable)
+      .set({ entitlementMode: "subscription", productVariant: null })
+      .where(eq(userProfilesTable.clerkId, parUser));
+    try {
+      const ent = await apiReq("GET", "/api/entitlements", parUser);
+      assert(ent.status === 200, `/api/entitlements ${ent.status}`);
+      const uiFeatures: Record<string, boolean> = ent.json?.commercialFeatures ?? {};
+      // Eén representatieve, parametervrije aanroep per gepoorte featuresleutel
+      // over alle gepoorte routers (grep-inventaris ABONNEMENT_01 §1.10).
+      const gepoort: Array<{ method: string; path: string; feature: string }> = [
+        { method: "GET", path: "/api/races/1/points", feature: "route_course_points" },
+        { method: "GET", path: "/api/live-location/group-options", feature: "live_friends_map" },
+        { method: "GET", path: "/api/open-loops", feature: "ai_observations" },
+        { method: "GET", path: "/api/coach/analysis", feature: "ai_observations" },
+        { method: "GET", path: "/api/races/insight", feature: "race_intel" },
+        { method: "GET", path: "/api/training-plan/", feature: "autonomous_training" },
+        { method: "POST", path: "/api/athlete/plan/generate", feature: "autonomous_training" },
+        { method: "GET", path: "/api/core-prediction/1", feature: "performance_lab" },
+        { method: "POST", path: "/api/races/1/exports", feature: "route_course_points" },
+        { method: "POST", path: "/api/document-analyses/1/link", feature: "route_course_points" },
+        { method: "PUT", path: "/api/routes/999999", feature: "route_library_manage" },
+      ];
+      for (const g of gepoort) {
+        assert(
+          uiFeatures[g.feature] !== true,
+          `UI-bron geeft ${g.feature} tóch vrij voor gratis abonnee`,
+        );
+        const r = await apiReq(g.method, g.path, parUser, g.method === "GET" ? undefined : {});
+        assert(
+          r.status === 403 && r.json?.code === "upgrade_required" && r.json?.feature === g.feature,
+          `${g.method} ${g.path}: verwachtte 403 upgrade_required(${g.feature}), kreeg ${r.status} ${JSON.stringify(r.json)}`,
+        );
+      }
+    } finally {
+      await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, parUser));
     }
   });
 

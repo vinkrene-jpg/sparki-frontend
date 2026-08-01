@@ -12,6 +12,14 @@ import {
 import { candidateToInsert } from "../lib/race-points";
 import { diffGuidePoints } from "../lib/race-export/guide-diff";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+// PRODUCTBESLUIT (René, 31-07-2026, correctie op ROUTE_PAKKET_01): algemene
+// documentupload/-analyse blijft race_intel; het aanmaken, koppelen, tonen,
+// beheren of exporteren van course points is route_course_points (Compleet).
+import {
+  requireCommercialFeature,
+  resolveEntitlements,
+  hasCommercialFeature,
+} from "../lib/entitlements";
 import {
   analyzeDocument,
   applyAnswers,
@@ -20,6 +28,23 @@ import {
 } from "../engines/document-analysis";
 
 const router = Router();
+
+// Zonder route_course_points wordt kandidaat-puntinformatie uit een analyse
+// niet inhoudelijk teruggegeven: de lijst is leeg en pointsLocked zegt eerlijk
+// waarom. Overige (niet-puntgebonden) wedstrijdinformatie blijft volledig.
+type AnalysisRow = typeof documentAnalysesTable.$inferSelect;
+function maskAnalysisPoints<T extends AnalysisRow>(
+  row: T,
+  pointsEntitled: boolean,
+): T & { pointsLocked: boolean } {
+  if (pointsEntitled) return { ...row, pointsLocked: false };
+  return { ...row, candidatePoints: [], pointsLocked: true };
+}
+
+async function coursePointsEntitled(clerkId: string): Promise<boolean> {
+  const resolved = await resolveEntitlements(clerkId);
+  return hasCommercialFeature(resolved, "route_course_points");
+}
 
 // Strip an optional data-URL prefix so the client may send either raw base64 or
 // a full "data:application/pdf;base64,...." string.
@@ -41,7 +66,8 @@ router.get("/", requireAuth, async (req, res) => {
       .where(eq(documentAnalysesTable.clerkId, clerkId))
       .orderBy(desc(documentAnalysesTable.createdAt))
       .limit(limit);
-    res.json({ analyses: rows });
+    const entitled = await coursePointsEntitled(clerkId);
+    res.json({ analyses: rows.map((r) => maskAnalysisPoints(r, entitled)) });
   } catch (err) {
     req.log.error({ err }, "documentAnalyses.list failed");
     res.status(500).json({ error: "Kon documenten niet laden" });
@@ -70,7 +96,9 @@ router.get("/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Document niet gevonden" });
       return;
     }
-    res.json({ analysis: row });
+    res.json({
+      analysis: maskAnalysisPoints(row, await coursePointsEntitled(clerkId)),
+    });
   } catch (err) {
     req.log.error({ err }, "documentAnalyses.get failed");
     res.status(500).json({ error: "Kon document niet laden" });
@@ -127,7 +155,9 @@ router.post("/", requireAuth, async (req, res) => {
         candidatePoints: result.candidatePoints,
       })
       .returning();
-    res.status(201).json({ analysis: row });
+    res.status(201).json({
+      analysis: maskAnalysisPoints(row!, await coursePointsEntitled(clerkId)),
+    });
   } catch (err) {
     req.log.error({ err }, "documentAnalyses.analyze failed");
     // Record the failed attempt honestly so the user knows it didn't work.
@@ -140,10 +170,14 @@ router.post("/", requireAuth, async (req, res) => {
           mediaType,
           status: "failed",
           errorMessage:
-            "Sparki kon dit document niet lezen. Probeer een duidelijkere scan of een ander bestand.",
+            "Dit document kon niet gelezen worden. Probeer een duidelijkere scan of een ander bestand.",
         })
         .returning();
-      res.status(201).json({ analysis: row });
+      // Zelfde contractvorm als het succespad: ook een failed record gaat
+      // door de maskerfunctie (uniform pointsLocked-veld).
+      res.status(201).json({
+        analysis: maskAnalysisPoints(row!, await coursePointsEntitled(clerkId)),
+      });
     } catch (err2) {
       req.log.error({ err: err2 }, "documentAnalyses.failed-record failed");
       res.status(500).json({ error: "Kon document niet verwerken" });
@@ -205,7 +239,9 @@ router.post("/:id/answers", requireAuth, async (req, res) => {
         ),
       )
       .returning();
-    res.json({ analysis: row });
+    res.json({
+      analysis: maskAnalysisPoints(row!, await coursePointsEntitled(clerkId)),
+    });
   } catch (err) {
     req.log.error({ err }, "documentAnalyses.answers failed");
     res.status(500).json({ error: "Kon antwoorden niet opslaan" });
@@ -215,7 +251,10 @@ router.post("/:id/answers", requireAuth, async (req, res) => {
 // POST /api/document-analyses/:id/link — couple this analysis to a race in the
 // agenda, and enrich that race with the fields we confidently extracted (never
 // overwriting an existing non-empty value).
-router.post("/:id/link", requireAuth, async (req, res) => {
+// Compleet-poort (productbesluit 31-07-2026): koppelen maakt race_points aan
+// en valt daarmee onder route_course_points. Gratis/Go krijgt hier 403 en er
+// wordt zonder recht nooit een (verborgen) punt aangemaakt.
+router.post("/:id/link", requireAuth, requireCommercialFeature("route_course_points"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = Number(String(req.params.id));
   const body = (req.body ?? {}) as Record<string, unknown>;

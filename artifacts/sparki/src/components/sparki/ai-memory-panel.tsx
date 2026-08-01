@@ -272,9 +272,9 @@ export function AiMemoryPanel() {
     <section>
       <SectionLabel n="08" title="Sparki Geheugen" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-        Sparki legt verbanden tussen je training, slaap, herstel, wedstrijden en
+        Hier worden verbanden gelegd tussen je training, slaap, herstel, wedstrijden en
         terugkoppeling. Bij elk inzicht zie je de meetreeks erachter, hoe zeker
-        Sparki is en — onder "Uitgebreid" — welke signalen zijn gebruikt en welke
+        het is en — onder "Uitgebreid" — welke signalen zijn gebruikt en welke
         andere verklaringen mogelijk zijn.
       </p>
 
@@ -285,7 +285,7 @@ export function AiMemoryPanel() {
           onClick={() => runConnections.mutate()}
           className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/70 transition hover:border-cyan-400/40 hover:text-cyan-300 disabled:opacity-40"
         >
-          {runConnections.isPending ? "Sparki zoekt…" : "Verbanden zoeken"}
+          {runConnections.isPending ? "Bezig met zoeken…" : "Verbanden zoeken"}
         </button>
         {runConnections.isSuccess && !runConnections.isPending && (
           <span className="font-mono text-[10px] text-white/40">

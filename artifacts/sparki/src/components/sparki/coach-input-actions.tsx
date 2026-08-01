@@ -107,7 +107,7 @@ function ActionModal({
             style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
           />
           <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/70">
-            Sparki vult aan
+            Automatisch aangevuld
           </span>
         </div>
 
@@ -557,7 +557,7 @@ export function CoachInputNeeds() {
           style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
         />
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/70">
-          Sparki heeft nog gegevens nodig
+          Er zijn nog gegevens nodig
         </span>
       </div>
       <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/55">

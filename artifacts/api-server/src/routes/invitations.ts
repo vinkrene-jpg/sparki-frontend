@@ -8,6 +8,8 @@ import {
   coachAthleteLinksTable,
   parentAthleteLinksTable,
   clubMembersTable,
+  clubTeamsTable,
+  clubTeamMembersTable,
   clubAuditLogTable,
   validRoles,
   invitationRelationships,
@@ -43,6 +45,7 @@ type CreateBody = {
   email?: string | null;
   expiresInDays?: number;
   clubId?: number;
+  teamId?: number;
 };
 
 // Clubrelaties: welke clubrol hoort bij welke uitnodiging.
@@ -89,6 +92,7 @@ function publicView(inv: Invitation) {
     targetRole: inv.targetRole,
     relationship: inv.relationship,
     clubId: inv.clubId,
+    teamId: inv.teamId,
     email: inv.email,
     status: inv.status,
     acceptedByClerkId: inv.acceptedByClerkId,
@@ -157,6 +161,13 @@ router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowM
         res.status(403).json({ error: "Alleen de clubbeheerder kan clubuitnodigingen maken." });
         return;
       }
+      // CLUB_ONBOARDING_01: in concept vertrekt geen enkele uitnodiging.
+      if (ctx.club.status === "concept") {
+        res.status(409).json({
+          error: "Deze club is nog in oprichting. Activeer de club eerst; daarna kun je uitnodigen.",
+        });
+        return;
+      }
       const cap = await checkCapacityForNew(
         ctx,
         relationship === "club_trainer" ? "trainer" : "member",
@@ -173,6 +184,25 @@ router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowM
             : "athlete";
       createdByRole = ctx.membership.role;
 
+      // Addendum parallelle teams: een uitnodiging kan aan één selectie
+      // (club_teams) hangen; het lid landt bij accepteren direct in die selectie.
+      let teamId: number | null = null;
+      if (body.teamId != null) {
+        const raw = Number(body.teamId);
+        if (!Number.isInteger(raw)) {
+          res.status(400).json({ error: "Ongeldige selectie voor deze uitnodiging." });
+          return;
+        }
+        const [team] = await db
+          .select({ id: clubTeamsTable.id })
+          .from(clubTeamsTable)
+          .where(and(eq(clubTeamsTable.id, raw), eq(clubTeamsTable.clubId, clubId)));
+        if (!team) {
+          res.status(404).json({ error: "Deze selectie bestaat niet binnen de organisatie." });
+          return;
+        }
+        teamId = team.id;
+      }
       const clubDays =
         typeof body.expiresInDays === "number" && body.expiresInDays > 0
           ? Math.min(body.expiresInDays, 365)
@@ -186,6 +216,7 @@ router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowM
           targetRole,
           relationship,
           clubId,
+          teamId,
           email: body.email?.trim() || null,
           status: "pending",
           expiresAt: new Date(Date.now() + clubDays * 24 * 60 * 60 * 1000),
@@ -196,7 +227,7 @@ router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowM
         actorClerkId: clerkId,
         action: "lid_uitgenodigd",
         targetType: "member",
-        detail: { relationship, email: body.email?.trim() || null },
+        detail: { relationship, teamId, email: body.email?.trim() || null },
       });
       res.status(201).json(publicView(clubInv!));
       return;
@@ -398,7 +429,8 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
               coachAthleteLinksTable.coachClerkId,
               coachAthleteLinksTable.athleteClerkId,
             ],
-            set: { status: "accepted" },
+            // Heropening na eerdere beëindiging: verse periode (BB-09).
+            set: { status: "accepted", endedAt: null, startedAt: new Date() },
           });
       } else if (relationship === "parent_athlete") {
         await tx
@@ -413,7 +445,7 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
               parentAthleteLinksTable.parentClerkId,
               parentAthleteLinksTable.athleteClerkId,
             ],
-            set: { status: "accepted" },
+            set: { status: "accepted", endedAt: null, startedAt: new Date() },
           });
       } else if (relationship === "friend_athlete") {
         // Vriendenuitnodiging: direct geaccepteerde vriendschap tussen
@@ -431,7 +463,12 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
               friendLinksTable.requesterClerkId,
               friendLinksTable.addresseeClerkId,
             ],
-            set: { status: "accepted", respondedAt: new Date() },
+            set: {
+              status: "accepted",
+              respondedAt: new Date(),
+              endedAt: null,
+              startedAt: new Date(),
+            },
           });
       } else if (relationship === "head_tester") {
         // Mark the accepter as Sparki's Hoofdtester. No peer link row.
@@ -483,13 +520,61 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
             role: clubRole,
           });
         }
+        // Addendum parallelle teams: draagt de uitnodiging een selectie, dan
+        // landt het lid direct in díé selectie (idempotent; de selectie moet
+        // nog steeds bij de organisatie horen).
+        if (inv.teamId != null) {
+          const [team] = await tx
+            .select({ id: clubTeamsTable.id, maxSize: clubTeamsTable.maxSize })
+            .from(clubTeamsTable)
+            .where(and(eq(clubTeamsTable.id, inv.teamId), eq(clubTeamsTable.clubId, inv.clubId)));
+          // Eerlijk falen (rollback van de hele accept) als de beloofde
+          // selectie niet meer bestaat — een team-uitnodiging mag nooit
+          // stilletjes als organisatie-brede uitnodiging landen.
+          if (!team) {
+            throw new ClubCapacityError(
+              "De selectie uit deze uitnodiging bestaat niet meer. Vraag een nieuwe uitnodiging aan.",
+            );
+          }
+          // Teamcapaciteit (maxSize) óók bij accepteren bewaken — zelfde
+          // regel als het join-pad; de advisory lock hierboven serialiseert.
+          if (team.maxSize != null) {
+            const actief = await tx
+              .select({ id: clubTeamMembersTable.id })
+              .from(clubTeamMembersTable)
+              .where(and(eq(clubTeamMembersTable.teamId, team.id), isNull(clubTeamMembersTable.endedAt)));
+            const alLid = await tx
+              .select({ id: clubTeamMembersTable.id })
+              .from(clubTeamMembersTable)
+              .where(
+                and(
+                  eq(clubTeamMembersTable.teamId, team.id),
+                  eq(clubTeamMembersTable.clerkId, clerkId),
+                  isNull(clubTeamMembersTable.endedAt),
+                ),
+              );
+            if (alLid.length === 0 && actief.length >= team.maxSize) {
+              throw new ClubCapacityError("Deze selectie zit vol. Vraag de teammanager om ruimte of een andere selectie.");
+            }
+          }
+          await tx
+            .insert(clubTeamMembersTable)
+            .values({ teamId: team.id, clerkId })
+            .onConflictDoNothing({
+              target: [clubTeamMembersTable.teamId, clubTeamMembersTable.clerkId],
+              // Partial unique index (ended_at IS NULL): zonder dit
+              // index-predicaat matcht ON CONFLICT hem niet en klapt de
+              // insert (bij DoNothing heet de optie `where`).
+              where: sql`ended_at IS NULL`,
+            });
+        }
         await tx.insert(clubAuditLogTable).values({
           clubId: inv.clubId,
           actorClerkId: clerkId,
           action: "lid_toegetreden",
           targetType: "member",
           targetId: clerkId,
-          detail: { relationship },
+          detail: { relationship, teamId: inv.teamId ?? null },
         });
       }
 

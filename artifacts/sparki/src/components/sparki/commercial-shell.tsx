@@ -32,7 +32,15 @@ import {
 import { TodayDebugPanel } from "@/components/sparki/role-today"
 import { Users, Bell, ShieldCheck } from "lucide-react"
 import { useUserProfile } from "@/contexts/UserContext"
-import { COACH_NAV_ENTRIES, PARENT_NAV_ENTRIES } from "@/lib/chapters"
+import {
+  COACH_NAV_ENTRIES,
+  PARENT_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_NAV_ENTRIES,
+  ROLE_LABELS,
+} from "@/lib/chapters"
+import type { Role } from "@/contexts/UserContext"
+import { DsContextRegel } from "@/components/ds/context"
+import { useTeamIdentity } from "@/hooks/use-social"
 import { cn } from "@/lib/utils"
 import {
   DsButton,
@@ -135,7 +143,9 @@ function shellNavForRole(role: string | null | undefined): {
       ? COACH_NAV_ENTRIES
       : role === "parent"
         ? PARENT_NAV_ENTRIES
-        : null
+        : role === "nutrition_specialist"
+          ? NUTRITION_SPECIALIST_NAV_ENTRIES
+          : null
   if (!entries) return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: MOBILE_NAV_ITEMS }
   return {
     desktop: entries,
@@ -221,6 +231,10 @@ export function CommercialShell({
       {!bare && (
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-app-deep/80 backdrop-blur lg:flex">
         <div className="type-wordmark px-6 pt-7">SPARKI</div>
+        {/* F4: actieve rol, organisatie en team permanent zichtbaar. */}
+        <div className="px-5 pt-3">
+          <ShellContextRegel />
+        </div>
         <nav className="mt-8 flex flex-col gap-1 px-3" aria-label="Hoofdmenu">
           {shellNav.desktop.map((item) => {
             const active = isActive(item.href)
@@ -257,6 +271,13 @@ export function CommercialShell({
       )}
 
       <main className={cn("relative z-10 pb-28 lg:pb-16", !bare && "lg:ml-56")}>
+        {/* F4 mobiel: dezelfde contextregel, boven de inhoud (desktop toont
+            hem in de zijbalk). */}
+        {!bare && (
+          <div className="px-5 pt-3 lg:hidden">
+            <ShellContextRegel />
+          </div>
+        )}
         {children}
       </main>
 
@@ -271,6 +292,28 @@ export function CommercialShell({
         </div>
       )}
     </div>
+  )
+}
+
+// F4 (SPARKI_BUILD_01): actieve rol, organisatie en team/groep permanent
+// zichtbaar in de schil — alleen de ACTIEVE context, nooit aantallen of
+// informatie uit niet-actieve contexten.
+function ShellContextRegel() {
+  const { profile } = useUserProfile()
+  const rol = (profile?.activeRole as Role | undefined) ?? "athlete"
+  // Reviewfix F4: de teamidentiteit is sporter-context. In een andere actieve
+  // rol tonen we haar NIET — anders lekt context uit een niet-actieve rol.
+  const { data } = useTeamIdentity()
+  const team = rol === "athlete" ? data?.team : null
+  const rolLabel = ROLE_LABELS[rol] ?? "Sporter"
+  return (
+    <DsContextRegel
+      rolLabel={rolLabel}
+      clubNaam={team?.clubName ?? null}
+      teamNaam={team?.teamName ?? null}
+      clubKleur={team?.primaryColor ?? null}
+      clubLogoUrl={team?.logoUrl ?? null}
+    />
   )
 }
 
@@ -390,8 +433,14 @@ function CoachBoodschap({ presentation }: { presentation: PresentationState }) {
 // sectie verdwijnt dan (geen dubbele foutkaarten, geen fallbackdata).
 function WeekSection() {
   const { data, isLoading, isError } = useAthleteDashboard()
+  const [, navigate] = useLocation()
 
   if (isError) return null
+
+  const dagen =
+    data && data.weekTSS.length > 0
+      ? buildWeekDays(data.weekTSS, localISODate(), data.todayWorkout != null)
+      : []
 
   return (
     <section className="mt-8" aria-label={COMMERCIAL_COPY.weekTitle}>
@@ -412,11 +461,14 @@ function WeekSection() {
       ) : (
         <DsWeek
           className="mt-3"
-          dagen={buildWeekDays(
-            data.weekTSS,
-            localISODate(),
-            data.todayWorkout != null,
-          )}
+          dagen={dagen}
+          // Dag-tik opent die dag in de trainingskalender — nooit stil
+          // niets-doen (gericht herstel 01-08-2026, punt 1).
+          onSelecteer={(idx) => {
+            const dag = dagen[idx]
+            if (dag) navigate(`/train?dag=${dag.date}`)
+          }}
+          selectieLabel="Open een dag van deze week in je trainingskalender"
         />
       )}
     </section>

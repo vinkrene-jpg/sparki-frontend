@@ -11,6 +11,11 @@ export type RadarInputs = {
   sessions: Array<{ sessionDate: string; feelScore: number | null }>;
   /** Huidige FTP uit het profiel (Sportpaspoort, SSOT). */
   ftpWatts: number | null;
+  /**
+   * Is de profiel-FTP een schatting (onboarding)? Een schatting telt niet
+   * als brondata: de vermogens-as blijft dan eerlijk leeg met reden.
+   */
+  ftpEstimated?: boolean | null;
   /** Gewicht in kg uit het profiel — nodig voor een eerlijke W/kg-schaal. */
   weightKg: number | null;
   /** "Vandaag" als JJJJ-MM-DD (lokale datum), zodat de functie puur blijft. */
@@ -88,7 +93,9 @@ export function computePerformanceRadar(input: RadarInputs): RadarAxis[] {
         : "Nog geen chronische trainingsbasis om herstel tegen af te zetten.",
   });
 
-  const wkg = ftpWatts != null && ftpWatts > 0 && weightKg != null && weightKg > 0
+  const ftpBruikbaar =
+    ftpWatts != null && ftpWatts > 0 && input.ftpEstimated !== true;
+  const wkg = ftpBruikbaar && weightKg != null && weightKg > 0
     ? ftpWatts / weightKg
     : null;
   axes.push({
@@ -101,7 +108,9 @@ export function computePerformanceRadar(input: RadarInputs): RadarAxis[] {
         ? undefined
         : ftpWatts == null || ftpWatts <= 0
           ? "FTP ontbreekt in je profiel."
-          : "Gewicht ontbreekt in je profiel (nodig voor W/kg).",
+          : input.ftpEstimated === true
+            ? "Je FTP is nog een schatting — een gemeten of afgeleide FTP is nodig voor deze as."
+            : "Gewicht ontbreekt in je profiel (nodig voor W/kg).",
   });
 
   axes.push({

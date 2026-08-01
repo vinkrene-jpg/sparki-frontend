@@ -31,10 +31,10 @@ export const TIER_LABELS: Record<TrustTier, string> = {
 
 /** One-line Dutch explanation of what a tier means for how Sparki talks. */
 export const TIER_BLURB: Record<TrustTier, string> = {
-  nieuw: "Sparki houdt het rustig en maakt nog geen aannames.",
-  kennismaking: "Sparki wordt nieuwsgieriger naarmate hij je beter leert kennen.",
-  vertrouwd: "Sparki durft nu ook droge humor te gebruiken.",
-  maat: "Sparki kent je — droog, soms licht cynisch, altijd eerlijk.",
+  nieuw: "De toon blijft rustig en maakt nog geen aannames.",
+  kennismaking: "De toon wordt nieuwsgieriger naarmate je beter bekend raakt.",
+  vertrouwd: "Er is nu ook ruimte voor droge humor.",
+  maat: "Je bent goed bekend — droog, soms licht cynisch, altijd eerlijk.",
 };
 
 /** Map a memory's kind → a ready-to-read Dutch reference for relational lines. */

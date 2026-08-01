@@ -53,7 +53,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "ftp",
     missingTitle: "FTP ontbreekt",
     missingWhy:
-      "Sparki heeft je FTP nodig om je trainingszones en belasting te berekenen.",
+      "Je FTP is nodig om je trainingszones en belasting te berekenen.",
     isSet: (p) => p?.ftp != null,
   },
   weeklyHours: {
@@ -63,7 +63,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "weeklyHours",
     missingTitle: "Wekelijkse uren ontbreken",
     missingWhy:
-      "Sparki verdeelt je training over de week op basis van hoeveel uur je beschikbaar hebt.",
+      "Je training wordt over de week verdeeld op basis van hoeveel uur je beschikbaar hebt.",
     isSet: (p) => p?.weeklyHourTarget != null,
   },
   goal: {
@@ -73,7 +73,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "goal",
     missingTitle: "Doel ontbreekt",
     missingWhy:
-      "Zonder doel weet Sparki niet waar je naartoe traint. Geef aan waar je naartoe wilt.",
+      "Zonder doel is niet duidelijk waar je naartoe traint. Geef aan waar je naartoe wilt.",
     isSet: (p) => !!(p?.goals && p.goals.trim().length > 0),
   },
   developmentGoal: {
@@ -83,7 +83,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "goal",
     missingTitle: "Langetermijndoel ontbreekt",
     missingWhy:
-      "Kies waar je op de lange termijn naartoe wilt — recreatief, een toertocht, wedstrijden of hoger. Sparki weegt elk advies af tegen dat doel.",
+      "Kies waar je op de lange termijn naartoe wilt — recreatief, een toertocht, wedstrijden of hoger. Elk advies wordt afgewogen tegen dat doel.",
     isSet: (p) => !!(p?.developmentGoal && p.developmentGoal.trim().length > 0),
   },
   weight: {
@@ -113,7 +113,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "birthYear",
     missingTitle: "Geboortedatum ontbreekt",
     missingWhy:
-      "Met je geboortedatum stemt Sparki je zones en advies af op je exacte leeftijd.",
+      "Met je geboortedatum worden je zones en advies afgestemd op je exacte leeftijd.",
     isSet: (p) => p?.birthDate != null || p?.birthYear != null,
   },
   sportProfile: {
@@ -123,7 +123,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "sportProfile",
     missingTitle: "Sportprofiel incompleet",
     missingWhy:
-      "Vertel Sparki welke discipline je rijdt, zodat het advies bij jouw sport past.",
+      "Geef aan welke discipline je rijdt, zodat het advies bij jouw sport past.",
     isSet: (p) => !!(p?.discipline && p.discipline.trim().length > 0),
   },
   checkin: {

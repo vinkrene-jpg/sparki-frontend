@@ -1,0 +1,62 @@
+TAALHERSTEL — VERWIJDER DE MERKNAAM UIT ALLE UI-ZINNEN
+
+Doel:
+Verwijder het woord “Sparki” uit alle gewone gebruikersgerichte UI-teksten.
+
+Hoofdregel:
+De interface spreekt rechtstreeks over de actie, uitleg, analyse of uitkomst. De app verwijst niet in de derde persoon naar zichzelf.
+
+Vervang onder meer patronen als:
+- “Sparki zegt”
+- “Sparki ziet”
+- “Sparki vindt”
+- “Sparki adviseert”
+- “Sparki leest”
+- “Sparki maakt”
+- “Sparki zoekt”
+- “Sparki vergelijkt”
+- “Sparki gebruikt”
+- “Sparki weet”
+- “Door Sparki afgestemd”
+- “Sparki heeft nog te weinig gegevens”
+
+Door directe, neutrale en menselijke teksten, bijvoorbeeld:
+- “Waarom dit advies?”
+- “Bekijk de analyse”
+- “Afgestemd op jouw sport en doelen”
+- “Er zijn nog te weinig gegevens”
+- “De gegevens worden ingelezen”
+- “De metingen worden vergeleken”
+
+Scope:
+- web;
+- PWA;
+- mobiel;
+- alle rollen;
+- Gratis, Go en Compleet;
+- knoppen;
+- toelichtingen;
+- foutmeldingen;
+- lege toestanden;
+- notificaties;
+- coachteksten;
+- analyse- en adviesteksten.
+
+Niet verwijderen waar de merknaam functioneel nodig is:
+- logo en appnaam;
+- “Sparki Go”;
+- “Sparki Compleet”;
+- juridische documenten;
+- privacy- en voorwaardenpagina’s;
+- formele e-mails en afzendernaam;
+- supportteksten waarin het bedrijf of product als organisatie wordt bedoeld.
+
+Werkregels:
+1. Zoek zowel statische teksten als vertalingen, templates en server-side foutmeldingen.
+2. Geen blinde globale zoek-en-vervangactie.
+3. Herschrijf iedere zin natuurlijk in zijn context.
+4. Verander geen betekenis, pakketgrens of gebruikersactie.
+5. Behoud bestaande fietser-, wandelaar- en rolafhankelijke terminologie.
+6. Lever een lijst op van alle gewijzigde teksten en vindplaatsen.
+7. Voeg een regressietest/lintregel toe die gewone UI-teksten met het woord “Sparki” voortaan detecteert, met een expliciete uitzonderingslijst voor toegestane merkvermeldingen.
+8. Mirror controleert Gratis, Go en Compleet op desktop en mobiel en zoekt aanvullend repo-breed naar niet-toegestane merkvermeldingen.

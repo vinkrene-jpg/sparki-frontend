@@ -224,11 +224,11 @@ function formatDate(dateStr: string): string {
 function weatherReasonNl(reason: RaceInsight["weather"]["reason"]): string {
   switch (reason) {
     case "too_far":
-      return "Het weer is er nog niet — een voorspelling bestaat pas vanaf ~16 dagen voor de wedstrijd. Sparki vult het later automatisch aan."
+      return "Het weer is er nog niet — een voorspelling bestaat pas vanaf ~16 dagen voor de wedstrijd. Het wordt later automatisch aangevuld."
     case "no_location":
-      return "Geef hieronder een locatie op, dan haalt Sparki het weer erbij."
+      return "Geef hieronder een locatie op, dan wordt het weer erbij gehaald."
     case "geocode_failed":
-      return "Sparki kon deze locatie niet op de kaart vinden — controleer de plaatsnaam."
+      return "Deze locatie kon niet op de kaart worden gevonden — controleer de plaatsnaam."
     case "no_forecast":
       return "Voor deze datum is er geen voorspelling beschikbaar."
     default:
@@ -239,11 +239,11 @@ function weatherReasonNl(reason: RaceInsight["weather"]["reason"]): string {
 function travelReasonNl(reason: RaceInsight["travel"]["reason"]): string {
   switch (reason) {
     case "no_home":
-      return "Sparki kent je thuislocatie nog niet — stel die in bij je profiel, dan rekent Sparki de afstand uit."
+      return "Je thuislocatie is nog niet bekend — stel die in bij je profiel, dan wordt de afstand uitgerekend."
     case "no_location":
-      return "Vul de locatie in, dan berekent Sparki de afstand vanaf huis."
+      return "Vul de locatie in, dan wordt de afstand vanaf huis berekend."
     case "geocode_failed":
-      return "Sparki kon de locatie niet op de kaart vinden — controleer de plaatsnaam."
+      return "De locatie kon niet op de kaart worden gevonden — controleer de plaatsnaam."
     default:
       return "Afstand nu niet te berekenen."
   }
@@ -317,11 +317,11 @@ function RaceInsightPanel({
       <div className="flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
         <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: ACCENT }}>
-          Sparki heeft alvast gekeken
+          Alvast bekeken
         </span>
       </div>
       <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
-        Dit haalde Sparki er zelf bij. Controleer het en vul alleen aan wat
+        Dit is automatisch erbij gezocht. Controleer het en vul alleen aan wat
         ontbreekt — overschrijven mag altijd.
       </p>
 
@@ -1028,7 +1028,7 @@ function RaceForm({
       <section>
         <SectionLabel n="03" title="Logistiek" large />
         <p className="mt-2 text-[11px] leading-relaxed text-white/35">
-          Sparki vulde alvast een voorstel in op basis van je discipline en
+          Er is alvast een voorstel ingevuld op basis van je discipline en
           thuislocatie. Pas aan waar nodig — dit berekent je dagplanning.
         </p>
         <div className="mt-4 space-y-4">

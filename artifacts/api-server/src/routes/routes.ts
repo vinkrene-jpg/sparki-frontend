@@ -59,6 +59,14 @@ import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
 import { controlUnpavedShare } from "../lib/surface-control";
 import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
+// ROUTE_PAKKET_02A — maandtelling van routegebruik (alleen meten, nooit
+// blokkeren). Tellende gebeurtenissen: definitief opslaan + succesvolle
+// GPX-export. Plannen, aanpassen en bekijken roepen dit nooit aan.
+import {
+  recordCandidateExportUsageSafe,
+  recordRouteUsageSafe,
+  settleCandidateOnSaveSafe,
+} from "../lib/route-usage-metering";
 import {
   createRouteGenerationJob,
   finishJob,
@@ -67,6 +75,21 @@ import {
 } from "../lib/route-generation-jobs";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import {
+  getRouteDowngradeState,
+  setActiveRouteSelection,
+  ACTIVE_ROUTE_LIMIT,
+} from "../lib/route-downgrade";
+// Go-poort op de bibliotheek-beheer-extra's (Besluit René 31-07-2026,
+// SPARKI-BESLUIT-2026-002): zoeken/sorteren/scopes, bewerken, dupliceren en
+// route-uit-rit zijn Sparki Go; opslaan, eigen lijst (simpel), openen,
+// verwijderen, plannen/genereren, GPX/TCX en navigatie blijven gratis.
+import {
+  requireCommercialFeature,
+  resolveEntitlements,
+  hasCommercialFeature,
+  GO_FEATURE_LABELS,
+} from "../lib/entitlements";
 import { isMinorAthlete, isVerifiedAdultAthlete } from "../lib/sharing";
 import {
   parseGpxRoute,
@@ -75,6 +98,7 @@ import {
   buildTcx,
   putCandidate,
   getCandidate,
+  markCandidateSaved,
   updateCandidateRationale,
   getRoutingProvider,
   bikeSuitabilityConfigError,
@@ -96,7 +120,7 @@ import {
   type CandidateEnvironment,
 } from "../engines/route";
 import { getRoadObjectsAlongRoute } from "../engines/road-objects";
-import { isSportActive } from "@workspace/feature-flags";
+import { isRouteSportActive } from "@workspace/feature-flags";
 import { getHourlyForecast } from "../lib/weather/open-meteo";
 import {
   computeGradeSplit,
@@ -142,6 +166,47 @@ import {
 } from "../lib/route-surfaces";
 
 const router = Router();
+
+// ── ABONNEMENT_01 §1.3 — downgrade-keuzeflow (vóór alle /:id-routes) ─────────
+// Alle routes blijven zichtbaar en herstelbaar; de gebruiker kiest max. drie
+// actieve routes. Alleen de keuzeflow hier; limiet/verval/opruiming in 02c.
+router.get("/downgrade-state", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    res.json(await getRouteDowngradeState(clerkId));
+  } catch (err) {
+    console.error("downgrade-state mislukt", err);
+    res.status(500).json({ error: "Kon de downgrade-status niet bepalen" });
+  }
+});
+
+router.put("/active-selection", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const ids = Array.isArray(body.routeIds)
+    ? body.routeIds.map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0)
+    : null;
+  if (!ids || (Array.isArray(body.routeIds) && ids.length !== body.routeIds.length)) {
+    res.status(400).json({ error: "routeIds moet een lijst geldige route-id's zijn" });
+    return;
+  }
+  try {
+    const result = await setActiveRouteSelection(clerkId, ids);
+    if (!result.ok) {
+      res.status(result.fout === "te_veel" ? 400 : 403).json({
+        error:
+          result.fout === "te_veel"
+            ? `Kies maximaal ${ACTIVE_ROUTE_LIMIT} actieve routes`
+            : "Eén of meer routes zijn niet van jou",
+      });
+      return;
+    }
+    res.json(await getRouteDowngradeState(clerkId));
+  } catch (err) {
+    console.error("active-selection mislukt", err);
+    res.status(500).json({ error: "Kon de keuze niet opslaan" });
+  }
+});
 
 function coerceSurface(v: unknown): RouteSurface {
   return typeof v === "string" &&
@@ -239,7 +304,7 @@ function applyBusyRoadReport(
     report.nietMogelijk.push({
       wens: "drukke N-wegen vermijden",
       reden:
-        "De routebron gaf voor deze route geen wegtype-meting terug, dus Sparki kan niet controleren of het vermijden gelukt is.",
+        "De routebron gaf voor deze route geen wegtype-meting terug, dus er kan niet gecontroleerd worden of het vermijden gelukt is.",
     });
     return;
   }
@@ -734,7 +799,7 @@ async function canViewSharedRoute(
         and(
           eq(coachAthleteLinksTable.coachClerkId, viewerClerkId),
           eq(coachAthleteLinksTable.athleteClerkId, route.clerkId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       )
       .limit(1);
@@ -883,6 +948,40 @@ async function cleanupUnriddenProposals(
 //   ?plannedWorkoutId=N      — only routes linked to that planned workout
 router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
+  // Besluit 2026-002: de eigen lijst simpel bekijken (nieuwste eerst) blijft
+  // gratis; zoeken (q), filter-scopes en sorteren zijn bibliotheek-beheer-
+  // extra's en horen bij Sparki Go. De poort geldt dus alleen zodra zo'n
+  // parameter daadwerkelijk wordt gebruikt — fail-closed via dezelfde
+  // entitlements-laag als requireCommercialFeature.
+  const usesLibraryExtras =
+    (typeof req.query.q === "string" && req.query.q.trim() !== "") ||
+    (typeof req.query.scope === "string" &&
+      req.query.scope !== "" &&
+      req.query.scope !== "mijn") ||
+    (typeof req.query.sort === "string" &&
+      req.query.sort !== "" &&
+      req.query.sort !== "nieuwste");
+  if (usesLibraryExtras) {
+    try {
+      const resolved = await resolveEntitlements(clerkId);
+      if (!hasCommercialFeature(resolved, "route_library_manage")) {
+        res.status(403).json({
+          error: `${GO_FEATURE_LABELS.route_library_manage} hoort bij Sparki Go.`,
+          code: "upgrade_required",
+          feature: "route_library_manage",
+        });
+        return;
+      }
+    } catch (err) {
+      req.log.error({ err }, "route library gate failed");
+      res.status(403).json({
+        error: "Commerciële toegang kon niet worden vastgesteld.",
+        code: "upgrade_required",
+        feature: "route_library_manage",
+      });
+      return;
+    }
+  }
   await cleanupUnriddenProposals(clerkId, req.log);
   const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 100);
   const plannedWorkoutId =
@@ -1003,7 +1102,7 @@ router.get("/gedeeld", requireAuth, async (req, res) => {
         .where(
           and(
             eq(coachAthleteLinksTable.coachClerkId, clerkId),
-            eq(coachAthleteLinksTable.status, "accepted"),
+            eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
           ),
         ),
       activeClubIds(clerkId),
@@ -1666,8 +1765,16 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
         // wegdekmeting blijft de racefiets-verificatie sturen in de eigen
         // bibliotheek en bij Navigeer.
         engineSurface: route.engineSurface ?? null,
+        // Bibliotheekroutes zijn fietsroutes (bikeType-gestuurd).
+        sport: "cycling",
       })
       .returning({ id: routesTable.id });
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: saved!.id,
+      usageType: "SAVED",
+      source: "opslaan:bibliotheek",
+    });
     res.json({ routeId: saved!.id });
   } catch (err) {
     req.log.error({ err }, "routes.bibliotheek.gebruik failed");
@@ -1718,11 +1825,23 @@ router.get("/:id", requireAuth, async (req, res) => {
           .orderBy(asc(racesTable.raceDate))
           .limit(1);
         if (linkedRace) {
-          const points = await db
-            .select()
-            .from(racePointsTable)
-            .where(eq(racePointsTable.raceId, linkedRace.id))
-            .orderBy(asc(racePointsTable.raceKm), asc(racePointsTable.id));
+          // Compleet-poort (Besluit 2026-002): wedstrijdpunten zijn
+          // route_course_points. Zonder dat recht gaat de wedstrijd-metadata
+          // wél mee (route en navigatie blijven gratis), maar de puntenlijst
+          // blijft leeg met een eerlijke pointsLocked-vlag — anders zou dit
+          // detail-endpoint de gepoorte /api/races/:id/points omzeilen.
+          const resolved = await resolveEntitlements(clerkId);
+          const pointsEntitled = hasCommercialFeature(
+            resolved,
+            "route_course_points",
+          );
+          const points = pointsEntitled
+            ? await db
+                .select()
+                .from(racePointsTable)
+                .where(eq(racePointsTable.raceId, linkedRace.id))
+                .orderBy(asc(racePointsTable.raceKm), asc(racePointsTable.id))
+            : [];
           race = {
             id: linkedRace.id,
             name: linkedRace.name,
@@ -1730,6 +1849,7 @@ router.get("/:id", requireAuth, async (req, res) => {
             localLaps: linkedRace.localLaps,
             assignment: linkedRace.assignment,
             points: activeRacePoints(points),
+            pointsLocked: !pointsEntitled,
           };
         }
       }
@@ -2080,7 +2200,12 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
       geometry.push([la, lo]);
     }
     const budgeted = await withPreviewBudget(getRouteRemarks(geometry), req.log);
-    const remarks = budgeted === PREVIEW_PENDING ? null : budgeted;
+    // footOnly-meldingen zijn puur meet-intern voor voetprofielen; in de
+    // opmerkingen-weergave (fietsgerichte copy) tonen we ze niet.
+    const remarks =
+      budgeted === PREVIEW_PENDING
+        ? null
+        : (budgeted?.filter((r) => r.footOnly !== true) ?? budgeted);
     if (remarks == null) {
       res.status(502).json({
         error:
@@ -2281,7 +2406,9 @@ router.get("/:id/remarks", requireAuth, async (req, res) => {
     // klant). De klant toont KLAAR/NAVIGEER uitsluitend bij verified_clear.
     const verification = hard ? "hard_blocked" : "verified_clear";
     res.json({
-      remarks,
+      // footOnly-meldingen zijn meet-intern voor voetprofielen; de
+      // opmerkingenlijst (fietsgerichte copy) toont ze niet.
+      remarks: remarks.filter((r) => r.footOnly !== true),
       dataRemarks,
       blockage,
       verification,
@@ -2551,6 +2678,15 @@ router.get("/:id/gpx", requireAuth, async (req, res) => {
       "Content-Disposition",
       `attachment; filename="${safeName}.gpx"`,
     );
+    // Succesvolle GPX-export telt als routegebruik. Registratie vóór het
+    // versturen: alle faalpaden (404/422) zijn hierboven al gepasseerd, en zo
+    // is de teller al bijgewerkt op het moment dat de client het bestand heeft.
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route.id,
+      usageType: "GPX_EXPORTED",
+      source: "gpx-export",
+    });
     res.send(gpx);
   } catch (err) {
     req.log.error({ err }, "routes.gpx failed");
@@ -2614,6 +2750,16 @@ router.get("/:id/tcx", requireAuth, async (req, res) => {
       "Content-Disposition",
       `attachment; filename="${safeName}.tcx"`,
     );
+    // Aanvulling 02a: iedere succesvolle export telt, ongeacht formaat.
+    // Registratie vóór res.send zodat een mislukte verzending nooit als
+    // gebruik telt; GPX+TCX van dezelfde route tellen samen één keer
+    // (unieke sleutel per route per maand).
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route.id,
+      usageType: "TCX_EXPORTED",
+      source: "tcx-export",
+    });
     res.send(tcx);
   } catch (err) {
     req.log.error({ err }, "routes.tcx failed");
@@ -2660,6 +2806,20 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
 
   res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${safeName}.gpx"`);
+  // Aanvulling 02a: export van een nog niet opgeslagen voorstel telt óók —
+  // via de bestaande stabiele kandidaat-identiteit (geen parallel systeem).
+  // Registratie vóór res.send; herhaalde export van hetzelfde voorstel telt
+  // niet dubbel (unieke sleutel per kandidaat per maand).
+  await recordCandidateExportUsageSafe(req.log, {
+    clerkId,
+    candidateKey: candidateId,
+    // Verse lezing BINNEN de metering-lock — nooit een momentopname van
+    // vóór de lock (race met gelijktijdig opslaan).
+    resolveSavedRouteId: () =>
+      getCandidate(candidateId, clerkId)?.savedRouteId ?? null,
+    usageType: "GPX_EXPORTED",
+    source: "gpx-export:voorstel",
+  });
   res.send(gpx);
 });
 
@@ -2741,6 +2901,16 @@ router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
 
   res.setHeader("Content-Type", "application/vnd.garmin.tcx+xml; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${safeName}.tcx"`);
+  // Aanvulling 02a: TCX-export van een niet-opgeslagen voorstel telt via
+  // dezelfde kandidaat-identiteit — GPX+TCX samen maximaal één keer per maand.
+  await recordCandidateExportUsageSafe(req.log, {
+    clerkId,
+    candidateKey: candidateId,
+    resolveSavedRouteId: () =>
+      getCandidate(candidateId, clerkId)?.savedRouteId ?? null,
+    usageType: "TCX_EXPORTED",
+    source: "tcx-export:voorstel",
+  });
   res.send(tcx);
 });
 
@@ -2995,6 +3165,7 @@ async function buildLoopCandidate(
     rationale,
     plannedWorkoutId: ctx.plannedWorkoutId,
     engineSurface,
+    sport: ctx.sport ?? null,
   });
 
   // Fire background enrichment — does NOT block the response.
@@ -3040,6 +3211,7 @@ async function buildLoopCandidate(
       rationale: altRationale,
       plannedWorkoutId: ctx.plannedWorkoutId,
       engineSurface: engineSurfaceOf(r),
+      sport: ctx.sport ?? null,
     });
     scheduleEnrichment(
       altId,
@@ -3123,7 +3295,13 @@ async function buildLoopCandidate(
 //   body: { startLat, startLon, mode?: "loop"|"ptp", targetDistanceKm?,
 //           targetDurationMin?, sport?, bikeType?, elevationPreference?,
 //           trainingType?, unpavedPreferencePct? }
-router.post("/zoek", requireAuth, async (req, res) => {
+// Mirror-herstelactie (René, 31-07-2026): dit is GEEN bibliotheekbeheer-extra
+// maar onderdeel van de gratis criteria-gestuurde routeplanning/-generatie
+// (bekend-eerst zoeklaag). Daarom bewust ZONDER commerciële poort.
+router.post(
+  "/zoek",
+  requireAuth,
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
 
@@ -3230,7 +3408,7 @@ router.post("/zoek", requireAuth, async (req, res) => {
           .where(
             and(
               eq(coachAthleteLinksTable.coachClerkId, clerkId),
-              eq(coachAthleteLinksTable.status, "accepted"),
+              eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
             ),
           ),
         activeClubIds(clerkId),
@@ -3377,13 +3555,14 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       : body.mode === "waypoints"
         ? "waypoints"
         : "loop";
-  // Phased rollout: route generation is only available for active sports
-  // (currently cycling). Validate the RAW input before coercion — coerceSport
-  // would otherwise silently map an explicit inactive sport (e.g. "triathlon",
-  // "running") to cycling and let it through. Absent sport defaults to cycling.
+  // Phased rollout: route generation is available for active ROUTE families
+  // (cycling + walking + hiking — MOBILE_ROUTE_WALKING_01). Validate the RAW
+  // input before coercion — coerceSport would otherwise silently map an
+  // explicit inactive sport (e.g. "triathlon", "running") to cycling and let
+  // it through. Absent sport defaults to cycling.
   if (
     typeof body.sport === "string" &&
-    !isSportActive(body.sport.toLowerCase())
+    !isRouteSportActive(body.sport.toLowerCase())
   ) {
     res
       .status(400)
@@ -3442,6 +3621,36 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
   // gelegd (start → via's → start).
   let viaPoints = mode === "loop" ? parseWaypoints(body.viaPoints) : [];
   let viaLoop = mode === "loop" && viaPoints.length > 0;
+
+  // Gekozen klim (Route maken → "Klimmen toevoegen → specifieke klim"): de
+  // klim reist als via-punten mee én wordt na generatie AANTOONBAAR
+  // geverifieerd — ligt de top niet op de route, dan bieden we de route
+  // eerlijk niet aan (422), nooit een stil "hij zit er vast wel in".
+  const climbCheckRaw =
+    body.climbCheck && typeof body.climbCheck === "object"
+      ? (body.climbCheck as Record<string, unknown>)
+      : null;
+  const climbCheck =
+    climbCheckRaw &&
+    typeof climbCheckRaw.name === "string" &&
+    climbCheckRaw.name.trim() &&
+    finiteNum(climbCheckRaw.summitLat) != null &&
+    finiteNum(climbCheckRaw.summitLon) != null
+      ? {
+          osmId:
+            typeof climbCheckRaw.osmId === "string" ? climbCheckRaw.osmId : null,
+          name: climbCheckRaw.name.trim().slice(0, 120),
+          summitLat: finiteNum(climbCheckRaw.summitLat)!,
+          summitLon: finiteNum(climbCheckRaw.summitLon)!,
+        }
+      : null;
+  if (climbCheck && !viaLoop) {
+    res.status(400).json({
+      error:
+        "Een gekozen klim vereist via-punten door de klim (voet en top) — stuur viaPoints mee.",
+    });
+    return;
+  }
 
   // Vermijd-voorkeuren met een EERLIJK rapport: wat is echt toegepast en wat
   // kan de routebron niet garanderen. Nooit stilletjes negeren.
@@ -3744,6 +3953,62 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     const ptpGeomKey = routeGeometryCacheKey(ptpGeomKeyParams);
     const ptpGeomCached = ROUTE_GEOMETRY_CACHE.get(ptpGeomKey);
 
+    // Gekozen klim aantoonbaar verifiëren: de top moet op de gegenereerde
+    // route liggen (minimale afstand top → routelijn). Puur meetkundig — geen
+    // aannames. Resultaat reist als `climbInclusion` mee op de kandidaat.
+    let climbInclusion: {
+      osmId: string | null;
+      name: string;
+      verified: boolean;
+      offsetM: number;
+    } | null = null;
+    const verifyClimbOnPath = (path: RoutePathPoint[]): boolean => {
+      if (!climbCheck) return true;
+      let minM = Infinity;
+      // RoutePathPoint = [lat, lon] (vaste conventie in de routeketen).
+      // Afstand top → routeLIJN: projecteer lokaal (equirectangulair rond de
+      // top) en meet punt-tot-SEGMENT, niet alleen punt-tot-punt — anders
+      // wordt een top midden op een lang segment ten onrechte afgekeurd.
+      const kLat = 111_000;
+      const kLon = 111_000 * Math.cos((climbCheck.summitLat * Math.PI) / 180);
+      const toXY = (p: RoutePathPoint): [number, number] => [
+        (p[1] - climbCheck.summitLon) * kLon,
+        (p[0] - climbCheck.summitLat) * kLat,
+      ];
+      for (let i = 0; i < path.length; i++) {
+        const [ax, ay] = toXY(path[i]!);
+        let d = Math.sqrt(ax * ax + ay * ay);
+        if (i + 1 < path.length) {
+          const [bx, by] = toXY(path[i + 1]!);
+          const dx = bx - ax;
+          const dy = by - ay;
+          const len2 = dx * dx + dy * dy;
+          if (len2 > 0) {
+            // Projectie van de top (origin) op segment a→b, geklemd op [0,1].
+            const t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+            const px = ax + t * dx;
+            const py = ay + t * dy;
+            d = Math.min(d, Math.sqrt(px * px + py * py));
+          }
+        }
+        if (d < minM) minM = d;
+      }
+      const verified = minM <= 250;
+      climbInclusion = {
+        osmId: climbCheck.osmId,
+        name: climbCheck.name,
+        verified,
+        offsetM: Math.round(minM),
+      };
+      if (!verified) {
+        res.status(422).json({
+          error: `De route kon niet aantoonbaar over ${climbCheck.name} worden gelegd (dichtstbijzijnde punt ${Math.round(minM)} m van de top). Kies een andere klim of een ander startpunt.`,
+          code: "CLIMB_NOT_ON_ROUTE",
+        });
+      }
+      return verified;
+    };
+
     // Helper: build and return the PTP/waypoints candidate from geometry +
     // geocoded names. Always called with a fresh putCandidate so the candidateId
     // is always owned by the current user / linked to the current plannedWorkoutId.
@@ -3807,6 +4072,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         rationale,
         plannedWorkoutId,
         engineSurface: engineSurfaceOf(geom),
+        sport,
       });
 
       // Hybride voorstellen behouden hun deterministische motivering-met-
@@ -3858,6 +4124,9 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         plannedWorkoutId,
         targetDistanceKm: null,
         avoidReport,
+        // Gekozen klim: aantoonbaar-op-route-verificatie (alleen via-loop met
+        // climbCheck; null in alle andere gevallen).
+        climbInclusion,
         // Hybride herkomst (taak #512): welke bekende route de basis vormde.
         hybride: hybrideBase
           ? {
@@ -3904,16 +4173,21 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         });
         return true;
       }
-      if (
-        obs != null &&
-        (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0)
-      ) {
+      // Voetprofielen hebben eigen blokkaderegels: een trap of fietsverbod is
+      // te voet géén blokkade; access=no/private en op-slot-poorten wél —
+      // exact dezelfde semantiek als de lusgeneratiepoort (loop-quality).
+      const isFootProfile = profile.startsWith("foot-");
+      const hardBlocked = isFootProfile
+        ? obs.forbiddenFoot > 0 || obs.blockedGatesFoot > 0
+        : obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0;
+      if (hardBlocked) {
         console.log(
-          `[generate.${mode}] harde afkeur handmatige route: forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates}`,
+          `[generate.${mode}] harde afkeur handmatige route (${profile}): forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates} forbiddenFoot=${obs.forbiddenFoot} blockedGatesFoot=${obs.blockedGatesFoot}`,
         );
         res.status(422).json({
-          error:
-            "Deze route loopt over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen.",
+          error: isFootProfile
+            ? "Deze route loopt over een harde blokkade voor voetgangers (privéterrein of een afgesloten poort) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen."
+            : "Deze route loopt over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen.",
           code: "NO_SUITABLE_ROUTE",
           blockage: obs,
         });
@@ -3925,6 +4199,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     if (ptpGeomCached) {
       // Geometry cache hit: skip ORS + geocoding entirely.
       if (await rejectIfBlocked(ptpGeomCached.geometry.path)) return;
+      if (!verifyClimbOnPath(ptpGeomCached.geometry.path)) return;
       res.json({
         candidate: buildPtpResponse(
           ptpGeomCached.geometry,
@@ -3996,6 +4271,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     });
 
     if (await rejectIfBlocked(ptpGeom.path)) return;
+    if (!verifyClimbOnPath(ptpGeom.path)) return;
     res.json({
       candidate: buildPtpResponse(ptpGeom, startName, endName, false),
     });
@@ -4035,7 +4311,7 @@ const generateOptionsHandler: import("express").RequestHandler = async (
 
   if (
     typeof body.sport === "string" &&
-    !isSportActive(body.sport.toLowerCase())
+    !isRouteSportActive(body.sport.toLowerCase())
   ) {
     res
       .status(400)
@@ -4376,11 +4652,24 @@ router.post("/", requireAuth, async (req, res) => {
           meetpoints: meetpoints.length > 0 ? meetpoints : null,
           rationale: stored.rationale,
           engineSurface: stored.engineSurface,
+          sport: stored.sport ?? null,
           source: "generated",
           linkedActivityImportId: null,
           linkedPlannedWorkoutId,
         })
         .returning();
+      // Aanvulling 02a: markeer de kandidaat als opgeslagen (latere exports
+      // van het voorstel tellen dan onder de route-identiteit) en verreken
+      // race-vrij onder de kandidaat-lock: bestaande export-registratie wordt
+      // gepromoveerd naar de route-id, anders telt een gewone SAVED —
+      // dezelfde route telt nooit dubbel.
+      markCandidateSaved(candidateId, clerkId, route!.id);
+      await settleCandidateOnSaveSafe(req.log, {
+        clerkId,
+        candidateKey: candidateId,
+        routeId: route!.id,
+        source: "opslaan:generated",
+      });
       res.status(201).json({ route });
     } catch (err) {
       req.log.error({ err }, "routes.create (generated) failed");
@@ -4459,6 +4748,12 @@ router.post("/", requireAuth, async (req, res) => {
         linkedActivityImportId,
       })
       .returning();
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route!.id,
+      usageType: "SAVED",
+      source: "opslaan:gpx-upload",
+    });
     res.status(201).json({ route });
   } catch (err) {
     req.log.error({ err }, "routes.create failed");
@@ -4472,7 +4767,12 @@ router.post("/", requireAuth, async (req, res) => {
 // fabricated. If the import has no stored track (older imports, or non-GPX
 // sources that don't retain geometry), we honestly refuse (422) instead of
 // inventing a path.
-router.post("/from-activity", requireAuth, async (req, res) => {
+// Route-uit-rit maken = beheer-extra ⇒ Sparki Go (Besluit 2026-002).
+router.post(
+  "/from-activity",
+  requireAuth,
+  requireCommercialFeature("route_library_manage"),
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
   const importId =
@@ -4562,6 +4862,12 @@ router.post("/from-activity", requireAuth, async (req, res) => {
         linkedActivityImportId: imp.id,
       })
       .returning();
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: route!.id,
+      usageType: "SAVED",
+      source: "opslaan:rit",
+    });
     res.status(201).json({ route });
   } catch (err) {
     req.log.error({ err }, "routes.fromActivity failed");
@@ -4573,7 +4879,12 @@ router.post("/from-activity", requireAuth, async (req, res) => {
 // wijzigingen (naam, ondergrond, meetpunten) verhogen het versienummer, zodat
 // eerder vastgelegd versiegebruik eerlijk naar de oude versie blijft wijzen.
 // Niet-inhoudelijk (favoriet, zichtbaarheid, archiveren) laat de versie staan.
-router.put("/:id", requireAuth, async (req, res) => {
+// Hernoemen/bewerken = beheer-extra ⇒ Sparki Go (Besluit 2026-002).
+router.put(
+  "/:id",
+  requireAuth,
+  requireCommercialFeature("route_library_manage"),
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = Number(String(req.params.id));
   if (!Number.isInteger(id)) {
@@ -4679,7 +4990,12 @@ router.put("/:id", requireAuth, async (req, res) => {
 // POST /api/routes/:id/duplicate — kopieer een eigen route (of een met jou
 // gedeelde route naar je eigen bibliotheek; dan wordt de VEILIGE kijkers-
 // geometrie gekopieerd, nooit de exacte start van de eigenaar).
-router.post("/:id/duplicate", requireAuth, async (req, res) => {
+// Dupliceren = beheer-extra ⇒ Sparki Go (Besluit 2026-002).
+router.post(
+  "/:id/duplicate",
+  requireAuth,
+  requireCommercialFeature("route_library_manage"),
+  async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = Number(String(req.params.id));
   if (!Number.isInteger(id)) {
@@ -4721,6 +5037,7 @@ router.post("/:id/duplicate", requireAuth, async (req, res) => {
         name: `${route.name} (kopie)`,
         source: route.source,
         surface: route.surface as RouteSurface,
+        sport: (route as { sport?: string | null }).sport ?? null,
         visibility: "prive",
         status: "ready",
         distanceKm: route.distanceKm,
@@ -4733,6 +5050,12 @@ router.post("/:id/duplicate", requireAuth, async (req, res) => {
         meetpoints: (isOwner ? route.meetpoints : null) as never,
       })
       .returning();
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: copy!.id,
+      usageType: "SAVED",
+      source: "opslaan:duplicaat",
+    });
     res.status(201).json({ route: copy });
   } catch (err) {
     req.log.error({ err }, "routes.duplicate failed");

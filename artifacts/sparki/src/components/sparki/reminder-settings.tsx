@@ -106,7 +106,7 @@ export function ReminderSettingsSection() {
             <Row
               icon={p.enabled ? Bell : BellOff}
               title="Herinneringen aan"
-              desc="De hoofdschakelaar. Staat deze uit, dan stuurt Sparki je geen enkele herinnering — in de app of per e-mail."
+              desc="De hoofdschakelaar. Staat deze uit, dan krijg je geen enkele herinnering — in de app of per e-mail."
             >
               <Toggle
                 on={p.enabled}
@@ -131,7 +131,7 @@ export function ReminderSettingsSection() {
             <Row
               icon={MessageCircleQuestion}
               title="Openstaande vragen"
-              desc="Een herinnering als Sparki nog een korte vraag voor je heeft openstaan om je advies preciezer te maken."
+              desc="Een herinnering als er nog een korte vraag voor je openstaat om je advies preciezer te maken."
               dimmed={!p.enabled}
             >
               <Toggle
@@ -170,7 +170,7 @@ export function ReminderSettingsSection() {
             <Row
               icon={UserCog}
               title="Profiel aanvullen"
-              desc="Eén korte vraag per keer als Sparki nog een belangrijk gegeven mist (bijv. je FTP, gewicht of lengte), zodat je advies klopt."
+              desc="Eén korte vraag per keer als er nog een belangrijk gegeven ontbreekt (bijv. je FTP, gewicht of lengte), zodat je advies klopt."
               dimmed={!p.enabled}
             >
               <Toggle
@@ -240,7 +240,7 @@ function ChannelsAndQuietHours({
           <Row
             icon={Smartphone}
             title="Kanaal: telefoonmelding"
-            desc="Meldingen op je telefoon (push). Zet dit uit en Sparki stuurt niets meer naar je telefoon — behalve bij privacy of veiligheid."
+            desc="Meldingen op je telefoon (push). Zet dit uit en er komt niets meer op je telefoon — behalve bij privacy of veiligheid."
           >
             <Toggle
               on={p.channelPush}
@@ -265,7 +265,7 @@ function ChannelsAndQuietHours({
             desc={
               quietOn
                 ? `Tussen ${p.quietHoursStart} en ${p.quietHoursEnd} blijven push en e-mail stil. Alleen privacy- en veiligheidsmeldingen komen er doorheen.`
-                : "Kies een venster waarin Sparki je niet stoort met push of e-mail. In de app blijft alles gewoon staan."
+                : "Kies een venster waarin je niet gestoord wordt met push of e-mail. In de app blijft alles gewoon staan."
             }
           >
             <Toggle
@@ -388,8 +388,8 @@ function RhythmReadout() {
 
   const learned = r.windowSource === "learned" && r.receptiveHour != null
   const windowLine = learned
-    ? `Je opent Sparki meestal rond ${fmtHour(r.receptiveHour as number)}. Een tik over iets nieuws komt daarom rond dat moment.`
-    : `Sparki kent je ritme nog niet goed genoeg, dus een tik komt op een rustig moment in de avond (tussen ${fmtHour(r.receptiveWindow.startHour)} en ${fmtHour(r.receptiveWindow.endHour)}).`
+    ? `Je opent de app meestal rond ${fmtHour(r.receptiveHour as number)}. Een tik over iets nieuws komt daarom rond dat moment.`
+    : `Je ritme is nog niet goed genoeg bekend, dus een tik komt op een rustig moment in de avond (tussen ${fmtHour(r.receptiveWindow.startHour)} en ${fmtHour(r.receptiveWindow.endHour)}).`
 
   return (
     <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-4 backdrop-blur-md">

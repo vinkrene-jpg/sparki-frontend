@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Bell } from "lucide-react"
 import { useLocation } from "wouter"
@@ -10,6 +10,25 @@ import {
   type AppNotification,
   type NotificationGroup,
 } from "@/hooks/use-notifications"
+import { useUserProfile, type Role } from "@/contexts/UserContext"
+
+// F4: welke rolomgeving hoort bij een meldings-actie? Alleen paden die
+// exclusief bij één rol horen — al het overige opent gewoon in de huidige
+// context.
+const ROLE_PATH_PREFIXES: [string, Role][] = [
+  ["/kinderen", "parent"],
+  ["/meldingen", "parent"],
+  ["/toestemmingen", "parent"],
+  ["/coach/", "coach"],
+]
+
+function roleForPath(url: string): Role | null {
+  const pad = url.split(/[?#]/)[0] ?? ""
+  for (const [prefix, rol] of ROLE_PATH_PREFIXES) {
+    if (pad === prefix || pad.startsWith(prefix.endsWith("/") ? prefix : `${prefix}/`)) return rol
+  }
+  return null
+}
 
 const PRIORITY_COLOR: Record<string, string> = {
   low: "rgba(255,255,255,0.3)",
@@ -159,6 +178,8 @@ function DayGroupRow({
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [, navigate] = useLocation()
+  const { profile, switchRole } = useUserProfile()
+  const switching = useRef(false)
   const { data } = useNotifications()
   const markRead = useMarkNotificationRead()
   const markAll = useMarkAllNotificationsRead()
@@ -169,7 +190,32 @@ export function NotificationBell() {
   function onActivate(n: AppNotification) {
     if (n.readAt == null) markRead.mutate(n.id)
     setOpen(false)
-    if (n.actionUrl) navigate(n.actionUrl)
+    if (!n.actionUrl) return
+    // F4: een melding opent in de juiste context. Wijst de actie naar een
+    // omgeving van een andere rol die dit account óók heeft, wissel dan eerst
+    // de actieve rol (zonder herlogin) en navigeer daarna. Zonder die rol
+    // navigeren we gewoon — de server bewaakt de toegang.
+    const vereist = roleForPath(n.actionUrl)
+    if (
+      vereist &&
+      profile &&
+      profile.activeRole !== vereist &&
+      profile.roles.includes(vereist)
+    ) {
+      // Reviewfix: één wissel tegelijk — nieuwe activaties tijdens een lopende
+      // rolwissel worden genegeerd, en bij een mislukte wissel navigeren we
+      // niet (anders land je in de verkeerde context).
+      if (switching.current) return
+      switching.current = true
+      switchRole(vereist)
+        .then(() => navigate(n.actionUrl!))
+        .catch(() => {})
+        .finally(() => {
+          switching.current = false
+        })
+      return
+    }
+    navigate(n.actionUrl)
   }
 
   return (

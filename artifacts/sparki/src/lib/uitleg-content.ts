@@ -30,8 +30,8 @@ export type Uitleg = {
 export const UITLEG: Record<string, Uitleg> = {
   seizoensdoel: {
     wat: "Je zelf ingestelde gewichtsdoel voor het seizoen (afvallen, aankomen of behoud) met een streefgewicht en de datum waarop het goed moet zitten.",
-    waarom: "Dit doel weegt overal mee waar Sparki een keuze maakt: in je voedingsplan, je dagadvies, je trainingsschema en je analyse. Waar het meeweegt, wordt het ook benoemd — zo zie je dat het doel echt iets doet.",
-    hoe: "De sturing is bewust rustig: maximaal 0,5 kg per week, alleen via je gewone maaltijden op rustige momenten. Trainingen worden altijd volledig gevoed — het doel snijdt nooit in je trainingsvoeding. Onder de 17 stuurt Sparki bewust helemaal niet op gewicht.",
+    waarom: "Dit doel weegt overal mee waar een keuze wordt gemaakt: in je voedingsplan, je dagadvies, je trainingsschema en je analyse. Waar het meeweegt, wordt het ook benoemd — zo zie je dat het doel echt iets doet.",
+    hoe: "De sturing is bewust rustig: maximaal 0,5 kg per week, alleen via je gewone maaltijden op rustige momenten. Trainingen worden altijd volledig gevoed — het doel snijdt nooit in je trainingsvoeding. Onder de 17 wordt bewust helemaal niet op gewicht gestuurd.",
     versie: 1,
   },
   vermogen: {

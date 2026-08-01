@@ -11,9 +11,9 @@ const archetypeAccent: Record<CoachArchetype, string> = {
 }
 
 const archetypeLabel: Record<CoachArchetype, string> = {
-  consistentiecoach: "Sparki coacht op consistentie",
-  wedstrijdcoach: "Sparki coacht op je wedstrijd",
-  prestatiecoach: "Sparki coacht op prestatie",
+  consistentiecoach: "Coaching op consistentie",
+  wedstrijdcoach: "Coaching op je wedstrijd",
+  prestatiecoach: "Coaching op prestatie",
 }
 
 // Coach Decision Card — surfaces the engine output (onderwerp / advies / vraag /
@@ -63,7 +63,7 @@ export function CoachDecisionCard({ decision }: { decision: CoachDecision }) {
           />
           <span className="flex flex-col gap-0.5">
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
-              Sparki let vandaag op
+              Vandaag ligt de focus op
             </span>
             <span className="text-[13px] leading-relaxed text-white/70">
               {decision.prioriteit}

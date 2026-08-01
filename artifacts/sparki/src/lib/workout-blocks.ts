@@ -105,7 +105,7 @@ function rationale(
 ): WorkoutStructure["rationale"] {
   return {
     whyToday,
-    supportsGoal: "Zelf gekozen training — Sparki bewaakt de belasting mee.",
+    supportsGoal: "Zelf gekozen training — de belasting wordt mee bewaakt.",
     whatToFeel,
     tooHardSigns: "Vermogen zakt per herhaling, ademhaling loopt vast, benen verzuren vroeg.",
     tooLightSigns: "Hartslag en ademhaling blijven laag, de blokken voelen als niets.",

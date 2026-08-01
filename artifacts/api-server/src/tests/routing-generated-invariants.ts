@@ -89,6 +89,8 @@ function makeObstacles(
     blockedGates: 0,
     gates: Math.floor(rnd() * 3), // gewone (open) poorten zijn nooit hard
     unpavedSegments: 0,
+    forbiddenFoot: 0,
+    blockedGatesFoot: 0,
   };
   if (verdict !== "hard_blocked") {
     // Schoon: op gravel/MTB mag onverhard gewoon voorkomen (I5).
@@ -300,8 +302,8 @@ async function oracleCases(): Promise<void> {
     ...base,
     candidates: 2,
     perCandidate: [
-      { verdict: "hard_blocked", obstacles: { steps: 0, forbidden: 1, blockedGates: 0, gates: 0, unpavedSegments: 0 } },
-      { verdict: "clean", obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0 } },
+      { verdict: "hard_blocked", obstacles: { steps: 0, forbidden: 1, blockedGates: 0, gates: 0, unpavedSegments: 0, forbiddenFoot: 0, blockedGatesFoot: 0 } },
+      { verdict: "clean", obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0, forbiddenFoot: 0, blockedGatesFoot: 0 } },
     ],
   };
   const o6 = await runScenario(i6);
@@ -311,9 +313,9 @@ async function oracleCases(): Promise<void> {
   // Elke harde oorzaak afzonderlijk, op elk profiel ⇒ altijd weigeren.
   for (const profile of PROFILES) {
     for (const [naam, obs] of [
-      ["fietsverbod", { steps: 0, forbidden: 1, blockedGates: 0, gates: 0, unpavedSegments: 0 }],
-      ["trap", { steps: 1, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0 }],
-      ["afgesloten poort", { steps: 0, forbidden: 0, blockedGates: 1, gates: 0, unpavedSegments: 0 }],
+      ["fietsverbod", { steps: 0, forbidden: 1, blockedGates: 0, gates: 0, unpavedSegments: 0, forbiddenFoot: 0, blockedGatesFoot: 0 }],
+      ["trap", { steps: 1, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0, forbiddenFoot: 0, blockedGatesFoot: 0 }],
+      ["afgesloten poort", { steps: 0, forbidden: 0, blockedGates: 1, gates: 0, unpavedSegments: 0, forbiddenFoot: 0, blockedGatesFoot: 0 }],
     ] as const) {
       const s: Scenario = {
         ...base,
@@ -332,7 +334,7 @@ async function oracleCases(): Promise<void> {
       candidates: 1,
       unpavedTargetShare: null,
       perCandidate: [
-        { verdict: "unverifiable", obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0 } },
+        { verdict: "unverifiable", obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 0, forbiddenFoot: 0, blockedGatesFoot: 0 } },
       ],
     };
     const ou = await runScenario(su);
@@ -349,7 +351,7 @@ async function oracleCases(): Promise<void> {
       perCandidate: [
         {
           verdict: profile === "cycling-road" || profile === "cycling-regular" ? "hard_blocked" : "clean",
-          obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 3 },
+          obstacles: { steps: 0, forbidden: 0, blockedGates: 0, gates: 0, unpavedSegments: 3, forbiddenFoot: 0, blockedGatesFoot: 0 },
         },
       ],
     };

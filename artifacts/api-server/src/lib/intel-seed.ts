@@ -280,13 +280,13 @@ const CARDS: SeedCard[] = [
     sourceLabel: "Trainingsleer — functionele drempel",
     content: {
       simple:
-        "FTP staat voor het hoogste gemiddelde vermogen dat je ongeveer een uur kunt volhouden. Het is een praktische maat voor je duurvermogen. Uit je FTP leidt Sparki je trainingszones af, zodat 'rustig' en 'hard' voor jou de juiste watts betekenen.",
+        "FTP staat voor het hoogste gemiddelde vermogen dat je ongeveer een uur kunt volhouden. Het is een praktische maat voor je duurvermogen. Uit je FTP worden je trainingszones afgeleid, zodat 'rustig' en 'hard' voor jou de juiste watts betekenen.",
       deep:
         "FTP benadert de inspanning waarbij je lichaam nog net in balans is tussen lactaat aanmaken en afvoeren (rond je lactaatdrempel). Train je net onder die drempel, dan verbeter je je vermogen om lang hoog vermogen vast te houden; train je er ver boven, dan werk je aan je piekvermogen maar word je sneller moe. Omdat je zones percentages van je FTP zijn, schuiven al je trainingsprikkels mee zodra je FTP verandert — daarom is het zo belangrijk om hem af en toe opnieuw te bepalen.",
       example:
         "Stel je FTP is 250 watt. Een rustige duurrit zit dan rond 140–185 watt (zone 2), en drempelblokken rond 235–265 watt. Wordt je FTP 270, dan schuiven al die getallen mee omhoog.",
       conclusion:
-        "Ken je FTP, dan weten jij én Sparki precies hoe zwaar elke training voor jóu is. Weet je hem nog niet? Sparki kan een veilige schatting maken en die later bijstellen.",
+        "Ken je FTP, dan is precies bekend hoe zwaar elke training voor jóu is. Weet je hem nog niet? Er kan een veilige schatting gemaakt worden die later wordt bijgesteld.",
       readMinutes: 3,
     },
   },

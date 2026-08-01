@@ -1,0 +1,93 @@
+# PRODUCT- EN OMGEVINGSBESLUIT — ÉÉN WAARHEID PER PLATFORM
+
+Ik zie momenteel verschillende weergaven tussen de mobiele PWA en de mobiele Publish-versie. Dat wil ik structureel oplossen.
+
+## Omgevingen
+
+### Desktop
+
+* **Replit Preview** is de ontwikkelomgeving.
+* Preview mag vooruitlopen op productie.
+* Preview wordt gebruikt voor ontwikkeling, debugging en validatie.
+
+### Telefoon
+
+Er mag **slechts één mobiele waarheid** bestaan.
+
+De volgende drie moeten altijd identiek zijn:
+
+* de geïnstalleerde Sparki PWA;
+* de mobiele browser op de Publish-URL;
+* de gepubliceerde productieversie.
+
+Deze moeten dezelfde:
+
+* interface;
+* functionaliteit;
+* build;
+* accountgegevens;
+* API;
+* database;
+
+gebruiken.
+
+De PWA is dus geen aparte app of aparte release, maar uitsluitend de geïnstalleerde versie van de gepubliceerde Sparki-omgeving.
+
+---
+
+# Onderzoek
+
+Breng volledig in kaart:
+
+1. Welke URL de huidige geïnstalleerde PWA werkelijk gebruikt.
+2. Welke URL de Replit Publish-pagina gebruikt.
+3. Of deze gelijk zijn.
+4. Welke build/commit beide tonen.
+5. Welke API en database beide gebruiken.
+6. Welke service worker actief is.
+7. Welke cache actief is.
+8. Welk manifest gebruikt wordt.
+9. Waarom de PWA en de mobiele Publish-versie momenteel verschillen.
+
+---
+
+# Gewenste eindsituatie
+
+De mobiele productieomgeving heeft:
+
+* één vaste productie-URL;
+* één productie-API;
+* één productie-database;
+* één PWA-manifest;
+* één actieve service worker;
+* betrouwbare cache-invalidatie;
+* een zichtbaar build- of versienummer;
+* automatische of duidelijk aangeboden update na een nieuwe release.
+
+Er mogen geen oude mobiele versies naast elkaar blijven bestaan.
+
+---
+
+# Verificatie
+
+Na herstel:
+
+1. Open de Publish-URL op dezelfde telefoon.
+2. Open de geïnstalleerde PWA.
+3. Vergelijk:
+
+   * buildnummer;
+   * interface;
+   * account;
+   * rollen;
+   * data.
+4. Publiceer vervolgens een kleine zichtbare wijziging.
+5. Controleer dat zowel de mobiele browser als de PWA dezelfde nieuwe build tonen.
+
+---
+
+# Acceptatiecriterium
+
+* Desktop Preview blijft de ontwikkelomgeving.
+* De mobiele Publish-versie en de geïnstalleerde PWA zijn aantoonbaar identiek.
+* Er bestaat nog maar **één mobiele waarheid** voor Sparki.

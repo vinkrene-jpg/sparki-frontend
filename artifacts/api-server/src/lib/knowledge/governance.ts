@@ -154,7 +154,7 @@ export function knowledgeSourceBlock(
     "- Gebruik voor vakinhoudelijke uitspraken UITSLUITEND de bovenstaande broninhoud, de meegegeven sporterdata en de meegegeven deterministische conclusies.",
     "- Verzin NOOIT meetwaarden, diagnoses, bronverwijzingen, onderzoeksresultaten of trainingsregels die hier niet letterlijk staan.",
     "- Verwijs bij gebruik compact naar de bron (bv. \"volgens [K1]\").",
-    "- Ontbreekt kennis over een vraag, zeg dan eerlijk dat Sparki daar geen gecontroleerde bron voor heeft.",
+    "- Ontbreekt kennis over een vraag, zeg dan eerlijk dat daar geen gecontroleerde bron voor is.",
     ...(hasCaution
       ? [
           "- Medisch/voeding/veiligheid: geen diagnose, geen behandeladvies, geen gegarandeerde uitkomst; adviseer bij risico of twijfel een bevoegde professional (arts, sportdiëtist).",

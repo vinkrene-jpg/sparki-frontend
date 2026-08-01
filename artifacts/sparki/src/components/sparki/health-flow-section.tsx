@@ -98,8 +98,8 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
     <div className="mt-3 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] p-4">
       <p className="text-[13px] font-medium text-white/85">Klacht doorgeven</p>
       <p className="mt-0.5 text-[11px] leading-relaxed text-white/40">
-        Dit is een registratie, geen diagnose. Sparki past je begeleiding erop
-        aan; bij twijfel is een arts of fysiotherapeut de juiste plek.
+        Dit is een registratie, geen diagnose. Je begeleiding wordt erop
+        aangepast; bij twijfel is een arts of fysiotherapeut de juiste plek.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {Object.entries(KIND_LABEL).map(([v, l]) => (
@@ -446,7 +446,7 @@ export function HealthFlowSection() {
                   : "Geen actieve klachten gemeld."
                 : overview.healthStatus === "sick"
                   ? "Je staat ziek gemeld — trainingsdruk wordt automatisch laag gehouden."
-                  : "Je staat geblesseerd gemeld — Sparki past je begeleiding aan."}
+                  : "Je staat geblesseerd gemeld — je begeleiding wordt hierop aangepast."}
             </p>
           ) : null}
 

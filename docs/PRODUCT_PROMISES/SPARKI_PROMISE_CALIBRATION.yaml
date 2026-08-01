@@ -3978,7 +3978,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -4098,7 +4098,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -4192,23 +4192,23 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
   - id: CLUB_TEAMOMGEVING_001
     module: Club, coachorganisatie en ploegomgeving
-    subject: "Platte teamstructuur: één lichte beheerder + staf (trainer(s), ploegleider, mechanieker, diëtist) zonder onderlinge hiërarchie; teamtrainer tussen club en zelfstandig in"
+    subject: "Platte teamstructuur: één lichte beheerder + staf (trainer(s), ploegleider, mechanieker, soigneur, medical_staff) zonder onderlinge hiërarchie; teamtrainer tussen club en zelfstandig in — gesynchroniseerd met besluitendocument 01-08-2026 (diëtist = functietype binnen medical_staff)"
     status: needs_calibration
 
     current_state:
       technical_status: partially_implemented
       source_snapshot: 2026-07-30
-      evidence_status: "Teams bestaan als club_teams bínnen een club, met teamtoewijzing van trainers (club_trainer_assignments naar team of groep, read-time einddatum — club-permissions.ts:211-260) en teammanager-rol voor trainings-/wedstrijdbeheer (club-permissions.ts:77-85). Mechanieker bestaat als rol (alleen materiaalvelden — club-permissions.ts:92-95, aparte mechanieker-module met tests). 'Ploegleider' bestaat feitelijk als teammanager (governor-fixtures koppelen ploegleider aan clubRole teammanager); volgauto is een feature, geen rol."
+      evidence_status: "Teams bestaan als club_teams bínnen een club, met teamtoewijzing van trainers (club_trainer_assignments naar team of groep, read-time einddatum — club-permissions.ts:211-260) en teammanager-rol voor trainings-/wedstrijdbeheer (club-permissions.ts:77-85). Mechanieker bestaat als rol (alleen materiaalvelden, aparte mechanieker-module met tests). Sinds 01-08-2026 (SPARKI-BESLUIT-2026-010, HERSTEL TEAM_ABONNEMENT_01): ploegleider is een APARTE server-side rolwaarde naast teammanager (trainings-/wedstrijdbeheer + team-scoped ledeninzage, geen clubbeheer); medic is hernoemd naar medical_staff met beschrijvend functietype (medical_specialty) zonder eigen rechten; soigneur bestaat als rol; bewezen via test:team-organisatie 8/8. Volgauto is een feature, geen rol."
       practice_status: "Teamtoewijzing en mechanieker in dev getest; een zelfstandig team búiten een club is nog nooit gebruikt want het bestaat niet."
       known_limitations:
         - "Een team zonder club (het vastgestelde model: los team met één lichte beheerder die elk teamlid kan zijn) bestaat niet in het schema — teams hangen nu altijd onder clubs met de drielaagse clubstructuur erboven."
-        - "Diëtist bestaat niet als rol of module."
+        - "Diëtist is per besluit 01-08-2026 GEEN losse rol maar een functietype binnen medical_staff; een apart rechtenprofiel per functietype wordt bewust niet gebouwd."
         - "Seizoensbegrenzing van teamtoegang bestaat alleen als einddatum op de toewijzing, niet als expliciet seizoensbegrip."
 
     proposed_promise:
-      text: "Een team is een platte omgeving: één lichte beheerder (elk teamlid kan dat zijn) en een staf van trainer(s), ploegleider, mechanieker en diëtist zonder onderlinge hiërarchie. Een teamtrainer begeleidt uitsluitend zijn toegewezen renners binnen het team/seizoen, met meer individuele rechten dan een clubtrainer maar zonder enige toegang buiten het teamverband."
+      text: "Een team is een platte omgeving: één lichte beheerder (elk teamlid kan dat zijn) en een staf van trainer(s), ploegleider, mechanieker, soigneur en medical_staff (met beschrijvend functietype, o.a. diëtist) zonder onderlinge hiërarchie. Een teamtrainer begeleidt uitsluitend zijn toegewezen renners binnen het team/seizoen, met meer individuele rechten dan een clubtrainer maar zonder enige toegang buiten het teamverband."
       proposed_by: replit
-      rationale: "De teambouwstenen (toewijzing, teammanager, mechanieker, einddatum) bestaan; wat ontbreekt is het zelfstandige team buiten de club, de diëtist-rol en de expliciete seizoensafbakening. Haalbaar als variant op de bestaande club-tabellen (organisatievorm 'team' met versimpelde rollen) in plaats van een tweede rechtenmodel."
+      rationale: "De teambouwstenen (toewijzing, teammanager, ploegleider, mechanieker, soigneur, medical_staff, einddatum) bestaan sinds 01-08-2026; wat ontbreekt is het zelfstandige team buiten de club (organisatietype TEAM, besluitendocument 01-08-2026 §3.2) en de expliciete seizoensafbakening. Haalbaar als variant op de bestaande club-tabellen in plaats van een tweede rechtenmodel; bouw belegd bij TEAM_ONBOARDING_01."
       rene_approved: false
 
     role_model:
@@ -4221,7 +4221,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -4247,7 +4247,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
     replit_definition:
       objective_quality_standard: "Elke teamstaf-rol heeft een eigen, getest rechtenprofiel; teamtoegang eindigt aantoonbaar hard op team- en seizoensgrens (0 lekken in contracttests); het rechtenverschil club- vs teamtrainer is als vaste matrix vastgelegd en getest, niet per route geïmproviseerd."
-      recommended_default: "Teamtrainer = clubtrainer-basis + individuele leesrechten en voorstelrechten voor toegewezen renners (binnen consent), zonder de club-drielaagsstructuur; ploegleider = teammanager-profiel; mechanieker = bestaand materiaalprofiel; diëtist = nieuw leesprofiel beperkt tot voedingsdata binnen consent."
+      recommended_default: "Teamtrainer = clubtrainer-basis + individuele leesrechten en voorstelrechten voor toegewezen renners (binnen consent), zonder de club-drielaagsstructuur; ploegleider = eigen rolwaarde (SUPERSEDED 01-08-2026: eerder 'teammanager-profiel') met trainings-/wedstrijdbeheer en team-scoped ledeninzage; mechanieker = bestaand materiaalprofiel; medical_staff = één centrale rol met beschrijvend functietype (o.a. diëtist), toegang via team-/sporterrelatie + expliciete toestemming + minimale noodzaak, géén rechtenmatrix per functietype."
       technical_limits:
         - "Zolang teams onder clubs hangen, erft een team de clubstructuur; het platte model vereist een organisatievorm zonder verplichte hoofdtrainer/beheerder-lagen."
       assumptions:
@@ -4264,7 +4264,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Teamtoegang eindigt hard op de teamgrens en de seizoens-/toewijzingsgrens: geen enkele stafrol (trainer, ploegleider, mechanieker, diëtist, lichte beheerder) ziet of bewerkt renner-data buiten het eigen team of buiten de actieve toewijzingsperiode."
+        - rule: "Teamtoegang eindigt hard op de teamgrens en de seizoens-/toewijzingsgrens: geen enkele stafrol (trainer, ploegleider, mechanieker, soigneur, medical_staff, lichte beheerder) ziet of bewerkt renner-data buiten het eigen team of buiten de actieve toewijzingsperiode."
           rule_type: hard_blockage
           measurement_level: per_trainer_athlete_context
           aggregate_justification: ""
@@ -4273,7 +4273,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
               proof_stage: designed
               proof_method: "Seizoenseinde-contracttest: verwacht 403/lege lijst; bestaande read-time einddatum-evaluatie (club-permissions.ts:211-260) als implementatiebasis."
               proof_result: not_yet_tested
-        - rule: "Stafrollen zijn geen gezinsrechten: mechanieker bewerkt uitsluitend materiaalvelden, diëtist ziet uitsluitend voedingsgerelateerde data binnen consent, ploegleider beheert organisatie — geen van hen krijgt via de teamvorm gezondheids- of individuele trainingsdata die zijn profiel niet expliciet toestaat."
+        - rule: "Stafrollen zijn geen gezinsrechten: mechanieker bewerkt uitsluitend materiaalvelden, medical_staff ziet uitsluitend data binnen expliciete toestemming en minimale noodzaak (functietype zoals diëtist geeft géén extra rechten), ploegleider beheert wedstrijd/organisatie — geen van hen krijgt via de teamvorm gezondheids- of individuele trainingsdata die zijn rol niet expliciet toestaat."
           rule_type: hard_blockage
           measurement_level: per_actie
           aggregate_justification: ""
@@ -4295,14 +4295,14 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       practice_testers: []
       result: not_tested
       expectation_gap:
-        - "Zelfstandig team, diëtist-rol en seizoensbegrip bestaan nog niet."
+        - "Zelfstandig team (organisatietype TEAM) en expliciet seizoensbegrip bestaan nog niet; rolwaarden ploegleider/soigneur/medical_staff bestaan sinds 01-08-2026 (test:team-organisatie 8/8)."
     product_proof:
       score: null
       status: not_proven
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Na akkoord René: zelfstandige teamvorm als versimpelde organisatie op het bestaande schema ontwerpen, diëtist-profiel definiëren (met hoofdstuk F-grenzen) en de stafrol-matrixtest bouwen."
+      description: "Rolwaarden zijn gerealiseerd (01-08-2026). Rest belegd: zelfstandige teamvorm (organisatietype TEAM) + organogram-onboarding in TEAM_ONBOARDING_01; operationele ploegleiderflow in PLOEGLEIDER_01; stafrol-matrixtest en seizoensbegrip in CLUB_RECHTEN_01/TEAM_ONBOARDING_01."
       approved_for_execution: false
 
   - id: CLUB_EXTERNE_COACH_001
@@ -4335,7 +4335,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -4453,7 +4453,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -4582,7 +4582,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -4707,7 +4707,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -4890,7 +4890,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED
@@ -5012,7 +5012,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         - trainers
       team_structure:
         beheerder: any_team_member
-        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+        staff_peers: [trainer, ploegleider, mechanieker, soigneur, medical_staff]   # besluit 01-08-2026: dietist is functietype binnen medical_staff, geen losse rol
       externe_coach:
         is_role: false
         provenance_tag: IMPORTED

@@ -126,7 +126,7 @@ export function buildFollowUps(
     out.push({
       id: "missing_checkin",
       question: "Hoe voel je je vandaag — fris, oké of vermoeid?",
-      because: "zonder check-in van vandaag mist Sparki je belangrijkste signaal",
+      because: "zonder check-in van vandaag ontbreekt je belangrijkste signaal",
       resolves: ["readiness", "subjective_feel"],
       options: optionsFor("missing_checkin"),
     });
@@ -143,7 +143,7 @@ export function buildFollowUps(
       question:
         "Kun je 's ochtends je rusthartslag of HRV bijhouden de komende dagen?",
       because:
-        "je traint stevig, maar Sparki kan je herstel nu niet objectief volgen",
+        "je traint stevig, maar je herstel is nu niet objectief te volgen",
       resolves: ["hrv_trend", "resting_hr_trend"],
       options: optionsFor("missing_morning_metrics"),
     });
@@ -161,7 +161,7 @@ function questionFor(id: string): string {
     case "sleep_ok_resting_high":
       return "Was je de laatste dagen ziek, gestrest of laat naar bed?";
     case "load_high_feedback_light":
-      return "Wil je dat Sparki je trainingen zwaarder maakt, of houd je deze belasting aan?";
+      return "Wil je zwaardere trainingen, of houd je deze belasting aan?";
     case "power_down_load_up":
       return "Heb je genoeg rustdagen, of stapelt de vermoeidheid zich op?";
     default:

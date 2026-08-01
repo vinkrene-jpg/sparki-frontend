@@ -1,0 +1,30 @@
+# Poort 5b sanity-check — Wandelen & Hiken + mobiele routeplanner definitief (opdracht René 01-08-2026)
+
+delivery: "Wandelen en Hiken als zichtbare routefamilies in Route maken (voet-specifieke geschiktheid: trap/fietsverbod te voet toegestaan, access=private en op-slot-poorten hard geweigerd), mobiele wizard als standaardgedrag zonder flag, sport-kolom op routes, /api/version met commit-SHA en buildtijd voor productie."
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "Route maken (prod-build, echte browserkliks e2e/tests/wandelen-hiken.mjs): 375×667 wandelroute genereren, 412×915 hikeroute genereren, desktop sportkeuze-regressie"
+  - "Route maken mobiele wizard (e2e/tests/routeplanner-mobiel-v2.mjs): 4 telefoonviewports + desktop, 62 checks"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Sportknoppen Fietsen/Wandelen/Hiken wisselen zichtbaar van staat op 375 px, 412 px én desktop; 'Genereer route' levert voor Wandelen en Hiken een echt RESULTAAT met kaartlijn (e2e-screenshots resultaat-wandelen/resultaat-hiken)"
+        result: "pass"
+      - case: "Mobiele wizard-kop en actiebalk zijn standaardgedrag (geen flagrij kan de oude planner activeren — mobile_routeplanner_v2 bestaat niet in code of DB); terugtik naar stap 1 werkt op elke telefoonbreedte"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Te voet is een trap of fietsverbod GEEN blokkade (unit: foot-walking/foot-hiking met steps+forbidden+blockedGates+onverhard wordt geleverd); access=private en locked=yes blijven ook te voet hard geweigerd — de voetregels zijn geen kopie van de fietsregels"
+        result: "pass"
+      - case: "Hardlopen blijft verborgen in de sportkeuze (routefamilie-register: alleen cycling/walking/hiking actief); fietsregels ongewijzigd (loop-quality-gate + routing-generated-invariants 120 scenario's + route-alternates 9/9 groen)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Overpass tijdelijk onbereikbaar ⇒ eerlijke weigering met uitleg ('kaartbron gaf geen antwoord') in plaats van een ongecontroleerde route — in de e2e-run écht opgetreden en gescreenshot; tweede poging leverde daarna een echte route"
+        result: "pass"
+      - case: "/api/version toont echte commit-SHA en buildtijd (bij deploy in de bundel gebakken); ontbreekt de bron, dan letterlijk 'onbekend' — nooit een verzonnen versie. Routes zonder bewijsbare sport krijgen sport=null, nooit een gegokte familie"
+        result: "pass"
+
+verdict: "deliverable"

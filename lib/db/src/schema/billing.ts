@@ -17,7 +17,7 @@ import { userProfilesTable } from "./users";
 // Sparki-beheerde trial-rijen in user_entitlements). Alles hier is additief;
 // legacy-gebruikers (commercial_tier = NULL) gedragen zich byte-identiek.
 
-export const COMMERCIAL_TIERS = ["FREE", "GO", "COMPLETE"] as const;
+export const COMMERCIAL_TIERS = ["FREE", "GO", "COMPLETE", "TEAM"] as const;
 export type CommercialTier = (typeof COMMERCIAL_TIERS)[number];
 
 export const BILLING_INTERVALS = ["month", "year"] as const;
@@ -31,6 +31,15 @@ export const BILLING_STATUSES = [
   "canceled",
   "expired",
   "blocked",
+  // ABONNEMENT_01: eerste betaling niet afgerond — geen rechten, wel een
+  // begrijpelijke melding dat de betaling nog niet rond is.
+  "incomplete",
+  // ABONNEMENT_01: door de gebruiker gepauzeerd bij Stripe — rechten bevroren,
+  // gegevens blijven volledig behouden, hervatten herstelt de rechten.
+  "paused",
+  // ABONNEMENT_01: een Stripe-status die wij niet kennen — fail-closed
+  // (geen rechten) en gelogd, nooit stilzwijgend behouden.
+  "unknown",
 ] as const;
 export type BillingStatus = (typeof BILLING_STATUSES)[number];
 

@@ -61,7 +61,7 @@ export async function connectionReadiness(
       id: "gevoel_slaap",
       titel: "Vul gevoel én slaap in op trainingsdagen",
       uitleg:
-        "Op minimaal 4 trainingsdagen zowel een gevoel-score bij de training als slaapuren in je dagelijkse check-in. Dan kan Sparki slaap en trainingsgevoel vergelijken.",
+        "Op minimaal 4 trainingsdagen zowel een gevoel-score bij de training als slaapuren in je dagelijkse check-in. Dan kunnen slaap en trainingsgevoel vergeleken worden.",
       heb: paired,
       nodig: 4,
       klaar: paired >= 4,
@@ -71,7 +71,7 @@ export async function connectionReadiness(
       id: "ochtendmetingen",
       titel: "Vul ochtendmetingen in",
       uitleg:
-        "Op minimaal 6 dagen een rusthartslag of HRV. Dan kan Sparki je belasting naast je herstel leggen.",
+        "Op minimaal 6 dagen een rusthartslag of HRV. Dan kan je belasting naast je herstel gelegd worden.",
       heb: morgen,
       nodig: 6,
       klaar: morgen >= 6,

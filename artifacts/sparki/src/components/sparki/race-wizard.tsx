@@ -506,7 +506,7 @@ function Step2({
           Automatisch ingevuld
         </h2>
         <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
-          Dit haalde Sparki zelf op — uit de kalender, je profiel en live databronnen.
+          Dit is automatisch opgehaald — uit de kalender, je profiel en live databronnen.
           Bekijk het en ga door.
         </p>
       </div>
@@ -534,7 +534,7 @@ function Step2({
         <div className="flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
           <span className="font-mono text-[9px] uppercase tracking-[0.22em]" style={{ color: ACCENT }}>
-            Sparki haalde erbij
+            Er automatisch bij gezocht
           </span>
         </div>
 
@@ -558,9 +558,9 @@ function Step2({
                 label="Weer op wedstrijddag"
                 reason={
                   insight.weather.reason === "too_far"
-                    ? "Voorspelling beschikbaar vanaf ~16 dagen voor de koers — Sparki vult later aan."
+                    ? "Voorspelling beschikbaar vanaf ~16 dagen voor de koers — dit wordt later aangevuld."
                     : insight.weather.reason === "no_location"
-                    ? "Geef een locatie op, dan haalt Sparki het weer erbij."
+                    ? "Geef een locatie op, dan wordt het weer erbij gehaald."
                     : "Locatie niet gevonden op de kaart — controleer de plaatsnaam."
                 }
               />
@@ -612,7 +612,7 @@ function Step2({
           </div>
         ) : (
           <p className="text-[12px] text-white/45">
-            Sparki kon niets afleiden — geen locatie of datum beschikbaar.
+            Er kon niets worden afgeleid — geen locatie of datum beschikbaar.
           </p>
         )}
       </section>
@@ -1002,7 +1002,7 @@ function Step4({
         <div>
           <h2 className="font-sans text-lg font-light tracking-tight text-white/90">Sparki's voorstel</h2>
           <p className="mt-2 text-[12.5px] text-white/45">
-            Sparki kon geen voorstel opstellen voor deze wedstrijd. Je kunt de velden zelf invullen in stap 5.
+            Er kon geen voorstel worden opgesteld voor deze wedstrijd. Je kunt de velden zelf invullen in stap 5.
           </p>
         </div>
         <WizardNav onBack={onBack} onNext={onNext} nextLabel="Overslaan, doorgaan" />

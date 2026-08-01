@@ -14,3 +14,8 @@ Regels die mijn gedrag direct raken:
 
 **Why:** René's bindende werkafspraak (v3, 30-07-2026) voor de hele reviewketen.
 **How to apply:** bij elke oplevering SHA melden, bewijscategorie expliciet benoemen, en uploads van werkafspraken naar de canonieke docs-map syncen.
+
+## Ontwikkelstraat-update 31-07-2026 (branch docs/sparki-build-packages-2026-07-31)
+- Nieuwe bindende docs: AGENTS.md + docs/governance/SPARKI_ONTWIKKELSTRAAT.md + FLOW_PATCH. Vaste statussen (DRAFT…RELEASED); Replit meldt na eigen tests uitsluitend `BUILD_DELIVERED`, nooit RENE_APPROVED/RELEASED. MIRROR_PROVEN ≠ productvrijgave; alleen René geeft vrij.
+- GitHub-first: geen lokale-only documenten; elke oplevering committen+pushen; eindrapport met start-SHA, eind-SHA, migraties, exitcodes. Mirror toetst alleen een vaste gepushte SHA.
+- Automatisch doorgaan alleen binnen door René vrijgegeven reeks, voorgangers op vereiste status, geen nieuw productbesluit; bij twijfel één concrete vraag.

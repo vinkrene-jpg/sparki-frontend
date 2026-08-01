@@ -13,6 +13,7 @@ import {
   type RacePoint,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import {
   EXPORT_TYPE_LABELS,
   applyProfileElevation,
@@ -382,7 +383,7 @@ router.get("/:raceId/exports", requireAuth, async (req, res) => {
       exports: withFreshness,
       // Eerlijke apparaatuitleg — géén sync-knoppen, geen geteste-claim.
       deviceNote:
-        "Garmin: zet het FIT Course-bestand in de map Garmin/NewFiles of importeer het via Garmin Connect. Wahoo en Hammerhead Karoo lezen GPX- en FIT-routes via hun eigen app (bestand delen of uploaden). Sparki heeft geen directe synchronisatie met deze diensten en doet daar ook geen beloftes over.",
+        "Garmin: zet het FIT Course-bestand in de map Garmin/NewFiles of importeer het via Garmin Connect. Wahoo en Hammerhead Karoo lezen GPX- en FIT-routes via hun eigen app (bestand delen of uploaden). Er is geen directe synchronisatie met deze diensten en daar worden ook geen beloftes over gedaan.",
     });
   } catch (err) {
     req.log.error({ err }, "raceExports.list failed");
@@ -391,7 +392,7 @@ router.get("/:raceId/exports", requireAuth, async (req, res) => {
 });
 
 // POST /api/races/:raceId/exports — bouw + valideer + registreer een export.
-router.post("/:raceId/exports", requireAuth, async (req, res) => {
+router.post("/:raceId/exports", requireAuth, requireCommercialFeature("route_course_points"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const raceId = Number(String(req.params.raceId));
   const type = (req.body ?? {}).type as unknown;
@@ -487,7 +488,7 @@ router.post("/:raceId/exports", requireAuth, async (req, res) => {
 // deterministisch opgebouwd; bij inhoudelijke wijziging sinds de export is de
 // registratie "verouderd" maar de download geeft altijd de ACTUELE inhoud —
 // dat melden we eerlijk via de headers).
-router.get("/:raceId/exports/:exportId/download", requireAuth, async (req, res) => {
+router.get("/:raceId/exports/:exportId/download", requireAuth, requireCommercialFeature("route_course_points"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const raceId = Number(String(req.params.raceId));
   const exportId = Number(String(req.params.exportId));

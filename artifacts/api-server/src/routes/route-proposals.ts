@@ -13,6 +13,9 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { createNotification } from "../lib/notifications";
+// ROUTE_PAKKET_02A — definitief opslaan (kopie/aangepaste route in eigen
+// bibliotheek) telt als routegebruik. Alleen meten, nooit blokkeren.
+import { recordRouteUsageSafe } from "../lib/route-usage-metering";
 import { listFriends } from "../engines/social";
 import {
   getRoutingProvider,
@@ -302,6 +305,14 @@ router.post("/voorstellen/:id/reageer", requireAuth, async (req, res) => {
       dedupeKey: `route-voorstel-reactie:${proposal.id}:${newStatus}`,
     });
 
+    if (copy) {
+      await recordRouteUsageSafe(req.log, {
+        clerkId,
+        routeId: (copy as RouteRow).id,
+        usageType: "SAVED",
+        source: "opslaan:voorstel-accept",
+      });
+    }
     res.json({ ok: true, status: newStatus, route: copy });
   } catch (err) {
     req.log.error({ err }, "routeProposals.respond failed");
@@ -478,6 +489,15 @@ router.post("/voorstellen/:id/aanpassen", requireAuth, async (req, res) => {
       res.status(409).json({ error: "Dit voorstel is al beantwoord" });
       return;
     }
+
+    // ROUTE_PAKKET_02A — de aangepaste kopie staat definitief in de eigen
+    // bibliotheek: telt als routegebruik (alleen meten).
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: adjusted!.id,
+      usageType: "SAVED",
+      source: "opslaan:voorstel-aangepast",
+    });
 
     const names = await displayNameMap([clerkId]);
     const responderName = names.get(clerkId) ?? "Je fietsmaatje";

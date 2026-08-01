@@ -12,6 +12,8 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { AiMemoryPanel } from "@/components/sparki/ai-memory-panel"
 import { ContextMemoryPanel } from "@/components/sparki/context-memory-panel"
 import { SparkiObservations } from "@/components/sparki/insights-section"
+import { useDataState } from "@/hooks/use-data-state"
+import { DataStateNotice } from "@/components/sparki/data-state-notice"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { useLocation } from "wouter"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
@@ -50,7 +52,7 @@ function FtpBars({
         compact
         showOrb={false}
         title="Nog geen FTP-tests"
-        description="Sparki heeft je FTP nodig om je vooruitgang te volgen. Stel je FTP in of log een test."
+        description="Je FTP is nodig om je vooruitgang te volgen. Stel je FTP in of log een test."
         targets={["ftp"]}
         returnTo="/lab"
       />
@@ -131,6 +133,15 @@ function localTodayIso(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
+function LabDataState() {
+  const dataState = useDataState("belasting")
+  if (dataState.isError) {
+    return <DataStateNotice className="mt-2" state={null} queryError={dataState.error} onActie={() => void dataState.refetch()} />
+  }
+  if (!dataState.data || dataState.data.toestand === "ok") return null
+  return <DataStateNotice className="mt-2" state={dataState.data} />
+}
+
 export default function LabPage() {
   const [periodDays, setPeriodDays] = useState<number>(14)
   const { data: load, isLoading: loadLoading } = useLoad()
@@ -150,6 +161,7 @@ export default function LabPage() {
       feelScore: s.feelScore ?? null,
     })),
     ftpWatts: profile?.ftp ?? null,
+    ftpEstimated: profile?.ftpEstimated ?? null,
     weightKg: profile?.weightKg != null ? Number(profile.weightKg) : null,
     todayIso: localTodayIso(),
   })
@@ -201,7 +213,7 @@ export default function LabPage() {
         {profile && (
           <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
             {profile.displayName ?? "Atleet"}
-            {profile.ftp ? ` · FTP ${profile.ftp}W` : ""}
+            {profile.ftp ? ` · FTP ${profile.ftp}W${profile.ftpEstimated ? " (geschat)" : ""}` : ""}
             {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
           </p>
         )}
@@ -209,6 +221,10 @@ export default function LabPage() {
 
       {/* SPARKI ZIET VANDAAG — de nieuwsgierig makende kop van Inzicht */}
       <SparkiObservations />
+
+      {/* Zeven-toestandencontract (DATA_TRUST_01 §4): verouderd / sync bezig /
+          providerfout zichtbaar onderscheiden vóór de cijfers. */}
+      <LabDataState />
 
       {/* 01 PERFORMANCE RADAR */}
       <section className="flex flex-col items-center">
@@ -233,7 +249,7 @@ export default function LabPage() {
         ) : (
           <p className="mt-4 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/35">
             Nog te weinig gegevens voor je radar · Log sessies en check-ins zodat
-            Sparki je capaciteitsprofiel kan opbouwen.
+            je capaciteitsprofiel kan worden opgebouwd.
           </p>
         )}
         {!radarLoading && missingAxes.length > 0 && (

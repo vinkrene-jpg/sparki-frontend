@@ -427,7 +427,7 @@ function LogForm() {
         )}
         {done && (
           <p className="text-[12px]" style={{ color: ACCENT }}>
-            Gelogd — Sparki neemt het mee.
+            Gelogd — het wordt meegenomen.
           </p>
         )}
         {create.isPending && willAssess && (
@@ -504,7 +504,7 @@ function GuidanceSection({ enabled }: { enabled: boolean }) {
       ) : isError || !guidance ? (
         <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
           <p className="text-[13px] leading-relaxed text-white/60">
-            Sparki kon nu geen voedingsbegeleiding maken. Probeer het zo opnieuw.
+            Er kon nu geen voedingsbegeleiding worden gemaakt. Probeer het zo opnieuw.
           </p>
           <button
             type="button"
@@ -520,7 +520,7 @@ function GuidanceSection({ enabled }: { enabled: boolean }) {
         <div className="mt-4 space-y-3">
           {guidance.level === "youth" && (
             <p className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] p-3 text-[12px] leading-relaxed text-white/70">
-              Voor jonge sporters houdt Sparki het licht: eten is brandstof én
+              Voor jonge sporters blijft het licht: eten is brandstof én
               plezier — genoeg en gevarieerd eten telt het meest.
             </p>
           )}
@@ -1397,7 +1397,7 @@ function PreferencesSection({ enabled }: { enabled: boolean }) {
       <SectionLabel title="Jouw voorkeuren & producten" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Allergieën, voorkeuren en wat je zelf in huis hebt. Alleen met jouw
-        toestemming gebruikt Sparki dit in je voedingsplan en analyses.
+        toestemming wordt dit gebruikt in je voedingsplan en analyses.
       </p>
       {!editing ? (
         <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
@@ -1519,7 +1519,7 @@ function FuelingPlanSection() {
         {fueling.isError && (
           <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
             <p className="text-[13px] leading-relaxed text-white/60">
-              Sparki kon nu geen voedingsplan maken. Probeer het zo opnieuw.
+              Er kon nu geen voedingsplan worden gemaakt. Probeer het zo opnieuw.
             </p>
             <button
               type="button"
@@ -1656,7 +1656,7 @@ function DayAnalysisSection() {
         {day.isError && (
           <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
             <p className="text-[13px] leading-relaxed text-white/60">
-              Sparki kon je dag nu niet beoordelen. Probeer het zo opnieuw.
+              Je dag kon nu niet worden beoordeeld. Probeer het zo opnieuw.
             </p>
             <button
               type="button"

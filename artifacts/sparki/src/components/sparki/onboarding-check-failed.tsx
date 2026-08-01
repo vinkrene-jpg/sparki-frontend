@@ -11,7 +11,7 @@ export function OnboardingCheckFailed({ onRetry }: { onRetry: () => void }) {
       className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-8 text-center"
     >
       <p className="text-[15px] font-medium text-white/85">
-        Sparki kan je accountstatus tijdelijk niet controleren
+        Je accountstatus kan tijdelijk niet worden gecontroleerd
       </p>
       <p className="max-w-xs text-[13px] leading-relaxed text-white/45">
         Waarschijnlijk hapert de verbinding even. Je voortgang is veilig

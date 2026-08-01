@@ -17,6 +17,8 @@ import {
   userProfilesTable,
   billingSubscriptionsTable,
   stripeWebhookEventsTable,
+  clubsTable,
+  clubSubscriptionsTable,
   type CommercialTier,
 } from "@workspace/db";
 import {
@@ -24,6 +26,7 @@ import {
   type SubscriptionState,
 } from "./stripe-gateway";
 import { GRACE_DAYS, isValidTier, isPaidTier, isValidInterval } from "./index";
+import { createNotification } from "../notifications";
 import { logger } from "../logger";
 
 export interface StripeEventLike {
@@ -40,27 +43,41 @@ export type WebhookOutcome =
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/** Stripe-subscription.status → interne status. Onbekend ⇒ null (fail-closed). */
-function mapStripeSubStatus(
+/**
+ * Stripe-subscription.status → interne status (ABONNEMENT_01, bindende tabel —
+ * gedocumenteerd in docs/SPARKI_ABONNEMENTSFLOW.md):
+ *   active/trialing → active (of canceled bij cancelAtPeriodEnd)
+ *   past_due/unpaid → grace (zelfde route als invoice.payment_failed)
+ *   canceled/incomplete_expired → expired
+ *   incomplete → incomplete (geen rechten, betaling nog niet rond)
+ *   paused → paused (rechten bevroren, gegevens behouden)
+ *   onbekend → unknown (fail-closed: geen rechten, gelogd)
+ */
+export function mapStripeSubStatus(
   s: SubscriptionState,
-): "active" | "canceled" | "expired" | null {
+): "active" | "canceled" | "expired" | "grace" | "incomplete" | "paused" | "unknown" {
   switch (s.status) {
     case "active":
     case "trialing": // hoort niet voor te komen (proef is Sparki-zijdig)
       return s.cancelAtPeriodEnd ? "canceled" : "active";
     case "past_due":
     case "unpaid":
-      // Grace wordt door invoice.payment_failed gezet; tot die tijd behouden
-      // we de bestaande status — hier geen eigen besluit.
-      return null;
+      // Zelfde graceroute als invoice.payment_failed (herstelpunt 1.1):
+      // rechten blijven tijdens grace, de vervaljob laat ze daarna vervallen.
+      return "grace";
     case "canceled":
     case "incomplete_expired":
       return "expired";
     case "incomplete":
+      return "incomplete";
     case "paused":
-      return null;
+      return "paused";
     default:
-      return null;
+      logger.warn(
+        { stripeStatus: s.status, subscriptionId: s.id },
+        "billing: onbekende Stripe-subscriptionstatus — fail-closed (geen rechten)",
+      );
+      return "unknown";
   }
 }
 
@@ -81,10 +98,95 @@ async function setProfileTier(
     );
 }
 
+// Melding die ná een geslaagde transactie wordt aangemaakt (nooit binnen de
+// transactie: een rollback mag geen melding achterlaten over een overgang die
+// niet heeft plaatsgevonden).
+export interface PendingBillingNotice {
+  clerkId: string;
+  title: string;
+  body: string;
+  dedupeKey: string;
+}
+
+/**
+ * Eerlijke meldingsteksten per statusovergang (herstelpunt 1.8): wat er is
+ * gebeurd, wat je nu wel/niet kunt, en wat je kunt doen. Geen aftelklok,
+ * geen vooraf aangevinkte aankoop, geen onterechte dataverliesclaim.
+ */
+export function billingTransitionNotice(
+  newStatus: string,
+  args: { clerkId: string; subscriptionId: string; graceUntil?: Date | null },
+): PendingBillingNotice | null {
+  const base = {
+    clerkId: args.clerkId,
+    dedupeKey: `billing:${args.subscriptionId}:${newStatus}`,
+  };
+  switch (newStatus) {
+    case "active":
+      return {
+        ...base,
+        title: "Je abonnement is actief",
+        body: "De betaling is gelukt. Alle onderdelen van je pakket zijn beschikbaar.",
+      };
+    case "grace":
+      return {
+        ...base,
+        title: "Betaling niet gelukt",
+        body:
+          "De laatste betaling is niet gelukt. Je houdt nog 7 dagen volledige toegang zodat je dit rustig kunt oplossen. Werk je betaalmethode bij via Abonnement → Beheer. Je gegevens blijven altijd bewaard.",
+      };
+    case "canceled":
+      return {
+        ...base,
+        title: "Opzegging bevestigd",
+        body:
+          "Je abonnement is opgezegd. Je houdt toegang tot het einde van de betaalde periode; daarna gaat je account verder als Gratis. Al je gegevens en routes blijven bewaard.",
+      };
+    case "expired":
+      return {
+        ...base,
+        title: "Je abonnement is gestopt",
+        body:
+          "Je account staat nu op Gratis. Al je gegevens, ritten en routes zijn er nog gewoon. Opnieuw abonneren kan altijd via Abonnement.",
+      };
+    case "incomplete":
+      return {
+        ...base,
+        title: "Betaling nog niet afgerond",
+        body:
+          "Je aanmelding is gestart, maar de eerste betaling is nog niet rond. Tot die tijd zijn de betaalde onderdelen niet beschikbaar. Rond de betaling af via Abonnement → Beheer, of begin opnieuw.",
+      };
+    case "paused":
+      return {
+        ...base,
+        title: "Je abonnement is gepauzeerd",
+        body:
+          "De betaalde onderdelen staan tijdelijk stil. Al je gegevens blijven volledig bewaard. Hervatten kan op elk moment via Abonnement → Beheer.",
+      };
+    case "blocked":
+      return {
+        ...base,
+        title: "Abonnement stopgezet na terugbetaling",
+        body:
+          "Je betaling is volledig terugbetaald en het abonnement is stopgezet. Je gegevens blijven bewaard. Vragen? Neem contact op via de helpdesk.",
+      };
+    case "unknown":
+      return {
+        ...base,
+        title: "Abonnementstatus onduidelijk",
+        body:
+          "We kregen een status van de betaalprovider die we niet kennen. Uit voorzorg staan de betaalde onderdelen uit; je gegevens zijn veilig. We zoeken dit uit — neem gerust contact op via de helpdesk.",
+      };
+    default:
+      return null;
+  }
+}
+
 async function upsertFromSubscriptionState(
   tx: Tx,
   state: SubscriptionState,
   eventCreated: Date,
+  notices: PendingBillingNotice[],
 ): Promise<string> {
   const clerkId = state.clerkId;
   if (!clerkId) return "genegeerd: subscription zonder clerk_id-metadata";
@@ -108,6 +210,19 @@ async function upsertFromSubscriptionState(
   const interval = isValidInterval(state.interval) ? state.interval : "month";
   const now = new Date();
 
+  // Grace via subscriptionstatus (past_due/unpaid): monotoon — nooit later
+  // zetten dan wat er staat (zelfde regel als invoice.payment_failed).
+  let graceUntil: Date | null | undefined = undefined;
+  if (mapped === "grace") {
+    const candidate = new Date(
+      eventCreated.getTime() + GRACE_DAYS * 24 * 60 * 60 * 1000,
+    );
+    graceUntil =
+      existing?.graceUntil && existing.graceUntil <= candidate
+        ? existing.graceUntil
+        : candidate;
+  }
+
   if (!existing) {
     await tx.insert(billingSubscriptionsTable).values({
       clerkId,
@@ -115,9 +230,10 @@ async function upsertFromSubscriptionState(
       stripeSubscriptionId: state.id,
       tier,
       interval,
-      status: mapped ?? "expired", // onbekend ⇒ fail-closed, nooit betaald
+      status: mapped, // onbekend is al expliciet "unknown" (fail-closed)
       stripePriceId: state.priceId,
       currentPeriodEnd: state.currentPeriodEnd,
+      graceUntil: graceUntil ?? null,
       lastEventCreated: eventCreated,
       createdAt: now,
       updatedAt: now,
@@ -133,27 +249,152 @@ async function upsertFromSubscriptionState(
         stripeCustomerId: state.customerId,
         tier,
         interval,
-        // Onbekende Stripe-status ⇒ bestaande status behouden (geen besluit).
-        status: mapped ?? existing.status,
+        status: mapped,
         stripePriceId: state.priceId ?? existing.stripePriceId,
         currentPeriodEnd: state.currentPeriodEnd ?? existing.currentPeriodEnd,
-        // Betaald & actueel ⇒ grace-teller vervalt via invoice.paid; hier laten staan.
+        // Betaald & actueel ⇒ grace-teller vervalt via invoice.paid; alleen
+        // een grace-overgang zet hem hier (monotoon).
+        ...(graceUntil !== undefined ? { graceUntil } : {}),
         lastEventCreated: eventCreated,
         updatedAt: now,
       })
       .where(eq(billingSubscriptionsTable.id, existing.id));
   }
 
-  if (mapped === "active" || mapped === "canceled") {
-    // canceled behoudt tier-toegang tot periode-einde (vervaljob zet FREE).
+  if (mapped === "active" || mapped === "canceled" || mapped === "grace") {
+    // canceled behoudt tier-toegang tot periode-einde, grace tijdens de
+    // graceperiode (vervaljob zet daarna FREE).
     await setProfileTier(tx, clerkId, tier);
-  } else if (mapped === "expired") {
+  } else if (
+    mapped === "expired" ||
+    mapped === "incomplete" ||
+    mapped === "paused" ||
+    mapped === "unknown"
+  ) {
+    // Fail-closed / bevroren: geen betaalde rechten. Gegevens blijven
+    // onaangeraakt; paused kan via een later active-event herstellen.
     await setProfileTier(tx, clerkId, "FREE");
   }
-  return `subscription ${state.id} → ${mapped ?? "(status onbekend, fail-closed)"}`;
+
+  if (existing?.status !== mapped) {
+    const notice = billingTransitionNotice(mapped, {
+      clerkId,
+      subscriptionId: state.id,
+      graceUntil: graceUntil ?? null,
+    });
+    if (notice) notices.push(notice);
+  }
+
+  // TEAM_ABONNEMENT_01: centrale facturatie — een TEAM-subscription met
+  // club_id-metadata stuurt het clubabonnement van die ene organisatie.
+  if (tier === "TEAM") {
+    const teamDetail = await syncTeamClubSubscription(tx, state, clerkId, mapped);
+    return `subscription ${state.id} → ${mapped}; ${teamDetail}`;
+  }
+  return `subscription ${state.id} → ${mapped}`;
 }
 
-async function handleEvent(tx: Tx, event: StripeEventLike): Promise<string> {
+// Vertaal de billing-status naar de bestaande club_subscriptions-status.
+// Fail-closed: alles wat niet aantoonbaar betaald-en-actueel is, blokkeert
+// nieuwe toevoegingen (bestaande data blijft altijd staan).
+function teamClubStatus(mapped: string): "active" | "blocked" | "ended" {
+  if (mapped === "active" || mapped === "grace" || mapped === "canceled") return "active";
+  if (mapped === "expired") return "ended";
+  return "blocked"; // paused | incomplete | unknown | blocked
+}
+
+// Terminale overgangen (deleted/refund/expiry) moeten óók doorwerken naar de
+// gekoppelde club, anders blijft een opgezegd team stilzwijgend actief.
+export async function endTeamClubByBillingRef(
+  tx: Tx,
+  subscriptionId: string | null | undefined,
+  status: "blocked" | "ended",
+): Promise<void> {
+  if (!subscriptionId) return;
+  await tx
+    .update(clubSubscriptionsTable)
+    .set({ status, updatedAt: new Date() })
+    .where(
+      and(
+        eq(clubSubscriptionsTable.billingRef, subscriptionId),
+        eq(clubSubscriptionsTable.packageKey, "team"),
+      ),
+    );
+}
+
+async function syncTeamClubSubscription(
+  tx: Tx,
+  state: SubscriptionState,
+  clerkId: string,
+  mapped: string,
+): Promise<string> {
+  const clubId = state.clubId ?? null;
+  if (clubId == null) return "team: genegeerd (geen club_id-metadata)";
+  const [club] = await tx.select().from(clubsTable).where(eq(clubsTable.id, clubId));
+  if (!club) return `team: genegeerd (club ${clubId} onbekend)`;
+  // Fail-closed eigendomscheck: alleen de eigenaar van de club mag met zijn
+  // subscription het clubabonnement sturen (metadata is geen autorisatie).
+  if (club.ownerClerkId !== clerkId) {
+    return `team: genegeerd (clerk is geen eigenaar van club ${clubId})`;
+  }
+  const status = teamClubStatus(mapped);
+  const now = new Date();
+  const [existingSub] = await tx
+    .select()
+    .from(clubSubscriptionsTable)
+    .where(eq(clubSubscriptionsTable.clubId, clubId));
+  // Exclusiviteit per club: als er al een ANDERE subscription is gekoppeld
+  // die nog leeft (active/grace), mag een tweede of verlaat event die niet
+  // zomaar vervangen (laat event van een oude sub ≠ de actuele facturatie).
+  if (
+    existingSub?.packageKey === "team" &&
+    existingSub.billingRef &&
+    existingSub.billingRef !== state.id
+  ) {
+    const [currentRow] = await tx
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, existingSub.billingRef));
+    if (currentRow && (currentRow.status === "active" || currentRow.status === "grace")) {
+      return `team: genegeerd (club ${clubId} is al gekoppeld aan actieve subscription ${existingSub.billingRef})`;
+    }
+  }
+  // maxMembers blijft configureerbaar: een bestaande team-configuratie wordt
+  // nooit stilzwijgend teruggezet; alleen bij eerste activering geldt 50.
+  const keepLimits = existingSub?.packageKey === "team";
+  if (existingSub) {
+    await tx
+      .update(clubSubscriptionsTable)
+      .set({
+        packageKey: "team",
+        status,
+        trialEndsAt: null,
+        ...(keepLimits ? {} : { maxMembers: 50, maxTrainers: 10 }),
+        billingRef: state.id,
+        updatedAt: now,
+      })
+      .where(eq(clubSubscriptionsTable.clubId, clubId));
+  } else {
+    await tx.insert(clubSubscriptionsTable).values({
+      clubId,
+      packageKey: "team",
+      status,
+      trialEndsAt: null,
+      maxMembers: 50,
+      maxTrainers: 10,
+      billingRef: state.id,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+  return `team: club ${clubId} → ${status}`;
+}
+
+async function handleEvent(
+  tx: Tx,
+  event: StripeEventLike,
+  notices: PendingBillingNotice[],
+): Promise<string> {
   const gateway = getStripeGateway();
   const obj = event.data.object;
   const eventCreated = new Date(event.created * 1000);
@@ -174,7 +415,7 @@ async function handleEvent(tx: Tx, event: StripeEventLike): Promise<string> {
       if (state.clerkId && metaClerk && state.clerkId !== metaClerk) {
         return "genegeerd: clerk_id-mismatch tussen sessie en subscription (fail-closed)";
       }
-      return await upsertFromSubscriptionState(tx, state, eventCreated);
+      return await upsertFromSubscriptionState(tx, state, eventCreated, notices);
     }
 
     case "customer.subscription.created":
@@ -194,12 +435,22 @@ async function handleEvent(tx: Tx, event: StripeEventLike): Promise<string> {
           .set({ status: "expired", lastEventCreated: eventCreated, updatedAt: new Date() })
           .where(eq(billingSubscriptionsTable.id, existing.id));
         await setProfileTier(tx, existing.clerkId, "FREE");
+        if (existing.tier === "TEAM") {
+          await endTeamClubByBillingRef(tx, subId, "ended");
+        }
+        if (existing.status !== "expired") {
+          const n = billingTransitionNotice("expired", {
+            clerkId: existing.clerkId,
+            subscriptionId: subId,
+          });
+          if (n) notices.push(n);
+        }
         return `subscription ${subId} → expired (deleted)`;
       }
       // Herlezen bij Stripe: API-staat is de waarheid (lost out-of-order op).
       const state = await gateway.getSubscription(subId);
       if (!state) return "genegeerd: subscription niet gevonden bij Stripe";
-      return await upsertFromSubscriptionState(tx, state, eventCreated);
+      return await upsertFromSubscriptionState(tx, state, eventCreated, notices);
     }
 
     case "invoice.paid": {
@@ -217,14 +468,27 @@ async function handleEvent(tx: Tx, event: StripeEventLike): Promise<string> {
         // Invoice vóór subscription-event: herlezen en aanmaken.
         const state = await gateway.getSubscription(invoice.subscriptionId);
         if (!state) return "genegeerd: subscription niet gevonden bij Stripe";
-        return await upsertFromSubscriptionState(tx, state, eventCreated);
+        return await upsertFromSubscriptionState(tx, state, eventCreated, notices);
       }
       if (existing.status === "blocked") return "genegeerd: subscription is blocked";
       const state = await gateway.getSubscription(invoice.subscriptionId);
+      // Fail-closed (review 31-07-2026): een (verlate) invoice.paid mag nooit
+      // rechten herstellen op basis van de betaling alleen — de ACTUELE
+      // Stripe-subscriptionstatus is de waarheid.
+      if (!state) {
+        return "genegeerd: subscription niet gevonden bij Stripe (invoice herstelt niets)";
+      }
+      const mappedNow = mapStripeSubStatus(state);
+      if (mappedNow !== "active" && mappedNow !== "canceled") {
+        // Actuele staat is niet betaald-actief (bv. paused/incomplete/unknown/
+        // grace): verwerk de echte staat via het centrale pad, geen tierherstel.
+        return await upsertFromSubscriptionState(tx, state, eventCreated, notices);
+      }
+      const paidStatus = mappedNow;
       await tx
         .update(billingSubscriptionsTable)
         .set({
-          status: state?.cancelAtPeriodEnd ? "canceled" : "active",
+          status: paidStatus,
           graceUntil: null, // betaling gelukt ⇒ grace-teller gewist
           currentPeriodEnd: state?.currentPeriodEnd ?? existing.currentPeriodEnd,
           lastEventCreated: eventCreated,
@@ -233,7 +497,16 @@ async function handleEvent(tx: Tx, event: StripeEventLike): Promise<string> {
         .where(eq(billingSubscriptionsTable.id, existing.id));
       const tier = isPaidTier(existing.tier) ? existing.tier : null;
       if (tier) await setProfileTier(tx, existing.clerkId, tier);
-      return `invoice ${invId} betaald → active`;
+      // Herstelmelding alleen wanneer dit echt een overgang is (bv. na grace
+      // of paused) — een routinebetaling op active meldt niets.
+      if (existing.status !== paidStatus && existing.status !== "active") {
+        const n = billingTransitionNotice(paidStatus, {
+          clerkId: existing.clerkId,
+          subscriptionId: invoice.subscriptionId,
+        });
+        if (n) notices.push(n);
+      }
+      return `invoice ${invId} betaald → ${paidStatus}`;
     }
 
     case "invoice.payment_failed": {
@@ -270,6 +543,14 @@ async function handleEvent(tx: Tx, event: StripeEventLike): Promise<string> {
         .where(eq(billingSubscriptionsTable.id, existing.id));
       // Rechten blijven tijdens grace intact (tier blijft staan); het
       // verlopen gebeurt in de dagelijkse vervaljob, niet hier.
+      if (existing.status !== "grace") {
+        const n = billingTransitionNotice("grace", {
+          clerkId: existing.clerkId,
+          subscriptionId: invoice.subscriptionId,
+          graceUntil,
+        });
+        if (n) notices.push(n);
+      }
       return `invoice ${invId} mislukt → grace tot ${graceUntil.toISOString()}`;
     }
 
@@ -297,10 +578,20 @@ async function handleEvent(tx: Tx, event: StripeEventLike): Promise<string> {
         .set({ status: "blocked", lastEventCreated: eventCreated, updatedAt: new Date() })
         .where(eq(billingSubscriptionsTable.id, existing.id));
       await setProfileTier(tx, existing.clerkId, "FREE");
+      if (existing.tier === "TEAM") {
+        await endTeamClubByBillingRef(tx, existing.stripeSubscriptionId, "blocked");
+      }
       logger.warn(
         { chargeId, clerkId: existing.clerkId },
         "billing: volledige (cumulatieve) refund — entitlement ingetrokken (blocked)",
       );
+      if (existing.status !== "blocked") {
+        const n = billingTransitionNotice("blocked", {
+          clerkId: existing.clerkId,
+          subscriptionId: existing.stripeSubscriptionId,
+        });
+        if (n) notices.push(n);
+      }
       return "volledige refund → blocked";
     }
 
@@ -321,7 +612,8 @@ export async function processStripeEvent(
   const digest = createHash("sha256")
     .update(typeof rawPayload === "string" ? Buffer.from(rawPayload) : rawPayload)
     .digest("hex");
-  return await db.transaction(async (tx) => {
+  const notices: PendingBillingNotice[] = [];
+  const outcome = await db.transaction(async (tx) => {
     const inserted = await tx
       .insert(stripeWebhookEventsTable)
       .values({ eventId: event.id, type: event.type, payloadDigest: digest })
@@ -330,7 +622,7 @@ export async function processStripeEvent(
     if (inserted.length === 0) {
       return { outcome: "duplicate" } as const;
     }
-    const detail = await handleEvent(tx, event);
+    const detail = await handleEvent(tx, event, notices);
     await tx
       .update(stripeWebhookEventsTable)
       .set({ processedAt: new Date(), result: detail })
@@ -340,4 +632,24 @@ export async function processStripeEvent(
     }
     return { outcome: "processed", detail } as const;
   });
+  // Meldingen pas ná een geslaagde commit (rollback ⇒ geen melding); dedupeKey
+  // maakt her-levering van hetzelfde event meldings-idempotent. Best-effort:
+  // een meldingsfout maakt de webhookverwerking niet ongedaan (gelogd).
+  if (outcome.outcome === "processed") {
+    for (const n of notices) {
+      try {
+        await createNotification({
+          clerkId: n.clerkId,
+          type: "system",
+          title: n.title,
+          body: n.body,
+          source: "billing",
+          dedupeKey: n.dedupeKey,
+        });
+      } catch (err) {
+        logger.error({ err, dedupeKey: n.dedupeKey }, "billing: melding aanmaken mislukt");
+      }
+    }
+  }
+  return outcome;
 }

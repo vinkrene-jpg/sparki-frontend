@@ -1,0 +1,31 @@
+# Poort 5b sanity-check rapport — TEAM_ONBOARDING_01
+
+delivery: "Zelfstandige Team-organisatie: aanmaken (CLUB/TEAM-keuze), organogram-kaarten als onboardinghulp, stafplekken, vaste seizoensstaf in concept, hervatbare onboarding en activatie"
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "Start-kaart (/club?code=…): keuze Club / Zelfstandig team, teamnaam, aanmaken — echte browserkliks desktop 1440×900 en mobiel 402×874 (e2e/tests/team-onboarding.mjs, prod-build)"
+  - "Teambeheer (/club/beheer): 'Team in oprichting' met teamstappen, organogram-kaarten, stafplekken, stafrol-toewijzing"
+  - "API: POST /api/clubs (organisationType), GET /api/clubs/organogram-templates, POST /:id/organogram, GET/POST/DELETE /:id/staff-slots, GET /:id/onboarding, POST /:id/activate"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Organogram-kaarten zijn echte knoppen: klik voert POST /organogram uit, meldt het resultaat ('Kaart toegepast: … toegevoegd') en de stafplekkenlijst ververst direct (e2e-klik + test:team-onboarding scenario 3/4)"
+        result: "pass"
+      - case: "'Stafplek toevoegen' en 'Plek verwijderen' muteren echt (201/200) met invalidate; verwijderen raakt nooit een lidmaatschap (scenario 5)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Team-onderdelen (kaarten, stafplekken, stafrollen teammanager/ploegleider/soigneur/medische staf) verschijnen alleen bij organisationType TEAM; een club-onboarding blijft exact de bestaande clubvariant (regressie test:club-onboarding 15/15)"
+        result: "pass"
+      - case: "Functietype-select alleen bij Medische staf; server weigert functietype bij andere rollen en onbekende functietypes met 400 (scenario 5/6)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Kaarten tonen rolplekken en selectienamen, nooit voorbeeldpersonen of mocknamen (scenario 2 controleert de catalogus); namen verschijnen pas na echte toewijzing/acceptatie"
+        result: "pass"
+      - case: "Lege toestand stafplekken is een eerlijke uitleg ('Nog geen stafplekken…') met directe actie, geen dummy-lijst; onboarding-missing meldt eerlijk wat ontbreekt (contact → 422 bij activatie, scenario 7/8)"
+        result: "pass"
+
+verdict: "deliverable"

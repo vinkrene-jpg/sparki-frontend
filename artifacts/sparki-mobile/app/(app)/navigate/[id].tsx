@@ -1607,11 +1607,33 @@ export default function NavigateScreen() {
                     </Pressable>
                   ))
                 )}
-                {startShare.isError && (
-                  <Text style={[styles.shareNote, { color: c.destructive }]}>
-                    {(startShare.error as Error)?.message ?? "Delen starten lukte niet."}
-                  </Text>
-                )}
+                {startShare.isError &&
+                  (() => {
+                    // Besluit 2026-002: live meekijken hoort bij Sparki
+                    // Compleet. De server blijft leidend (403
+                    // upgrade_required) — hier alleen een rustige, eerlijke
+                    // uitleg in plaats van een kale foutmelding.
+                    const err = startShare.error as {
+                      status?: number;
+                      data?: { code?: string; error?: string };
+                      message?: string;
+                    } | null;
+                    const upgrade =
+                      err?.status === 403 && err?.data?.code === "upgrade_required";
+                    return (
+                      <Text
+                        style={[
+                          styles.shareNote,
+                          { color: upgrade ? c.mutedForeground : c.destructive },
+                        ]}
+                      >
+                        {upgrade
+                          ? (err?.data?.error ??
+                            "Vrienden en ploeg live op de kaart hoort bij Sparki Compleet.")
+                          : (err?.message ?? "Delen starten lukte niet.")}
+                      </Text>
+                    );
+                  })()}
               </ScrollView>
             )}
           </View>

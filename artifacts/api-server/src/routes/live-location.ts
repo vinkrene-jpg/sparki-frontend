@@ -13,6 +13,7 @@ import {
   type LiveLocationAudience,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import { athleteAgeTier } from "../lib/parent-permissions";
 import {
   classifyAge,
@@ -42,7 +43,7 @@ async function acceptedFriendIds(clerkId: string): Promise<Set<string>> {
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           eq(friendLinksTable.requesterClerkId, clerkId),
           eq(friendLinksTable.addresseeClerkId, clerkId),
@@ -62,7 +63,7 @@ async function guardianIds(athleteClerkId: string): Promise<Set<string>> {
     .where(
       and(
         eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
-        eq(parentAthleteLinksTable.status, "accepted"),
+        eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return new Set(rows.map((r) => r.parent));
@@ -119,7 +120,7 @@ async function endSessionsFor(clerkId: string, now: Date): Promise<number> {
 
 // GET /api/live-location/group-options — groepsritten van VANDAAG waarvoor
 // deze gebruiker is aangemeld (voor de deelkeuze bij navigatiestart).
-router.get("/group-options", requireAuth, async (req, res) => {
+router.get("/group-options", requireAuth, requireCommercialFeature("live_friends_map"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const now = new Date();
@@ -153,7 +154,7 @@ router.get("/group-options", requireAuth, async (req, res) => {
 });
 
 // POST /api/live-location/sessions — start een deelsessie (expliciete opt-in).
-router.post("/sessions", requireAuth, async (req, res) => {
+router.post("/sessions", requireAuth, requireCommercialFeature("live_friends_map"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
   const audience = body.audience as LiveLocationAudience;
@@ -252,7 +253,7 @@ router.post("/sessions", requireAuth, async (req, res) => {
 });
 
 // GET /api/live-location/sessions/current — eigen actieve sessie (indicator).
-router.get("/sessions/current", requireAuth, async (req, res) => {
+router.get("/sessions/current", requireAuth, requireCommercialFeature("live_friends_map"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const now = new Date();
@@ -300,7 +301,7 @@ router.get("/sessions/current", requireAuth, async (req, res) => {
 });
 
 // DELETE /api/live-location/sessions/current — stop delen (direct, server-side).
-router.delete("/sessions/current", requireAuth, async (req, res) => {
+router.delete("/sessions/current", requireAuth, requireCommercialFeature("live_friends_map"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const ended = await endSessionsFor(clerkId, new Date());
@@ -313,7 +314,7 @@ router.delete("/sessions/current", requireAuth, async (req, res) => {
 
 // POST /api/live-location/positions — eigen positie bijwerken (alleen met
 // actieve sessie; geen sessie = 409, er wordt niets opgeslagen).
-router.post("/positions", requireAuth, async (req, res) => {
+router.post("/positions", requireAuth, requireCommercialFeature("live_friends_map"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
   const pos = validPosition(body.lat, body.lon);
@@ -377,7 +378,7 @@ router.post("/positions", requireAuth, async (req, res) => {
 
 // GET /api/live-location/friends — posities die IK mag zien. Autorisatie
 // wordt hier op leesmoment volledig opnieuw gecontroleerd.
-router.get("/friends", requireAuth, async (req, res) => {
+router.get("/friends", requireAuth, requireCommercialFeature("live_friends_map"), async (req, res) => {
   const viewer = getClerkUserId(req)!;
   try {
     const now = new Date();

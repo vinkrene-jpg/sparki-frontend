@@ -36,7 +36,7 @@ router.get("/:workoutId", requireAuth, requireCommercialFeature("performance_lab
     console.error("core prediction failed", err);
     res
       .status(500)
-      .json({ error: "Sparki kon de voorspelling nu niet maken" });
+      .json({ error: "De voorspelling kon nu niet gemaakt worden" });
   }
 });
 

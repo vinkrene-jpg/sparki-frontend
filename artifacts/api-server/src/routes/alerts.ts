@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   db,
   coachAthleteLinksTable,
@@ -56,7 +56,7 @@ router.post("/crash", requireAuth, async (req, res) => {
     .where(
       and(
         eq(coachAthleteLinksTable.athleteClerkId, clerkId),
-        eq(coachAthleteLinksTable.status, "accepted"),
+        eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
       ),
     );
   const parents = await db
@@ -65,7 +65,7 @@ router.post("/crash", requireAuth, async (req, res) => {
     .where(
       and(
         eq(parentAthleteLinksTable.athleteClerkId, clerkId),
-        eq(parentAthleteLinksTable.status, "accepted"),
+        eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
       ),
     );
 
