@@ -60,7 +60,7 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Dieptecomponent (CMP-40, zweefkaart) | GEBOUWD (F2, flag uit) | DsCard-uitbreiding `diepte` + moment "training voltooid" in TodayLayer; `test:zweefkaart` 5/5; flag `media_uitleg_dieptekaart` |
 | Herbruikbare mediaspeler / ondertiteling / posters | NIET GESTART | geen speler aangetroffen (F3) |
 | Contentmodel media (KENNIS_01-contract) | ONTBREEKT | `knowledge_items` mist blokkerende velden (O-1) |
-| Gebruikersstatus mediacontent | NIET GESTART | geen generieke statusrij (F4) |
+| Gebruikersstatus mediacontent | GEBOUWD (F4) | tabel `media_content_status` (migratie 0016) + `/api/media-status` (4 statuscalls); D-1/D-2 server-side geweigerd + gelogd, D-3 max 1 her-aanbod per versie, D-4 historie blijft, D-7 cross-account; `test:media-status` 8/8 |
 | Uitlegflow-basis | GEDEELTELIJK | uitleg-registry + UitlegDot bestaan; versievastheid ontbreekt (O-6) |
 | Academy-omgeving | NIET GESTART | route + Help-code herbruikbaar vastgesteld (F8) |
 | Niet-acute coachmelding-grond | AANWEZIG | decideCoach + CoachAnalysisCard (O-4 vervuld) |
