@@ -190,7 +190,8 @@
     "test:route-search": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-search",
     "test:route-search-sharing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-search-sharing",
     "test:club-onboarding": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-onboarding",
-    "test:team-organisatie": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs team-organisatie"
+    "test:team-organisatie": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs team-organisatie",
+    "test:team-onboarding": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs team-onboarding"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

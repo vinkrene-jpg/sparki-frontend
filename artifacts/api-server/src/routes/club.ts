@@ -32,8 +32,14 @@ import {
   clubImportBatchesTable,
   clubImportRowsTable,
   adminOpsLogTable,
+  organisationStaffSlotsTable,
+  organisationTypes,
   type ClubRole,
 } from "@workspace/db";
+import {
+  ORGANOGRAM_TEMPLATES,
+  getOrganogramTemplate,
+} from "../lib/organogram-templates";
 import { billingSubscriptionsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { createNotification } from "../lib/notifications";
@@ -143,11 +149,28 @@ async function profilesByIds(ids: string[]) {
 
 // ── Club aanmaken & mijn clubs ────────────────────────────────────────────────
 
+// TEAM_ONBOARDING_01: catalogus van organogram-kaarten. Statisch en
+// server-side — kaarten bevatten uitsluitend bestaande rollen en rolplekken,
+// nooit voorbeeldpersonen. Vóór de /:clubId-routes gedeclareerd.
+router.get("/organogram-templates", requireAuth, (_req, res) => {
+  res.json({ templates: ORGANOGRAM_TEMPLATES });
+});
+
 router.post("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const name = str(req.body?.name);
   if (!name) {
-    res.status(400).json({ error: "Geef de club een naam." });
+    res.status(400).json({ error: "Geef de organisatie een naam." });
+    return;
+  }
+  // TEAM_ONBOARDING_01: organisatietype op de bestaande container. Rauwe
+  // invoer wordt EERST gevalideerd (nooit stil naar CLUB terugvallen bij een
+  // onbekende waarde).
+  const rawType = req.body?.organisationType;
+  const organisationType =
+    rawType === undefined || rawType === null ? "CLUB" : String(rawType);
+  if (!organisationTypes.includes(organisationType as (typeof organisationTypes)[number])) {
+    res.status(400).json({ error: "Onbekend organisatietype. Kies CLUB of TEAM." });
     return;
   }
   try {
@@ -168,6 +191,9 @@ router.post("/", requireAuth, async (req, res) => {
           contactPhone: str(req.body?.contactPhone),
           joinCode: generateJoinCode(),
           ownerClerkId: clerkId,
+          organisationType,
+          // Beschrijvend subtype: een zelfstandig team is "ploeg".
+          organisationKind: organisationType === "TEAM" ? "ploeg" : "club",
         })
         .returning();
       await tx.insert(clubMembersTable).values({
@@ -2974,14 +3000,22 @@ router.get("/:clubId/onboarding", requireAuth, async (req, res) => {
       .select({ id: clubMembersTable.id, role: clubMembersTable.role })
       .from(clubMembersTable)
       .where(and(eq(clubMembersTable.clubId, club.id), isNull(clubMembersTable.endedAt)));
+    // TEAM_ONBOARDING_01: stafplekken tellen mee in de hervatbare toestand.
+    const stafSlots = await db
+      .select({ id: organisationStaffSlotsTable.id })
+      .from(organisationStaffSlotsTable)
+      .where(eq(organisationStaffSlotsTable.clubId, club.id));
     res.json({
       status: club.status,
+      organisationType: club.organisationType,
       missing,
       steps: {
         profiel: Boolean(club.name?.trim()),
         contact: Boolean(club.contactEmail?.trim() || club.contactPhone?.trim()),
         logo: Boolean(club.logoUrl),
         seizoen: seasons > 0,
+        organogram: Boolean(club.organogramTemplate),
+        stafplekken: stafSlots.length,
         teams,
         beheerders: admins.filter((m) => ["owner", "admin"].includes(m.role)).length,
         trainers: admins.filter((m) => ["hoofdtrainer", "trainer"].includes(m.role)).length,
@@ -3077,9 +3111,38 @@ router.post("/:clubId/onboarding/managers", requireAuth, async (req, res) => {
     }
     const email = str(req.body?.email)?.toLowerCase();
     const role = str(req.body?.role);
-    const allowed = ["admin", "hoofdtrainer", "trainer"];
+    // TEAM_ONBOARDING_01: bij een Team-organisatie wordt de VOLLEDIGE vaste
+    // seizoensstaf in concept direct toegewezen (teammanager en ploegleider
+    // blijven aparte rollen; medical_staff met beschrijvend functietype).
+    const allowed =
+      ctx.club.organisationType === "TEAM"
+        ? [
+            "admin",
+            "hoofdtrainer",
+            "trainer",
+            "teammanager",
+            "ploegleider",
+            "mechanieker",
+            "soigneur",
+            "medical_staff",
+          ]
+        : ["admin", "hoofdtrainer", "trainer"];
     if (!email || !role || !allowed.includes(role)) {
-      res.status(400).json({ error: "Geef een e-mailadres en een rol (beheerder, hoofdtrainer of trainer)." });
+      res.status(400).json({ error: "Geef een e-mailadres en een geldige stafrol." });
+      return;
+    }
+    // Functietype: alleen bij medical_staff, en alleen uit de vaste lijst.
+    const medicalSpecialty = str(req.body?.medicalSpecialty);
+    if (medicalSpecialty && role !== "medical_staff") {
+      res.status(400).json({ error: "Een functietype hoort alleen bij medische staf." });
+      return;
+    }
+    if (
+      role === "medical_staff" &&
+      medicalSpecialty &&
+      !medicalSpecialties.includes(medicalSpecialty as (typeof medicalSpecialties)[number])
+    ) {
+      res.status(400).json({ error: "Onbekend functietype voor medische staf." });
       return;
     }
     const [profile] = await db
@@ -3097,7 +3160,11 @@ router.post("/:clubId/onboarding/managers", requireAuth, async (req, res) => {
       res.status(409).json({ error: "Dit account is al lid van de club." });
       return;
     }
-    const cap = await checkCapacityForNew(ctx, role === "admin" ? "member" : "trainer");
+    // Capaciteit: trainersrollen tellen als trainer, overige staf als lid.
+    const cap = await checkCapacityForNew(
+      ctx,
+      ["hoofdtrainer", "trainer"].includes(role) ? "trainer" : "member",
+    );
     if (!cap.ok) {
       res.status(409).json({ error: cap.reason });
       return;
@@ -3106,6 +3173,7 @@ router.post("/:clubId/onboarding/managers", requireAuth, async (req, res) => {
       clubId: ctx.club.id,
       clerkId: profile.clerkId,
       role,
+      medicalSpecialty: role === "medical_staff" ? medicalSpecialty : null,
     });
     await writeClubAudit({
       clubId: ctx.club.id,
@@ -3381,6 +3449,223 @@ router.post("/:clubId/import/:batchId/cancel", requireAuth, async (req, res) => 
 });
 
 // Activatie — één server-side handeling; weigert met wat ontbreekt.
+// ── TEAM_ONBOARDING_01: organogram-kaart toepassen ───────────────────────────
+// Maakt uitsluitend CONCEPTstructuur aan: ontbrekende selecties (club_teams)
+// en ontbrekende stafplekken (organisation_staff_slots). Additief en
+// idempotent — nooit destructief: bestaande selecties, personen en rollen
+// blijven altijd staan, ook wanneer een kaart later opnieuw of anders wordt
+// gekozen op een actieve organisatie. Er worden GEEN rechten afgeleid.
+router.post("/:clubId/organogram", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder mag de structuur kiezen." });
+      return;
+    }
+    if (!["concept", "actief"].includes(ctx.club.status)) {
+      res.status(409).json({ error: "Deze organisatie kan nu geen structuurwijziging ontvangen." });
+      return;
+    }
+    const template = getOrganogramTemplate(String(req.body?.template ?? ""));
+    if (!template) {
+      res.status(400).json({ error: "Onbekende organogram-kaart." });
+      return;
+    }
+    const result = await db.transaction(async (tx) => {
+      const bestaandeTeams = await tx
+        .select({ id: clubTeamsTable.id, name: clubTeamsTable.name })
+        .from(clubTeamsTable)
+        .where(eq(clubTeamsTable.clubId, ctx.club.id));
+      const bestaandeNamen = new Set(bestaandeTeams.map((t) => t.name.toLowerCase()));
+      let selectiesToegevoegd = 0;
+      for (const naam of template.selecties) {
+        if (bestaandeNamen.has(naam.toLowerCase())) continue;
+        await tx.insert(clubTeamsTable).values({
+          clubId: ctx.club.id,
+          name: naam,
+          joinCode: generateJoinCode(),
+        });
+        selectiesToegevoegd += 1;
+      }
+      const bestaandeSlots = await tx
+        .select({
+          role: organisationStaffSlotsTable.role,
+          medicalSpecialty: organisationStaffSlotsTable.medicalSpecialty,
+        })
+        .from(organisationStaffSlotsTable)
+        .where(eq(organisationStaffSlotsTable.clubId, ctx.club.id));
+      const perRol = new Map<string, number>();
+      for (const s of bestaandeSlots) {
+        perRol.set(s.role, (perRol.get(s.role) ?? 0) + 1);
+      }
+      let slotsToegevoegd = 0;
+      for (const staf of template.staf) {
+        const huidige = perRol.get(staf.role) ?? 0;
+        for (let i = huidige; i < staf.aantal; i += 1) {
+          await tx.insert(organisationStaffSlotsTable).values({
+            clubId: ctx.club.id,
+            role: staf.role,
+            medicalSpecialty: staf.role === "medical_staff" ? (staf.medicalSpecialty ?? null) : null,
+            createdByClerkId: ctx.membership.clerkId,
+          });
+          slotsToegevoegd += 1;
+        }
+        perRol.set(staf.role, Math.max(huidige, staf.aantal));
+      }
+      await tx
+        .update(clubsTable)
+        .set({ organogramTemplate: template.key, updatedAt: new Date() })
+        .where(eq(clubsTable.id, ctx.club.id));
+      return { selectiesToegevoegd, slotsToegevoegd };
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "organogram_kaart_toegepast",
+      targetType: "club",
+      targetId: ctx.club.id,
+      detail: { template: template.key, ...result },
+    });
+    res.json({ template: template.key, ...result });
+  } catch (err) {
+    req.log.error({ err }, "organogram apply failed");
+    res.status(500).json({ error: "Structuur toepassen is niet gelukt." });
+  }
+});
+
+// ── TEAM_ONBOARDING_01: stafplekken (conceptstructuur, geen rechten) ─────────
+router.get("/:clubId/staff-slots", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder ziet de stafplekken." });
+      return;
+    }
+    const slots = await db
+      .select()
+      .from(organisationStaffSlotsTable)
+      .where(eq(organisationStaffSlotsTable.clubId, ctx.club.id))
+      .orderBy(asc(organisationStaffSlotsTable.id));
+    // Vervulling wordt AFGELEID uit echte lidmaatschappen — namen verschijnen
+    // uitsluitend via club_members (na toewijzing of geaccepteerde uitnodiging).
+    const leden = await db
+      .select({ role: clubMembersTable.role })
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clubId, ctx.club.id), isNull(clubMembersTable.endedAt)));
+    const bezetPerRol = new Map<string, number>();
+    for (const l of leden) bezetPerRol.set(l.role, (bezetPerRol.get(l.role) ?? 0) + 1);
+    res.json({ slots, bezetting: Object.fromEntries(bezetPerRol) });
+  } catch (err) {
+    req.log.error({ err }, "staff slots list failed");
+    res.status(500).json({ error: "Stafplekken ophalen is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/staff-slots", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder mag stafplekken toevoegen." });
+      return;
+    }
+    const role = str(req.body?.role);
+    if (!role || !clubRoles.includes(role as ClubRole)) {
+      res.status(400).json({ error: "Onbekende rol voor deze stafplek." });
+      return;
+    }
+    const medicalSpecialty = str(req.body?.medicalSpecialty);
+    if (medicalSpecialty && role !== "medical_staff") {
+      res.status(400).json({ error: "Een functietype hoort alleen bij medische staf." });
+      return;
+    }
+    if (
+      role === "medical_staff" &&
+      medicalSpecialty &&
+      !medicalSpecialties.includes(medicalSpecialty as (typeof medicalSpecialties)[number])
+    ) {
+      res.status(400).json({ error: "Onbekend functietype voor medische staf." });
+      return;
+    }
+    const teamId = req.body?.teamId != null ? intParam(req.body.teamId) : null;
+    if (teamId != null) {
+      const [team] = await db
+        .select({ id: clubTeamsTable.id })
+        .from(clubTeamsTable)
+        .where(and(eq(clubTeamsTable.id, teamId), eq(clubTeamsTable.clubId, ctx.club.id)));
+      if (!team) {
+        res.status(404).json({ error: "Deze selectie bestaat niet binnen de organisatie." });
+        return;
+      }
+    }
+    const [slot] = await db
+      .insert(organisationStaffSlotsTable)
+      .values({
+        clubId: ctx.club.id,
+        teamId,
+        role,
+        medicalSpecialty: role === "medical_staff" ? medicalSpecialty : null,
+        label: str(req.body?.label),
+        createdByClerkId: ctx.membership.clerkId,
+      })
+      .returning();
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "stafplek_toegevoegd",
+      targetType: "club",
+      targetId: slot!.id,
+      detail: { role, medicalSpecialty, teamId },
+    });
+    res.status(201).json(slot);
+  } catch (err) {
+    req.log.error({ err }, "staff slot create failed");
+    res.status(500).json({ error: "Stafplek toevoegen is niet gelukt." });
+  }
+});
+
+// Een stafplek verwijderen raakt uitsluitend de plek — nooit een persoon,
+// lidmaatschap of rol (bindende regel: personen verdwijnen nooit door een
+// structuurwijziging).
+router.delete("/:clubId/staff-slots/:slotId", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder mag stafplekken verwijderen." });
+      return;
+    }
+    const slotId = intParam(req.params["slotId"]);
+    const [removed] = await db
+      .delete(organisationStaffSlotsTable)
+      .where(
+        and(
+          eq(organisationStaffSlotsTable.id, slotId ?? -1),
+          eq(organisationStaffSlotsTable.clubId, ctx.club.id),
+        ),
+      )
+      .returning();
+    if (!removed) {
+      res.status(404).json({ error: "Deze stafplek bestaat niet (meer)." });
+      return;
+    }
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "stafplek_verwijderd",
+      targetType: "club",
+      targetId: removed.id,
+      detail: { role: removed.role },
+    });
+    res.json({ verwijderd: true });
+  } catch (err) {
+    req.log.error({ err }, "staff slot delete failed");
+    res.status(500).json({ error: "Stafplek verwijderen is niet gelukt." });
+  }
+});
+
 router.post("/:clubId/activate", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);

@@ -193,8 +193,15 @@ export function useHoofdtrainerOverview(clubId: number | null, enabled: boolean)
 export function useCreateClub() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string; description?: string; location?: string; concept?: boolean }) =>
-      apiFetch("/api/clubs", { method: "POST", body: JSON.stringify(body) }),
+    mutationFn: (body: {
+      name: string
+      description?: string
+      location?: string
+      concept?: boolean
+      // TEAM_ONBOARDING_01: "TEAM" = zelfstandige teamorganisatie op de
+      // bestaande container; weggelaten = CLUB.
+      organisationType?: "CLUB" | "TEAM"
+    }) => apiFetch("/api/clubs", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
   })
 }
@@ -202,12 +209,15 @@ export function useCreateClub() {
 // ── CLUB_ONBOARDING_01: van registratie tot actief ──────────────────────────
 export type ClubOnboardingState = {
   status: string
+  organisationType: "CLUB" | "TEAM"
   missing: string[]
   steps: {
     profiel: boolean
     contact: boolean
     logo: boolean
     seizoen: boolean
+    organogram: boolean
+    stafplekken: number
     teams: number
     beheerders: number
     trainers: number
@@ -244,9 +254,71 @@ export function useSetClubLogo(clubId: number | null) {
 export function useAddOnboardingManager(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { email: string; role: "admin" | "hoofdtrainer" | "trainer" }) =>
+    mutationFn: (body: { email: string; role: string; medicalSpecialty?: string }) =>
       apiFetch(`/api/clubs/${clubId}/onboarding/managers`, { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+// ── TEAM_ONBOARDING_01: organogram-kaarten en stafplekken ────────────────────
+export type OrganogramTemplate = {
+  key: string
+  naam: string
+  beschrijving: string
+  selecties: string[]
+  staf: { role: string; aantal: number; medicalSpecialty?: string }[]
+}
+
+export function useOrganogramTemplates(enabled = true) {
+  return useQuery<{ templates: OrganogramTemplate[] }>({
+    queryKey: ["organogram-templates"],
+    queryFn: () => apiFetch("/api/clubs/organogram-templates"),
+    enabled,
+    staleTime: Infinity,
+  })
+}
+
+export function useApplyOrganogram(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { template: string }) =>
+      apiFetch(`/api/clubs/${clubId}/organogram`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export type StaffSlot = {
+  id: number
+  clubId: number
+  teamId: number | null
+  role: string
+  medicalSpecialty: string | null
+  label: string | null
+}
+
+export function useStaffSlots(clubId: number | null, enabled = true) {
+  return useQuery<{ slots: StaffSlot[]; bezetting: Record<string, number> }>({
+    queryKey: ["clubs", clubId, "staff-slots"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/staff-slots`),
+    enabled: clubId != null && enabled,
+  })
+}
+
+export function useAddStaffSlot(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { role: string; teamId?: number; medicalSpecialty?: string; label?: string }) =>
+      apiFetch(`/api/clubs/${clubId}/staff-slots`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId, "staff-slots"] }),
+  })
+}
+
+export function useDeleteStaffSlot(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (slotId: number) =>
+      apiFetch(`/api/clubs/${clubId}/staff-slots/${slotId}`, { method: "DELETE" }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId, "staff-slots"] }),
   })
 }
 

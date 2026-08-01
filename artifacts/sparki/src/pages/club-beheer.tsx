@@ -32,6 +32,11 @@ import {
   useCreateClubImport,
   useConfirmClubImport,
   useCancelClubImport,
+  useOrganogramTemplates,
+  useApplyOrganogram,
+  useStaffSlots,
+  useAddStaffSlot,
+  useDeleteStaffSlot,
   type ClubImportRow,
   useRegenerateJoinCode,
   useClubLocations,
@@ -905,6 +910,129 @@ function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean 
 
 // ── CLUB_ONBOARDING_01: club in oprichting — stappen met zichtbare voortgang.
 // Alles wordt server-side bewaard: weggaan en later verdergaan kan altijd.
+// TEAM_ONBOARDING_01: organogram-kaarten als onboardinghulp. Een kaart maakt
+// alleen conceptstructuur (selecties + stafplekken) aan — nooit rechten,
+// nooit personen, nooit destructief. Rolplekken tonen rollen, geen namen.
+function TeamStructuurBlock({ clubId, organogramGekozen }: { clubId: number; organogramGekozen: boolean }) {
+  const { data: tpl } = useOrganogramTemplates()
+  const apply = useApplyOrganogram(clubId)
+  const { data: slotsData } = useStaffSlots(clubId)
+  const addSlot = useAddStaffSlot(clubId)
+  const deleteSlot = useDeleteStaffSlot(clubId)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [slotRole, setSlotRole] = useState<string>("ploegleider")
+  const [slotSpecialty, setSlotSpecialty] = useState<string>("")
+
+  const slots = slotsData?.slots ?? []
+  const bezetting = slotsData?.bezetting ?? {}
+
+  return (
+    <div className="space-y-3 border-t border-white/10 pt-3">
+      <div>
+        <p className="text-[12px] text-white/70">Structuur kiezen (organogram-kaarten)</p>
+        <p className="mt-0.5 text-[11px] text-white/45">
+          Een kaart zet selecties en stafplekken voor je klaar als startpunt. Dit is een
+          hulpmiddel: het bepaalt geen rechten en verwijdert nooit iets dat er al staat.
+          Namen verschijnen pas zodra iemand echt is toegewezen of een uitnodiging accepteert.
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {(tpl?.templates ?? []).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setMsg(null)
+                apply.mutate(
+                  { template: t.key },
+                  {
+                    onSuccess: (r: unknown) => {
+                      const res = r as { selectiesToegevoegd: number; slotsToegevoegd: number }
+                      setMsg(`Kaart toegepast: ${res.selectiesToegevoegd} selectie(s) en ${res.slotsToegevoegd} stafplek(ken) toegevoegd.`)
+                    },
+                    onError: (e) => setMsg(e instanceof Error ? e.message : "Toepassen is niet gelukt."),
+                  },
+                )
+              }}
+              disabled={apply.isPending}
+              className="rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-left hover:border-cyan-300/40 disabled:opacity-40"
+            >
+              <p className="text-[13px] text-white/85">{t.naam}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-white/45">{t.beschrijving}</p>
+              <p className="mt-1 text-[11px] text-white/55">
+                {t.selecties.length > 0 ? `Selecties: ${t.selecties.join(", ")}` : "Geen voorgestelde selecties"}
+              </p>
+              {t.staf.length > 0 && (
+                <p className="text-[11px] text-white/55">
+                  Rolplekken: {t.staf.map((s) => `${s.aantal}× ${ROLE_LABELS[s.role as ClubRole] ?? s.role}`).join(" · ")}
+                </p>
+              )}
+            </button>
+          ))}
+        </div>
+        {organogramGekozen && (
+          <p className="mt-1 text-[11px] text-emerald-300/80">Er is al een structuur gekozen — opnieuw kiezen voegt alleen ontbrekende onderdelen toe.</p>
+        )}
+        {msg && <p className="mt-1 text-[11px] text-white/60">{msg}</p>}
+      </div>
+
+      <div>
+        <p className="text-[12px] text-white/70">Stafplekken</p>
+        {slots.length === 0 ? (
+          <p className="mt-0.5 text-[11px] text-white/45">
+            Nog geen stafplekken. Kies hierboven een kaart of voeg er hieronder zelf één toe.
+          </p>
+        ) : (
+          <ul className="mt-1 space-y-1">
+            {slots.map((s) => (
+              <li key={s.id} className="flex items-center gap-2 text-[12px]">
+                <span className="text-white/75">{ROLE_LABELS[s.role as ClubRole] ?? s.role}</span>
+                {s.medicalSpecialty && (
+                  <span className="text-white/45">({MEDICAL_SPECIALTY_LABELS[s.medicalSpecialty] ?? s.medicalSpecialty})</span>
+                )}
+                <span className="text-[11px] text-white/40">
+                  {(bezetting[s.role] ?? 0) > 0 ? "rol al vervuld in de staf" : "nog open"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteSlot.mutate(s.id)}
+                  className="ml-auto rounded border border-white/15 px-2 py-0.5 text-[11px] text-white/50 hover:text-white/80"
+                >
+                  Plek verwijderen
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form
+          className="mt-2 flex flex-col gap-2 sm:flex-row"
+          onSubmit={(e) => {
+            e.preventDefault()
+            addSlot.mutate({
+              role: slotRole,
+              ...(slotRole === "medical_staff" && slotSpecialty ? { medicalSpecialty: slotSpecialty } : {}),
+            })
+          }}
+        >
+          <select value={slotRole} onChange={(e) => setSlotRole(e.target.value)} className={`${INPUT} sm:w-44`} aria-label="Rol voor stafplek">
+            {(["teammanager", "ploegleider", "trainer", "hoofdtrainer", "mechanieker", "soigneur", "medical_staff"] as const).map((r) => (
+              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+            ))}
+          </select>
+          {slotRole === "medical_staff" && (
+            <select value={slotSpecialty} onChange={(e) => setSlotSpecialty(e.target.value)} className={`${INPUT} sm:w-44`} aria-label="Functietype medische staf">
+              <option value="">Functietype (optioneel)</option>
+              {Object.entries(MEDICAL_SPECIALTY_LABELS).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          )}
+          <button type="submit" disabled={addSlot.isPending} className={BTN}>Stafplek toevoegen</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function OnboardingSection({ clubId }: { clubId: number }) {
   const { data: ob } = useClubOnboarding(clubId)
   const activate = useActivateClub(clubId)
@@ -916,7 +1044,8 @@ function OnboardingSection({ clubId }: { clubId: number }) {
 
   const [logoError, setLogoError] = useState<string | null>(null)
   const [mgrEmail, setMgrEmail] = useState("")
-  const [mgrRole, setMgrRole] = useState<"admin" | "hoofdtrainer" | "trainer">("trainer")
+  const [mgrRole, setMgrRole] = useState<string>("trainer")
+  const [mgrSpecialty, setMgrSpecialty] = useState<string>("")
   const [mgrMsg, setMgrMsg] = useState<string | null>(null)
   const [batch, setBatch] = useState<{ id: number; rows: ClubImportRow[]; klaar: number } | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -980,24 +1109,34 @@ function OnboardingSection({ clubId }: { clubId: number }) {
     )
   }
 
+  // TEAM_ONBOARDING_01: teamvariant van dezelfde hervatbare onboarding.
+  const isTeam = ob?.organisationType === "TEAM"
   const steps: { label: string; done: boolean; hint?: string }[] = ob
-    ? [
-        { label: "Clubnaam", done: ob.steps.profiel },
-        { label: "Contactgegevens", done: ob.steps.contact, hint: "e-mailadres of telefoonnummer, hieronder bij Clubprofiel" },
-        { label: "Logo (optioneel)", done: ob.steps.logo },
-        { label: "Seizoen (aanbevolen)", done: ob.steps.seizoen, hint: "hieronder bij Seizoenen & teams" },
-        { label: "Minstens één team", done: ob.steps.teams > 0, hint: "hieronder bij Seizoenen & teams" },
-      ]
+    ? isTeam
+      ? [
+          { label: "Teamnaam", done: ob.steps.profiel },
+          { label: "Contactgegevens", done: ob.steps.contact, hint: "e-mailadres of telefoonnummer, hieronder bij Profiel" },
+          { label: "Structuur gekozen (optioneel)", done: ob.steps.organogram, hint: "kies hieronder een organogram-kaart" },
+          { label: "Minstens één selectie", done: ob.steps.teams > 0, hint: "via een organogram-kaart of hieronder bij Seizoenen & teams" },
+          { label: "Logo (optioneel)", done: ob.steps.logo },
+        ]
+      : [
+          { label: "Clubnaam", done: ob.steps.profiel },
+          { label: "Contactgegevens", done: ob.steps.contact, hint: "e-mailadres of telefoonnummer, hieronder bij Clubprofiel" },
+          { label: "Logo (optioneel)", done: ob.steps.logo },
+          { label: "Seizoen (aanbevolen)", done: ob.steps.seizoen, hint: "hieronder bij Seizoenen & teams" },
+          { label: "Minstens één team", done: ob.steps.teams > 0, hint: "hieronder bij Seizoenen & teams" },
+        ]
     : []
 
   return (
-    <section aria-label="Club in oprichting">
-      <h2 className={H2}><Settings2 className="h-3 w-3" /> Club in oprichting</h2>
+    <section aria-label={isTeam ? "Team in oprichting" : "Club in oprichting"}>
+      <h2 className={H2}><Settings2 className="h-3 w-3" /> {isTeam ? "Team in oprichting" : "Club in oprichting"}</h2>
       <div className={`${CARD} space-y-4`}>
         <p className="text-[12px] text-white/60">
           Doorloop de stappen in je eigen tempo — alles wordt direct bewaard, dus je kunt
-          altijd weggaan en later verdergaan. Zolang de club in oprichting is, zijn leden
-          voor niemand anders zichtbaar en vertrekt er geen uitnodiging.
+          altijd weggaan en later verdergaan. Zolang de {isTeam ? "teamorganisatie" : "club"} in
+          oprichting is, zijn leden voor niemand anders zichtbaar en vertrekt er geen uitnodiging.
         </p>
 
         {/* Voortgang */}
@@ -1013,9 +1152,12 @@ function OnboardingSection({ clubId }: { clubId: number }) {
           ))}
         </ul>
 
+        {/* TEAM_ONBOARDING_01: organogram-kaarten + stafplekken */}
+        {isTeam && <TeamStructuurBlock clubId={clubId} organogramGekozen={Boolean(ob?.steps.organogram)} />}
+
         {/* Logo */}
         <div>
-          <p className="mb-1 text-[12px] text-white/60">Clublogo (JPG, PNG, WebP of SVG, max 5 MB)</p>
+          <p className="mb-1 text-[12px] text-white/60">{isTeam ? "Teamlogo" : "Clublogo"} (JPG, PNG, WebP of SVG, max 5 MB)</p>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/svg+xml"
@@ -1029,8 +1171,9 @@ function OnboardingSection({ clubId }: { clubId: number }) {
         {/* Eerste beheerders en trainers */}
         <div>
           <p className="mb-1 text-[12px] text-white/60">
-            Eerste beheerders en trainers — direct toewijzen aan een bestaand account
-            (uitnodigen van nieuwe accounts kan na activatie).
+            {isTeam
+              ? "Vaste seizoensstaf — direct toewijzen aan een bestaand account (uitnodigen van nieuwe accounts kan na activatie)."
+              : "Eerste beheerders en trainers — direct toewijzen aan een bestaand account (uitnodigen van nieuwe accounts kan na activatie)."}
           </p>
           <form
             className="flex flex-col gap-2 sm:flex-row"
@@ -1039,7 +1182,11 @@ function OnboardingSection({ clubId }: { clubId: number }) {
               setMgrMsg(null)
               if (!mgrEmail.trim()) return
               addManager.mutate(
-                { email: mgrEmail.trim(), role: mgrRole },
+                {
+                  email: mgrEmail.trim(),
+                  role: mgrRole,
+                  ...(mgrRole === "medical_staff" && mgrSpecialty ? { medicalSpecialty: mgrSpecialty } : {}),
+                },
                 {
                   onSuccess: () => { setMgrMsg("Toegevoegd."); setMgrEmail("") },
                   onError: (err) => setMgrMsg(err instanceof Error ? err.message : "Niet gelukt."),
@@ -1048,11 +1195,28 @@ function OnboardingSection({ clubId }: { clubId: number }) {
             }}
           >
             <input value={mgrEmail} onChange={(e) => setMgrEmail(e.target.value)} placeholder="E-mailadres van bestaand account" className={INPUT} />
-            <select value={mgrRole} onChange={(e) => setMgrRole(e.target.value as typeof mgrRole)} className={`${INPUT} sm:w-44`}>
+            <select value={mgrRole} onChange={(e) => setMgrRole(e.target.value)} className={`${INPUT} sm:w-44`}>
               <option value="admin">Beheerder</option>
               <option value="hoofdtrainer">Hoofdtrainer</option>
               <option value="trainer">Trainer</option>
+              {isTeam && (
+                <>
+                  <option value="teammanager">Teammanager</option>
+                  <option value="ploegleider">Ploegleider</option>
+                  <option value="mechanieker">Mechanieker</option>
+                  <option value="soigneur">Soigneur</option>
+                  <option value="medical_staff">Medische staf</option>
+                </>
+              )}
             </select>
+            {isTeam && mgrRole === "medical_staff" && (
+              <select value={mgrSpecialty} onChange={(e) => setMgrSpecialty(e.target.value)} className={`${INPUT} sm:w-44`} aria-label="Functietype medische staf">
+                <option value="">Functietype (optioneel)</option>
+                {Object.entries(MEDICAL_SPECIALTY_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            )}
             <button type="submit" disabled={addManager.isPending} className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40">
               Toewijzen
             </button>
@@ -1134,7 +1298,7 @@ function OnboardingSection({ clubId }: { clubId: number }) {
             disabled={activate.isPending}
             className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-[13px] font-medium text-emerald-200 disabled:opacity-40"
           >
-            Club activeren
+            {isTeam ? "Team activeren" : "Club activeren"}
           </button>
           {activateMsg && (
             <ul className="mt-2 space-y-0.5 text-[12px] text-rose-300/85">

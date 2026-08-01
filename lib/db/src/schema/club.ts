@@ -103,6 +103,14 @@ export const clubsTable = pgTable("clubs", {
   // WP-03: soort organisatie (club | vereniging | ploeg | school | anders).
   // Additief; bestaande rijen blijven gewoon "club".
   organisationKind: text("organisation_kind").notNull().default("club"),
+  // TEAM_ONBOARDING_01 (besluitendoc 01-08-2026): organisatietype op de
+  // BESTAANDE container — géén tweede organisatie-entiteit. "CLUB" =
+  // clubomgeving, "TEAM" = zelfstandige wedstrijdteam-organisatie.
+  // organisationKind blijft het beschrijvende subtype.
+  organisationType: text("organisation_type").notNull().default("CLUB"),
+  // Gekozen organogram-kaart tijdens de team-onboarding. Puur conceptstructuur:
+  // de kaart leidt NOOIT rechten af en is nooit destructief (bindende regels §3).
+  organogramTemplate: text("organogram_template"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -633,6 +641,36 @@ export const clubAuditLogTable = pgTable(
   (t) => [index("club_audit_club_idx").on(t.clubId, t.createdAt)],
 );
 
+// ── TEAM_ONBOARDING_01: stafplekken (conceptstructuur, GEEN rechten) ─────────
+// Een organogram-kaart of beheerder maakt "rolplekken" aan: welke stafrollen
+// de organisatie wil invullen. Een plek is puur structuur — er hangt geen
+// persoon, recht of zichtbaarheid aan. Echte namen en rechten ontstaan
+// uitsluitend via club_members (na directe toewijzing of geaccepteerde
+// uitnodiging). Een plek verwijderen raakt dus nooit een persoon of rol.
+export const organisationStaffSlotsTable = pgTable(
+  "organisation_staff_slots",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    // Optioneel gebonden aan één selectie/subteam (club_teams).
+    teamId: integer("team_id").references(() => clubTeamsTable.id, { onDelete: "cascade" }),
+    // Bestaande server-side rolwaarde (clubRoles) — kaarten tonen uitsluitend
+    // rollen die echt bestaan.
+    role: text("role").notNull(),
+    // Alleen betekenisvol bij role="medical_staff": beschrijvend functietype
+    // zonder eigen rechten (medicalSpecialties).
+    medicalSpecialty: text("medical_specialty"),
+    // Vrij label, bv. "Ploegleider voorjaarsblok". Nooit een persoonsnaam
+    // vóór acceptatie — namen komen uit club_members.
+    label: text("label"),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("organisation_staff_slots_club_idx").on(t.clubId)],
+);
+
 // ── Zod & types ───────────────────────────────────────────────────────────────
 export const insertClubSchema = createInsertSchema(clubsTable).omit({ id: true });
 export const selectClubSchema = createSelectSchema(clubsTable);
@@ -652,3 +690,8 @@ export type ClubMessageRead = typeof clubMessageReadsTable.$inferSelect;
 export type ClubConsent = typeof clubConsentsTable.$inferSelect;
 export type ClubSubscription = typeof clubSubscriptionsTable.$inferSelect;
 export type ClubAuditEntry = typeof clubAuditLogTable.$inferSelect;
+export type OrganisationStaffSlot = typeof organisationStaffSlotsTable.$inferSelect;
+
+// TEAM_ONBOARDING_01: organisatietypen op de bestaande container.
+export const organisationTypes = ["CLUB", "TEAM"] as const;
+export type OrganisationType = (typeof organisationTypes)[number];

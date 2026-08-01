@@ -561,21 +561,25 @@ function StartClubCard() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [location, setLocation] = useState("")
+  // TEAM_ONBOARDING_01: één startpunt voor beide organisatietypen — een
+  // clubomgeving of een zelfstandige teamorganisatie (wedstrijdteam).
+  const [orgType, setOrgType] = useState<"CLUB" | "TEAM">("CLUB")
   const [error, setError] = useState<string | null>(null)
 
   return (
     <div className={CARD}>
-      <p className="text-[13px] text-white/85">Start een clubomgeving</p>
+      <p className="text-[13px] text-white/85">Start een club- of teamomgeving</p>
       <p className="mt-0.5 text-[12px] text-white/50">
-        Beheer leden, teams, clubtrainingen, wedstrijden en communicatie op één plek.
-        Je start met een gratis proefperiode van 30 dagen (tot 15 leden).
+        Een club beheert leden, teams, clubtrainingen en communicatie. Een zelfstandig
+        team is een wedstrijdploeg met selecties en vaste seizoensstaf. Je start met een
+        gratis proefperiode van 30 dagen (tot 15 leden).
       </p>
       {!open ? (
         <button
           onClick={() => setOpen(true)}
           className="mt-2 flex items-center gap-1.5 rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-[12px] text-cyan-200"
         >
-          <Plus className="h-3.5 w-3.5" /> Club aanmaken
+          <Plus className="h-3.5 w-3.5" /> Aanmaken
         </button>
       ) : (
         <form
@@ -583,19 +587,41 @@ function StartClubCard() {
           onSubmit={(e) => {
             e.preventDefault()
             setError(null)
-            if (!name.trim()) { setError("Geef de club een naam."); return }
+            if (!name.trim()) { setError(orgType === "TEAM" ? "Geef het team een naam." : "Geef de club een naam."); return }
             create.mutate(
-              // Nieuwe clubs starten in oprichting ("concept"): eerst inrichten
-              // en activeren, dan pas uitnodigen (CLUB_ONBOARDING_01).
-              { name: name.trim(), location: location.trim() || undefined, concept: true },
+              // Nieuwe organisaties starten in oprichting ("concept"): eerst
+              // inrichten en activeren, dan pas uitnodigen.
+              {
+                name: name.trim(),
+                location: location.trim() || undefined,
+                concept: true,
+                organisationType: orgType,
+              },
               { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
             )
           }}
         >
+          <div className="flex gap-2" role="radiogroup" aria-label="Soort organisatie">
+            {([
+              ["CLUB", "Club"],
+              ["TEAM", "Zelfstandig team"],
+            ] as const).map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                role="radio"
+                aria-checked={orgType === val}
+                onClick={() => setOrgType(val)}
+                className={`rounded-lg border px-3 py-1.5 text-[12px] ${orgType === val ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Clubnaam"
+            placeholder={orgType === "TEAM" ? "Teamnaam" : "Clubnaam"}
             className="w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
           />
           <input
