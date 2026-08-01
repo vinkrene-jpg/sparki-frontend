@@ -60,3 +60,7 @@ const { flags, isLoading: flagsLoading } = useFeatureFlags();
 if (flagsLoading || flags.commercial_shell) return <CoreXPage />;
 return <LegacyPage />;
 ```
+
+## Nieuwe flag-keys en e2e (01-08-2026)
+- Nieuwe FEATURE_KEYS in lib/feature-flags werken pas na `pnpm --filter @workspace/feature-flags run build` ÉN een api-server-herstart — de server resolvet flags uit zijn eigen geladen kopie; anders blijft de key onzichtbaar in /api/flags en faalt e2e stil.
+- E2e-flagactivatie per testidentiteit: seed feature_flags-rij + user_flag_overrides via psql (zie e2e/tests/routeplanner-mobiel-v2.mjs); override na afloop opruimen.
