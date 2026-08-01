@@ -10,8 +10,8 @@ Regel: dit bestand bevat uitsluitend nog niet afgeronde P0/P1-punten. Afgerond =
 | F-P0-01 | Consentservice overal gebruikt | deels → audit gedaan (zie statusregister); leeftijdsdefinitie nu ÉÉN pad: dev.ts eigen kopie weg, parent-permissions.athleteAgeTier delegeert aan consent-service.getAgeClass (13/13 sharing-levels groen) | rest: privacy_settings-init-writes beoordeeld als instellingen (geen consent-besluiten) — documenteren in DATA_TRUST-matrix |
 | F-P0-02 | Relatiehistorie endedAt op álle relatietypen (ook vriend/club/team), heropening = nieuwe periode | deels bewezen (coach/ouder groen 01-08: links-end 3/3, cross-account 19/19) | zelfde toets voor club/team/vriend-relaties; e2e beëindigde ouderrelatie = taak #547 |
 | ~~F-P0-03~~ | ~~/rol-start/<rol> alleen bij rolbezit~~ | **KLAAR** — rolbezit-poort (globale rollen + actieve clubrollen, fail-closed) in `541d03f0`; e2e wp-f3-rolstart 10/10 incl. geen-toegang-zonder-structuurlek | — |
-| F-P0-04 | DATA_TRUST_01 volledige testmatrix | deels | matrix afronden, gevonden problemen herstellen |
-| F-P0-05 | ABONNEMENT_01 volledige entitlementmatrix, fail-closed, Stripe test/live gescheiden | deels | matrixtest 12 rollen/tiers client+server |
+| ~~F-P0-04~~ | ~~DATA_TRUST_01 testmatrix~~ | **KLAAR** — test:data-trust 24/24 + cross-account-isolation 19/19 + links-end 3/3 groen (01-08); matrixdocumenten in docs/SPARKI_DATA_TRUST_*.md | — |
+| ~~F-P0-05~~ | ~~ABONNEMENT_01 entitlementmatrix~~ | **KLAAR** — test:entitlements 29/29 (incl. §1.10 API/UI-pariteit, fail-closed subscription, verlopen/ingetrokken rechten) + team-abonnement 10/10 groen (01-08) | — |
 | ~~F-P0-06~~ | ~~Migratie 0017 naar prod~~ | **KLAAR** — prod geverifieerd 01-08 (consent_grants + ended_at aanwezig) | — |
 
 ## P1
