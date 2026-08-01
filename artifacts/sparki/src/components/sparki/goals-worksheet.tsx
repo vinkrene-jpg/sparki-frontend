@@ -31,6 +31,7 @@ import {
   useUpdateGoal,
   useDecideGoalProposal,
   useGoalPolicy,
+  useTranslateGoal,
   type Goal,
   type DerivedGoal,
   type GoalProgress,
@@ -388,6 +389,141 @@ function SliderGoalForm({
   )
 }
 
+// DOELEN_01 F3 — vrije invoer → meetbaar doel. Sparki vraagt hooguit twee
+// keer door (server bewaakt de teller) en stelt daarna altijd een doel voor;
+// pas na expliciete bevestiging wordt het opgeslagen, mét vertaal-audit.
+function TranslateGoalFlow({
+  onClose,
+  onManual,
+}: {
+  onClose: () => void
+  onManual: () => void
+}) {
+  const translate = useTranslateGoal()
+  const create = useCreateGoal()
+  const [input, setInput] = useState("")
+  const [answer, setAnswer] = useState("")
+  const [history, setHistory] = useState<{ question: string; answer: string }[]>([])
+  const result = translate.data
+
+  const ask = (h: { question: string; answer: string }[]) => {
+    translate.mutate({ input: input.trim(), history: h })
+  }
+
+  const confirm = () => {
+    if (!result || result.status !== "proposal") return
+    create.mutate(
+      {
+        ...result.goal,
+        kind: result.goal.kind,
+        priority: 1,
+        translation: {
+          originalInput: input.trim(),
+          followUpCount: result.followUpCount,
+          proposedGoal: result.goal,
+          confirmed: true,
+        },
+      },
+      { onSuccess: onClose },
+    )
+  }
+
+  return (
+    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.85] p-4 backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+          Vertel het in je eigen woorden
+        </span>
+        <button type="button" onClick={onClose} className="text-white/40 hover:text-white/70" aria-label="Sluiten">
+          <X className="h-4 w-4" strokeWidth={2} />
+        </button>
+      </div>
+      {!result && (
+        <>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={2}
+            placeholder="Bijv. ik wil sterker de bergen over komen"
+            className="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+          />
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => ask([])}
+              disabled={!input.trim() || translate.isPending}
+              className="rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+            >
+              {translate.isPending ? "Bezig…" : "Maak er een doel van"}
+            </button>
+            <button type="button" onClick={onManual} className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 hover:text-white/70">
+              Liever zelf invullen
+            </button>
+          </div>
+        </>
+      )}
+      {result?.status === "question" && (
+        <>
+          <p className="mt-3 text-[14px] leading-relaxed text-white/85">{result.question}</p>
+          <input
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            placeholder="Je antwoord"
+            className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              const h = [...history, { question: result.question, answer: answer.trim() }]
+              setHistory(h)
+              setAnswer("")
+              ask(h)
+            }}
+            disabled={!answer.trim() || translate.isPending}
+            className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+          >
+            {translate.isPending ? "Bezig…" : "Verder"}
+          </button>
+        </>
+      )}
+      {result?.status === "proposal" && (
+        <>
+          <p className="mt-3 text-[15px] font-light tracking-tight text-white">{result.goal.title}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-white/60">
+            {[result.goal.measure, result.goal.targetValue, result.goal.targetDate ? fmtDate(result.goal.targetDate) : null]
+              .filter(Boolean)
+              .join(" · ") || "Zonder meetlat — die kun je later nog toevoegen."}
+          </p>
+          {result.fallback && (
+            <p className="mt-1.5 text-[12px] text-white/45">
+              Je wens was nog niet direct meetbaar; dit is het dichtstbijzijnde doel om mee te starten.
+            </p>
+          )}
+          {create.isError && (
+            <p className="mt-2 text-[12px] text-rose-300">Opslaan lukte niet. Probeer het opnieuw.</p>
+          )}
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={create.isPending}
+              className="rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+            >
+              {create.isPending ? "Bezig…" : "Ja, dit wordt mijn doel"}
+            </button>
+            <button type="button" onClick={onManual} className="rounded-xl px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 ring-1 ring-white/15 hover:text-white/70">
+              Zelf aanpassen
+            </button>
+          </div>
+        </>
+      )}
+      {translate.isError && !result && (
+        <p className="mt-2 text-[12px] text-rose-300">Vertalen lukte nu niet. Vul je doel anders zelf in.</p>
+      )}
+    </div>
+  )
+}
+
 function AddGoalForm({ onClose }: { onClose: () => void }) {
   const create = useCreateGoal()
   const { data: policy } = useGoalPolicy()
@@ -396,10 +532,16 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
   const [targetDate, setTargetDate] = useState("")
   const [measure, setMeasure] = useState("")
   const [kind, setKind] = useState<string | null>(null)
+  const [mode, setMode] = useState<"translate" | "manual">("translate")
 
   // Onder 14: uitsluitend de schuifbalkvorm (server dwingt dit ook af).
   if (policy?.form === "slider") {
     return <SliderGoalForm policy={policy} onClose={onClose} />
+  }
+
+  // Standaard eerst de vrije invoer (DOE-18); zelf invullen blijft altijd kunnen.
+  if (mode === "translate") {
+    return <TranslateGoalFlow onClose={onClose} onManual={() => setMode("manual")} />
   }
 
   const submit = () => {
@@ -540,6 +682,13 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
           </span>
           <p className="mt-2 text-[15px] font-light tracking-tight text-white">{p.title}</p>
           <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{p.reasoning}</p>
+          {/* DOE-35: bij een trainervoorstel is de consequentie vooraf helder. */}
+          {p.kind === "goal_new" && (
+            <p className="mt-1.5 text-[12px] leading-relaxed text-cyan-200/70">
+              Als je dit accepteert, ziet je trainer je doelen zolang dit doel bestaat.
+              Jij houdt de regie: weigeren mag altijd, en je hoofddoel blijft van jou.
+            </p>
+          )}
           <div className="mt-3 flex gap-2">
             <button
               type="button"
