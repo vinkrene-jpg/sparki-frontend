@@ -210,7 +210,13 @@ async function main() {
   });
 
   await scenario("gast: link zonder account, intrekbaar, historie toont gast", async () => {
-    const inv = await api(PLOEGLEIDER, "POST", `${E}/guests`, { email: "gast@example.test" });
+    // Zonder verantwoordelijkheidsvinkje geen uitnodiging.
+    const geenVink = await api(PLOEGLEIDER, "POST", `${E}/guests`, { email: "gast@example.test" });
+    assert(geenVink.status === 400, `zonder vinkje: verwacht 400, kreeg ${geenVink.status}`);
+    const inv = await api(PLOEGLEIDER, "POST", `${E}/guests`, {
+      email: "gast@example.test",
+      responsible: true,
+    });
     assert(inv.status === 201 && inv.json.guestUrl, `uitnodigen: ${inv.status}`);
     // Zonder account (geen x-dev-clerk-id) het plan bekijken.
     const view = await fetch(`${base}${inv.json.guestUrl}`);

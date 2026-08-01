@@ -403,6 +403,14 @@ router.post("/guests", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Een geldig e-mailadres is verplicht." });
       return;
     }
+    // Patch D: de uitnodiger vinkt apart aan dat hij verantwoordelijk is voor
+    // deze gast — zonder dat vinkje geen uitnodiging.
+    if (req.body?.responsible !== true) {
+      res.status(400).json({
+        error: "Vink eerst aan dat je verantwoordelijk bent voor deze gast (responsible: true).",
+      });
+      return;
+    }
     const token = randomBytes(24).toString("base64url");
     const [row] = await db
       .insert(clubRaceGuestsTable)
@@ -456,6 +464,85 @@ router.delete("/guests/:guestId", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "guest revoke failed");
     res.status(500).json({ error: "Intrekken is niet gelukt." });
+  }
+});
+
+// ── Wedstrijddagmodus (app-only, ploegleider én teammanager) ─────────────────
+// Eén gebundeld overzicht voor op de telefoon: selectie, dagschema, vervoer,
+// materiaalstatus, briefings, opdrachten en de vertrekcontrole in één call.
+// De WEERGAVE is app-only (patch D); dit endpoint is de datalaag ervoor en
+// weigert rollen zonder ploegleiderrechten.
+router.get("/day-mode", requireAuth, async (req, res) => {
+  try {
+    const le = await loadCtxEvent(req, res);
+    if (!le) return;
+    if (!isPloegleiderRechten(le.ctx, le.event)) {
+      res.status(403).json({ error: "De wedstrijddagmodus is voor de ploegleider en teammanager." });
+      return;
+    }
+    const [selections, schedule, vehicles, briefings, assignments, results, evaluations] =
+      await Promise.all([
+        db.select().from(clubRaceSelectionsTable).where(eq(clubRaceSelectionsTable.eventId, le.event.id)),
+        db
+          .select()
+          .from(clubRaceDayScheduleTable)
+          .where(eq(clubRaceDayScheduleTable.eventId, le.event.id))
+          .orderBy(asc(clubRaceDayScheduleTable.departTime)),
+        db.select().from(clubRaceVehiclesTable).where(eq(clubRaceVehiclesTable.eventId, le.event.id)),
+        db
+          .select()
+          .from(clubRaceBriefingsTable)
+          .where(eq(clubRaceBriefingsTable.eventId, le.event.id))
+          .orderBy(asc(clubRaceBriefingsTable.createdAt)),
+        db
+          .select()
+          .from(clubRaceAssignmentsTable)
+          .where(eq(clubRaceAssignmentsTable.eventId, le.event.id)),
+        db
+          .select()
+          .from(clubRaceResultsTable)
+          .where(eq(clubRaceResultsTable.eventId, le.event.id))
+          .orderBy(asc(clubRaceResultsTable.position)),
+        db
+          .select()
+          .from(clubRaceEvaluationsTable)
+          .where(eq(clubRaceEvaluationsTable.eventId, le.event.id))
+          .orderBy(desc(clubRaceEvaluationsTable.createdAt)),
+      ]);
+    const seats = vehicles.length
+      ? await db
+          .select()
+          .from(clubRaceVehicleSeatsTable)
+          .where(inArray(clubRaceVehicleSeatsTable.vehicleId, vehicles.map((v) => v.id)))
+      : [];
+    const { clubRaceMaterialItemsTable } = await import("@workspace/db");
+    const material = await db
+      .select()
+      .from(clubRaceMaterialItemsTable)
+      .where(eq(clubRaceMaterialItemsTable.eventId, le.event.id));
+    const openMaterial = material.filter((m) => m.loadedAt == null);
+    res.json({
+      event: le.event,
+      isRaceDay: amsDate(new Date()) === le.event.raceDate,
+      selections,
+      schedule,
+      vehicles: vehicles.map((v) => ({
+        ...v,
+        passengers: seats.filter((s) => s.vehicleId === v.id).map((s) => s.clerkId),
+      })),
+      material: {
+        total: material.length,
+        loaded: material.length - openMaterial.length,
+        open: openMaterial,
+      },
+      briefings,
+      assignments,
+      results,
+      evaluations,
+    });
+  } catch (err) {
+    req.log.error({ err }, "day mode failed");
+    res.status(500).json({ error: "Wedstrijddagmodus laden is niet gelukt." });
   }
 });
 

@@ -743,6 +743,17 @@ export default function InstellingenScreen() {
             Help &amp; support
           </Text>
         </Pressable>
+        {/* Wedstrijddagmodus is app-only (ploegleider/teammanager); de server
+            bepaalt de rechten — andere rollen krijgen een eerlijke melding. */}
+        <Pressable
+          style={[styles.btn, { borderColor: c.border, marginTop: 8 }]}
+          onPress={() => router.push("/wedstrijddag" as Href)}
+        >
+          <Ionicons name="flag-outline" size={16} color={c.foreground} />
+          <Text style={[styles.btnText, { color: c.foreground }]}>
+            Wedstrijddagmodus
+          </Text>
+        </Pressable>
         <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
           Sparki versie {appVersion}
           {buildNr ? ` (build ${buildNr})` : ""}
