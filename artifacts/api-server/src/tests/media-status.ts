@@ -145,6 +145,33 @@ async function main() {
     assert(adultRead.json.statuses[0].state === "overgeslagen", "andermans schrijfactie raakte deze gebruiker");
   });
 
+  await scenario("PUT weigert versie-terugval (409) en vult first_offered_at hoogstens één keer", async () => {
+    const C2 = `${CONTENT}_v2pad`;
+    // Rij ontstaat via PUT (zonder aanbod): first_offered_at is dan leeg.
+    const started = await call(adult, "PUT", `/${C2}`, { contentVersion: 3, state: "gestart" });
+    assert(started.json.status.firstOfferedAt === null, "first_offered_at hoort leeg te zijn zonder aanbod");
+    // Latere 'aangeboden'-PUT vult hem alsnog — maar precies één keer.
+    const offered = await call(adult, "PUT", `/${C2}`, { contentVersion: 3, state: "aangeboden" });
+    const stamp = offered.json.status.firstOfferedAt;
+    assert(stamp, "first_offered_at niet gevuld bij aangeboden-status");
+    const offered2 = await call(adult, "PUT", `/${C2}`, { contentVersion: 3, state: "aangeboden" });
+    assert(offered2.json.status.firstOfferedAt === stamp, "first_offered_at overschreven (D-4)");
+    // Verouderde client met lagere versie wordt geweigerd.
+    const stale = await call(adult, "PUT", `/${C2}`, { contentVersion: 2, state: "voltooid" });
+    assert(stale.status === 409, `versie-terugval: verwacht 409, kreeg ${stale.status}`);
+  });
+
+  await scenario("D-3 onder gelijktijdigheid: dubbel her-aanbod kan niet", async () => {
+    const C3 = `${CONTENT}_race`;
+    await call(adult, "POST", `/${C3}/offered`, { contentVersion: 1 });
+    const [a, b] = await Promise.all([
+      call(adult, "POST", `/${C3}/offered`, { contentVersion: 2 }),
+      call(adult, "POST", `/${C3}/offered`, { contentVersion: 2 }),
+    ]);
+    const offeredCount = [a, b].filter((r) => r.json?.offered === true).length;
+    assert(offeredCount === 1, `precies één her-aanbod verwacht, kreeg ${offeredCount} (${JSON.stringify([a.json, b.json])})`);
+  });
+
   await scenario("whitelist: onbekende velden en ongeldige waarden geven 400", async () => {
     const bad = await call(adult, "PUT", `/${CONTENT}`, { contentVersion: 1, state: "gestart", inhoud: "x" });
     assert(bad.status === 400, `onbekend veld: ${bad.status}`);

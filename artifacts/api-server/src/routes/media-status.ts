@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, mediaContentStatusTable, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { computeAge } from "../lib/age";
@@ -97,6 +97,48 @@ router.post("/:contentId/offered", requireAuth, async (req, res) => {
   const version = parseVersion((req.body as Record<string, unknown>)?.contentVersion);
   if (!version) return res.status(400).json({ error: "contentVersion moet een positief geheel getal zijn." });
   try {
+    const now = new Date();
+    // Atomair (D-3 ook onder gelijktijdige verzoeken): eerste aanbod als
+    // insert; bestaande rij alleen bijwerken wanneer dit écht een eerste
+    // her-aanbod voor een NIEUWERE versie is en "niet meer tonen" het niet
+    // blokkeert. De voorwaarde zit in de UPSERT zelf, dus twee gelijktijdige
+    // calls kunnen nooit allebei een her-aanbod registreren.
+    const updated = await db
+      .insert(mediaContentStatusTable)
+      .values({
+        clerkId,
+        contentId,
+        contentVersion: version,
+        state: "aangeboden",
+        firstOfferedAt: now,
+        lastReofferedVersion: version,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [mediaContentStatusTable.clerkId, mediaContentStatusTable.contentId],
+        set: {
+          contentVersion: version,
+          state: "aangeboden",
+          lastReofferedVersion: version,
+          updatedAt: now,
+          // D-4: firstOfferedAt blijft; alleen zetten als hij nog leeg was.
+          firstOfferedAt: sql`COALESCE(${mediaContentStatusTable.firstOfferedAt}, ${now})`,
+        },
+        setWhere: sql`${mediaContentStatusTable.contentVersion} < ${version}
+          AND COALESCE(${mediaContentStatusTable.lastReofferedVersion}, 0) < ${version}
+          AND NOT ${mediaContentStatusTable.doNotShowAgain}`,
+      })
+      .returning();
+
+    if (updated.length > 0) {
+      const row = updated[0]!;
+      // Her-aanbod = de rij bestond al (first_offered_at ouder dan deze call).
+      const reoffer =
+        row.firstOfferedAt != null && row.firstOfferedAt.getTime() < now.getTime();
+      return res.json({ offered: true, reoffer });
+    }
+
+    // Niet aangeboden: lees de rij voor een eerlijke reden (informatief).
     const existing = (
       await db
         .select()
@@ -109,48 +151,16 @@ router.post("/:contentId/offered", requireAuth, async (req, res) => {
         )
         .limit(1)
     )[0];
-
     if (!existing) {
-      await db.insert(mediaContentStatusTable).values({
-        clerkId,
-        contentId,
-        contentVersion: version,
-        state: "aangeboden",
-        firstOfferedAt: new Date(),
-        lastReofferedVersion: version,
-        updatedAt: new Date(),
-      });
-      return res.json({ offered: true, reoffer: false });
+      // Race met een verwijdering; eerlijk melden.
+      return res.status(409).json({ error: "Aanbod kon niet worden vastgelegd, probeer opnieuw." });
     }
-
-    if (existing.doNotShowAgain && !isAcuteContent(contentId) && version <= existing.contentVersion) {
+    if (existing.doNotShowAgain) {
       return res.json({ offered: false, reason: "niet_meer_tonen" });
     }
-
-    if (version > existing.contentVersion) {
-      // Nieuwe versie: hoogstens één her-aanbod per versie (D-3).
-      if ((existing.lastReofferedVersion ?? 0) >= version) {
-        return res.json({ offered: false, reason: "al_opnieuw_aangeboden" });
-      }
-      await db
-        .update(mediaContentStatusTable)
-        .set({
-          contentVersion: version,
-          state: "aangeboden",
-          lastReofferedVersion: version,
-          updatedAt: new Date(),
-          // D-4: firstOfferedAt en historische tijdstempels blijven staan.
-        })
-        .where(
-          and(
-            eq(mediaContentStatusTable.clerkId, clerkId),
-            eq(mediaContentStatusTable.contentId, contentId),
-          ),
-        );
-      return res.json({ offered: true, reoffer: true });
+    if (version > existing.contentVersion && (existing.lastReofferedVersion ?? 0) >= version) {
+      return res.json({ offered: false, reason: "al_opnieuw_aangeboden" });
     }
-
-    // Zelfde (of oudere) versie: geen statuswijziging nodig; eerlijk antwoord.
     return res.json({ offered: false, reason: "al_bekend" });
   } catch (err) {
     req.log?.error({ err }, "media-status: aanbod registreren mislukt");
@@ -204,6 +214,8 @@ router.put("/:contentId", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "doNotShowAgain moet true of false zijn." });
   }
 
+  // Versies zijn monotoon: een verouderde client mag een rij nooit terugzetten
+  // naar een lagere contentversie (dat zou de aanbod-statusmachine corrumperen).
   const now = new Date();
   const stamps: Partial<{
     startedAt: Date;
@@ -215,7 +227,7 @@ router.put("/:contentId", requireAuth, async (req, res) => {
   if (state === "overgeslagen") stamps.skippedAt = now;
 
   try {
-    await db
+    const result = await db
       .insert(mediaContentStatusTable)
       .values({
         clerkId,
@@ -247,22 +259,25 @@ router.put("/:contentId", requireAuth, async (req, res) => {
             ? { doNotShowAgain: body.doNotShowAgain === true }
             : {}),
           ...(dismissedUntil !== undefined ? { dismissedUntil } : {}),
-          // D-4: first_offered_at en eerdere tijdstempels worden nooit gewist.
+          // D-4: first_offered_at wordt nooit gewist; alleen ingevuld als hij
+          // nog leeg was en de nieuwe toestand "aangeboden" is.
+          ...(state === "aangeboden"
+            ? {
+                firstOfferedAt: sql`COALESCE(${mediaContentStatusTable.firstOfferedAt}, ${now})`,
+              }
+            : {}),
         },
+        // Versies zijn monotoon: een verouderde client mag nooit terugzetten
+        // naar een lagere contentversie (corruptie van de aanbod-statusmachine).
+        setWhere: sql`${mediaContentStatusTable.contentVersion} <= ${version}`,
+      })
+      .returning();
+    if (result.length === 0) {
+      return res.status(409).json({
+        error: "Verouderde contentversie: de status hoort al bij een nieuwere versie.",
       });
-    const row = (
-      await db
-        .select()
-        .from(mediaContentStatusTable)
-        .where(
-          and(
-            eq(mediaContentStatusTable.clerkId, clerkId),
-            eq(mediaContentStatusTable.contentId, contentId),
-          ),
-        )
-        .limit(1)
-    )[0];
-    return res.json({ status: row });
+    }
+    return res.json({ status: result[0] });
   } catch (err) {
     req.log?.error({ err }, "media-status: opslaan mislukt");
     return res.status(500).json({ error: "Status kon niet worden opgeslagen." });
