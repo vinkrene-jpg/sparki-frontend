@@ -41,6 +41,7 @@ import { usePlannerView } from "@/hooks/use-planner-view"
 import { plannerViewHas, type PlannerFeature } from "@/lib/planner-view"
 import { PlannerViewSwitcher } from "@/components/sparki/planner-view-switcher"
 import { useFriends } from "@/hooks/use-social"
+import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { isSportActive } from "@workspace/feature-flags"
 import { racefietsVerification } from "@/lib/racefiets-verification"
 import { zoekCriteriaKey } from "@/lib/route-search-criteria"
@@ -1777,6 +1778,10 @@ export function RouteGenerator({
   // gaat ook niet mee in de aanvraag (effectieve waarden hieronder).
   const plannerView = usePlannerView()
   const heeft = (f: PlannerFeature) => plannerViewHas(plannerView.view, f)
+  // MOBILE_ROUTE_WALKING_01 F1 — telefoon-gerichte compositie achter een
+  // aparte flag (default uit). Zelfde state, handlers en route-engine als
+  // desktop: dit is uitsluitend presentatie (geen tweede flowlogica).
+  const mobielV2 = useFeatureFlag("mobile_routeplanner_v2")
   const save = useSaveGeneratedRoute()
   // RequestId guard: prevents a slow in-flight request from overwriting a newer one.
   const generateReqId = useRef(0)
@@ -2622,9 +2627,55 @@ export function RouteGenerator({
           het resultaatscherm toont voor iedereen dezelfde eerlijke controle. */}
       {!showResult && <PlannerViewSwitcher />}
 
+      {/* MOBILE_ROUTE_WALKING_01 F1 — mobiele voortgangskop: één hoofdtaak
+          per scherm, voortgang altijd zichtbaar, grote tikvlakken. Alleen op
+          telefoonformaat en alleen met de flag aan; desktop blijft de
+          bestaande stappenteller gebruiken. */}
+      {mobielV2 && !showResult && (
+        <div className="mt-4 lg:hidden" data-testid="mobiele-wizard-kop">
+          <div className="flex items-center justify-between">
+            <span className="font-sans text-[13px] font-medium text-white/85">
+              {step === 1
+                ? "Waar rijd je?"
+                : step === 2
+                  ? "Fiets & training"
+                  : step === 3
+                    ? "Wensen & samen"
+                    : "Controleren"}
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-white/45">
+              Stap {step} van 4
+            </span>
+          </div>
+          <div
+            className="mt-2 flex gap-1.5"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={4}
+            aria-valuenow={step}
+            aria-label={`Stap ${step} van 4`}
+          >
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                type="button"
+                disabled={n >= step}
+                onClick={() => n < step && setStep(n)}
+                aria-label={n < step ? `Terug naar stap ${n}` : undefined}
+                className={`h-1.5 min-w-0 flex-1 rounded-full ${
+                  n <= step ? "bg-accent-cyan/80" : "bg-white/10"
+                } ${n < step ? "cursor-pointer" : ""}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Stappenteller — vier duidelijke stappen, resultaat apart */}
       {!showResult && (
-        <div className="mt-4 flex items-center gap-2">
+        <div
+          className={`mt-4 items-center gap-2 ${mobielV2 ? "hidden lg:flex" : "flex"}`}
+        >
           {[1, 2, 3, 4].map((n) => (
             <button
               key={n}
@@ -3587,7 +3638,17 @@ export function RouteGenerator({
       )}
 
       {!showResult && (
-        <div className="mx-auto mt-4 flex w-full max-w-md gap-3">
+        <div
+          className={`mx-auto mt-4 flex w-full max-w-md gap-3 ${
+            mobielV2
+              ? // F1: primaire actie altijd bereikbaar op telefoon — vaste balk
+                // onderaan het paneel, met veilige schermrand. Desktop
+                // ongewijzigd (lg:static).
+                "sticky bottom-16 z-30 -mx-5 w-auto max-w-none rounded-2xl bg-map-panel/95 px-5 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-md lg:static lg:z-auto lg:mx-auto lg:w-full lg:max-w-md lg:rounded-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+              : ""
+          }`}
+          data-testid={mobielV2 ? "mobiele-actiebalk" : undefined}
+        >
           {step > 1 && (
             <button
               type="button"

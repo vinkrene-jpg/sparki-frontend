@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://127.0.0.1:38689",
+  "baseUrl": "http://127.0.0.1:45739",
   "geo": {
     "latitude": 50.865,
     "longitude": 5.83
@@ -9,91 +9,91 @@
       "stap": "login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-08-01T09:54:06.608Z"
+      "t": "2026-08-01T10:34:22.898Z"
     },
     {
       "stap": "planner-zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:09.128Z"
+      "t": "2026-08-01T10:34:25.299Z"
     },
     {
       "stap": "startpunt",
       "status": "OK",
       "detail": "Valkenburg vastgeklikt",
-      "t": "2026-08-01T09:54:09.218Z"
+      "t": "2026-08-01T10:34:25.368Z"
     },
     {
       "stap": "klimblok-na-start-afstand",
       "status": "OK",
       "detail": "KLIMMEN TOEVOEGEN zichtbaar in stap 2",
-      "t": "2026-08-01T09:54:09.669Z"
+      "t": "2026-08-01T10:34:25.827Z"
     },
     {
       "stap": "geen-detail-voor-selectie",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:09.739Z"
+      "t": "2026-08-01T10:34:25.894Z"
     },
     {
       "stap": "klim-gekozen",
       "status": "OK",
       "detail": "Hoscheit",
-      "t": "2026-08-01T09:54:09.856Z"
+      "t": "2026-08-01T10:34:26.007Z"
     },
     {
       "stap": "vervangen",
       "status": "OK",
       "detail": "zoeker terug zonder invoerverlies",
-      "t": "2026-08-01T09:54:17.309Z"
+      "t": "2026-08-01T10:34:33.961Z"
     },
     {
       "stap": "samenvatting-klimregel",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:18.308Z"
+      "t": "2026-08-01T10:34:34.962Z"
     },
     {
       "stap": "resultaat",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:30.880Z"
+      "t": "2026-08-01T10:34:56.643Z"
     },
     {
       "stap": "klim-verificatie",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:30.886Z"
+      "t": "2026-08-01T10:34:56.649Z"
     },
     {
       "stap": "feit: Aantal klimmen:",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:30.888Z"
+      "t": "2026-08-01T10:34:56.654Z"
     },
     {
       "stap": "feit: Totale hoogtemeters:",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:30.890Z"
+      "t": "2026-08-01T10:34:56.659Z"
     },
     {
       "stap": "feit: Zwaarste klim:",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:30.892Z"
+      "t": "2026-08-01T10:34:56.661Z"
     },
     {
       "stap": "feit: Extra afstand",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T09:54:30.894Z"
+      "t": "2026-08-01T10:34:56.663Z"
     },
     {
       "stap": "bewaard",
       "status": "OK",
-      "detail": "http://127.0.0.1:38689/routes?view=bewaard&route=575",
-      "t": "2026-08-01T09:54:31.163Z"
+      "detail": "http://127.0.0.1:45739/routes?view=bewaard&route=576",
+      "t": "2026-08-01T10:34:56.953Z"
     }
   ]
 }

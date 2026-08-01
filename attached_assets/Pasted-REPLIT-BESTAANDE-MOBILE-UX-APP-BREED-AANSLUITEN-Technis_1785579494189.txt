@@ -1,0 +1,168 @@
+REPLIT — BESTAANDE MOBILE UX APP-BREED AANSLUITEN
+Technische code: MOBILE_UX_IMPLEMENTATION_RECOVERY_01
+
+DOEL
+
+Onderzoek en herstel waarom de eerder ontworpen en gebouwde Sparki Mobile UX niet als samenhangende telefoonervaring zichtbaar is.
+
+Gebruik uitsluitend de bestaande bindende bronnen:
+
+- SPARKI_MOBILE_UX_STANDARD_v1.4.md
+- SPARKI_MOBILE_COMPONENT_LIBRARY.md
+- SPARKI_MOBILE_PATTERNS.md
+- SPARKI_ROLE_BASED_MOBILE_FLOWS.md
+- SPARKI_MIRROR_MOBILE_TESTSTANDARD.md
+- MOBILE_MEDIA_COMPONENTS_01
+- bestaande MUX-, CMP-, PAT- en MTS-regels
+- bestaande reeds gebouwde mobiele componenten
+
+Geen nieuwe mobiele architectuur ontwerpen.
+Geen tweede mobiele app bouwen.
+Geen desktopfunctionaliteit verwijderen.
+
+F0 — WERKELIJKHEIDSAUDIT
+
+Breng per hoofdscherm in kaart:
+
+- welke MUX-regels daadwerkelijk in code zijn toegepast;
+- welke CMP-componenten werkelijk bestaan;
+- waar desktopcomponenten alleen smaller worden;
+- waar een echte mobiele compositie bestaat;
+- welke eerder gebouwde mobiele onderdelen niet aangesloten zijn;
+- welke featureflags mobiele verbeteringen verbergen;
+- welke routes nog oude componenten gebruiken;
+- welke schermen horizontale overflow of overbelasting hebben.
+
+Onderzoek minimaal:
+
+- Vandaag
+- Trainen
+- Rijden
+- Routeplanner
+- Navigatie
+- Activiteiten
+- Analyse
+- Meer
+- Club
+- Team
+- Trainer
+- Hoofdtrainer
+- Ploegleider
+- Mechanieker
+- Soigneur
+- Medical Staff
+- Ouder
+- Documenten
+- Facturatie
+
+Per scherm classificeren:
+
+- MOBILE_NATIVE
+- RESPONSIVE_MAAR_DESKTOP
+- GEDEELTELIJK
+- NIET_AANGESLOTEN
+- NIET_GEBOUWD
+- NIET_TOETSBAAR
+
+F1 — GEDEELDE MOBIELE SHELL
+
+Controleer en herstel:
+
+- vaste bottom navigation;
+- veilige schermranden;
+- actieve rol/context;
+- headergedrag;
+- terugactie;
+- scrollgedrag;
+- toetsenbordgedrag;
+- modal/bottom-sheetregels;
+- één primaire actie;
+- tabs binnen modules;
+- geen zesde hoofditem.
+
+F2 — HOOFDSCHERMEN
+
+Hercomposeer ieder hoofdscherm voor telefoon:
+
+- maximaal vier kaarten boven de vouw;
+- geen brede tabellen;
+- geen dertien secties onder elkaar;
+- details naar apart scherm;
+- formulieren naar wizard;
+- acties bereikbaar met duim;
+- geen horizontale overflow;
+- geen desktopzijpanelen op telefoon.
+
+F3 — ROLMODULES
+
+Maak per rol een echte mobiele werkplek:
+
+- eigen startscherm;
+- eigen eerste prioriteit;
+- relevante tabs;
+- Mijn taken;
+- context zichtbaar;
+- geen lege of generieke atleetweergave;
+- geen functies zonder recht.
+
+F4 — ROUTEPLANNER EN NAVIGATIE
+
+Gebruik MOBILE_ROUTE_WALKING_01 voor de routeplanner.
+Behoud één centrale routearchitectuur.
+
+F5 — DOCUMENTEN EN PROFESSIONELE MODULES
+
+Mobiele weergave voor:
+
+- documentenbibliotheek;
+- werkobjecten;
+- dagschema;
+- wedstrijdplan;
+- taken;
+- notificaties;
+- trainerfacturatie;
+- club/teambeheer.
+
+Desktop blijft leidend voor uitgebreide bewerking.
+Mobiel wordt leidend voor lezen, bevestigen, afvinken, snelle wijziging en dagelijkse uitvoering.
+
+F6 — INTEGRALE TOETS
+
+Test alle hoofdschermen op:
+
+- kleine iPhone-viewport;
+- grote iPhone-viewport;
+- kleine Android-viewport;
+- grote Android-viewport;
+- 200% tekst;
+- schermlezer;
+- portret;
+- lage bandbreedte;
+- offline;
+- rolwissel;
+- terugknop;
+- toetsenbord;
+- geen overflow;
+- primaire actie zichtbaar.
+
+Mirror moet per scherm aantonen:
+- geen versmalde desktop;
+- juiste MUX-regels;
+- juiste componenten;
+- juiste rolcontext;
+- geen regressie op desktop.
+
+OPLEVERING
+
+Lever:
+
+- MOBILE_UX_REALITY_MATRIX.csv
+- lijst eerder gebouwde maar niet aangesloten componenten;
+- lijst schermen die echte herbouw nodig hadden;
+- screenshots per hoofdscherm;
+- fase-SHA’s;
+- tests;
+- bekende beperkingen;
+- vaste eind-SHA voor Mirror.
+
+Geen productiepublicatie.

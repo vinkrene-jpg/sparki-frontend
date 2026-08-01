@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://127.0.0.1:39713",
+  "baseUrl": "http://127.0.0.1:44759",
   "geo": {
     "latitude": 51.905,
     "longitude": 5.66
@@ -9,43 +9,43 @@
       "stap": "login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-07-31T09:03:23.348Z"
+      "t": "2026-08-01T10:43:42.709Z"
     },
     {
       "stap": "planner-zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-07-31T09:03:25.857Z"
+      "t": "2026-08-01T10:43:45.110Z"
     },
     {
       "stap": "startpunt",
       "status": "OK",
       "detail": "eigen locatie vastgeklikt",
-      "t": "2026-07-31T09:03:25.941Z"
+      "t": "2026-08-01T10:43:45.202Z"
     },
     {
       "stap": "status-berekenen",
       "status": "OK",
       "detail": "zichtbare status direct na de tik",
-      "t": "2026-07-31T09:03:27.486Z"
+      "t": "2026-08-01T10:43:46.863Z"
     },
     {
       "stap": "knop-geblokkeerd",
       "status": "OK",
       "detail": "",
-      "t": "2026-07-31T09:03:27.573Z"
+      "t": "2026-08-01T10:43:46.959Z"
     },
     {
       "stap": "status-veiligheidscontrole",
       "status": "OK",
       "detail": "",
-      "t": "2026-07-31T09:03:55.011Z"
+      "t": "2026-08-01T10:44:00.818Z"
     },
     {
-      "stap": "einde",
-      "status": "OK",
-      "detail": "echte route(varianten) op het scherm",
-      "t": "2026-07-31T09:05:30.480Z"
+      "stap": "test",
+      "status": "FOUT",
+      "detail": "TimeoutError: locator.waitFor: Timeout 200000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('RESULTAAT', { exact: true }).first() to be visible\u001b[22m\n",
+      "t": "2026-08-01T10:47:20.897Z"
     }
   ]
 }
