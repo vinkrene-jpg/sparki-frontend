@@ -1031,7 +1031,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
   return (
     <section>
       <SectionLabel n={n} title="Fietsengarage" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+      <p className="mt-2 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 text-pretty text-[12px] leading-relaxed text-white/50 backdrop-blur-md">
         Leg je fietsen en uitrusting vast. Per herkend onderdeel zie je een
         beoordeling uit de kennisbank — en waar per specialisme de grootste
         winst zit.
@@ -1118,8 +1118,8 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
           )}
 
           {data.bikes.length === 0 && !addingBike && !adoptSuggestion && (
-            <div className="space-y-1.5">
-              <p className="text-[13px] leading-relaxed text-white/45">
+            <div className="space-y-1.5 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
+              <p className="text-[13px] leading-relaxed text-white/55">
                 Nog geen fietsen in je garage. Voeg je eerste fiets toe — daarna
                 krijg je onderhoudsadvies per onderdeel.
               </p>

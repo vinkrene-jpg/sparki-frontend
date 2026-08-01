@@ -92,7 +92,7 @@ export function MaintenanceSignalsPanel({
   if (signals.length === 0) {
     if (compact) return null
     return (
-      <p className="text-[12px] leading-relaxed text-white/40">
+      <p className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 text-[12px] leading-relaxed text-white/50 backdrop-blur-md">
         Geen onderhoudssignalen op dit moment. Signalen verschijnen op basis van
         je gekoppelde ritten en je eigen registraties in de garage.
       </p>
