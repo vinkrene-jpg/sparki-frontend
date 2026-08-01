@@ -40,7 +40,7 @@
 
 ## 1a. Vrijgavevolgorde
 
-**Uitsluitend F0 is nu vrijgeefbaar.** Na F0: commit, push, vaste eind-SHA, Mirror-toets — **en stop**. F1 start niet automatisch. Eerst beoordelen ChatGPT en René de hergebruikmatrix, de risico's en de open besluiten. **Geen versnelde automatische F0–F13-bouwstraat.**
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Uitsluitend F0 is nu vrijgeefbaar.** Na F0: commit, push, vaste eind-SHA, Mirror-toets — **en stop**. F1 start niet automatisch. Eerst beoordelen ChatGPT en René de hergebruikmatrix, de risico's en de open besluiten. **Geen versnelde automatische F0–F13-bouwstraat.**~~
 
 ## 2. Wat een fase tegenhoudt
 

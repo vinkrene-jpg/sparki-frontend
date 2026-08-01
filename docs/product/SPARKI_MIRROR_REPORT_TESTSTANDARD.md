@@ -1,5 +1,13 @@
 # SPARKI — MIRROR RAPPORT-TESTSTANDAARD v1.0
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `REPORT_DESIGN_STANDARD_01` — oplevering 5 van 5
 **Hoort bij:** de vier voorgaande documenten van deze reeks (alle bindend)
 **Status:** BINDEND, afgeleid. Geen nieuwe `RPT`-, `TPL`-, `BLK`-, `RT`-, `RCR`- of `RPV`-codes.
@@ -128,7 +136,7 @@ Mirror toetst niet of de PDF opent. Mirror toetst of het rapport doet wat het be
 
 **MRT-46 — Niet van toepassing is een uitkomst.** Met reden vastgelegd. Stilzwijgend overslaan maakt de toets ongeldig.
 
-**MRT-47 — De poort.** Alle dimensies uitgevoerd of gemotiveerd niet van toepassing · geen directe afkeurgrond · bewijs per dimensie op één vaste SHA · minimaal één rapporttype per template getoetst.
+**MRT-47 — De poort.** Alle dimensies uitgevoerd of gemotiveerd niet van toepassing · geen directe herstelgrond · bewijs per dimensie op één vaste SHA · minimaal één rapporttype per template getoetst.
 
 **MRT-48 — Bestaande uitdraaien.** Niet met terugwerkende kracht herbouwen; toetsen bij de eerstvolgende wijziging aan die uitdraai.
 

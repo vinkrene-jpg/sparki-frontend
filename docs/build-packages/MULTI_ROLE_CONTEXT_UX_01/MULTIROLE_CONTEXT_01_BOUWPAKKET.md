@@ -1,5 +1,13 @@
 # MULTIROLE_CONTEXT_01 — Bouwpakket (5-delig)
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `MULTIROLE_CONTEXT_01`
 **Datum:** 1 augustus 2026 · **Status:** `OPEN` — **niet vrijgegeven**
 **Doelmap:** `docs/build-packages/<nummer>_MULTIROLE_CONTEXT_01/` — nummering door ChatGPT

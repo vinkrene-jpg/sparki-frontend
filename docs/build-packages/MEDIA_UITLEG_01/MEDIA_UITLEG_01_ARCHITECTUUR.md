@@ -1,5 +1,13 @@
 # MEDIA_UITLEG_01 — ARCHITECTUUR
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Deel 2 van 20** · hoort bij `README.md`
 
 ---
@@ -48,7 +56,7 @@
 
 **C-3 Server-side.** De status wordt op de server bewaard. Lokaal wordt niets als bevestigd getoond zonder serverantwoord (MUX-55).
 
-**C-4 Per gebruiker, nooit gedeeld.** Cross-account voortgang is een directe afkeurgrond.
+**C-4 Per gebruiker, nooit gedeeld.** Cross-account voortgang is een directe herstelgrond.
 
 **C-5 Historie blijft herleidbaar.** Overslaan wist niet dat er ooit is aangeboden.
 
@@ -141,7 +149,7 @@ Geen beweging of diepte bij: medische of acute inhoud · standaardlijsten · fil
 
 ### F-9 Geen layoutshift
 
-Elke overgang reserveert de definitieve ruimte vooraf (MUX-93d). Laat geladen media mag niets verschuiven — dat is een directe afkeurgrond.
+Elke overgang reserveert de definitieve ruimte vooraf (MUX-93d). Laat geladen media mag niets verschuiven — dat is een directe herstelgrond.
 
 ---
 

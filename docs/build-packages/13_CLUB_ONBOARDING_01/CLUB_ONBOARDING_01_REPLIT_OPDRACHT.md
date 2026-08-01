@@ -1,5 +1,13 @@
 # CLUB_ONBOARDING_01 — EEN CLUB VAN REGISTRATIE TOT ACTIEF
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
 **Status:** voorbereid werk. Start pas na expliciete vrijgave door René.
 **Verhouding tot `TRAINER_CLUB_01`:** dat pakket maakt rechten en lekken sluitend in de bestaande omgeving. Dit pakket bouwt de **instroom**: hoe een club ontstaat en actief wordt. Geen overlap, geen tweede clubmodel.

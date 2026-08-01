@@ -1,5 +1,13 @@
 # MEDIA_UITLEG_01 — VERTAALTABEL
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Deel 19 van 20** · van bestaande codes naar fasen en documenten
 
 ---
@@ -56,7 +64,7 @@ Daarnaast hergebruikt, niet gewijzigd: CMP-00 (componentcontract) · CMP-17 (zoe
 | MTS-66 | speler blokkeert niets | F3 |
 | MTS-67 | rechten en versie | F3, F6, F10 |
 | MTS-68 | verbruik en zwaarte | alle |
-| MTS-69 | directe afkeurgronden | alle |
+| MTS-69 | directe herstelgronden | alle |
 
 ## 4. MUX-regels die dit pakket het meest raken
 

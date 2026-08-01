@@ -1,5 +1,13 @@
 # SPARKI BUILD 03 — WEDSTRIJD- EN TEAMOPERATIE
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `SPARKI_BUILD_03`
 **Uitvoerder:** Replit · **Toetser:** Mirror (parallel) · **Opdrachtgever:** René
 **Datum:** 1 augustus 2026 · **Status:** klaar voor vrijgave, nog niet gestart.
@@ -96,7 +104,7 @@ Dit pakket bouwt **geen** van de dertien centrale diensten. Het gebruikt ze.
 | PD-12 gebruikersaudit | pakket 02 | wie wijzigde de selectie, wie opende noodinformatie |
 | PD-13 import en export | pakket 02 | wedstrijdkalender, bezetting, agenda-export |
 
-**Harde regel:** één eigen agenda, takenlijst, locatielijst of meldingenlijst in dit pakket is een **directe afkeurgrond**.
+**Harde regel:** één eigen agenda, takenlijst, locatielijst of meldingenlijst in dit pakket is een **directe herstelgrond**.
 
 **Elke taak uit een dagschema verschijnt in "Mijn taken"** van de verantwoordelijke (PD-7). Een taak die alleen in het dagschema bestaat, telt als niet gebouwd.
 
@@ -272,7 +280,7 @@ actieve rol en context · huidige taak · volgende taak · tijd tot taak · wijz
 
 **Eisen:** grote tikvlakken (≥ 64 dp) · zonlichtleesbaar · batterijzuinig · werkt bij slechte verbinding · geen video · geen afleidende animatie · geen AI-onderbreking · niet typen — alles is kiezen, afvinken of bevestigen.
 
-**Noodhandeling:** permanent bereikbaar, buiten de duimzone, één korte bevestiging, bereikt de juiste persoon, **en zegt eerlijk wanneer er geen verbinding is** — een noodhandeling die stil faalt is een directe afkeurgrond.
+**Noodhandeling:** permanent bereikbaar, buiten de duimzone, één korte bevestiging, bereikt de juiste persoon, **en zegt eerlijk wanneer er geen verbinding is** — een noodhandeling die stil faalt is een directe herstelgrond.
 
 ## 8. Desktop UX
 

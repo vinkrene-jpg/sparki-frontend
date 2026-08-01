@@ -1,22 +1,30 @@
 # AI_INTELLIGENCE — REPLIT-OPDRACHTEN
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Deel 16 van 21** · fasen F0 t/m F13
 
 ---
 
 ## Hoe deze opdrachten werken
 
-Eén fase per opdracht. **Uitsluitend F0 is nu vrijgeefbaar.** Elke volgende fase vereist `MIRROR_PROVEN` van de voorgaande én expliciete vrijgave door René.
+Eén fase per opdracht. ~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Uitsluitend F0 is nu vrijgeefbaar.** Elke volgende fase vereist `MIRROR_PROVEN` van de voorgaande én expliciete vrijgave door René.~~
 
 **Vrijgavevolgorde — bindend.**
 1. F0 wordt vrijgegeven en uitgevoerd.
 2. Replit commit en pusht, en meldt de **vaste eind-SHA**.
 3. Mirror toetst op die SHA.
-4. **Daarna stopt het.** F1 start niet automatisch.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~4. **Daarna stopt het.** F1 start niet automatisch.~~
 5. De hergebruikmatrix, de risico's en de open besluiten worden eerst door ChatGPT en René beoordeeld.
 6. Pas daarna wordt bepaald of, en met welke fase, er verder wordt gegaan.
 
-**Er is geen versnelde automatische F0–F13-bouwstraat.** Een fase die "logisch volgt" is geen vrijgegeven fase.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Er is geen versnelde automatische F0–F13-bouwstraat.** Een fase die "logisch volgt" is geen vrijgegeven fase.~~
 
 Vier velden gelden voor alle fasen en staan hier één keer:
 

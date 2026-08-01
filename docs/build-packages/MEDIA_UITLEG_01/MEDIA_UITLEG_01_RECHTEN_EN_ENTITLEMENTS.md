@@ -1,5 +1,13 @@
 # MEDIA_UITLEG_01 — RECHTEN EN ENTITLEMENTS
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Deel 5 van 20**
 
 ---
@@ -30,7 +38,7 @@ FTP · zones · herstel · intervaltraining · klimmen · dalen · voeding · we
 **R-2** Welk pakket ervoor nodig is.
 **R-3** **Geen preview die persoonlijke analyse suggereert.** Een titel en een omschrijving mogen; een grafiek met eigen gegevens erin niet.
 **R-4** Geen inhoud downloaden vóór de entitlementcontrole. De controle gebeurt vóór de URL wordt afgegeven (datamodel 4.4).
-**R-5** **Server-side controle.** Client-side verbergen is een directe afkeurgrond.
+**R-5** **Server-side controle.** Client-side verbergen is een directe herstelgrond.
 **R-6** Bestaande voortgang blijft bestaan bij pakketverlies; alleen de toegang vervalt.
 **R-7** Ingetrokken toegang wordt onmiddellijk gerespecteerd — ook een reeds geopende speler stopt bij de volgende URL-aanvraag.
 **R-8** Wat de gebruiker niet heeft, wordt niet als lokkertje in beeld geduwd. Het bestaat in de lijst met een eerlijke uitleg, niet als verleidelijke tegel.

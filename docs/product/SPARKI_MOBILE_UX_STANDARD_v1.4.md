@@ -1,5 +1,13 @@
 # SPARKI — MOBIELE UX-STANDAARD v1.4
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `MOBILE_UX_STANDARD_01`
 **Versie:** v1.4 — vervangt v1.3 van dezelfde dag (gerichte patch MUX-76)
 **Status:** BINDEND — vastgesteld door René, 1 augustus 2026
@@ -458,7 +466,7 @@ AI is in Sparki geen aparte wereld met eigen omgangsvormen. Alles wat de AI op e
 - **f. Bevestigen in één handeling.** Taken worden met één tik afgevinkt of bevestigd, met zichtbare bevestiging en een korte ongedaan-mogelijkheid achteraf, in plaats van een dialog vooraf.
 - **g. Geen invoer.** In deze modus wordt niet getypt. Alles is kiezen, afvinken of bevestigen (MUX-09). Wat typen vereist, wordt bewaard als taak voor na afloop.
 - **h. Noodhandeling.** Eén permanent bereikbare handeling voor een acute situatie (val, medisch, stilstand door materiaalpech), die de juiste persoon in de organisatie bereikt en zichtbaar bevestigt dát de melding is verstuurd. Staat buiten de vaste duimpositie (MUX-23) en vraagt één korte bevestiging, zodat hij niet per ongeluk afgaat.
-  **Grens:** zonder verbinding kan deze melding niet worden verstuurd (MUX-54). De modus zegt dat dan expliciet en noemt het alternatief. Een noodhandeling die stil faalt is de ernstigste vorm van MUX-55 en een directe afkeurgrond.
+  **Grens:** zonder verbinding kan deze melding niet worden verstuurd (MUX-54). De modus zegt dat dan expliciet en noemt het alternatief. Een noodhandeling die stil faalt is de ernstigste vorm van MUX-55 en een directe herstelgrond.
 - **i. Offline.** Uitsluitend volgens MUX-53: een gestarte navigatie loopt door, al het overige toont de offlinetoestand. Bij herstel geldt MUX-53a.
 - **j. Meldingen.** Alleen wat de huidige situatie raakt. Al het overige wordt uitgesteld tot de modus eindigt. AI-adviezen zwijgen volledig (MUX-90).
 - **k. Bediening in beweging.** Een handeling die stilstand vereist, wordt niet gepresenteerd alsof hij onderweg kan. Wat stilstand vereist, zegt dat.
@@ -768,7 +776,7 @@ Uitbreidingsronde. Geen nieuwe architectuur, geen nieuwe productbesluiten, beslu
 | MUX-93 | **Nieuw.** Geen verrassingen: niets verschuift, verdwijnt of wisselt onaangekondigd. Vijf verboden gedragingen, vijf toegestane uitzonderingen met voorwaarde. |
 | MUX-94 | **Nieuw.** Prestatiedoelen als ervaringsnorm in plaats van technische milliseconden. Subregel g regelt de verhouding tot MUX-56 en MUX-57: die blijven de toetsbare ondergrens, het ervaringsdoel wint bij tegenstrijdigheid. |
 | MUX-95 | **Nieuw.** Codegovernance: nieuwe regel is nieuwe code, codes worden nooit hergebruikt, codes zijn identificatie en geen volgorde, verwijzen gebeurt uitsluitend per code, een bevinding zonder code is niet toetsbaar. |
-| MUX-96 | **Nieuw.** Wedstrijddagmodus voor wedstrijddag, trainingskamp, etappekoers en begeleiding onderweg. Twaalf subregels a–l. Subregel h begrenst de noodhandeling expliciet: zonder verbinding kan hij niet worden verstuurd, dat wordt gezegd, en stil falen is een directe afkeurgrond. |
+| MUX-96 | **Nieuw.** Wedstrijddagmodus voor wedstrijddag, trainingskamp, etappekoers en begeleiding onderweg. Twaalf subregels a–l. Subregel h begrenst de noodhandeling expliciet: zonder verbinding kan hij niet worden verstuurd, dat wordt gezegd, en stil falen is een directe herstelgrond. |
 | MUX-97 | **Nieuw.** Rolcontexten voor sporter, trainer, ploegleider, mechanieker, soigneur en medical staff. Structuur en regels; detailflows volgen later. Een context verandert volgorde en prominentie, nooit navigatie of rechten. |
 | MUX-81 | Toetsdimensies uitgebreid van elf naar vijftien. |
 | MUX-82 | Vijf afkeurgronden toegevoegd, waaronder de stil falende noodhandeling. |

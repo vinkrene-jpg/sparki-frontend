@@ -1,5 +1,13 @@
 # SPARKI — MOBIELE PATRONEN v1.0
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `MOBILE_UX_STANDARD_01` — oplevering 4 van 5
 **Hoort bij:** `SPARKI_MOBILE_UX_STANDARD_v1.4.md`, `SPARKI_MOBILE_COMPONENT_LIBRARY.md`, `SPARKI_ROLE_BASED_MOBILE_FLOWS.md`
 **Status:** BINDEND, afgeleid. Geen nieuwe MUX-regels, geen nieuwe componenten, geen productbesluiten.
@@ -245,7 +253,7 @@ Een patroon is geen nieuwe regel. Het is de afgesproken manier waarop bestaande 
 **Patroon:** één permanent bereikbare handeling, buiten de duimzone, met één korte bevestiging — en zonder verbinding een expliciete melding dat er níéts verstuurd is, plus het alternatief.
 **Componenten:** CMP-38.
 **Regels:** MUX-96h, MUX-54, MUX-55, MUX-23.
-**Antipatroon:** een noodknop die er hetzelfde uitziet of hij nu werkt of niet. Stil falen is hier de ernstigste fout in de hele standaard en een directe afkeurgrond.
+**Antipatroon:** een noodknop die er hetzelfde uitziet of hij nu werkt of niet. Stil falen is hier de ernstigste fout in de hele standaard en een directe herstelgrond.
 **Sparki:** val in de finale, in een dal zonder bereik.
 
 ### PAT-25 — Terug uit de modus
@@ -433,7 +441,7 @@ Toegevoegd door `MOBILE_MEDIA_COMPONENTS_01`. Deze twaalf patronen dragen een ui
 **Fout:** een reeds spelende video wordt gepauzeerd zodra de taak begint, niet doorgespeeld op de achtergrond.
 **Offline:** ongewijzigd.
 **Toegankelijkheid:** ongewijzigd.
-**Verboden:** autoplay tijdens navigatie of wedstrijddag — dit is een directe afkeurgrond.
+**Verboden:** autoplay tijdens navigatie of wedstrijddag — dit is een directe herstelgrond.
 **Antipatroon:** "een korte uitleg terwijl de route laadt". Precies het moment waarop de gebruiker wegrijdt.
 **Mirror:** MTS-59, MTS-64.
 

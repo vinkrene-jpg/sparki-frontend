@@ -1,5 +1,13 @@
 # SPARKI — MEDIA EN UITLEG: PRODUCTBESLUIT v1.0
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `MOBILE_MEDIA_COMPONENTS_01` → voorwaarden voor bouwpakket `MEDIA_UITLEG_01`
 **Datum:** 1 augustus 2026
 **Status:** vastgelegd wat René heeft besloten; open punten expliciet als open gemarkeerd. Dit document neemt zelf geen nieuwe productbesluiten.
@@ -53,7 +61,7 @@ Vastgelegd als **verwijzing**. Dit document bouwt geen entitlements en wijzigt g
 3. **Geen speelse animatie of diepte** bij een acute of medische waarschuwing.
 4. **Acute meldingen zijn nooit permanent onderdrukbaar** en sluiten pas nadat de inhoud is gelezen; de passende verantwoordelijke blijft geïnformeerd.
 5. **Geen media tijdens een actieve taak**: navigatie, training, wedstrijddagmodus, onboarding, formulier of acute flow.
-6. **Coachadvies komt uit echte gebruikersgegevens.** Advies op basis van mock- of verzonnen data wordt niet getoond — een directe afkeurgrond.
+6. **Coachadvies komt uit echte gebruikersgegevens.** Advies op basis van mock- of verzonnen data wordt niet getoond — een directe herstelgrond.
 
 ---
 
@@ -92,7 +100,7 @@ Het bouwpakket mag pas starten wanneer aan alle zeven is voldaan.
 4. **Geen media wordt in dit pakket geproduceerd.** Het pakket bouwt de weergavelaag; de pilotinhoud is een aparte opdracht.
 5. **De pilotomvang is klein**: één diepte-kaart, één zwevende coachmelding, één bewegende uitleg, twee oefendemonstraties, de pagina Uitleg en Academy, en de instelling voor minder beweging.
 6. **Bewijslast bij oplevering**: aantonen dat alles zonder animatie identiek bruikbaar blijft (MTS-52), en dat geen enkele functie beweging nodig heeft om te bestaan.
-7. **Mirror toetst volgens MTS-50 t/m MTS-69**, inclusief de zeven directe afkeurgronden.
+7. **Mirror toetst volgens MTS-50 t/m MTS-69**, inclusief de zeven directe herstelgronden.
 
 ---
 
@@ -120,7 +128,7 @@ Geen van deze punten wordt hier beslist.
 | `SPARKI_MOBILE_COMPONENT_LIBRARY.md` | nieuw hoofdstuk 9 met CMP-40 t/m CMP-44; acht regels toegevoegd aan de verbodenlijst; register uitgebreid |
 | `SPARKI_MOBILE_PATTERNS.md` | nieuw hoofdstuk 8 met PAT-28 t/m PAT-39; register uitgebreid |
 | `SPARKI_ROLE_BASED_MOBILE_FLOWS.md` | v1.2 — nieuw hoofdstuk 4 met media-aanvullingen per rol, inclusief de grens per rol |
-| `SPARKI_MIRROR_MOBILE_TESTSTANDARD.md` | nieuw hoofdstuk 10 met MTS-50 t/m MTS-69, waarvan MTS-69 zeven directe afkeurgronden |
+| `SPARKI_MIRROR_MOBILE_TESTSTANDARD.md` | nieuw hoofdstuk 10 met MTS-50 t/m MTS-69, waarvan MTS-69 zeven directe herstelgronden |
 | `SPARKI_MEDIA_UITLEG_PRODUCTBESLUIT.md` | nieuw (dit document) |
 
 **Niet gewijzigd, bewust:** `SPARKI_MOBILE_UX_STANDARD_v1.4.md`. Er zijn geen nieuwe MUX-regels nodig — alle mediacomponenten en -patronen zijn te herleiden tot bestaande regels, met name MUX-90, MUX-91, MUX-51, MUX-48 en het toegankelijkheidshoofdstuk.

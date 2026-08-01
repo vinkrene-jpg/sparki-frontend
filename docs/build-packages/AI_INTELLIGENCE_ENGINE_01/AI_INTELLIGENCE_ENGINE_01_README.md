@@ -1,5 +1,13 @@
 # AI_INTELLIGENCE_ENGINE_01 — README
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `AI_INTELLIGENCE_ENGINE_01`
 **Uitvoerder na goedkeuring:** Replit · **Toetser:** Mirror · **Eindvrijgever:** René
 **Datum:** 1 augustus 2026 · **Status:** `OPEN` — niets gebouwd, niets gecommit, geen Replit-taak gestart.
@@ -67,7 +75,7 @@ Dit is geen slag om de arm. Het is de enige manier waarop "bouw niet opnieuw wat
 
 **AIE-03 — Deterministisch blijft deterministisch.** Een taalmodel legt uit en formuleert; het rekent niet, beslist niet en overschrijft geen berekende waarde.
 
-Alle drie zijn directe afkeurgronden en worden niet per document herhaald.
+Alle drie zijn directe herstelgronden en worden niet per document herhaald.
 
 ---
 
@@ -75,9 +83,9 @@ Alle drie zijn directe afkeurgronden en worden niet per document herhaald.
 
 Geen code, geen commit, geen push, geen Master Plan, geen Replit-taak. Na oplevering controleert ChatGPT op volledigheid, overlap, veiligheid, fasering en open eindjes.
 
-**Vrijgavevolgorde.** Pas na expliciete goedkeuring mag Replit met **F0** starten — en **uitsluitend met F0**. Daarna: commit, push, vaste eind-SHA, Mirror-toets, **en stop**. F1 start niet automatisch. Eerst worden de hergebruikmatrix, de risico's en de open besluiten door ChatGPT en René beoordeeld; pas daarna wordt bepaald of er verder wordt gegaan.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Vrijgavevolgorde.** Pas na expliciete goedkeuring mag Replit met **F0** starten — en **uitsluitend met F0**. Daarna: commit, push, vaste eind-SHA, Mirror-toets, **en stop**. F1 start niet automatisch. Eerst worden de hergebruikmatrix, de risico's en de open besluiten door ChatGPT en René beoordeeld; pas daarna wordt bepaald of er verder wordt gegaan.~~
 
-**Er is geen versnelde automatische F0–F13-bouwstraat.** Elke fase is een afzonderlijk besluit.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Er is geen versnelde automatische F0–F13-bouwstraat.** Elke fase is een afzonderlijk besluit.~~
 
 ---
 

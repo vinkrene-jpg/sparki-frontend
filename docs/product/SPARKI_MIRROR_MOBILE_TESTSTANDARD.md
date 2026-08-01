@@ -1,5 +1,13 @@
 # SPARKI — MIRROR MOBILE TESTSTANDAARD v1.0
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `MOBILE_UX_STANDARD_01` — oplevering 5 van 5
 **Hoort bij:** `SPARKI_MOBILE_UX_STANDARD_v1.4.md` · `SPARKI_MOBILE_COMPONENT_LIBRARY.md` · `SPARKI_ROLE_BASED_MOBILE_FLOWS.md` · `SPARKI_MOBILE_PATTERNS.md`
 **Status:** BINDEND, afgeleid. Geen nieuwe MUX-, CMP- of PAT-codes. Geen productbesluiten.
@@ -33,7 +41,7 @@ Mirror toetst of de mobiele belofte van een bouwpakket werkelijk waargemaakt is.
 
 **MTS-06 — Echt account per rol.** De rol wordt getoetst met een account dat die rol werkelijk heeft, niet met een beheerdersaccount dat "doet alsof" (MUX-81, punt 2).
 
-**MTS-07 — Geen mockdata.** Aantreffen van voorbeeld-, placeholder- of demogegevens in een echte omgeving is een directe afkeurgrond, ongeacht de rest van de uitkomst (MUX-51).
+**MTS-07 — Geen mockdata.** Aantreffen van voorbeeld-, placeholder- of demogegevens in een echte omgeving is een directe herstelgrond, ongeacht de rest van de uitkomst (MUX-51).
 
 **MTS-08 — Cumulatief oordeel.** Voldoet elk scherm los maar is het geheel onbruikbaar, dan is de uitkomst afkeuring. Technisch binnen de norm en in de praktijk onbruikbaar telt als tekortkoming (MUX-94g).
 
@@ -108,7 +116,7 @@ Iedere mobiele toets dekt deze achttien. Wat niet van toepassing is, wordt expli
 *Zakt bij:* een AI-melding tijdens navigatie, training, wedstrijd, onboarding of formulier; een advies zonder waarom, welke gegevens en welke onzekerheid; een voorstel dat na verloop van tijd alsnog is uitgevoerd.
 
 **MTS-25 — Wedstrijddagmodus.** Van toepassing bij elk pakket dat de modus raakt: knopmaat, één regel tekst, geen invoer, bediening met handschoenen, geen storende meldingen, eerlijk offline (MUX-96, PAT-22 t/m PAT-25).
-*Zakt bij:* een noodhandeling die zonder verbinding stil faalt (MUX-96h). Dit is een directe afkeurgrond zonder herstelruimte binnen de toets.
+*Zakt bij:* een noodhandeling die zonder verbinding stil faalt (MUX-96h). Dit is een directe herstelgrond zonder herstelruimte binnen de toets.
 
 **MTS-26 — Prestatiedoelen.** Eerste bruikbare informatie eerst, elke tik reageert onmiddellijk, vertraging wordt benoemd, nooit een zwart gat — getoetst op het zwaarste scherm (MUX-94).
 *Zakt bij:* een scherm dat pas iets toont als de traagste bron klaar is.
@@ -224,7 +232,7 @@ Naast de dimensies loopt Mirror de antipatronen uit `SPARKI_MOBILE_PATTERNS.md` 
 
 ## 9. De poort
 
-**MTS-46 — Wanneer mag een pakket door.** Alle achttien dimensies uitgevoerd of gemotiveerd niet van toepassing · geen directe afkeurgrond · geen openstaande bevinding uit MTS-39 zonder besluit · antipatroonsweep uitgevoerd met verslag · bewijs per scenario aanwezig op één vaste SHA.
+**MTS-46 — Wanneer mag een pakket door.** Alle achttien dimensies uitgevoerd of gemotiveerd niet van toepassing · geen directe herstelgrond · geen openstaande bevinding uit MTS-39 zonder besluit · antipatroonsweep uitgevoerd met verslag · bewijs per scenario aanwezig op één vaste SHA.
 
 **MTS-47 — Volgorde.** Toetsen gebeurt ná bouwen en vóór vrijgave van het volgende pakket. Eén pakket tegelijk.
 

@@ -1,5 +1,13 @@
 # SPARKI_MIRROR_MULTIROLE_TESTSTANDARD
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Regelcodes:** `MMT-01..` · **Status:** `OPEN` · **Datum:** 1 augustus 2026
 Aanvullend op `SPARKI_MIRROR_MOBILE_TESTSTANDARD.md` (`MTS-01..69`), die onverkort blijft gelden.
 
@@ -89,7 +97,7 @@ geen zoekveld bij meer dan zeven contexten · favorieten die door Sparki zelf wo
 
 ```
 Bevinding <nummer>
-Dimensie:     MMT-<nn> of directe afkeurgrond <n>
+Dimensie:     MMT-<nn> of directe herstelgrond <n>
 Contexten:    welke contexten betrokken waren
 Apparaat:     telefoon / tablet / desktop / PWA
 Scenario:     stap voor stap

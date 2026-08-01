@@ -1,5 +1,13 @@
 # SPARKI — RAPPORT-PRIVACYSTANDAARD v1.0
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `REPORT_DESIGN_STANDARD_01` — oplevering 4 van 5
 **Hoort bij:** `SPARKI_REPORT_DESIGN_STANDARD_v1.0.md` · `SPARKI_REPORT_TEMPLATE_LIBRARY.md` · `SPARKI_REPORT_CONTENT_RULES.md`
 **Status:** BINDEND, afgeleid. Neemt geen nieuwe productbesluiten; open punten zijn als open gemarkeerd.
@@ -83,7 +91,7 @@ Een rapport is het moment waarop gegevens Sparki verlaten. Vanaf dat moment geld
 
 > **Open punt.** De concrete verloopduur is een productbesluit dat nog niet is genomen. Het mechanisme wordt configureerbaar gebouwd met een expliciet gemarkeerd voorstel, niet met een stilzwijgende standaardwaarde (open afhankelijkheid 3 uit het kerndocument).
 
-**RPV-19 — Ingetrokken toegang werkt onmiddellijk.** Zodra toegang wordt ingetrokken, opent de link niet meer — en de QR-code die ernaar verwijst evenmin (RPT-21). Een link die blijft werken na intrekking is een directe afkeurgrond.
+**RPV-19 — Ingetrokken toegang werkt onmiddellijk.** Zodra toegang wordt ingetrokken, opent de link niet meer — en de QR-code die ernaar verwijst evenmin (RPT-21). Een link die blijft werken na intrekking is een directe herstelgrond.
 
 **RPV-20 — Wat gelogd wordt.** Genereren · downloaden · delen · openen van een gedeelde link · intrekken. Per gebeurtenis: wie, wanneer, welk document-ID, en bij inzage in andermans gegevens ook de grond.
 

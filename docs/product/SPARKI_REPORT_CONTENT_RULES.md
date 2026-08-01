@@ -1,5 +1,13 @@
 # SPARKI — RAPPORTINHOUDSREGELS v1.0
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `REPORT_DESIGN_STANDARD_01` — oplevering 3 van 5
 **Hoort bij:** `SPARKI_REPORT_DESIGN_STANDARD_v1.0.md` en `SPARKI_REPORT_TEMPLATE_LIBRARY.md` (beide bindend)
 **Status:** BINDEND, afgeleid. Geen nieuwe merkregels, geen nieuwe productbesluiten.

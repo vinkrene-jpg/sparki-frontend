@@ -1,5 +1,13 @@
 # SPARKI BUILD 04 — PROFESSIONELE BEGELEIDING EN FACTURATIE
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `SPARKI_BUILD_04`
 **Uitvoerder:** Replit · **Toetser:** Mirror (parallel) · **Opdrachtgever:** René
 **Datum:** 1 augustus 2026 · **Status:** klaar voor vrijgave, nog niet gestart.
@@ -100,7 +108,7 @@ Dit pakket bouwt **geen** van de dertien centrale diensten.
 | PD-12 gebruikersaudit | pakket 02 | wie markeerde betaald · wie crediteerde · wie wijzigde de reeks |
 | PD-13 import en export | pakket 02 | klanten importeren · facturen exporteren |
 
-**Harde regel:** een eigen agenda, takenlijst, klantenlijst, zoekfunctie of meldingenlijst in dit pakket is een **directe afkeurgrond**.
+**Harde regel:** een eigen agenda, takenlijst, klantenlijst, zoekfunctie of meldingenlijst in dit pakket is een **directe herstelgrond**.
 
 **"Mijn taken" van de trainer** toont taken uit alle bronnen: begeleiding, documenten én facturatie, in dezelfde vijf groepen (vandaag · te laat · binnenkort · geblokkeerd · afgerond).
 

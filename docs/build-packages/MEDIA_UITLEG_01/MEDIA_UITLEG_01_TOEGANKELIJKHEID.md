@@ -1,12 +1,20 @@
 # MEDIA_UITLEG_01 — TOEGANKELIJKHEID
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Deel 6 van 20**
 
 ---
 
 ## 1. De harde regel
 
-**Alles blijft volledig bruikbaar met animatie uit én met media uit.** Geen extra tik, geen omweg, geen verdwenen knop, en **geen aparte inferieure variant**. Dit is geen wens maar de eerste directe afkeurgrond.
+**Alles blijft volledig bruikbaar met animatie uit én met media uit.** Geen extra tik, geen omweg, geen verdwenen knop, en **geen aparte inferieure variant**. Dit is geen wens maar de eerste directe herstelgrond.
 
 De reduced-motionstand is niet een uitgeklede versie van de app. Het is dezelfde app, zonder beweging.
 
@@ -25,7 +33,7 @@ De reduced-motionstand is niet een uitgeklede versie van de app. Het is dezelfde
 ## 3. Media
 
 **T-6 Ondertiteling** is verplicht bij elke video en animatie met gesproken of tekstuele inhoud. Zonder ondertiteling geen publicatie.
-**T-7 Tekstalternatief** is verplicht bij **alle** media, en is **volwaardig**: wie het leest, mist geen informatie. Een samenvatting voldoet niet — dat is een directe afkeurgrond.
+**T-7 Tekstalternatief** is verplicht bij **alle** media, en is **volwaardig**: wie het leest, mist geen informatie. Een samenvatting voldoet niet — dat is een directe herstelgrond.
 **T-8 Zonder geluid begrijpelijk.** Geen informatie die alleen in het geluid zit.
 **T-9 Snelheid 1× en 0,5×**, met name voor oefendemonstraties.
 **T-10 Schermlezer.** Elke knop van de speler heeft een leesbare naam; de status (spelend, gepauzeerd, voltooid) is uitspreekbaar.

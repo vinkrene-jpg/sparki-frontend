@@ -1,5 +1,13 @@
 # MEDIA_UITLEG_01 — F0 RISICO'S
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Fase:** `MEDIA_UITLEG_01_F0` · **Datum:** 2026-08-01
 
 | # | Risico | Grond (inventaris) | Raakt | Beheersing |
@@ -15,4 +23,4 @@
 | R-9 | Jeugdregels: `do_not_show_again` verboden voor minderjarigen (D-2) botst met generiek UI-gedrag | fail-closed jeugdlaag bestaat, maar niet gekoppeld aan meldingspresentatie | F4, F7 | statuslaag (F4) dwingt D-1/D-2 server-side af; UI toont de optie niet eens client-side |
 | R-10 | Tweede helpomgeving sluipt erin via Academy | `/support` bestaat al met artikelen + AI-helpdesk | F8 | Academy als onderdeel binnen het bestaande Hulp & ondersteuning-chapter; support-artikelen en Academy-inhoud krijgen één vindbaarheid via bestaande `/api/search` |
 | R-11 | Motionfoutlogging kan persoonlijke inhoud lekken | pino-logging bestaat, maar geen media-specifieke logdiscipline | F1+ | metadata-only loggen (contentId, event, foutcode) conform AI-gateway-logdoctrine |
-| R-12 | Entitlement client-side nabouwen (directe afkeurgrond) | UI heeft her en der flag-gedreven zichtbaarheid | F8 | alle Academy-entitlement via `requireCommercialFeature`-pad; UI verbergt nooit als vervanging van een servercheck |
+| R-12 | Entitlement client-side nabouwen (directe herstelgrond) | UI heeft her en der flag-gedreven zichtbaarheid | F8 | alle Academy-entitlement via `requireCommercialFeature`-pad; UI verbergt nooit als vervanging van een servercheck |

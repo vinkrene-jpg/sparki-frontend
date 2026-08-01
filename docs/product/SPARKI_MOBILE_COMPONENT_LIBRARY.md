@@ -1,5 +1,13 @@
 # SPARKI — MOBIELE COMPONENTBIBLIOTHEEK v1.0
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `MOBILE_UX_STANDARD_01` — oplevering 2 van 5
 **Hoort bij:** `SPARKI_MOBILE_UX_STANDARD_v1.4.md`
 **Status:** BINDEND, afgeleid. Dit document werkt de standaard uit en mag hem niet tegenspreken.
@@ -427,7 +435,7 @@ De wedstrijddagmodus (MUX-96) is geen apart ontwerp maar een **variant** van bes
 **Wanneer:** permanent bereikbaar binnen de modus.
 **Wanneer niet:** buiten de modus, en nooit als gewone knop tussen andere acties.
 **Eisen:** staat buiten de vaste duimpositie zodat hij niet per ongeluk afgaat (MUX-23, MUX-96h); vraagt één korte bevestiging; bereikt de juiste persoon in de organisatie; bevestigt zichtbaar **dát** de melding is verstuurd.
-**Harde grens:** zonder verbinding kan de melding niet worden verstuurd (MUX-54). Het component zegt dat dan expliciet en noemt het alternatief. Stil falen is een directe afkeurgrond (MUX-82) en de ernstigste vorm van MUX-55.
+**Harde grens:** zonder verbinding kan de melding niet worden verstuurd (MUX-54). Het component zegt dat dan expliciet en noemt het alternatief. Stil falen is een directe herstelgrond (MUX-82) en de ernstigste vorm van MUX-55.
 **Lege toestand:** niet van toepassing.
 **Sparki:** val in de finale, materiaalpech met stilstand.
 

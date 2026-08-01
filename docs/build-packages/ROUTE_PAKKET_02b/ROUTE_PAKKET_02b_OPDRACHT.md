@@ -1,5 +1,13 @@
 # ROUTE_PAKKET_02b — LIMIET EN RESERVERINGEN
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Uitvoerder:** Replit
 **Startcommit:** de eindcommit van `ROUTE_PAKKET_02a` — bevestig die SHA in je eindrapport
 **Start pas na:** Mirror-goedkeuring van `02a` én expliciete vrijgave door René

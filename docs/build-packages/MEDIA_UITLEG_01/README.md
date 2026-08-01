@@ -1,5 +1,13 @@
 # MEDIA_UITLEG_01 — README
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `MEDIA_UITLEG_01`
 **Uitvoerder na goedkeuring:** Replit · **Toetser:** Mirror · **Eindvrijgever:** René
 **Datum:** 1 augustus 2026 · **Status:** `OPEN` — niets gebouwd, niets gecommit, geen Replit-taak gestart.
@@ -106,7 +114,7 @@ Verder vastgelegd, uitgewerkt in het architectuurdocument:
 
 **R-B. Geen mock-, demo- of verzonnen gegevens.** Niet in een scherm, niet in een voorbeeld, niet "even voor de demo".
 
-Beide zijn directe afkeurgronden en worden niet per fase herhaald.
+Beide zijn directe herstelgronden en worden niet per fase herhaald.
 
 ---
 

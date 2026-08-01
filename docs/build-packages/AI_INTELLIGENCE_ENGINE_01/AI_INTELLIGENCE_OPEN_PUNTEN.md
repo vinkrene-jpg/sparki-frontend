@@ -40,11 +40,11 @@ Geen van deze punten wordt hier beslist. Ze staan hier zodat ze niet stilzwijgen
 
 ## Wat dit betekent voor de vrijgave
 
-**Uitsluitend F0 is nu vrijgeefbaar.** F0 lost O-1 op en levert de input voor O-2 en O-3.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Uitsluitend F0 is nu vrijgeefbaar.** F0 lost O-1 op en levert de input voor O-2 en O-3.~~
 
-Daarna: **commit, push, vaste eind-SHA, Mirror-toets — en stop.** F1 start niet automatisch. Eerst beoordelen ChatGPT en René de hergebruikmatrix, de risico's en de open besluiten; pas daarna wordt bepaald of, en met welke fase, er verder wordt gegaan.
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~Daarna: **commit, push, vaste eind-SHA, Mirror-toets — en stop.** F1 start niet automatisch. Eerst beoordelen ChatGPT en René de hergebruikmatrix, de risico's en de open besluiten; pas daarna wordt bepaald of, en met welke fase, er verder wordt gegaan.~~
 
-**Er is geen versnelde automatische F0–F13-bouwstraat.**
+~~VERVALLEN 01-08-2026 (SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, hoofdstuk 0)~~ — ~~**Er is geen versnelde automatische F0–F13-bouwstraat.**~~
 
 **O-11 Migratie van bestaande adviezen.** Welke bestaande adviesvormen alsnog een volledig dossier kunnen krijgen uit gegevens die er al zijn, en welke definitief `LEGACY_NIET_VOLLEDIG_HERLEIDBAAR` blijven. Wordt beantwoord in F1 op basis van de F0-inventarisatie; het antwoord is geen aanname vooraf.
 

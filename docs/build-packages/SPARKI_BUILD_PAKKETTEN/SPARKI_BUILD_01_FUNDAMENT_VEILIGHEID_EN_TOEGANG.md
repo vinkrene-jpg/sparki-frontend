@@ -1,5 +1,13 @@
 # SPARKI BUILD 01 — FUNDAMENT, VEILIGHEID EN TOEGANG
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Technische code:** `SPARKI_BUILD_01`
 **Uitvoerder:** Replit · **Toetser:** Mirror · **Eindvrijgever:** René
 **Datum:** 1 augustus 2026 · **Status:** klaar voor vrijgave, nog niet gestart.
@@ -68,7 +76,7 @@ De gebruiker corrigeert, verrijkt en bevestigt. **Hij hoeft bekende informatie n
 **BB-13g** AI-tekst blijft **concept** tot menselijke bevestiging.
 **BB-13h** **Bestaande feiten worden niet door AI gewijzigd.** Aanvullen mag, overschrijven niet.
 
-*Toepassing:* elk documenttype in pakket 02, 03 en 04 voldoet aan het documenttypecontract (DTC) uit pakket 02 hoofdstuk 3b, en aan de vijftien stappen van de objectlevenscyclus daar. Een leeg formulier terwijl de gegevens er zijn, is een directe afkeurgrond in alle vier de pakketten.
+*Toepassing:* elk documenttype in pakket 02, 03 en 04 voldoet aan het documenttypecontract (DTC) uit pakket 02 hoofdstuk 3b, en aan de vijftien stappen van de objectlevenscyclus daar. Een leeg formulier terwijl de gegevens er zijn, is een directe herstelgrond in alle vier de pakketten.
 
 ---
 
@@ -277,7 +285,7 @@ Elke fase: scope · niet bouwen · datamodel · API · rechten · UX · migratie
 **Migratie:** bestaande relaties zonder `endedAt` krijgen dat veld; lopende relaties blijven `NULL`.
 **Tests:** trainer na beëindigd lidmaatschap · twee tabbladen met verschillende context · deep link naar een andere organisatie · browser-back na contextwissel · offline gegevens na intrekking.
 **Bewijs:** elk van de tien scenario's aantoonbaar dicht.
-**Mirror:** BB-09, BB-10. **Een gevonden lek is een directe afkeurgrond.**
+**Mirror:** BB-09, BB-10. **Een gevonden lek is een directe herstelgrond.**
 
 ### F3 — Rolgestuurde startschermen
 **Scope:** elke server-side rolwaarde krijgt een eigen startpunt: atleet · trainer · hoofdtrainer · ouder/verzorger · clubbeheerder · teammanager · ploegleider · mechanieker · soigneur · **`nutrition_specialist`** · `medical_staff` · assistent · vrijwilliger · alleen_lezen · plus elke andere werkelijk bestaande rolwaarde uit F0.
@@ -393,7 +401,7 @@ Per fase: SHA · scenario's · uitkomst · openstaande punten. Plus één integr
 
 ## 16. Productiepoort
 
-Naar productie **alleen** na: alle fasen `MIRROR_PROVEN` · geen openstaande directe afkeurgrond · rollback aantoonbaar per fase · **expliciete vrijgave door René**. Geen wijziging op productie zonder die vrijgave.
+Naar productie **alleen** na: alle fasen `MIRROR_PROVEN` · geen openstaande directe herstelgrond · rollback aantoonbaar per fase · **expliciete vrijgave door René**. Geen wijziging op productie zonder die vrijgave.
 
 ## 17. Rapportagevorm voor Replit
 

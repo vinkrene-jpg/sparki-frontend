@@ -1,5 +1,13 @@
 # AI_INTELLIGENCE — DATA TRUST
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Deel 5 van 21**
 
 ---
@@ -31,7 +39,7 @@ profiel · actieve doelen · trainingsplan · uitgevoerde activiteiten · CTL/AT
 
 ## 3. Harde regels
 
-**AIE-19** Geen mock-, seed- of fallbackdata als persoonlijke waarheid. Een testwaarde die als gebruikersgegeven wordt gepresenteerd, is een directe afkeurgrond.
+**AIE-19** Geen mock-, seed- of fallbackdata als persoonlijke waarheid. Een testwaarde die als gebruikersgegeven wordt gepresenteerd, is een directe herstelgrond.
 
 **AIE-20** Een ontbrekende bron **verlaagt de zekerheid**. Hij wordt niet vervangen, geschat of geïnterpoleerd.
 

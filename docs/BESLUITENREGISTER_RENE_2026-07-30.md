@@ -303,3 +303,13 @@ Conform dezelfde afspraak als MUX-B1 t/m B4: pas een definitief
   komt uitsluitend uit de centrale entitlementlaag.
 - **Doorwerking:** `docs/product/SPARKI_MEDIA_UITLEG_PRODUCTBESLUIT.md`
   (open afhankelijkheid 6 vervallen).
+
+---
+
+## Aanvulling 01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01 (GOV-B1)
+
+- `SPARKI-BESLUIT-2026-004` (bouwproces: één kleine opdracht tegelijk · volgende opdracht pas
+  na expliciete vrijgave door René · Mirror bewijst elke opdracht) is **INGETROKKEN — BESLUIT
+  RENÉ 01-08-2026**. De oorspronkelijke tekst blijft staan waar hij staat; de geldende regel is
+  `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` (K1=A · K2=B · K3=A · K4=A/elf hard
+  stops · K5=A/benoemde testset · K6=A/input≠toestemming).

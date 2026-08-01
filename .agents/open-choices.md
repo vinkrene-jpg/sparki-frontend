@@ -16,15 +16,14 @@ Laatst bijgewerkt: 2026-08-01.
   productie worden doorgezet. (Kanttekening: de Publish-knop zelf kan alleen René
   klikken — Replit meldt wanneer een productie-push klaarstaat.)
 
-## Open — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01 (01-08-2026), zes keuzes K1–K6
+## Beslist 01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01 (K1–K6, René)
 
-Het correctiepakket blokkeert op zes keuzes (advies bij alle zes: A):
-- K1 Futur Control uitgezonderd van de nieuwe regel? (A: ja, mutatiepoort blijft)
-- K2 Alleen gegeven opdrachten lopen door, reeks-vervolg niet? (A: alleen gegeven)
-- K3 RENE_APPROVED uit de deployketen, blijft als productbesluit? (A: ja)
-- K4 Acht of elf hard stops? (A: elf — betaalde release blijft aan bewaartermijnen hangen)
-- K5 Verplichte tests = benoemde set (entitlements/rechten/consent/jeugd/Stripe/migratie)? (A: ja)
-- K6 Ontbrekende input blijft wachtgrond, alleen toestemmingspoorten vervallen? (A: ja)
+K1=A (Futur Control uitgezonderd, mutatiepoort blijft) · **K2=B (ook reeks-vervolg start
+automatisch — 02c/02d en taak #536 zijn hiermee geautoriseerd zodra hun technische
+afhankelijkheden vervuld zijn)** · K3=A (RENE_APPROVED uit deployketen, blijft productbesluit) ·
+K4=A (elf hard stops) · K5=A (benoemde verplichte testset) · K6=A (input≠toestemming).
+Doorgevoerd: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` + correctierapport
+`docs/audits/GOVERNANCE_CORRECTIE_RAPPORT_2026-08-01.md` + flag-inventaris.
 
 ## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
 

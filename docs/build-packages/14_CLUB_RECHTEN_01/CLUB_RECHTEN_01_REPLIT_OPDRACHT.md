@@ -1,5 +1,13 @@
 # CLUB_RECHTEN_01 — DEFINITIEVE CLUBROLLEN EN RECHTEN
 
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+
 **Uitvoerder:** Replit · **Type:** breed domeinpakket · **Startcommit:** actuele `main`, bevestig de SHA
 **Status:** voorbereid werk. Start pas na expliciete vrijgave door René.
 **Verhouding tot andere pakketten:** `CLUB_ONBOARDING_01` bouwt de instroom, `CLUB_LEDEN_01` het lidmaatschapsbeheer, `TRAINER_CLUB_01` maakt de bestaande omgeving lekvrij. Dit pakket legt het **rolmodel zelf** vast. Alle andere pakketten steunen erop; het gaat daarom vóór.
