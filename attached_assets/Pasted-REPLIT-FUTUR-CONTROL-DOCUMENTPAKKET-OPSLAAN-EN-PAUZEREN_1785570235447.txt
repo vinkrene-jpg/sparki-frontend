@@ -1,0 +1,89 @@
+REPLIT — FUTUR CONTROL DOCUMENTPAKKET OPSLAAN EN PAUZEREN
+
+DOEL
+
+Sla het volledige FUTUR_CONTROL_01-documentpakket op in GitHub en zet het daarna formeel op GEPAUZEERD / DEFERRED.
+
+Gebruik alle door Claude opgeleverde Futur Control-bestanden als bron.
+
+PLAATSING
+
+Maak één vaste map:
+
+docs/build-packages/FUTUR_CONTROL_01/
+
+Plaats daarin alle documenten uit het definitieve pakket, waaronder minimaal:
+
+- FUTUR_CONTROL_PRODUCTVISION.md
+- FUTUR_CONTROL_ARCHITECTURE.md
+- FUTUR_CONTROL_SECURITY_MODEL.md
+- FUTUR_CONTROL_PRODUCT_CONNECTOR_STANDARD.md
+- FUTUR_CONTROL_DEPENDENCY_REGISTRY_STANDARD.md
+- FUTUR_CONTROL_HEALTHCHECK_STANDARD.md
+- FUTUR_CONTROL_AGENT_GOVERNANCE.md
+- FUTUR_CONTROL_MOBILE_DESKTOP_UX.md
+- FUTUR_CONTROL_CONTINUITY_STANDARD.md
+- FUTUR_CONTROL_BUILD_ROADMAP.md
+- FUTUR_CONTROL_MIRROR_TESTSTANDARD.md
+- FUTUR_CONTROL_INFRASTRUCTURE_STANDARD.md
+- FUTUR_CONTROL_NAS_CONNECTOR_STANDARD.md
+- FUTUR_CONTROL_LOCAL_SERVER_STANDARD.md
+- FUTUR_CONTROL_HYBRID_ARCHITECTURE.md
+- FUTUR_CONTROL_INFRASTRUCTURE_MIRROR_TESTSTANDARD.md
+- SPARKI_CONTROL_CONNECTOR_01_BOUWPAKKET.md
+- vertaaltabel van SPARKI_CONTROL_01 v1.1 naar FUTUR_CONTROL_01
+- open-besluitenlijst
+- wijzigingslog / eindcontrole
+- overige door Claude meegeleverde documenten
+
+Maak daarnaast:
+
+docs/build-packages/FUTUR_CONTROL_01/README.md
+
+In die README vastleggen:
+
+- status: DEFERRED / GEPAUZEERD;
+- inhoudelijk goedgekeurd;
+- nog niets gebouwd;
+- alleen F0 was vrijgeefbaar;
+- F0 wordt nu niet gestart;
+- hervatting begint later bij F0;
+- F1A mag nooit automatisch starten;
+- open besluiten blijven geparkeerd;
+- geen codewijzigingen;
+- geen muterende functies gebouwd.
+
+CONTROLE
+
+- vergelijk alle bronbestanden met wat in GitHub wordt geplaatst;
+- meld ontbrekende bestanden;
+- meld dubbele of verouderde versies;
+- bewaar alleen de definitieve versie;
+- zet oudere ingetrokken concepten duidelijk op INGETROKKEN of verplaats ze naar een archive-map;
+- wijzig geen applicatiecode;
+- wijzig geen Master Plan.
+
+BIJWERKEN
+
+Werk alleen de status bij in:
+
+- afbouwmatrix;
+- dagkaart;
+- roadmap;
+- releasestatus;
+
+met de vermelding dat FUTUR_CONTROL_01 bestaat als volledig documentpakket maar voorlopig gepauzeerd is.
+
+OPLEVERING
+
+Commit en push als documentatie-only wijziging.
+
+Rapporteer:
+
+- start-SHA;
+- eind-SHA;
+- lijst geplaatste bestanden;
+- lijst ontbrekende bestanden;
+- lijst gearchiveerde/ingetrokken bestanden;
+- bevestiging dat geen code is gewijzigd;
+- bevestiging dat hervatting later bij F0 begint.
