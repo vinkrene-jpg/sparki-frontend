@@ -23,13 +23,6 @@ Laatst bijgewerkt: 2026-07-31.
 
 (17 en 18 beslist 01-08-2026 — zie archief.)
 
-19. **Degraded-gedrag rechtenlaag (ABONNEMENT_01 §1.2, 31-07-2026) — gemaakte
-    veiligheidskeuze ter bevestiging**: bij een onleesbare rechtenbron telt die
-    bron niet mee (nooit rechten aannemen), maar wél-leesbare bronnen blijven
-    gelden zodat een storing betalende gebruikers niet buitensluit. Vastgelegd
-    in docs/SPARKI_ABONNEMENTSFLOW.md §3. Akkoord, of liever alles-dicht bij
-    elke storing?
-
 14. **Vrijgave drie voorbereide pakketten (31-07-2026)** — `DATA_TRUST_01` (aangevuld
     met herstelprotocol/afhankelijkheden uit files_8), `ABONNEMENT_01` en
     `DOCUMENTEN_COMMUNICATIE_01` staan klaar; geadviseerde volgorde: data-trust →
@@ -172,6 +165,12 @@ Laatst bijgewerkt: 2026-07-31.
   dry-run+preview+herleidbaarheid+idempotent+auditlog verplicht; nooit betrouwbaardere
   data overschrijven; gefaseerde uitrol na bewezen test. SPARKI-BESLUIT-2026-012.
   Welke accounts wanneer migreren blijft een per-account-akkoord van René.
+- **2026-08-01 — Keuze 19 (degraded-gedrag rechtenlaag): beslist — A.** Fail-closed
+  per bron: onleesbare bronnen voegen nooit rechten toe, leesbare bronnen blijven
+  gelden. Aanvullende eisen René: `degraded:true` verplicht loggen (bestond),
+  zichtbaar voor beheer/support (toegevoegd aan GET /api/admin/entitlements/:clerkId)
+  en automatisch herstel zodra de bron weer leesbaar is (per-verzoek-resolutie,
+  geen cache — herstelt vanzelf). Vastgelegd in docs/SPARKI_ABONNEMENTSFLOW.md §3.
 - **2026-08-01 — Keuze 16/D5 (ploegleiderrol): beslist.** Eigen server-side rolwaarde
   `ploegleider` naast `teammanager` (niet samenvoegen/hernoemen); medic→medical_staff
   met beschrijvend functietype. SPARKI-BESLUIT-2026-010; 15m daarmee SUPERSEDED

@@ -68,6 +68,15 @@ Motivatie: beschikbaarheid voor betalende gebruikers weegt zwaarder dan het
 kortstondig maskeren van een intrekking tijdens een storing. Getest in
 `test:entitlements` ("§1.2 degraded fail-closed per bron").
 
+**Bevestigd door René op 01-08-2026 (keuze 19, optie A)**, met drie eisen:
+
+1. `degraded: true` wordt verplicht gelogd — elke bron-leesfout logt via
+   `logger.error` in `resolveEntitlements`.
+2. Zichtbaar voor beheer/support — `GET /api/admin/entitlements/:clerkId`
+   geeft `degraded` terug in het antwoord.
+3. Automatisch herstel — rechten worden per verzoek vers opgelost (geen
+   cache); zodra de bron weer leesbaar is, verdwijnt `degraded` vanzelf.
+
 ## 4. Downgrade van routes (§1.3)
 
 Bij een downgrade naar Gratis verdwijnt **niets**: alle routes blijven

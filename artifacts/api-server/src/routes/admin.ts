@@ -1783,6 +1783,10 @@ router.get(
         entitlement_mode: resolved.entitlementMode,
         product_variant: resolved.productVariant,
         commercial_features: resolved.commercialFeatures,
+        // Keuze 19 (beslist 01-08-2026): degraded-status verplicht zichtbaar
+        // voor beheer/support — true betekent dat minstens één rechtenbron
+        // onleesbaar was en fail-closed niet meetelde.
+        degraded: resolved.degraded,
         entitlements: rows,
       });
     } catch (err) {
