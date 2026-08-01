@@ -532,6 +532,8 @@ channel = "stable-25_05"
 
 [userenv.production]
 SPARKI_ADMIN_IDS = "user_3FXo8wJYIQ2uvZGRXyrRXzdWuUp"
+E2E_PROOF_EMAIL = "vink.rene@gmail.com"
+E2E_PROOF_TOKEN = "d_dckBVoj6Aia0tPZV5VYpTl5r074ZSPsy5CRIUqoEI"
 
 [userenv.shared]
 VAPID_PUBLIC_KEY = "BE_zshRDB06c6BP5jf0KqW58sejO_57nStUboT-LDb8qMvPXgSUV7VbZQmWIE1vbKXs6LRF8pnZvXsjbgmuOhUc"
@@ -541,6 +543,8 @@ ROUTING_PROVIDER = "graphhopper"
 [userenv.development]
 SPARKI_ADMIN_IDS = "governor-fixture-admin"
 SPARKI_ACCEPT_MODE = "true"
+E2E_PROOF_EMAIL = "vink.rene@gmail.com"
+E2E_PROOF_TOKEN = "d_dckBVoj6Aia0tPZV5VYpTl5r074ZSPsy5CRIUqoEI"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-26c63990-dec3-42e3-b3ed-3f8d9932257c"
