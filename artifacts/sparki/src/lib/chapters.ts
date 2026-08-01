@@ -93,6 +93,15 @@ export const PARENT_CHAPTERS: Chapter[] = [
   { href: "/feed", icon: Radio, label: "Nieuws", hint: "Wat er speelt" },
 ]
 
+// BB-14: voedingsdeskundige — eigen (dunne) rolomgeving, Voeding eerst.
+// Nooit terugvallen op de sporterweergave: zolang er geen gekoppelde sporters
+// zijn, toont het startscherm de eerlijke lege toestand.
+export const NUTRITION_SPECIALIST_CHAPTERS: Chapter[] = [
+  { href: "/", icon: HeartPulse, label: "Voeding", hint: "Jouw sporters & voeding" },
+  { href: "/you", icon: User, label: "Profiel", hint: "Jouw gegevens" },
+  { href: "/support", icon: LifeBuoy, label: "Hulp", hint: "Vragen & ondersteuning" },
+]
+
 // Hoofdnavigatie (onderbalk) — pure data zodat de navigatieregressietest dit
 // zonder React kan importeren. Sporter: precies vijf hoofdkeuzes.
 export type NavEntry = { href: string; label: string }
@@ -120,11 +129,19 @@ export const PARENT_NAV_ENTRIES: NavEntry[] = [
   { href: "/meer", label: "Meer" },
 ]
 
+// BB-14: onderbalk voedingsdeskundige — Voeding eerst.
+export const NUTRITION_SPECIALIST_NAV_ENTRIES: NavEntry[] = [
+  { href: "/", label: "Voeding" },
+  { href: "/you", label: "Profiel" },
+  { href: "/support", label: "Hulp" },
+]
+
 export function chaptersForRole(
   role: Role | null | undefined,
   hasClub: boolean,
 ): Chapter[] {
   if (role === "coach") return COACH_CHAPTERS
   if (role === "parent") return PARENT_CHAPTERS
+  if (role === "nutrition_specialist") return NUTRITION_SPECIALIST_CHAPTERS
   return hasClub ? [...ATHLETE_CHAPTERS, CLUB_CHAPTER] : ATHLETE_CHAPTERS
 }

@@ -28,6 +28,7 @@ const ROLE_LABEL: Record<Role, string> = {
   athlete: "Sporter",
   coach: "Coach",
   parent: "Ouder",
+  nutrition_specialist: "Voedingsdeskundige",
 }
 
 function isActiveHref(pathname: string, href: string): boolean {

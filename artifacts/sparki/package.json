@@ -54,7 +54,8 @@
     "test:route-surface-states": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-surfaces-states.test.tsx",
     "test:route-map-startfinish": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-map-startfinish.test.tsx",
     "test:route-verification-gate": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-verification-gate.test.tsx",
-    "test:route-volgauto-wijzig": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-volgauto-wijzig.test.tsx"
+    "test:route-volgauto-wijzig": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-volgauto-wijzig.test.tsx",
+    "test:role-start": "node ../../scripts/run-tsx-test.mjs src/lib/role-start.test.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.11.1",

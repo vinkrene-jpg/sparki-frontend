@@ -56,6 +56,8 @@ import { OnboardingCheckFailed } from "@/components/sparki/onboarding-check-fail
 import AdminPage from "@/pages/admin"
 import AdminHealthDetailPage from "@/pages/admin-health-detail"
 import DevDesignSystemPage from "@/pages/dev-design-system"
+import NutritionSpecialistHome from "@/pages/nutrition-start"
+import RolStartPage from "@/pages/rol-start"
 
 const LANDING_PATH = "/_dev/landing"
 const ONBOARDING_PATH = "/_dev/onboarding"
@@ -494,10 +496,17 @@ export function DevPreview() {
       page = <CoachHome />
     } else if (profile?.activeRole === "parent") {
       page = <ParentHome />
+    } else if (profile?.activeRole === "nutrition_specialist") {
+      // F3 (BB-14): voedingsdeskundige houdt het eigen startscherm, geen
+      // stille terugval op de sporterweergave.
+      page = <NutritionSpecialistHome />
     } else {
       page = <CommercialToday />
       showNav = false
     }
+  } else if (location.startsWith("/rol-start")) {
+    // F3 (BB-08): rolgestuurde startpunten — zelfde pagina als de echte router.
+    page = <RolStartPage />
   } else if (location.startsWith("/kinderen")) {
     // WP-R1 ouderomgeving — zonder deze regels viel de ouderonderbalk hier
     // stil terug op de StartPage-fallback (zelfde valkuil als /privacy in WP-S1).
@@ -607,6 +616,9 @@ export function DevPreview() {
       // WP-R0: spiegelt RoleHome — een ouder ziet de ouderstartpagina, geen
       // sporterweergave meer als stille terugval.
       page = <ParentHome />
+    } else if (profile?.activeRole === "nutrition_specialist") {
+      // F3 (BB-14): spiegelt RoleHome — eigen startscherm, geen terugval.
+      page = <NutritionSpecialistHome />
     } else {
       page = <CommercialToday />
       showNav = false

@@ -60,6 +60,7 @@ import {
   ATHLETE_NAV_ENTRIES,
   COACH_NAV_ENTRIES,
   PARENT_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_NAV_ENTRIES,
 } from "@/lib/chapters"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
@@ -106,7 +107,9 @@ function shellNavForRole(role: string | null | undefined): {
       ? COACH_NAV_ENTRIES
       : role === "parent"
         ? PARENT_NAV_ENTRIES
-        : null
+        : role === "nutrition_specialist"
+          ? NUTRITION_SPECIALIST_NAV_ENTRIES
+          : null
   if (!entries) {
     return { desktop: COMMERCIAL_DESKTOP_NAV, mobiel: SHELL_MOBILE_NAV_ITEMS }
   }

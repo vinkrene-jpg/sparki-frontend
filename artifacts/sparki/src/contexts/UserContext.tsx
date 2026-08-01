@@ -10,7 +10,7 @@ import { useUser } from "@clerk/react";
 import { apiFetch } from "@/lib/api";
 import { DEV_PREVIEW } from "@/lib/dev";
 
-export type Role = "athlete" | "coach" | "parent";
+export type Role = "athlete" | "coach" | "parent" | "nutrition_specialist";
 
 export interface UserProfile {
   clerkId: string;

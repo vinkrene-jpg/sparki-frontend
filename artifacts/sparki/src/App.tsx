@@ -64,6 +64,8 @@ import PaspoortPage from "@/pages/paspoort";
 import SupportPage from "@/pages/support";
 import ParentKinderenPage from "@/pages/parent-kinderen";
 import ParentMeldingenPage from "@/pages/parent-meldingen";
+import NutritionSpecialistHome from "@/pages/nutrition-start";
+import RolStartPage from "@/pages/rol-start";
 import ParentToestemmingenPage from "@/pages/parent-toestemmingen";
 import { apiFetch } from "@/lib/api";
 import { decideOnboardingOutcome, lsKeyFor } from "@/lib/onboarding-gate";
@@ -299,6 +301,11 @@ function SignedInHomeReady() {
       setOnboarded(true);
       return;
     }
+    // BB-14: de voedingsdeskundige is geen sporter — nooit sporteronboarding.
+    if (profile.activeRole === "nutrition_specialist") {
+      setOnboarded(true);
+      return;
+    }
     let cancelled = false;
     const lsKey = lsKeyFor(profile.clerkId);
     const lsDone = localStorage.getItem(lsKey) === "true";
@@ -430,6 +437,9 @@ function RoleHome() {
   const { flags, isLoading: flagsLoading } = useFeatureFlags();
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
+  // BB-14: eigen startscherm, nooit terugval op de sporterweergave.
+  if (profile?.activeRole === "nutrition_specialist")
+    return <NutritionSpecialistHome />;
   if (flagsLoading || flags.commercial_shell) return <CommercialToday />;
   return <StartPage />;
 }
@@ -449,6 +459,8 @@ function VandaagPage() {
   const commercialShell = flags.commercial_shell;
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
+  if (profile?.activeRole === "nutrition_specialist")
+    return <NutritionSpecialistHome />;
   if (flagsLoading || commercialShell) return <CommercialToday />;
   return <DayHome />;
 }
@@ -697,6 +709,10 @@ function AppRouter() {
                 </Route>
                 <Route path="/toestemmingen">
                   <ProtectedPage component={ParentToestemmingenPage} />
+                </Route>
+                {/* F3 (BB-08): eigen startpunt per server-side rolwaarde. */}
+                <Route path="/rol-start/:rol">
+                  <ProtectedPage component={RolStartPage} />
                 </Route>
                 <Route path="/train">
                   <ProtectedPage component={TrainSwitchPage} />
