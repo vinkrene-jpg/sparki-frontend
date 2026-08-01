@@ -78,6 +78,7 @@ mock.module("@/hooks/use-routes", {
     useShareRoute: noopMutation,
     useRoutePace: noopQuery,
     useRouteInsight: noopQuery,
+    useZoekBekendeRoutes: noopMutation,
     useGeocode: noopMutation,
     canShareRouteFiles: () => false,
   },
@@ -90,7 +91,13 @@ mock.module("@/hooks/use-athlete-dashboard", {
 })
 mock.module("@/hooks/use-social", { namedExports: { useFriends: noopQuery } })
 mock.module("@workspace/feature-flags", {
-  namedExports: { isSportActive: () => true },
+  // Volledig import-oppervlak dekken: route-panel gebruikt isRouteSportActive,
+  // FeatureFlagContext (transitief) FEATURE_KEYS.
+  namedExports: {
+    isSportActive: () => true,
+    isRouteSportActive: () => true,
+    FEATURE_KEYS: [],
+  },
 })
 mock.module("@/hooks/use-route-remarks", {
   namedExports: {

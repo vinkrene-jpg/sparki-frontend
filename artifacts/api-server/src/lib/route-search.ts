@@ -355,10 +355,16 @@ export async function verifyKnownRoutes(
     forbidden: number;
     steps: number;
     blockedGates: number;
+    // Voetfamilie (MOBILE_ROUTE_WALKING_01): te voet zijn alleen
+    // access=no/private en op-slot-poorten hard — een trap of fietsverbod is
+    // voor een wandelaar géén blokkade.
+    forbiddenFoot?: number;
+    blockedGatesFoot?: number;
   } | null>,
-  opts?: { maxBruikbaar?: number },
+  opts?: { maxBruikbaar?: number; sport?: string | null },
 ): Promise<VerifiedKnownRoute[]> {
   const maxBruikbaar = opts?.maxBruikbaar ?? Infinity;
+  const isFoot = opts?.sport === "walking" || opts?.sport === "hiking";
   const out: VerifiedKnownRoute[] = [];
   let bruikbaarCount = 0;
   for (const m of matches) {
@@ -375,11 +381,16 @@ export async function verifyKnownRoutes(
           reden:
             "De blokkademeting gaf geen antwoord — deze bekende route is nu niet controleerbaar en wordt daarom niet aangeboden om te rijden.",
         };
-      } else if (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0) {
+      } else if (
+        isFoot
+          ? (obs.forbiddenFoot ?? 0) > 0 || (obs.blockedGatesFoot ?? 0) > 0
+          : obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0
+      ) {
         verificatie = {
           status: "geblokkeerd",
-          reden:
-            "Deze route loopt inmiddels over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden.",
+          reden: isFoot
+            ? "Deze route loopt inmiddels over privéterrein of door een afgesloten poort en wordt daarom niet aangeboden."
+            : "Deze route loopt inmiddels over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden.",
           blockage: obs,
         };
       } else {

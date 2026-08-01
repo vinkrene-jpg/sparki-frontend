@@ -768,7 +768,9 @@ export async function generateVariedLoop(
         // Gebruikerstaal (WP-1): de exacte tellers staan al in de PERF-log
         // hierboven — de renner krijgt een begrijpelijke reden.
         hasForbidden
-          ? "elke gevonden kandidaat bevat een fietsverbod, trap of afgesloten poort"
+          ? isFootProfile
+            ? "elke gevonden kandidaat loopt over privéterrein of door een afgesloten poort"
+            : "elke gevonden kandidaat bevat een fietsverbod, trap of afgesloten poort"
           : `de gevonden wegen bevatten aantoonbaar onverhard wegdek (${obs.unpavedSegments} stuk${obs.unpavedSegments > 1 ? "ken" : ""})`,
       );
     }
@@ -927,6 +929,8 @@ const PROFILE_LABELS_NL: Record<string, string> = {
   "cycling-gravel": "de gravelbike",
   "cycling-mountain": "de mountainbike",
   "cycling-regular": "de gewone fiets",
+  "foot-walking": "wandelen",
+  "foot-hiking": "hiken",
 };
 
 export class NoSuitableRouteError extends Error {

@@ -37,6 +37,9 @@ export type SparkiRoute = {
   surface: string;
   status: string;
   visibility: string;
+  // Sport van de route (MOBILE_ROUTE_WALKING_01): "cycling" | "walking" |
+  // "hiking" | null bij oude/geïmporteerde routes zonder bewijsbare sport.
+  sport?: string | null;
   distanceKm: number | null;
   durationSec: number | null;
   elevationGainM: number | null;

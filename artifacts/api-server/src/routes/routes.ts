@@ -3508,6 +3508,7 @@ router.post(
     // eerlijk gemarkeerd met hun reden.
     const verified = await verifyKnownRoutes(ranked, routeObstaclesOf(), {
       maxBruikbaar: 5,
+      sport,
     });
     const bekend = [
       ...verified.filter((m) => m.bruikbaar).slice(0, 5),

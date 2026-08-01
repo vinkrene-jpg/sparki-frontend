@@ -497,7 +497,7 @@ function TempoBlock({
 // doorlopen met het scherm uit of op de achtergrond (geen wake lock, de
 // browser stopt locatie-updates), en gesproken afslag-aanwijzingen bestaan
 // niet. Daarom noemen we die functies hier bewust niet — geen loze beloftes.
-function NavigateInfoCard() {
+function NavigateInfoCard({ sport = null }: { sport?: string | null }) {
   const [more, setMore] = useState(false)
   // Echte capability-check: bestaat locatiebepaling op dit apparaat?
   // (Achtergrond-tracking bestaat in de browser/PWA per definitie niet —
@@ -530,8 +530,11 @@ function NavigateInfoCard() {
           ) : (
             <p>
               Deze browser ondersteunt geen locatiebepaling, dus live volgen
-              werkt hier niet. Download de route hierboven als GPX/TCX voor je
-              fietscomputer.
+              werkt hier niet. Download de route hierboven als GPX/TCX voor je{" "}
+              {sport === "walking" || sport === "hiking"
+                ? "sporthorloge"
+                : "fietscomputer"}
+              .
             </p>
           )}
           {more && hasGeo && (
@@ -547,8 +550,9 @@ function NavigateInfoCard() {
                 afslag-aanwijzingen zijn er niet.
               </li>
               <li>
-                De ritregistratie pauzeert automatisch als je stilstaat en
-                hervat zodra je weer rijdt.
+                {sport === "walking" || sport === "hiking"
+                  ? "De registratie pauzeert automatisch als je stilstaat en hervat zodra je weer in beweging bent."
+                  : "De ritregistratie pauzeert automatisch als je stilstaat en hervat zodra je weer rijdt."}
               </li>
               <li>
                 Onderweg wordt je rit tussentijds bewaard: keer je terug naar
@@ -556,8 +560,11 @@ function NavigateInfoCard() {
                 er wordt niets dubbel geregistreerd.
               </li>
               <li>
-                Liever je fietscomputer? Download de route hierboven als
-                GPX/TCX.
+                Liever je{" "}
+                {sport === "walking" || sport === "hiking"
+                  ? "sporthorloge"
+                  : "fietscomputer"}
+                ? Download de route hierboven als GPX/TCX.
               </li>
             </ul>
           )}
@@ -966,7 +973,7 @@ function RoutePassport({
 // vanzelf op je fietscomputer. Eerlijke toestanden: zolang de fabrikant onze
 // serverkoppeling nog niet heeft goedgekeurd, staat dat er gewoon — niets
 // wordt gefaket.
-function DeviceSyncBlock({ routeId }: { routeId: number }) {
+function DeviceSyncBlock({ routeId, sport = null }: { routeId: number; sport?: string | null }) {
   useDeviceSyncOAuthReturn()
   const { data } = useDeviceSyncStatus()
   const connect = useConnectDevice()
@@ -980,7 +987,9 @@ function DeviceSyncBlock({ routeId }: { routeId: number }) {
   return (
     <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
       <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
-        Naar je fietscomputer
+        {sport === "walking" || sport === "hiking"
+          ? "Naar je horloge"
+          : "Naar je fietscomputer"}
       </p>
       {!anyConfigured ? (
         <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">
@@ -1290,9 +1299,9 @@ function RouteCard({
           </h3>
           {hardBlocked && (
             <p className="mt-1.5 rounded-md border border-negative/25 bg-negative/10 px-2.5 py-1.5 text-[11px] leading-snug text-negative/90">
-              Deze route bevat harde blokkades (fietsverbod, trap of afgesloten
-              poort/privéterrein) en kan niet genavigeerd worden. Genereer een
-              nieuwe route — de routemaker keurt zulke routes tegenwoordig af.
+              {route.sport === "walking" || route.sport === "hiking"
+                ? "Deze route bevat harde blokkades (privéterrein of een afgesloten poort) en kan niet genavigeerd worden. Genereer een nieuwe route — de routemaker keurt zulke routes tegenwoordig af."
+                : "Deze route bevat harde blokkades (fietsverbod, trap of afgesloten poort/privéterrein) en kan niet genavigeerd worden. Genereer een nieuwe route — de routemaker keurt zulke routes tegenwoordig af."}
             </p>
           )}
         </div>
@@ -1381,7 +1390,7 @@ function RouteCard({
                     </button>
                     <a
                       href={`https://wa.me/?text=${encodeURIComponent(
-                        `Fiets je mee? Route "${route.name}"${
+                        `${route.sport === "walking" || route.sport === "hiking" ? "Ga je mee? Route" : "Fiets je mee? Route"} "${route.name}"${
                           route.distanceKm ? ` (${route.distanceKm} km)` : ""
                         } in Sparki: ${shareLink}`,
                       )}`}
@@ -1463,7 +1472,11 @@ function RouteCard({
                 type="button"
                 onClick={() => exportRoute("gpx")}
                 disabled={download.isPending}
-                title="Download als GPX voor je fietscomputer"
+                title={
+                  route.sport === "walking" || route.sport === "hiking"
+                    ? "Download als GPX voor je sporthorloge"
+                    : "Download als GPX voor je fietscomputer"
+                }
                 className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-accent-cyan/80 disabled:opacity-40"
               >
                 <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -1497,7 +1510,7 @@ function RouteCard({
         </p>
       )}
 
-      {canExport && <DeviceSyncBlock routeId={route.id} />}
+      {canExport && <DeviceSyncBlock routeId={route.id} sport={route.sport ?? null} />}
 
       {geometry.length > 1 && (
         <RouteMap
@@ -1611,7 +1624,7 @@ function RouteCard({
         </p>
       )}
 
-      <NavigateInfoCard />
+      <NavigateInfoCard sport={route.sport ?? null} />
 
       {nav.length > 0 ? (
         <div className="mt-4">
@@ -1661,6 +1674,7 @@ function RouteCard({
 
       {rideOptionsOpen && (
         <RideOptionsMenu
+          sport={route.sport ?? null}
           workout={navWorkout}
           onClose={closeRideOptions}
           onStart={(opts) => {
@@ -1682,6 +1696,7 @@ function RouteCard({
           routeId={route.id}
           workout={navWorkout}
           ftp={navFtp}
+          sport={route.sport ?? null}
           rideOptions={
             chosenRideOptions ??
             applyFocusRules(loadLastRideOptions(), navWorkout)
@@ -2874,7 +2889,9 @@ export function RouteGenerator({
               {step === 1
                 ? "Waar rijd je?"
                 : step === 2
-                  ? "Fiets & training"
+                  ? (sport === "walking" || sport === "hiking")
+                  ? "Sport & training"
+                  : "Fiets & training"
                   : step === 3
                     ? "Wensen & samen"
                     : "Controleren"}
@@ -2947,7 +2964,9 @@ export function RouteGenerator({
             {step === 1
               ? "Waar rijd je?"
               : step === 2
-                ? "Fiets & training"
+                ? (sport === "walking" || sport === "hiking")
+                  ? "Sport & training"
+                  : "Fiets & training"
                 : step === 3
                   ? "Wensen & samen"
                   : "Controleren"}
@@ -3694,12 +3713,16 @@ export function RouteGenerator({
         {withOthers && (
           <div className="mt-2.5">
             <p className="text-[12px] leading-relaxed text-white/50">
-              Kies met wie je rijdt — dat zie je terug in de navigatie.
+              {sport === "walking" || sport === "hiking"
+                ? "Kies met wie je op pad gaat — dat zie je terug in de navigatie."
+                : "Kies met wie je rijdt — dat zie je terug in de navigatie."}
             </p>
             {friends.length > 0 ? (
               <>
                 <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
-                  Wie fietst er mee?
+                  {sport === "walking" || sport === "hiking"
+                    ? "Wie gaat er mee?"
+                    : "Wie fietst er mee?"}
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {friends.map((f) => {
@@ -3770,7 +3793,9 @@ export function RouteGenerator({
                   : "nog niet gekozen"}
             </p>
             <p>
-              <span className="text-white/40">Fiets & hoogte: </span>
+              <span className="text-white/40">
+                {sport === "cycling" ? "Fiets & hoogte: " : "Sport & hoogte: "}
+              </span>
               {sport === "cycling"
                 ? BIKE_OPTIONS.find((b) => b.value === bikeType)?.label ?? bikeType
                 : SPORT_OPTIONS.find((s) => s.value === sport)?.label ?? sport}
@@ -3986,7 +4011,9 @@ export function RouteGenerator({
         <div className="mt-3">
           <p className="text-[12px] leading-relaxed text-accent-cyan/85">
             {genPhase === "veiligheidscontrole"
-              ? "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op fietsverboden, trappen en afgesloten poorten…"
+              ? sport === "walking" || sport === "hiking"
+                    ? "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op privéterrein en afgesloten poorten…"
+                    : "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op fietsverboden, trappen en afgesloten poorten…"
               : "Route berekenen…"}
           </p>
           {slowNotice && (
@@ -4585,7 +4612,9 @@ export function RouteGenerator({
             {generate.isPending && (
               <p className="w-full basis-full text-[12px] leading-relaxed text-accent-cyan/75">
                 {genPhase === "veiligheidscontrole"
-                  ? "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op fietsverboden, trappen en afgesloten poorten…"
+                  ? sport === "walking" || sport === "hiking"
+                    ? "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op privéterrein en afgesloten poorten…"
+                    : "Veiligheidscontrole uitvoeren — de route wordt gecontroleerd op fietsverboden, trappen en afgesloten poorten…"
                   : "Route berekenen…"}
                 {slowNotice
                   ? " Bij een nieuw gebied kan dit eenmalig langer duren — de berekening loopt op de server door."
@@ -4622,7 +4651,11 @@ export function RouteGenerator({
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-white/35">
             Na het bewaren vind je hieronder de route terug — met navigeren,
-            downloaden (GPX/TCX) en delen naar je fietscomputer-app.
+            downloaden (GPX/TCX) en delen naar je{" "}
+            {sport === "walking" || sport === "hiking"
+              ? "sporthorloge-app"
+              : "fietscomputer-app"}
+            .
           </p>
 
           {/* F2 — detailcompositie: desktop toont de panelen inline

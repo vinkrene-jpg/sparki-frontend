@@ -398,6 +398,7 @@ export function RouteNavigator({
   rideOptionsExplicit = false,
   climbs = null,
   elevationProfile = null,
+  sport = null,
 }: {
   name: string
   geometry: [number, number][]
@@ -418,6 +419,9 @@ export function RouteNavigator({
   // wat hij moet leveren.
   workout?: PlannedWorkout | null
   ftp?: number | null
+  // Sport van de route (MOBILE_ROUTE_WALKING_01): te voet (walking/hiking)
+  // spreekt de navigatie de gebruiker niet als fietser aan.
+  sport?: string | null
   // Route onderweg aanpassen: opent de eigen-route-bouwer met de echte punten
   // van deze route voorgevuld, en keert na opslaan terug naar de navigatie.
   onEditRoute?: (() => void) | null
@@ -2296,7 +2300,10 @@ export function RouteNavigator({
   // de foto nooit verloren gaat.
   const photoInputRef = useRef<HTMLInputElement | null>(null)
   const handlePhotoTaken = async (file: File) => {
-    const shareText = `Onderweg op de fiets 🚴 — genavigeerd met Sparki.`
+    const shareText =
+      sport === "walking" || sport === "hiking"
+        ? `Onderweg te voet 🚶 — genavigeerd met Sparki.`
+        : `Onderweg op de fiets 🚴 — genavigeerd met Sparki.`
     const nav = window.navigator as Navigator & {
       canShare?: (data: ShareData) => boolean
     }
@@ -3081,7 +3088,9 @@ export function RouteNavigator({
                 onClick={dismissCoffee}
                 className="flex-1 rounded-full border border-white/15 px-3 py-2 text-[12px] font-medium text-white/70 transition hover:bg-white/5"
               >
-                Nee, doorfietsen
+                {sport === "walking" || sport === "hiking"
+                  ? "Nee, verder gaan"
+                  : "Nee, doorfietsen"}
               </button>
               <button
                 type="button"
@@ -3891,10 +3900,13 @@ export function RideOptionsMenu({
   workout = null,
   onStart,
   onClose,
+  sport = null,
 }: {
   workout?: PlannedWorkout | null
   onStart: (opts: RideOptions) => void
   onClose: () => void
+  // Sport van de route: te voet spreekt het menu de gebruiker niet als fietser aan.
+  sport?: string | null
 }) {
   const [opts, setOpts] = useState<RideOptions>(loadLastRideOptions)
   const { data: friendsData } = useFriends()
@@ -4017,12 +4029,16 @@ export function RideOptionsMenu({
               {opts.samen && (
                 <>
                   <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-                    Je rijdt met anderen — kies hieronder wie er meefietst.
+                    {sport === "walking" || sport === "hiking"
+                      ? "Je bent met anderen op pad — kies hieronder wie er meegaat."
+                      : "Je rijdt met anderen — kies hieronder wie er meefietst."}
                   </p>
                   {friends.length > 0 ? (
                     <>
                       <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
-                        Wie fietst er mee?
+                        {sport === "walking" || sport === "hiking"
+                          ? "Wie gaat er mee?"
+                          : "Wie fietst er mee?"}
                       </p>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {friends.map((f) => {
