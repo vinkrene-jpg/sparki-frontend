@@ -2272,6 +2272,60 @@ export function RouteGenerator({
     )
   }
 
+  // ROUTE_CLIMB_ERROR_FEEDBACK_01 — één eerlijke afhandeling voor een mislukte
+  // routegeneratie. De server stuurt JSON {error, code}; hier wordt dat een
+  // begrijpelijke fouttekst voor de rijder, terwijl de technische servercode
+  // in de console wordt gelogd. Alle gekozen invoer (klim incl.) blijft staan.
+  function failGenerate(e: unknown) {
+    const raw = e instanceof Error ? e.message : String(e)
+    let code: string | null =
+      e instanceof Error && typeof (e as { code?: unknown }).code === "string"
+        ? ((e as { code?: string }).code ?? null)
+        : null
+    let serverText: string | null = null
+    try {
+      const p = JSON.parse(raw) as { error?: unknown; code?: unknown }
+      if (p && typeof p === "object") {
+        if (typeof p.code === "string") code = p.code
+        if (typeof p.error === "string" && p.error.trim()) serverText = p.error
+      }
+    } catch {
+      // geen JSON — de boodschap kan een eerlijke Nederlandse zin zijn (bijv.
+      // de time-outmelding van de jobpolling) of een technische netwerkfout.
+      const technisch =
+        !raw.trim() ||
+        raw === "Routegeneratie mislukt. Probeer het opnieuw." ||
+        /^(TypeError|Failed to fetch|NetworkError|Load failed|fetch failed|AbortError)/i.test(
+          raw,
+        )
+      if (!technisch) serverText = raw
+    }
+    // Technische log — de rijder ziet de begrijpelijke tekst, de code staat hier.
+    console.error(
+      `[route-generatie] mislukt — code=${code ?? "ONBEKEND"}`,
+      raw,
+    )
+    if (serverText) {
+      setError(serverText)
+      return
+    }
+    if (code === "NO_SUITABLE_ROUTE") {
+      setError(
+        "Er kon geen veilige route worden gemaakt met deze instellingen. Pas je wensen aan of kies een andere klim.",
+      )
+      return
+    }
+    if (code === "CLIMB_NOT_ON_ROUTE") {
+      setError(
+        "De gekozen klim kon niet betrouwbaar in de route worden opgenomen. Kies een andere klim of pas het startpunt aan.",
+      )
+      return
+    }
+    setError(
+      "De route kon niet worden gemaakt. Je instellingen zijn bewaard. Probeer opnieuw of pas je wensen aan.",
+    )
+  }
+
   // De eigenlijke nieuwe-voorstellen-generatie (lus, 3 afstandsvarianten) —
   // start pas ná de zoeklaag, of via de expliciete "nieuwe voorstellen"-knop.
   function doGenerateOptions() {
@@ -2298,8 +2352,7 @@ export function RouteGenerator({
       },
       {
         onSuccess: (data) => setOptions(data.options),
-        onError: (e) =>
-          setError(e instanceof Error ? e.message : "Routegeneratie mislukt"),
+        onError: (e) => failGenerate(e),
       },
     )
   }
@@ -2422,8 +2475,10 @@ export function RouteGenerator({
           if (generateReqId.current !== myReqId) return // stale response
           setCandidate(data.candidate)
         },
-        onError: (e) =>
-          setError(e instanceof Error ? e.message : "Routegeneratie mislukt"),
+        onError: (e) => {
+          if (generateReqId.current !== myReqId) return // stale response
+          failGenerate(e)
+        },
       },
     )
   }
@@ -3309,39 +3364,6 @@ export function RouteGenerator({
       )}
 
       {stepVisible(3) && (<>
-      {error && (
-        <div className="mt-3 rounded-2xl border border-negative/25 bg-negative/[0.06] p-3">
-          <p className="text-[12px] leading-relaxed text-negative/85">{error}</p>
-          {/* WP-1: geen doodlopende fout — duidelijke vervolgacties. */}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() =>
-                mode === "loop" ? runGenerateOptions() : runGenerate()
-              }
-              disabled={genPending}
-              className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30 disabled:opacity-50"
-            >
-              Opnieuw proberen
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setError(null)
-                setStep(1)
-              }}
-              className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
-            >
-              Startpunt of afstand aanpassen
-            </button>
-          </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-            Je keuzes zijn bewaard — pas gerust één ding aan (korter, ander
-            startpunt of soepelere voorkeuren) en probeer opnieuw.
-          </p>
-        </div>
-      )}
-
       {/* Samen rijden? — de plek waar je je maten kiest. (Bordjes-sprint is
           gestopt — veiligheidsrisico op openbare weg, besluit 31-07-2026.) */}
       <div className="mt-4 border-t border-white/[0.08] pt-4">
@@ -3505,12 +3527,76 @@ export function RouteGenerator({
         </div>
       )}
 
+      {/* ROUTE_CLIMB_ERROR_FEEDBACK_01 — de foutmelding hoort op de stap waar
+          de actie is gestart (dus óók op stap 4 "Controleren", waar Genereer
+          route staat). Eén blok, geen dubbele melding; role="alert" zodat een
+          schermlezer de fout direct aankondigt. Blijft staan tot de rijder
+          opnieuw probeert, teruggaat of iets aanpast. Gekozen klim en overige
+          invoer blijven onaangeroerd. */}
+      {!showResult && error && (
+        <div
+          role="alert"
+          className="mt-3 rounded-2xl border border-negative/25 bg-negative/[0.06] p-3"
+        >
+          <p className="text-[12px] leading-relaxed text-negative/85">{error}</p>
+          {/* Geen doodlopende fout — duidelijke vervolgacties (op stap 4:
+              opnieuw proberen, terug naar wensen, of terug naar het begin). */}
+          {step >= 3 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  mode === "loop" ? runGenerateOptions() : runGenerate()
+                }
+                disabled={genPending}
+                className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30 disabled:opacity-50"
+              >
+                Opnieuw proberen
+              </button>
+              {step === 4 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null)
+                    setStep(3)
+                  }}
+                  className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
+                >
+                  Wensen aanpassen (stap 3)
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null)
+                  setStep(1)
+                }}
+                className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
+              >
+                Startpunt of afstand aanpassen
+              </button>
+            </div>
+          )}
+          {step >= 3 && (
+            <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+              Je keuzes zijn bewaard — pas gerust één ding aan (korter, ander
+              startpunt of soepelere voorkeuren) en probeer opnieuw.
+            </p>
+          )}
+        </div>
+      )}
+
       {!showResult && (
         <div className="mx-auto mt-4 flex w-full max-w-md gap-3">
           {step > 1 && (
             <button
               type="button"
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
+              onClick={() => {
+                // Teruggaan is een bewuste gebruikersactie — de foutmelding
+                // mag dan weg en blokkeert de terugweg nooit.
+                setError(null)
+                setStep((s) => Math.max(1, s - 1))
+              }}
               className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Terug
@@ -3520,10 +3606,12 @@ export function RouteGenerator({
             <button
               type="button"
               onClick={() => {
+                // Verdergaan is een bewuste gebruikersactie — een oude
+                // foutmelding mag dan weg.
+                setError(null)
                 // Eerlijke controle vóór het doorgaan: zonder plek op de kaart
                 // valt er niets te berekenen.
                 if (step === 1) {
-                  setError(null)
                   if (mode === "waypoints") {
                     if (allPoints.length < 2) {
                       setError(

@@ -468,10 +468,16 @@ async function runGenerationJob<T>(
     if (st.status != null && st.status >= 200 && st.status < 300) {
       return st.body as T;
     }
-    const body = st.body as { error?: string } | null;
-    throw new Error(
+    // ROUTE_CLIMB_ERROR_FEEDBACK_01: geef de technische servercode (bijv.
+    // NO_SUITABLE_ROUTE) en de status mee aan de fout, zodat de UI een
+    // begrijpelijke tekst kan kiezen en de code technisch kan loggen.
+    const body = st.body as { error?: string; code?: string } | null;
+    const jobErr = new Error(
       body?.error ?? "Routegeneratie mislukt. Probeer het opnieuw.",
-    );
+    ) as Error & { code?: string; status?: number };
+    if (body?.code) jobErr.code = body.code;
+    if (st.status != null) jobErr.status = st.status;
+    throw jobErr;
   }
 }
 
