@@ -1364,14 +1364,42 @@ export function ProfileSettings({
 
   useEffect(() => {
     if (!focus) return undefined
-    const el = document.getElementById(`cfg-${focus}`)
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" })
-      setHlToken(focus)
-      const t = setTimeout(() => setHlToken(null), 2600)
-      return () => clearTimeout(t)
+    // Secties laden asynchroon (abonnement wacht bijv. op billing-status) en de
+    // sheet animeert open — één keer scrollen mist het doel dan. Blijf ~2,5s
+    // her-scrollen tot de positie stabiel is (zelfde patroon als de Kompas-
+    // deep-link in you.tsx), anders "belandt" de gebruiker bovenaan de sheet.
+    let lastTop: number | null = null
+    let stableTicks = 0
+    let highlighted = false
+    const started = Date.now()
+    let hlTimer: ReturnType<typeof setTimeout> | undefined
+    const tick = () => {
+      const el = document.getElementById(`cfg-${focus}`)
+      if (el) {
+        if (!highlighted) {
+          highlighted = true
+          setHlToken(focus)
+          hlTimer = setTimeout(() => setHlToken(null), 2600)
+        }
+        const top = el.getBoundingClientRect().top
+        if (lastTop === null || Math.abs(top - lastTop) > 4) {
+          el.scrollIntoView({ behavior: "auto", block: "center" })
+          stableTicks = 0
+        } else {
+          stableTicks += 1
+        }
+        lastTop = el.getBoundingClientRect().top
+      }
+      if (stableTicks >= 3 || Date.now() - started > 2500) {
+        window.clearInterval(interval)
+      }
     }
-    return undefined
+    const interval = window.setInterval(tick, 250)
+    tick()
+    return () => {
+      window.clearInterval(interval)
+      if (hlTimer) clearTimeout(hlTimer)
+    }
   }, [focus])
 
   const configRows: {
