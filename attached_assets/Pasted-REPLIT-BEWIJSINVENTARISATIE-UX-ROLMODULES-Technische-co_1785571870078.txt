@@ -1,0 +1,107 @@
+REPLIT — BEWIJSINVENTARISATIE UX ROLMODULES
+Technische code: UX_AUDIT_MODULES_01A
+
+DOEL
+
+Vul het ontbrekende feitelijke deel van SPARKI_UX_AUDIT_MODULES.md.
+
+Geen UX-herbouw.
+Geen functies verplaatsen.
+Geen code wijzigen.
+Alleen inventariseren en bewijs verzamelen op één vaste gepushte SHA.
+
+TESTBASIS
+
+- noteer branch;
+- noteer vaste start-SHA;
+- gebruik geen actief veranderende preview;
+- gebruik echte beschikbare testrollen;
+- meld per ontbrekende rol: NIET TOETSBAAR.
+
+ONDERZOEK DEZE MODULES
+
+1. Ploegleider
+2. Club
+3. Team
+4. Trainer
+5. Hoofdtrainer
+6. Mechanieker
+7. Soigneur
+8. Medical Staff
+9. Beheer
+10. Academy, uitsluitend om vast te stellen of er al iets bestaat
+
+PER MODULE VASTLEGGEN
+
+- route/URL;
+- betrokken bestanden en componenten;
+- eerste scherm;
+- alle zichtbare secties;
+- alle kaarten;
+- alle tabs;
+- alle knoppen en links;
+- primaire actie;
+- secundaire acties;
+- formulieren en aantal velden;
+- detailschermen;
+- wizards;
+- Meer-menu;
+- lege toestanden;
+- fouttoestanden;
+- laadgedrag;
+- rol(len) die dit zien;
+- organisatie/teamcontext;
+- mobiel gedrag;
+- desktopgedrag;
+- functies die uitgegrijsd maar zichtbaar zijn;
+- doodlopende schermen;
+- onderdelen die nergens bereikbaar zijn.
+
+BEWIJS
+
+Per module minimaal:
+
+- screenshot desktop;
+- screenshot telefoonbreedte;
+- screenshot van iedere tab;
+- screenshot van Meer-menu;
+- screenshot van één leeg- of foutscenario indien aanwezig;
+- component- of bestandspad als codebewijs;
+- rol waarmee getest is;
+- getoonde build/SHA.
+
+Maak geen fictieve data om schermen te vullen.
+
+OPLEVERINGEN
+
+Maak:
+
+- UX_AUDIT_PLOEGLEIDER_INVENTARISATIE.md
+- UX_AUDIT_CLUB_INVENTARISATIE.md
+- UX_AUDIT_TEAM_INVENTARISATIE.md
+- UX_AUDIT_TRAINER_INVENTARISATIE.md
+- UX_AUDIT_HOOFDTRAINER_INVENTARISATIE.md
+- UX_AUDIT_MECHANIEKER_INVENTARISATIE.md
+- UX_AUDIT_SOIGNEUR_INVENTARISATIE.md
+- UX_AUDIT_MEDICAL_STAFF_INVENTARISATIE.md
+- UX_AUDIT_BEHEER_INVENTARISATIE.md
+- UX_AUDIT_ACADEMY_INVENTARISATIE.md
+- UX_AUDIT_MODULES_BEWIJSINDEX.md
+- UX_AUDIT_MODULES_SCREENSHOTS/
+
+Vul daarnaast één tabel:
+
+module | route | rol | secties | tabs | kaarten_boven_vouw | primaire_acties | formulier_velden | leeg_tabblad | rechtenlek_zichtbaar | mobiel_bewijs | desktop_bewijs
+
+STOPREGELS
+
+- niets bouwen;
+- niets herindelen;
+- geen tab toevoegen;
+- geen functie verwijderen;
+- geen UX-oplossing bedenken;
+- geen Academy bouwen;
+- geen codecommit behalve documentatie en bewijsbestanden.
+
+Commit en push als documentatie-only inventarisatie.
+Lever eind-SHA en bestandenlijst.

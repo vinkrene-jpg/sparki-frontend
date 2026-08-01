@@ -1,0 +1,57 @@
+# Poort 5b — ABONNEMENT_01: volledige abonnementslevenscyclus (statusvertaling
+# incl. incomplete/paused/unknown, meldingen per overgang, degraded fail-closed,
+# downgrade-keuzeflow routes, trial-einde-meldingen, admininzicht, parity API↔UI,
+# web+mobiel dezelfde status). Additief op de bestaande billinglaag.
+
+delivery: "Stripe-statussen vertalen deterministisch (past_due/unpaid→grace 7d monotoon; incomplete/paused/unknown→eerlijk FREE, fail-closed, gelogd); elke overgang geeft precies één rustige NL-melding (dedupeKey, pas ná commit); resolveEntitlements is degraded fail-closed per bron; downgrade laat álle routes staan en biedt een keuzeflow (max 3 actief, route_active_selections); trial-einde meldt vooraf en achteraf zonder data te raken; admin ziet status+bron+webhooks; elke gepoorte functie weigert via directe API identiek aan de UI; web en mobiel tonen dezelfde server-status"
+date: "2026-07-31"
+checked_by: "replit"
+surfaces:
+  - "API: POST /api/billing/webhook (statusvertaling + meldingen, idempotent)"
+  - "API: GET /api/routes/downgrade-state + PUT /api/routes/active-selection"
+  - "API: GET /api/admin/billing/:clerkId (strikt admin, live gecurld)"
+  - "Web: Jij → Instellingen → Abonnement (nieuwe statuslabels) en Routes → Bewaard (downgrade-banner)"
+  - "Mobiel: Instellingen → Abonnement (zelfde server-status als web)"
+  - "scripts: test:stripe-billing (21/21) en test:entitlements (29/29)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Downgrade-keuzeflow: 4 routes kiezen ⇒ 400, andermans route ⇒ 403, geldige keuze van 3 ⇒ opgeslagen en keuzeVereist=false; alle 5 routes blijven bestaan (scenario 19, geautomatiseerd via echte HTTP-aanroepen)"
+        result: "pass"
+      - case: "Bewerken op Gratis blijft geweigerd (403 upgrade_required) óók voor gekozen actieve routes — alleen-lezen is server-side, niet alleen UI"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Onbekende Stripe-status wordt nooit geraden: DB-rij 'unknown', profiel fail-closed FREE, besluit gelogd (scenario 17); webhook voor onbekende gebruiker ⇒ 'genegeerd' gelogd, geen rij aangemaakt (scenario 20)"
+        result: "pass"
+      - case: "Meldingsteksten beloven niets onwaars: geen aftelklok, geen dataverliesdreiging; trial-afloopmelding stelt expliciet gerust dat alles bewaard blijft (regex-gecontroleerd in scenario 18/21)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Degraded-toestand verzint geen rechten: onleesbare bron telt niet mee, leesbare variantbron blijft gelden, activeEntitlements leeg (test:entitlements §1.2); admininzicht meldt eerlijk dat mislukte webhookverwerkingen terugrollen en dus niet in de tabel staan"
+        result: "pass"
+      - case: "Parity §1.10: 11 representatieve gepoorte endpoints over alle gepoorte routers weigeren met exact dezelfde upgrade_required+featuresleutel als de UI-bron /api/entitlements toont"
+        result: "pass"
+
+# Bewijs (alle op 31-07-2026 uitgevoerd):
+#   pnpm run test:stripe-billing — 21/21 (incl. nieuwe scenario's 15-21)
+#   pnpm run test:entitlements — 29/29 (incl. §1.2 degraded + §1.10 parity)
+#   typecheck: libs + api-server + web tsc --noEmit groen; mobiel alleen de
+#     reeds bekende, onaangeraakte nav-replay.test.ts-fout (pre-existing)
+#   workflows typecheck-api (incl. sanity-/brandcopy-checks) en admin-smoke
+#     (13/13) vers gedraaid en groen
+#   live: api-server herstart (build&start); curl downgrade-state 200,
+#     /api/admin/billing/dev_qa_athlete 200 met status+bron+webhooks als admin,
+#     403 als niet-admin
+#   migratie 0010_route_active_selections.sql aangemaakt én op dev toegepast
+#   screenshot: docs/PRODUCT_PROMISES/sanity-checks/bewijs/abonnement01-web-routes-bewaard.jpg
+# Eerlijk beperkt: het mobiele screenshot (bewijs/abonnement01-mobiel-
+# instellingen.jpg) toont het inlogscherm — mobiel heeft bewust géén
+# dev-auth-bypass; de Abonnement-sectie leest dezelfde /api/billing/status
+# met dezelfde NL-labels als web (code + typecheck als bewijs).
+# Eerlijk niet gedekt: echte Stripe-livegang, prijzen/btw en de 02c-limieten
+# (opslaglimiet/verval/opruiming) vallen buiten deze opdracht; de
+# downgrade-banner is alleen zichtbaar voor echt gedowngradede accounts en
+# staat daarom niet op het dev-preview-screenshot (legacy-account).
+verdict: "deliverable"

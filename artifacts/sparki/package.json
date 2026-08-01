@@ -4,13 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.config.ts --host 0.0.0.0",
+    "dev": "if [ \"$SPARKI_ACCEPT_MODE\" = \"true\" ]; then pnpm run build && pnpm run serve; else vite --config vite.config.ts --host 0.0.0.0; fi",
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:route-search-criteria": "node ../../scripts/run-tsx-test.mjs src/lib/route-search-criteria.test.ts",
     "test:humor": "node ../../scripts/run-tsx-test.mjs src/lib/humor.test.ts",
     "test:day-advice-canonical": "node ../../scripts/run-tsx-test.mjs src/lib/day-advice-canonical.test.ts",
+    "test:zweefkaart": "node ../../scripts/run-tsx-test.mjs src/lib/zweefkaart.test.ts",
+    "test:motion": "node ../../scripts/run-tsx-test.mjs src/lib/motion.test.ts",
     "test:uitleg-content": "node ../../scripts/run-tsx-test.mjs src/lib/uitleg-content.test.ts",
     "test:session-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/session-analysis.test.ts",
     "test:insight-grouping": "node ../../scripts/run-tsx-test.mjs src/lib/insight-grouping.test.ts",
@@ -52,7 +54,8 @@
     "test:route-surface-states": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-surfaces-states.test.tsx",
     "test:route-map-startfinish": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-map-startfinish.test.tsx",
     "test:route-verification-gate": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-verification-gate.test.tsx",
-    "test:route-volgauto-wijzig": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-volgauto-wijzig.test.tsx"
+    "test:route-volgauto-wijzig": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-volgauto-wijzig.test.tsx",
+    "test:role-start": "node ../../scripts/run-tsx-test.mjs src/lib/role-start.test.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.11.1",

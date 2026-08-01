@@ -11,11 +11,11 @@
     "groep": {"tabel": "club_groups", "toelichting": "informele groep (trainingsgroep, jeugdgroep)"},
     "seizoen": {"tabel": "ONTBREEKT", "voorstel": "club_seasons (id, club_id, naam, start/eind); toewijzingen krijgen nullable season_id zodat rollen per seizoen kunnen aflopen — niet-destructief"},
     "lidmaatschap": {"tabel": "club_members", "toelichting": "persoon×organisatie×rol; endedAt beëindigt; limieten via club_subscriptions"},
-    "roltoewijzing": {"tabel": "club_members.role", "waarden": ["owner","admin","hoofdtrainer","trainer","assistent","teammanager","mechanieker","member","parent","vrijwilliger","alleen_lezen"]},
+    "roltoewijzing": {"tabel": "club_members.role", "waarden": ["owner","admin","hoofdtrainer","trainer","assistent","teammanager","ploegleider","mechanieker","member","parent","vrijwilliger","alleen_lezen","soigneur","medical_staff"]},
     "trainer_toewijzing": {"tabel": "club_trainer_assignments", "toelichting": "trainer×team/groep — de rechten-gate voor sportersinzage binnen club"},
     "hoofdtrainer_toewijzing": {"tabel": "club_members.role=hoofdtrainer", "toelichting": "hoofdtrainer geldt per organisatie; beheert club_trainer_assignments binnen die context"},
     "ouder_kind": {"tabel": "parent_athlete_links", "toelichting": "bestaand, blijft buiten organisatie-tabellen; clubcontext verwijst ernaar (jeugdconsent club_consents)"},
-    "ploegleider_toewijzing": {"tabel": "club_members.role=teammanager + teamscope", "uitbreiding_nodig": "teamscope: hergebruik club_trainer_assignments generaliseren naar club_role_assignments (rol+team/groep) OF aparte rij per team in club_team_members met role='begeleider' — keuze in werkpakket 5, geen tweede model"},
+    "ploegleider_toewijzing": {"tabel": "club_members.role=ploegleider + teamscope (SUPERSEDED 2026-08-01: eerder role=teammanager; ploegleider is nu een aparte rolwaarde)", "uitbreiding_nodig": "teamscope: hergebruik club_trainer_assignments generaliseren naar club_role_assignments (rol+team/groep) OF aparte rij per team in club_team_members met role='begeleider' — keuze in werkpakket 5, geen tweede model"},
     "mechanieker_toewijzing": {"tabel": "club_members.role=mechanieker + toewijzing", "uitbreiding_nodig": "zelfde generalisatie als ploegleider (rol×team/renner-scope)"}
   },
   "regels": [

@@ -43,7 +43,7 @@ async function acceptedFriendIds(clerkId: string): Promise<Set<string>> {
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           eq(friendLinksTable.requesterClerkId, clerkId),
           eq(friendLinksTable.addresseeClerkId, clerkId),
@@ -63,7 +63,7 @@ async function guardianIds(athleteClerkId: string): Promise<Set<string>> {
     .where(
       and(
         eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
-        eq(parentAthleteLinksTable.status, "accepted"),
+        eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return new Set(rows.map((r) => r.parent));

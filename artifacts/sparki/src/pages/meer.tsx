@@ -1,5 +1,6 @@
 import { Shield, LifeBuoy, Link2, Settings } from "lucide-react"
 import { dagSfeer } from "@/lib/sfeer"
+import { APP_VERSION, BUILD_SHA, IS_PRODUCTION_BUILD } from "@/lib/version"
 import { useLocation } from "wouter"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { ChapterGrid } from "@/components/sparki/chapter-grid"
@@ -111,6 +112,14 @@ export default function MeerPage() {
             Photo Lab
           </button>
         </div>
+
+        {/* Eén mobiele waarheid (besluit 01-08-2026): het buildnummer is
+            zichtbaar zodat op elke telefoon controleerbaar is wélke versie
+            draait — PWA en mobiele browser moeten hetzelfde tonen. */}
+        <p className="pt-1 type-body-sm text-content-secondary/70">
+          Versie {APP_VERSION} · build {BUILD_SHA} ·{" "}
+          {IS_PRODUCTION_BUILD ? "productie" : "ontwikkelomgeving"}
+        </p>
       </div>
     </CommercialShell>
   )

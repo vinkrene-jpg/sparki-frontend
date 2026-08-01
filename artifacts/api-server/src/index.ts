@@ -10,7 +10,11 @@ import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
 import { startGitMaintenanceScheduler } from "./lib/git-maintenance";
 import { startExportsMaintenanceScheduler } from "./lib/exports-maintenance";
-import { ensureBillingFlagSeed, expireBillingStates } from "./lib/billing";
+import {
+  ensureBillingFlagSeed,
+  expireBillingStates,
+  sweepTrialNotices,
+} from "./lib/billing";
 import { startRouteEnvWarmupScheduler } from "./lib/route-env-warmup";
 import { sweepObservationCleanup } from "./jobs/observation-cleanup";
 
@@ -199,6 +203,18 @@ app.listen(port, (err) => {
     () =>
       void expireBillingStates().catch((err) =>
         logger.error({ err }, "billing expiry sweep failed"),
+      ),
+    24 * 60 * 60 * 1000,
+  ).unref?.();
+  // Proefperiode-meldingen (ABONNEMENT_01 §1.7): rustige melding vóór en ná
+  // afloop; idempotent via dedupeKey, raakt nooit gebruikersdata.
+  sweepTrialNotices().catch((err) =>
+    logger.error({ err }, "billing trial notice sweep failed"),
+  );
+  setInterval(
+    () =>
+      void sweepTrialNotices().catch((err) =>
+        logger.error({ err }, "billing trial notice sweep failed"),
       ),
     24 * 60 * 60 * 1000,
   ).unref?.();

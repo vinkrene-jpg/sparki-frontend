@@ -446,6 +446,7 @@ async function main() {
         rationale: "testvoorstel",
         plannedWorkoutId: null,
         engineSurface: null,
+    sport: "cycling",
       });
 
     await scenario("A2. succesvolle TCX-export telt", async () => {

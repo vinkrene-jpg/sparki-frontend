@@ -1,0 +1,11 @@
+# TEAM_MECHANIEKER_01 — COMPLEET DOMEINPAKKET
+
+Dit pakket bevat de vijf verplichte onderdelen volgens `SPARKI_SJABLOON_DOMEINPAKKET`:
+
+1. `TEAM_MECHANIEKER_01_REPLIT_OPDRACHT.md`
+2. `TEAM_MECHANIEKER_01_MIRROR_TOETS.md`
+3. `TEAM_MECHANIEKER_01_AFHANKELIJKHEDEN.md`
+4. `TEAM_MECHANIEKER_01_HERSTELPROTOCOL.md`
+5. `TEAM_MECHANIEKER_01_SYNCHRONISATIEPATCH.md`
+
+De bouwopdracht wordt volledig uitgevoerd wanneer René haar vrijgeeft. Mirror-toetsing is een afzonderlijke vervolgstap en verkleint de bouwscope niet.

@@ -77,6 +77,32 @@ export interface ResolvedEntitlements {
   degraded: boolean;
 }
 
+// ── Vastgelegd degraded-gedrag (ABONNEMENT_01 §1.2, veiligheidskeuze) ────────
+// Bij een leesfout in de entitlementlaag (degraded=true):
+//  • wat NIET gelezen kon worden telt niet mee (fail-closed per bron) — een
+//    storing kan dus nooit rechten TOEVOEGEN;
+//  • wat WÉL gelezen kon worden (bv. variantrechten terwijl de persoonlijke
+//    rechten faalden) blijft gewoon gelden — een tijdelijke storing is geen
+//    bewijs dat een recht vervallen is, en een betalende gebruiker mag niet
+//    buitengesloten raken door een databasefout aan onze kant;
+//  • legacy_unrestricted blijft volledig werken (hangt niet van deze tabellen
+//    af — bestaande carve-out).
+// Motivatie: beschikbaarheid voor betalende gebruikers weegt zwaarder dan het
+// theoretische risico dat een storing een zojuist-ingetrokken recht enkele
+// minuten langer laat doorlopen; intrekking loopt bovendien via dezelfde
+// tabellen, dus een leesfout maskeert hooguit kortstondig. Gedocumenteerd in
+// docs/SPARKI_ABONNEMENTSFLOW.md; afgedekt in test:entitlements.
+let forcedEntitlementReadError = false;
+/** Alleen voor tests: forceer een leesfout op user_entitlements. */
+export function __setEntitlementsReadFailureForTests(v: boolean): void {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "__setEntitlementsReadFailureForTests is uitgeschakeld in productie",
+    );
+  }
+  forcedEntitlementReadError = v;
+}
+
 function isEntitlementActive(e: UserEntitlement, now: Date): boolean {
   if (e.status !== "active") return false; // onbekende status ⇒ fail-closed
   if (e.startsAt && e.startsAt > now) return false;
@@ -138,6 +164,7 @@ export async function resolveEntitlements(
   let rows: UserEntitlement[] = [];
   let degraded = false;
   try {
+    if (forcedEntitlementReadError) throw new Error("test: geforceerde leesfout");
     rows = await db
       .select()
       .from(userEntitlementsTable)

@@ -1,0 +1,183 @@
+REPLIT — DOCUMENTSYNC HERSTELRONDE
+Technische code: DOCUMENTSYNC_MEDIA_REPORT_02
+
+DOEL
+
+Rond de twee documentreeksen volledig en consistent af.
+
+Bestaande commits:
+
+- Mobile media/documentatie: 25557b70
+- Rapportagestandaarden: 335dc9a0
+- huidige main eind-SHA: 335dc9a0
+
+Wijzig uitsluitend documentatie.
+Geen applicatiecode.
+Geen Master Plan-wijziging.
+Geen stille productbesluiten.
+
+====================================================
+1. ONTBREKENDE RAPPORTDOCUMENTEN
+====================================================
+
+Voeg de twee ontbrekende documenten toe vanuit de aangeleverde Claude-bron:
+
+1. SPARKI_REPORT_DESIGN_STANDARD_v1.0.md
+2. SPARKI_REPORT_TEMPLATE_LIBRARY.md
+
+Plaats ze op dezelfde documentatielocatie als de overige rapportstandaarden.
+
+Controleer daarna:
+
+- alle RPT-verwijzingen;
+- alle TPL-verwijzingen;
+- alle BLK-verwijzingen;
+- onderlinge bestandsnamen;
+- versies;
+- verwijzingsindex;
+- oplevering 1/5 t/m 5/5;
+- geen ontbrekende bindende bron meer.
+
+De rapportreeks moet daarna bestaan uit:
+
+1. SPARKI_REPORT_DESIGN_STANDARD_v1.0.md
+2. SPARKI_REPORT_TEMPLATE_LIBRARY.md
+3. SPARKI_REPORT_CONTENT_RULES.md
+4. SPARKI_REPORT_PRIVACY_STANDARD.md
+5. SPARKI_MIRROR_REPORT_TESTSTANDARD.md
+
+====================================================
+2. ACADEMY-NAVIGATIEBESLUIT
+====================================================
+
+Werk het vastgestelde besluit door in de relevante documentatie.
+
+Definitieve plaats:
+
+Hulp & ondersteuning
+→ Uitleg en Academy
+
+Daarbinnen:
+
+1. Sparki gebruiken
+- gratis;
+- productuitleg;
+- onboarding;
+- routeplanner;
+- GPX;
+- navigatie;
+- training;
+- analyses;
+- instellingen;
+- abonnementen;
+- veiligheid;
+- toegankelijkheid.
+
+2. Beter fietsen en trainen
+- Sparki Compleet;
+- FTP;
+- zones;
+- herstel;
+- intervaltraining;
+- klimmen;
+- dalen;
+- voeding;
+- wedstrijdvoorbereiding;
+- kracht;
+- mobiliteit.
+
+Harde regels:
+
+- geen zesde hoofditem;
+- vijf vaste hoofditems blijven intact;
+- verwijder teksten waarin staat dat de plaats nog onbepaald is;
+- geen nieuwe navigatiearchitectuur;
+- entitlements blijven afkomstig uit de centrale entitlementlaag.
+
+Werk dit minimaal door in:
+
+- SPARKI_MEDIA_UITLEG_PRODUCTBESLUIT.md
+- SPARKI_MOBILE_COMPONENT_LIBRARY.md, indien daar een navigatieverwijzing staat
+- SPARKI_MOBILE_PATTERNS.md, indien relevant
+- SPARKI_ROLE_BASED_MOBILE_FLOWS.md, indien relevant
+- SPARKI_MIRROR_MOBILE_TESTSTANDARD.md, indien relevant
+- besluitregister, uitsluitend met dit reeds genomen besluit
+
+Neem geen nieuw besluitnummer aan wanneer de nummerreeks nog niet betrouwbaar is. Gebruik dan de bestaande tijdelijke besluitwijze.
+
+====================================================
+3. DOCUMENTSYNC-RAPPORT
+====================================================
+
+Maak:
+
+docs/DOCUMENTSYNC_REPORT_MEDIA_REPORT_02.md
+
+Neem daarin op:
+
+- bronbestanden/ZIP’s;
+- start-SHA;
+- eind-SHA;
+- toegevoegde bestanden;
+- vervangen bestanden;
+- ongewijzigde bestanden;
+- verwerkte besluiten;
+- geverifieerde codefamilies;
+- ontbrekende bronnen;
+- aangetroffen verschillen;
+- nog open afhankelijkheden;
+- bevestiging dat geen applicatiecode is gewijzigd;
+- bevestiging dat geen Master Plan is gewijzigd.
+
+====================================================
+4. CONSISTENTIECONTROLE
+====================================================
+
+Controleer de volledige mobiele mediareeks op:
+
+- MUX-verwijzingen;
+- CMP-40 t/m CMP-44;
+- PAT-28 t/m PAT-39;
+- MTS-50 t/m MTS-69;
+- MOBILE_UX_STANDARD v1.4;
+- ploegleider;
+- medical_staff;
+- Academy onder Hulp & ondersteuning;
+- Gratis versus Compleet;
+- geen tekst “plaats nog niet bepaald”.
+
+Controleer de volledige rapportreeks op:
+
+- RPT;
+- TPL;
+- BLK;
+- RCR;
+- RT;
+- RPV;
+- MRT;
+- BRAND_IDENTITY_01 als enige merkbron;
+- geen tweede PDF- of rapportarchitectuur;
+- alle vijf opleveringen aanwezig.
+
+====================================================
+5. OPLEVERING
+====================================================
+
+Commit als één documentatiecommit.
+
+Push naar main.
+
+Rapporteer:
+
+- start-SHA;
+- eind-SHA;
+- commitbericht;
+- gewijzigde bestanden;
+- nieuwe bestanden;
+- alle uitgevoerde controles;
+- eventuele resterende verschillen;
+- bevestiging:
+  - geen applicatiecode gewijzigd;
+  - geen Master Plan gewijzigd;
+  - rapportreeks compleet;
+  - Academy-navigatiebesluit volledig verwerkt.

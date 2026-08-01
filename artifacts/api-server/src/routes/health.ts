@@ -28,6 +28,9 @@ function versionInfo(): Record<string, string> {
     environment:
       process.env.NODE_ENV === "production" ? "production" : "development",
     commit,
+    // Buildtijd: bij deploy door build.mjs ingebakken (SPARKI_BUILD_TIME);
+    // ontbreekt die, dan eerlijk "onbekend" — nooit een gegokte tijd.
+    buildTime: process.env.SPARKI_BUILD_TIME ?? "onbekend",
     startedAt: new Date().toISOString(),
   };
   return cachedVersion;

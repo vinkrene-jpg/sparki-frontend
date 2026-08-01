@@ -7,7 +7,7 @@
 // aantallen of foutmeldingen.
 
 import { createHash } from "node:crypto";
-import { and, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, or, sql, isNull } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -229,17 +229,23 @@ export async function blockUser(viewer: string, target: string): Promise<void> {
       .insert(worldBlocksTable)
       .values({ blockerClerkId: viewer, blockedClerkId: target })
       .onConflictDoNothing();
+    // BB-09 (BUILD_01 F2): vriendschap beëindigen bij blokkade = endedAt
+    // zetten (historie blijft); scope-filters lezen alleen endedAt IS NULL.
     await tx
-      .delete(friendLinksTable)
+      .update(friendLinksTable)
+      .set({ endedAt: new Date() })
       .where(
-        or(
-          and(
-            eq(friendLinksTable.requesterClerkId, viewer),
-            eq(friendLinksTable.addresseeClerkId, target),
-          ),
-          and(
-            eq(friendLinksTable.requesterClerkId, target),
-            eq(friendLinksTable.addresseeClerkId, viewer),
+        and(
+          isNull(friendLinksTable.endedAt),
+          or(
+            and(
+              eq(friendLinksTable.requesterClerkId, viewer),
+              eq(friendLinksTable.addresseeClerkId, target),
+            ),
+            and(
+              eq(friendLinksTable.requesterClerkId, target),
+              eq(friendLinksTable.addresseeClerkId, viewer),
+            ),
           ),
         ),
       );
@@ -399,7 +405,7 @@ export async function getPublicProfile(
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           eq(friendLinksTable.requesterClerkId, owner),
           eq(friendLinksTable.addresseeClerkId, owner),

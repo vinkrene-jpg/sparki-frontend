@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -49,7 +49,7 @@ export async function reconcileRoles(
     .where(
       and(
         eq(coachAthleteLinksTable.coachClerkId, clerkId),
-        eq(coachAthleteLinksTable.status, "accepted"),
+        eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
       ),
     )
     .limit(1);
@@ -61,7 +61,7 @@ export async function reconcileRoles(
     .where(
       and(
         eq(parentAthleteLinksTable.parentClerkId, clerkId),
-        eq(parentAthleteLinksTable.status, "accepted"),
+        eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
       ),
     )
     .limit(1);

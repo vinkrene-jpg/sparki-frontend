@@ -481,6 +481,140 @@ async function main() {
     );
   });
 
+  // ── DATA_TRUST_01: centrale classificatie ─────────────────────────────────
+  await scenario("classificatie: mappingtabel bronveld → klasse", async () => {
+    const { classifyValue, isRealUserData } = await import(
+      "../engines/data-origin/classification"
+    );
+    assert(classifyValue({ ownerClerkId: A, source: "manual" }) === "USER_ENTERED", "manual ≠ USER_ENTERED");
+    assert(classifyValue({ ownerClerkId: A, source: "strava" }) === "IMPORTED_PROVIDER", "strava ≠ IMPORTED_PROVIDER");
+    assert(classifyValue({ ownerClerkId: A, source: "file" }) === "IMPORTED_PROVIDER", "file ≠ IMPORTED_PROVIDER");
+    assert(classifyValue({ ownerClerkId: A, source: "derived", hasComputationTrace: true }) === "CALCULATED_FROM_REAL_DATA", "derived+trace ≠ CALCULATED");
+    assert(classifyValue({ ownerClerkId: A, source: "derived", hasComputationTrace: false }) === "UNKNOWN", "derived zonder trace moet UNKNOWN zijn");
+    assert(classifyValue({ ownerClerkId: "seed_persona_gratis", source: "manual" }) === "TEST_ONLY", "seed_-identiteit ≠ TEST_ONLY");
+    assert(classifyValue({ ownerClerkId: "governor-fixture-x", source: "strava" }) === "TEST_ONLY", "governor-fixture ≠ TEST_ONLY");
+    assert(classifyValue({ ownerClerkId: A, source: "iets_onbekends" }) === "UNKNOWN", "onbekende bron ≠ UNKNOWN");
+    assert(classifyValue({ ownerClerkId: A, source: null }) === "UNKNOWN", "lege bron ≠ UNKNOWN");
+    assert(classifyValue({ ownerClerkId: A, source: "manual", virtualOrDemo: true }) === "MOCK_OR_DEMO", "virtueel ≠ MOCK_OR_DEMO");
+    for (const k of ["UNKNOWN", "TEST_ONLY", "MOCK_OR_DEMO"] as const) {
+      assert(!isRealUserData(k), `${k} mag nooit als echte waarde gelden`);
+    }
+    for (const k of ["USER_ENTERED", "IMPORTED_PROVIDER", "CALCULATED_FROM_REAL_DATA", "ADMIN_ENTERED"] as const) {
+      assert(isRealUserData(k), `${k} hoort echt te zijn`);
+    }
+  });
+
+  await scenario("classificatie: explain/session draagt trust.klasse", async () => {
+    const [sess] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: A,
+        sessionDate: "2026-07-30",
+        sport: "cycling",
+        type: "training",
+        source: "manual",
+        durationMin: 60,
+      })
+      .returning({ id: trainingSessionsTable.id });
+    const r = await req("GET", `/api/data-origin/explain/session/${sess!.id}`, A);
+    assert(r.status === 200, `status ${r.status}`);
+    assert(r.json?.trust?.klasse === "USER_ENTERED", `klasse ${r.json?.trust?.klasse}`);
+    assert(r.json?.trust?.echt === true, "handmatige sessie hoort echt te zijn");
+    await db.delete(trainingSessionsTable).where(eq(trainingSessionsTable.id, sess!.id));
+  });
+
+  // ── DATA_TRUST_01: zeven-toestandencontract ───────────────────────────────
+  await scenario("toestanden: leeg account geeft geen_data met uitleg", async () => {
+    const r = await req("GET", "/api/data-origin/state/sessies", B);
+    assert(r.status === 200, `status ${r.status}`);
+    assert(r.json?.toestand === "geen_data", `toestand ${r.json?.toestand}`);
+    assert(typeof r.json?.melding === "string" && r.json.melding.length > 0, "melding ontbreekt");
+    assert(typeof r.json?.actie === "string" && r.json.actie.length > 0, "actie ontbreekt");
+  });
+
+  await scenario("toestanden: onvoldoende data voor belastingstrend", async () => {
+    const [sess] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: B,
+        sessionDate: "2026-07-29",
+        sport: "cycling",
+        type: "training",
+        source: "manual",
+        durationMin: 45,
+      })
+      .returning({ id: trainingSessionsTable.id });
+    const r = await req("GET", "/api/data-origin/state/belasting", B);
+    assert(r.json?.toestand === "onvoldoende_data", `toestand ${r.json?.toestand}`);
+    const rs = await req("GET", "/api/data-origin/state/sessies", B);
+    assert(rs.json?.toestand === "ok", `sessies-toestand ${rs.json?.toestand}`);
+    await db.delete(trainingSessionsTable).where(eq(trainingSessionsTable.id, sess!.id));
+  });
+
+  await scenario("toestanden: mislukte sync toont providerfout, ook mét data", async () => {
+    const { syncRunsTable } = await import("@workspace/db");
+    const [sess] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: B,
+        sessionDate: "2026-07-26",
+        sport: "cycling",
+        type: "training",
+        source: "strava",
+        durationMin: 30,
+      })
+      .returning({ id: trainingSessionsTable.id });
+    const [run] = await db
+      .insert(syncRunsTable)
+      .values({ clerkId: B, provider: "strava", status: "error" } as never)
+      .returning({ id: syncRunsTable.id });
+    const r = await req("GET", "/api/data-origin/state/sessies", B);
+    assert(r.json?.toestand === "providerfout", `toestand ${r.json?.toestand}`);
+    assert(typeof r.json?.melding === "string" && r.json.melding.includes("mislukt"), "melding hoort de mislukte sync te benoemen");
+    await db.delete(syncRunsTable).where(eq(syncRunsTable.id, run!.id));
+    await db.delete(trainingSessionsTable).where(eq(trainingSessionsTable.id, sess!.id));
+  });
+
+  await scenario("toestanden: onbekend domein wordt geweigerd", async () => {
+    const r = await req("GET", "/api/data-origin/state/onzin", A);
+    assert(r.status === 400, `status ${r.status}`);
+  });
+
+  // ── DATA_TRUST_01: geschatte FTP is geen brondata ─────────────────────────
+  await scenario("geschatte FTP levert geen afgeleide belastingscore", async () => {
+    await db
+      .update(athleteProfilesTable)
+      .set({ ftp: 250, ftpEstimated: true })
+      .where(eq(athleteProfilesTable.clerkId, A));
+    await db.delete(ftpHistoryTable).where(eq(ftpHistoryTable.clerkId, A));
+    const { ingestManualSession } = await import("../lib/manual-session-ingest");
+    const { session } = await ingestManualSession(A, {
+      sessionDate: "2026-07-28",
+      sport: "cycling",
+      type: "training",
+      durationMin: 60,
+      avgPower: 200,
+    } as never);
+    assert(session.tss == null, `belastingscore is afgeleid van een schatting: ${session.tss}`);
+
+    // Met een ECHTE (niet-geschatte) FTP komt de score wél.
+    await db
+      .update(athleteProfilesTable)
+      .set({ ftpEstimated: false })
+      .where(eq(athleteProfilesTable.clerkId, A));
+    const { session: session2 } = await ingestManualSession(A, {
+      sessionDate: "2026-07-27",
+      sport: "cycling",
+      type: "training",
+      durationMin: 60,
+      avgPower: 200,
+    } as never);
+    assert(session2.tss != null, "echte FTP hoort wél een belastingscore te geven");
+    await db
+      .delete(trainingSessionsTable)
+      .where(and(eq(trainingSessionsTable.clerkId, A), inArray(trainingSessionsTable.sessionDate, ["2026-07-28", "2026-07-27"])));
+  });
+
   await cleanup();
   if (server) await new Promise<void>((res) => server!.close(() => res()));
 

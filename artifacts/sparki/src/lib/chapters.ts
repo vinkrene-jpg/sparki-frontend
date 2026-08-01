@@ -93,6 +93,15 @@ export const PARENT_CHAPTERS: Chapter[] = [
   { href: "/feed", icon: Radio, label: "Nieuws", hint: "Wat er speelt" },
 ]
 
+// BB-14: voedingsdeskundige — eigen (dunne) rolomgeving, Voeding eerst.
+// Nooit terugvallen op de sporterweergave: zolang er geen gekoppelde sporters
+// zijn, toont het startscherm de eerlijke lege toestand.
+export const NUTRITION_SPECIALIST_CHAPTERS: Chapter[] = [
+  { href: "/", icon: HeartPulse, label: "Voeding", hint: "Jouw sporters & voeding" },
+  { href: "/you", icon: User, label: "Profiel", hint: "Jouw gegevens" },
+  { href: "/support", icon: LifeBuoy, label: "Hulp", hint: "Vragen & ondersteuning" },
+]
+
 // Hoofdnavigatie (onderbalk) — pure data zodat de navigatieregressietest dit
 // zonder React kan importeren. Sporter: precies vijf hoofdkeuzes.
 export type NavEntry = { href: string; label: string }
@@ -105,10 +114,16 @@ export const ATHLETE_NAV_ENTRIES: NavEntry[] = [
   { href: "/meer", label: "Meer" },
 ]
 
+// F4 (BB-06): vaste vijf posities met vaste betekenis voor élke rol —
+// 1 startpunt · 2 hoofdonderwerp · 3 uitvoeren · 4 terugkijken · 5 Meer.
+// Labels 1–4 mogen per rol verschillen; aantal, volgorde en betekenis niet.
+// Positie 5 heet altijd "Meer". Nooit een zesde hoofditem (BB-07).
 export const COACH_NAV_ENTRIES: NavEntry[] = [
-  { href: "/", label: "Vandaag" },
-  { href: "/invitations", label: "Uitnodigen" },
-  { href: "/you", label: "Profiel" },
+  { href: "/", label: "Vandaag" }, // 1 startpunt
+  { href: "/invitations", label: "Sporters" }, // 2 hoofdonderwerp: gekoppelde sporters
+  { href: "/samen", label: "Samen" }, // 3 uitvoeren: werken met het team
+  { href: "/you", label: "Profiel" }, // 4 terugkijken: jouw gegevens & historie
+  { href: "/meer", label: "Meer" }, // 5 Meer (vast)
 ]
 
 // WP-R1 bindende ouderonderbalk (besluit 31-07-2026).
@@ -120,11 +135,30 @@ export const PARENT_NAV_ENTRIES: NavEntry[] = [
   { href: "/meer", label: "Meer" },
 ]
 
+// BB-14: onderbalk voedingsdeskundige — Voeding eerst; BB-06: vijf posities.
+export const NUTRITION_SPECIALIST_NAV_ENTRIES: NavEntry[] = [
+  { href: "/", label: "Voeding" }, // 1 startpunt
+  { href: "/invitations", label: "Sporters" }, // 2 hoofdonderwerp: koppelingen
+  { href: "/support", label: "Hulp" }, // 3 uitvoeren: koppeling/hulp aanvragen
+  { href: "/you", label: "Profiel" }, // 4 terugkijken
+  { href: "/meer", label: "Meer" }, // 5 Meer (vast)
+]
+
+// F4: één bron van waarheid voor het zichtbare rollabel in de contextregel
+// en het hoofdmenu.
+export const ROLE_LABELS: Record<Role, string> = {
+  athlete: "Sporter",
+  coach: "Coach",
+  parent: "Ouder",
+  nutrition_specialist: "Voedingsdeskundige",
+}
+
 export function chaptersForRole(
   role: Role | null | undefined,
   hasClub: boolean,
 ): Chapter[] {
   if (role === "coach") return COACH_CHAPTERS
   if (role === "parent") return PARENT_CHAPTERS
+  if (role === "nutrition_specialist") return NUTRITION_SPECIALIST_CHAPTERS
   return hasClub ? [...ATHLETE_CHAPTERS, CLUB_CHAPTER] : ATHLETE_CHAPTERS
 }

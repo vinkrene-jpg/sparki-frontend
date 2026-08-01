@@ -1,0 +1,114 @@
+
+> **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
+> Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
+> Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
+> deployketen) zijn vervallen. Fasevolgorde geldt uitsluitend als technische afhankelijkheid;
+> Mirror toetst parallel; productiepublicatie loopt via de automatische technische poort.
+> Bindende regel + elf hard stops + verplichte testset: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md`.
+
+REPLIT — VIER DEFINITIEVE SPARKI-BOUWPAKKETTEN UITVOEREN
+
+Gebruik uitsluitend de bijgevoegde ZIP met deze vier bestanden als bindende bron:
+
+1. SPARKI_BUILD_01_FUNDAMENT_VEILIGHEID_EN_TOEGANG.md
+2. SPARKI_BUILD_02_WERKOBJECTEN_EN_ORGANISATIEGEHEUGEN.md
+3. SPARKI_BUILD_03_WEDSTRIJD_EN_TEAMOPERATIE.md
+4. SPARKI_BUILD_04_PROFESSIONELE_BEGLEIDING_EN_FACTURATIE.md
+
+ALGEMENE REGELS
+
+- Bestaande werkende architectuur behouden.
+- Eerst inventariseren en hergebruiken.
+- Geen complete herschrijving.
+- Geen tweede rechtenlaag.
+- Geen tweede documentarchitectuur.
+- Geen tweede agenda-, taak-, notificatie-, contacten-, locatie-, bestanden-, zoek- of archiefarchitectuur.
+- Geen mock-, seed-, demo- of fallbackdata als persoonlijke waarheid.
+- Geen productiepublicatie zonder expliciete vrijgave door René.
+- Mirror loopt parallel mee op vaste gepushte fase-SHA’s.
+- Iedere fase krijgt:
+  - start-SHA;
+  - eind-SHA;
+  - gewijzigde bestanden;
+  - migraties;
+  - tests en exitcodes;
+  - rollback/herstel;
+  - opleverrapport;
+  - Mirror-overdracht.
+
+UITVOERVOLGORDE
+
+A. Start met Bouwpakket 1.
+B. Ga daarna door met Bouwpakket 2.
+C. Start Bouwpakket 3 pas wanneer de vereiste centrale werkobject-, documenten-, taak-, notificatie- en versieonderdelen uit Bouwpakket 2 aantoonbaar beschikbaar zijn.
+D. Start Bouwpakket 4 pas wanneer de vereiste werkobject-, documenten-, archief-, contacten- en facturatiebasis aantoonbaar beschikbaar is.
+E. Wanneer een afhankelijkheid ontbreekt:
+   - markeer de fase BLOCKED;
+   - bouw geen parallelle tijdelijke oplossing;
+   - ga alleen door met aantoonbaar onafhankelijke fasen.
+
+BELANGRIJKE PRODUCTBESLUITEN
+
+- Eén centrale documentenbibliotheek.
+- Eén centrale werkobjectlaag.
+- Eén centrale agenda.
+- Eén centrale taaklaag.
+- Eén centrale inbox/notificatielaag.
+- Eén centrale contacten- en relatielaag.
+- Eén centrale locatieservice.
+- Eén centrale bestandenlaag.
+- Eén centrale zoeklaag.
+- Eén centrale goedkeuringsflow.
+- Eén centrale sjabloonbibliotheek.
+- Eén centrale bewaarmatrix.
+- PDF is altijd afgeleide, nooit primaire waarheid.
+- Oude versies blijven bestaan.
+- Hergebruik en organisatiegeheugen zijn standaard.
+- AI vult alleen echte bekende gegevens of gemarkeerde concepten.
+- AI publiceert nooit zelfstandig.
+- nutrition_specialist wordt een echte server-side rol.
+- Facturatie is een volwaardige trainerwerkplek.
+- Klant, sporter en betaler blijven afzonderlijk.
+- Sparki doet verkoopfacturatie, geen volledige boekhouding.
+
+STOPCONDITIES
+
+Stop de afhankelijke bouwstraat bij:
+
+- rechtenlek;
+- consentlek;
+- dataverlies;
+- onveilige migratie;
+- dubbele architectuur;
+- build/typecheck/tests niet groen;
+- ontbrekende rollback;
+- verzonnen persoonlijke data;
+- productie-impact;
+- onopgeloste blokkade die volgens de pakketten eerst een besluit vereist.
+
+PRODUCTIE
+
+Niet publiceren.
+Geen productiemigraties goedkeuren.
+Geen flags voor gewone productiegebruikers activeren.
+Productievrijgave blijft uitsluitend aan René.
+
+RAPPORTAGE
+
+Na iedere fase kort rapporteren:
+
+- pakket;
+- fase;
+- start-SHA;
+- eind-SHA;
+- scope;
+- gewijzigde bestanden;
+- migraties;
+- tests;
+- rollback;
+- bekende blokkades;
+- afhankelijkheden;
+- Mirror-toets aangevraagd;
+- volgende fase.
+
+Start nu met F0 van Bouwpakket 1 en ga daarna volgens de vastgelegde afhankelijkheden door.

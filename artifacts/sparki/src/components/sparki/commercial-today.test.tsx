@@ -74,6 +74,54 @@ mock.module("wouter", {
   },
 });
 
+// WP-R1 maakte de shell rol-bewust: useUserProfile + TodayDebugPanel kwamen
+// bij het import-oppervlak. Mocks moeten dat volledige oppervlak dekken
+// (@/lib/dev leest import.meta.env op moduleniveau — bestaat niet in node).
+mock.module("@/contexts/UserContext", {
+  namedExports: {
+    useUserProfile: () => ({ profile: { activeRole: "athlete" } }),
+    UserProvider: ({ children }: { children: unknown }) => children,
+  },
+});
+
+mock.module("@/components/sparki/role-today", {
+  namedExports: { TodayDebugPanel: () => null },
+});
+
+mock.module("@/lib/dev", {
+  namedExports: { DEV_PREVIEW: false, useDevPreview: () => false, getDevAthleteId: () => 1 },
+});
+
+// @/lib/version en @/lib/api lezen óók import.meta.env op moduleniveau.
+mock.module("@/lib/version", {
+  namedExports: { APP_VERSION: "test", BUILD_SHA: "test", IS_PRODUCTION_BUILD: false },
+});
+
+mock.module("@tanstack/react-query", {
+  namedExports: {
+    useQuery: () => ({}),
+    useMutation: () => ({}),
+    useQueryClient: () => ({ invalidateQueries: () => {} }),
+    QueryClient: class {},
+    QueryClientProvider: ({ children }: { children: unknown }) => children,
+  },
+});
+
+mock.module("@clerk/react", {
+  namedExports: {
+    useUser: () => ({ isSignedIn: true, isLoaded: true, user: { id: "user_1" } }),
+  },
+});
+
+mock.module("@/lib/api", {
+  namedExports: {
+    API_BASE: "",
+    VERSION_BLOCKED_EVENT: "sparki:version-blocked",
+    getVersionBlockMessage: () => null,
+    apiFetch: async () => ({}),
+  },
+});
+
 // Lazy imports — pas ná de mocks hierboven.
 const reactPromise = import("react");
 const rtlPromise = import("@testing-library/react");
@@ -215,9 +263,20 @@ test("hiërarchie: kop → boodschap → week → training → herstel → seizo
     assert.equal(atmos.length, 1, "precies één data-atmosphere-element");
     assert.equal(atmos[0]!.getAttribute("data-atmosphere"), "training");
 
-    // Weeknavigatie: 7 dagen, echte belasting zichtbaar, vandaag actief.
-    const dagen = view.container.querySelectorAll("[role='listitem']");
+    // Weeknavigatie: 7 dagen als échte knoppen (gericht herstel 01-08-2026:
+    // een dag-tik opent die dag in de trainingskalender — nooit stil).
+    const dagen = view.container.querySelectorAll(
+      "[role='group'][aria-label*='trainingskalender'] button[aria-pressed]",
+    );
     assert.equal(dagen.length, 7, "DsWeek toont 7 dagen");
+    navCalls.length = 0;
+    view.rtl.fireEvent.click(dagen[0]!);
+    assert.equal(navCalls.length, 1, "dag-tik navigeert");
+    assert.ok(
+      /^\/train\?dag=\d{4}-\d{2}-\d{2}$/.test(navCalls[0]!),
+      `dag-tik opent de kalender op die dag (${navCalls[0]})`,
+    );
+    navCalls.length = 0;
     assert.ok(text.includes("75"), "echte weekbelasting (75) zichtbaar");
     const vandaag = view.container.querySelector("[aria-current='date']");
     assert.ok(vandaag, "vandaag gemarkeerd in DsWeek");
@@ -227,8 +286,10 @@ test("hiërarchie: kop → boodschap → week → training → herstel → seizo
     );
 
     // Precies één primaire actie (44px-knop in de trainingskaart).
+    // Dag-tabs (aria-pressed) tellen niet mee: hun actieve tint is een
+    // selectiestatus, geen primaire actie.
     const primaries = Array.from(
-      view.container.querySelectorAll("button"),
+      view.container.querySelectorAll("button:not([aria-pressed])"),
     ).filter((b) => b.className.includes("bg-accent-cyan"));
     assert.equal(primaries.length, 1, "precies één primaire knop");
     assert.ok(
@@ -270,8 +331,9 @@ test("lege training: eerlijke melding + actie, geen primaire knop", async () => 
     assert.ok(!text.includes("Duurblok"), "geen verzonnen training");
 
     // Geen training ⇒ nergens een primaire knop (maximaal één blijft waar).
+    // Dag-tabs (aria-pressed) zijn selectiestatus, geen primaire actie.
     const primaries = Array.from(
-      view.container.querySelectorAll("button"),
+      view.container.querySelectorAll("button:not([aria-pressed])"),
     ).filter((b) => b.className.includes("bg-accent-cyan"));
     assert.equal(primaries.length, 0, "geen primaire knop zonder training");
 

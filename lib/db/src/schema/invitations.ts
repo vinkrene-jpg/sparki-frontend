@@ -70,6 +70,11 @@ export const invitationsTable = pgTable("invitations", {
   // Voor club-relaties: de club waarvoor deze uitnodiging geldt.
   clubId: integer("club_id"),
 
+  // TEAM_ONBOARDING_01 (addendum parallelle teams): optioneel de selectie
+  // (club_teams-rij) waarvoor deze uitnodiging geldt — bij accepteren wordt
+  // het lid dan meteen aan die selectie gekoppeld.
+  teamId: integer("team_id"),
+
   status: text("status").notNull().default("pending"),
   acceptedByClerkId: text("accepted_by_clerk_id").references(
     () => userProfilesTable.clerkId,

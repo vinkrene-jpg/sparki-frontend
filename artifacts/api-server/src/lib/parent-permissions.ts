@@ -24,7 +24,7 @@ import {
   type ParentDataCategory,
   type ParentAgeTier,
 } from "@workspace/db";
-import { computeAge } from "./age";
+import { getAgeClass } from "./consent-service";
 import { getEffectivePrivacy } from "./privacy";
 
 export type EffectiveParentAccess = {
@@ -74,18 +74,9 @@ function defaultsForLevel(
 export async function athleteAgeTier(
   athleteClerkId: string,
 ): Promise<ParentAgeTier> {
-  const [a] = await db
-    .select({
-      birthDate: athleteProfilesTable.birthDate,
-      birthYear: athleteProfilesTable.birthYear,
-    })
-    .from(athleteProfilesTable)
-    .where(eq(athleteProfilesTable.clerkId, athleteClerkId));
-  const age = a ? computeAge(a.birthDate, a.birthYear) : null;
-  if (age == null) return "unknown";
-  if (age < 16) return "u16";
-  if (age < 18) return "16_17";
-  return "adult";
+  // Eén leeftijdsclassificatie voor de hele consentlaag (F-P0-01): de
+  // categorisering leeft in consent-service.getAgeClass; hier niet dupliceren.
+  return getAgeClass(athleteClerkId);
 }
 
 export async function getParentLink(
@@ -122,7 +113,9 @@ export async function effectiveParentAccess(
     permissions: allOff(),
     parentMayEdit: tier === "u16",
   };
-  if (link.status !== "accepted" || level === "none") return base;
+  // BB-09 (BUILD_01 F2): een beëindigde koppeling geeft nooit toegang.
+  if (link.status !== "accepted" || link.endedAt != null || level === "none")
+    return base;
 
   // Herbevestiging nodig wanneer de leeftijdscategorie is gewijzigd sinds de
   // laatste bevestiging. Een koppeling zonder bevestiging heeft nooit meer dan

@@ -14,3 +14,12 @@ Test-mode Stripe billing per docs/SPARKI_STRIPE_SUBSCRIPTIONS_PHASE1_ARCHITECTUR
 **Why:** the phase-1 contract demands legacy users stay byte-identical and payment webhooks can never be a rights-escalation path.
 
 **How to test offline (no Stripe keys):** `setStripeGatewayForTests(fake)` (blocked in production) + REAL signature verification — sign payloads with the official SDK `new Stripe("sk_test_x").webhooks.generateTestHeaderString({payload, secret})` and set `STRIPE_WEBHOOK_SECRET` in-process. Signature verify needs raw bytes: express.json `verify: (req,_res,buf)=>{req.rawBody=buf}` in app.ts — keep it. 14-scenario matrix: `pnpm --filter @workspace/api-server run test:stripe-billing` (run via shell, not a workflow — workflow limit).
+
+## ABONNEMENT_01 (31-07-2026)
+- Statusvertaling: `mapStripeSubStatus` is exported en nooit-null; past_due/unpaid→grace (7d, monotoon — graceUntil wordt nooit korter), onbekende status→`unknown` fail-closed FREE. Nieuwe BILLING_STATUSES: incomplete/paused/unknown.
+- Meldingen: `billingTransitionNotice` alleen NÁ commit (rollback ⇒ geen melding), dedupeKey `billing:<subId>:<status>`; trials `billing:trial:<id>:ending|ended` via `sweepTrialNotices` (boot + dagelijks). Nooit dreigende copy.
+- Degraded §1.2 (bevestigingsvraag bij René): fail-closed per BRON — onleesbare bron telt niet, leesbare bronnen blijven gelden; degraded voegt nooit rechten toe.
+- Downgrade-keuzeflow: `route_active_selections` (migratie 0010), max 3 actief; alleen-lezen zit al in Go-poort `route_library_manage`; limiet/verval/opruiming = ROUTE_PAKKET_02c (zelfde tabel).
+- Admin-inzicht `/api/admin/billing/:clerkId`: mislukte webhookverwerking rolt terug en laat GEEN rij achter — eerlijk vermelden, niet "faken" in de tabel.
+- Router-valkuilen bij parity-tests: insights mount zonder prefix (/api/open-loops), document-analyses is meervoud, race-routers alle op /races.
+- Dev-admin-curl: identiteit uit `x-dev-clerk-id` valt stil terug op dev_qa als het clerkId GEEN user_profiles-rij heeft — fixture-admin eerst een profielrij geven.

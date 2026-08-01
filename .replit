@@ -540,6 +540,7 @@ ROUTING_PROVIDER = "graphhopper"
 
 [userenv.development]
 SPARKI_ADMIN_IDS = "governor-fixture-admin"
+SPARKI_ACCEPT_MODE = "true"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-26c63990-dec3-42e3-b3ed-3f8d9932257c"

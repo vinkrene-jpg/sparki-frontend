@@ -1,8 +1,5 @@
 # Sparki beloftekaders — huidige praktijk en voorstel (31-07-2026)
 
-> De uitvoeringsregel is op 1 augustus 2026 gewijzigd (`SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`). Dit rapport beschrijft de situatie onder de eerdere regel en is niet herschreven.
-
-
 **Status: voorstel ter beoordeling door René.** Niets hiervan is doorgevoerd;
 de inventaris (`SPARKI_PROMISE_INVENTORY_2026-07-31.md`) is met de *huidige*
 bronnen gemaakt en markeert elke mapping naar dit voorstel expliciet als

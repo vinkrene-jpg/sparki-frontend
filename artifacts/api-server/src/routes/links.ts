@@ -70,12 +70,15 @@ router.get("/", requireAuth, async (req, res) => {
 router.delete("/coach/:coachClerkId", requireAuth, async (req, res) => {
   const me = getClerkUserId(req)!;
   try {
+    // BB-09 (BUILD_01 F2): beëindigen = endedAt zetten, historie blijft.
     const result = await db
-      .delete(coachAthleteLinksTable)
+      .update(coachAthleteLinksTable)
+      .set({ endedAt: new Date() })
       .where(
         and(
           eq(coachAthleteLinksTable.coachClerkId, String(req.params.coachClerkId)),
           eq(coachAthleteLinksTable.athleteClerkId, me),
+          isNull(coachAthleteLinksTable.endedAt),
         ),
       );
     const removed = result.rowCount ?? 0;
@@ -99,12 +102,15 @@ router.delete("/coach/:coachClerkId", requireAuth, async (req, res) => {
 router.delete("/parent/:parentClerkId", requireAuth, async (req, res) => {
   const me = getClerkUserId(req)!;
   try {
+    // BB-09 (BUILD_01 F2): beëindigen = endedAt zetten, historie blijft.
     const result = await db
-      .delete(parentAthleteLinksTable)
+      .update(parentAthleteLinksTable)
+      .set({ endedAt: new Date() })
       .where(
         and(
           eq(parentAthleteLinksTable.parentClerkId, String(req.params.parentClerkId)),
           eq(parentAthleteLinksTable.athleteClerkId, me),
+          isNull(parentAthleteLinksTable.endedAt),
         ),
       );
     const removed = result.rowCount ?? 0;
@@ -131,7 +137,8 @@ router.delete("/as-coach/:athleteClerkId", requireAuth, async (req, res) => {
   const me = getClerkUserId(req)!;
   try {
     await db
-      .delete(coachAthleteLinksTable)
+      .update(coachAthleteLinksTable)
+      .set({ endedAt: new Date() })
       .where(
         and(
           eq(coachAthleteLinksTable.coachClerkId, me),
@@ -139,6 +146,7 @@ router.delete("/as-coach/:athleteClerkId", requireAuth, async (req, res) => {
             coachAthleteLinksTable.athleteClerkId,
             String(req.params.athleteClerkId),
           ),
+          isNull(coachAthleteLinksTable.endedAt),
         ),
       );
     void writeAudit({
@@ -162,7 +170,8 @@ router.delete("/as-parent/:athleteClerkId", requireAuth, async (req, res) => {
   const me = getClerkUserId(req)!;
   try {
     await db
-      .delete(parentAthleteLinksTable)
+      .update(parentAthleteLinksTable)
+      .set({ endedAt: new Date() })
       .where(
         and(
           eq(parentAthleteLinksTable.parentClerkId, me),
@@ -170,6 +179,7 @@ router.delete("/as-parent/:athleteClerkId", requireAuth, async (req, res) => {
             parentAthleteLinksTable.athleteClerkId,
             String(req.params.athleteClerkId),
           ),
+          isNull(parentAthleteLinksTable.endedAt),
         ),
       );
     void writeAudit({
@@ -209,7 +219,9 @@ router.get("/parents/manage", requireAuth, async (req, res) => {
           .from(userProfilesTable)
           .where(eq(userProfilesTable.clerkId, link.parentClerkId));
         const access =
-          link.status === "accepted" ? await effectiveParentAccess(link) : null;
+          link.status === "accepted" && link.endedAt == null
+            ? await effectiveParentAccess(link)
+            : null;
         return {
           parentClerkId: link.parentClerkId,
           displayName: p?.displayName ?? null,
@@ -247,7 +259,7 @@ router.put(
             eq(parentAthleteLinksTable.athleteClerkId, me),
           ),
         );
-      if (!link || link.status !== "accepted") {
+      if (!link || link.status !== "accepted" || link.endedAt != null) {
         res.status(404).json({ error: "Koppeling niet gevonden" });
         return;
       }
@@ -315,7 +327,7 @@ router.post(
             eq(parentAthleteLinksTable.athleteClerkId, me),
           ),
         );
-      if (!link || link.status !== "accepted") {
+      if (!link || link.status !== "accepted" || link.endedAt != null) {
         res.status(404).json({ error: "Koppeling niet gevonden" });
         return;
       }
@@ -412,7 +424,7 @@ router.get("/parent/:parentClerkId/messages", requireAuth, async (req, res) => {
           eq(parentAthleteLinksTable.athleteClerkId, me),
         ),
       );
-    if (!link || link.status !== "accepted") {
+    if (!link || link.status !== "accepted" || link.endedAt != null) {
       res.status(404).json({ error: "Koppeling niet gevonden" });
       return;
     }
@@ -465,7 +477,7 @@ router.post("/parent/:parentClerkId/messages", requireAuth, async (req, res) => 
           eq(parentAthleteLinksTable.athleteClerkId, me),
         ),
       );
-    if (!link || link.status !== "accepted") {
+    if (!link || link.status !== "accepted" || link.endedAt != null) {
       res.status(404).json({ error: "Koppeling niet gevonden" });
       return;
     }

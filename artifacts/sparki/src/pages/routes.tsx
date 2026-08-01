@@ -9,6 +9,7 @@ import { RouteDiscover } from "@/components/sparki/route-discover"
 import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { RouteCandidatesSection } from "@/components/sparki/route-candidates-section"
+import { RouteDowngradeBanner } from "@/components/sparki/route-downgrade-banner"
 
 type RoutesView = "maken" | "gpx" | "bewaard" | "ontdek" | "instellingen"
 
@@ -131,6 +132,9 @@ export default function RoutesPage() {
               params.has("ritopties")
             ) && (
               <>
+                {/* Downgrade-keuzeflow (ABONNEMENT_01 §1.3): alleen zichtbaar
+                    ná een echte downgrade met meer routes dan de limiet. */}
+                <RouteDowngradeBanner />
                 <section className="mt-8">
                   <RouteLibrary />
                 </section>

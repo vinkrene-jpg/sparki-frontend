@@ -19,14 +19,21 @@ import {
   billingSubscriptionsTable,
   billingTestAccountsTable,
   stripeWebhookEventsTable,
+  notificationsTable,
   tierFeatureGrantsTable,
   featureFlagsTable,
   userFlagOverridesTable,
+  routesTable,
 } from "@workspace/db";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
 import { resolveEntitlements, resolveFeatureAccess } from "../lib/entitlements";
-import { expireBillingStates, ensureBillingFlagSeed, getBillingState } from "../lib/billing";
+import {
+  expireBillingStates,
+  ensureBillingFlagSeed,
+  getBillingState,
+  sweepTrialNotices,
+} from "../lib/billing";
 import {
   setStripeGatewayForTests,
   type StripeGateway,
@@ -66,7 +73,7 @@ class FakeGateway implements StripeGateway {
   }
   async createCheckoutSession(args: {
     clerkId: string;
-    tier: "GO" | "COMPLETE";
+    tier: "GO" | "COMPLETE" | "TEAM";
     interval: "month" | "year";
   }) {
     return {
@@ -603,6 +610,312 @@ async function main() {
     });
     const state2 = await getBillingState(userB);
     assert(state2.status === "free" && state2.tier === "FREE", `corrupte substatus: ${state2.status}/${state2.tier}`);
+  });
+
+  // ── ABONNEMENT_01: uitgebreide statusvertaling + meldingen ────────────────
+
+  // 15. past_due/unpaid via subscription-status → grace (zelfde route als
+  //     invoice.payment_failed), monotoon, rechten intact tijdens grace.
+  await scenario("15. past_due-subscriptionstatus → grace, monotoon, rechten intact", async () => {
+    await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+    const subId = `sub_${RUN}_pastdue`;
+    seedSub(subId, userA, "GO", "month");
+    await sendWebhook("customer.subscription.created", { id: subId });
+    const eventCreated = Math.floor(Date.now() / 1000) - 3600;
+    fake.subs.get(subId)!.status = "past_due";
+    await sendWebhook("customer.subscription.updated", { id: subId }, { created: eventCreated });
+    let state = await getBillingState(userA);
+    assert(state.status === "grace", `status ${state.status} ≠ grace`);
+    const expected = eventCreated * 1000 + 7 * 24 * 3600 * 1000;
+    assert(new Date(state.graceUntil!).getTime() === expected, "grace ≠ eventtijd + 7d");
+    const ent = await resolveEntitlements(userA);
+    assert(ent.commercialFeatures["premium"], "rechten moeten tijdens grace intact blijven");
+    // Latere her-levering mag grace niet opschuiven (monotoon).
+    await sendWebhook("customer.subscription.updated", { id: subId }, { created: eventCreated + 9999 });
+    state = await getBillingState(userA);
+    assert(new Date(state.graceUntil!).getTime() === expected, "grace opgeschoven (niet monotoon)");
+    // Herstel: betaling gelukt.
+    fake.subs.get(subId)!.status = "active";
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    state = await getBillingState(userA);
+    assert(state.status === "active", `herstel gaf ${state.status}`);
+  });
+
+  // 16. incomplete → geen rechten; paused → bevroren maar data behouden; active herstelt.
+  await scenario("16. incomplete geen rechten; paused bevriest en hervatten herstelt", async () => {
+    await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+    const subId = `sub_${RUN}_pause`;
+    seedSub(subId, userA, "COMPLETE", "month", { status: "incomplete" });
+    await sendWebhook("customer.subscription.created", { id: subId });
+    let state = await getBillingState(userA);
+    assert(state.status === "incomplete" && state.tier === "FREE", `${state.status}/${state.tier}`);
+    let ent = await resolveEntitlements(userA);
+    assert(!ent.commercialFeatures["premium"], "incomplete gaf rechten");
+    // Betaling rond → active.
+    fake.subs.get(subId)!.status = "active";
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    ent = await resolveEntitlements(userA);
+    assert(ent.commercialFeatures["knowledge_base"], "active herstelde COMPLETE-rechten niet");
+    // Pauzeren: rechten bevroren, subscription-rij (data) blijft bestaan.
+    fake.subs.get(subId)!.status = "paused";
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    state = await getBillingState(userA);
+    assert(state.status === "paused", `status ${state.status} ≠ paused`);
+    assert(state.tier === "COMPLETE", "paused moet tonen wát er gepauzeerd is");
+    ent = await resolveEntitlements(userA);
+    assert(!ent.commercialFeatures["premium"], "paused gaf tóch betaalde rechten");
+    const rows = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(rows.length === 1 && rows[0].tier === "COMPLETE", "paused raakte gegevens kwijt");
+    // Hervatten via webhook herstelt de rechten volledig.
+    fake.subs.get(subId)!.status = "active";
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    state = await getBillingState(userA);
+    ent = await resolveEntitlements(userA);
+    assert(state.status === "active" && ent.commercialFeatures["knowledge_base"], "hervatten herstelde niet");
+  });
+
+  // 17. Onbekende Stripe-status → fail-closed "unknown" (geen rechten), nooit
+  //     stilzwijgend de oude status behouden.
+  await scenario("17. onbekende Stripe-status → unknown, fail-closed, gelogd besluit", async () => {
+    await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+    const subId = `sub_${RUN}_unknown`;
+    seedSub(subId, userA, "GO", "month");
+    await sendWebhook("customer.subscription.created", { id: subId });
+    let ent = await resolveEntitlements(userA);
+    assert(ent.commercialFeatures["premium"], "voorbereiding: active gaf geen rechten");
+    fake.subs.get(subId)!.status = "some_future_stripe_status" as SubscriptionState["status"];
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    const [row] = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(row?.status === "unknown", `DB-status ${row?.status} ≠ unknown (stil behouden?)`);
+    const state = await getBillingState(userA);
+    assert(state.status === "free" && state.tier === "FREE", `${state.status}/${state.tier}`);
+    ent = await resolveEntitlements(userA);
+    assert(!ent.commercialFeatures["premium"], "unknown gaf tóch rechten");
+  });
+
+  // 18. Meldingen bij overgangen: aangemaakt ná commit, idempotent via dedupeKey.
+  await scenario("18. statusovergang maakt één melding; her-levering geen tweede", async () => {
+    await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+    const subId = `sub_${RUN}_notify`;
+    seedSub(subId, userA, "GO", "month");
+    await sendWebhook("customer.subscription.created", { id: subId });
+    fake.subs.get(subId)!.status = "paused";
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    const key = `billing:${subId}:paused`;
+    let rows = await db
+      .select()
+      .from(notificationsTable)
+      .where(and(eq(notificationsTable.clerkId, userA), eq(notificationsTable.dedupeKey, key)));
+    assert(rows.length === 1, `verwacht 1 paused-melding, kreeg ${rows.length}`);
+    assert(rows[0].title.includes("gepauzeerd"), `titel: ${rows[0].title}`);
+    assert(!/\d+\s*(uur|minuten) over|nog maar/.test(rows[0].body ?? ""), "melding bevat aftel-urgentie");
+    // Her-levering (nieuw event-id, zelfde staat): geen tweede melding.
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    rows = await db
+      .select()
+      .from(notificationsTable)
+      .where(and(eq(notificationsTable.clerkId, userA), eq(notificationsTable.dedupeKey, key)));
+    assert(rows.length === 1, `her-levering maakte extra melding (${rows.length})`);
+    // Verwerkingsfout ⇒ rollback ⇒ óók geen NIEUWE melding over de mislukte
+    // overgang (de eerdere created→active-melding telt niet mee).
+    const countBefore = (
+      await db
+        .select()
+        .from(notificationsTable)
+        .where(eq(notificationsTable.clerkId, userA))
+    ).length;
+    fake.subs.get(subId)!.status = "grace" as SubscriptionState["status"];
+    fake.subs.get(subId)!.status = "past_due";
+    fake.failNextGetSubscription = true;
+    const r = await sendWebhook("customer.subscription.updated", { id: subId });
+    assert(r.status === 500, `fout moest 500 geven, was ${r.status}`);
+    const countAfter = (
+      await db
+        .select()
+        .from(notificationsTable)
+        .where(eq(notificationsTable.clerkId, userA))
+    ).length;
+    assert(countAfter === countBefore, "rollback liet tóch een melding achter");
+    await db.delete(notificationsTable).where(eq(notificationsTable.clerkId, userA));
+  });
+
+  // 19. Downgrade van routes (§1.3): alles blijft zichtbaar, niets verdwijnt,
+  //     keuzeflow max. drie actieve routes, eigendom afgedwongen.
+  await scenario("19. downgrade-keuzeflow: routes blijven, keuze max 3, eigendom afgedwongen", async () => {
+    // userA is na scenario 17 effectief FREE met een Stripe-historie (unknown).
+    const ids: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const [r] = await db
+        .insert(routesTable)
+        .values({ clerkId: userA, name: `Downgrade-test route ${i + 1}` })
+        .returning({ id: routesTable.id });
+      ids.push(r!.id);
+    }
+    const [vreemde] = await db
+      .insert(routesTable)
+      .values({ clerkId: userB, name: "Route van B" })
+      .returning({ id: routesTable.id });
+    try {
+      let state = await api(userA, "GET", "/api/routes/downgrade-state");
+      assert(state.status === 200, `downgrade-state ${state.status}`);
+      assert(state.body.vanToepassing === true, "downgrade niet van toepassing terwijl A gedowngraded is");
+      assert(state.body.keuzeVereist === true, "keuzeVereist moest true zijn (>3 routes, geen keuze)");
+      assert(Number(state.body.totaalRoutes) >= 5, `routes verdwenen? totaal=${state.body.totaalRoutes}`);
+      // Meer dan drie kiezen ⇒ 400; route van een ander ⇒ 403.
+      const teVeel = await api(userA, "PUT", "/api/routes/active-selection", { routeIds: ids.slice(0, 4) });
+      assert(teVeel.status === 400, `4 routes moest 400 zijn, was ${teVeel.status}`);
+      const nietVanJou = await api(userA, "PUT", "/api/routes/active-selection", { routeIds: [ids[0], vreemde!.id] });
+      assert(nietVanJou.status === 403, `andermans route moest 403 zijn, was ${nietVanJou.status}`);
+      // Geldige keuze van drie ⇒ keuzeVereist vervalt, en er is niets verwijderd.
+      const keuze = await api(userA, "PUT", "/api/routes/active-selection", { routeIds: ids.slice(0, 3) });
+      assert(keuze.status === 200, `keuze ${keuze.status}`);
+      assert(keuze.body.keuzeVereist === false, "na geldige keuze moest keuzeVereist false zijn");
+      assert((keuze.body.gekozenRouteIds as number[]).length === 3, "keuze niet opgeslagen");
+      const rows = await db
+        .select({ id: routesTable.id })
+        .from(routesTable)
+        .where(and(eq(routesTable.clerkId, userA), inArray(routesTable.id, ids)));
+      assert(rows.length === 5, `downgrade verwijderde routes: ${rows.length}/5 over`);
+      // Bewerken blijft op Gratis geweigerd (alleen-lezen), óók voor gekozen routes.
+      const bewerk = await api(userA, "PUT", `/api/routes/${ids[0]}`, { name: "Nieuwe naam" });
+      assert(bewerk.status === 403 && bewerk.body.code === "upgrade_required", `bewerken op Gratis: ${bewerk.status}`);
+    } finally {
+      await db.delete(routesTable).where(inArray(routesTable.id, [...ids, vreemde!.id]));
+    }
+  });
+
+  // 20. Webhook voor een onbekende gebruiker: gelogd-als-genegeerd, niets geraden.
+  await scenario("20. webhook onbekende gebruiker → genegeerd + gelogd, niets aangemaakt", async () => {
+    const subId = `sub_${RUN}_ghost`;
+    seedSub(subId, `${RUN}_bestaat_niet`, "GO", "month");
+    const eventId = `evt_test_${RUN}_ghost`;
+    const r = await sendWebhook("customer.subscription.created", { id: subId }, { eventId });
+    assert(r.status === 200 && r.body.outcome === "ignored", JSON.stringify(r.body));
+    const [ev] = await db
+      .select()
+      .from(stripeWebhookEventsTable)
+      .where(eq(stripeWebhookEventsTable.eventId, eventId));
+    assert(ev?.result?.includes("onbekende gebruiker"), `resultaat niet gelogd: ${ev?.result}`);
+    const rows = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(rows.length === 0, "er is tóch een subscription-rij geraden");
+  });
+
+  // 21. Proefperiode-einde (§1.7): rustige melding vóór en ná afloop; data blijft.
+  await scenario("21. trial-einde: melding vooraf en achteraf, idempotent, data onaangeraakt", async () => {
+    // trialUser heeft in scenario 2 een verlopen COMPLETE-trial.
+    const before = await db
+      .select()
+      .from(userEntitlementsTable)
+      .where(eq(userEntitlementsTable.clerkId, trialUser));
+    const r1 = await sweepTrialNotices();
+    assert(r1.ended >= 1, `verwachtte ≥1 afloop-melding, kreeg ${r1.ended}`);
+    const meldingen = await db
+      .select()
+      .from(notificationsTable)
+      .where(eq(notificationsTable.clerkId, trialUser));
+    const ended = meldingen.find((m) => m.dedupeKey?.endsWith(":ended"));
+    assert(ended, "afloop-melding ontbreekt");
+    assert(/blijft bewaard|is er nog|niets verdwenen/.test(ended!.body ?? ""), "afloop-melding stelt data niet gerust");
+    assert(!/nog maar|laatste kans|verloopt over \d+ (minuten|uur)!/i.test(ended!.body ?? ""), "misleidende urgentie");
+    // Idempotent: tweede sweep maakt geen tweede melding.
+    const r2 = await sweepTrialNotices();
+    assert(r2.ended === 0, `tweede sweep maakte ${r2.ended} extra meldingen`);
+    // Vooraf-melding: zet de einddatum 2 dagen vooruit.
+    await db
+      .update(userEntitlementsTable)
+      .set({ endsAt: new Date(Date.now() + 2 * 24 * 3600 * 1000) })
+      .where(and(eq(userEntitlementsTable.clerkId, trialUser), eq(userEntitlementsTable.entitlementType, "trial")));
+    const r3 = await sweepTrialNotices();
+    assert(r3.endingSoon >= 1, "vooraf-melding niet aangemaakt");
+    // Data onaangeraakt: entitlement-rijen bestaan nog exact.
+    const after = await db
+      .select()
+      .from(userEntitlementsTable)
+      .where(eq(userEntitlementsTable.clerkId, trialUser));
+    assert(after.length === before.length, "trial-einde raakte gebruikersdata");
+    await db.delete(notificationsTable).where(eq(notificationsTable.clerkId, trialUser));
+  });
+
+  // 22. Verlate invoice.paid herstelt NOOIT rechten als de actuele Stripe-staat
+  // niet betaald-actief is (review 31-07-2026, fail-closed).
+  await scenario("22. verlate invoice.paid: paused/unknown/verdwenen sub herstelt geen rechten", async () => {
+    const user = `${RUN}_late_invoice`;
+    await ensureAccount(user, `${user}@test.sparki.local`, user, silentLogger);
+    await db
+      .update(userProfilesTable)
+      .set({ entitlementMode: "subscription" })
+      .where(eq(userProfilesTable.clerkId, user));
+    const subId = `sub_${RUN}_late`;
+    seedSub(subId, user, "GO", "month");
+    await sendWebhook("customer.subscription.created", { id: subId });
+    // Zet actuele Stripe-staat op paused; profiel wordt FREE.
+    fake.subs.get(subId)!.status = "paused";
+    await sendWebhook("customer.subscription.updated", { id: subId });
+    let state = await getBillingState(user);
+    assert(state.status === "paused", `voorbereiding faalde: ${state.status}`);
+    // Verlate betaalde invoice komt binnen terwijl de sub nog paused is.
+    fake.invoices.set(`in_${RUN}_late_paused`, {
+      id: `in_${RUN}_late_paused`,
+      subscriptionId: subId,
+      customerId: `cus_${subId}`,
+      created: new Date(),
+      status: "paid",
+      attemptCount: 1,
+    });
+    await sendWebhook("invoice.paid", { id: `in_${RUN}_late_paused` });
+    state = await getBillingState(user);
+    assert(state.status === "paused", `invoice.paid overschreef paused met ${state.status}`);
+    let ent = await resolveEntitlements(user);
+    assert(!ent.commercialFeatures["premium"], "verlate invoice gaf tóch betaalde rechten (paused)");
+    // Onbekende actuele status ⇒ unknown, geen rechten.
+    fake.subs.get(subId)!.status = "toekomstige_status_xyz";
+    fake.invoices.set(`in_${RUN}_late_unknown`, {
+      id: `in_${RUN}_late_unknown`,
+      subscriptionId: subId,
+      customerId: `cus_${subId}`,
+      created: new Date(),
+      status: "paid",
+      attemptCount: 1,
+    });
+    await sendWebhook("invoice.paid", { id: `in_${RUN}_late_unknown` });
+    // Rij fail-closed op "unknown"; de klantweergave valt terug op free/FREE.
+    let [row] = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(row?.status === "unknown", `onbekende staat werd rij-status ${row?.status}`);
+    state = await getBillingState(user);
+    assert(state.status === "free" && state.tier === "FREE", `onbekende staat gaf weergave ${state.status}/${state.tier}`);
+    ent = await resolveEntitlements(user);
+    assert(!ent.commercialFeatures["premium"], "verlate invoice gaf tóch rechten (unknown)");
+    // Subscription niet meer vindbaar bij Stripe ⇒ genegeerd, niets hersteld.
+    fake.subs.delete(subId);
+    fake.invoices.set(`in_${RUN}_late_gone`, {
+      id: `in_${RUN}_late_gone`,
+      subscriptionId: subId,
+      customerId: `cus_${subId}`,
+      created: new Date(),
+      status: "paid",
+      attemptCount: 1,
+    });
+    const r = await sendWebhook("invoice.paid", { id: `in_${RUN}_late_gone` });
+    assert(r.status === 200, `webhook gaf ${r.status}`);
+    [row] = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(row?.status === "unknown", `verdwenen sub veranderde rij-status naar ${row?.status}`);
+    ent = await resolveEntitlements(user);
+    assert(!ent.commercialFeatures["premium"], "verdwenen sub gaf tóch rechten");
   });
 
   await cleanup();

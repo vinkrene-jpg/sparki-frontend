@@ -27,11 +27,24 @@ import {
   trainingSessionsTable,
   invitationsTable,
   clubRoles,
+  medicalSpecialties,
   clubSignupStatuses,
+  clubImportBatchesTable,
+  clubImportRowsTable,
+  adminOpsLogTable,
+  organisationStaffSlotsTable,
+  organisationTypes,
   type ClubRole,
 } from "@workspace/db";
+import {
+  ORGANOGRAM_TEMPLATES,
+  getOrganogramTemplate,
+} from "../lib/organogram-templates";
+import { billingSubscriptionsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { createNotification } from "../lib/notifications";
+import { isValidInterval } from "../lib/billing";
+import { getStripeGateway, TIER_PRICING } from "../lib/billing/stripe-gateway";
 import {
   getClubContext,
   canManageClub,
@@ -136,11 +149,28 @@ async function profilesByIds(ids: string[]) {
 
 // ── Club aanmaken & mijn clubs ────────────────────────────────────────────────
 
+// TEAM_ONBOARDING_01: catalogus van organogram-kaarten. Statisch en
+// server-side — kaarten bevatten uitsluitend bestaande rollen en rolplekken,
+// nooit voorbeeldpersonen. Vóór de /:clubId-routes gedeclareerd.
+router.get("/organogram-templates", requireAuth, (_req, res) => {
+  res.json({ templates: ORGANOGRAM_TEMPLATES });
+});
+
 router.post("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const name = str(req.body?.name);
   if (!name) {
-    res.status(400).json({ error: "Geef de club een naam." });
+    res.status(400).json({ error: "Geef de organisatie een naam." });
+    return;
+  }
+  // TEAM_ONBOARDING_01: organisatietype op de bestaande container. Rauwe
+  // invoer wordt EERST gevalideerd (nooit stil naar CLUB terugvallen bij een
+  // onbekende waarde).
+  const rawType = req.body?.organisationType;
+  const organisationType =
+    rawType === undefined || rawType === null ? "CLUB" : String(rawType);
+  if (!organisationTypes.includes(organisationType as (typeof organisationTypes)[number])) {
+    res.status(400).json({ error: "Onbekend organisatietype. Kies CLUB of TEAM." });
     return;
   }
   try {
@@ -148,6 +178,9 @@ router.post("/", requireAuth, async (req, res) => {
       const [club] = await tx
         .insert(clubsTable)
         .values({
+          // CLUB_ONBOARDING_01: via de onboarding start een club als "concept"
+          // (geen uitnodigingen, leden onzichtbaar) tot expliciete activatie.
+          status: req.body?.concept === true ? "concept" : "actief",
           name,
           description: str(req.body?.description),
           location: str(req.body?.location),
@@ -158,6 +191,9 @@ router.post("/", requireAuth, async (req, res) => {
           contactPhone: str(req.body?.contactPhone),
           joinCode: generateJoinCode(),
           ownerClerkId: clerkId,
+          organisationType,
+          // Beschrijvend subtype: een zelfstandig team is "ploeg".
+          organisationKind: organisationType === "TEAM" ? "ploeg" : "club",
         })
         .returning();
       await tx.insert(clubMembersTable).values({
@@ -435,6 +471,15 @@ router.put("/:clubId", requireAuth, async (req, res) => {
         res.status(403).json({ error: "Alleen de clubeigenaar kan de clubstatus wijzigen." });
         return;
       }
+      // CLUB_ONBOARDING_01: een club in oprichting wordt UITSLUITEND actief via
+      // POST /activate (die de voorwaarden controleert). Elke andere
+      // statuswijziging vanuit concept is een omzeiling van die poort.
+      if (ctx.club.status === "concept") {
+        res.status(409).json({
+          error: "Deze club is nog in oprichting. Activeer de club eerst via de onboarding; daarna kun je de status wijzigen.",
+        });
+        return;
+      }
       patch["status"] = status;
     }
     // Modules aan/uit (jsonb array van bekende sleutels).
@@ -661,6 +706,118 @@ router.put("/:clubId/subscription", requireAuth, async (req, res) => {
   }
 });
 
+// ── Sparki Team-abonnement (TEAM_ABONNEMENT_01) ───────────────────────────────
+// Centrale facturatie: de clubeigenaar betaalt één Stripe-abonnement (tier
+// TEAM) dat via webhook het clubabonnement van precies deze organisatie
+// aanstuurt. Geen parallel systeem: capaciteit en status lopen door de
+// bestaande club_subscriptions-laag.
+
+function teamAppBaseUrl(): string {
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
+  return domain ? `https://${domain}` : "http://localhost:5000";
+}
+
+router.get("/:clubId/team-subscription", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder ziet het Team-abonnement." });
+      return;
+    }
+    const counts = await countActive(ctx.club.id);
+    // Facturatiestatus alleen via de gekoppelde subscription (billingRef);
+    // nooit "de nieuwste subscription van de eigenaar" aannemen.
+    let billing: { status: string; interval: string; currentPeriodEnd: Date | null } | null =
+      null;
+    const ref = ctx.subscription?.billingRef ?? null;
+    if (ctx.subscription?.packageKey === "team" && ref) {
+      const [row] = await db
+        .select()
+        .from(billingSubscriptionsTable)
+        .where(eq(billingSubscriptionsTable.stripeSubscriptionId, ref));
+      if (row && row.tier === "TEAM") {
+        billing = {
+          status: row.status,
+          interval: row.interval,
+          currentPeriodEnd: row.currentPeriodEnd,
+        };
+      }
+    }
+    res.json({
+      subscription: ctx.subscription,
+      isTeam: ctx.subscription?.packageKey === "team",
+      counts,
+      pricing: {
+        monthCents: TIER_PRICING.TEAM.month,
+        yearCents: TIER_PRICING.TEAM.year,
+      },
+      billing,
+      checkoutAvailable:
+        hasClubRole(ctx, ["owner"]) && getStripeGateway().isConfigured(),
+    });
+  } catch (err) {
+    req.log.error({ err }, "club team-subscription status failed");
+    res.status(500).json({ error: "Team-abonnement ophalen is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/team-subscription/checkout", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    // Centrale facturatie is aan de eigenaar voorbehouden (server-side).
+    if (!hasClubRole(ctx, ["owner"]) || ctx.club.ownerClerkId !== ctx.membership.clerkId) {
+      res.status(403).json({ error: "Alleen de clubeigenaar kan het Team-abonnement afsluiten." });
+      return;
+    }
+    const interval = req.body?.interval;
+    if (!isValidInterval(interval)) {
+      res.status(400).json({ error: "Ongeldig interval (month of year)." });
+      return;
+    }
+    // Exclusiviteit: geen tweede checkout terwijl er al een levende
+    // Team-koppeling voor deze club bestaat (voorkomt dubbele subscriptions).
+    if (ctx.subscription?.packageKey === "team" && ctx.subscription.billingRef) {
+      const [row] = await db
+        .select()
+        .from(billingSubscriptionsTable)
+        .where(eq(billingSubscriptionsTable.stripeSubscriptionId, ctx.subscription.billingRef));
+      if (row && (row.status === "active" || row.status === "grace")) {
+        res.status(409).json({ error: "Deze club heeft al een actief Team-abonnement." });
+        return;
+      }
+    }
+    if (!getStripeGateway().isConfigured()) {
+      res.status(503).json({
+        error: "Stripe-testmodus is niet geconfigureerd (STRIPE_SECRET_KEY sk_test_… ontbreekt)",
+      });
+      return;
+    }
+    const base = teamAppBaseUrl();
+    const session = await getStripeGateway().createCheckoutSession({
+      clerkId: ctx.membership.clerkId,
+      tier: "TEAM",
+      interval,
+      successUrl: `${base}/club/beheer?team_billing=success`,
+      cancelUrl: `${base}/club/beheer?team_billing=cancel`,
+      clubId: ctx.club.id,
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "team_abonnement_checkout_gestart",
+      targetType: "subscription",
+      targetId: ctx.club.id,
+      detail: { interval },
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    req.log.error({ err }, "club team-subscription checkout failed");
+    res.status(500).json({ error: "Team-checkout starten is niet gelukt." });
+  }
+});
+
 // ── Leden ─────────────────────────────────────────────────────────────────────
 
 router.get("/:clubId/members", requireAuth, async (req, res) => {
@@ -669,9 +826,15 @@ router.get("/:clubId/members", requireAuth, async (req, res) => {
     if (!ctx) return;
     const manage = canManageClub(ctx);
     const isTrainer = hasClubRole(ctx, ["trainer"]);
-    const isTeamManager = hasClubRole(ctx, ["teammanager"]);
+    // Ploegleider = aparte rol met dezelfde team-scoped inzage als teammanager.
+    const isTeamManager = hasClubRole(ctx, ["teammanager", "ploegleider"]);
     if (!manage && !isTrainer && !isTeamManager) {
       res.status(403).json({ error: "Geen inzage in de ledenlijst." });
+      return;
+    }
+    // Concept: leden zijn voor niemand anders zichtbaar dan het clubbeheer.
+    if (ctx.club.status === "concept" && !manage) {
+      res.status(403).json({ error: "Deze club is nog in oprichting; de ledenlijst is nog niet zichtbaar." });
       return;
     }
     const includeHistory = manage && req.query["historie"] === "1";
@@ -786,9 +949,24 @@ router.put("/:clubId/members/:memberId/role", requireAuth, async (req, res) => {
         return;
       }
     }
+    // HERSTEL TEAM_ABONNEMENT_01: beschrijvend functietype, alleen voor
+    // medical_staff, geeft geen rechten. Bij elke andere rol wordt het gewist.
+    let medicalSpecialty: string | null = null;
+    if (role === "medical_staff") {
+      const raw = str(req.body?.medicalSpecialty);
+      if (raw != null) {
+        if (!medicalSpecialties.includes(raw as (typeof medicalSpecialties)[number])) {
+          res.status(400).json({ error: "Onbekend functietype voor medische staf." });
+          return;
+        }
+        medicalSpecialty = raw;
+      } else {
+        medicalSpecialty = target.role === "medical_staff" ? target.medicalSpecialty : null;
+      }
+    }
     const [updated] = await db
       .update(clubMembersTable)
-      .set({ role, updatedAt: new Date() })
+      .set({ role, medicalSpecialty, updatedAt: new Date() })
       .where(eq(clubMembersTable.id, memberId))
       .returning();
     await writeClubAudit({
@@ -1930,7 +2108,9 @@ router.put("/:clubId/trainings/:trainingId/attendance", requireAuth, async (req,
 // ── Wedstrijdbeheer ───────────────────────────────────────────────────────────
 
 function canManageRaces(ctx: ClubContext): boolean {
-  return hasClubRole(ctx, ["owner", "admin", "teammanager"]);
+  // HERSTEL TEAM_ABONNEMENT_01: ploegleider is een aparte rol met dezelfde
+  // wedstrijdbeheerrechten als teammanager.
+  return hasClubRole(ctx, ["owner", "admin", "teammanager", "ploegleider"]);
 }
 
 router.post("/:clubId/races", requireAuth, async (req, res) => {
@@ -2708,6 +2888,1095 @@ router.get("/:clubId/audit", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club audit failed");
     res.status(500).json({ error: "Logboek ophalen is niet gelukt." });
+  }
+});
+
+// ── CLUB_ONBOARDING_01: van registratie tot actief ───────────────────────────
+// Een club in "concept" is in oprichting: elke stap wordt server-side bewaard
+// (hervatbaar), er vertrekt geen uitnodiging en leden zijn niet zichtbaar voor
+// anderen. Activatie is één server-side handeling die de voorwaarden
+// controleert en eerlijk weigert met een lijst van wat ontbreekt.
+
+// Bewaartermijn importrijen (persoonsgegevens). Besluitpunt — configureerbaar.
+function importRetentionDays(): number {
+  const n = Number(process.env["SPARKI_IMPORT_RETENTION_DAYS"]);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 365) : 30;
+}
+
+// Opportunistische opschoning: verlopen batches verliezen hun rijen
+// (persoonsgegevens weg), de batch zelf blijft als telling/auditspoor.
+async function purgeExpiredImportRows(clubId: number): Promise<void> {
+  const expired = await db
+    .select({ id: clubImportBatchesTable.id })
+    .from(clubImportBatchesTable)
+    .where(
+      and(
+        eq(clubImportBatchesTable.clubId, clubId),
+        sql`${clubImportBatchesTable.purgeAfter} < now()`,
+      ),
+    );
+  const ids = expired.map((b) => b.id);
+  if (ids.length === 0) return;
+  await db.delete(clubImportRowsTable).where(inArray(clubImportRowsTable.batchId, ids));
+  await db
+    .update(clubImportBatchesTable)
+    .set({ status: "verlopen", updatedAt: new Date() })
+    .where(
+      and(
+        inArray(clubImportBatchesTable.id, ids),
+        eq(clubImportBatchesTable.status, "wacht_op_bevestiging"),
+      ),
+    );
+}
+
+async function writeAdminOpsLog(entry: {
+  action: string;
+  actorClerkId: string;
+  newState?: Record<string, unknown>;
+  reason?: string | null;
+}): Promise<void> {
+  // Fire-and-forget: audit mag een geslaagde handeling nooit blokkeren.
+  try {
+    await db.insert(adminOpsLogTable).values({
+      action: entry.action,
+      actorClerkId: entry.actorClerkId,
+      previousState: null,
+      newState: entry.newState ?? null,
+      reason: entry.reason ?? null,
+      actorIp: null,
+    });
+  } catch {
+    // Bewust stil: de handeling zelf is geslaagd; het clubauditlog heeft de
+    // gebeurtenis al vastgelegd.
+  }
+}
+
+// Activatievoorwaarden — één plek, gebruikt door checklist én activatie.
+async function onboardingMissing(clubId: number) {
+  const [club] = await db.select().from(clubsTable).where(eq(clubsTable.id, clubId));
+  if (!club) return { club: null, missing: ["club"] as string[], teams: 0, seasons: 0 };
+  const teams = await db
+    .select({ id: clubTeamsTable.id })
+    .from(clubTeamsTable)
+    .where(eq(clubTeamsTable.clubId, clubId));
+  const seasons = await db
+    .select({ id: clubSeasonsTable.id })
+    .from(clubSeasonsTable)
+    .where(eq(clubSeasonsTable.clubId, clubId));
+  const owner = await db
+    .select({ id: clubMembersTable.id })
+    .from(clubMembersTable)
+    .where(
+      and(
+        eq(clubMembersTable.clubId, clubId),
+        eq(clubMembersTable.role, "owner"),
+        isNull(clubMembersTable.endedAt),
+      ),
+    );
+  const missing: string[] = [];
+  if (!club.name?.trim()) missing.push("Een clubnaam");
+  if (!club.contactEmail?.trim() && !club.contactPhone?.trim())
+    missing.push("Contactgegevens (e-mailadres of telefoonnummer)");
+  if (owner.length === 0) missing.push("Een eigenaar");
+  if (teams.length === 0) missing.push("Minstens één team");
+  return { club, missing, teams: teams.length, seasons: seasons.length };
+}
+
+// Onboardingtoestand — hervatbaar: alles komt uit wat al echt is opgeslagen.
+router.get("/:clubId/onboarding", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag de onboarding uitvoeren." });
+      return;
+    }
+    const { club, missing, teams, seasons } = await onboardingMissing(ctx.club.id);
+    if (!club) {
+      res.status(404).json({ error: "Club niet gevonden." });
+      return;
+    }
+    const admins = await db
+      .select({ id: clubMembersTable.id, role: clubMembersTable.role })
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clubId, club.id), isNull(clubMembersTable.endedAt)));
+    // TEAM_ONBOARDING_01: stafplekken tellen mee in de hervatbare toestand.
+    const stafSlots = await db
+      .select({ id: organisationStaffSlotsTable.id })
+      .from(organisationStaffSlotsTable)
+      .where(eq(organisationStaffSlotsTable.clubId, club.id));
+    res.json({
+      status: club.status,
+      organisationType: club.organisationType,
+      missing,
+      steps: {
+        profiel: Boolean(club.name?.trim()),
+        contact: Boolean(club.contactEmail?.trim() || club.contactPhone?.trim()),
+        logo: Boolean(club.logoUrl),
+        seizoen: seasons > 0,
+        organogram: Boolean(club.organogramTemplate),
+        stafplekken: stafSlots.length,
+        teams,
+        beheerders: admins.filter((m) => ["owner", "admin"].includes(m.role)).length,
+        trainers: admins.filter((m) => ["hoofdtrainer", "trainer"].includes(m.role)).length,
+        leden: admins.length,
+      },
+      klaarVoorActivatie: missing.length === 0,
+    });
+  } catch (err) {
+    req.log.error({ err }, "club onboarding state failed");
+    res.status(500).json({ error: "Onboardingtoestand ophalen is niet gelukt." });
+  }
+});
+
+// Logo koppelen — eerlijke fout bij te groot of verkeerd type.
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+const LOGO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+router.post("/:clubId/logo", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag het logo wijzigen." });
+      return;
+    }
+    const logoUrl = str(req.body?.logoUrl);
+    if (!logoUrl) {
+      res.status(400).json({ error: "Geen logobestand ontvangen." });
+      return;
+    }
+    // Server-side waarheid: het object moet echt bestaan, door de aanvrager
+    // zelf zijn geüpload, en de OPGESLAGEN metadata (niet de clientclaim)
+    // bepaalt type en grootte.
+    const { ObjectStorageService } = await import("../lib/objectStorage");
+    const { getObjectAclPolicy } = await import("../lib/objectAcl");
+    let contentType = "";
+    let size = 0;
+    try {
+      const storage = new ObjectStorageService();
+      const file = await storage.getObjectEntityFile(logoUrl);
+      const acl = await getObjectAclPolicy(file);
+      if (acl && acl.owner !== ctx.membership.clerkId) {
+        res.status(403).json({ error: "Dit bestand is niet door jou geüpload." });
+        return;
+      }
+      const [metadata] = await file.getMetadata();
+      contentType = String(metadata.contentType ?? "").toLowerCase().split(";")[0]!.trim();
+      size = Number(metadata.size ?? 0);
+    } catch {
+      res.status(400).json({ error: "Het logobestand is niet gevonden. Upload het opnieuw." });
+      return;
+    }
+    if (!LOGO_TYPES.includes(contentType)) {
+      res.status(400).json({
+        error: "Dit bestandstype kan niet als logo. Gebruik JPG, PNG, WebP of SVG.",
+      });
+      return;
+    }
+    if (!Number.isFinite(size) || size <= 0 || size > LOGO_MAX_BYTES) {
+      res.status(400).json({
+        error: "Het logobestand is te groot (maximaal 5 MB). Verklein het bestand en probeer opnieuw.",
+      });
+      return;
+    }
+    const [updated] = await db
+      .update(clubsTable)
+      .set({ logoUrl, updatedAt: new Date() })
+      .where(eq(clubsTable.id, ctx.club.id))
+      .returning();
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "clublogo_gewijzigd",
+      targetType: "club",
+      targetId: ctx.club.id,
+    });
+    res.json({ logoUrl: updated?.logoUrl ?? logoUrl });
+  } catch (err) {
+    req.log.error({ err }, "club logo failed");
+    res.status(500).json({ error: "Logo opslaan is niet gelukt." });
+  }
+});
+
+// Eerste beheerders/trainers in concept: direct toewijzen aan een BESTAAND
+// account op geverifieerd e-mailadres. Bewust géén uitnodiging — in concept
+// vertrekt er geen (productregel 2).
+router.post("/:clubId/onboarding/managers", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag rollen toewijzen." });
+      return;
+    }
+    const email = str(req.body?.email)?.toLowerCase();
+    const role = str(req.body?.role);
+    // TEAM_ONBOARDING_01: bij een Team-organisatie wordt de VOLLEDIGE vaste
+    // seizoensstaf in concept direct toegewezen (teammanager en ploegleider
+    // blijven aparte rollen; medical_staff met beschrijvend functietype).
+    const allowed =
+      ctx.club.organisationType === "TEAM"
+        ? [
+            "admin",
+            "hoofdtrainer",
+            "trainer",
+            "teammanager",
+            "ploegleider",
+            "mechanieker",
+            "soigneur",
+            "medical_staff",
+          ]
+        : ["admin", "hoofdtrainer", "trainer"];
+    if (!email || !role || !allowed.includes(role)) {
+      res.status(400).json({ error: "Geef een e-mailadres en een geldige stafrol." });
+      return;
+    }
+    // Functietype: alleen bij medical_staff, en alleen uit de vaste lijst.
+    const medicalSpecialty = str(req.body?.medicalSpecialty);
+    if (medicalSpecialty && role !== "medical_staff") {
+      res.status(400).json({ error: "Een functietype hoort alleen bij medische staf." });
+      return;
+    }
+    if (
+      role === "medical_staff" &&
+      medicalSpecialty &&
+      !medicalSpecialties.includes(medicalSpecialty as (typeof medicalSpecialties)[number])
+    ) {
+      res.status(400).json({ error: "Onbekend functietype voor medische staf." });
+      return;
+    }
+    const [profile] = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .where(sql`lower(${userProfilesTable.email}) = ${email}`);
+    if (!profile) {
+      res.status(404).json({
+        error: "Er bestaat nog geen account met dit e-mailadres. Uitnodigen kan zodra de club actief is.",
+      });
+      return;
+    }
+    const existing = await getClubContext(ctx.club.id, profile.clerkId);
+    if (existing) {
+      res.status(409).json({ error: "Dit account is al lid van de club." });
+      return;
+    }
+    // Capaciteit: trainersrollen tellen als trainer, overige staf als lid.
+    const cap = await checkCapacityForNew(
+      ctx,
+      ["hoofdtrainer", "trainer"].includes(role) ? "trainer" : "member",
+    );
+    if (!cap.ok) {
+      res.status(409).json({ error: cap.reason });
+      return;
+    }
+    await db.insert(clubMembersTable).values({
+      clubId: ctx.club.id,
+      clerkId: profile.clerkId,
+      role,
+      medicalSpecialty: role === "medical_staff" ? medicalSpecialty : null,
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "onboarding_rol_toegewezen",
+      targetType: "member",
+      detail: { role },
+    });
+    res.status(201).json({ toegevoegd: true, role });
+  } catch (err) {
+    req.log.error({ err }, "club onboarding manager failed");
+    res.status(500).json({ error: "Rol toewijzen is niet gelukt." });
+  }
+});
+
+// Ledenimport stap 1: rijen aanleveren → batch "wacht_op_bevestiging".
+// Er wordt hier NOOIT iets toegevoegd (productregel 6).
+router.post("/:clubId/import", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag leden importeren." });
+      return;
+    }
+    await purgeExpiredImportRows(ctx.club.id);
+    const rows = Array.isArray(req.body?.rows) ? req.body.rows : null;
+    if (!rows || rows.length === 0) {
+      res.status(400).json({ error: "Het bestand bevat geen rijen om te importeren." });
+      return;
+    }
+    if (rows.length > 2000) {
+      res.status(400).json({ error: "Maximaal 2000 rijen per import." });
+      return;
+    }
+    // Bestaande ACTIEVE leden op e-mailadres (dubbel = geverifieerd
+    // e-mailadres, nooit naam — productregel 7).
+    const activeMembers = await db
+      .select({ clerkId: clubMembersTable.clerkId, email: userProfilesTable.email })
+      .from(clubMembersTable)
+      .innerJoin(userProfilesTable, eq(userProfilesTable.clerkId, clubMembersTable.clerkId))
+      .where(and(eq(clubMembersTable.clubId, ctx.club.id), isNull(clubMembersTable.endedAt)));
+    const memberEmails = new Set(activeMembers.map((m) => m.email.toLowerCase()));
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const seen = new Set<string>();
+    const prepared: {
+      rowNumber: number;
+      email: string | null;
+      name: string | null;
+      role: string;
+      status: string;
+      message: string | null;
+      matchedClerkId: string | null;
+    }[] = [];
+    const emails = rows
+      .map((r: Record<string, unknown>) => (typeof r?.["email"] === "string" ? r["email"].trim().toLowerCase() : ""))
+      .filter((e: string) => emailRe.test(e));
+    const profiles = emails.length
+      ? await db
+          .select({ clerkId: userProfilesTable.clerkId, email: userProfilesTable.email })
+          .from(userProfilesTable)
+          .where(inArray(sql`lower(${userProfilesTable.email})`, emails))
+      : [];
+    const profileByEmail = new Map(profiles.map((p) => [p.email.toLowerCase(), p.clerkId]));
+    rows.forEach((r: Record<string, unknown>, i: number) => {
+      const email = typeof r?.["email"] === "string" ? r["email"].trim().toLowerCase() : "";
+      const name = typeof r?.["name"] === "string" ? r["name"].trim() || null : null;
+      const row = {
+        rowNumber: i + 1,
+        email: email || null,
+        name,
+        role: "member",
+        status: "ongeldig",
+        message: null as string | null,
+        matchedClerkId: null as string | null,
+      };
+      if (!emailRe.test(email)) {
+        row.message = "Geen geldig e-mailadres.";
+      } else if (seen.has(email)) {
+        row.status = "dubbel";
+        row.message = "Dit e-mailadres staat al eerder in dit bestand.";
+      } else if (memberEmails.has(email)) {
+        row.status = "dubbel";
+        row.message = "Dit e-mailadres hoort al bij een actief clublid.";
+      } else {
+        seen.add(email);
+        const clerkId = profileByEmail.get(email);
+        if (!clerkId) {
+          row.status = "geen_account";
+          row.message = "Nog geen account met dit e-mailadres — uitnodigen kan na activatie.";
+        } else {
+          row.status = "klaar";
+          row.matchedClerkId = clerkId;
+        }
+      }
+      prepared.push(row);
+    });
+    const okCount = prepared.filter((r) => r.status === "klaar").length;
+    const purgeAfter = new Date(Date.now() + importRetentionDays() * 24 * 60 * 60 * 1000);
+    const batch = await db.transaction(async (tx) => {
+      const [b] = await tx
+        .insert(clubImportBatchesTable)
+        .values({
+          clubId: ctx.club.id,
+          createdByClerkId: ctx.membership.clerkId,
+          fileName: str(req.body?.fileName),
+          totalRows: prepared.length,
+          purgeAfter,
+        })
+        .returning();
+      await tx
+        .insert(clubImportRowsTable)
+        .values(prepared.map((r) => ({ ...r, batchId: b!.id })));
+      return b!;
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "ledenimport_klaargezet",
+      targetType: "import",
+      targetId: batch.id,
+      detail: { totalRows: prepared.length, klaar: okCount },
+    });
+    const rowsOut = await db
+      .select()
+      .from(clubImportRowsTable)
+      .where(eq(clubImportRowsTable.batchId, batch.id))
+      .orderBy(asc(clubImportRowsTable.rowNumber));
+    res.status(201).json({ batch, rows: rowsOut, klaar: okCount });
+  } catch (err) {
+    req.log.error({ err }, "club import failed");
+    res.status(500).json({ error: "Import klaarzetten is niet gelukt." });
+  }
+});
+
+// Ledenimport stap 2: expliciete bevestiging → één transactie, alles of niets.
+router.post("/:clubId/import/:batchId/confirm", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag een import bevestigen." });
+      return;
+    }
+    const batchId = Number(req.params["batchId"]);
+    const result = await db.transaction(async (tx) => {
+      // Eén club-brede lock serialiseert confirm, cancel en capaciteitspaden;
+      // de batchstatus wordt PAS na de lock gelezen en geclaimd, zodat een
+      // tweede confirm (of een gelijktijdige cancel) eerlijk 409/404 krijgt.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(881100, ${ctx.club.id})`);
+      const [batch] = await tx
+        .select()
+        .from(clubImportBatchesTable)
+        .where(
+          and(eq(clubImportBatchesTable.id, batchId), eq(clubImportBatchesTable.clubId, ctx.club.id)),
+        );
+      if (!batch) return { notFound: true } as const;
+      if (batch.status !== "wacht_op_bevestiging") {
+        return { error: `Deze import is al ${batch.status.replace(/_/g, " ")}.` } as const;
+      }
+      const rows = await tx
+        .select()
+        .from(clubImportRowsTable)
+        .where(eq(clubImportRowsTable.batchId, batch.id));
+      const ready = rows.filter((r) => r.status === "klaar" && r.matchedClerkId);
+      // Capaciteit: hele import past of niets (alles-of-niets, eerlijk).
+      const [subscription] = await tx
+        .select()
+        .from(clubSubscriptionsTable)
+        .where(eq(clubSubscriptionsTable.clubId, ctx.club.id));
+      const active = await tx
+        .select({ id: clubMembersTable.id })
+        .from(clubMembersTable)
+        .where(and(eq(clubMembersTable.clubId, ctx.club.id), isNull(clubMembersTable.endedAt)));
+      const maxMembers = subscription?.maxMembers ?? 0;
+      if (subscription && active.length + ready.length > maxMembers) {
+        return {
+          error: `Deze import past niet binnen het ledenmaximum (${maxMembers}). Er is niets toegevoegd.`,
+        } as const;
+      }
+      if (ready.length > 0) {
+        await tx.insert(clubMembersTable).values(
+          ready.map((r) => ({ clubId: ctx.club.id, clerkId: r.matchedClerkId!, role: "member" })),
+        );
+        await tx
+          .update(clubImportRowsTable)
+          .set({ status: "toegevoegd", message: null })
+          .where(
+            inArray(
+              clubImportRowsTable.id,
+              ready.map((r) => r.id),
+            ),
+          );
+      }
+      const failed = rows.length - ready.length;
+      await tx
+        .update(clubImportBatchesTable)
+        .set({
+          status: "bevestigd",
+          okRows: ready.length,
+          failedRows: failed,
+          confirmedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(clubImportBatchesTable.id, batch.id));
+      return { ok: ready.length, failed, batchId: batch.id } as const;
+    });
+    if ("notFound" in result) {
+      res.status(404).json({ error: "Importbatch niet gevonden." });
+      return;
+    }
+    if ("error" in result) {
+      res.status(409).json({ error: result.error });
+      return;
+    }
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "ledenimport_bevestigd",
+      targetType: "import",
+      targetId: result.batchId,
+      detail: { toegevoegd: result.ok, nietVerwerkt: result.failed },
+    });
+    await writeAdminOpsLog({
+      action: "club_ledenimport_bevestigd",
+      actorClerkId: ctx.membership.clerkId,
+      newState: { clubId: ctx.club.id, batchId: result.batchId, toegevoegd: result.ok, nietVerwerkt: result.failed },
+    });
+    res.json({ toegevoegd: result.ok, nietVerwerkt: result.failed });
+  } catch (err) {
+    req.log.error({ err }, "club import confirm failed");
+    res.status(500).json({ error: "Import bevestigen is niet gelukt. Er is niets toegevoegd." });
+  }
+});
+
+// Ledenimport annuleren — rijen (persoonsgegevens) meteen weg.
+router.post("/:clubId/import/:batchId/cancel", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag een import annuleren." });
+      return;
+    }
+    const batchId = Number(req.params["batchId"]);
+    // Zelfde club-lock als confirm: annuleren en bevestigen kunnen elkaar
+    // nooit doorkruisen; de status wordt pas NA de lock gelezen.
+    const cancelled = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(881100, ${ctx.club.id})`);
+      const [batch] = await tx
+        .select()
+        .from(clubImportBatchesTable)
+        .where(
+          and(eq(clubImportBatchesTable.id, batchId), eq(clubImportBatchesTable.clubId, ctx.club.id)),
+        );
+      if (!batch || batch.status !== "wacht_op_bevestiging") return false;
+      await tx.delete(clubImportRowsTable).where(eq(clubImportRowsTable.batchId, batch.id));
+      await tx
+        .update(clubImportBatchesTable)
+        .set({ status: "geannuleerd", updatedAt: new Date() })
+        .where(eq(clubImportBatchesTable.id, batch.id));
+      return true;
+    });
+    if (!cancelled) {
+      res.status(404).json({ error: "Geen openstaande importbatch gevonden." });
+      return;
+    }
+    res.json({ geannuleerd: true });
+  } catch (err) {
+    req.log.error({ err }, "club import cancel failed");
+    res.status(500).json({ error: "Import annuleren is niet gelukt." });
+  }
+});
+
+// Activatie — één server-side handeling; weigert met wat ontbreekt.
+// ── TEAM_ONBOARDING_01: organogram-kaart toepassen ───────────────────────────
+// Maakt uitsluitend CONCEPTstructuur aan: ontbrekende selecties (club_teams)
+// en ontbrekende stafplekken (organisation_staff_slots). Additief en
+// idempotent — nooit destructief: bestaande selecties, personen en rollen
+// blijven altijd staan, ook wanneer een kaart later opnieuw of anders wordt
+// gekozen op een actieve organisatie. Er worden GEEN rechten afgeleid.
+router.post("/:clubId/organogram", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder mag de structuur kiezen." });
+      return;
+    }
+    if (ctx.club.organisationType !== "TEAM") {
+      res.status(409).json({ error: "Organogram-kaarten zijn er alleen voor teamorganisaties." });
+      return;
+    }
+    if (!["concept", "actief"].includes(ctx.club.status)) {
+      res.status(409).json({ error: "Deze organisatie kan nu geen structuurwijziging ontvangen." });
+      return;
+    }
+    const template = getOrganogramTemplate(String(req.body?.template ?? ""));
+    if (!template) {
+      res.status(400).json({ error: "Onbekende organogram-kaart." });
+      return;
+    }
+    const result = await db.transaction(async (tx) => {
+      // Concurrency-idempotentie: twee gelijktijdige toepassingen zouden anders
+      // beide dezelfde bestaande toestand lezen en duplicaten aanvullen.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(881101, ${ctx.club.id})`);
+      const bestaandeTeams = await tx
+        .select({ id: clubTeamsTable.id, name: clubTeamsTable.name })
+        .from(clubTeamsTable)
+        .where(eq(clubTeamsTable.clubId, ctx.club.id));
+      const bestaandeNamen = new Set(bestaandeTeams.map((t) => t.name.toLowerCase()));
+      let selectiesToegevoegd = 0;
+      for (const naam of template.selecties) {
+        if (bestaandeNamen.has(naam.toLowerCase())) continue;
+        await tx.insert(clubTeamsTable).values({
+          clubId: ctx.club.id,
+          name: naam,
+          joinCode: generateJoinCode(),
+        });
+        selectiesToegevoegd += 1;
+      }
+      const bestaandeSlots = await tx
+        .select({
+          role: organisationStaffSlotsTable.role,
+          medicalSpecialty: organisationStaffSlotsTable.medicalSpecialty,
+        })
+        .from(organisationStaffSlotsTable)
+        .where(eq(organisationStaffSlotsTable.clubId, ctx.club.id));
+      // Tellen per rol én (voor medische staf) per functietype: een bestaande
+      // fysiotherapeut-plek vervult nooit een vereiste arts-plek.
+      const slotKey = (role: string, specialty: string | null | undefined) =>
+        role === "medical_staff" ? `${role}|${specialty ?? ""}` : role;
+      const perRol = new Map<string, number>();
+      for (const s of bestaandeSlots) {
+        const k = slotKey(s.role, s.medicalSpecialty);
+        perRol.set(k, (perRol.get(k) ?? 0) + 1);
+      }
+      let slotsToegevoegd = 0;
+      for (const staf of template.staf) {
+        const k = slotKey(staf.role, staf.medicalSpecialty);
+        const huidige = perRol.get(k) ?? 0;
+        for (let i = huidige; i < staf.aantal; i += 1) {
+          await tx.insert(organisationStaffSlotsTable).values({
+            clubId: ctx.club.id,
+            role: staf.role,
+            medicalSpecialty: staf.role === "medical_staff" ? (staf.medicalSpecialty ?? null) : null,
+            createdByClerkId: ctx.membership.clerkId,
+          });
+          slotsToegevoegd += 1;
+        }
+        perRol.set(k, Math.max(huidige, staf.aantal));
+      }
+      await tx
+        .update(clubsTable)
+        .set({ organogramTemplate: template.key, updatedAt: new Date() })
+        .where(eq(clubsTable.id, ctx.club.id));
+      return { selectiesToegevoegd, slotsToegevoegd };
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "organogram_kaart_toegepast",
+      targetType: "club",
+      targetId: ctx.club.id,
+      detail: { template: template.key, ...result },
+    });
+    res.json({ template: template.key, ...result });
+  } catch (err) {
+    req.log.error({ err }, "organogram apply failed");
+    res.status(500).json({ error: "Structuur toepassen is niet gelukt." });
+  }
+});
+
+// ── TEAM_ONBOARDING_01: stafplekken (conceptstructuur, geen rechten) ─────────
+router.get("/:clubId/staff-slots", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder ziet de stafplekken." });
+      return;
+    }
+    const slots = await db
+      .select()
+      .from(organisationStaffSlotsTable)
+      .where(eq(organisationStaffSlotsTable.clubId, ctx.club.id))
+      .orderBy(asc(organisationStaffSlotsTable.id));
+    // Vervulling wordt AFGELEID uit echte lidmaatschappen — namen verschijnen
+    // uitsluitend via club_members (na toewijzing of geaccepteerde uitnodiging).
+    const leden = await db
+      .select({ role: clubMembersTable.role })
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clubId, ctx.club.id), isNull(clubMembersTable.endedAt)));
+    const bezetPerRol = new Map<string, number>();
+    for (const l of leden) bezetPerRol.set(l.role, (bezetPerRol.get(l.role) ?? 0) + 1);
+    res.json({ slots, bezetting: Object.fromEntries(bezetPerRol) });
+  } catch (err) {
+    req.log.error({ err }, "staff slots list failed");
+    res.status(500).json({ error: "Stafplekken ophalen is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/staff-slots", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder mag stafplekken toevoegen." });
+      return;
+    }
+    if (ctx.club.organisationType !== "TEAM") {
+      res.status(409).json({ error: "Stafplekken zijn er alleen voor teamorganisaties." });
+      return;
+    }
+    const role = str(req.body?.role);
+    if (!role || !clubRoles.includes(role as ClubRole)) {
+      res.status(400).json({ error: "Onbekende rol voor deze stafplek." });
+      return;
+    }
+    const medicalSpecialty = str(req.body?.medicalSpecialty);
+    if (medicalSpecialty && role !== "medical_staff") {
+      res.status(400).json({ error: "Een functietype hoort alleen bij medische staf." });
+      return;
+    }
+    if (
+      role === "medical_staff" &&
+      medicalSpecialty &&
+      !medicalSpecialties.includes(medicalSpecialty as (typeof medicalSpecialties)[number])
+    ) {
+      res.status(400).json({ error: "Onbekend functietype voor medische staf." });
+      return;
+    }
+    const teamId = req.body?.teamId != null ? intParam(req.body.teamId) : null;
+    if (teamId != null) {
+      const [team] = await db
+        .select({ id: clubTeamsTable.id })
+        .from(clubTeamsTable)
+        .where(and(eq(clubTeamsTable.id, teamId), eq(clubTeamsTable.clubId, ctx.club.id)));
+      if (!team) {
+        res.status(404).json({ error: "Deze selectie bestaat niet binnen de organisatie." });
+        return;
+      }
+    }
+    const [slot] = await db
+      .insert(organisationStaffSlotsTable)
+      .values({
+        clubId: ctx.club.id,
+        teamId,
+        role,
+        medicalSpecialty: role === "medical_staff" ? medicalSpecialty : null,
+        label: str(req.body?.label),
+        createdByClerkId: ctx.membership.clerkId,
+      })
+      .returning();
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "stafplek_toegevoegd",
+      targetType: "club",
+      targetId: slot!.id,
+      detail: { role, medicalSpecialty, teamId },
+    });
+    res.status(201).json(slot);
+  } catch (err) {
+    req.log.error({ err }, "staff slot create failed");
+    res.status(500).json({ error: "Stafplek toevoegen is niet gelukt." });
+  }
+});
+
+// Een stafplek verwijderen raakt uitsluitend de plek — nooit een persoon,
+// lidmaatschap of rol (bindende regel: personen verdwijnen nooit door een
+// structuurwijziging).
+router.delete("/:clubId/staff-slots/:slotId", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of beheerder mag stafplekken verwijderen." });
+      return;
+    }
+    const slotId = intParam(req.params["slotId"]);
+    const [removed] = await db
+      .delete(organisationStaffSlotsTable)
+      .where(
+        and(
+          eq(organisationStaffSlotsTable.id, slotId ?? -1),
+          eq(organisationStaffSlotsTable.clubId, ctx.club.id),
+        ),
+      )
+      .returning();
+    if (!removed) {
+      res.status(404).json({ error: "Deze stafplek bestaat niet (meer)." });
+      return;
+    }
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "stafplek_verwijderd",
+      targetType: "club",
+      targetId: removed.id,
+      detail: { role: removed.role },
+    });
+    res.json({ verwijderd: true });
+  } catch (err) {
+    req.log.error({ err }, "staff slot delete failed");
+    res.status(500).json({ error: "Stafplek verwijderen is niet gelukt." });
+  }
+});
+
+// ── TEAM_ONBOARDING_01 addendum: rolgestuurde start ──────────────────────────
+// Iedere rol landt op een eigen startblok met handelingsperspectief: óf één
+// begrijpelijke eerste actie, óf een eerlijke lege toestand die vermeldt wat
+// ontbreekt, waarom, wie het kan oplossen en de vervolgstap. Alles wordt
+// AFGELEID uit werkelijke inrichting — nooit uit een verzonnen lijst.
+const START_ROLE_LABELS: Record<string, string> = {
+  owner: "Eigenaar",
+  admin: "Beheerder",
+  hoofdtrainer: "Hoofdtrainer",
+  trainer: "Trainer",
+  assistent: "Assistent-trainer",
+  teammanager: "Teammanager",
+  ploegleider: "Ploegleider",
+  soigneur: "Soigneur",
+  medical_staff: "Medische staf",
+  mechanieker: "Mechanieker",
+  vrijwilliger: "Vrijwilliger",
+  alleen_lezen: "Gast",
+  parent: "Ouder",
+  member: "Sporter",
+};
+
+router.get("/:clubId/start", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const role = ctx.membership.role;
+    const isTeam = ctx.club.organisationType === "TEAM";
+    const orgWoord = isTeam ? "team" : "club";
+    const beheerWoord = isTeam ? "de teammanager" : "de clubbeheerder";
+    const today = new Date().toISOString().slice(0, 10);
+
+    const [teams, seizoenen, [training], [uitnodiging], eigenSelecties, [consentRij]] = await Promise.all([
+      db
+        .select({ id: clubTeamsTable.id, name: clubTeamsTable.name })
+        .from(clubTeamsTable)
+        .where(eq(clubTeamsTable.clubId, ctx.club.id)),
+      db
+        .select({ id: clubSeasonsTable.id })
+        .from(clubSeasonsTable)
+        .where(eq(clubSeasonsTable.clubId, ctx.club.id)),
+      db
+        .select({ id: clubTrainingsTable.id })
+        .from(clubTrainingsTable)
+        .where(and(eq(clubTrainingsTable.clubId, ctx.club.id), gte(clubTrainingsTable.trainingDate, today)))
+        .limit(1),
+      db
+        .select({ id: invitationsTable.id })
+        .from(invitationsTable)
+        .where(and(eq(invitationsTable.clubId, ctx.club.id), eq(invitationsTable.status, "pending")))
+        .limit(1),
+      // Eigen actieve selectie-toewijzingen binnen deze organisatie — de
+      // eerlijke basis voor "je bent (niet) toegewezen".
+      db
+        .select({ teamId: clubTeamMembersTable.teamId, naam: clubTeamsTable.name })
+        .from(clubTeamMembersTable)
+        .innerJoin(clubTeamsTable, eq(clubTeamsTable.id, clubTeamMembersTable.teamId))
+        .where(
+          and(
+            eq(clubTeamsTable.clubId, ctx.club.id),
+            eq(clubTeamMembersTable.clerkId, ctx.membership.clerkId),
+            isNull(clubTeamMembersTable.endedAt),
+          ),
+        ),
+      // Is er minstens één sporter die inzage-toestemming gaf (welke scope
+      // dan ook)? Bepaalt de eerlijke medische starttoestand.
+      db
+        .select({ id: clubConsentsTable.id })
+        .from(clubConsentsTable)
+        .where(and(eq(clubConsentsTable.clubId, ctx.club.id), eq(clubConsentsTable.status, "granted")))
+        .limit(1),
+    ]);
+
+    type EersteActie = { label: string; uitleg: string; doel: string };
+    type LegeToestand = {
+      soort: "nog_niet_ingericht" | "niet_toegewezen" | "geen_toestemming" | "geen_open_acties";
+      watOntbreekt: string;
+      waarom: string;
+      wie: string;
+      vervolgstap: string;
+    };
+    let werkgebied: string;
+    let eersteActie: EersteActie | null = null;
+    let legeToestand: LegeToestand | null = null;
+
+    const beheerder = ["owner", "admin", "teammanager"].includes(role);
+    if (beheerder) {
+      werkgebied = `Inrichting en beheer van ${isTeam ? "de teamorganisatie" : "de club"}: structuur, staf, leden en uitnodigingen.`;
+      if (ctx.club.status === "concept") {
+        eersteActie = {
+          label: "Rond de inrichting af",
+          uitleg: `${isTeam ? "Het team" : "De club"} staat nog in oprichting — doorloop de resterende stappen en activeer daarna.`,
+          doel: "onboarding",
+        };
+      } else if (seizoenen.length === 0) {
+        eersteActie = {
+          label: "Stel het seizoen in",
+          uitleg: "Er is nog geen seizoen — zonder seizoen is er geen kader voor de vaste bezetting.",
+          doel: "onboarding",
+        };
+      } else if (!uitnodiging && teams.length > 0) {
+        eersteActie = {
+          label: "Nodig je vaste bezetting uit",
+          uitleg: "Er staat geen enkele uitnodiging open — nodig renners en staf uit voor de selecties.",
+          doel: "leden",
+        };
+      } else {
+        eersteActie = {
+          label: "Bekijk de ledenstand",
+          uitleg: "Controleer wie er al binnen is en welke plekken nog open staan.",
+          doel: "leden",
+        };
+      }
+    } else if (role === "ploegleider") {
+      werkgebied = "Selecties en seizoensbezetting: wie hoort bij welke ploeg.";
+      if (eigenSelecties.length > 0) {
+        eersteActie = {
+          label: eigenSelecties.length === 1 ? `Bekijk je selectie: ${eigenSelecties[0]!.naam}` : "Bekijk je selecties",
+          uitleg: `Je bent toegewezen aan ${eigenSelecties.length === 1 ? "1 selectie" : `${eigenSelecties.length} selecties`} — bekijk de bezetting.`,
+          doel: "teams",
+        };
+      } else if (teams.length > 0) {
+        legeToestand = {
+          soort: "niet_toegewezen",
+          watOntbreekt: "Je bent nog aan geen enkele selectie toegewezen.",
+          waarom: `Er ${teams.length === 1 ? "bestaat wel 1 selectie" : `bestaan wel ${teams.length} selecties`}, maar jij hoort er nog bij geen enkele.`,
+          wie: beheerWoord,
+          vervolgstap: `Vraag ${beheerWoord} om je aan een selectie toe te wijzen.`,
+        };
+      } else {
+        legeToestand = {
+          soort: "nog_niet_ingericht",
+          watOntbreekt: "Er zijn nog geen selecties aangemaakt.",
+          waarom: `De structuur van het ${orgWoord} is nog niet ingericht.`,
+          wie: beheerWoord,
+          vervolgstap: `Vraag ${beheerWoord} om selecties aan te maken (bijvoorbeeld via een organogram-kaart).`,
+        };
+      }
+    } else if (["trainer", "hoofdtrainer", "assistent"].includes(role)) {
+      werkgebied = "Trainingen: planning en begeleiding van de groep.";
+      if (training) {
+        eersteActie = {
+          label: "Bekijk de geplande trainingen",
+          uitleg: "Er staat minstens één training gepland — bekijk de kalender.",
+          doel: "trainingen",
+        };
+      } else {
+        legeToestand = {
+          soort: "nog_niet_ingericht",
+          watOntbreekt: "Er staat nog geen training gepland.",
+          waarom: "De trainingskalender is nog leeg.",
+          wie: role === "assistent" ? "de (hoofd)trainer of " + beheerWoord : `jij of ${beheerWoord}`,
+          vervolgstap: role === "assistent" ? "Vraag de trainer wanneer de eerste training komt." : "Plan de eerste training in de kalender.",
+        };
+      }
+    } else if (["mechanieker", "soigneur", "vrijwilliger"].includes(role)) {
+      werkgebied =
+        role === "mechanieker"
+          ? "Materiaal: ondersteuning rond fietsen en onderhoud."
+          : role === "soigneur"
+            ? "Verzorging: ondersteuning van de renners rond trainingen en wedstrijden."
+            : "Ondersteuning: kalender en berichten volgen.";
+      if (eigenSelecties.length > 0) {
+        eersteActie = {
+          label: eigenSelecties.length === 1 ? `Bekijk je selectie: ${eigenSelecties[0]!.naam}` : "Bekijk je selecties",
+          uitleg: "Je bent aan een selectie toegewezen — bekijk wie erbij horen en wat er gepland staat.",
+          doel: "teams",
+        };
+      } else {
+        legeToestand = {
+          soort: "niet_toegewezen",
+          watOntbreekt: "Je bent nog aan geen enkele selectie toegewezen.",
+          waarom: `Het ${orgWoord} heeft je nog niet aan een selectie of moment gekoppeld.`,
+          wie: beheerWoord,
+          vervolgstap: `Vraag ${beheerWoord} om je aan een selectie toe te wijzen; tot die tijd zie je kalender en berichten.`,
+        };
+      }
+    } else if (role === "medical_staff") {
+      werkgebied = "Medische begeleiding — inzage in sportdata kan alleen na expliciete toestemming van de sporter.";
+      if (consentRij) {
+        eersteActie = {
+          label: "Bekijk wie je inzage gaf",
+          uitleg: "Minstens één sporter gaf toestemming voor inzage — bekijk de ledenlijst en de gedeelde gegevens.",
+          doel: "leden",
+        };
+      } else {
+        legeToestand = {
+          soort: "geen_toestemming",
+          watOntbreekt: "Je hebt nog van geen enkele sporter toestemming voor inzage.",
+          waarom: "Gezondheids- en sportgegevens zijn pas zichtbaar nadat een sporter dat zelf toestaat.",
+          wie: "de sporter zelf",
+          vervolgstap: "Bespreek met de sporter of die je toestemming wil geven; zonder toestemming blijft je beeld beperkt tot kalender en berichten.",
+        };
+      }
+    } else if (role === "alleen_lezen") {
+      werkgebied = `Meekijken: je volgt het ${orgWoord} als gast, zonder acties.`;
+      legeToestand = {
+        soort: "geen_open_acties",
+        watOntbreekt: "Er zijn geen acties voor je — en dat klopt.",
+        waarom: "Een gast kijkt alleen mee en hoeft niets te doen.",
+        wie: beheerWoord,
+        vervolgstap: `Wil je meedoen, vraag dan ${beheerWoord} om een andere rol.`,
+      };
+    } else {
+      // member (Sporter), parent en overige leesrollen.
+      werkgebied =
+        role === "parent"
+          ? `Meekijken als ouder/verzorger binnen het ${orgWoord}.`
+          : `Meedoen als sporter: trainingen, wedstrijden en berichten van het ${orgWoord}.`;
+      if (training) {
+        eersteActie = {
+          label: "Bekijk de eerstvolgende training",
+          uitleg: "Er staat een training gepland — kijk wanneer je verwacht wordt.",
+          doel: "trainingen",
+        };
+      } else {
+        legeToestand = {
+          soort: "nog_niet_ingericht",
+          watOntbreekt: "Er staat nog niets voor je gepland.",
+          waarom: `Het ${orgWoord} heeft nog geen trainingen of activiteiten in de kalender gezet.`,
+          wie: beheerWoord,
+          vervolgstap: "Houd de berichten in de gaten; zodra er iets gepland staat, zie je het hier.",
+        };
+      }
+    }
+
+    res.json({
+      role,
+      rolLabel: START_ROLE_LABELS[role] ?? role,
+      organisationType: ctx.club.organisationType,
+      clubStatus: ctx.club.status,
+      werkgebied,
+      eersteActie,
+      legeToestand,
+      seizoenen: seizoenen.length,
+      selecties: teams.length,
+    });
+  } catch (err) {
+    req.log.error({ err }, "role start failed");
+    res.status(500).json({ error: "Startoverzicht ophalen is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/activate", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag de club activeren." });
+      return;
+    }
+    if (ctx.club.status === "actief") {
+      res.json({ status: "actief", alActief: true });
+      return;
+    }
+    if (ctx.club.status !== "concept") {
+      res.status(409).json({ error: "Deze club is niet in oprichting en kan zo niet worden geactiveerd." });
+      return;
+    }
+    const { missing } = await onboardingMissing(ctx.club.id);
+    if (missing.length > 0) {
+      res.status(422).json({
+        error: "De club kan nog niet worden geactiveerd. Dit ontbreekt nog:",
+        ontbreekt: missing,
+      });
+      return;
+    }
+    await db
+      .update(clubsTable)
+      .set({ status: "actief", updatedAt: new Date() })
+      .where(and(eq(clubsTable.id, ctx.club.id), eq(clubsTable.status, "concept")));
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "club_geactiveerd",
+      targetType: "club",
+      targetId: ctx.club.id,
+    });
+    await writeAdminOpsLog({
+      action: "club_geactiveerd",
+      actorClerkId: ctx.membership.clerkId,
+      newState: { clubId: ctx.club.id, naam: ctx.club.name },
+    });
+    await createNotification({
+      clerkId: ctx.membership.clerkId,
+      type: "club_update",
+      source: "club-onboarding",
+      title: "Je club is actief",
+      body: `${ctx.club.name} is geactiveerd. Vanaf nu kun je leden uitnodigen.`,
+    }).catch(() => undefined);
+    res.json({ status: "actief" });
+  } catch (err) {
+    req.log.error({ err }, "club activate failed");
+    res.status(500).json({ error: "Club activeren is niet gelukt." });
   }
 });
 

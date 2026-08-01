@@ -75,6 +75,11 @@ import {
 } from "../lib/route-generation-jobs";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import {
+  getRouteDowngradeState,
+  setActiveRouteSelection,
+  ACTIVE_ROUTE_LIMIT,
+} from "../lib/route-downgrade";
 // Go-poort op de bibliotheek-beheer-extra's (Besluit René 31-07-2026,
 // SPARKI-BESLUIT-2026-002): zoeken/sorteren/scopes, bewerken, dupliceren en
 // route-uit-rit zijn Sparki Go; opslaan, eigen lijst (simpel), openen,
@@ -115,7 +120,7 @@ import {
   type CandidateEnvironment,
 } from "../engines/route";
 import { getRoadObjectsAlongRoute } from "../engines/road-objects";
-import { isSportActive } from "@workspace/feature-flags";
+import { isRouteSportActive } from "@workspace/feature-flags";
 import { getHourlyForecast } from "../lib/weather/open-meteo";
 import {
   computeGradeSplit,
@@ -161,6 +166,47 @@ import {
 } from "../lib/route-surfaces";
 
 const router = Router();
+
+// ── ABONNEMENT_01 §1.3 — downgrade-keuzeflow (vóór alle /:id-routes) ─────────
+// Alle routes blijven zichtbaar en herstelbaar; de gebruiker kiest max. drie
+// actieve routes. Alleen de keuzeflow hier; limiet/verval/opruiming in 02c.
+router.get("/downgrade-state", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    res.json(await getRouteDowngradeState(clerkId));
+  } catch (err) {
+    console.error("downgrade-state mislukt", err);
+    res.status(500).json({ error: "Kon de downgrade-status niet bepalen" });
+  }
+});
+
+router.put("/active-selection", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const ids = Array.isArray(body.routeIds)
+    ? body.routeIds.map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0)
+    : null;
+  if (!ids || (Array.isArray(body.routeIds) && ids.length !== body.routeIds.length)) {
+    res.status(400).json({ error: "routeIds moet een lijst geldige route-id's zijn" });
+    return;
+  }
+  try {
+    const result = await setActiveRouteSelection(clerkId, ids);
+    if (!result.ok) {
+      res.status(result.fout === "te_veel" ? 400 : 403).json({
+        error:
+          result.fout === "te_veel"
+            ? `Kies maximaal ${ACTIVE_ROUTE_LIMIT} actieve routes`
+            : "Eén of meer routes zijn niet van jou",
+      });
+      return;
+    }
+    res.json(await getRouteDowngradeState(clerkId));
+  } catch (err) {
+    console.error("active-selection mislukt", err);
+    res.status(500).json({ error: "Kon de keuze niet opslaan" });
+  }
+});
 
 function coerceSurface(v: unknown): RouteSurface {
   return typeof v === "string" &&
@@ -753,7 +799,7 @@ async function canViewSharedRoute(
         and(
           eq(coachAthleteLinksTable.coachClerkId, viewerClerkId),
           eq(coachAthleteLinksTable.athleteClerkId, route.clerkId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       )
       .limit(1);
@@ -1056,7 +1102,7 @@ router.get("/gedeeld", requireAuth, async (req, res) => {
         .where(
           and(
             eq(coachAthleteLinksTable.coachClerkId, clerkId),
-            eq(coachAthleteLinksTable.status, "accepted"),
+            eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
           ),
         ),
       activeClubIds(clerkId),
@@ -1719,6 +1765,8 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
         // wegdekmeting blijft de racefiets-verificatie sturen in de eigen
         // bibliotheek en bij Navigeer.
         engineSurface: route.engineSurface ?? null,
+        // Bibliotheekroutes zijn fietsroutes (bikeType-gestuurd).
+        sport: "cycling",
       })
       .returning({ id: routesTable.id });
     await recordRouteUsageSafe(req.log, {
@@ -2152,7 +2200,12 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
       geometry.push([la, lo]);
     }
     const budgeted = await withPreviewBudget(getRouteRemarks(geometry), req.log);
-    const remarks = budgeted === PREVIEW_PENDING ? null : budgeted;
+    // footOnly-meldingen zijn puur meet-intern voor voetprofielen; in de
+    // opmerkingen-weergave (fietsgerichte copy) tonen we ze niet.
+    const remarks =
+      budgeted === PREVIEW_PENDING
+        ? null
+        : (budgeted?.filter((r) => r.footOnly !== true) ?? budgeted);
     if (remarks == null) {
       res.status(502).json({
         error:
@@ -2353,7 +2406,9 @@ router.get("/:id/remarks", requireAuth, async (req, res) => {
     // klant). De klant toont KLAAR/NAVIGEER uitsluitend bij verified_clear.
     const verification = hard ? "hard_blocked" : "verified_clear";
     res.json({
-      remarks,
+      // footOnly-meldingen zijn meet-intern voor voetprofielen; de
+      // opmerkingenlijst (fietsgerichte copy) toont ze niet.
+      remarks: remarks.filter((r) => r.footOnly !== true),
       dataRemarks,
       blockage,
       verification,
@@ -3110,6 +3165,7 @@ async function buildLoopCandidate(
     rationale,
     plannedWorkoutId: ctx.plannedWorkoutId,
     engineSurface,
+    sport: ctx.sport ?? null,
   });
 
   // Fire background enrichment — does NOT block the response.
@@ -3155,6 +3211,7 @@ async function buildLoopCandidate(
       rationale: altRationale,
       plannedWorkoutId: ctx.plannedWorkoutId,
       engineSurface: engineSurfaceOf(r),
+      sport: ctx.sport ?? null,
     });
     scheduleEnrichment(
       altId,
@@ -3351,7 +3408,7 @@ router.post(
           .where(
             and(
               eq(coachAthleteLinksTable.coachClerkId, clerkId),
-              eq(coachAthleteLinksTable.status, "accepted"),
+              eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
             ),
           ),
         activeClubIds(clerkId),
@@ -3498,13 +3555,14 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       : body.mode === "waypoints"
         ? "waypoints"
         : "loop";
-  // Phased rollout: route generation is only available for active sports
-  // (currently cycling). Validate the RAW input before coercion — coerceSport
-  // would otherwise silently map an explicit inactive sport (e.g. "triathlon",
-  // "running") to cycling and let it through. Absent sport defaults to cycling.
+  // Phased rollout: route generation is available for active ROUTE families
+  // (cycling + walking + hiking — MOBILE_ROUTE_WALKING_01). Validate the RAW
+  // input before coercion — coerceSport would otherwise silently map an
+  // explicit inactive sport (e.g. "triathlon", "running") to cycling and let
+  // it through. Absent sport defaults to cycling.
   if (
     typeof body.sport === "string" &&
-    !isSportActive(body.sport.toLowerCase())
+    !isRouteSportActive(body.sport.toLowerCase())
   ) {
     res
       .status(400)
@@ -3563,6 +3621,36 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
   // gelegd (start → via's → start).
   let viaPoints = mode === "loop" ? parseWaypoints(body.viaPoints) : [];
   let viaLoop = mode === "loop" && viaPoints.length > 0;
+
+  // Gekozen klim (Route maken → "Klimmen toevoegen → specifieke klim"): de
+  // klim reist als via-punten mee én wordt na generatie AANTOONBAAR
+  // geverifieerd — ligt de top niet op de route, dan bieden we de route
+  // eerlijk niet aan (422), nooit een stil "hij zit er vast wel in".
+  const climbCheckRaw =
+    body.climbCheck && typeof body.climbCheck === "object"
+      ? (body.climbCheck as Record<string, unknown>)
+      : null;
+  const climbCheck =
+    climbCheckRaw &&
+    typeof climbCheckRaw.name === "string" &&
+    climbCheckRaw.name.trim() &&
+    finiteNum(climbCheckRaw.summitLat) != null &&
+    finiteNum(climbCheckRaw.summitLon) != null
+      ? {
+          osmId:
+            typeof climbCheckRaw.osmId === "string" ? climbCheckRaw.osmId : null,
+          name: climbCheckRaw.name.trim().slice(0, 120),
+          summitLat: finiteNum(climbCheckRaw.summitLat)!,
+          summitLon: finiteNum(climbCheckRaw.summitLon)!,
+        }
+      : null;
+  if (climbCheck && !viaLoop) {
+    res.status(400).json({
+      error:
+        "Een gekozen klim vereist via-punten door de klim (voet en top) — stuur viaPoints mee.",
+    });
+    return;
+  }
 
   // Vermijd-voorkeuren met een EERLIJK rapport: wat is echt toegepast en wat
   // kan de routebron niet garanderen. Nooit stilletjes negeren.
@@ -3865,6 +3953,62 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     const ptpGeomKey = routeGeometryCacheKey(ptpGeomKeyParams);
     const ptpGeomCached = ROUTE_GEOMETRY_CACHE.get(ptpGeomKey);
 
+    // Gekozen klim aantoonbaar verifiëren: de top moet op de gegenereerde
+    // route liggen (minimale afstand top → routelijn). Puur meetkundig — geen
+    // aannames. Resultaat reist als `climbInclusion` mee op de kandidaat.
+    let climbInclusion: {
+      osmId: string | null;
+      name: string;
+      verified: boolean;
+      offsetM: number;
+    } | null = null;
+    const verifyClimbOnPath = (path: RoutePathPoint[]): boolean => {
+      if (!climbCheck) return true;
+      let minM = Infinity;
+      // RoutePathPoint = [lat, lon] (vaste conventie in de routeketen).
+      // Afstand top → routeLIJN: projecteer lokaal (equirectangulair rond de
+      // top) en meet punt-tot-SEGMENT, niet alleen punt-tot-punt — anders
+      // wordt een top midden op een lang segment ten onrechte afgekeurd.
+      const kLat = 111_000;
+      const kLon = 111_000 * Math.cos((climbCheck.summitLat * Math.PI) / 180);
+      const toXY = (p: RoutePathPoint): [number, number] => [
+        (p[1] - climbCheck.summitLon) * kLon,
+        (p[0] - climbCheck.summitLat) * kLat,
+      ];
+      for (let i = 0; i < path.length; i++) {
+        const [ax, ay] = toXY(path[i]!);
+        let d = Math.sqrt(ax * ax + ay * ay);
+        if (i + 1 < path.length) {
+          const [bx, by] = toXY(path[i + 1]!);
+          const dx = bx - ax;
+          const dy = by - ay;
+          const len2 = dx * dx + dy * dy;
+          if (len2 > 0) {
+            // Projectie van de top (origin) op segment a→b, geklemd op [0,1].
+            const t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+            const px = ax + t * dx;
+            const py = ay + t * dy;
+            d = Math.min(d, Math.sqrt(px * px + py * py));
+          }
+        }
+        if (d < minM) minM = d;
+      }
+      const verified = minM <= 250;
+      climbInclusion = {
+        osmId: climbCheck.osmId,
+        name: climbCheck.name,
+        verified,
+        offsetM: Math.round(minM),
+      };
+      if (!verified) {
+        res.status(422).json({
+          error: `De route kon niet aantoonbaar over ${climbCheck.name} worden gelegd (dichtstbijzijnde punt ${Math.round(minM)} m van de top). Kies een andere klim of een ander startpunt.`,
+          code: "CLIMB_NOT_ON_ROUTE",
+        });
+      }
+      return verified;
+    };
+
     // Helper: build and return the PTP/waypoints candidate from geometry +
     // geocoded names. Always called with a fresh putCandidate so the candidateId
     // is always owned by the current user / linked to the current plannedWorkoutId.
@@ -3928,6 +4072,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         rationale,
         plannedWorkoutId,
         engineSurface: engineSurfaceOf(geom),
+        sport,
       });
 
       // Hybride voorstellen behouden hun deterministische motivering-met-
@@ -3979,6 +4124,9 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         plannedWorkoutId,
         targetDistanceKm: null,
         avoidReport,
+        // Gekozen klim: aantoonbaar-op-route-verificatie (alleen via-loop met
+        // climbCheck; null in alle andere gevallen).
+        climbInclusion,
         // Hybride herkomst (taak #512): welke bekende route de basis vormde.
         hybride: hybrideBase
           ? {
@@ -4025,16 +4173,21 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         });
         return true;
       }
-      if (
-        obs != null &&
-        (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0)
-      ) {
+      // Voetprofielen hebben eigen blokkaderegels: een trap of fietsverbod is
+      // te voet géén blokkade; access=no/private en op-slot-poorten wél —
+      // exact dezelfde semantiek als de lusgeneratiepoort (loop-quality).
+      const isFootProfile = profile.startsWith("foot-");
+      const hardBlocked = isFootProfile
+        ? obs.forbiddenFoot > 0 || obs.blockedGatesFoot > 0
+        : obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0;
+      if (hardBlocked) {
         console.log(
-          `[generate.${mode}] harde afkeur handmatige route: forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates}`,
+          `[generate.${mode}] harde afkeur handmatige route (${profile}): forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates} forbiddenFoot=${obs.forbiddenFoot} blockedGatesFoot=${obs.blockedGatesFoot}`,
         );
         res.status(422).json({
-          error:
-            "Deze route loopt over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen.",
+          error: isFootProfile
+            ? "Deze route loopt over een harde blokkade voor voetgangers (privéterrein of een afgesloten poort) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen."
+            : "Deze route loopt over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen.",
           code: "NO_SUITABLE_ROUTE",
           blockage: obs,
         });
@@ -4046,6 +4199,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     if (ptpGeomCached) {
       // Geometry cache hit: skip ORS + geocoding entirely.
       if (await rejectIfBlocked(ptpGeomCached.geometry.path)) return;
+      if (!verifyClimbOnPath(ptpGeomCached.geometry.path)) return;
       res.json({
         candidate: buildPtpResponse(
           ptpGeomCached.geometry,
@@ -4117,6 +4271,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     });
 
     if (await rejectIfBlocked(ptpGeom.path)) return;
+    if (!verifyClimbOnPath(ptpGeom.path)) return;
     res.json({
       candidate: buildPtpResponse(ptpGeom, startName, endName, false),
     });
@@ -4156,7 +4311,7 @@ const generateOptionsHandler: import("express").RequestHandler = async (
 
   if (
     typeof body.sport === "string" &&
-    !isSportActive(body.sport.toLowerCase())
+    !isRouteSportActive(body.sport.toLowerCase())
   ) {
     res
       .status(400)
@@ -4497,6 +4652,7 @@ router.post("/", requireAuth, async (req, res) => {
           meetpoints: meetpoints.length > 0 ? meetpoints : null,
           rationale: stored.rationale,
           engineSurface: stored.engineSurface,
+          sport: stored.sport ?? null,
           source: "generated",
           linkedActivityImportId: null,
           linkedPlannedWorkoutId,
@@ -4881,6 +5037,7 @@ router.post(
         name: `${route.name} (kopie)`,
         source: route.source,
         surface: route.surface as RouteSurface,
+        sport: (route as { sport?: string | null }).sport ?? null,
         visibility: "prive",
         status: "ready",
         distanceKm: route.distanceKm,

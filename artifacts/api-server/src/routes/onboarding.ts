@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   db,
   onboardingStateTable,
@@ -201,7 +201,7 @@ async function hasAcceptedCoach(athleteClerkId: string): Promise<boolean> {
     .where(
       and(
         eq(coachAthleteLinksTable.athleteClerkId, athleteClerkId),
-        eq(coachAthleteLinksTable.status, "accepted"),
+        eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
       ),
     )
     .limit(1);

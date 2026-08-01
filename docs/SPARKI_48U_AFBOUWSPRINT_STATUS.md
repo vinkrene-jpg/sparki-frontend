@@ -2,13 +2,6 @@
 
 **Besluit René:** 31-07-2026. Bron: sprintbesluit "48-UURS VOLLEDIGE AFBOUWSPRINT".
 **Regel:** afgerond = uitsluitend MIRROR_PROVEN. "Gebouwd maar niet getoetst" telt niet.
-**Uitvoeringsregel per 01-08-2026 (`SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`, `GOV-B1`):**
-MIRROR_PROVEN blijft de bewijsstatus, maar Mirror is geen wachtpoort meer: Mirror toetst
-parallel, "TECHNISCH GROEN — WACHT OP MIRROR" is een bewijstoestand (vergelijkbaar met
-BUILT_UNPROVEN) en geen bouwstop, en "WACHT OP VOORGANGER" betekent uitsluitend een
-technische afhankelijkheid (het onderdeel gebruikt het resultaat van zijn voorganger),
-geen vrijgavepoort. Opdrachten die nog niet gegeven zijn (o.a. 02c, 02d, taak #536)
-starten niet vanzelf.
 **Bijhouden:** dit bestand is het enige actuele totaaloverzicht; elke statuswijziging
 wordt hier bijgewerkt met datum en bewijsverwijzing.
 
@@ -55,8 +48,61 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Privacy, toestemming, accountverwijdering | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Desktop / PWA / mobiel | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Bedrijfscontinuïteit en support | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
+| Merkidentiteit (BRAND_IDENTITY_01) | DEFERRED — tot na Mobile UX | besluit 01-08-2026 (SPARKI-BESLUIT-2026-013): bliksemschicht is enige officiële identiteit; geen tussentijds logo-ontwerp; traject start pas na Mobile UX-documenten |
+| Futur Control (FUTUR_CONTROL_01) | DEFERRED / GEPAUZEERD | besluit 01-08-2026: inhoudelijk goedgekeurd, alleen F0 was vrijgeefbaar maar wordt voorlopig niet gestart; geen bouw gestart, geen code gewijzigd; FC-B05/06/07/09/10/11 geparkeerd; hervatting later bij F0 Inventarisatie; F1A start nooit automatisch; volledig documentpakket (20 docs) sinds 01-08-2026 in `docs/build-packages/FUTUR_CONTROL_01/` |
+
+## 2b. Mediaweergave en uitleglaag (MEDIA_UITLEG_01 — eerste echte statussen, F0 01-08-2026)
+
+| Onderdeel | Status | Bewijs |
+|---|---|---|
+| Reduced-motion (systeem) | AANWEZIG | `index.css` app-breed vangnet + `reduced-motion.test.ts` |
+| Sparki-instelling Verminder beweging | GEBOUWD (F1, flag uit) | `ui_preferences` + `/api/ui-preferences` + toggle in Instellingen; `test:motion` 4/4, `test:ui-preferences` 4/4; SHA `58bef0db` |
+| Dieptecomponent (CMP-40, zweefkaart) | GEBOUWD (F2, flag uit) | DsCard-uitbreiding `diepte` + moment "training voltooid" in TodayLayer; `test:zweefkaart` 5/5; flag `media_uitleg_dieptekaart` |
+| Herbruikbare mediaspeler / ondertiteling / posters | NIET GESTART | geen speler aangetroffen (F3) |
+| Contentmodel media (KENNIS_01-contract) | ONTBREEKT | `knowledge_items` mist blokkerende velden (O-1) |
+| Gebruikersstatus mediacontent | GEBOUWD (F4) | tabel `media_content_status` (migratie 0016) + `/api/media-status` (4 statuscalls); D-1/D-2 server-side geweigerd + gelogd, D-3 max 1 her-aanbod per versie, D-4 historie blijft, D-7 cross-account; `test:media-status` 8/8 |
+| Uitlegflow-basis | GEDEELTELIJK | uitleg-registry + UitlegDot bestaan; versievastheid ontbreekt (O-6) |
+| Academy-omgeving | NIET GESTART | route + Help-code herbruikbaar vastgesteld (F8) |
+| Niet-acute coachmelding-grond | AANWEZIG | decideCoach + CoachAnalysisCard (O-4 vervuld) |
 
 ## 3. Logboek
+
+- **01-08-2026** — MEDIA_UITLEG_01 **F1 opgeleverd** (versnelde uitvoering): bevroren
+  motionconfig (120/240/400 ms, één in-/uit-easing), centrale uitschakelaar
+  `data-motion="off"` (direct eindtoestand, geen layoutshift), tabel `ui_preferences`
+  + migratie 0015, `/api/ui-preferences`, instelling "Verminder beweging" (OR met
+  systeem), testpagina `/_dev/motion`. Flag `media_uitleg_motion` DEFAULT UIT.
+  Tests groen (motion 4/4, ui-preferences 4/4, typecheck). SHA `58bef0db`.
+  **F2 opgeleverd**: CMP-40 diepte-/zweefkaart als uitbreiding van bestaande DsCard
+  (geen nieuwe kaart), uitsluitend moment "training voltooid" (TodayLayer);
+  kanteling alleen tijdens aanraking, geclampt ±4°, puur transform; beweging-uit ⇒
+  gewone kaart. Flag `media_uitleg_dieptekaart` DEFAULT UIT. `test:zweefkaart` 5/5.
+  Mirror-toetsen F1/F2 aangevraagd.
+
+- **01-08-2026** — MEDIA_UITLEG_01 **F0 (inventarisatie) opgeleverd**: vijf documenten
+  in `docs/build-packages/MEDIA_UITLEG_01/F0/`; nul regels productiecode; pilot
+  bevestigd op "Training voltooid"; O-4 en O-11 vervuld, O-3/O-6/O-13 blokkeren
+  resp. F3/F5/F10. Wacht op Mirror-toets + vrijgave F1 door René.
+
+- **01-08-2026 (aanvulling)** — Volledig FUTUR_CONTROL_01-documentpakket (20
+  documenten, verbatim uit de definitieve Claude-export) opgeslagen in
+  `docs/build-packages/FUTUR_CONTROL_01/` + README met pauzestatus. Gemeld:
+  los wijzigingslog/eindcontrole-document ontbrak in de export;
+  `FUTUR_CONTROL_MUTATION_GATE.md` was extra t.o.v. de minimaal-lijst.
+  Status blijft DEFERRED / GEPAUZEERD; niets gebouwd.
+
+- **01-08-2026** — FUTUR_CONTROL_01 op DEFERRED / GEPAUZEERD gezet (besluit René).
+  Pakket inhoudelijk goedgekeurd; alleen F0 was vrijgeefbaar maar wordt voorlopig
+  niet gestart. Geen Replit-bouw gestart, geen code gewijzigd. Open besluiten
+  FC-B05, FC-B06, FC-B07, FC-B09, FC-B10 en FC-B11 blijven geparkeerd. Hervatting
+  begint later bij F0 Inventarisatie; F1A mag nooit automatisch starten. Bestaande
+  documenten en pakketten blijven behouden. Statusdoc:
+  `docs/build-packages/FUTUR_CONTROL_01/FUTUR_CONTROL_01_STATUS.md`.
+
+- **01-08-2026** — BRAND_IDENTITY_01 op DEFERRED gezet tot na de Mobile
+  UX-documenten (SPARKI-BESLUIT-2026-013). Forensisch Mirror-onderzoek:
+  bliksemschicht = enige bewezen productiebeeldmerk; Figma-S = niet-geproduceerde
+  mock-up; geen bewijs voor een pijlen-"S". Geen tussentijdse merkwijzigingen.
 
 - **31-07-2026** — Register aangemaakt. 01 opnieuw bij Mirror (SHA `1114919a`).
   Open punten #10/#12/#13 geparkeerd per sprintbesluit 3. Baseline-verificatie

@@ -4,7 +4,7 @@
 // de UI is nooit de waarheid. Fail-closed: onbekende categorie of onbekend
 // niveau ⇒ alleen_ik.
 
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, or, isNull } from "drizzle-orm";
 import {
   db,
   friendLinksTable,
@@ -153,7 +153,7 @@ export async function getViewerRelation(
         and(
           eq(coachAthleteLinksTable.coachClerkId, viewer),
           eq(coachAthleteLinksTable.athleteClerkId, owner),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       )
       .limit(1),
@@ -164,7 +164,7 @@ export async function getViewerRelation(
         and(
           eq(parentAthleteLinksTable.parentClerkId, viewer),
           eq(parentAthleteLinksTable.athleteClerkId, owner),
-          eq(parentAthleteLinksTable.status, "accepted"),
+          eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
         ),
       )
       .limit(1),
@@ -173,7 +173,7 @@ export async function getViewerRelation(
       .from(friendLinksTable)
       .where(
         and(
-          eq(friendLinksTable.status, "accepted"),
+          eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
           or(
             and(
               eq(friendLinksTable.requesterClerkId, viewer),

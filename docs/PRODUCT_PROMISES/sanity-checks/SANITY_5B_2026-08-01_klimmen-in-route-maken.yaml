@@ -1,0 +1,30 @@
+# Poort 5b sanity-check — Klimmen integreren in Route maken (opdracht René 01-08-2026)
+
+delivery: "Route maken: stap 'Klimmen toevoegen' (geen voorkeur / enkele / zoveel mogelijk / specifieke klim), meetkundige klimverificatie op de route (climbInclusion, 422 CLIMB_NOT_ON_ROUTE), klimfeitenblok vóór bewaren, Klimmen verplaatst van Meer→Sport & materiaal naar Ontdekken, klimdetail krijgt 'Gebruik in Route maken'."
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "Route maken (mobiel, prod-build): start → afstand → Klimmen toevoegen → specifieke klim zoeken/kiezen/vervangen → genereren → klimfeitenblok → bewaren (e2e/tests/route-klimmen.mjs, echte browserkliks)"
+  - "Ontdekken-feed (sectie Klimmen) en Meer-menu (Sport & materiaal zonder Klimmen)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Alle 4 klimkeuzeknoppen in stap 2 wisselen zichtbaar van staat; 'Specifieke klim zoeken' opent de zoeker; klimtreffer aantikken selecteert; 'Vervangen' en 'Verwijderen' op de gekozen-klim-kaart doen aantoonbaar iets (e2e: klim-gekozen → vervangen → hergekozen)"
+        result: "pass"
+      - case: "'Klim vervangen of verwijderen' op het resultaatblok springt terug naar stap 2 met behouden invoer; 'Gebruik deze klim in Route maken' op het klimdetail linkt naar /routes?view=maken&klim=… (geen doodlopend detail)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Klimblok verschijnt alleen in de lus-modus (via-punten door een klim zijn bij vrije waypoints/A-naar-B niet de belofte); zonder startpunt vraagt de zoeker eerst om stap 1 i.p.v. in het luchtledige te zoeken"
+        result: "pass"
+      - case: "Specifieke klim dwingt het enkelvoudige generatiepad af (de 3-afstanden-kiezer kan geen via-punten garanderen); klim zonder betrouwbaar profiel is eerlijk niet toevoegbaar met reden"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Kaart + hoogteprofiel van de klim laden pas ná selectie met zichtbare laadstatus en eerlijke fouttekst; lege zoekresultaten melden eerlijk 'vlak gebied is eerlijk vlak' i.p.v. blijvende spinner (e2e-screenshots klimblok/klim-gekozen)"
+        result: "pass"
+      - case: "Resultaatblok toont alleen echte gemeten waarden (aantal klimmen, hoogtemeters, zwaarste klim, extra afstand) en 'onbekend' waar data ontbreekt; verificatie ('ligt aantoonbaar op deze route', offset in meters) komt van de server, nooit UI-aanname — niet-verifieerbaar = 422-weigering (api-test poort 3)"
+        result: "pass"
+
+verdict: "deliverable"

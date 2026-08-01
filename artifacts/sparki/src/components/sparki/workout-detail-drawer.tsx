@@ -619,6 +619,7 @@ export function WorkoutDetailDrawer({
                           key={n}
                           type="button"
                           onClick={() => setRpe(rpe === n ? null : n)}
+                          aria-pressed={rpe === n}
                           className="h-7 w-7 rounded-full border font-mono text-[11px] tabular-nums transition-colors"
                           style={{
                             borderColor:
@@ -655,6 +656,7 @@ export function WorkoutDetailDrawer({
                               completion === opt.value ? null : opt.value,
                             )
                           }
+                          aria-pressed={completion === opt.value}
                           className="rounded-full border px-3 py-1 font-sans text-[12px] transition-colors"
                           style={{
                             borderColor:
@@ -706,6 +708,7 @@ export function WorkoutDetailDrawer({
                       type="button"
                       onClick={() => handleFeedback(opt.type)}
                       disabled={adjust.isPending}
+                      aria-pressed={active}
                       className="rounded-full border px-3.5 py-1.5 font-sans text-[12px] font-medium transition-colors disabled:opacity-50"
                       style={{
                         borderColor: active

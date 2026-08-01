@@ -1,0 +1,126 @@
+HERSTEL EN AANSLUITING TEAM_ABONNEMENT_01
+
+Uitgangspunt:
+TEAM_ABONNEMENT_01 is technisch gebouwd, maar nog niet vrijgegeven omdat het rolmodel en twee productflows niet voldoen of niet bewezen zijn.
+
+Voer geen nieuwe abonnementsarchitectuur uit.
+Hergebruik de bestaande Stripe-, club-, team- en rechtenlagen.
+
+1. ROLMAPPING HERSTELLEN
+
+Verwijder de tijdelijke aanname dat ploegleider en teammanager dezelfde rol zijn.
+
+Definitieve waarden:
+
+- teammanager blijft bestaan;
+- ploegleider wordt een aparte server-side rolwaarde;
+- member blijft technisch bestaan, gebruikersnaam “Sporter”;
+- alleen_lezen blijft technisch bestaan, gebruikersnaam “Gast”;
+- soigneur blijft bestaan;
+- medic wordt medical_staff;
+- medical_staff krijgt een beschrijvend functietype:
+  - arts
+  - fysiotherapeut
+  - diëtist
+  - sportpsycholoog
+  - inspanningsfysioloog
+  - overig
+
+Het functietype geeft geen zelfstandige rechten.
+
+Controleer vóór wijziging aantallen voor:
+- medic
+- teammanager
+- member
+- alleen_lezen
+
+Bij nul medic-toekenningen:
+- schema- en codewijziging zonder datamigratie.
+
+Bij bestaande medic-toekenningen:
+- gecontroleerde migratie naar medical_staff;
+- rij-aantallen en rollbackbewijs.
+
+CLUB_RECHTEN_01 blijft eigenaar van het centrale rollenmodel.
+Bouw geen aparte rechtenlaag in TEAM_ABONNEMENT_01.
+
+2. MEERDERE TEAMS PER ORGANISATIE
+
+Bewijs of herstel dat één organisatie meerdere teams/selecties kan beheren.
+
+Minimaal:
+
+- meerdere teams aanmaken;
+- staf per team koppelen;
+- sporters per team koppelen;
+- één gebruiker aan meerdere teams;
+- organisatiebrede en teamspecifieke rollen;
+- cross-team toegang fail-closed;
+- centraal abonnement en centrale facturatie per organisatie.
+
+Als dit al bestaat:
+- voeg regressie- en API-tests toe en lever bewijs.
+
+Als het ontbreekt:
+- voeg uitsluitend de minimale uitbreiding toe binnen de bestaande organisatiearchitectuur.
+
+3. MOBIEL/PWA
+
+Bewijs of herstel minimaal:
+
+- Team-abonnementsstatus zichtbaar;
+- ledenlimiet zichtbaar;
+- team/selectie zichtbaar;
+- uitnodiging accepteren;
+- staf en sporters bekijken;
+- begrijpelijke fout- en upgrade-status;
+- geen desktopcomponent dat onbruikbaar wordt op telefoon.
+
+Desktop mag leidend blijven voor checkout en uitgebreid beheer.
+
+4. REGRESSIES
+
+Bewijs dat ongewijzigd blijven:
+
+- €149 per maand;
+- €1.490 per jaar;
+- 14 dagen proef;
+- eigenaar-only checkout;
+- exclusiviteit per organisatie;
+- terminale abonnementsovergangen;
+- databehoud bij wanbetaling/opzegging;
+- persoonlijke abonnementspaden weigeren TEAM;
+- maximaal 50 leden, configureerbaar;
+- geen mock- of fallbackdata.
+
+5. DOCUMENTATIE
+
+Markeer de oude Replit-rolmapping als SUPERSEDED.
+
+Synchroniseer:
+
+- CLUB_RECHTEN_01
+- TEAM_ABONNEMENT_01
+- TEAM_ONBOARDING_01
+- PLOEGLEIDER_01
+- TEAM_MECHANIEKER_01
+- hoofdstuk J
+- besluitregister
+
+6. OPLEVERING
+
+Lever:
+
+- start-SHA;
+- eind-SHA;
+- gewijzigde bestanden;
+- aantallen bestaande rollen vóór migratie;
+- migratiebewijs;
+- tests en exitcodes;
+- directe API-tests;
+- desktopbewijs;
+- mobiel/PWA-bewijs;
+- bevestiging dat geen tweede rechten- of abonnementenarchitectuur is gebouwd;
+- commit en push.
+
+Daarna een gerichte Mirror-hertoets van TEAM_ABONNEMENT_01.

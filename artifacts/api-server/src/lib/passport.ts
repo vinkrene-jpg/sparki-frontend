@@ -6,7 +6,7 @@
 // alleen herkomst, historie, voorstellen en samengestelde weergaven toe.
 // Eerlijkheid: geen waarde zonder herkomst verzinnen — bestaat er geen
 // event, dan is de herkomst gewoon "onbekend (vóór het paspoort)".
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql, isNull } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
@@ -315,7 +315,7 @@ export async function isAcceptedCoachOf(
       and(
         eq(coachAthleteLinksTable.coachClerkId, coachClerkId),
         eq(coachAthleteLinksTable.athleteClerkId, athleteClerkId),
-        eq(coachAthleteLinksTable.status, "accepted"),
+        eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
       ),
     )
     .limit(1);

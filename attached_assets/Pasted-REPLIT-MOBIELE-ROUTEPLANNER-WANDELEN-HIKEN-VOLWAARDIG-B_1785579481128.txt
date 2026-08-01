@@ -1,0 +1,593 @@
+REPLIT — MOBIELE ROUTEPLANNER + WANDELEN/HIKEN VOLWAARDIG BOUWEN
+Technische code: MOBILE_ROUTE_WALKING_01
+
+DOEL
+
+Bouw twee samenhangende maar technisch gescheiden uitbreidingen:
+
+A. Een echte telefoon-gerichte routeplanner voor Sparki.
+B. Wandelen en Hiken als volwaardige routefamilie.
+
+Bestaande routearchitectuur, API’s, kaarten, route-engine, GPX, hoogteprofiel, opgeslagen routes en navigatie behouden en hergebruiken.
+
+Geen tweede routeplanner.
+Geen losse mobiele app naast de bestaande PWA.
+Geen simpele knop “Wandelen” zichtbaar maken zonder geschikte route- en wegdeklogica.
+
+====================================================
+1. WERKWIJZE
+====================================================
+
+Voer eerst een korte F0-inventarisatie uit en ga daarna zelfstandig door.
+
+Per fase:
+
+- eigen scope;
+- eigen commit;
+- push naar GitHub;
+- vaste SHA;
+- tests en exitcodes;
+- opleverrapport;
+- rollback/herstel;
+- bewijs voor Mirror.
+
+Geen productiepublicatie.
+Geen featureflags voor gewone productiegebruikers activeren zonder René.
+
+====================================================
+2. F0 — INVENTARISATIE
+====================================================
+
+Onderzoek aantoonbaar:
+
+- huidige routeplannercomponenten;
+- bestaande mobiele breakpoints;
+- huidige stapstructuur;
+- bestaande route-engines;
+- gebruikte GraphHopper-/kaartprofielen;
+- wegdek- en padclassificatie;
+- OSM-tags die al worden gebruikt;
+- bestaande sportfamilie-/sportregisterlogica;
+- huidige status van Wandelen en Hiken;
+- GPX-import/export;
+- hoogteprofiel;
+- navigatie;
+- opgeslagen routes;
+- permissies en entitlements;
+- featureflags;
+- bestaande tests;
+- bestaande bekende routebugs.
+
+Lever:
+
+- hergebruikmatrix;
+- codepaden;
+- ontbrekende onderdelen;
+- risico’s;
+- migratie-effect;
+- testplan.
+
+F0 mag geen productcode wijzigen.
+
+====================================================
+3. DEEL A — ECHTE MOBIELE ROUTEPLANNER
+====================================================
+
+Bouw geen versmalde desktopweergave.
+
+Maak een telefoon-gerichte wizard met duidelijke stappen.
+
+Minimaal:
+
+1. Activiteit kiezen
+2. Startpunt kiezen
+3. Afstand / duur / doel
+4. Routevoorkeuren
+5. Wegdek / terrein
+6. Klimmen of hoogtevoorkeur
+7. Controleren
+8. Route genereren
+9. Route bekijken en aanpassen
+10. Opslaan / navigeren / exporteren
+
+Op mobiel:
+
+- één hoofdtaak per scherm;
+- vaste ondernavigatie blijft beschikbaar waar passend;
+- geen brede panelen;
+- geen horizontale overflow;
+- primaire actie altijd bereikbaar;
+- duidelijke terugactie;
+- gekozen waarden blijven behouden;
+- voortgang zichtbaar;
+- foutfeedback op dezelfde stap als de actie;
+- hoogteprofiel in aparte goed leesbare weergave;
+- kaart en instellingen niet tegelijk gepropt;
+- veilige schermranden;
+- grote tikvlakken;
+- toetsenbord en schermlezer;
+- portretstand leidend;
+- geen afleidende animaties tijdens actieve navigatie.
+
+Op desktop:
+
+- bestaande overzichtsruimte benutten;
+- geen mobiele wizard kunstmatig uitrekken;
+- dezelfde databron en route-engine;
+- geen tweede flowlogica.
+
+====================================================
+4. MOBIELE ROUTDETAILS
+====================================================
+
+Bouw voor mobiel een aparte compositie voor:
+
+- kaart;
+- routegegevens;
+- afstand;
+- duur;
+- hoogtemeters;
+- wegdek;
+- geschiktheid;
+- klimprofiel;
+- waarschuwingen;
+- routepunten;
+- start navigatie;
+- opslaan;
+- delen;
+- exporteren;
+- inkorten;
+- alternatief genereren.
+
+Gebruik bottom sheets of aparte schermen waar passend.
+
+Geen alles-op-één-scherm-layout.
+
+====================================================
+5. FOUT- EN LEGE TOESTANDEN
+====================================================
+
+Ondersteun minimaal:
+
+- geen route gevonden;
+- route onveilig;
+- route over afgesloten pad;
+- gekozen klim niet op route;
+- wandelprofiel niet beschikbaar;
+- kaartdata ontbreekt;
+- hoogteprofiel ontbreekt;
+- slechte verbinding;
+- timeout;
+- routegeneratie afgebroken;
+- locatiepermissie geweigerd;
+- startpunt niet gevonden.
+
+Iedere fout:
+
+- begrijpelijke tekst;
+- technische code gelogd;
+- instellingen blijven behouden;
+- opnieuw proberen;
+- terug;
+- alternatief voorstellen;
+- geen stil falen.
+
+====================================================
+6. DEEL B — WANDELEN EN HIKEN
+====================================================
+
+Activeer Wandelen en Hiken pas nadat de route-engine en geschiktheidslogica geschikt zijn gemaakt.
+
+Maak onderscheid:
+
+Wandelen
+- verharde en halfverharde paden;
+- stedelijk, park, bos;
+- lage technische moeilijkheid;
+- comfort en bereikbaarheid leidend.
+
+Hiken
+- onverharde paden;
+- steilere hellingen;
+- technisch terrein;
+- langere en zwaardere routes;
+- ondergrond en hoogte leidend.
+
+Geen wielrenprofiel hergebruiken als wandelprofiel.
+
+====================================================
+7. ROUTEPROFIELEN WANDELEN/HIKEN
+====================================================
+
+Onderzoek en bouw passende routeprofielen voor:
+
+- voetpaden;
+- trottoirs;
+- wandelpaden;
+- bospaden;
+- trappen;
+- bruggen;
+- veerponten;
+- onverharde ondergrond;
+- hellingspercentage;
+- technische moeilijkheid;
+- toegang;
+- privéterrein;
+- seizoensafsluiting;
+- fietspad waar lopen toegestaan is;
+- wegen zonder veilige loopruimte.
+
+Gebruik OSM-tags waar beschikbaar.
+
+Harde regels:
+
+- geen route over verboden/private paden;
+- geen autoweg;
+- geen vals veilige route;
+- onzekerheid zichtbaar;
+- ontbrekende data verlaagt confidence;
+- geen zelfverzonnen paden.
+
+====================================================
+8. WEGDEK EN TERREIN
+====================================================
+
+Ondersteun voor Wandelen/Hiken minimaal:
+
+- asfalt;
+- klinkers;
+- beton;
+- gravel;
+- schelpenpad;
+- bosgrond;
+- zand;
+- modder;
+- rots;
+- gras;
+- onbekend.
+
+Toon:
+
+- verdeling per ondergrond;
+- geschiktheidswaarschuwingen;
+- natweer-risico waar aantoonbaar;
+- technische passages;
+- trappen;
+- steile stukken;
+- onzekere classificatie.
+
+Geen absolute zekerheid wanneer brondata ontbreekt.
+
+====================================================
+9. MOEILIJKHEID EN BELASTING
+====================================================
+
+Voor Wandelen/Hiken berekenen en tonen:
+
+- afstand;
+- verwachte duur;
+- hoogtemeters;
+- gemiddelde helling;
+- steile segmenten;
+- ondergrond;
+- technische moeilijkheid;
+- routezwaarte;
+- toegankelijkheidswaarschuwingen.
+
+Geen medische fitheidsclaim.
+
+Gebruik begrijpelijke niveaus, bijvoorbeeld:
+
+- licht;
+- gemiddeld;
+- zwaar;
+- zeer zwaar.
+
+Technische berekening blijft herleidbaar.
+
+====================================================
+10. TOEGANKELIJKHEID EN VEILIGHEID
+====================================================
+
+Ondersteun waar brondata dit toelaat:
+
+- rolstoeltoegankelijkheid;
+- kinderwagen;
+- trappen;
+- smalle doorgang;
+- steile helling;
+- veerboot;
+- slecht verlicht;
+- drukke wegkruising;
+- seizoensafsluiting.
+
+Geen toegankelijkheidsclaim zonder bron.
+
+====================================================
+11. ROUTEVOORKEUREN
+====================================================
+
+Wandelen:
+
+- rustig;
+- groen;
+- stedelijk;
+- verhard;
+- halfverhard;
+- weinig hoogte;
+- rondwandeling;
+- punt-tot-punt.
+
+Hiken:
+
+- natuur;
+- onverhard;
+- hoogte;
+- uitzicht;
+- technisch;
+- lange afstand;
+- rondwandeling;
+- punt-tot-punt.
+
+Voorkeuren mogen routekwaliteit sturen maar geen verboden of onveilige routes toestaan.
+
+====================================================
+12. STARTPUNT EN LOCATIE
+====================================================
+
+Ondersteun:
+
+- huidige locatie;
+- adres;
+- kaartpunt;
+- opgeslagen locatie;
+- hotel;
+- parkeerplaats;
+- station;
+- clublocatie;
+- start/finish;
+- gedeelde locatie.
+
+Voor Wandelen/Hiken waar relevant:
+
+- bereikbaar met auto;
+- bereikbaar met OV;
+- parkeerinformatie;
+- startpunt veilig en toegestaan.
+
+====================================================
+13. GPX EN NAVIGATIE
+====================================================
+
+Wandelen/Hiken ondersteunen:
+
+- GPX import;
+- GPX export;
+- route opslaan;
+- hoogteprofiel;
+- routepunten;
+- navigatie;
+- van-route-af-melding;
+- hervatten;
+- stoppen;
+- route inkorten;
+- offline cache waar bestaand ondersteund;
+- batterijzuinig gedrag.
+
+Navigatie toont geen afleidende video of animatie.
+
+====================================================
+14. SPORTREGISTER EN ENTITLEMENTS
+====================================================
+
+Werk het sportregister correct bij.
+
+Classificeer Wandelen en Hiken als:
+
+- volwaardige routefamilie;
+- zichtbaar zodra featureflag/testvrijgave actief is;
+- niet langer “binnenkort” na volledige oplevering;
+- geen verborgen dode optie.
+
+Controleer pakketgrenzen:
+
+- basis routeplanning;
+- premium routevoorkeuren;
+- navigatie;
+- analyses;
+- export.
+
+Neem geen prijsbesluit.
+Gebruik bestaande entitlementarchitectuur.
+
+====================================================
+15. DATA TRUST
+====================================================
+
+Per route-uitkomst:
+
+- gebruikte routeprovider;
+- profiel;
+- kaartdatum waar beschikbaar;
+- brondata;
+- waarschuwingen;
+- onbekende segmenten;
+- confidence;
+- eventuele fallback.
+
+Geen fietsprofiel stil als wandelprofiel gebruiken.
+Geen voorbeeldroute tonen als persoonlijke echte route.
+
+====================================================
+16. FEATURE FLAGS
+====================================================
+
+Gebruik afzonderlijke flags:
+
+- mobile_routeplanner_v2
+- walking_routes
+- hiking_routes
+
+Standaard uit voor productie.
+
+Testidentiteiten mogen gericht geactiveerd worden.
+
+Geen globale activatie zonder René.
+
+====================================================
+17. MIGRATIE
+====================================================
+
+Bestaande:
+
+- fietsroutes;
+- opgeslagen routes;
+- GPX;
+- navigatie;
+- routevoorkeuren;
+- klimintegratie
+
+blijven intact.
+
+Geen stille omzetting van bestaande routes naar wandelen/hiken.
+
+Sla sportfamilie expliciet op bij nieuwe routes.
+
+====================================================
+18. TESTEN
+====================================================
+
+Minimaal:
+
+Mobiel
+- kleine iPhone-viewport;
+- grote iPhone-viewport;
+- kleine Android-viewport;
+- grote Android-viewport;
+- PWA;
+- portret;
+- 200% tekst;
+- schermlezer;
+- toetsenbord waar relevant;
+- lage verbinding;
+- offline;
+- foutscenario’s.
+
+Routeprofielen
+- stedelijke wandeling;
+- boswandeling;
+- gravelpad;
+- steile hike;
+- route met trappen;
+- route met privépad;
+- route met afgesloten pad;
+- onbekende ondergrond;
+- rondwandeling;
+- punt-tot-punt;
+- GPX import/export.
+
+Regressie
+- racefiets;
+- gravel;
+- MTB;
+- bestaande routeplanner;
+- klimintegratie;
+- hoogteprofiel;
+- opgeslagen routes;
+- navigatie;
+- route inkorten;
+- foutfeedback stap 4.
+
+====================================================
+19. MIRROR
+====================================================
+
+Mirror toetst per fase:
+
+- vaste SHA;
+- geen versmalde desktop als mobiel eindresultaat;
+- echte mobiele stapflow;
+- wandelprofiel gebruikt geen fietslogica;
+- routeveiligheid;
+- OSM-/providerherkomst;
+- fouttoestanden;
+- GPX;
+- navigatie;
+- featureflags;
+- regressie;
+- live SHA-match.
+
+Oordelen:
+
+- MIRROR_PROVEN
+- HERSTEL NODIG
+- AFGEKEURD
+- NIET BEWIJSBAAR
+
+Echte fysieke toesteltest blijft apart wanneer Mirror alleen viewport-emulatie kan uitvoeren.
+
+====================================================
+20. DIRECTE AFKEURGRONDEN
+====================================================
+
+Direct afkeuren bij:
+
+- Wandelen alleen zichtbaar maken zonder routeprofiel;
+- fietsprofiel als wandelprofiel;
+- route over verboden pad;
+- vals veilige route;
+- mobiele layout blijft desktoppagina;
+- horizontale overflow;
+- primaire actie buiten bereik;
+- stil falen;
+- instellingen verloren na fout;
+- oude fietsroutes beschadigd;
+- featureflag ontbreekt;
+- productie automatisch geactiveerd;
+- mockroutes als echte routes;
+- geen rollback.
+
+====================================================
+21. OPLEVERING
+====================================================
+
+Lever:
+
+- start-SHA;
+- fase-SHA’s;
+- eind-SHA;
+- gewijzigde bestanden;
+- datamodel;
+- API’s;
+- routeprofielen;
+- gebruikte OSM-tags/providerinstellingen;
+- screenshots mobiel;
+- screenshots desktop;
+- tests en exitcodes;
+- regressiebewijs;
+- foutscenario’s;
+- featureflagstatus;
+- rollbackbewijs;
+- bekende beperkingen;
+- Mirror-overdracht.
+
+Geen productiepublicatie.
+
+====================================================
+22. START
+====================================================
+
+Start met F0.
+
+Ga daarna zelfstandig gefaseerd door.
+
+Stop alleen bij:
+
+- ontbrekende providerondersteuning;
+- onopgeloste veiligheidsgrens;
+- onveilige migratie;
+- niet-groene tests;
+- dubbele routearchitectuur;
+- benodigde productkeuze die niet uit bestaande besluiten volgt.
+
+Laat bestaande fietsfunctionaliteit intact.

@@ -127,7 +127,7 @@ type Bron<T> = {
 }
 
 type Profiel =
-  | { displayName?: string | null; ftp?: number | null; weightKg?: number | null; weeklyHourTarget?: number | null }
+  | { displayName?: string | null; ftp?: number | null; ftpEstimated?: boolean | null; weightKg?: number | null; weeklyHourTarget?: number | null }
   | null
   | undefined
 

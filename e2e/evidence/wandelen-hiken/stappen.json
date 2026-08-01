@@ -1,0 +1,104 @@
+[
+  {
+    "stap": "api-version",
+    "status": "OK",
+    "detail": "status=200 service=api-server env=development commit=0e38ad31 buildTime=2026-08-01T12:52:26.298Z",
+    "t": "2026-08-01T12:59:18.469Z"
+  },
+  {
+    "stap": "iphone-klein-wandelen: mobiele wizard",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T12:59:23.638Z"
+  },
+  {
+    "stap": "iphone-klein-wandelen: sportoptie Fietsen",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T12:59:24.149Z"
+  },
+  {
+    "stap": "iphone-klein-wandelen: sportoptie Wandelen",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T12:59:24.152Z"
+  },
+  {
+    "stap": "iphone-klein-wandelen: sportoptie Hiken",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T12:59:24.155Z"
+  },
+  {
+    "stap": "iphone-klein-wandelen: Wandelen-route gegenereerd",
+    "status": "OK",
+    "detail": "uitkomst=resultaat",
+    "t": "2026-08-01T13:00:03.427Z"
+  },
+  {
+    "stap": "iphone-klein-wandelen: geen horizontale overflow",
+    "status": "OK",
+    "detail": "delta=0px",
+    "t": "2026-08-01T13:00:03.504Z"
+  },
+  {
+    "stap": "android-groot-hiken: mobiele wizard",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:00:08.985Z"
+  },
+  {
+    "stap": "android-groot-hiken: sportoptie Fietsen",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:00:09.495Z"
+  },
+  {
+    "stap": "android-groot-hiken: sportoptie Wandelen",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:00:09.499Z"
+  },
+  {
+    "stap": "android-groot-hiken: sportoptie Hiken",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:00:09.501Z"
+  },
+  {
+    "stap": "android-groot-hiken: Hiken-route gegenereerd",
+    "status": "OK",
+    "detail": "uitkomst=resultaat",
+    "t": "2026-08-01T13:01:11.973Z"
+  },
+  {
+    "stap": "android-groot-hiken: geen horizontale overflow",
+    "status": "OK",
+    "detail": "delta=0px",
+    "t": "2026-08-01T13:01:12.094Z"
+  },
+  {
+    "stap": "desktop: mobiele kop NIET zichtbaar",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:01:18.530Z"
+  },
+  {
+    "stap": "desktop: sportoptie Fietsen",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:01:19.063Z"
+  },
+  {
+    "stap": "desktop: sportoptie Wandelen",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:01:19.066Z"
+  },
+  {
+    "stap": "desktop: sportoptie Hiken",
+    "status": "OK",
+    "detail": "",
+    "t": "2026-08-01T13:01:19.069Z"
+  }
+]

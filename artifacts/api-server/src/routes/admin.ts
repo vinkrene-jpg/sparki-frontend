@@ -24,9 +24,16 @@ import {
   type TesterRawData,
 } from "../lib/test-dashboard/scoring";
 import { isConnectorAvailable } from "../lib/connectors/registry";
+import { isTestIdentity } from "../engines/data-origin/classification";
 import { buildScheduledTasks } from "../lib/scheduled-tasks";
 import { libraryBackfillState } from "../lib/library-backfill";
-import { securityAuditLogTable, analysisFeedbackTable } from "@workspace/db";
+import {
+  securityAuditLogTable,
+  analysisFeedbackTable,
+  billingSubscriptionsTable,
+  stripeWebhookEventsTable,
+} from "@workspace/db";
+import { getBillingState } from "../lib/billing";
 import { AI_PURPOSES } from "../lib/ai/gateway";
 import { rateLimitStats } from "../lib/security/rate-limit";
 import { userEntitlementsTable } from "@workspace/db";
@@ -1325,6 +1332,16 @@ router.get("/data-provenance", requireAuth, requireAdmin, async (req, res) => {
             (row?.n ?? 0) > 0
               ? "directe of afgeleide echte gebruikersdata"
               : "geen brondata",
+          // Centrale data-trust-classificatie (DATA_TRUST_01): testidentiteit
+          // is zichtbaar in het adminoverzicht. Per-waarde-klassen komen uit
+          // de explain-endpoints; een surface-brede klasse zou hier gokken
+          // zijn, dus die geven we eerlijk alleen wanneer hij vaststaat.
+          klasse: isTestIdentity(target)
+            ? ("TEST_ONLY" as const)
+            : (row?.n ?? 0) === 0
+              ? ("UNKNOWN" as const)
+              : null,
+          testAccount: isTestIdentity(target),
         });
       } catch (err) {
         // Eerlijke fout per blok — nooit vervangen door verzonnen cijfers.
@@ -1766,6 +1783,10 @@ router.get(
         entitlement_mode: resolved.entitlementMode,
         product_variant: resolved.productVariant,
         commercial_features: resolved.commercialFeatures,
+        // Keuze 19 (beslist 01-08-2026): degraded-status verplicht zichtbaar
+        // voor beheer/support — true betekent dat minstens één rechtenbron
+        // onleesbaar was en fail-closed niet meetelde.
+        degraded: resolved.degraded,
         entitlements: rows,
       });
     } catch (err) {
@@ -2049,6 +2070,84 @@ router.post(
     } catch (err) {
       req.log.error({ err }, "admin.observation-cleanup failed");
       res.status(500).json({ error: "Observatie-opschoning mislukt" });
+    }
+  },
+);
+
+// ── ABONNEMENT_01 §1.9 — admininzicht per gebruiker ─────────────────────────
+// Huidige pakketstatus + bron, abonnementsrijen, laatste webhooks (tijdstip +
+// resultaat) en openstaande events. Géén betaalgegevens die hier niet horen
+// (er staan er ook geen in de database: alleen Stripe-id's en statusvelden).
+// Let op de eerlijke beperking: een MISLUKTE verwerking rolt de registratie
+// volledig terug (herleverbaar), dus mislukte events staan bewust niet in de
+// tabel — dat wordt hieronder expliciet gemeld in plaats van verzonnen.
+router.get(
+  "/billing/:clerkId",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const clerkId = String(req.params.clerkId);
+    try {
+      const state = await getBillingState(clerkId);
+      const subs = await db
+        .select()
+        .from(billingSubscriptionsTable)
+        .where(eq(billingSubscriptionsTable.clerkId, clerkId));
+      const subIds = subs.map((s) => s.stripeSubscriptionId);
+      // Webhookresultaten vermelden het subscription-id in het resultaatveld;
+      // events zonder gebruikerskoppeling (bv. genegeerd) blijven buiten beeld.
+      // Drizzle ALL/ANY-array-trap (zie memory): bouw de filter veilig met OR.
+      let events: (typeof stripeWebhookEventsTable.$inferSelect)[] = [];
+      if (subIds.length > 0) {
+        const conds = subIds.map(
+          (id) => sql`${stripeWebhookEventsTable.result} LIKE ${"%" + id + "%"}`,
+        );
+        let combined = conds[0]!;
+        for (const c of conds.slice(1)) combined = sql`${combined} OR ${c}`;
+        events = await db
+          .select()
+          .from(stripeWebhookEventsTable)
+          .where(sql`(${combined})`)
+          .orderBy(desc(stripeWebhookEventsTable.createdAt))
+          .limit(20);
+      }
+      const open = events.filter((e) => e.processedAt == null);
+      res.json({
+        clerkId,
+        status: state,
+        statusBron:
+          state.status === "legacy_unrestricted"
+            ? "entitlement_mode (legacy)"
+            : state.hasStripeSubscription
+              ? "billing_subscriptions (Stripe-webhooks)"
+              : state.status === "trialing" || state.status === "expired"
+                ? "user_entitlements (Sparki-proef)"
+                : "geen abonnementsgegevens (Gratis)",
+        subscriptions: subs.map((s) => ({
+          stripeSubscriptionId: s.stripeSubscriptionId,
+          tier: s.tier,
+          interval: s.interval,
+          status: s.status,
+          currentPeriodEnd: s.currentPeriodEnd,
+          graceUntil: s.graceUntil,
+          plannedDowngradeTier: s.plannedDowngradeTier,
+          lastEventCreated: s.lastEventCreated,
+          updatedAt: s.updatedAt,
+        })),
+        laatsteWebhooks: events.map((e) => ({
+          eventId: e.eventId,
+          type: e.type,
+          receivedAt: e.createdAt,
+          processedAt: e.processedAt,
+          result: e.result,
+        })),
+        openstaandeEvents: open.map((e) => e.eventId),
+        toelichtingMislukt:
+          "Een mislukte verwerking rolt volledig terug en laat geen rij achter; Stripe levert het event opnieuw. Mislukte pogingen staan daarom in de serverlogs, niet in deze tabel.",
+      });
+    } catch (err) {
+      req.log.error({ err }, "admin.billing failed");
+      res.status(500).json({ error: "Kon billinginzicht niet laden" });
     }
   },
 );

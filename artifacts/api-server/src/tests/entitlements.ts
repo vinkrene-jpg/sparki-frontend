@@ -39,6 +39,7 @@ import {
   resolveEntitlements,
   hasCommercialFeature,
   ensureGoVariantGrantSeed,
+  __setEntitlementsReadFailureForTests,
   GO_FEATURE_KEYS,
   COMPLEET_FEATURE_KEYS,
   VARIANT_FEATURE_KEYS,
@@ -945,6 +946,93 @@ async function main() {
       }
     } finally {
       await db.delete(routesTable).where(eq(routesTable.id, vrij!.id)).catch(() => {});
+    }
+  });
+
+  // ABONNEMENT_01 §1.2 — vastgelegd degraded-gedrag: een leesfout op de
+  // persoonlijke rechten (a) zet degraded=true, (b) laat wél-leesbare bronnen
+  // (variantrechten) intact, (c) voegt nooit rechten toe.
+  await scenario("ABONNEMENT_01 §1.2: degraded is fail-closed per bron, leesbare bron blijft gelden", async () => {
+    const degUser = `${RUN}_degraded`;
+    await ensureAccount(degUser, `${degUser}@test.sparki.local`, degUser, silentLogger);
+    await db
+      .update(userProfilesTable)
+      .set({ entitlementMode: "subscription", productVariant: "sparki_go" })
+      .where(eq(userProfilesTable.clerkId, degUser));
+    await ensureGoVariantGrantSeed();
+    // Persoonlijk recht dat bij de leesfout NIET meegeteld mag worden.
+    await db.insert(userEntitlementsTable).values({
+      clerkId: degUser,
+      entitlementKey: "knowledge_base",
+      entitlementType: "permanent_addon",
+      status: "active",
+      source: "test",
+      createdBy: "test:degraded",
+    });
+    try {
+      const normal = await resolveEntitlements(degUser);
+      assert(!normal.degraded, "zonder storing mag degraded niet true zijn");
+      assert(normal.commercialFeatures["knowledge_base"], "voorbereiding: persoonlijk recht ontbreekt");
+      assert(normal.commercialFeatures[GO_FEATURE_KEYS[0]], "voorbereiding: variantrecht ontbreekt");
+
+      __setEntitlementsReadFailureForTests(true);
+      const degraded = await resolveEntitlements(degUser);
+      assert(degraded.degraded === true, "leesfout zette degraded niet");
+      // (b) leesbare bron (variant) blijft gelden — betalende gebruiker niet
+      // buitensluiten door een storing aan onze kant.
+      assert(degraded.commercialFeatures[GO_FEATURE_KEYS[0]], "leesbare variantbron viel weg");
+      // (a)+(c) onleesbare bron telt niet mee; er komt nooit iets bij.
+      assert(!degraded.commercialFeatures["knowledge_base"], "onleesbare bron telde tóch mee");
+      assert(degraded.activeEntitlements.length === 0, "degraded verzon entitlement-rijen");
+    } finally {
+      __setEntitlementsReadFailureForTests(false);
+      await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, degUser));
+    }
+  });
+
+  await scenario("ABONNEMENT_01 §1.10 parity: directe API weigert identiek aan de UI per gepoorte functie", async () => {
+    // De UI leest /api/entitlements en verbergt gepoorte functies; de directe
+    // API-aanroep moet voor dezelfde gebruiker met precies dezelfde
+    // upgrade_required-weigering en featuresleutel antwoorden — anders zou de
+    // API meer toestaan dan de UI toont (of andersom).
+    const parUser = `${RUN}_parity`;
+    await ensureAccount(parUser, `${parUser}@test.sparki.local`, parUser, silentLogger);
+    await db
+      .update(userProfilesTable)
+      .set({ entitlementMode: "subscription", productVariant: null })
+      .where(eq(userProfilesTable.clerkId, parUser));
+    try {
+      const ent = await apiReq("GET", "/api/entitlements", parUser);
+      assert(ent.status === 200, `/api/entitlements ${ent.status}`);
+      const uiFeatures: Record<string, boolean> = ent.json?.commercialFeatures ?? {};
+      // Eén representatieve, parametervrije aanroep per gepoorte featuresleutel
+      // over alle gepoorte routers (grep-inventaris ABONNEMENT_01 §1.10).
+      const gepoort: Array<{ method: string; path: string; feature: string }> = [
+        { method: "GET", path: "/api/races/1/points", feature: "route_course_points" },
+        { method: "GET", path: "/api/live-location/group-options", feature: "live_friends_map" },
+        { method: "GET", path: "/api/open-loops", feature: "ai_observations" },
+        { method: "GET", path: "/api/coach/analysis", feature: "ai_observations" },
+        { method: "GET", path: "/api/races/insight", feature: "race_intel" },
+        { method: "GET", path: "/api/training-plan/", feature: "autonomous_training" },
+        { method: "POST", path: "/api/athlete/plan/generate", feature: "autonomous_training" },
+        { method: "GET", path: "/api/core-prediction/1", feature: "performance_lab" },
+        { method: "POST", path: "/api/races/1/exports", feature: "route_course_points" },
+        { method: "POST", path: "/api/document-analyses/1/link", feature: "route_course_points" },
+        { method: "PUT", path: "/api/routes/999999", feature: "route_library_manage" },
+      ];
+      for (const g of gepoort) {
+        assert(
+          uiFeatures[g.feature] !== true,
+          `UI-bron geeft ${g.feature} tóch vrij voor gratis abonnee`,
+        );
+        const r = await apiReq(g.method, g.path, parUser, g.method === "GET" ? undefined : {});
+        assert(
+          r.status === 403 && r.json?.code === "upgrade_required" && r.json?.feature === g.feature,
+          `${g.method} ${g.path}: verwachtte 403 upgrade_required(${g.feature}), kreeg ${r.status} ${JSON.stringify(r.json)}`,
+        );
+      }
+    } finally {
+      await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, parUser));
     }
   });
 

@@ -6,7 +6,7 @@
 // (privacy_settings.share_activity_with_friends), and sensitive health states
 // (ziek/blessure) are never shared.
 
-import { and, desc, eq, gte, inArray, ne, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, or, isNull } from "drizzle-orm";
 import {
   db,
   friendLinksTable,
@@ -182,7 +182,7 @@ async function acceptedLinks(clerkId: string) {
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           eq(friendLinksTable.requesterClerkId, clerkId),
           eq(friendLinksTable.addresseeClerkId, clerkId),
@@ -345,6 +345,23 @@ export async function sendFriendRequest(
       ),
     );
   if (existing) {
+    if (existing.status === "accepted" && existing.endedAt) {
+      // Eerder beëindigde vriendschap (BB-09-historie): heropenen als vers
+      // verzoek — beide kanten mogen opnieuw beginnen.
+      await db
+        .update(friendLinksTable)
+        .set({
+          requesterClerkId: requester,
+          addresseeClerkId: addressee,
+          status: "pending",
+          respondedAt: null,
+          endedAt: null,
+          startedAt: new Date(),
+        })
+        .where(eq(friendLinksTable.id, existing.id));
+      await notifyFriendRequest(requester, addressee);
+      return { ok: true };
+    }
     if (existing.status === "accepted")
       return { ok: false, reason: "Jullie zijn al verbonden." };
     if (existing.status === "pending")
@@ -517,7 +534,7 @@ export async function setTrainingBuddy(
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           and(
             eq(friendLinksTable.requesterClerkId, viewer),
@@ -546,17 +563,22 @@ export async function removeFriend(
   viewer: string,
   friendClerkId: string,
 ): Promise<boolean> {
+  // BB-09 (BUILD_01 F2): beëindigen = endedAt zetten, historie blijft.
   const result = await db
-    .delete(friendLinksTable)
+    .update(friendLinksTable)
+    .set({ endedAt: new Date() })
     .where(
-      or(
-        and(
-          eq(friendLinksTable.requesterClerkId, viewer),
-          eq(friendLinksTable.addresseeClerkId, friendClerkId),
-        ),
-        and(
-          eq(friendLinksTable.requesterClerkId, friendClerkId),
-          eq(friendLinksTable.addresseeClerkId, viewer),
+      and(
+        isNull(friendLinksTable.endedAt),
+        or(
+          and(
+            eq(friendLinksTable.requesterClerkId, viewer),
+            eq(friendLinksTable.addresseeClerkId, friendClerkId),
+          ),
+          and(
+            eq(friendLinksTable.requesterClerkId, friendClerkId),
+            eq(friendLinksTable.addresseeClerkId, viewer),
+          ),
         ),
       ),
     )

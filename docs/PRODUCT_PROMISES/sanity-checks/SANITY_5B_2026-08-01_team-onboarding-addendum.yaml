@@ -1,0 +1,31 @@
+# Poort 5b sanity-check rapport — TEAM_ONBOARDING_01 addendum
+# (parallelle teams + rolgestuurde startschermen)
+
+delivery: "Addendum TEAM_ONBOARDING_01: (1) parallelle teams — één organisatie beheert meerdere selecties gelijktijdig met eigen seizoensbezetting, stafbasis en uitnodigingen per team; (2) rolgestuurde start — iedere rol landt op een eigen startblok met één begrijpelijke eerste actie of een eerlijke lege toestand"
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "Clubpagina (/club): nieuw rolgestuurd startblok 'Jouw rol' bovenaan — e2e-browserbewijs desktop 1440×900 en mobiel 402×874 (e2e/tests/team-onboarding.mjs, prod-build)"
+  - "API: GET /api/clubs/:id/start (rolgestuurde start), POST /api/invitations met teamId (selectie-uitnodiging), accept landt in de juiste selectie"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "De eerste-actie-knop in het startblok navigeert echt (beheer/leden); het blok verschijnt alleen met echte serverdata (query, geen hardcoded tekst)"
+        result: "pass"
+      - case: "Uitnodiging met teamId muteert echt: 201 met teamId in het antwoord, accepteren maakt een club_team_members-rij in precies die selectie (test:team-onboarding scenario 14)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Per rol een passend startblok: teammanager krijgt een inrichtings-/uitnodigingsactie, mechanieker/soigneur 'niet toegewezen', medical_staff 'geen toestemming', gast 'werkelijk geen open acties' — alle acht rollen getoetst (scenario 15)"
+        result: "pass"
+      - case: "Uitnodiging naar een selectie van een ándere organisatie of een onbestaande selectie faalt eerlijk met 404; buitenstaander krijgt 403 op /start (scenario 14/15)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Eerste acties en lege toestanden zijn AFGELEID uit werkelijke inrichting (conceptstatus, selecties, trainingen, open uitnodigingen) — nooit een verzonnen takenlijst; vier soorten lege toestand expliciet onderscheiden (nog_niet_ingericht / niet_toegewezen / geen_toestemming / geen_open_acties)"
+        result: "pass"
+      - case: "Elke lege toestand vermeldt alle vier de velden: wat ontbreekt · waarom · wie het kan oplossen · vervolgstap (server-side afgedwongen contract, per rol getest)"
+        result: "pass"
+
+verdict: "deliverable"

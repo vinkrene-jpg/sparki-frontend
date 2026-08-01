@@ -159,6 +159,19 @@ mock.module("@clerk/react", {
   }
 });
 
+// WP-R1: de shell is rol-bewust (useUserProfile) en toont een testerpaneel
+// (TodayDebugPanel) — beide horen bij het volledige import-oppervlak.
+mock.module("@/contexts/UserContext", {
+  namedExports: {
+    useUserProfile: () => ({ profile: { activeRole: "athlete" } }),
+    UserProvider: ({ children }: any) => children,
+  }
+});
+
+mock.module("@/components/sparki/role-today", {
+  namedExports: { TodayDebugPanel: () => null }
+});
+
 const reactPromise = import("react");
 const rtlPromise = import("@testing-library/react");
 const componentPromise = import("./core-plan");

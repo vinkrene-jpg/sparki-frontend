@@ -181,29 +181,135 @@ teamtrainerinzage + clubvoortgang → F zones/PDC/koolhydraat → G ramp-rate-vo
   niets automatisch verwijderd of onbereikbaar gemaakt.
 - **Gevolg:** hiermee is de laatste blokkade voor `ROUTE_PAKKET_02c` (opslag, verval
   en downgrade) vervallen. De keuzeflow zelf wordt gebouwd in `ABONNEMENT_01`
-  (alleen de flow) en `02c` (opslag/verval); beide starten zodra René de betreffende opdracht geeft — een volgende opdracht in een reeks start niet vanzelf (`GOV-B1`).
+  (alleen de flow) en `02c` (opslag/verval); beide starten pas na expliciete vrijgave.
 
-## GOV-B1 — Continue uitvoeringsregel (besluit René, 01-08-2026)
+---
 
-- **Besluit (01-08-2026, `SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`):** zodra René een
-  volledige bouwopdracht geeft, is de volledige daarin beschreven bouw-, test-, herstel-,
-  migratie-, deployment-, productie- en rollbackstraat vrijgegeven; Replit voert alle fasen
-  zelfstandig achter elkaar uit en rapporteert per fase zonder te wachten op antwoord.
-  Mirror toetst parallel en is geen wachtpoort (`MIRROR_PROVEN`=door · `HERSTEL NODIG`=zelf
-  herstellen en door · `AFGEKEURD`=alleen de geraakte lijn stopt · `NIET BEWIJSBAAR`=bewijs
-  herstellen, bouw ligt niet stil). Productiepublicatie is een automatische poort met
-  uitsluitend technische voorwaarden (build/typecheck/verplichte tests groen, migraties
-  gevalideerd, rollback beschikbaar, geen actieve harde stop) — `RENE_APPROVED` verdwijnt
-  uit de deployketen en blijft alleen bestaan voor productbesluiten (release, prijs, merk).
-  Elf hard stops (o.a. dataverlies, consentlek, verzonnen persoonsgegevens, onveilige
-  jeugd-/medische functionaliteit, destructieve migratie zonder rollback, betaalstromen
-  onbedoeld bij Sparki, blijvend rood, onoplosbare producttegenstrijdigheid, prod-DB
-  onbereikbaar, ontbrekende juridische bewaartermijnkeuze vóór betaalde publieke release,
-  ontbrekende rollback bij destructieve wijziging). Featureflags alleen om technische
-  redenen (rollback, migratie, A/B, providerbeperking, incompatibele overgang), nooit als
-  standaard bouw- of vrijgavepoort. Wachten op ontbrekende input blijft; wachten op
-  toestemming vervalt. Een volgende opdracht in een reeks start niet vanzelf.
-- **Nummering:** voorlopig geregistreerd als `GOV-B1`; definitief nummer volgt na
-  opschoning van de nummerreeks. `SPARKI-BESLUIT-2026-004` is in dit register/de repo
-  niet aangetroffen en kon daarom niet als INGETROKKEN worden gemarkeerd (gemeld).
-- **Status:** **besloten** (01-08-2026).
+## SPARKI-BESLUIT-2026-010 — Definitieve rolmapping teamorganisatie (HERSTEL TEAM_ABONNEMENT_01, 01-08-2026)
+
+- **Besluit (René, herstelopdracht 01-08-2026):** de eerdere Replit-aanname
+  "ploegleider = teammanager" is **SUPERSEDED**. Ploegleider is een APARTE
+  server-side rolwaarde (`ploegleider`) naast `teammanager`. `medic` heet
+  voortaan `medical_staff`, met een beschrijvend functietype
+  (arts/fysiotherapeut/diëtist/sportpsycholoog/inspanningsfysioloog/overig)
+  dat GEEN zelfstandige rechten geeft. Gebruikersnamen: `member` = "Sporter",
+  `alleen_lezen` = "Gast". CLUB_RECHTEN_01 blijft eigenaar van het rollenmodel.
+- **Migratie:** op wijzigingsmoment 0 rijen met rol medic/teammanager/member/
+  alleen_lezen in dev én productie → geen datamigratie; migratie 0012 bevat een
+  idempotent vangnet (medic→medical_staff) en de kolom `medical_specialty`.
+- **Synchronisatie:** geldt voor CLUB_RECHTEN_01, TEAM_ABONNEMENT_01,
+  TEAM_ONBOARDING_01, PLOEGLEIDER_01, TEAM_MECHANIEKER_01 en hoofdstuk J.
+
+---
+
+## SPARKI-BESLUIT-2026-011 — Geschatte FTP (keuze 17, 01-08-2026)
+
+- **Besluit (René):** een geschatte FTP mag worden gebruikt voor **voorlopige
+  trainingszones en een voorlopig trainingsplan**, onder voorwaarden:
+  altijd zichtbaar als "Geschatte FTP"; bron, datum en betrouwbaarheid vastgelegd;
+  nooit gepresenteerd als gemeten of bevestigde FTP; gebruiker kan bevestigen,
+  aanpassen of vervangen; nieuwe betrouwbare data levert een wijzigingsVOORSTEL op
+  (geen stille wijziging); bij gekoppelde trainer blijft de trainer leidend;
+  bij onvoldoende betrouwbare data vraagt Sparki om een FTP-test of handmatige invoer.
+- **Productregel:** een geschatte FTP mag Sparki bruikbaar maken, maar nooit een
+  sportfeit suggereren dat niet bewezen is.
+- **Gevolg:** huidige gedrag (zones/plan/pacing op geschatte profiel-FTP; belasting-
+  scores en Vermogen-as sluiten schattingen uit) blijft; labels en voorstel-flow
+  toetsen tegen deze voorwaarden bij de eerstvolgende relevante bouwronde.
+
+---
+
+## SPARKI-BESLUIT-2026-012 — Legacy-migratie per account (keuze 18, 01-08-2026)
+
+- **Besluit (René):** legacy-migratie gebeurt **per account**, nooit als één globale
+  migratie. Verplicht: inventarisatie + dry-run per account; preview van over te
+  nemen gegevens; volledige herleidbaarheid naar bron; idempotent; nooit nieuwere of
+  betrouwbaardere data overschrijven; conflicten zichtbaar houden; migratiestatus
+  per account; auditlog + herstelmogelijkheid; gefaseerde uitrol na bewezen test.
+- **Productregel:** migratie is een gecontroleerde accounttransformatie, geen
+  database-import.
+- **Status:** er is nog níéts gemigreerd (alleen dry-run-inventarisatie);
+  `legacy_unrestricted`-accounts behouden volledige toegang tot per-account akkoord.
+
+---
+
+## Statusbesluit 01-08-2026 — ABONNEE_ADMIN_01 blijft geblokkeerd
+
+Vrijgave volgt pas na een succesvolle Mirror-hertoets van DATA_TRUST_01,
+ABONNEMENT_01 en de volledige gekoppelde keten (geen mock/seed/fallback zichtbaar;
+rechten uitsluitend uit echte abonnementstoestand; Stripe-events deterministisch;
+dubbele webhooks veilig; typecheck/build/tests groen; negatieve tests uitgevoerd;
+audittrail compleet).
+
+---
+
+## SPARKI-BESLUIT-2026-013 — Brand-identity-voorbereiding (01-08-2026)
+
+- **Aanleiding:** forensisch Mirror-onderzoek naar het Sparki-beeldmerk.
+  Uitkomst: het enige bewezen productiebeeldmerk is de **bliksemschicht**; er
+  bestaat één S-concept in Figma (niet-geproduceerde mock-up); er is géén bewijs
+  voor een officiële Sparki-"S" opgebouwd uit richtingspijlen.
+- **Besluit (René):**
+  1. BRAND_IDENTITY_01 blijft tijdelijk gepauzeerd.
+  2. Er wordt niet verder gezocht naar een historisch beeldmerk.
+  3. Er wordt geen nieuw logo tussentijds ontworpen.
+  4. Na afronding van de Mobile UX-documenten start een afzonderlijk traject
+     "BRAND_IDENTITY_01".
+  5. Dat traject ontwerpt meerdere professionele logo-richtingen.
+  6. René kiest één definitieve merkidentiteit.
+  7. Pas daarna worden favicon, PWA-iconen, splashscreens, PDF-rapporten,
+     Academy, website, social media en overige merkuitingen aangepast.
+  8. Tot die tijd blijft het huidige productiebeeldmerk (bliksemschicht) de
+     enige officiële identiteit.
+- **Productregel:** geen enkele merkuiting wordt tussentijds gewijzigd of
+  "alvast" aangepast; de bliksemschicht is tot het BRAND_IDENTITY_01-besluit de
+  enige officiële identiteit.
+- **Status:** BRAND_IDENTITY_01 = DEFERRED tot na Mobile UX (zie statusregister
+  en docs/build-packages/BRAND_IDENTITY_01/).
+
+---
+
+## Mobiele UX-besluiten MUX-B1 t/m MUX-B4 (01-08-2026 — bewust nog ONGENUMMERD)
+
+Bron: `docs/product/SPARKI_MOBILE_UX_STANDARD_v1.4.md`, hoofdstuk 17. Conform de
+afspraak van 01-08-2026 krijgen deze besluiten pas een definitief
+`SPARKI-BESLUIT-2026-nnn`-nummer nadat de reeks is opgeschoond en `-006` t/m
+`-013` betrouwbaar zijn vastgesteld. Tot die tijd gelden de letters.
+
+| Tijdelijk | Besluit (René, 01-08-2026) |
+|---|---|
+| MUX-B1 | Mobiel is de web/PWA-ervaring op telefoonbreedte. Apparaatdoctrine WP-R0..R8 bevestigd: web/PWA-eerst, jeugd- en ouderdomein mobiel alleen-lezen-eerst. Routeplanner blijft in v1 een mobiele webpagina. |
+| MUX-B2 | Offline betekent in v1 uitsluitend dat een gestarte navigatie doorloopt. Geen offline schrijfacties, geen wachtrij, geen lokale bevestiging zonder server. Uitgebreidere offlinelaag = afzonderlijk toekomstig pakket. |
+| MUX-B3 | Geen rolgestuurd scherm bouwen voordat de rolwaarde server-side bestaat. Vooruit ontwerpen mag wel. |
+| MUX-B4 | `MOBILE_UX_STANDARD_01` is bindend voor alle mobiele schermen. Afwijken alleen met expliciete productgoedkeuring van René, vastgelegd met vermelding van de MUX-code. |
+
+---
+
+## Tijdelijk besluit MUX-B5 — Plaats van Uitleg en Academy (01-08-2026, bewust ONGENUMMERD)
+
+Conform dezelfde afspraak als MUX-B1 t/m B4: pas een definitief
+`SPARKI-BESLUIT-2026-nnn`-nummer nadat de reeks is opgeschoond.
+
+- **Besluit (René):** Uitleg en Academy wordt **geen** extra (zesde)
+  hoofdnavigatie-item; de vijf vaste hoofditems blijven intact (MUX-14).
+  Definitieve plaats: **Hulp & ondersteuning → Uitleg en Academy**, daarbinnen:
+  1. **Sparki gebruiken** — gratis: productuitleg, onboarding, routeplanner,
+     GPX, navigatie, training, analyses, instellingen, abonnementen,
+     veiligheid, toegankelijkheid.
+  2. **Beter fietsen en trainen** — Sparki Compleet: FTP, zones, herstel,
+     intervaltraining, klimmen, dalen, voeding, wedstrijdvoorbereiding,
+     kracht, mobiliteit.
+- **Harde regels:** geen nieuwe navigatiearchitectuur; de grens gratis/Compleet
+  komt uitsluitend uit de centrale entitlementlaag.
+- **Doorwerking:** `docs/product/SPARKI_MEDIA_UITLEG_PRODUCTBESLUIT.md`
+  (open afhankelijkheid 6 vervallen).
+
+---
+
+## Aanvulling 01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01 (GOV-B1)
+
+- `SPARKI-BESLUIT-2026-004` (bouwproces: één kleine opdracht tegelijk · volgende opdracht pas
+  na expliciete vrijgave door René · Mirror bewijst elke opdracht) is **INGETROKKEN — BESLUIT
+  RENÉ 01-08-2026**. De oorspronkelijke tekst blijft staan waar hij staat; de geldende regel is
+  `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` (K1=A · K2=B · K3=A · K4=A/elf hard
+  stops · K5=A/benoemde testset · K6=A/input≠toestemming).

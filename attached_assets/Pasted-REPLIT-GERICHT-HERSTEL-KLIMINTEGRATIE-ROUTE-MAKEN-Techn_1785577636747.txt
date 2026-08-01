@@ -1,0 +1,113 @@
+REPLIT — GERICHT HERSTEL KLIMINTEGRATIE ROUTE MAKEN
+Technische code: ROUTE_CLIMB_ERROR_FEEDBACK_01
+
+GETOETSTE BASIS
+
+- acceptatie-SHA: 42f688ff
+- Mirror-oordeel: HERSTEL NODIG
+- kernfunctionaliteit PASS:
+  - Klimmen onder Ontdekken
+  - deep link vanuit klimdetail
+  - klim blijft door alle stappen zichtbaar
+  - geometrische verificatie
+  - eerlijke weigering bij onbetrouwbaar klimprofiel
+  - echte 422-afhandeling
+- alleen de foutpresentatie bij routegeneratie is defect
+
+DOEL
+
+Herstel uitsluitend de foutafhandeling wanneer routegeneratie op stap 4 “Controleren” mislukt.
+
+HUIDIG DEFECT
+
+Bij klikken op “Genereer route” op stap 4:
+
+- server geeft een echte fout terug, bijvoorbeeld 422 NO_SUITABLE_ROUTE;
+- voortgang stopt;
+- knop valt terug naar “Genereer route”;
+- op stap 4 verschijnt geen foutmelding;
+- fouttekst staat alleen op stap 3.
+
+Daardoor lijkt de actie op stap 4 stil te falen.
+
+VEREIST GEDRAG
+
+Op stap 4 moet direct zichtbaar zijn:
+
+- dat genereren is mislukt;
+- begrijpelijke fouttekst;
+- servercode technisch gelogd;
+- mogelijke vervolgstap;
+- mogelijkheid opnieuw proberen;
+- mogelijkheid terug naar stap 3;
+- geen vals succes;
+- geen verlies van gekozen klim of overige invoer.
+
+Voorbeelden:
+
+NO_SUITABLE_ROUTE
+→ “Er kon geen veilige route worden gemaakt met deze instellingen. Pas je wensen aan of kies een andere klim.”
+
+CLIMB_NOT_ON_ROUTE
+→ “De gekozen klim kon niet betrouwbaar in de route worden opgenomen. Kies een andere klim of pas het startpunt aan.”
+
+Onbekende fout
+→ “De route kon niet worden gemaakt. Je instellingen zijn bewaard. Probeer opnieuw of pas je wensen aan.”
+
+UX-EISEN
+
+- foutmelding verschijnt op dezelfde stap waar de actie is gestart;
+- foutmelding blijft zichtbaar totdat gebruiker iets wijzigt, opnieuw probeert of teruggaat;
+- knopstatus herstelt correct;
+- geen automatische sprong naar stap 3;
+- gekozen klim blijft behouden;
+- schermlezer kondigt de fout aan;
+- mobiel en desktop;
+- geen dubbele foutmelding;
+- geen toast als enige feedback;
+- fout blokkeert niet de terugweg.
+
+TESTEN
+
+Minimaal:
+
+1. 422 NO_SUITABLE_ROUTE
+2. CLIMB_NOT_ON_ROUTE
+3. onbekende 500
+4. timeout
+5. dubbelklik op Genereer route
+6. snel terug/vooruit tussen stap 3 en 4
+7. mobiel
+8. desktop
+9. retry na fout
+10. gekozen klim blijft behouden
+11. knop blijft niet hangen in laadstatus
+12. fout verdwijnt pas na relevante gebruikersactie
+
+REGRESSIE
+
+Controleer dat niet breekt:
+
+- zoeken van klimmen;
+- deep link klimdetail → Route maken;
+- klimkaart;
+- hoogteprofiel;
+- samenvatting;
+- andere routegeneratie zonder klim;
+- GPX;
+- bestaande routeplanner.
+
+OPLEVERING
+
+- start-SHA;
+- eind-SHA;
+- gewijzigde bestanden;
+- tests en exitcodes;
+- mobiel bewijs;
+- desktopbewijs;
+- foutscenario’s;
+- bevestiging dat alleen dit defect is hersteld;
+- vaste herstel-SHA voor Mirror.
+
+Commit en push.
+Geen productiepublicatie.

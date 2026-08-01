@@ -97,7 +97,10 @@ export async function hasAcceptedCoachLink(
   athleteClerkId: string,
 ): Promise<boolean> {
   const [row] = await db
-    .select({ status: coachAthleteLinksTable.status })
+    .select({
+      status: coachAthleteLinksTable.status,
+      endedAt: coachAthleteLinksTable.endedAt,
+    })
     .from(coachAthleteLinksTable)
     .where(
       and(
@@ -105,7 +108,7 @@ export async function hasAcceptedCoachLink(
         eq(coachAthleteLinksTable.athleteClerkId, athleteClerkId),
       ),
     );
-  return row?.status === "accepted";
+  return row?.status === "accepted" && row.endedAt == null;
 }
 
 /**
@@ -327,7 +330,10 @@ export async function hasAcceptedParentLink(
   athleteClerkId: string,
 ): Promise<boolean> {
   const [row] = await db
-    .select({ status: parentAthleteLinksTable.status })
+    .select({
+      status: parentAthleteLinksTable.status,
+      endedAt: parentAthleteLinksTable.endedAt,
+    })
     .from(parentAthleteLinksTable)
     .where(
       and(
@@ -335,7 +341,7 @@ export async function hasAcceptedParentLink(
         eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
       ),
     );
-  return row?.status === "accepted";
+  return row?.status === "accepted" && row.endedAt == null;
 }
 
 /**

@@ -96,7 +96,7 @@ router.get("/dashboard", requireAuth, async (req, res) => {
       .where(
         and(
           eq(coachAthleteLinksTable.coachClerkId, coachId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       );
     // Unie van directe koppelingen en geldige club/teamtoewijzingen (zelfde
@@ -333,7 +333,7 @@ router.post("/athletes/:athleteId/review", requireAuth, async (req, res) => {
         and(
           eq(coachAthleteLinksTable.coachClerkId, coachId),
           eq(coachAthleteLinksTable.athleteClerkId, athleteId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       )
       .returning({ lastReviewedAt: coachAthleteLinksTable.lastReviewedAt });

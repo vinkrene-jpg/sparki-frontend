@@ -316,7 +316,7 @@ export async function explainObservation(
     trust: klasseMeta({
       ownerClerkId: obs.clerkId,
       source: heeftVerantwoording ? "derived" : null,
-      hasComputationTrace: heeftVerantwoording,
+      hasComputationTrace: Boolean(heeftVerantwoording),
     }),
   };
 }

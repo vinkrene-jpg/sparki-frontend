@@ -16,7 +16,7 @@ import { useFeedback } from "@/contexts/FeedbackContext"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useClubMembership } from "@/hooks/use-club"
 import { useAdminWhoami } from "@/hooks/use-bug-reports"
-import { chaptersForRole } from "@/lib/chapters"
+import { chaptersForRole, ROLE_LABELS } from "@/lib/chapters"
 
 // Hoofdmenu — één bron van waarheid met het startscherm (lib/chapters). Naast
 // de hoofdstukken huisvest het de rustige secundaire acties die uit de
@@ -24,11 +24,8 @@ import { chaptersForRole } from "@/lib/chapters"
 // en uitloggen. Club verschijnt alleen bij een echte, geaccepteerde
 // trainerkoppeling.
 
-const ROLE_LABEL: Record<Role, string> = {
-  athlete: "Sporter",
-  coach: "Coach",
-  parent: "Ouder",
-}
+// F4: rollabels komen uit één bron van waarheid (lib/chapters ROLE_LABELS).
+const ROLE_LABEL = ROLE_LABELS
 
 function isActiveHref(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href)

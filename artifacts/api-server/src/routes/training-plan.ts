@@ -4,7 +4,7 @@
 // engine never writes planned_workouts — coach workouts are never overwritten.
 
 import { Router } from "express";
-import { and, asc, eq, gte, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, ne, isNull } from "drizzle-orm";
 import {
   db,
   coachAthleteLinksTable,
@@ -35,7 +35,7 @@ async function hasAcceptedCoach(athleteClerkId: string): Promise<boolean> {
     .where(
       and(
         eq(coachAthleteLinksTable.athleteClerkId, athleteClerkId),
-        eq(coachAthleteLinksTable.status, "accepted"),
+        eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
       ),
     )
     .limit(1);

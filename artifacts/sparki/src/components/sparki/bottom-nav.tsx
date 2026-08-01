@@ -17,6 +17,7 @@ import {
   ATHLETE_NAV_ENTRIES,
   COACH_NAV_ENTRIES,
   PARENT_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_NAV_ENTRIES,
   type NavEntry,
 } from "@/lib/chapters"
 
@@ -46,10 +47,13 @@ function withIcons(entries: NavEntry[]): NavItem[] {
 const ATHLETE_NAV: NavItem[] = withIcons(ATHLETE_NAV_ENTRIES)
 const COACH_NAV: NavItem[] = withIcons(COACH_NAV_ENTRIES)
 const PARENT_NAV: NavItem[] = withIcons(PARENT_NAV_ENTRIES)
+const NUTRITION_NAV: NavItem[] = withIcons(NUTRITION_SPECIALIST_NAV_ENTRIES)
 
 function navForRole(role: Role | null | undefined): NavItem[] {
   if (role === "coach") return COACH_NAV
   if (role === "parent") return PARENT_NAV
+  // BB-14: eigen rolomgeving, geen terugval op de sporterbalk.
+  if (role === "nutrition_specialist") return NUTRITION_NAV
   return ATHLETE_NAV
 }
 

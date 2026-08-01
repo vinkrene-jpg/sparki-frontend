@@ -17,6 +17,10 @@ export const FEATURE_KEYS = [
   "stripe_checkout",
   "stripe_webhooks",
   "stripe_portal",
+  "media_uitleg_motion",
+  "media_uitleg_dieptekaart",
+  "walking_routes",
+  "hiking_routes",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -55,6 +59,14 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "Stripe-webhookendpoint (TESTMODUS) — idempotente eventverwerking volgens het fase-1-webhookcontract. Default uit",
   stripe_portal:
     "Stripe Customer Portal (TESTMODUS) — facturen/betaalmethoden/annuleren voor allowlist-accounts. Default uit",
+  media_uitleg_motion:
+    "MEDIA_UITLEG_01 F1 — gedeelde motionbasis: instelling 'Verminder beweging' (server-side bewaard) + centrale animatie-uitschakelaar en testpagina. Default uit",
+  media_uitleg_dieptekaart:
+    "MEDIA_UITLEG_01 F2 — diepte-/zweefkaart (CMP-40) op het ene vrijgegeven moment 'training voltooid'; subtiele kanteling alleen tijdens aanraking. Default uit",
+  walking_routes:
+    "MOBILE_ROUTE_WALKING_01 Deel B — Wandelen als volwaardige routefamilie (foot-walking-profiel + voet-geschiktheid); nooit stil fietsprofiel. Default uit",
+  hiking_routes:
+    "MOBILE_ROUTE_WALKING_01 Deel B — Hiken als volwaardige routefamilie (foot-hiking-profiel, onverhard/hoogte leidend); nooit stil fietsprofiel. Default uit",
 };
 
 export * from "./sports";

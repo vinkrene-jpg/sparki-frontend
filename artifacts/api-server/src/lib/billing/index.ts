@@ -11,6 +11,7 @@ import {
   userEntitlementsTable,
   billingSubscriptionsTable,
   billingTestAccountsTable,
+  clubSubscriptionsTable,
   featureFlagsTable,
   userFlagOverridesTable,
   COMMERCIAL_TIERS,
@@ -20,6 +21,7 @@ import {
   type BillingInterval,
 } from "@workspace/db";
 import { TIER_PRICING } from "./stripe-gateway";
+import { createNotification } from "../notifications";
 import { logger } from "../logger";
 
 export const GRACE_DAYS = 7;
@@ -32,13 +34,17 @@ export type BillingLifecycleStatus =
   | "grace"
   | "canceled"
   | "expired"
-  | "blocked";
+  | "blocked"
+  // ABONNEMENT_01: eerste betaling niet afgerond (geen rechten).
+  | "incomplete"
+  // ABONNEMENT_01: gepauzeerd bij Stripe (rechten bevroren, data behouden).
+  | "paused";
 
 export function isValidTier(v: unknown): v is CommercialTier {
   return typeof v === "string" && (COMMERCIAL_TIERS as readonly string[]).includes(v);
 }
 export function isPaidTier(v: unknown): v is Exclude<CommercialTier, "FREE"> {
-  return v === "GO" || v === "COMPLETE";
+  return v === "GO" || v === "COMPLETE" || v === "TEAM";
 }
 export function isValidInterval(v: unknown): v is BillingInterval {
   return typeof v === "string" && (BILLING_INTERVALS as readonly string[]).includes(v);
@@ -195,8 +201,15 @@ export function deriveBillingState(args: {
         return { ...view, status: "expired", tier: "FREE" };
       case "expired":
         return { ...view, status: "expired", tier: "FREE" };
+      case "incomplete":
+        // Betaling nog niet rond ⇒ geen rechten, wel eerlijke status.
+        return { ...view, status: "incomplete", tier: "FREE" };
+      case "paused":
+        // Bevroren: geen betaalde rechten, gegevens behouden; de tier blijft
+        // zichtbaar zodat de UI eerlijk kan zeggen wát er gepauzeerd is.
+        return { ...view, status: "paused" };
       default:
-        // Onbekende status ⇒ fail-closed (nooit betaald).
+        // Onbekende status (incl. expliciet "unknown") ⇒ fail-closed.
         return { ...view, status: "free", tier: "FREE" };
     }
   }
@@ -335,7 +348,11 @@ export async function expireBillingStates(now = new Date()): Promise<{
         lt(billingSubscriptionsTable.graceUntil, now),
       ),
     )
-    .returning({ clerkId: billingSubscriptionsTable.clerkId });
+    .returning({
+      clerkId: billingSubscriptionsTable.clerkId,
+      stripeSubscriptionId: billingSubscriptionsTable.stripeSubscriptionId,
+      tier: billingSubscriptionsTable.tier,
+    });
   const canceledRows = await db
     .update(billingSubscriptionsTable)
     .set({ status: "expired", updatedAt: now })
@@ -345,7 +362,27 @@ export async function expireBillingStates(now = new Date()): Promise<{
         lt(billingSubscriptionsTable.currentPeriodEnd, now),
       ),
     )
-    .returning({ clerkId: billingSubscriptionsTable.clerkId });
+    .returning({
+      clerkId: billingSubscriptionsTable.clerkId,
+      stripeSubscriptionId: billingSubscriptionsTable.stripeSubscriptionId,
+      tier: billingSubscriptionsTable.tier,
+    });
+  // TEAM: verlopen facturatie moet óók de gekoppelde club sluiten, anders
+  // blijft een opgezegd team stilzwijgend leden toelaten.
+  const teamRefs = [...graceRows, ...canceledRows]
+    .filter((r) => r.tier === "TEAM" && r.stripeSubscriptionId)
+    .map((r) => r.stripeSubscriptionId);
+  if (teamRefs.length > 0) {
+    await db
+      .update(clubSubscriptionsTable)
+      .set({ status: "ended", updatedAt: now })
+      .where(
+        and(
+          inArray(clubSubscriptionsTable.billingRef, teamRefs),
+          eq(clubSubscriptionsTable.packageKey, "team"),
+        ),
+      );
+  }
   const affected = [
     ...new Set([...graceRows, ...canceledRows].map((r) => r.clerkId)),
   ];
@@ -365,8 +402,88 @@ export async function expireBillingStates(now = new Date()): Promise<{
       { affected: affected.length },
       "billing: verlopen abonnementen teruggezet naar FREE",
     );
+    // Eerlijke melding per overgang (ABONNEMENT_01 §1.8): best-effort ná de
+    // updates; dedupeKey maakt de dagelijkse sweep meldings-idempotent.
+    for (const row of [...graceRows, ...canceledRows]) {
+      await createNotification({
+        clerkId: row.clerkId,
+        type: "system",
+        title: "Je abonnement is gestopt",
+        body:
+          "Je account staat nu op Gratis. Al je gegevens, ritten en routes zijn er nog gewoon. Opnieuw abonneren kan altijd via Abonnement.",
+        source: "billing",
+        dedupeKey: `billing:${row.stripeSubscriptionId}:expired`,
+      }).catch((err) =>
+        logger.error({ err, clerkId: row.clerkId }, "billing: expiry-melding mislukt"),
+      );
+    }
   }
   return { expiredGrace: graceRows.length, expiredCanceled: canceledRows.length };
+}
+
+/**
+ * ABONNEMENT_01 §1.7 — proefperiode-einde: bij afloop vervalt de begeleiding,
+ * NIET de data (er wordt hier nooit iets verwijderd — de trial-entitlement
+ * verloopt vanzelf op endsAt). Deze sweep stuurt alleen twee rustige
+ * meldingen: één vóór afloop en één ná afloop. Idempotent via dedupeKey.
+ */
+export async function sweepTrialNotices(now = new Date()): Promise<{
+  endingSoon: number;
+  ended: number;
+}> {
+  const soonWindow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const recentPast = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const trials = await db
+    .select({
+      id: userEntitlementsTable.id,
+      clerkId: userEntitlementsTable.clerkId,
+      entitlementKey: userEntitlementsTable.entitlementKey,
+      status: userEntitlementsTable.status,
+      endsAt: userEntitlementsTable.endsAt,
+    })
+    .from(userEntitlementsTable)
+    .where(
+      and(
+        eq(userEntitlementsTable.entitlementType, "trial"),
+        eq(userEntitlementsTable.status, "active"),
+        lt(userEntitlementsTable.endsAt, soonWindow),
+      ),
+    );
+  let endingSoon = 0;
+  let ended = 0;
+  for (const t of trials) {
+    const tier = tierFromTrialKey(t.entitlementKey);
+    if (!tier || !t.endsAt) continue;
+    const tierNaam = tier === "COMPLETE" ? "Compleet" : "Go";
+    if (t.endsAt > now) {
+      const dagen = Math.max(1, Math.ceil((t.endsAt.getTime() - now.getTime()) / (24 * 3600 * 1000)));
+      const created = await createNotification({
+        clerkId: t.clerkId,
+        type: "system",
+        title: `Je ${tierNaam}-proefperiode loopt binnenkort af`,
+        body:
+          `Over ${dagen === 1 ? "1 dag" : `${dagen} dagen`} eindigt je proefperiode van Sparki ${tierNaam}. ` +
+          "Daarna gaat je account gewoon verder als Gratis — al je gegevens, ritten en routes blijven bewaard. Wil je doorgaan met " +
+          `${tierNaam}, dan kan dat via Abonnement.`,
+        source: "billing",
+        dedupeKey: `billing:trial:${t.id}:ending`,
+      });
+      if (created) endingSoon++;
+    } else if (t.endsAt > recentPast) {
+      const created = await createNotification({
+        clerkId: t.clerkId,
+        type: "system",
+        title: `Je ${tierNaam}-proefperiode is afgelopen`,
+        body:
+          "Je account gaat verder als Gratis. Alles wat je zelf hebt ingevoerd of gesynchroniseerd is er nog gewoon — er is niets verdwenen. " +
+          `Opnieuw kiezen voor ${tierNaam} kan altijd via Abonnement.`,
+        source: "billing",
+        dedupeKey: `billing:trial:${t.id}:ended`,
+      });
+      if (created) ended++;
+    }
+  }
+  return { endingSoon, ended };
 }
 
 /**

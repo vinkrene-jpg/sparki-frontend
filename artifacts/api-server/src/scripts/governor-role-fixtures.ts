@@ -89,7 +89,7 @@ export const PERSONAS: Persona[] = [
   { key: "trainer-zelfstandig", name: "TESTFIXTURE Trainer Zelfstandig", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription" },
   { key: "hoofdtrainer", name: "TESTFIXTURE Hoofdtrainer", roles: ["coach"], activeRole: "coach", entitlementMode: "subscription", clubRole: "hoofdtrainer" },
   { key: "clubbeheerder", name: "TESTFIXTURE Clubbeheerder", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "admin" },
-  { key: "ploegleider", name: "TESTFIXTURE Ploegleider", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "teammanager" },
+  { key: "ploegleider", name: "TESTFIXTURE Ploegleider", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "ploegleider" },
   { key: "mechanieker", name: "TESTFIXTURE Mechanieker", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "mechanieker" },
   // Admin/testbeheer: admin-rechten lopen via SPARKI_ADMIN_IDS (env), die we hier
   // bewust NIET aanpassen; deze persona bestaat voor menusmoke en audit-tests.

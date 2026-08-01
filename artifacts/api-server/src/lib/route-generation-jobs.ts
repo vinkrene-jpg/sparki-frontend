@@ -36,6 +36,32 @@ export type RouteGenerationJob = {
 
 const JOBS = new Map<string, RouteGenerationJob>();
 const JOB_TTL_MS = 30 * 60 * 1000;
+
+// KETEN_FIETS_01 (01-08-2026), harde eis 1: iedere routegeneratietaak eindigt.
+// De deadline geldt voor de TAAK, niet voor de veiligheidscontrole: verloopt
+// de taak, dan is de uitkomst eerlijk "geen route geleverd" (fail-closed) —
+// nooit "route geleverd zonder controle". Bewust korter dan de klant-timeout
+// van 6 minuten (use-routes.ts), zodat de klant een eerlijke serveruitkomst
+// ziet in plaats van zelf te moeten opgeven.
+const JOB_DEADLINE_MS = 5 * 60 * 1000;
+
+// Interne finalisatie ZONDER deadline-bewaking; alleen voor de expiry zelf.
+function finalize(job: RouteGenerationJob, status: number, body: unknown): void {
+  if (job.done) return;
+  job.status = status;
+  job.body = body;
+  job.done = true;
+}
+
+function expireIfPastDeadline(job: RouteGenerationJob): boolean {
+  if (job.done || Date.now() - job.createdAt <= JOB_DEADLINE_MS) return false;
+  finalize(job, 504, {
+    error:
+      "Geen route geleverd: de berekening is niet binnen 5 minuten afgerond. De veiligheidscontrole is niet overgeslagen. Probeer het opnieuw — je keuzes zijn bewaard.",
+    code: "GENERATION_DEADLINE",
+  });
+  return true;
+}
 let lastSweep = 0;
 
 function sweep(): void {
@@ -43,7 +69,14 @@ function sweep(): void {
   if (now - lastSweep < 60_000) return;
   lastSweep = now;
   for (const [id, job] of JOBS) {
-    if (now - job.createdAt > JOB_TTL_MS) JOBS.delete(id);
+    if (now - job.createdAt > JOB_TTL_MS) {
+      JOBS.delete(id);
+      continue;
+    }
+    // Ook zonder polls verloopt een taak hard op de deadline (KETEN_FIETS_01
+    // eis 1): de vaste veegbeurt markeert hem als eerlijk mislukt, zodat een
+    // taak nooit stil "bezig" kan blijven tot de TTL hem wist.
+    expireIfPastDeadline(job);
   }
 }
 
@@ -80,9 +113,13 @@ export function finishJob(job: RouteGenerationJob, status: number, body: unknown
   // dubbele res.json in een toekomstig handlerpad) mag het resultaat dat de
   // klant mogelijk al gezien heeft nooit meer veranderen.
   if (job.done) return;
-  job.status = status;
-  job.body = body;
-  job.done = true;
+  // Deadline-bewaking óók hier (racevrij): een berekening die pas ná de
+  // deadline klaarkomt mag nooit alsnog een succes vastleggen — de klant
+  // heeft "verlopen" mogelijk al gezien, en een kandidaat van na de deadline
+  // wordt zo nooit als bruikbaar resultaat aangeboden. De uitslag is dan de
+  // eerlijke 504, ongeacht wat de late berekening opleverde.
+  if (expireIfPastDeadline(job)) return;
+  finalize(job, status, body);
 }
 
 /** Ownership-gecheckt ophalen: andermans job bestaat gewoon niet. */
@@ -93,5 +130,6 @@ export function getRouteGenerationJob(
   sweep();
   const job = JOBS.get(id);
   if (!job || job.clerkId !== clerkId) return null;
+  expireIfPastDeadline(job);
   return job;
 }
