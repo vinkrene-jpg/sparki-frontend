@@ -87,6 +87,67 @@ export const privacySettingsTable = pgTable("privacy_settings", {
     .defaultNow(),
 });
 
+// ── SPARKI_BUILD_01 F1 — centrale toestemmingsservice ──────────────────────
+// Eén gedeelde consent-status-enumeratie voor frontend én backend (BB-01).
+// Legacy-waarden ("accepted") worden via normalizeConsentStatus gemapt; nieuwe
+// code gebruikt uitsluitend deze zes statussen.
+export const consentStatuses = [
+  "not_required",
+  "pending",
+  "granted",
+  "declined",
+  "revoked",
+  "expired",
+] as const;
+export type ConsentStatus = (typeof consentStatuses)[number];
+
+/** Map een legacy parent-consent-waarde naar de gedeelde enumeratie. */
+export function normalizeConsentStatus(value: string | null | undefined): ConsentStatus {
+  if (value === "accepted" || value === "granted") return "granted";
+  if (value === "declined") return "declined";
+  if (value === "revoked") return "revoked";
+  if (value === "expired") return "expired";
+  if (value === "not_required") return "not_required";
+  // Onbekend of ontbrekend = strengste regime: er is géén toestemming.
+  return "pending";
+}
+
+export const consentGrantTypes = [
+  "parental_consent", // ouderlijke toestemming voor deelname van een minderjarige
+  "medical_data_access", // afzonderlijke toestemming voor inzage medisch dossier
+  "nutrition_data_access", // afzonderlijke toestemming voedingsbegeleiding
+  "media_publication", // beeldmateriaal publiceren
+  "data_sharing", // gegevens delen buiten de standaardrelatie
+] as const;
+export type ConsentGrantType = (typeof consentGrantTypes)[number];
+
+// consent_grant (bouwpakket 01 §4.1): wie (grantor) gaf welke toestemming voor
+// wie (subject), op welke grondslag, uit welke bron, tot wanneer geldig.
+export const consentGrantsTable = pgTable("consent_grants", {
+  id: serial("id").primaryKey(),
+  subjectClerkId: text("subject_clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+  grantorClerkId: text("grantor_clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("pending"),
+  grantedAt: timestamp("granted_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  validUntil: timestamp("valid_until", { withTimezone: true }),
+  // Grondslag: waarom deze toestemming rechtsgeldig is (bijv. "ouderlijk gezag").
+  legalBasis: text("legal_basis"),
+  // Bron: waar de toestemming vandaan komt (web/pwa/mobiel/migratie:…).
+  source: text("source").notNull().default("web"),
+  // Herbevestiging bij de eerstvolgende relevante leeftijdsgrens (16/18).
+  reconfirmationDueAt: timestamp("reconfirmation_due_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ConsentGrant = typeof consentGrantsTable.$inferSelect;
+
 // Append-only audit trail for consent / privacy changes.
 export const consentAuditLogTable = pgTable("consent_audit_log", {
   id: serial("id").primaryKey(),

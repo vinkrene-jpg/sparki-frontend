@@ -194,7 +194,8 @@
     "test:club-onboarding": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-onboarding",
     "test:team-organisatie": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs team-organisatie",
     "test:team-onboarding": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs team-onboarding",
-    "test:route-climb-check": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-climb-check"
+    "test:route-climb-check": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-climb-check",
+    "test:consent-service": "node ./scripts/run-test.mjs consent-service"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
