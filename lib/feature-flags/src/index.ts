@@ -19,7 +19,6 @@ export const FEATURE_KEYS = [
   "stripe_portal",
   "media_uitleg_motion",
   "media_uitleg_dieptekaart",
-  "mobile_routeplanner_v2",
   "walking_routes",
   "hiking_routes",
 ] as const;
@@ -64,8 +63,6 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "MEDIA_UITLEG_01 F1 — gedeelde motionbasis: instelling 'Verminder beweging' (server-side bewaard) + centrale animatie-uitschakelaar en testpagina. Default uit",
   media_uitleg_dieptekaart:
     "MEDIA_UITLEG_01 F2 — diepte-/zweefkaart (CMP-40) op het ene vrijgegeven moment 'training voltooid'; subtiele kanteling alleen tijdens aanraking. Default uit",
-  mobile_routeplanner_v2:
-    "MOBILE_ROUTE_WALKING_01 Deel A — telefoon-gerichte routeplanner-wizard (voortgang, vaste primaire actie, veilige schermranden); zelfde state en route-engine als desktop. Default uit",
   walking_routes:
     "MOBILE_ROUTE_WALKING_01 Deel B — Wandelen als volwaardige routefamilie (foot-walking-profiel + voet-geschiktheid); nooit stil fietsprofiel. Default uit",
   hiking_routes:

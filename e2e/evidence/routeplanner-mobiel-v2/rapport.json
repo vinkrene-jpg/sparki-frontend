@@ -4,395 +4,375 @@
       "stap": "iphone-klein: login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-08-01T10:58:02.929Z"
+      "t": "2026-08-01T11:05:21.787Z"
     },
     {
       "stap": "iphone-klein: mobiele voortgangskop zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:03.742Z"
+      "t": "2026-08-01T11:05:22.600Z"
     },
     {
       "stap": "iphone-klein: 'Stap 1 van 4' getoond",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:03.745Z"
+      "t": "2026-08-01T11:05:22.603Z"
     },
     {
       "stap": "iphone-klein: actiebalk aanwezig",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:03.747Z"
+      "t": "2026-08-01T11:05:22.605Z"
     },
     {
       "stap": "iphone-klein: mobiele shell (onderbalk) zichtbaar naast wizard",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:03.753Z"
+      "t": "2026-08-01T11:05:22.611Z"
     },
     {
       "stap": "iphone-klein: primaire actie binnen beeld",
       "status": "OK",
       "detail": "y=524 h=48 vp=667",
-      "t": "2026-08-01T10:58:03.789Z"
+      "t": "2026-08-01T11:05:22.654Z"
     },
     {
       "stap": "iphone-klein: primaire actie niet afgedekt (hit-test)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:03.791Z"
+      "t": "2026-08-01T11:05:22.656Z"
     },
     {
       "stap": "iphone-klein: geen horizontale overflow (stap 1)",
       "status": "OK",
       "detail": "375/375",
-      "t": "2026-08-01T10:58:03.792Z"
+      "t": "2026-08-01T11:05:22.658Z"
     },
     {
       "stap": "iphone-klein: fout op dezelfde stap, stap blijft 1",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:04.229Z"
+      "t": "2026-08-01T11:05:23.189Z"
     },
     {
       "stap": "iphone-klein: voortgang toont stap 2",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:04.620Z"
+      "t": "2026-08-01T11:05:23.578Z"
     },
     {
       "stap": "iphone-klein: geen horizontale overflow (stap 2)",
       "status": "OK",
       "detail": "375/375",
-      "t": "2026-08-01T10:58:04.621Z"
+      "t": "2026-08-01T11:05:23.579Z"
     },
     {
       "stap": "iphone-klein: stap 4 bereikt, voortgang klopt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:05.053Z"
+      "t": "2026-08-01T11:05:24.016Z"
     },
     {
       "stap": "iphone-klein: startpunt behouden op stap 4",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:05.055Z"
+      "t": "2026-08-01T11:05:24.018Z"
     },
     {
       "stap": "iphone-klein: geen horizontale overflow (stap 4)",
       "status": "OK",
       "detail": "375/375",
-      "t": "2026-08-01T10:58:05.056Z"
+      "t": "2026-08-01T11:05:24.019Z"
     },
     {
       "stap": "iphone-klein: terugtik naar stap 1 werkt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:05.417Z"
+      "t": "2026-08-01T11:05:24.372Z"
     },
     {
       "stap": "iphone-groot: login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-08-01T10:58:08.426Z"
+      "t": "2026-08-01T11:05:27.212Z"
     },
     {
       "stap": "iphone-groot: mobiele voortgangskop zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:09.235Z"
+      "t": "2026-08-01T11:05:28.020Z"
     },
     {
       "stap": "iphone-groot: 'Stap 1 van 4' getoond",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:09.237Z"
+      "t": "2026-08-01T11:05:28.022Z"
     },
     {
       "stap": "iphone-groot: actiebalk aanwezig",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:09.238Z"
+      "t": "2026-08-01T11:05:28.024Z"
     },
     {
       "stap": "iphone-groot: mobiele shell (onderbalk) zichtbaar naast wizard",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:09.243Z"
+      "t": "2026-08-01T11:05:28.029Z"
     },
     {
       "stap": "iphone-groot: primaire actie binnen beeld",
       "status": "OK",
       "detail": "y=789 h=48 vp=932",
-      "t": "2026-08-01T10:58:09.267Z"
+      "t": "2026-08-01T11:05:28.054Z"
     },
     {
       "stap": "iphone-groot: primaire actie niet afgedekt (hit-test)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:09.269Z"
+      "t": "2026-08-01T11:05:28.055Z"
     },
     {
       "stap": "iphone-groot: geen horizontale overflow (stap 1)",
       "status": "OK",
       "detail": "430/430",
-      "t": "2026-08-01T10:58:09.270Z"
+      "t": "2026-08-01T11:05:28.057Z"
     },
     {
       "stap": "iphone-groot: fout op dezelfde stap, stap blijft 1",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:09.755Z"
+      "t": "2026-08-01T11:05:28.504Z"
     },
     {
       "stap": "iphone-groot: voortgang toont stap 2",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:10.158Z"
+      "t": "2026-08-01T11:05:28.926Z"
     },
     {
       "stap": "iphone-groot: geen horizontale overflow (stap 2)",
       "status": "OK",
       "detail": "430/430",
-      "t": "2026-08-01T10:58:10.159Z"
+      "t": "2026-08-01T11:05:28.928Z"
     },
     {
       "stap": "iphone-groot: stap 4 bereikt, voortgang klopt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:10.618Z"
+      "t": "2026-08-01T11:05:29.401Z"
     },
     {
       "stap": "iphone-groot: startpunt behouden op stap 4",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:10.620Z"
+      "t": "2026-08-01T11:05:29.403Z"
     },
     {
       "stap": "iphone-groot: geen horizontale overflow (stap 4)",
       "status": "OK",
       "detail": "430/430",
-      "t": "2026-08-01T10:58:10.621Z"
+      "t": "2026-08-01T11:05:29.404Z"
     },
     {
       "stap": "iphone-groot: terugtik naar stap 1 werkt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:10.974Z"
+      "t": "2026-08-01T11:05:29.767Z"
     },
     {
       "stap": "android-klein: login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-08-01T10:58:13.653Z"
+      "t": "2026-08-01T11:05:32.587Z"
     },
     {
       "stap": "android-klein: mobiele voortgangskop zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:14.462Z"
+      "t": "2026-08-01T11:05:33.395Z"
     },
     {
       "stap": "android-klein: 'Stap 1 van 4' getoond",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:14.464Z"
+      "t": "2026-08-01T11:05:33.397Z"
     },
     {
       "stap": "android-klein: actiebalk aanwezig",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:14.466Z"
+      "t": "2026-08-01T11:05:33.398Z"
     },
     {
       "stap": "android-klein: mobiele shell (onderbalk) zichtbaar naast wizard",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:14.471Z"
+      "t": "2026-08-01T11:05:33.404Z"
     },
     {
       "stap": "android-klein: primaire actie binnen beeld",
       "status": "OK",
       "detail": "y=657 h=48 vp=800",
-      "t": "2026-08-01T10:58:14.503Z"
+      "t": "2026-08-01T11:05:33.431Z"
     },
     {
       "stap": "android-klein: primaire actie niet afgedekt (hit-test)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:14.506Z"
+      "t": "2026-08-01T11:05:33.433Z"
     },
     {
       "stap": "android-klein: geen horizontale overflow (stap 1)",
       "status": "OK",
       "detail": "360/360",
-      "t": "2026-08-01T10:58:14.508Z"
+      "t": "2026-08-01T11:05:33.434Z"
     },
     {
       "stap": "android-klein: fout op dezelfde stap, stap blijft 1",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:14.945Z"
+      "t": "2026-08-01T11:05:33.904Z"
     },
     {
       "stap": "android-klein: voortgang toont stap 2",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:15.337Z"
+      "t": "2026-08-01T11:05:34.303Z"
     },
     {
       "stap": "android-klein: geen horizontale overflow (stap 2)",
       "status": "OK",
       "detail": "360/360",
-      "t": "2026-08-01T10:58:15.338Z"
+      "t": "2026-08-01T11:05:34.304Z"
     },
     {
       "stap": "android-klein: stap 4 bereikt, voortgang klopt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:15.786Z"
+      "t": "2026-08-01T11:05:34.750Z"
     },
     {
       "stap": "android-klein: startpunt behouden op stap 4",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:15.787Z"
+      "t": "2026-08-01T11:05:34.752Z"
     },
     {
       "stap": "android-klein: geen horizontale overflow (stap 4)",
       "status": "OK",
       "detail": "360/360",
-      "t": "2026-08-01T10:58:15.789Z"
+      "t": "2026-08-01T11:05:34.753Z"
     },
     {
       "stap": "android-klein: terugtik naar stap 1 werkt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:16.142Z"
+      "t": "2026-08-01T11:05:35.104Z"
     },
     {
       "stap": "android-groot: login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-08-01T10:58:18.794Z"
+      "t": "2026-08-01T11:05:38.063Z"
     },
     {
       "stap": "android-groot: mobiele voortgangskop zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:19.604Z"
+      "t": "2026-08-01T11:05:38.870Z"
     },
     {
       "stap": "android-groot: 'Stap 1 van 4' getoond",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:19.606Z"
+      "t": "2026-08-01T11:05:38.872Z"
     },
     {
       "stap": "android-groot: actiebalk aanwezig",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:19.608Z"
+      "t": "2026-08-01T11:05:38.873Z"
     },
     {
       "stap": "android-groot: mobiele shell (onderbalk) zichtbaar naast wizard",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:19.612Z"
+      "t": "2026-08-01T11:05:38.877Z"
     },
     {
       "stap": "android-groot: primaire actie binnen beeld",
       "status": "OK",
       "detail": "y=772 h=48 vp=915",
-      "t": "2026-08-01T10:58:19.643Z"
+      "t": "2026-08-01T11:05:38.902Z"
     },
     {
       "stap": "android-groot: primaire actie niet afgedekt (hit-test)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:19.645Z"
+      "t": "2026-08-01T11:05:38.904Z"
     },
     {
       "stap": "android-groot: geen horizontale overflow (stap 1)",
       "status": "OK",
       "detail": "412/412",
-      "t": "2026-08-01T10:58:19.646Z"
+      "t": "2026-08-01T11:05:38.905Z"
     },
     {
       "stap": "android-groot: fout op dezelfde stap, stap blijft 1",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:20.090Z"
+      "t": "2026-08-01T11:05:39.354Z"
     },
     {
       "stap": "android-groot: voortgang toont stap 2",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:20.492Z"
+      "t": "2026-08-01T11:05:39.755Z"
     },
     {
       "stap": "android-groot: geen horizontale overflow (stap 2)",
       "status": "OK",
       "detail": "412/412",
-      "t": "2026-08-01T10:58:20.493Z"
+      "t": "2026-08-01T11:05:39.756Z"
     },
     {
       "stap": "android-groot: stap 4 bereikt, voortgang klopt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:20.936Z"
+      "t": "2026-08-01T11:05:40.200Z"
     },
     {
       "stap": "android-groot: startpunt behouden op stap 4",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:20.938Z"
+      "t": "2026-08-01T11:05:40.202Z"
     },
     {
       "stap": "android-groot: geen horizontale overflow (stap 4)",
       "status": "OK",
       "detail": "412/412",
-      "t": "2026-08-01T10:58:20.940Z"
+      "t": "2026-08-01T11:05:40.203Z"
     },
     {
       "stap": "android-groot: terugtik naar stap 1 werkt",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:21.289Z"
+      "t": "2026-08-01T11:05:40.554Z"
     },
     {
-      "stap": "desktop (flag aan): mobiele kop NIET zichtbaar",
+      "stap": "desktop: mobiele kop NIET zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:25.147Z"
+      "t": "2026-08-01T11:05:44.197Z"
     },
     {
-      "stap": "desktop (flag aan): bestaande stappenteller zichtbaar",
+      "stap": "desktop: bestaande stappenteller zichtbaar",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:58:25.149Z"
-    },
-    {
-      "stap": "flag uit: geen mobiele kop, bestaande stappenteller",
-      "status": "OK",
-      "detail": "",
-      "t": "2026-08-01T10:58:28.892Z"
+      "t": "2026-08-01T11:05:44.199Z"
     }
   ],
-  "flagConfig": {
-    "voor": {
-      "globaal": "key           | enabled_globally \n------------------------+------------------\n commercial_shell       | t\n mobile_routeplanner_v2 | f\n(2 rows)",
-      "overridesTestidentiteit": "clerk_id | flag_key | enabled \n----------+----------+---------\n(0 rows)"
-    },
-    "tijdensTest": {
-      "globaal": "key           | enabled_globally \n------------------------+------------------\n commercial_shell       | t\n mobile_routeplanner_v2 | f\n(2 rows)",
-      "overridesTestidentiteit": "clerk_id             |        flag_key        | enabled \n----------------------------------+------------------------+---------\n user_3HG8jhjNUhHTFf7bqpMzZm5QhL4 | mobile_routeplanner_v2 | t\n(1 row)"
-    },
-    "na": {
-      "globaal": "key           | enabled_globally \n------------------------+------------------\n commercial_shell       | t\n mobile_routeplanner_v2 | f\n(2 rows)",
-      "overridesTestidentiteit": "clerk_id | flag_key | enabled \n----------+----------+---------\n(0 rows)"
-    }
-  },
   "exitCode": 0,
-  "t": "2026-08-01T10:58:29.259Z"
+  "t": "2026-08-01T11:05:44.805Z"
 }

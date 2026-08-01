@@ -1781,7 +1781,10 @@ export function RouteGenerator({
   // MOBILE_ROUTE_WALKING_01 F1 — telefoon-gerichte compositie achter een
   // aparte flag (default uit). Zelfde state, handlers en route-engine als
   // desktop: dit is uitsluitend presentatie (geen tweede flowlogica).
-  const mobielV2 = useFeatureFlag("mobile_routeplanner_v2")
+  // Besluit René 01-08-2026 ("stop met die stomme flags"): de mobiele
+  // wizard-compositie is standaardgedrag, niet langer flag-gebonden. De
+  // constante blijft zodat de flag-uit-paden (desktopweergave) intact zijn.
+  const mobielV2 = true
   const save = useSaveGeneratedRoute()
   // RequestId guard: prevents a slow in-flight request from overwriting a newer one.
   const generateReqId = useRef(0)

@@ -153,3 +153,4 @@
 - [Merknaam-lint UI-copy](sparki-brand-copy-lint.md) — UI spreekt direct, nooit "Sparki <werkwoord>"; check-brand-copy.mjs in typecheck-api, uitzonderingen zin-exact in allowlist.
 - [TEAM-onboarding & organogram-kaarten](sparki-team-onboarding.md) — TEAM = kolom op clubs; kaarten additief+idempotent (advisory lock), TEAM-gate server-side, medisch telt per functietype; e2e-valkuilen.
 - [Sparki Team-abonnement](sparki-team-abonnement.md) — tier TEAM: tier-verbreding raakt álle persoonlijke paden; terminale routes sluiten club; rolmapping definitief: ploegleider aparte rol, medic→medical_staff.
+- [48-uurs afbouwsprint](sparki-48h-sprint.md) update 01-08: BREDE VRIJGAVE René — vier bouwpakketten + Mobile UX + Wandelen/Hiken volledig vrij; groene automatische controles volstaan, ook richting productie (Publish-klik blijft bij René).

@@ -1,16 +1,17 @@
 // MOBILE_ROUTE_WALKING_01 F1 — echte browserkliktest tegen de PRODUCTIEBUILD.
 //
-// Bewijst de telefoon-gerichte wizard achter de flag `mobile_routeplanner_v2`:
+// Bewijst de telefoon-gerichte wizard (sinds besluit René 01-08-2026
+// STANDAARDGEDRAG, niet langer flag-gebonden):
 // - mobiele voortgangskop ("Stap X van 4" + voortgangsbalk) zichtbaar op
 //   telefoonformaat, desktop-stappenteller daar verborgen;
-// - primaire actie (Verder →) binnen het zichtbare scherm (sticky balk);
+// - primaire actie (Verder →) binnen het zichtbare scherm (sticky balk),
+//   niet afgedekt door de onderbalk (hit-test);
+// - mobiele shell (onderbalk) zichtbaar naast de wizard;
 // - géén horizontale overflow op vier telefoon-viewports;
 // - stapfout blijft op dezelfde stap en keuzes blijven behouden;
-// - flag UIT ⇒ exact de bestaande weergave (geen mobiele kop);
-// - desktop (flag aan) ⇒ ongewijzigde stappenteller.
+// - desktop ⇒ ongewijzigde stappenteller.
 //
 // Draaien: node e2e/tests/routeplanner-mobiel-v2.mjs
-import { execFileSync } from "node:child_process";
 import { launchBrowser, ensureE2eUser, mintTicket, TestRun } from "../harness.mjs";
 import { startProdServer } from "../serve-prod.mjs";
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -42,30 +43,6 @@ function log(stap, ok, detail = "") {
   console.log(`[${status}] ${stap}${detail ? ` — ${detail}` : ""}`);
 }
 
-// psql zonder shell-interpolatie: execFileSync + psql-variabelen (:'cid')
-// zodat waarden nooit in de SQL-string worden geplakt (geen injectiepad).
-function psql(sql, vars = {}) {
-  const oneLine = sql.replace(/\s+/g, " ").trim();
-  // Let op: psql interpoleert :'var' NIET bij -c; daarom via stdin (-f -).
-  const args = [process.env.DATABASE_URL, "-v", "ON_ERROR_STOP=1"];
-  for (const [k, v] of Object.entries(vars)) args.push("-v", `${k}=${v}`);
-  args.push("-f", "-");
-  return execFileSync("psql", args, { encoding: "utf8", input: oneLine });
-}
-
-// Gerichte activatie voor de testidentiteit (opdracht §16) — nooit globaal.
-function setOverride(clerkId, enabled) {
-  psql(
-    `INSERT INTO feature_flags (key) VALUES ('mobile_routeplanner_v2') ON CONFLICT (key) DO NOTHING;`,
-  );
-  psql(
-    `INSERT INTO user_flag_overrides (clerk_id, flag_key, enabled, set_by, reason)
-     VALUES (:'cid', 'mobile_routeplanner_v2', ${enabled ? "true" : "false"}, 'e2e', 'MOBILE_ROUTE_WALKING_01 F1 e2e')
-     ON CONFLICT (clerk_id, flag_key) DO UPDATE SET enabled = EXCLUDED.enabled;`,
-    { cid: clerkId },
-  );
-}
-
 async function geenHorizontaleOverflow(page) {
   return page.evaluate(() => {
     const el = document.documentElement;
@@ -73,29 +50,12 @@ async function geenHorizontaleOverflow(page) {
   });
 }
 
-// Flagconfiguratie vastleggen (AANVULLING F1): oude en nieuwe waarden in het
-// rapport, zodat bewijsbaar is dat alleen de testidentiteit is geraakt.
-function flagSnapshot(clerkId) {
-  const globaal = psql(
-    `SELECT key, enabled_globally FROM feature_flags WHERE key IN ('commercial_shell','mobile_routeplanner_v2') ORDER BY key;`,
-  ).trim();
-  const overrides = psql(
-    `SELECT clerk_id, flag_key, enabled FROM user_flag_overrides WHERE flag_key IN ('commercial_shell','mobile_routeplanner_v2') AND clerk_id = :'cid' ORDER BY flag_key;`,
-    { cid: clerkId },
-  ).trim();
-  return { globaal, overridesTestidentiteit: overrides };
-}
-const flagConfig = {};
-
 const { server, baseUrl } = await startProdServer();
 const browser = await launchBrowser();
 try {
   const userId = await ensureE2eUser();
-  flagConfig.voor = flagSnapshot(userId);
 
-  // ---- Flag AAN: vier telefoon-viewports ----
-  setOverride(userId, true);
-  flagConfig.tijdensTest = flagSnapshot(userId);
+  // ---- Vier telefoon-viewports (standaardgedrag, geen flag) ----
   for (const [naam, viewport] of Object.entries(PHONE_VIEWPORTS)) {
     const run = new TestRun({
       browser,
@@ -228,56 +188,24 @@ try {
     const page = run.page;
     await page.waitForTimeout(800);
     log(
-      "desktop (flag aan): mobiele kop NIET zichtbaar",
+      "desktop: mobiele kop NIET zichtbaar",
       !(await page.locator('[data-testid="mobiele-wizard-kop"]').isVisible()),
     );
     log(
-      "desktop (flag aan): bestaande stappenteller zichtbaar",
+      "desktop: bestaande stappenteller zichtbaar",
       await page.locator("span.font-mono", { hasText: "Waar rijd je?" }).isVisible(),
     );
     await run.shot("desktop");
     await run.context.close();
   }
-
-  // ---- Flag UIT op telefoon: exact bestaande weergave ----
-  setOverride(userId, false);
-  {
-    const run = new TestRun({
-      browser, baseUrl, viewport: PHONE_VIEWPORTS["iphone-klein"], evidenceDir: EVIDENCE, runName: "mobiel-v2-uit",
-    });
-    await run.open();
-    await run.context.grantPermissions(["geolocation"]);
-    await run.context.setGeolocation(GEO);
-    await run.loginWithTicket(await mintTicket(userId));
-    await run.page.goto(`${baseUrl}/routes`, { waitUntil: "networkidle" });
-    await run.acceptConsentIfPresent();
-    const page = run.page;
-    await page.waitForTimeout(800);
-    log(
-      "flag uit: geen mobiele kop, bestaande stappenteller",
-      !(await page.locator('[data-testid="mobiele-wizard-kop"]').isVisible()) &&
-        (await page.locator("span.font-mono", { hasText: "Waar rijd je?" }).isVisible()),
-    );
-    await run.shot("flag-uit");
-    await run.context.close();
-  }
 } finally {
-  // Testoverride niet aan laten staan.
-  try {
-    const userId = await ensureE2eUser();
-    psql(
-      `DELETE FROM user_flag_overrides WHERE clerk_id = :'cid' AND flag_key = 'mobile_routeplanner_v2';`,
-      { cid: userId },
-    );
-    flagConfig.na = flagSnapshot(userId);
-  } catch {}
   await browser.close();
   server.close();
 }
 
 writeFileSync(
   path.join(EVIDENCE, "rapport.json"),
-  JSON.stringify({ stappen, flagConfig, exitCode, t: new Date().toISOString() }, null, 2),
+  JSON.stringify({ stappen, exitCode, t: new Date().toISOString() }, null, 2),
 );
 console.log(`\nKlaar — exitcode ${exitCode} (${stappen.length} checks)`);
 process.exit(exitCode);

@@ -5,7 +5,16 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-07-31.
+Laatst bijgewerkt: 2026-08-01.
+
+## Beslist 01-08-2026 — BREDE VRIJGAVE (René)
+
+- De al gegeven opdrachten voor de VIER bouwpakketten (DATA_TRUST_01, ABONNEMENT_01,
+  DOCUMENTEN_COMMUNICATIE_01, ABONNEE_ADMIN_01), MOBILE UX en WANDELEN/HIKEN
+  (MOBILE_ROUTE_WALKING_01 F2–F6) zijn VOLLEDIG vrijgegeven. Geen hernieuwde
+  toestemming per fase nodig; na groene geautomatiseerde controles mag ook naar
+  productie worden doorgezet. (Kanttekening: de Publish-knop zelf kan alleen René
+  klikken — Replit meldt wanneer een productie-push klaarstaat.)
 
 ## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
 
