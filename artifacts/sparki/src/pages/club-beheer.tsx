@@ -55,13 +55,24 @@ const ROLE_LABELS: Record<ClubRole, string> = {
   trainer: "Trainer",
   assistent: "Assistent-trainer",
   teammanager: "Teammanager",
+  ploegleider: "Ploegleider",
   soigneur: "Soigneur",
-  medic: "Medic",
+  medical_staff: "Medische staf",
   mechanieker: "Mechanieker",
   vrijwilliger: "Vrijwilliger",
-  alleen_lezen: "Alleen lezen",
+  alleen_lezen: "Gast",
   parent: "Ouder",
-  member: "Lid",
+  member: "Sporter",
+}
+
+// Beschrijvend functietype voor medische staf — geeft geen rechten.
+const MEDICAL_SPECIALTY_LABELS: Record<string, string> = {
+  arts: "Arts",
+  fysiotherapeut: "Fysiotherapeut",
+  dietist: "Diëtist",
+  sportpsycholoog: "Sportpsycholoog",
+  inspanningsfysioloog: "Inspanningsfysioloog",
+  overig: "Overig",
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -542,7 +553,12 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
                 {m.isYouth === true && <span className="ml-1.5 text-[10px] text-amber-300/80">jeugd</span>}
                 {m.isYouth === null && <span className="ml-1.5 text-[10px] text-white/35">leeftijd onbekend</span>}
               </p>
-              <p className="text-[11px] text-white/40">{ROLE_LABELS[m.role]}</p>
+              <p className="text-[11px] text-white/40">
+                {ROLE_LABELS[m.role]}
+                {m.role === "medical_staff" && m.medicalSpecialty && (
+                  <span className="text-white/30"> · {MEDICAL_SPECIALTY_LABELS[m.medicalSpecialty] ?? m.medicalSpecialty}</span>
+                )}
+              </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               {m.role !== "owner" && (
@@ -562,6 +578,25 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
                     .map((r) => (
                       <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                     ))}
+                </select>
+              )}
+              {m.role === "medical_staff" && (
+                <select
+                  value={m.medicalSpecialty ?? ""}
+                  onChange={(e) => {
+                    setError(null)
+                    setRole.mutate(
+                      { memberId: m.id, role: m.role, medicalSpecialty: e.target.value || null },
+                      { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
+                    )
+                  }}
+                  className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+                  title="Functietype (beschrijvend, geeft geen rechten)"
+                >
+                  <option value="">Functietype…</option>
+                  {Object.entries(MEDICAL_SPECIALTY_LABELS).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
                 </select>
               )}
               {m.role !== "owner" && (

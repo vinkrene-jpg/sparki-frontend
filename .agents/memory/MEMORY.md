@@ -139,14 +139,13 @@
 - [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
 - [Sparki e2e-harness (WP-S1)](sparki-e2e-harness.md) — BINDEND: schermacceptatie alleen via echte browserklik (e2e/), DEV Preview nooit bewijs; isAdmin strikt zonder dev-bypass.
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp; [NixOS-chromium](nix-playwright-chromium.md) via Nix-pakket + executablePath.
-- [Sparki Gratis vs Go paywall](sparki-go-paywall.md) — GO_FEATURE_KEYS commercieel-only gate (nooit via flags); UI faalt open; admin.ts bad-merge-corruptie herstel uit parent-commit.
-- [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
+- Billing: [Gratis vs Go paywall](sparki-go-paywall.md) GO_FEATURE_KEYS commercieel-only, UI faalt open; [Stripe-testomgeving](sparki-stripe-testmode.md) flag+allowlist AND, webhook idempotent-in-tx, fake gateway + echte HMAC, rawBody-verify.
 - [Sparki observatie-opschoning](sparki-observation-cleanup.md) — auditbare cleanup-job (status "outdated", nooit delete); draait automatisch 1×/Amsterdamse dag; admin POST /api/admin/observation-cleanup voor on-demand.
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.
 - [Sparki sterren-beoordelingen (build_ratings)](sparki-build-ratings.md) — beoordelen≠instellen; één register + BuildRatingBlock; ster-tik moet bestaande toelichting meesturen of de upsert wist hem.
 - [Meer-menu chapters SSOT](sparki-meer-chapters.md) — core-meer dropt ontbrekende chapters STIL via filter(Boolean); /samen-contract bewaakt door test:navigation.
 - Trainerlaag: [werkruimte](sparki-trainer-workspace-wp01.md) hasCoachAccess = link ∪ clubtoewijzing; [tiers](sparki-trainer-access-tiers.md) schrijven eist DIRECTE link; [rechten](sparki-trainer-rights-wp01c.md) owner-only; [hoofdtrainer](sparki-hoofdtrainer.md) geen gezondheidsdata.
-- [Sparki cluborganisatie](sparki-club-organisation.md) — wrapped unique-violation via err.cause; ÉÉN advisory-lock-key voor alle capacity-paden; activeAssignmentWindow op elk leespad.
+- Cluborganisatie: [organisatie](sparki-club-organisation.md) err.cause unique-violation, ÉÉN advisory-lock-key, activeAssignmentWindow; [onboarding](sparki-club-onboarding.md) activatie alleen via /activate, gelockte import-state-machine, upload-metadata server-side.
 - [Governor Beslisblok 02](governor-beslisblok-02.md) — governance/-modellen; governor-fixtures = WP-R0 rol-testidentiteiten; e2e-probes MOETEN x-dev-clerk-id meesturen, kale fetch = dev-fallback.
 - [Overpass burst rate-limits](overpass-burst-rate-limits.md) — recursieve kwadrant-splitsing vuurt query-bursts; mirrors 429'en dan — pauze tussen queries + één beleefde retry, eerlijk gat blijft.
 - [Blokkadepoort koude-cache fail-open](sparki-blokkadepoort-fail-open.md) — 1e aanvraag in vers gebied lekt route door locked gate (2500ms budget vs Overpass 10-20s); warm = 422; bewijs eist warme cache.
@@ -156,5 +155,4 @@
 - [Routegebruik-telling 02a](sparki-route-usage-telling.md) — maandtelling DB-uniek (user+route+Ams-maand), registreer vóór res.send in exports, 20%-vlag uit (geen server-side routedekking), tier-snapshot nooit herrekend.
 - [Route-zoeklaag bekend-eerst](sparki-route-search-layer.md) — bekende routes vóór generatie: pure rank+verify-laag, fail-closed blokkadecheck ook op oude routes, gedeeld matcht op kijkersgeometrie, hybride alleen op eigen basis.
 - [Merknaam-lint UI-copy](sparki-brand-copy-lint.md) — UI spreekt direct, nooit "Sparki <werkwoord>"; check-brand-copy.mjs in typecheck-api, uitzonderingen zin-exact in allowlist.
-- [Club-onboarding concept→actief](sparki-club-onboarding.md) — activatie alleen via /activate (PUT-status-bypass dichten!); import-confirm/cancel = gelockte state machine; uploadobject-metadata server-side, nooit clientclaims.
-- [Sparki Team-abonnement](sparki-team-abonnement.md) — tier TEAM: tier-verbreding raakt álle persoonlijke paden; terminale webhook-routes moeten club sluiten; exclusiviteit per club via billingRef.
+- [Sparki Team-abonnement](sparki-team-abonnement.md) — tier TEAM: tier-verbreding raakt álle persoonlijke paden; terminale routes sluiten club; rolmapping definitief: ploegleider aparte rol, medic→medical_staff.

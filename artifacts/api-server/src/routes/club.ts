@@ -27,6 +27,7 @@ import {
   trainingSessionsTable,
   invitationsTable,
   clubRoles,
+  medicalSpecialties,
   clubSignupStatuses,
   clubImportBatchesTable,
   clubImportRowsTable,
@@ -799,7 +800,8 @@ router.get("/:clubId/members", requireAuth, async (req, res) => {
     if (!ctx) return;
     const manage = canManageClub(ctx);
     const isTrainer = hasClubRole(ctx, ["trainer"]);
-    const isTeamManager = hasClubRole(ctx, ["teammanager"]);
+    // Ploegleider = aparte rol met dezelfde team-scoped inzage als teammanager.
+    const isTeamManager = hasClubRole(ctx, ["teammanager", "ploegleider"]);
     if (!manage && !isTrainer && !isTeamManager) {
       res.status(403).json({ error: "Geen inzage in de ledenlijst." });
       return;
@@ -921,9 +923,24 @@ router.put("/:clubId/members/:memberId/role", requireAuth, async (req, res) => {
         return;
       }
     }
+    // HERSTEL TEAM_ABONNEMENT_01: beschrijvend functietype, alleen voor
+    // medical_staff, geeft geen rechten. Bij elke andere rol wordt het gewist.
+    let medicalSpecialty: string | null = null;
+    if (role === "medical_staff") {
+      const raw = str(req.body?.medicalSpecialty);
+      if (raw != null) {
+        if (!medicalSpecialties.includes(raw as (typeof medicalSpecialties)[number])) {
+          res.status(400).json({ error: "Onbekend functietype voor medische staf." });
+          return;
+        }
+        medicalSpecialty = raw;
+      } else {
+        medicalSpecialty = target.role === "medical_staff" ? target.medicalSpecialty : null;
+      }
+    }
     const [updated] = await db
       .update(clubMembersTable)
-      .set({ role, updatedAt: new Date() })
+      .set({ role, medicalSpecialty, updatedAt: new Date() })
       .where(eq(clubMembersTable.id, memberId))
       .returning();
     await writeClubAudit({
@@ -2065,7 +2082,9 @@ router.put("/:clubId/trainings/:trainingId/attendance", requireAuth, async (req,
 // ── Wedstrijdbeheer ───────────────────────────────────────────────────────────
 
 function canManageRaces(ctx: ClubContext): boolean {
-  return hasClubRole(ctx, ["owner", "admin", "teammanager"]);
+  // HERSTEL TEAM_ABONNEMENT_01: ploegleider is een aparte rol met dezelfde
+  // wedstrijdbeheerrechten als teammanager.
+  return hasClubRole(ctx, ["owner", "admin", "teammanager", "ploegleider"]);
 }
 
 router.post("/:clubId/races", requireAuth, async (req, res) => {

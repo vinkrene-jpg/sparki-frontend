@@ -152,7 +152,7 @@ const RUN = `test_team_${Date.now()}`;
 const owner = `${RUN}_owner`; // clubeigenaar, allowlisted
 const manager = `${RUN}_manager`; // teammanager — géén checkout-recht
 const soigneur = `${RUN}_soigneur`;
-const medic = `${RUN}_medic`;
+const medic = `${RUN}_medic`; // rol: medical_staff (herstel rolmapping)
 const rider1 = `${RUN}_rider1`;
 const rider2 = `${RUN}_rider2`;
 const stranger = `${RUN}_stranger`; // eigenaar van een ANDERE club
@@ -244,7 +244,7 @@ async function setup() {
   for (const [who, role] of [
     [manager, "teammanager"],
     [soigneur, "soigneur"],
-    [medic, "medic"],
+    [medic, "medical_staff"],
     [rider1, "member"],
   ] as const) {
     const j = await api(who, "POST", "/api/clubs/join", { code: joinCode });
@@ -363,7 +363,7 @@ async function main() {
     await db.update(clubSubscriptionsTable).set({ maxMembers: 50 }).where(eq(clubSubscriptionsTable.clubId, clubId));
   });
 
-  await scenario("7. Soigneur en medic: toegewezen, géén beheer, géén sportdata", async () => {
+  await scenario("7. Soigneur en medische staf: toegewezen, géén beheer, géén sportdata", async () => {
     for (const who of [soigneur, medic]) {
       const ctx = await getClubContext(clubId, who);
       assert(ctx, `${who} heeft geen clubcontext`);

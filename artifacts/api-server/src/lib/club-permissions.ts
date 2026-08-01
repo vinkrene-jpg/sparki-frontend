@@ -76,7 +76,10 @@ export function canManageClub(ctx: ClubContext): boolean {
 
 // Trainingen/wedstrijden aanmaken en aanwezigheid registreren.
 export function canManageTrainings(ctx: ClubContext): boolean {
-  return canManageClub(ctx) || hasClubRole(ctx, ["hoofdtrainer", "trainer", "teammanager"]);
+  // HERSTEL TEAM_ABONNEMENT_01: ploegleider is een aparte rol met dezelfde
+  // operationele trainings-/wedstrijdrechten als teammanager (het centrale
+  // rollenmodel blijft eigendom van CLUB_RECHTEN_01).
+  return canManageClub(ctx) || hasClubRole(ctx, ["hoofdtrainer", "trainer", "teammanager", "ploegleider"]);
 }
 
 // Aanwezigheid registreren mag ook een assistent.

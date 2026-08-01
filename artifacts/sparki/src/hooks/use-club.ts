@@ -31,8 +31,9 @@ export type ClubRole =
   | "trainer"
   | "assistent"
   | "teammanager"
+  | "ploegleider"
   | "soigneur"
-  | "medic"
+  | "medical_staff"
   | "mechanieker"
   | "vrijwilliger"
   | "alleen_lezen"
@@ -128,6 +129,7 @@ export type ClubMemberRow = {
   endedAt: string | null
   displayName: string | null
   email: string | null
+  medicalSpecialty?: string | null
   isYouth?: boolean | null
 }
 
@@ -478,10 +480,10 @@ export function useRevokeInvitation(clubId: number | null) {
 export function useSetMemberRole(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ memberId, role }: { memberId: number; role: ClubRole }) =>
+    mutationFn: ({ memberId, role, medicalSpecialty }: { memberId: number; role: ClubRole; medicalSpecialty?: string | null }) =>
       apiFetch(`/api/clubs/${clubId}/members/${memberId}/role`, {
         method: "PUT",
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ role, ...(medicalSpecialty !== undefined ? { medicalSpecialty } : {}) }),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId] }),
   })

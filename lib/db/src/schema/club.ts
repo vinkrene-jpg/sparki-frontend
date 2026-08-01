@@ -34,17 +34,34 @@ export const clubRoles = [
   "trainer",
   "assistent", // helpt bij trainingen (aanwezigheid), geen sportdata-inzage
   "teammanager",
+  // HERSTEL TEAM_ABONNEMENT_01: ploegleider is een APARTE server-side rol
+  // (eerdere aanname ploegleider==teammanager is vervallen/SUPERSEDED).
+  "ploegleider",
   "mechanieker", // mag materiaalvelden bijwerken, verder alleen-lezen
-  "member", // lid (renner)
+  "member", // lid (renner) — gebruikersnaam "Sporter"
   "parent", // ouder/verzorger
   "vrijwilliger", // leest kalender/berichten, geen beheer
-  "alleen_lezen", // strikt alleen-lezen
+  "alleen_lezen", // strikt alleen-lezen — gebruikersnaam "Gast"
   // TEAM_ABONNEMENT_01: begeleidende teamrollen. Least privilege — geen
   // beheerrechten, geen automatische sportdata-inzage (consent blijft leidend).
   "soigneur", // verzorger: kalender/berichten, geen beheer of sportdata
-  "medic", // medische begeleider: kalender/berichten; sportdata alleen via consent
+  // HERSTEL TEAM_ABONNEMENT_01: "medic" heet nu "medical_staff" (met
+  // beschrijvend functietype zonder zelfstandige rechten).
+  "medical_staff", // medische staf: kalender/berichten; sportdata alleen via consent
 ] as const;
 export type ClubRole = (typeof clubRoles)[number];
+
+// Beschrijvend functietype voor medical_staff. Geeft GEEN zelfstandige
+// rechten — puur label voor wie welke medische functie vervult.
+export const medicalSpecialties = [
+  "arts",
+  "fysiotherapeut",
+  "dietist",
+  "sportpsycholoog",
+  "inspanningsfysioloog",
+  "overig",
+] as const;
+export type MedicalSpecialty = (typeof medicalSpecialties)[number];
 
 // Clubstatus (commerciële voorbereiding): beperkt = geen nieuwe toevoegingen,
 // geschorst/beeindigd = alleen-lezen voor iedereen behalve eigenaar/beheer.
@@ -104,6 +121,9 @@ export const clubMembersTable = pgTable(
       .notNull()
       .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     role: text("role").notNull().default("member"),
+    // Alleen voor rol medical_staff: beschrijvend functietype (arts,
+    // fysiotherapeut, …). Geen zelfstandige rechten.
+    medicalSpecialty: text("medical_specialty"),
     // Vrij label, bv. "hoofdtrainer jeugd".
     label: text("label"),
     joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),

@@ -182,3 +182,20 @@ teamtrainerinzage + clubvoortgang → F zones/PDC/koolhydraat → G ramp-rate-vo
 - **Gevolg:** hiermee is de laatste blokkade voor `ROUTE_PAKKET_02c` (opslag, verval
   en downgrade) vervallen. De keuzeflow zelf wordt gebouwd in `ABONNEMENT_01`
   (alleen de flow) en `02c` (opslag/verval); beide starten pas na expliciete vrijgave.
+
+---
+
+## SPARKI-BESLUIT-2026-010 — Definitieve rolmapping teamorganisatie (HERSTEL TEAM_ABONNEMENT_01, 01-08-2026)
+
+- **Besluit (René, herstelopdracht 01-08-2026):** de eerdere Replit-aanname
+  "ploegleider = teammanager" is **SUPERSEDED**. Ploegleider is een APARTE
+  server-side rolwaarde (`ploegleider`) naast `teammanager`. `medic` heet
+  voortaan `medical_staff`, met een beschrijvend functietype
+  (arts/fysiotherapeut/diëtist/sportpsycholoog/inspanningsfysioloog/overig)
+  dat GEEN zelfstandige rechten geeft. Gebruikersnamen: `member` = "Sporter",
+  `alleen_lezen` = "Gast". CLUB_RECHTEN_01 blijft eigenaar van het rollenmodel.
+- **Migratie:** op wijzigingsmoment 0 rijen met rol medic/teammanager/member/
+  alleen_lezen in dev én productie → geen datamigratie; migratie 0012 bevat een
+  idempotent vangnet (medic→medical_staff) en de kolom `medical_specialty`.
+- **Synchronisatie:** geldt voor CLUB_RECHTEN_01, TEAM_ABONNEMENT_01,
+  TEAM_ONBOARDING_01, PLOEGLEIDER_01, TEAM_MECHANIEKER_01 en hoofdstuk J.
