@@ -23,9 +23,15 @@ Niet opnieuw bouwen. `artifacts/sparki-mobile/` bevat onder meer:
 
 ---
 
-## 1. De drie ingangen
+## 1. Het schermmodel en de drie ingangen
 
-Het routescherm opent niet met een formulier. Drie manieren om te beginnen:
+**Staand, kaart op circa 80% van het scherm.** Zoekveld, driepuntsmenu en filterbolletjes liggen bovenop de kaart; kaartbediening rechtsonder; onderaan een sleep-open blad in drie hoogtes; daaronder het vaste menu van vijf. Volledig uitgewerkt in `SPARKI_ROUTEPLANNER_RICHTING_01` hoofdstuk 2a, inclusief beeldgebruik.
+
+**Het eerste filterbolletje is het trainingstype**, niet de sport.
+
+**Bij het starten van een route wisselt de weergave op dezelfde kaart:** de navigatielaag komt over de planningslaag heen. Geen apart navigatiescherm.
+
+Het routescherm opent niet met een formulier. Drie manieren om te beginnen, als tabbladen in het sleepblad:
 
 **1.1 Voorstel van vandaag.** Staat er een training in het schema, dan toont Sparki één routevoorstel dat daarbij past. Overslaan moet met één tik.
 
