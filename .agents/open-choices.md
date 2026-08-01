@@ -40,6 +40,17 @@ Doorgevoerd: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` + correctierapp
 - F5 van SPARKI_BUILD_01 gaat door; geen van beide keuzes blokkeert.
 - Taak #537 (ABONNEE_ADMIN_01) blijft ongemoeid en niet afgerond (herbevestigd 01-08).
 
+
+## Besluit René 01-08-2026 — ABONNEE_ADMIN_01 klantnummer = lidnummer
+
+- **Vastgelegd besluit (nog NIET bouwen):** klantnummer en lidnummer zijn hetzelfde
+  nummer — één per abonnee, uniek en onveranderlijk.
+- ABONNEE_ADMIN_01 wordt **opnieuw uitgegeven** zodra de besluiten van 1 augustus
+  over clubafname erin verwerkt zijn: die vragen een scheiding tussen betaler en
+  gebruiker die er nu niet is. Tot die heruitgifte wordt er niets van dit pakket
+  gebouwd.
+- Taak #537 blijft staan en wordt niet als afgerond gemarkeerd (herbevestigd 01-08).
+
 ## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
 
 - **ABONNEE_ADMIN_01** (files_10, 31-07-2026) — door René AANGENOMEN als volledige
