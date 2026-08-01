@@ -2,6 +2,13 @@
 
 _Last updated: 2026-06-22 — end of the "AI Memory & Core Data Foundation" sprint._
 
+> **Statuswijziging 2026-08-01 — FUTUR_CONTROL_01: DEFERRED / GEPAUZEERD.**
+> Pakket inhoudelijk goedgekeurd door René; alleen F0 was vrijgeefbaar maar wordt
+> voorlopig niet gestart. Geen Replit-bouw gestart, geen code gewijzigd. Open
+> besluiten FC-B05/06/07/09/10/11 blijven geparkeerd. Hervatting begint later bij
+> F0 Inventarisatie; F1A mag nooit automatisch starten. Documenten en pakketten
+> blijven behouden. Zie `docs/build-packages/FUTUR_CONTROL_01/FUTUR_CONTROL_01_STATUS.md`.
+
 > **Statuswijziging 2026-07-31 — Bordjes sprinten: Gestopt — veiligheidsrisico op
 > openbare weg.** De functie stimuleerde sprintgedrag op de openbare weg en kan
 > ondanks kaartcontroles niet betrouwbaar rekening houden met actuele

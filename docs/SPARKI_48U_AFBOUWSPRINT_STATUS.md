@@ -49,8 +49,17 @@ definitie nog niet MIRROR_PROVEN, ook waar de techniek groen staat.
 | Desktop / PWA / mobiel | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Bedrijfscontinuïteit en support | NIET BEWIJSBAAR — nog geen Mirror-oordeel | |
 | Merkidentiteit (BRAND_IDENTITY_01) | DEFERRED — tot na Mobile UX | besluit 01-08-2026 (SPARKI-BESLUIT-2026-013): bliksemschicht is enige officiële identiteit; geen tussentijds logo-ontwerp; traject start pas na Mobile UX-documenten |
+| Futur Control (FUTUR_CONTROL_01) | DEFERRED / GEPAUZEERD | besluit 01-08-2026: inhoudelijk goedgekeurd, alleen F0 was vrijgeefbaar maar wordt voorlopig niet gestart; geen bouw gestart, geen code gewijzigd; FC-B05/06/07/09/10/11 geparkeerd; hervatting later bij F0 Inventarisatie; F1A start nooit automatisch |
 
 ## 3. Logboek
+
+- **01-08-2026** — FUTUR_CONTROL_01 op DEFERRED / GEPAUZEERD gezet (besluit René).
+  Pakket inhoudelijk goedgekeurd; alleen F0 was vrijgeefbaar maar wordt voorlopig
+  niet gestart. Geen Replit-bouw gestart, geen code gewijzigd. Open besluiten
+  FC-B05, FC-B06, FC-B07, FC-B09, FC-B10 en FC-B11 blijven geparkeerd. Hervatting
+  begint later bij F0 Inventarisatie; F1A mag nooit automatisch starten. Bestaande
+  documenten en pakketten blijven behouden. Statusdoc:
+  `docs/build-packages/FUTUR_CONTROL_01/FUTUR_CONTROL_01_STATUS.md`.
 
 - **01-08-2026** — BRAND_IDENTITY_01 op DEFERRED gezet tot na de Mobile
   UX-documenten (SPARKI-BESLUIT-2026-013). Forensisch Mirror-onderzoek:
