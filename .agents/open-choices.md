@@ -298,3 +298,9 @@ Laatst bijgewerkt: 2026-07-31.
    Renner=member, Gast=alleen_lezen) met slechts twee additieve rollen: soigneur en medic
    (least privilege). Aparte "ploegleider"-rolnaam wacht bewust op CLUB_RECHTEN_01/pakket 14
    om een rollenconflict te voorkomen. Terugdraaien of hernoemen kan daar alsnog.
+
+15n. **CLUB_ONBOARDING_01 — Variant 1 bindend (besloten 31-07-2026 door René).**
+   Startvoorwaarde uit het pakket zelf: DATA_TRUST_01 én ROUTE_PAKKET_01 moeten
+   MIRROR_PROVEN zijn. ROUTE_PAKKET_01 is dat; DATA_TRUST_01 nog niet (register:
+   "nog geen Mirror-oordeel"). OPEN: René kiest — eerst Mirror-toets DATA_TRUST_01,
+   of expliciete ontheffing van deze voorwaarde.
