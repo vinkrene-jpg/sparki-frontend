@@ -266,3 +266,19 @@ audittrail compleet).
   enige officiële identiteit.
 - **Status:** BRAND_IDENTITY_01 = DEFERRED tot na Mobile UX (zie statusregister
   en docs/build-packages/BRAND_IDENTITY_01/).
+
+---
+
+## Mobiele UX-besluiten MUX-B1 t/m MUX-B4 (01-08-2026 — bewust nog ONGENUMMERD)
+
+Bron: `docs/product/SPARKI_MOBILE_UX_STANDARD_v1.4.md`, hoofdstuk 17. Conform de
+afspraak van 01-08-2026 krijgen deze besluiten pas een definitief
+`SPARKI-BESLUIT-2026-nnn`-nummer nadat de reeks is opgeschoond en `-006` t/m
+`-013` betrouwbaar zijn vastgesteld. Tot die tijd gelden de letters.
+
+| Tijdelijk | Besluit (René, 01-08-2026) |
+|---|---|
+| MUX-B1 | Mobiel is de web/PWA-ervaring op telefoonbreedte. Apparaatdoctrine WP-R0..R8 bevestigd: web/PWA-eerst, jeugd- en ouderdomein mobiel alleen-lezen-eerst. Routeplanner blijft in v1 een mobiele webpagina. |
+| MUX-B2 | Offline betekent in v1 uitsluitend dat een gestarte navigatie doorloopt. Geen offline schrijfacties, geen wachtrij, geen lokale bevestiging zonder server. Uitgebreidere offlinelaag = afzonderlijk toekomstig pakket. |
+| MUX-B3 | Geen rolgestuurd scherm bouwen voordat de rolwaarde server-side bestaat. Vooruit ontwerpen mag wel. |
+| MUX-B4 | `MOBILE_UX_STANDARD_01` is bindend voor alle mobiele schermen. Afwijken alleen met expliciete productgoedkeuring van René, vastgelegd met vermelding van de MUX-code. |
