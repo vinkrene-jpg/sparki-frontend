@@ -1,0 +1,30 @@
+# Poort 5b sanity-check — ROUTE_OVERPASS_STABILITEIT_01 (opdracht René 01-08-2026)
+
+delivery: "Gedeelde Overpass-client voor de routeketen: serieel met minimumpauze (geen bursts meer), herkansing met oplopende pauze op dezelfde mirror, mirrorvolgorde op gemeten prestatie (maps.mail.ru eerst, falende mirror tijdelijk achteraan), persistente antwoordcache in Postgres met genormaliseerde bbox, aanvraagbudget van 60 per routegeneratie en per-generatie-meting in de logs. Fail-closed blokkadepoort onveranderd."
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "Routegeneratie-API (POST /api/routes/generate, /generate/options en de job-varianten): zelfde handlers, nu binnen overpass-budget + meting"
+  - "Wegdek-, obstakel-, omgevings- en wegobjectmetingen (route-surfaces, route-remarks, route-insight, road-objects): alle Overpass-verkeer via één gedeelde client"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Bestaande generatie-endpoints blijven exact dezelfde handlers gebruiken (wrapper voegt alleen budgetcontext + logregel toe); typecheck-api en de bestaande route-tests draaien groen na de omzetting"
+        result: "pass"
+      - case: "Cachestoring (DB onbereikbaar) blokkeert geen meting: cache-lees/schrijffouten loggen een waarschuwing en vallen terug op een verse echte fetch — de knop 'Genereer route' kan niet dood raken door de nieuwe cachetabel"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Bbox-normalisatie snapt uitsluitend NAAR BUITEN op een 0,005°-raster: het antwoord is altijd een superset van het gevraagde gebied en alle consumenten filteren zelf op hun eigen geometrie — een verschoven route krijgt nooit wegdata van een ánder gebied"
+        result: "pass"
+      - case: "Budget-op betekent eerlijk gat (null) door de bestaande fail-closed paden — nooit 'geen blokkades gevonden'; de afkeurmelding blijft de bestaande ROUTE_UNVERIFIABLE-uitleg"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "De persistente cache bevat uitsluitend échte bronantwoorden (elements + remark, exact zoals opgehaald); na de TTL van 14 dagen wordt de rij genegeerd en volgt een verse echte fetch — er wordt nooit iets verzonnen of bijgeschat"
+        result: "pass"
+      - case: "Alle mirrors op na herkansing ⇒ antwoord blijft null en de route wordt niet geleverd of opgeslagen (taak #505-contract onaangetast); een afgekapt antwoord (remark/limiet) blijft als truncated behandeld, nooit als compleet"
+        result: "pass"
+
+verdict: "deliverable"

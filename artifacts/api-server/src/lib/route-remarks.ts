@@ -13,6 +13,7 @@
 import type { RoutePathPoint } from "@workspace/db";
 import { samplePath } from "./route-insight";
 import { bgtVerdictsForPoints, type BgtPointVerdict } from "./bgt-verharding";
+import { runOverpassQuery, normalizeBbox } from "./overpass/client";
 import { grbVerdictsForPoints, type GrbPointVerdict } from "./grb-verharding";
 
 export type RouteRemarkKind =
@@ -58,13 +59,8 @@ export type RouteRemarksResult = {
   };
 };
 
-// Zelfde mirror-keten als lib/climbs/overpass.ts: overpass-api.de geeft in deze
-// omgeving vaak 406, maps.mail.ru werkt betrouwbaar.
-const ENDPOINTS = [
-  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-];
+// ROUTE_OVERPASS_STABILITEIT_01: alle Overpass-verkeer loopt via de gedeelde
+// client (serieel, mirror-gezondheid, persistente cache, budget, meting).
 const OVERPASS_TIMEOUT_MS = 20_000;
 
 const CACHE = new Map<string, { at: number; data: RouteRemark[] }>();
@@ -441,61 +437,14 @@ export type OverpassElement = {
   tags?: Record<string, string>;
 };
 
-// Beleefde herkansing (KETEN_FIETS_01-praktijktest, 01-08-2026): tijdens een
-// routegeneratie vuren we tientallen queries kort na elkaar af en dan
-// rate-limiten de mirrors intermitterend — dezelfde query slaagt seconden
-// later wél. Eén extra ronde na een ruime pauze voorkomt dat de fail-closed
-// blokkadepoort een hele generatie afkeurt om een tijdelijke burst-limiet.
-// Blijft eerlijk: na twee mislukte rondes is het antwoord alsnog null.
-const OVERPASS_RETRY_ROUNDS = 2;
-const OVERPASS_RETRY_PAUSE_MS = 15_000;
-const OVERPASS_MIRROR_PAUSE_MS = 1_000;
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
+// Herkansing met oplopende pauze op dezelfde mirror, mirror-gezondheid en de
+// persistente cache zitten in de gedeelde client; hier blijft alleen het
+// eerlijke contract over: null = geen antwoord, nooit "geen blokkades".
 async function runOverpass(query: string): Promise<OverpassElement[] | null> {
-  for (let round = 0; round < OVERPASS_RETRY_ROUNDS; round++) {
-    if (round > 0) await sleep(OVERPASS_RETRY_PAUSE_MS);
-    const res = await runOverpassOnce(query, round);
-    if (res != null) return res;
-  }
-  return null;
-}
-
-async function runOverpassOnce(
-  query: string,
-  round: number,
-): Promise<OverpassElement[] | null> {
-  let first = true;
-  for (const endpoint of ENDPOINTS) {
-    // Kleine pauze tussen mirrors: niet dezelfde burst doorschuiven.
-    if (!first || round > 0) await sleep(OVERPASS_MIRROR_PAUSE_MS);
-    first = false;
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), OVERPASS_TIMEOUT_MS);
-      let res: Response;
-      try {
-        res = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Sparki/1.0 (cycling training app)",
-            Accept: "application/json",
-          },
-          body: `data=${encodeURIComponent(query)}`,
-          signal: ctrl.signal,
-        });
-      } finally {
-        clearTimeout(timer);
-      }
-      if (!res.ok) continue;
-      const json = (await res.json()) as { elements?: OverpassElement[] };
-      return Array.isArray(json.elements) ? json.elements : [];
-    } catch {
-      // volgende mirror
-    }
-  }
-  return null;
+  const answer = await runOverpassQuery(query, {
+    timeoutMs: OVERPASS_TIMEOUT_MS,
+  });
+  return answer ? (answer.elements as OverpassElement[]) : null;
 }
 
 /**
@@ -630,11 +579,15 @@ export async function getRouteRemarks(
   // Zeer grote gebieden: eerlijk overslaan i.p.v. een halve provincie ophalen.
   if (maxLat - minLat > 1 || maxLon - minLon > 1.5) return null;
   const pad = 0.001; // ~100 m
-  const s = (minLat - pad).toFixed(4);
-  const w = (minLon - pad).toFixed(4);
-  const n = (maxLat + pad).toFixed(4);
-  const e = (maxLon + pad).toFixed(4);
-  const bbox = `${s},${w},${n},${e}`;
+  // Bbox naar buiten gesnapt op een vast raster: licht verschoven routes in
+  // hetzelfde gebied geven dezelfde gebiedsvraag → persistente cache-treffer.
+  const [bs, bw, bn, be] = normalizeBbox(
+    minLat - pad,
+    minLon - pad,
+    maxLat + pad,
+    maxLon + pad,
+  );
+  const bbox = `${bs.toFixed(4)},${bw.toFixed(4)},${bn.toFixed(4)},${be.toFixed(4)}`;
 
   // Compacte unies (uitgeschreven vorm geeft 504 op stadsgrote bboxes).
   // `out geom(...)` knipt weg-geometrie op de bbox zodat enorme polygonen

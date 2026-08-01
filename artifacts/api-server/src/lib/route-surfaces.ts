@@ -13,6 +13,7 @@
 import type { RoutePathPoint } from "@workspace/db";
 import { samplePath } from "./route-insight";
 import type { OverpassElement } from "./route-remarks";
+import { runOverpassQuery, normalizeBbox } from "./overpass/client";
 import {
   bgtSource,
   bgtVerdictsForPoints,
@@ -610,11 +611,8 @@ export function computeBikeSuitability(
 
 // ── Overpass-ophaal + cache ─────────────────────────────────────────────────
 
-const ENDPOINTS = [
-  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-];
+// ROUTE_OVERPASS_STABILITEIT_01: alle Overpass-verkeer loopt via de gedeelde
+// client (serieel, mirror-gezondheid, persistente cache, budget, meting).
 const OVERPASS_TIMEOUT_MS = 25_000;
 // Maximaal aantal ways per Overpass-antwoord. Wordt dit plafond geraakt, dan
 // is het antwoord AFGEKAPT: ontbrekende wegen zouden onterecht als "onbekend"
@@ -648,33 +646,14 @@ export function overpassLooksTruncated(
 }
 
 async function runOverpass(query: string): Promise<OverpassRun | null> {
-  for (const endpoint of ENDPOINTS) {
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), OVERPASS_TIMEOUT_MS);
-      const resp = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: ctrl.signal,
-      });
-      clearTimeout(t);
-      if (!resp.ok) continue;
-      const json = (await resp.json()) as {
-        elements?: OverpassElement[];
-        remark?: string;
-      };
-      if (Array.isArray(json.elements)) {
-        return {
-          elements: json.elements,
-          truncated: overpassLooksTruncated(json.elements.length, json.remark),
-        };
-      }
-    } catch {
-      // volgende mirror
-    }
-  }
-  return null;
+  const answer = await runOverpassQuery(query, {
+    timeoutMs: OVERPASS_TIMEOUT_MS,
+  });
+  if (!answer) return null;
+  return {
+    elements: answer.elements as OverpassElement[],
+    truncated: overpassLooksTruncated(answer.elements.length, answer.remark),
+  };
 }
 
 function surfacesQuery(bbox: string): string {
@@ -721,14 +700,9 @@ async function collectSurfaceElements(
   const fmt = (a: number, b: number, c: number, d: number) =>
     `${a.toFixed(4)},${b.toFixed(4)},${c.toFixed(4)},${d.toFixed(4)}`;
   const query = surfacesQuery(fmt(minLat, minLon, maxLat, maxLon));
-  let run = await runOverpass(query);
-  if (run === null) {
-    // Recursieve splitsing vuurt meerdere queries kort na elkaar af; mirrors
-    // rate-limiten dat soms (429/timeout). Eén beleefde retry na een korte
-    // pauze — faalt die óók, dan blijft het een eerlijk gat.
-    await new Promise((r) => setTimeout(r, 2_000));
-    run = await runOverpass(query);
-  }
+  // Herkansing met oplopende pauze en mirror-gezondheid zit in de gedeelde
+  // client (ROUTE_OVERPASS_STABILITEIT_01); faalt die alsnog: eerlijk gat.
+  const run = await runOverpass(query);
   if (run === null) return false; // eerlijk gat
   if (!run.truncated) {
     for (const el of run.elements) {
@@ -801,12 +775,16 @@ async function measureRouteSurfaces(
   if (maxLat - minLat > 1 || maxLon - minLon > 1.5) return null;
   const pad = 0.001;
 
-  const elements = await fetchSurfaceElements(
+  // Bbox naar buiten snappen op een vast raster: licht verschoven routes in
+  // hetzelfde gebied stellen dan exact dezelfde gebiedsvraag en raken de
+  // persistente cache (ROUTE_OVERPASS_STABILITEIT_01, 2.3).
+  const [nMinLat, nMinLon, nMaxLat, nMaxLon] = normalizeBbox(
     minLat - pad,
     minLon - pad,
     maxLat + pad,
     maxLon + pad,
   );
+  const elements = await fetchSurfaceElements(nMinLat, nMinLon, nMaxLat, nMaxLon);
   if (elements === null) return null;
 
   const assignment = assignSurfaceSamples(geometry, elements);

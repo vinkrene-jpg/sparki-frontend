@@ -164,6 +164,7 @@ import {
   maxSlopePct,
   surfacesSource,
 } from "../lib/route-surfaces";
+import { withOverpassBudget } from "../lib/overpass/client";
 
 const router = Router();
 
@@ -3536,6 +3537,34 @@ function onPhaseOf(req: unknown): GeneratePhaseFn | undefined {
   return (req as { sparkiOnPhase?: GeneratePhaseFn }).sparkiOnPhase;
 }
 
+// ROUTE_OVERPASS_STABILITEIT_01 (2.2 + 2.5): aanvraagbudget en meting per
+// routegeneratie. Het budget dekt alle Overpass-verkeer binnen de handler
+// (obstakelmeting, wegdek, omgeving); op = op, de bestaande fail-closed paden
+// geven dan de eerlijke melding. Na afloop wordt de meting gelogd: aantal
+// aanvragen, cache-treffers, herkansingen, per-mirror-uitkomst, doorlooptijd.
+function withOverpassAccounting(
+  name: string,
+  handler: import("express").RequestHandler,
+): import("express").RequestHandler {
+  return async (req, res, next) => {
+    const { stats } = await withOverpassBudget(async () => {
+      await handler(req, res, next);
+    });
+    req.log.info(
+      {
+        generation: name,
+        overpassRequests: stats.requests,
+        cacheHits: stats.cacheHits,
+        retries: stats.retries,
+        budgetDenied: stats.budgetDenied,
+        perMirror: stats.perMirror,
+        durationMs: Date.now() - stats.startedAt,
+      },
+      "routegeneratie: overpass-meting",
+    );
+  };
+}
+
 const generateHandler: import("express").RequestHandler = async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -4284,7 +4313,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     res.status(502).json({ error: message });
   }
 };
-router.post("/generate", requireAuth, generateHandler);
+router.post("/generate", requireAuth, withOverpassAccounting("generate", generateHandler));
 
 // POST /api/routes/generate/options — loop-only. Instead of a single route,
 // Sparki proposes THREE real loops at different distances (korter ≈ 0,9× /
@@ -4511,7 +4540,11 @@ const generateOptionsHandler: import("express").RequestHandler = async (
     res.status(502).json({ error: message });
   }
 };
-router.post("/generate/options", requireAuth, generateOptionsHandler);
+router.post(
+  "/generate/options",
+  requireAuth,
+  withOverpassAccounting("generate-options", generateOptionsHandler),
+);
 
 // ── WP-1 (31-07-2026): generatie als korte start + statuspolling ───────────
 // Waarom: één lange POST wordt op mobiel afgebroken door proxy-afkap of
@@ -4552,10 +4585,14 @@ function startGenerationJob(
 }
 
 router.post("/generate/start", requireAuth, (req, res) => {
-  startGenerationJob(generateHandler, req, res);
+  startGenerationJob(withOverpassAccounting("generate-job", generateHandler), req, res);
 });
 router.post("/generate/options/start", requireAuth, (req, res) => {
-  startGenerationJob(generateOptionsHandler, req, res);
+  startGenerationJob(
+    withOverpassAccounting("generate-options-job", generateOptionsHandler),
+    req,
+    res,
+  );
 });
 
 // GET /api/routes/generate-jobs/:id — status/resultaat van een gestarte

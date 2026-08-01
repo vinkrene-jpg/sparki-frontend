@@ -16,11 +16,10 @@ import type { RoutePathPoint } from "@workspace/db";
 import { logger } from "../logger";
 import { upsertOsmObjects, type OsmRoadObject } from "./store";
 
-const ENDPOINTS = [
-  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-];
+// ROUTE_OVERPASS_STABILITEIT_01: alle Overpass-verkeer loopt via de gedeelde
+// client (serieel, mirror-gezondheid, persistente cache, budget, meting).
+import { runOverpassQuery } from "../overpass/client";
+
 const OVERPASS_TIMEOUT_MS = 20_000;
 
 type OverpassElement = {
@@ -100,54 +99,9 @@ export function bboxAroundPath(
 // Beleefde herkansing bij intermitterende burst-rate-limits (zie
 // lib/route-remarks.ts): één extra ronde na een ruime pauze, kleine pauze
 // tussen mirrors. Na twee mislukte rondes blijft het antwoord eerlijk null.
-const RETRY_ROUNDS = 2;
-const RETRY_PAUSE_MS = 15_000;
-const MIRROR_PAUSE_MS = 1_000;
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
 async function runQuery(ql: string): Promise<OverpassElement[] | null> {
-  for (let round = 0; round < RETRY_ROUNDS; round++) {
-    if (round > 0) await sleep(RETRY_PAUSE_MS);
-    const res = await runQueryOnce(ql, round);
-    if (res != null) return res;
-  }
-  return null;
-}
-
-async function runQueryOnce(
-  ql: string,
-  round: number,
-): Promise<OverpassElement[] | null> {
-  let first = true;
-  for (const endpoint of ENDPOINTS) {
-    if (!first || round > 0) await sleep(MIRROR_PAUSE_MS);
-    first = false;
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), OVERPASS_TIMEOUT_MS);
-      let res: Response;
-      try {
-        res = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Sparki/1.0 (cycling training app)",
-            Accept: "application/json",
-          },
-          body: `data=${encodeURIComponent(ql)}`,
-          signal: ctrl.signal,
-        });
-      } finally {
-        clearTimeout(timer);
-      }
-      if (!res.ok) continue;
-      const json = (await res.json()) as { elements?: OverpassElement[] };
-      return Array.isArray(json.elements) ? json.elements : [];
-    } catch {
-      // volgende mirror
-    }
-  }
-  return null;
+  const answer = await runOverpassQuery(ql, { timeoutMs: OVERPASS_TIMEOUT_MS });
+  return answer ? (answer.elements as OverpassElement[]) : null;
 }
 
 /**

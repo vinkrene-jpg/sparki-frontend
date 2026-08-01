@@ -12,6 +12,7 @@
 // nooit iets verzonnen.
 
 import type { RoutePathPoint } from "@workspace/db";
+import { runOverpassQuery } from "./overpass/client";
 
 // ── Hellingsverdeling ────────────────────────────────────────────────────────
 
@@ -83,8 +84,8 @@ export type RouteEnvironment = {
   builtUpSharePct: number | null;
 };
 
-// Only this fixed host is ever contacted (no user-controlled URLs).
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+// ROUTE_OVERPASS_STABILITEIT_01: via de gedeelde client (vaste mirrorlijst —
+// geen user-controlled URLs; serieel, mirror-gezondheid, persistente cache).
 const OVERPASS_TIMEOUT_MS = 12_000;
 
 // Environment facts are near-static → cache per route geometry for 6 hours.
@@ -185,32 +186,11 @@ way["natural"="wood"](${bbox});
 way["landuse"~"^(residential|retail|commercial)$"](${bbox});
 );out geom 800;`;
 
-  let elements: OverpassElement[];
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), OVERPASS_TIMEOUT_MS);
-    let res: Response;
-    try {
-      res = await fetch(OVERPASS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          // Overpass rejects requests without an identifying User-Agent (406).
-          "User-Agent": "Sparki/1.0 (cycling training app)",
-          Accept: "application/json",
-        },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: ctrl.signal,
-      });
-    } finally {
-      clearTimeout(timer);
-    }
-    if (!res.ok) return null;
-    const json = (await res.json()) as { elements?: OverpassElement[] };
-    elements = Array.isArray(json.elements) ? json.elements : [];
-  } catch {
-    return null;
-  }
+  const answer = await runOverpassQuery(query, {
+    timeoutMs: OVERPASS_TIMEOUT_MS,
+  });
+  if (!answer) return null;
+  const elements = answer.elements as OverpassElement[];
 
   const data = classifyEnvironment(sampled, elements);
   ENV_CACHE.set(key, { at: Date.now(), data });
@@ -313,26 +293,9 @@ way["landuse"~"^(residential|retail|commercial)$"](${bboxStr});
 
   const run = (async (): Promise<boolean> => {
     try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 50_000);
-      let res: Response;
-      try {
-        res = await fetch(OVERPASS_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Sparki/1.0 (cycling training app)",
-            Accept: "application/json",
-          },
-          body: `data=${encodeURIComponent(query)}`,
-          signal: ctrl.signal,
-        });
-      } finally {
-        clearTimeout(timer);
-      }
-      if (!res.ok) return false;
-      const json = (await res.json()) as { elements?: OverpassElement[] };
-      const elements = Array.isArray(json.elements) ? json.elements : [];
+      const answer = await runOverpassQuery(query, { timeoutMs: 50_000 });
+      if (!answer) return false;
+      const elements = answer.elements as OverpassElement[];
       // Limiet geraakt = mogelijk afgekapt = onvolledige data. Eerlijk niet
       // opslaan; route-metingen in dit gebied meten dan gewoon zelf.
       if (elements.length >= AREA_ELEMENT_CAP) return false;
