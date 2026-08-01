@@ -116,6 +116,13 @@ Bron: de besluiten die René op 1 augustus 2026 heeft genomen, ná het opstellen
 - een briefing per rol is optioneel, hoeft niet bevestigd te worden, en stafleden zien elkaars briefings
 - een opdracht per renner (kopman, knecht, vrije rol) is optioneel. **Iedereen ziet elkaars opdracht**, ook reserves. De ploegleider mag ze op de dag zelf wijzigen; de renner krijgt direct bericht. De oorspronkelijke opdracht wordt niet bewaard
 
+**Wedstrijdgids en technische gids** *(toegevoegd 01-08-2026, besluit René)*
+- **ploegleider én teammanager** kunnen bij een wedstrijd de wedstrijdgids of technische gids uploaden (PDF/document)
+- Sparki haalt daar met de bestaande documentanalyse de informatie uit voor het **wedstrijdplan**: parcours, start- en finishlocatie, tijdschema, bevoorrading, reglementaire punten
+- wat uit de gids komt is voor de **hele ploeg** zichtbaar in het wedstrijdplan, met bronvermelding (welke gids, welke pagina waar dat kan)
+- de bestaande eerlijkheidsregels gelden onverkort: gevonden/afgeleid/ontbrekend blijft zichtbaar, Sparki verzint niets bij; en de bestaande regel blijft staan dat de technische gids **geen course points lekt zonder Compleet-recht**
+- dit is dezelfde analyse-motor als bij de renner zelf — één keer gebouwd, twee ingangen
+
 **Na afloop**
 - uitslag per renner is optioneel, wordt **handmatig ingevoerd** door ploegleider of renner, komt ook in de persoonlijke wedstrijdhistorie, en is voor **iedereen** zichtbaar
 - een ploegevaluatie is optioneel, **iedereen mag erin schrijven**, iedereen ziet elkaars bijdragen, en hij **sluit een week na de wedstrijd** — daarna alleen leesbaar. Geen herinnering vooraf, geen verlenging
