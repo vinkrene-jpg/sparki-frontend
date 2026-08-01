@@ -427,7 +427,14 @@ export async function loadGoalPicture(clerkId: string): Promise<GoalPicture> {
     db
       .select()
       .from(athleteGoalsTable)
-      .where(eq(athleteGoalsTable.clerkId, clerkId))
+      // DOELEN_01 (DOE-47): verwijderen is een zachte verwijdering; een
+      // "dropped" doel verdwijnt uit ÉLKE weergave, ook de eigen.
+      .where(
+        and(
+          eq(athleteGoalsTable.clerkId, clerkId),
+          ne(athleteGoalsTable.status, "dropped"),
+        ),
+      )
       .orderBy(asc(athleteGoalsTable.priority), asc(athleteGoalsTable.targetDate)),
     loadDerivedGoals(clerkId, ctx),
     db

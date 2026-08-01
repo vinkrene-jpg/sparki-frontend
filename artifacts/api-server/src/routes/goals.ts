@@ -289,36 +289,46 @@ router.put("/:id", requireAuth, async (req, res) => {
     return;
   }
 
-  // DOELEN_01: ook bij wijzigen blijft de leeftijdsfilter gelden (DOE-07/15) —
-  // een geblokkeerde meetlat mag er niet via een update alsnog in.
-  if (
-    patch.title !== undefined ||
-    patch.measure !== undefined ||
-    patch.targetValue !== undefined
-  ) {
+  // DOELEN_01: ook bij wijzigen blijft de leeftijdsfilter gelden (DOE-07/15).
+  // We valideren niet de losse patch, maar de VOLLEDIGE resulterende rij
+  // (bestaand doel + patch), zodat de band nooit via een gedeeltelijke update
+  // te omzeilen is.
+  const [existing] = await db
+    .select()
+    .from(athleteGoalsTable)
+    .where(and(eq(athleteGoalsTable.id, id), eq(athleteGoalsTable.clerkId, clerkId)))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Doel niet gevonden" });
+    return;
+  }
+  {
     const band = await goalAgeBandFor(clerkId);
-    const cfg = bandConfig(band);
-    if (
-      cfg.blockWeightRelated &&
-      isWeightRelatedGoalText(
-        patch.title ?? null,
-        patch.measure ?? null,
-        patch.targetValue ?? null,
-      )
+    const merged = {
+      kind: existing.kind,
+      title: patch.title !== undefined ? patch.title : existing.title,
+      measure: patch.measure !== undefined ? patch.measure : existing.measure,
+      targetValue:
+        patch.targetValue !== undefined ? patch.targetValue : existing.targetValue,
+      theme: existing.theme,
+      themeLevel: existing.themeLevel,
+    };
+    // Legacy doelen (kind=null) van vóór DOELEN_01 blijven bewerkbaar, maar
+    // de gewichts-/meetlatregels gelden onverkort op het samengestelde geheel.
+    if (merged.kind != null) {
+      const check = validateGoalForBand(band, merged);
+      if (!check.ok) {
+        res.status(400).json({ error: check.error });
+        return;
+      }
+    } else if (
+      bandConfig(band).blockWeightRelated &&
+      isWeightRelatedGoalText(merged.title, merged.measure, merged.targetValue)
     ) {
       res.status(400).json({
         error:
           "Doelen rond gewicht, w/kg of maximale kracht zijn tot 18 jaar niet beschikbaar.",
       });
-      return;
-    }
-    if (
-      cfg.form === "slider" &&
-      ((patch.measure != null && patch.measure !== "") ||
-        (patch.targetValue != null && patch.targetValue !== "") ||
-        (patch.title != null && /\d/.test(patch.title)))
-    ) {
-      res.status(400).json({ error: "Een themadoel heeft geen meetwaarde" });
       return;
     }
   }
