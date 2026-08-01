@@ -176,6 +176,47 @@ try {
     }
     await run.shot("klim-resultaatblok");
 
+    // ── MOBILE_ROUTE_WALKING_01 F2: mobiele route-detailcompositie ──
+    // Op telefoonformaat zitten de detailpanelen (hoogteprofiel, wegdek,
+    // opmerkingen, klimmen, uitleg) achter één knop in een bottom sheet;
+    // desktop toont dezelfde panelen inline (zelfde JSX-bron).
+    const detailsKnop = page.getByTestId("route-details-knop");
+    const knopZichtbaar = await detailsKnop.isVisible().catch(() => false);
+    log("F2: details-knop zichtbaar (mobiel)", knopZichtbaar ? "OK" : "FOUT");
+    if (!knopZichtbaar) exitCode = 1;
+    if (knopZichtbaar) {
+      await detailsKnop.click();
+      const sheet = page.getByTestId("route-detail-sheet");
+      await sheet.waitFor({ timeout: 5000 });
+      const sheetOk = await sheet.isVisible().catch(() => false);
+      log("F2: bottom sheet opent", sheetOk ? "OK" : "FOUT");
+      if (!sheetOk) exitCode = 1;
+      // Inhoud: wegdekpaneel of uitlegtekst moet in de sheet staan (echte data).
+      const inhoudOk =
+        (await sheet.getByText(/Wegdek|WEGDEK/i).first().isVisible().catch(() => false)) ||
+        (await sheet.getByText(/route/i).first().isVisible().catch(() => false));
+      log("F2: sheet bevat detailinhoud", inhoudOk ? "OK" : "FOUT");
+      if (!inhoudOk) exitCode = 1;
+      await run.shot("f2-detail-sheet");
+      await sheet.getByRole("button", { name: "Sluiten" }).click();
+      await page.waitForTimeout(300);
+      const dicht = !(await page.getByTestId("route-detail-sheet").isVisible().catch(() => false));
+      log("F2: sheet sluit", dicht ? "OK" : "FOUT");
+      if (!dicht) exitCode = 1;
+    }
+    // Desktopcontrole op dezelfde pagina/kandidaat: knop weg, panelen inline.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForTimeout(400);
+    const knopDesktop = await detailsKnop.isVisible().catch(() => false);
+    log("F2: details-knop NIET op desktop", knopDesktop ? "FOUT" : "OK");
+    if (knopDesktop) exitCode = 1;
+    const inlineOk = await page.getByText("STAP-VOOR-STAP", { exact: false }).first().isVisible().catch(() => false);
+    log("F2: detailpanelen inline op desktop", inlineOk ? "OK" : "FOUT");
+    if (!inlineOk) exitCode = 1;
+    await run.shot("f2-desktop-inline");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(400);
+
     // Bewaren (eis 12): eindigt aantoonbaar in het Bewaard-tabblad. Bevat de
     // racefietsroute onbekend wegdek, dan eist de UI eerst een expliciete
     // bewuste keuze — die maken we hier zichtbaar (eerlijkheidspoort).

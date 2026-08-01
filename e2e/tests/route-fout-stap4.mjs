@@ -257,9 +257,9 @@ try {
     await fault.uninstall();
 
     // Snel terug/vooruit tussen stap 3 en 4: fout wist bij teruggaan, wizard blijft heel.
-    await page.getByRole("button", { name: "Terug" }).click();
+    await page.getByRole("button", { name: "Terug", exact: true }).click();
     await page.getByRole("button", { name: "Verder →" }).first().click();
-    await page.getByRole("button", { name: "Terug" }).click();
+    await page.getByRole("button", { name: "Terug", exact: true }).click();
     await page.getByRole("button", { name: "Verder →" }).first().click();
     log(
       `${viewport}: snel terug/vooruit 3↔4 blijft heel`,

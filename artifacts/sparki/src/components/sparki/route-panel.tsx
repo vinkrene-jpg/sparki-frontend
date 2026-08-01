@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
+import { useEffect, useRef, useState, type ComponentProps, type Dispatch, type ReactNode, type SetStateAction } from "react"
+import { createPortal } from "react-dom"
 import { DsStatus, IconCheck } from "@/components/ds"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
@@ -1732,6 +1733,189 @@ function sampleWaypointsFromGeometry(
 
 // Export voor de node-page-test van de racefiets-verificatiegate
 // (route-panel-verification-gate.test.tsx) — geen app-gebruik buiten RoutePanel.
+// ── MOBILE_ROUTE_WALKING_01 F2: mobiele route-detailcompositie ───────────────
+// Bottom sheet voor de detailpanelen van een routevoorstel op telefoonformaat.
+// Portal naar body + z-[80] (boven de onderbalk-z-50 — zie modal-layering-les);
+// desktop toont dezelfde panelen gewoon inline. Eén JSX-bron (CandidateDetails),
+// dus geen tweede routeflow — puur een andere presentatie van dezelfde data.
+function MobielDetailSheet({
+  title,
+  onClose,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  children: ReactNode
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-end justify-center lg:hidden">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div
+        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-white/[0.1] bg-[#070d16]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        data-testid="route-detail-sheet"
+      >
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+          <p className="text-[15px] font-medium text-white/90">{title}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/[0.12] px-3 py-1.5 text-[12px] text-white/60 transition-colors hover:border-white/25"
+          >
+            Sluiten
+          </button>
+        </div>
+        <div className="overflow-y-auto px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-1">
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+// Detailpanelen van een routevoorstel — één bron voor desktop (inline) en
+// mobiel (bottom sheet). Alle data en handlers komen van de ouder; dit
+// component bevat geen eigen state of fetches.
+function CandidateDetails({
+  candidate,
+  surfacesData,
+  surfacesLoading,
+  surfacesError,
+  surfaceKind,
+  onSelectSurfaceKind,
+  preferredBike,
+  remarksData,
+  remarksLoading,
+  remarksError,
+  posKm,
+  onPosChange,
+  enrichFailed,
+}: {
+  candidate: RouteCandidate
+  surfacesData: ComponentProps<typeof RouteSurfacesPanel>["data"]
+  surfacesLoading: boolean
+  surfacesError: boolean
+  surfaceKind: ComponentProps<typeof RouteSurfacesPanel>["selectedKind"]
+  onSelectSurfaceKind: ComponentProps<typeof RouteSurfacesPanel>["onSelectKind"]
+  preferredBike: ComponentProps<typeof RouteSurfacesPanel>["preferredBike"]
+  remarksData: ComponentProps<typeof RouteRemarksPanel>["data"]
+  remarksLoading: boolean
+  remarksError: boolean
+  posKm: number | null
+  onPosChange: (km: number | null) => void
+  enrichFailed: boolean
+}) {
+  return (
+    <>
+      {candidate.profile.length > 0 && (
+        <InteractiveElevationProfile
+          profile={candidate.profile}
+          distanceKm={candidate.distanceKm}
+          markers={
+            candidate.distanceKm != null && candidate.distanceKm > 0
+              ? [
+                  { km: 0, label: "Start", kind: "start" },
+                  {
+                    km: candidate.distanceKm,
+                    label: "Finish",
+                    kind: "finish",
+                  },
+                  ...candidate.climbs
+                    .filter((c) => Number.isFinite(c.summitKm))
+                    .map((c) => ({
+                      km: c.summitKm as number,
+                      label: `Top: ${c.name}`,
+                      kind: "klim" as const,
+                    })),
+                ]
+              : []
+          }
+          positionKm={posKm}
+          onPositionChange={onPosChange}
+        />
+      )}
+
+      {candidate.geometry.length > 1 && (
+        <RouteSurfacesPanel
+          data={surfacesData}
+          isLoading={surfacesLoading}
+          isError={surfacesError}
+          selectedKind={surfaceKind}
+          onSelectKind={onSelectSurfaceKind}
+          preferredBike={preferredBike}
+          className="mt-4"
+        />
+      )}
+
+      {candidate.geometry.length > 1 && (
+        <RouteRemarksPanel
+          data={remarksData}
+          isLoading={remarksLoading}
+          isError={remarksError}
+          className="mt-4"
+        />
+      )}
+
+      <Climbs climbs={candidate.climbs} />
+
+      {/* Eerlijk vermijd-rapport (taak #462): lukte het vermijden van
+          N-wegen niet in dit gebied, dan staat dat er expliciet bij —
+          nooit stiekem toch N-weg rijden. */}
+      {candidate.avoidReport?.nietMogelijk?.map((item, i) => (
+        <p
+          key={`avoid-nm-${i}`}
+          className="mt-4 rounded-lg border border-warning/25 bg-warning/[0.07] px-3 py-2 text-[12px] leading-relaxed text-warning/90"
+        >
+          Niet gelukt: {item.wens} — {item.reden}
+        </p>
+      ))}
+      {(candidate.avoidReport?.toegepast?.length ?? 0) > 0 && (
+        <p className="mt-4 text-[11px] leading-relaxed text-positive/70">
+          Toegepast: {candidate.avoidReport!.toegepast.join(" · ")}
+        </p>
+      )}
+
+      <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
+        {candidate.rationale}
+      </p>
+      {enrichFailed && (
+        <p className="mt-1.5 text-[11px] text-white/30">
+          De uitgebreide routetoelichting kon niet worden gegenereerd.
+        </p>
+      )}
+
+      {candidate.nav.length > 0 && (
+        <details className="mt-4">
+          <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-accent-cyan/80">
+            STAP-VOOR-STAP ({candidate.nav.length}) — toon
+          </summary>
+          <div className="mt-2 max-h-64 overflow-y-auto pr-1">
+            {candidate.nav.map((n, i) => (
+              <div
+                key={i}
+                className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
+              >
+                <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
+                  {n.km}
+                </span>
+                <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-white/85">
+                  {n.dir}
+                </span>
+                <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
+                  {n.note}
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </>
+  )
+}
+
 export function RouteGenerator({
   onClose,
   initialElevation = null,
@@ -1945,6 +2129,8 @@ export function RouteGenerator({
   // Interactief hoogteprofiel voor de voorgestelde route (kaartklik blijft in
   // de bouwer voor verzamelpunten — positie kiezen gaat hier via het profiel).
   const [candPosKm, setCandPosKm] = useState<number | null>(null)
+  // F2: bottom sheet met detailpanelen op telefoonformaat (desktop inline).
+  const [detailsOpen, setDetailsOpen] = useState(false)
   // Routeopmerkingen-voorproef op de echte kandidaat-geometrie.
   const candRemarks = useRouteRemarksPreview(candidate?.geometry ?? null)
   // Wegtypen-voorproef + geschiktheid per fietstype op de kandidaat.
@@ -4392,107 +4578,56 @@ export function RouteGenerator({
             downloaden (GPX/TCX) en delen naar je fietscomputer-app.
           </p>
 
-          {candidate.profile.length > 0 && (
-            <InteractiveElevationProfile
-              profile={candidate.profile}
-              distanceKm={candidate.distanceKm}
-              markers={
-                candidate.distanceKm != null && candidate.distanceKm > 0
-                  ? [
-                      { km: 0, label: "Start", kind: "start" },
-                      {
-                        km: candidate.distanceKm,
-                        label: "Finish",
-                        kind: "finish",
-                      },
-                      ...candidate.climbs
-                        .filter((c) => Number.isFinite(c.summitKm))
-                        .map((c) => ({
-                          km: c.summitKm as number,
-                          label: `Top: ${c.name}`,
-                          kind: "klim" as const,
-                        })),
-                    ]
-                  : []
-              }
-              positionKm={candPosKm}
-              onPositionChange={setCandPosKm}
-            />
-          )}
-
-          {candidate.geometry.length > 1 && (
-            <RouteSurfacesPanel
-              data={candSurfaces.data}
-              isLoading={candSurfaces.isLoading}
-              isError={candSurfaces.isError}
-              selectedKind={candSurfaceKind}
-              onSelectKind={setCandSurfaceKind}
+          {/* F2 — detailcompositie: desktop toont de panelen inline
+              (ongewijzigd); op telefoonformaat gaan ze achter één knop in een
+              bottom sheet. Zelfde CandidateDetails-bron, dus geen tweede flow. */}
+          <div className="hidden lg:block">
+            <CandidateDetails
+              candidate={candidate}
+              surfacesData={candSurfaces.data}
+              surfacesLoading={candSurfaces.isLoading}
+              surfacesError={candSurfaces.isError}
+              surfaceKind={candSurfaceKind}
+              onSelectSurfaceKind={setCandSurfaceKind}
               preferredBike={preferredBikeFromSurface(candidate.bikeType)}
-              className="mt-4"
+              remarksData={candRemarks.data}
+              remarksLoading={candRemarks.isLoading}
+              remarksError={candRemarks.isError}
+              posKm={candPosKm}
+              onPosChange={setCandPosKm}
+              enrichFailed={enrich.data?.failed === true}
             />
-          )}
-
-          {candidate.geometry.length > 1 && (
-            <RouteRemarksPanel
-              data={candRemarks.data}
-              isLoading={candRemarks.isLoading}
-              isError={candRemarks.isError}
-              className="mt-4"
-            />
-          )}
-
-          <Climbs climbs={candidate.climbs} />
-
-          {/* Eerlijk vermijd-rapport (taak #462): lukte het vermijden van
-              N-wegen niet in dit gebied, dan staat dat er expliciet bij —
-              nooit stiekem toch N-weg rijden. */}
-          {candidate.avoidReport?.nietMogelijk?.map((item, i) => (
-            <p
-              key={`avoid-nm-${i}`}
-              className="mt-4 rounded-lg border border-warning/25 bg-warning/[0.07] px-3 py-2 text-[12px] leading-relaxed text-warning/90"
+          </div>
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(true)}
+            data-testid="route-details-knop"
+            className="mt-4 w-full rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-white/25 lg:hidden"
+          >
+            Details van deze route — hoogteprofiel, wegdek, opmerkingen
+            {candidate.climbs.length > 0 ? ", klimmen" : ""}
+          </button>
+          {detailsOpen && (
+            <MobielDetailSheet
+              title="Details van deze route"
+              onClose={() => setDetailsOpen(false)}
             >
-              Niet gelukt: {item.wens} — {item.reden}
-            </p>
-          ))}
-          {(candidate.avoidReport?.toegepast?.length ?? 0) > 0 && (
-            <p className="mt-4 text-[11px] leading-relaxed text-positive/70">
-              Toegepast: {candidate.avoidReport!.toegepast.join(" · ")}
-            </p>
-          )}
-
-          <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
-            {candidate.rationale}
-          </p>
-          {enrich.data?.failed && (
-            <p className="mt-1.5 text-[11px] text-white/30">
-              De uitgebreide routetoelichting kon niet worden gegenereerd.
-            </p>
-          )}
-
-          {candidate.nav.length > 0 && (
-            <details className="mt-4">
-              <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-accent-cyan/80">
-                STAP-VOOR-STAP ({candidate.nav.length}) — toon
-              </summary>
-              <div className="mt-2 max-h-64 overflow-y-auto pr-1">
-                {candidate.nav.map((n, i) => (
-                  <div
-                    key={i}
-                    className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
-                  >
-                    <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
-                      {n.km}
-                    </span>
-                    <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-white/85">
-                      {n.dir}
-                    </span>
-                    <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
-                      {n.note}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </details>
+              <CandidateDetails
+                candidate={candidate}
+                surfacesData={candSurfaces.data}
+                surfacesLoading={candSurfaces.isLoading}
+                surfacesError={candSurfaces.isError}
+                surfaceKind={candSurfaceKind}
+                onSelectSurfaceKind={setCandSurfaceKind}
+                preferredBike={preferredBikeFromSurface(candidate.bikeType)}
+                remarksData={candRemarks.data}
+                remarksLoading={candRemarks.isLoading}
+                remarksError={candRemarks.isError}
+                posKm={candPosKm}
+                onPosChange={setCandPosKm}
+                enrichFailed={enrich.data?.failed === true}
+              />
+            </MobielDetailSheet>
           )}
 
           {candidate.plannedWorkoutId != null && (
