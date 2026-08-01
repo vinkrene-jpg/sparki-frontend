@@ -32,6 +32,7 @@ import {
   clubsTable,
   clubMembersTable,
   clubTeamsTable,
+  clubTeamMembersTable,
   organisationStaffSlotsTable,
 } from "@workspace/db";
 import { and, eq, isNull } from "drizzle-orm";
@@ -303,6 +304,143 @@ async function main() {
     assert(slots.length === 4, `verwacht 4 stafplekken na parallel toepassen, kreeg ${slots.length}`);
     const teams = await db.select().from(clubTeamsTable).where(eq(clubTeamsTable.clubId, orgD));
     assert(teams.length === 1, `verwacht 1 selectie na parallel toepassen, kreeg ${teams.length}`);
+  });
+
+  await scenario("14. Parallelle teams: elk team eigen bezetting, stafbasis en uitnodigingen", async () => {
+    // Organisatie A is inmiddels actief en heeft één selectie uit de kaart.
+    const bestaand = await db.select().from(clubTeamsTable).where(eq(clubTeamsTable.clubId, teamOrgId));
+    assert(bestaand.length >= 1, "geen bestaande selectie in organisatie A");
+    const teamA = bestaand[0]!;
+    const mkB = await req("POST", `/api/clubs/${teamOrgId}/teams`, owner, { name: `U23 ${RUN}` });
+    assert(mkB.status === 201, `tweede selectie: ${mkB.status} ${JSON.stringify(mkB.json)}`);
+    const teamBId = Number(mkB.json["id"] ?? (mkB.json["team"] as Record<string, unknown> | undefined)?.["id"]);
+    assert(Number.isFinite(teamBId) && teamBId !== teamA.id, "tweede selectie kreeg geen eigen id");
+
+    // Eigen seizoensbezetting per team.
+    const bezA = await req("POST", `/api/clubs/${teamOrgId}/teams/${teamA.id}/members`, owner, { clerkId: renner });
+    assert([200, 201].includes(bezA.status), `bezetting team A: ${bezA.status}`);
+    const bezB = await req("POST", `/api/clubs/${teamOrgId}/teams/${teamBId}/members`, owner, { clerkId: leider });
+    assert([200, 201].includes(bezB.status), `bezetting team B: ${bezB.status}`);
+
+    // Eigen stafbasis per team.
+    const stafA = await req("POST", `/api/clubs/${teamOrgId}/staff-slots`, owner, { role: "mechanieker", teamId: teamA.id });
+    assert(stafA.status === 201, `stafplek team A: ${stafA.status}`);
+    const stafB = await req("POST", `/api/clubs/${teamOrgId}/staff-slots`, owner, { role: "soigneur", teamId: teamBId });
+    assert(stafB.status === 201, `stafplek team B: ${stafB.status}`);
+    const slots = await db
+      .select()
+      .from(organisationStaffSlotsTable)
+      .where(eq(organisationStaffSlotsTable.clubId, teamOrgId));
+    assert(slots.some((s) => s.teamId === teamA.id && s.role === "mechanieker"), "stafbasis team A ontbreekt");
+    assert(slots.some((s) => s.teamId === teamBId && s.role === "soigneur"), "stafbasis team B ontbreekt");
+
+    // Eigen uitnodiging per team: teamId reist mee en accepteren landt in
+    // precies díé selectie. Onbestaande selectie = eerlijke 404.
+    const fout = await req("POST", "/api/invitations", owner, { relationship: "club_member", clubId: teamOrgId, teamId: 99999999 });
+    assert(fout.status === 404, `onbestaande selectie kreeg ${fout.status}, verwacht 404`);
+    const invB = await req("POST", "/api/invitations", owner, { relationship: "club_member", clubId: teamOrgId, teamId: teamBId });
+    assert(invB.status === 201, `uitnodiging team B: ${invB.status} ${JSON.stringify(invB.json)}`);
+    assert(Number(invB.json["teamId"]) === teamBId, "uitnodiging draagt teamId niet");
+    const nieuw = `dev_${RUN}_u23renner`;
+    await ensureAccount(nieuw, `${nieuw}@sparki.test`, "Fixture U23", silentLogger);
+    const acc = await req("POST", `/api/invitations/${invB.json["token"]}/accept`, nieuw);
+    assert(acc.status === 200, `accept: ${acc.status} ${JSON.stringify(acc.json)}`);
+    const rows = await db
+      .select({ teamId: clubTeamMembersTable.teamId })
+      .from(clubTeamMembersTable)
+      .where(and(eq(clubTeamMembersTable.clerkId, nieuw), isNull(clubTeamMembersTable.endedAt)));
+    assert(rows.length === 1 && rows[0]!.teamId === teamBId, `nieuw lid landde in ${JSON.stringify(rows)}, verwacht team B`);
+  });
+
+  await scenario("15. Rolgestuurde start: alle acht rollen krijgen eerste actie of eerlijke lege toestand", async () => {
+    // Extra rollen direct toewijzen (trainer, mechanieker, soigneur, gast).
+    const extra: [string, string][] = [
+      [`dev_${RUN}_trainer`, "trainer"],
+      [`dev_${RUN}_mech`, "mechanieker"],
+      [`dev_${RUN}_soigneur`, "soigneur"],
+      [`dev_${RUN}_gast`, "alleen_lezen"],
+    ];
+    for (const [who, rol] of extra) {
+      await ensureAccount(who, `${who}@sparki.test`, `Fixture ${rol}`, silentLogger);
+      await db.insert(clubMembersTable).values({ clubId: teamOrgId, clerkId: who, role: rol });
+    }
+    const rollen: [string, string][] = [
+      [manager, "teammanager"],
+      [leider, "ploegleider"],
+      [arts, "medical_staff"],
+      [renner, "member"],
+      ...extra,
+    ];
+    for (const [who, rol] of rollen) {
+      const start = await req("GET", `/api/clubs/${teamOrgId}/start`, who);
+      assert(start.status === 200, `${rol} start: ${start.status}`);
+      assert(start.json["role"] === rol, `${who} kreeg rol ${start.json["role"]}, verwacht ${rol}`);
+      assert(typeof start.json["rolLabel"] === "string" && (start.json["rolLabel"] as string).length > 0, `${rol}: rolLabel ontbreekt`);
+      assert(typeof start.json["werkgebied"] === "string" && (start.json["werkgebied"] as string).length > 0, `${rol}: werkgebied ontbreekt`);
+      const actie = start.json["eersteActie"] as Record<string, unknown> | null;
+      const leeg = start.json["legeToestand"] as Record<string, unknown> | null;
+      assert((actie != null) !== (leeg != null), `${rol}: verwacht PRECIES één van eersteActie/legeToestand`);
+      if (actie) {
+        for (const veld of ["label", "uitleg", "doel"]) {
+          assert(typeof actie[veld] === "string" && (actie[veld] as string).length > 0, `${rol}: eersteActie.${veld} ontbreekt`);
+        }
+      } else if (leeg) {
+        for (const veld of ["soort", "watOntbreekt", "waarom", "wie", "vervolgstap"]) {
+          assert(typeof leeg[veld] === "string" && (leeg[veld] as string).length > 0, `${rol}: legeToestand.${veld} ontbreekt`);
+        }
+      }
+      // Buitenstaander blijft buiten: geen start zonder lidmaatschap.
+      const buiten = await req("GET", `/api/clubs/${teamOrgId}/start`, vreemde);
+      assert(buiten.status === 403, `vreemde kreeg start (${buiten.status}), verwacht 403`);
+    }
+    // Gast krijgt de "werkelijk geen open acties"-toestand, medical_staff de
+    // toestemmingstoestand, mechanieker/soigneur de niet-toegewezen-toestand.
+    const gast = await req("GET", `/api/clubs/${teamOrgId}/start`, extra[3]![0]);
+    assert((gast.json["legeToestand"] as Record<string, unknown>)["soort"] === "geen_open_acties", "gast mist geen_open_acties");
+    const med = await req("GET", `/api/clubs/${teamOrgId}/start`, arts);
+    assert((med.json["legeToestand"] as Record<string, unknown>)["soort"] === "geen_toestemming", "medical_staff mist geen_toestemming");
+    const mech = await req("GET", `/api/clubs/${teamOrgId}/start`, extra[1]![0]);
+    assert((mech.json["legeToestand"] as Record<string, unknown>)["soort"] === "niet_toegewezen", "mechanieker mist niet_toegewezen");
+    // Toewijzing verandert de toestand eerlijk: de ploegleider is in
+    // scenario 14 aan team B toegewezen en krijgt dus een echte eerste actie.
+    const pl = await req("GET", `/api/clubs/${teamOrgId}/start`, leider);
+    assert(pl.json["eersteActie"] != null, "toegewezen ploegleider mist een eerste actie");
+  });
+
+  await scenario("16. Team-uitnodiging faalt eerlijk: verdwenen selectie en volle selectie", async () => {
+    // Verdwenen selectie: uitnodiging wijst naar een selectie die daarna is
+    // verwijderd → accept faalt (409) en er ontstaat GEEN lidmaatschap.
+    const mkC = await req("POST", `/api/clubs/${teamOrgId}/teams`, owner, { name: `Tijdelijk ${RUN}` });
+    assert(mkC.status === 201, `selectie C: ${mkC.status}`);
+    const teamCId = Number(mkC.json["id"] ?? (mkC.json["team"] as Record<string, unknown> | undefined)?.["id"]);
+    const invC = await req("POST", "/api/invitations", owner, { relationship: "club_member", clubId: teamOrgId, teamId: teamCId });
+    assert(invC.status === 201, `uitnodiging C: ${invC.status}`);
+    await db.delete(clubTeamsTable).where(eq(clubTeamsTable.id, teamCId));
+    const spook = `dev_${RUN}_spook`;
+    await ensureAccount(spook, `${spook}@sparki.test`, "Fixture spook", silentLogger);
+    const accC = await req("POST", `/api/invitations/${invC.json["token"]}/accept`, spook);
+    assert(accC.status === 409, `accept op verdwenen selectie: ${accC.status}, verwacht 409`);
+    const lid = await db
+      .select()
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clubId, teamOrgId), eq(clubMembersTable.clerkId, spook), isNull(clubMembersTable.endedAt)));
+    assert(lid.length === 0, "accept rolde niet terug: spook werd toch organisatielid");
+
+    // Volle selectie (maxSize=1): accept overschrijdt de capaciteit nooit.
+    const mkD = await req("POST", `/api/clubs/${teamOrgId}/teams`, owner, { name: `Vol ${RUN}`, maxSize: 1 });
+    assert(mkD.status === 201, `selectie D: ${mkD.status}`);
+    const teamDId = Number(mkD.json["id"] ?? (mkD.json["team"] as Record<string, unknown> | undefined)?.["id"]);
+    const vulling = await req("POST", `/api/clubs/${teamOrgId}/teams/${teamDId}/members`, owner, { clerkId: renner });
+    assert([200, 201].includes(vulling.status), `vulling team D: ${vulling.status}`);
+    const invD = await req("POST", "/api/invitations", owner, { relationship: "club_member", clubId: teamOrgId, teamId: teamDId });
+    assert(invD.status === 201, `uitnodiging D: ${invD.status}`);
+    const accD = await req("POST", `/api/invitations/${invD.json["token"]}/accept`, spook);
+    assert(accD.status === 409, `accept op volle selectie: ${accD.status}, verwacht 409`);
+    const bezD = await db
+      .select()
+      .from(clubTeamMembersTable)
+      .where(and(eq(clubTeamMembersTable.teamId, teamDId), isNull(clubTeamMembersTable.endedAt)));
+    assert(bezD.length === 1, `volle selectie kreeg er toch iemand bij (${bezD.length})`);
   });
 
   // ── Opruimen ──────────────────────────────────────────────────────────────

@@ -1,32 +1,35 @@
 # TEAM_ONBOARDING_01 — AFHANKELIJKHEDEN
 
-## Harde voorwaarden vóór start
+## 1. Exact nodig
+| Nodig | Vindplaats | Waarvoor | Zonder dit |
+|---|---|---|---|
+| Rolwaarden `ploegleider`, `medical_staff` + functietype | `CLUB_RECHTEN_01` | organogram-kaarten en roltoekenning | kaarten tonen rollen die niet bestaan |
+| Centrale rechten- en scopelaag | `CLUB_RECHTEN_01` | alle autorisatie | tweede rechtenlaag |
+| Organisatiecontainer | `schema/club.ts` — `clubs`, `club_members`, `club_teams`, `club_groups`, `club_seasons` | organisatietype, selecties, groepen, seizoen | tweede organisatiesysteem |
+| Onboardingpatroon | `CLUB_ONBOARDING_01`, commit `66a9931` | conceptstatus, hervatten, activatiepoort | tweede onboardingmachine |
+| Uitnodigingsmechanisme | `routes/invitations.ts` | uitnodigingen | tweede mechanisme |
+| `admin_ops_log` | `schema/admin-ops-log.ts` | audit op roltoekenning en activering | geen bewijs achteraf |
+| Lege-toestandscontract | `DATA_TRUST_01` | de vier lege toestanden | verzonnen takenlijsten |
 
-1. **CLUB_RECHTEN_01** — eigenaar van het centrale rollen- en rechtenmodel;
-   de rolwaarden `ploegleider`, `soigneur` en `medical_staff` (met functietype)
-   bestaan reeds server-side (SPARKI-BESLUIT-2026-010, 01-08-2026), maar het
-   volledige matrix-/scopemodel wordt daar beheerd.
-2. **CLUB_ONBOARDING_01** — hervatbare onboarding, uitnodigings- en
-   activatiemechaniek zijn daar gebouwd (BUILD_DELIVERED 01-08-2026) en worden
-   hier hergebruikt, niet gedupliceerd.
-3. Expliciete vrijgave door René.
+## 2. Verplicht MIRROR_PROVEN vóór start
+1. **`CLUB_RECHTEN_01`** — het rolmodel met `ploegleider`, `medical_staff` en het functietype. Dit is een harde poort: zonder de rollen kan geen kaart worden getekend.
+2. `DATA_TRUST_01` — lege toestanden en herkomst; dit pakket toont ledengegevens.
+3. `ROUTE_PAKKET_01` — rechtenresolver en niet-legacy testidentiteiten.
 
-## Volgorde (bindend, besluitendocument 01-08-2026 §7)
+`CLUB_ONBOARDING_01` hoeft niet Mirror-bewezen te zijn, maar het patroon eruit wordt wel hergebruikt. Loopt daar nog een herstelronde, stem dan af — bouw geen afwijkende tweede variant.
 
-CLUB_RECHTEN_01 → Mirror → vrijgave → CLUB_ONBOARDING_01 → **TEAM_ONBOARDING_01**
-→ PLOEGLEIDER_01 → TEAM_MECHANIEKER_01 → medische teamflow → TEAM_ABONNEMENT_01
-aansluiten en opnieuw toetsen.
+## 3. Restpunten die niet blokkeren
+| Restpunt | Gevolg |
+|---|---|
+| `PLOEGLEIDER_01` nog niet gebouwd | seizoensbezetting werkt; wedstrijdbezetting is bewust afwezig |
+| `TEAM_MECHANIEKER_01` nog niet gebouwd | `mechanieker` bestaat als rol; de materiaalflow volgt daar |
+| `JEUGD_OUDER_01` nog niet gebouwd | jeugdleden uitnodigen mag, markeer ze als in afwachting van toestemming |
+| Medische teamflow nog niet gebouwd | `medical_staff` bestaat als rol; toegang blijft dicht tot toestemming |
+| `TEAM_ABONNEMENT_01` nog niet hertoetst | onboarding werkt; betaling is een aparte laag |
+| Seizoensperiode niet formeel vastgesteld | configureerbaar maken en markeren als besluitpunt |
+| `DOCUMENTEN_COMMUNICATIE_01` nog niet uitgevoerd | eenvoudige uitnodigings- en bevestigingsmails volstaan |
 
-## Raakvlakken (geen blokkade, wel afstemming)
+Een restpunt is pas een blokkade wanneer het punt 1, 2 of 3 uit hoofdstuk 2 raakt.
 
-- **TEAM_ABONNEMENT_01** — Team-checkout gebruikt `club_id`-metadata als
-  organisatie-ID; blijft geldig voor organisatietype `TEAM`.
-- **PLOEGLEIDER_01 / TEAM_MECHANIEKER_01** — consumeren de hier aangemaakte
-  teamstructuur; bouwen geen eigen structuur.
-- **JEUGD/CYD-regels** — gelden onverkort; geen eigen toestemmingslaag bouwen.
-
-## Wat dit pakket uitdrukkelijk NIET bezit
-
-- rolwaarden en rechten (CLUB_RECHTEN_01);
-- abonnement/facturatie (TEAM_ABONNEMENT_01);
-- operationele wedstrijd- en materiaalflows (PLOEGLEIDER_01, TEAM_MECHANIEKER_01).
+## 4. Positie in de reeks
+Volgens de vastgestelde bouwvolgorde: `CLUB_RECHTEN_01` → Mirror → `CLUB_ONBOARDING_01` → **`TEAM_ONBOARDING_01`** → `PLOEGLEIDER_01` → `TEAM_MECHANIEKER_01` → medische teamflow → team-abonnement hertoetsen.

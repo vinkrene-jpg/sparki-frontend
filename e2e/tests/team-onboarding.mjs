@@ -89,6 +89,17 @@ async function flow(viewport, { create }) {
       if (!vis) throw new Error(`"${tekst}" niet zichtbaar bij stafplekken (${viewport})`);
     }
   }
+  // Addendum: rolgestuurde start — de eigenaar/teammanager landt op /club op
+  // een startblok met de eigen rol en één begrijpelijke eerste actie (in
+  // concept: "Rond de inrichting af").
+  await run.page.goto(`${baseUrl}/club`, { waitUntil: "networkidle" });
+  await run.page.waitForTimeout(1000);
+  await run.shot("rolgestuurde-start");
+  for (const tekst of ["Jouw rol", "Rond de inrichting af"]) {
+    const vis = await run.page.getByText(tekst, { exact: false }).locator("visible=true").first().isVisible().catch(() => false);
+    if (!vis) throw new Error(`"${tekst}" niet zichtbaar op de rolgestuurde start (${viewport})`);
+  }
+
   await run.close();
 }
 

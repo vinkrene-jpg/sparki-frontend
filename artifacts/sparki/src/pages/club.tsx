@@ -32,6 +32,7 @@ import {
   useCreateClub,
   useJoinClub,
   useHoofdtrainerOverview,
+  useRoleStart,
   type ClubTraining,
 } from "@/hooks/use-club"
 import { usePlanWindow } from "@/hooks/use-training-plan"
@@ -188,6 +189,53 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
   )
 }
 
+// TEAM_ONBOARDING_01 addendum: rolgestuurde start. Elke rol krijgt bovenaan
+// een eigen startblok met óf één begrijpelijke eerste actie, óf een eerlijke
+// lege toestand (wat ontbreekt · waarom · wie · vervolgstap) — server-side
+// afgeleid uit de werkelijke inrichting.
+function RolStartBlock({ clubId }: { clubId: number }) {
+  const { data: start } = useRoleStart(clubId)
+  const [, navigate] = useLocation()
+  if (!start) return null
+  return (
+    <section
+      aria-label="Jouw start"
+      className="rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-3.5"
+    >
+      <p className="text-[11px] uppercase tracking-wide text-white/40">
+        Jouw rol: <span className="text-white/70">{start.rolLabel}</span>
+      </p>
+      <p className="mt-1 text-[13px] text-white/75">{start.werkgebied}</p>
+      {start.eersteActie ? (
+        <button
+          onClick={() => {
+            const doel = start.eersteActie?.doel
+            if (doel === "trainingen") {
+              document.getElementById("club-trainingen")?.scrollIntoView({ behavior: "smooth", block: "start" })
+            } else {
+              // onboarding · leden · teams: alles leeft op de beheerpagina.
+              navigate("/club/beheer")
+            }
+          }}
+          className="mt-2.5 flex w-full items-center justify-between rounded-xl border border-cyan-300/25 bg-cyan-300/[0.08] px-3.5 py-2.5 text-left"
+        >
+          <span>
+            <span className="block text-[13px] font-semibold text-cyan-100">{start.eersteActie.label}</span>
+            <span className="block text-[12px] text-white/60">{start.eersteActie.uitleg}</span>
+          </span>
+        </button>
+      ) : start.legeToestand ? (
+        <div className="mt-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-[12px] leading-relaxed text-white/65">
+          <p className="font-medium text-white/80">{start.legeToestand.watOntbreekt}</p>
+          <p>{start.legeToestand.waarom}</p>
+          <p className="text-white/50">Wie kan dit oplossen: {start.legeToestand.wie}</p>
+          <p className="mt-1 text-white/75">{start.legeToestand.vervolgstap}</p>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 function RealClubView({ clubId }: { clubId: number }) {
   const { data: dash } = useClubDashboard(clubId)
   const { data: trainings } = useClubTrainings(clubId)
@@ -240,6 +288,8 @@ function RealClubView({ clubId }: { clubId: number }) {
         )}
       </header>
 
+      <RolStartBlock clubId={clubId} />
+
       {canManage && (dash.signals?.length ?? 0) > 0 && (
         <section aria-label="Signalen" className="space-y-1.5">
           {dash.signals!.map((s, i) => (
@@ -278,7 +328,7 @@ function RealClubView({ clubId }: { clubId: number }) {
         </section>
       )}
 
-      <section aria-label="Clubtrainingen">
+      <section aria-label="Clubtrainingen" id="club-trainingen">
         <h2 className={H2}><CalendarDays className="h-3 w-3" /> Clubtrainingen</h2>
         {(trainings ?? []).length === 0 ? (
           <p className={EMPTY}>Er staan nog geen clubtrainingen gepland.</p>

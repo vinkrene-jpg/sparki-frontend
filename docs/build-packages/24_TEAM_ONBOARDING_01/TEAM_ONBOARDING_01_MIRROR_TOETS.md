@@ -1,54 +1,78 @@
 # MIRROR-TOETS — TEAM_ONBOARDING_01
 
-**Toetser:** Mirror
-**Onderwerp:** zelfstandige Team-organisatie van registratie tot actief
-**Type:** breed domeinpakket — je toetst hele gebruikersflows, niet losse endpoints
-**Voorwaarde:** Replit heeft `TEAM_ONBOARDING_01` opgeleverd met eindcommit en bewijs
+**Toetser:** Mirror · **Voorwaarde:** oplevering met eindcommit en bewijs; `CLUB_RECHTEN_01` is Mirror-goedgekeurd
 
 ## Vooraf vaststellen
+1. Vraag de lijst **server-side bestaande rollen** op. Elke organogram-kaart wordt daartegen getoetst.
+2. Bevestig dat bestaande organisaties na migratie type `CLUB` hebben en hun rollen behielden.
+3. Bevestig dat er **geen** rolwaarde `teameigenaar` is toegevoegd.
 
-- vaste gepushte SHA uit het eindrapport;
-- schone accounts: een eigenaar zonder bestaande organisaties, een tweede gebruiker
-  voor uitnodigingen, een minderjarige met ouderaccount;
-- minstens één bestaande CLUB-organisatie als regressie-anker.
+**Accounts nodig:** nieuwe gebruiker zonder organisatie · teameigenaar · teammanager · ploegleider · trainer · mechanieker · soigneur · medical_staff · sporter · gast · beheerder van een bestaande club.
 
-## A. Aanmaak en organisatietype
+## Wat deze toets moet vaststellen
+Of een teamorganisatie **van niets tot actief** komt zonder databasehulp, of er onderweg niets zichtbaar of verstuurd wordt dat nog niet mag, en of de operatie uit `PLOEGLEIDER_01` aantoonbaar **niet** is meegebouwd.
 
-1. Maak een zelfstandige Team-organisatie. Controleer server-side organisatietype
-   `TEAM` (niet `CLUB`), zonder tweede organisatie-entiteit in het schema.
-2. Een bestaande Club blijft volledig ongewijzigd (structuur, rollen, leden).
-3. Concept-status vóór activering: nog niet zichtbaar/actief voor leden.
+## A. Organisatie en eigenaarschap
+1. Maak een zelfstandige teamorganisatie aan. Precies één eigenaar; gebruikersnaam "Teameigenaar".
+2. De eigenaar heeft automatisch `teammanager`.
+3. Zoek in rollijst, API en interface naar `teameigenaar`. Bestaat niet.
+4. Open een bestaande club: type `CLUB`, rollen ongewijzigd, alles werkt.
+5. Draag eigendom over. Precies één eigenaar; de organisatie is nooit zonder.
 
-## B. Organogram-kaarten
+## B. Structuur
+6. Maak twee selecties binnen één seizoen. 7. Maak een trainingsgroep. Selectie en trainingsgroep zijn verschillende dingen. 8. Zet één sporter in een trainingsgroep **én** in twee selecties tegelijk. Werkt.
+9. Maak een wedstrijdteam binnen een club en controleer dat het dezelfde structuur gebruikt als een zelfstandige selectie.
 
-4. Elke teamkaart (Compact wedstrijdteam, Prestatieploeg, Etappe-/koersorganisatie,
-   Zelf samenstellen) toont uitsluitend server-side bestaande rollen.
-5. Kaartkeuze maakt alleen een conceptstructuur; er worden geen rechten afgeleid
-   en geen voorbeeldpersonen getoond.
-6. Probeer op een ACTIEVE organisatie een nieuw sjabloon te leggen: dit mag nooit
-   destructief zijn; bestaande personen en rollen verdwijnen niet.
-
-## C. Staf, selecties en uitnodigingen
-
-7. Selecties/subteams aanmaken en hernoemen; leden per selectie.
-8. Stafplekken invullen: teammanager, ploegleider (aparte rollen!), trainer,
-   mechanieker, soigneur, medical_staff met functietype (functietype geeft géén
-   rechten — toets via directe API-aanroep).
-9. Uitnodiging → acceptatie → naam verschijnt pas ná acceptatie.
-10. Minderjarige: CYD-/ouderregels onverkort, fail-closed.
+## C. Organogram — het zwaartepunt
+10. Doorloop de vier teamkaarten. **Elke getoonde rol bestaat server-side** — vergelijk regel voor regel met de lijst uit stap 1.
+11. Een kaart maakt een conceptstructuur; controleer dat er **geen enkel recht** uit is afgeleid.
+12. Nergens een voorbeeldnaam of fictief persoon. Alleen rolplekken.
+13. Activeer, en probeer daarna opnieuw een kaart toe te passen. **Niet mogelijk.**
+14. Wijzig de structuur na activering. Geen bestaande persoon verliest zijn rol.
 
 ## D. Hervatten en activeren
+15. Verlaat de onboarding halverwege, sluit de browser, log opnieuw in. Alles staat er nog.
+16. Probeer te activeren met een ontbrekende voorwaarde. Geweigerd, met een lijst van wat mist.
+17. Controleer dat vóór activering geen uitnodiging is vertrokken en leden niet zichtbaar waren.
 
-11. Breek de onboarding af halverwege; hervat: exacte stand terug.
-12. Activeren alleen via het expliciete activatiepad; daarna is de omgeving actief
-    en worden rollen afzonderlijk beheerd.
+## E. Seizoensbezetting — en wat er NIET mag zijn
+18. Leg vaste seizoensrenners en vaste staf vast, met beschikbaarheidsvoorkeur.
+19. Zoek actief naar wedstrijdbezetting, voertuigen, materiaal, dagschema, taken, rode vlaggen of conflictsignalering. **Deze horen er niet te zijn.** Vind je ze, dan is er vooruitgebouwd op `PLOEGLEIDER_01` — dat is een afkeuringsgrond.
+20. Een eerste programma of evenement toevoegen mag wel; controleer dat het daarbij blijft.
 
-## E. Rechten en API-omzeiling
+## F. Uitnodigingen
+21. Verstuur een uitnodiging. Vermeldt organisatie, rol, team, periode en verwachte werkzaamheden.
+22. Vergelijk de rolbeschrijving in de uitnodiging met die in de rolintroductie bij de eerste login en in de voorbeeldmodus. **Identiek** — één centrale definitie.
+23. Uitnodiging voor een minderjarige volgt de oudertoestemmingsregels.
 
-13. Directe API-aanroepen (zonder UI) dwingen dezelfde rechten af: geen
-    cross-organisatie-lek, geen rechten via organogram, fail-closed bij onbekende
-    status.
-14. Mobiel/PWA: dezelfde keten werkt op klein scherm.
+## G. Rolgestuurde start
+24. Log in als elk van de rollen. Elke rol landt op een **eigen** startscherm met één echte eerste actie. Geen generiek of leeg dashboard.
+25. Breng elke rol in de vier lege toestanden: nog niet ingericht · niet toegewezen · geen toestemming · werkelijk geen open acties. Alle vier zien er verschillend uit en noemen wat ontbreekt, waarom, wie het oplost en de vervolgstap.
+26. Controleer dat de takenlijst uit echte ontbrekende inrichting volgt: verwijder een ontbrekend onderdeel en zie de taak verdwijnen.
 
-Elk niet echt uitvoerbaar punt wordt gemeld als **niet getoetst** met reden;
-geen benaderingen.
+## H. Weergave als rol
+27. Open "weergave als rol" als beheerder. Je ziet wat die rol ziet.
+28. Probeer vanuit die weergave iets te wijzigen, te versturen of toe te kennen. **Niet mogelijk.**
+29. Herhaal via **directe API-aanroep**. Read-only valt server-side, niet in de interface.
+
+## I. Voorbeeldmodus
+30. Open de voorbeeldmodus. Markering permanent zichtbaar, eigen organisatie, niet te mengen met een echte.
+31. Mouse-over toont uitleg; op mobiel opent het vraagteken de uitleg zonder de onderliggende knop te activeren, en is te sluiten.
+32. Werk in een **echte** organisatie: geen fictief persoon, geen voorbeeldgegevens.
+
+## J. Rechten en audit
+33. Probeer als sporter, gast en trainer te activeren of rollen toe te kennen. Geweigerd, ook via directe aanroep.
+34. Roltoekenning, activering en eigendomsoverdracht staan in `admin_ops_log` met wie, wanneer, oude en nieuwe waarde.
+35. Gezondheidsgegevens zijn niet zichtbaar zonder toestemming van de sporter; het functietype van `medical_staff` geeft geen extra toegang.
+
+## K. Apparaten en regressie
+36. Doorloop de hele flow op mobiel. 37. Bestaande clubtests aanwezig en groen. 38. Mirror-bewezen onderdelen uit `CLUB_RECHTEN_01` en `ROUTE_PAKKET_01` onaangetast.
+
+## Afkeuringsgronden
+Meer dan één eigenaar · een rolwaarde `teameigenaar` · een organogram-kaart met een rol die server-side niet bestaat · een recht afgeleid uit een kaart · een sjabloon dat na activering opnieuw kan worden toegepast · een persoon die zijn rol verliest door een structuurwijziging · een voorbeeldnaam in een echte omgeving · wedstrijdbezetting, voertuigen, materiaal, dagschema of conflictsignalering in dit pakket · een rol die op een generiek dashboard landt · een lege toestand zonder wie-en-vervolgstap · "weergave als rol" die iets kan wijzigen · een verloren rol of organisatie na migratie.
+
+## Rapportvorm
+Per scenario: verwacht, werkelijk, oordeel. Voeg toe: de kaart-tegen-rollijst-vergelijking uit C10, en het bewijs uit E19 dat de operatie niet is meegebouwd. Eindoordeel: goedgekeurd of afgekeurd met concrete blokkade.
+
+## Uitzonderingslijst voor herstel
+Raakt een fix het organisatietype, de eigenaarschapsrelatie, de organogram-naar-conceptstructuur of de migratie van bestaande organisaties, dan wordt deze toets **volledig** hernomen. Anders: de betrokken rubriek plus rubriek K.

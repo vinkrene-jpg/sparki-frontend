@@ -3683,6 +3683,249 @@ router.delete("/:clubId/staff-slots/:slotId", requireAuth, async (req, res) => {
   }
 });
 
+// ── TEAM_ONBOARDING_01 addendum: rolgestuurde start ──────────────────────────
+// Iedere rol landt op een eigen startblok met handelingsperspectief: óf één
+// begrijpelijke eerste actie, óf een eerlijke lege toestand die vermeldt wat
+// ontbreekt, waarom, wie het kan oplossen en de vervolgstap. Alles wordt
+// AFGELEID uit werkelijke inrichting — nooit uit een verzonnen lijst.
+const START_ROLE_LABELS: Record<string, string> = {
+  owner: "Eigenaar",
+  admin: "Beheerder",
+  hoofdtrainer: "Hoofdtrainer",
+  trainer: "Trainer",
+  assistent: "Assistent-trainer",
+  teammanager: "Teammanager",
+  ploegleider: "Ploegleider",
+  soigneur: "Soigneur",
+  medical_staff: "Medische staf",
+  mechanieker: "Mechanieker",
+  vrijwilliger: "Vrijwilliger",
+  alleen_lezen: "Gast",
+  parent: "Ouder",
+  member: "Sporter",
+};
+
+router.get("/:clubId/start", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const role = ctx.membership.role;
+    const isTeam = ctx.club.organisationType === "TEAM";
+    const orgWoord = isTeam ? "team" : "club";
+    const beheerWoord = isTeam ? "de teammanager" : "de clubbeheerder";
+    const today = new Date().toISOString().slice(0, 10);
+
+    const [teams, seizoenen, [training], [uitnodiging], eigenSelecties, [consentRij]] = await Promise.all([
+      db
+        .select({ id: clubTeamsTable.id, name: clubTeamsTable.name })
+        .from(clubTeamsTable)
+        .where(eq(clubTeamsTable.clubId, ctx.club.id)),
+      db
+        .select({ id: clubSeasonsTable.id })
+        .from(clubSeasonsTable)
+        .where(eq(clubSeasonsTable.clubId, ctx.club.id)),
+      db
+        .select({ id: clubTrainingsTable.id })
+        .from(clubTrainingsTable)
+        .where(and(eq(clubTrainingsTable.clubId, ctx.club.id), gte(clubTrainingsTable.trainingDate, today)))
+        .limit(1),
+      db
+        .select({ id: invitationsTable.id })
+        .from(invitationsTable)
+        .where(and(eq(invitationsTable.clubId, ctx.club.id), eq(invitationsTable.status, "pending")))
+        .limit(1),
+      // Eigen actieve selectie-toewijzingen binnen deze organisatie — de
+      // eerlijke basis voor "je bent (niet) toegewezen".
+      db
+        .select({ teamId: clubTeamMembersTable.teamId, naam: clubTeamsTable.name })
+        .from(clubTeamMembersTable)
+        .innerJoin(clubTeamsTable, eq(clubTeamsTable.id, clubTeamMembersTable.teamId))
+        .where(
+          and(
+            eq(clubTeamsTable.clubId, ctx.club.id),
+            eq(clubTeamMembersTable.clerkId, ctx.membership.clerkId),
+            isNull(clubTeamMembersTable.endedAt),
+          ),
+        ),
+      // Is er minstens één sporter die inzage-toestemming gaf (welke scope
+      // dan ook)? Bepaalt de eerlijke medische starttoestand.
+      db
+        .select({ id: clubConsentsTable.id })
+        .from(clubConsentsTable)
+        .where(and(eq(clubConsentsTable.clubId, ctx.club.id), eq(clubConsentsTable.status, "granted")))
+        .limit(1),
+    ]);
+
+    type EersteActie = { label: string; uitleg: string; doel: string };
+    type LegeToestand = {
+      soort: "nog_niet_ingericht" | "niet_toegewezen" | "geen_toestemming" | "geen_open_acties";
+      watOntbreekt: string;
+      waarom: string;
+      wie: string;
+      vervolgstap: string;
+    };
+    let werkgebied: string;
+    let eersteActie: EersteActie | null = null;
+    let legeToestand: LegeToestand | null = null;
+
+    const beheerder = ["owner", "admin", "teammanager"].includes(role);
+    if (beheerder) {
+      werkgebied = `Inrichting en beheer van ${isTeam ? "de teamorganisatie" : "de club"}: structuur, staf, leden en uitnodigingen.`;
+      if (ctx.club.status === "concept") {
+        eersteActie = {
+          label: "Rond de inrichting af",
+          uitleg: `${isTeam ? "Het team" : "De club"} staat nog in oprichting — doorloop de resterende stappen en activeer daarna.`,
+          doel: "onboarding",
+        };
+      } else if (seizoenen.length === 0) {
+        eersteActie = {
+          label: "Stel het seizoen in",
+          uitleg: "Er is nog geen seizoen — zonder seizoen is er geen kader voor de vaste bezetting.",
+          doel: "onboarding",
+        };
+      } else if (!uitnodiging && teams.length > 0) {
+        eersteActie = {
+          label: "Nodig je vaste bezetting uit",
+          uitleg: "Er staat geen enkele uitnodiging open — nodig renners en staf uit voor de selecties.",
+          doel: "leden",
+        };
+      } else {
+        eersteActie = {
+          label: "Bekijk de ledenstand",
+          uitleg: "Controleer wie er al binnen is en welke plekken nog open staan.",
+          doel: "leden",
+        };
+      }
+    } else if (role === "ploegleider") {
+      werkgebied = "Selecties en seizoensbezetting: wie hoort bij welke ploeg.";
+      if (eigenSelecties.length > 0) {
+        eersteActie = {
+          label: eigenSelecties.length === 1 ? `Bekijk je selectie: ${eigenSelecties[0]!.naam}` : "Bekijk je selecties",
+          uitleg: `Je bent toegewezen aan ${eigenSelecties.length === 1 ? "1 selectie" : `${eigenSelecties.length} selecties`} — bekijk de bezetting.`,
+          doel: "teams",
+        };
+      } else if (teams.length > 0) {
+        legeToestand = {
+          soort: "niet_toegewezen",
+          watOntbreekt: "Je bent nog aan geen enkele selectie toegewezen.",
+          waarom: `Er ${teams.length === 1 ? "bestaat wel 1 selectie" : `bestaan wel ${teams.length} selecties`}, maar jij hoort er nog bij geen enkele.`,
+          wie: beheerWoord,
+          vervolgstap: `Vraag ${beheerWoord} om je aan een selectie toe te wijzen.`,
+        };
+      } else {
+        legeToestand = {
+          soort: "nog_niet_ingericht",
+          watOntbreekt: "Er zijn nog geen selecties aangemaakt.",
+          waarom: `De structuur van het ${orgWoord} is nog niet ingericht.`,
+          wie: beheerWoord,
+          vervolgstap: `Vraag ${beheerWoord} om selecties aan te maken (bijvoorbeeld via een organogram-kaart).`,
+        };
+      }
+    } else if (["trainer", "hoofdtrainer", "assistent"].includes(role)) {
+      werkgebied = "Trainingen: planning en begeleiding van de groep.";
+      if (training) {
+        eersteActie = {
+          label: "Bekijk de geplande trainingen",
+          uitleg: "Er staat minstens één training gepland — bekijk de kalender.",
+          doel: "trainingen",
+        };
+      } else {
+        legeToestand = {
+          soort: "nog_niet_ingericht",
+          watOntbreekt: "Er staat nog geen training gepland.",
+          waarom: "De trainingskalender is nog leeg.",
+          wie: role === "assistent" ? "de (hoofd)trainer of " + beheerWoord : `jij of ${beheerWoord}`,
+          vervolgstap: role === "assistent" ? "Vraag de trainer wanneer de eerste training komt." : "Plan de eerste training in de kalender.",
+        };
+      }
+    } else if (["mechanieker", "soigneur", "vrijwilliger"].includes(role)) {
+      werkgebied =
+        role === "mechanieker"
+          ? "Materiaal: ondersteuning rond fietsen en onderhoud."
+          : role === "soigneur"
+            ? "Verzorging: ondersteuning van de renners rond trainingen en wedstrijden."
+            : "Ondersteuning: kalender en berichten volgen.";
+      if (eigenSelecties.length > 0) {
+        eersteActie = {
+          label: eigenSelecties.length === 1 ? `Bekijk je selectie: ${eigenSelecties[0]!.naam}` : "Bekijk je selecties",
+          uitleg: "Je bent aan een selectie toegewezen — bekijk wie erbij horen en wat er gepland staat.",
+          doel: "teams",
+        };
+      } else {
+        legeToestand = {
+          soort: "niet_toegewezen",
+          watOntbreekt: "Je bent nog aan geen enkele selectie toegewezen.",
+          waarom: `Het ${orgWoord} heeft je nog niet aan een selectie of moment gekoppeld.`,
+          wie: beheerWoord,
+          vervolgstap: `Vraag ${beheerWoord} om je aan een selectie toe te wijzen; tot die tijd zie je kalender en berichten.`,
+        };
+      }
+    } else if (role === "medical_staff") {
+      werkgebied = "Medische begeleiding — inzage in sportdata kan alleen na expliciete toestemming van de sporter.";
+      if (consentRij) {
+        eersteActie = {
+          label: "Bekijk wie je inzage gaf",
+          uitleg: "Minstens één sporter gaf toestemming voor inzage — bekijk de ledenlijst en de gedeelde gegevens.",
+          doel: "leden",
+        };
+      } else {
+        legeToestand = {
+          soort: "geen_toestemming",
+          watOntbreekt: "Je hebt nog van geen enkele sporter toestemming voor inzage.",
+          waarom: "Gezondheids- en sportgegevens zijn pas zichtbaar nadat een sporter dat zelf toestaat.",
+          wie: "de sporter zelf",
+          vervolgstap: "Bespreek met de sporter of die je toestemming wil geven; zonder toestemming blijft je beeld beperkt tot kalender en berichten.",
+        };
+      }
+    } else if (role === "alleen_lezen") {
+      werkgebied = `Meekijken: je volgt het ${orgWoord} als gast, zonder acties.`;
+      legeToestand = {
+        soort: "geen_open_acties",
+        watOntbreekt: "Er zijn geen acties voor je — en dat klopt.",
+        waarom: "Een gast kijkt alleen mee en hoeft niets te doen.",
+        wie: beheerWoord,
+        vervolgstap: `Wil je meedoen, vraag dan ${beheerWoord} om een andere rol.`,
+      };
+    } else {
+      // member (Sporter), parent en overige leesrollen.
+      werkgebied =
+        role === "parent"
+          ? `Meekijken als ouder/verzorger binnen het ${orgWoord}.`
+          : `Meedoen als sporter: trainingen, wedstrijden en berichten van het ${orgWoord}.`;
+      if (training) {
+        eersteActie = {
+          label: "Bekijk de eerstvolgende training",
+          uitleg: "Er staat een training gepland — kijk wanneer je verwacht wordt.",
+          doel: "trainingen",
+        };
+      } else {
+        legeToestand = {
+          soort: "nog_niet_ingericht",
+          watOntbreekt: "Er staat nog niets voor je gepland.",
+          waarom: `Het ${orgWoord} heeft nog geen trainingen of activiteiten in de kalender gezet.`,
+          wie: beheerWoord,
+          vervolgstap: "Houd de berichten in de gaten; zodra er iets gepland staat, zie je het hier.",
+        };
+      }
+    }
+
+    res.json({
+      role,
+      rolLabel: START_ROLE_LABELS[role] ?? role,
+      organisationType: ctx.club.organisationType,
+      clubStatus: ctx.club.status,
+      werkgebied,
+      eersteActie,
+      legeToestand,
+      seizoenen: seizoenen.length,
+      selecties: teams.length,
+    });
+  } catch (err) {
+    req.log.error({ err }, "role start failed");
+    res.status(500).json({ error: "Startoverzicht ophalen is niet gelukt." });
+  }
+});
+
 router.post("/:clubId/activate", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);

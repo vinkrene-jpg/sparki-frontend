@@ -287,6 +287,34 @@ export function useApplyOrganogram(clubId: number | null) {
   })
 }
 
+// Addendum: rolgestuurde start — per rol één eerste actie of een eerlijke
+// lege toestand, server-side afgeleid uit de werkelijke inrichting.
+export type RoleStart = {
+  role: string
+  rolLabel: string
+  organisationType: "CLUB" | "TEAM"
+  clubStatus: string
+  werkgebied: string
+  eersteActie: { label: string; uitleg: string; doel: string } | null
+  legeToestand: {
+    soort: "nog_niet_ingericht" | "niet_toegewezen" | "geen_toestemming" | "geen_open_acties"
+    watOntbreekt: string
+    waarom: string
+    wie: string
+    vervolgstap: string
+  } | null
+  seizoenen: number
+  selecties: number
+}
+
+export function useRoleStart(clubId: number | null) {
+  return useQuery<RoleStart>({
+    queryKey: ["club-role-start", clubId],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/start`),
+    enabled: clubId != null,
+  })
+}
+
 export type StaffSlot = {
   id: number
   clubId: number
