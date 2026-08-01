@@ -32,7 +32,10 @@ import {
 import { TodayDebugPanel } from "@/components/sparki/role-today"
 import { Users, Bell, ShieldCheck } from "lucide-react"
 import { useUserProfile } from "@/contexts/UserContext"
-import { COACH_NAV_ENTRIES, PARENT_NAV_ENTRIES } from "@/lib/chapters"
+import { COACH_NAV_ENTRIES, PARENT_NAV_ENTRIES, ROLE_LABELS } from "@/lib/chapters"
+import type { Role } from "@/contexts/UserContext"
+import { DsContextRegel } from "@/components/ds/context"
+import { useTeamIdentity } from "@/hooks/use-social"
 import { cn } from "@/lib/utils"
 import {
   DsButton,
@@ -221,6 +224,10 @@ export function CommercialShell({
       {!bare && (
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-app-deep/80 backdrop-blur lg:flex">
         <div className="type-wordmark px-6 pt-7">SPARKI</div>
+        {/* F4: actieve rol, organisatie en team permanent zichtbaar. */}
+        <div className="px-5 pt-3">
+          <ShellContextRegel />
+        </div>
         <nav className="mt-8 flex flex-col gap-1 px-3" aria-label="Hoofdmenu">
           {shellNav.desktop.map((item) => {
             const active = isActive(item.href)
@@ -257,6 +264,13 @@ export function CommercialShell({
       )}
 
       <main className={cn("relative z-10 pb-28 lg:pb-16", !bare && "lg:ml-56")}>
+        {/* F4 mobiel: dezelfde contextregel, boven de inhoud (desktop toont
+            hem in de zijbalk). */}
+        {!bare && (
+          <div className="px-5 pt-3 lg:hidden">
+            <ShellContextRegel />
+          </div>
+        )}
         {children}
       </main>
 
@@ -271,6 +285,27 @@ export function CommercialShell({
         </div>
       )}
     </div>
+  )
+}
+
+// F4 (SPARKI_BUILD_01): actieve rol, organisatie en team/groep permanent
+// zichtbaar in de schil — alleen de ACTIEVE context, nooit aantallen of
+// informatie uit niet-actieve contexten.
+function ShellContextRegel() {
+  const { profile } = useUserProfile()
+  const { data } = useTeamIdentity()
+  const team = data?.team
+  const rolLabel =
+    ROLE_LABELS[(profile?.activeRole as Role | undefined) ?? "athlete"] ??
+    "Sporter"
+  return (
+    <DsContextRegel
+      rolLabel={rolLabel}
+      clubNaam={team?.clubName ?? null}
+      teamNaam={team?.teamName ?? null}
+      clubKleur={team?.primaryColor ?? null}
+      clubLogoUrl={team?.logoUrl ?? null}
+    />
   )
 }
 

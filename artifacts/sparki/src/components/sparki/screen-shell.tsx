@@ -61,7 +61,10 @@ import {
   COACH_NAV_ENTRIES,
   PARENT_NAV_ENTRIES,
   NUTRITION_SPECIALIST_NAV_ENTRIES,
+  ROLE_LABELS,
 } from "@/lib/chapters"
+import type { Role } from "@/contexts/UserContext"
+import { DsContextRegel } from "@/components/ds/context"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
@@ -225,6 +228,27 @@ function ClubCrest() {
         {team.shirtBadge || team.clubName}
       </span>
     </span>
+  )
+}
+
+// F4 (SPARKI_BUILD_01): actieve rol, organisatie en team/groep permanent
+// zichtbaar in de schil. Toont uitsluitend de ACTIEVE context — nooit
+// aantallen of informatie uit niet-actieve contexten.
+function ContextRegel() {
+  const { profile } = useUserProfile()
+  const { data } = useTeamIdentity()
+  const team = data?.team
+  const rolLabel =
+    ROLE_LABELS[(profile?.activeRole as Role | undefined) ?? "athlete"] ??
+    "Sporter"
+  return (
+    <DsContextRegel
+      rolLabel={rolLabel}
+      clubNaam={team?.clubName ?? null}
+      teamNaam={team?.teamName ?? null}
+      clubKleur={team?.primaryColor ?? null}
+      clubLogoUrl={team?.logoUrl ?? null}
+    />
   )
 }
 
@@ -449,7 +473,9 @@ export function ScreenShell({
             <SectionIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="font-mono text-[10px] tracking-[0.28em] uppercase">{sectionLabel}</span>
           </span>
-          {(isHome || sectionKey === "start") && <ClubCrest />}
+          {/* F4: actieve rol, organisatie en team permanent zichtbaar —
+              alleen de actieve context, nooit aantallen uit andere contexten. */}
+          <ContextRegel />
         </div>
 
         {/* Automatische top-anchored Terug op diepere pagina's. */}

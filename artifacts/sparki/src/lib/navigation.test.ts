@@ -7,6 +7,8 @@ import {
   ATHLETE_NAV_ENTRIES,
   COACH_NAV_ENTRIES,
   PARENT_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_NAV_ENTRIES,
+  NUTRITION_SPECIALIST_CHAPTERS,
   ATHLETE_CHAPTERS,
   ATHLETE_MEER_CHAPTERS,
   COACH_CHAPTERS,
@@ -58,6 +60,7 @@ test("elke hoofdnav-link wijst naar een bestaande route", () => {
     ...ATHLETE_NAV_ENTRIES,
     ...COACH_NAV_ENTRIES,
     ...PARENT_NAV_ENTRIES,
+    ...NUTRITION_SPECIALIST_NAV_ENTRIES,
   ]) {
     assert.ok(routeExists(e.href), `route ontbreekt voor nav-link ${e.href}`)
   }
@@ -69,6 +72,7 @@ test("alle hoofdstukken en Meer-onderdelen blijven bereikbaar", () => {
     ...ATHLETE_MEER_CHAPTERS,
     ...COACH_CHAPTERS,
     ...PARENT_CHAPTERS,
+    ...NUTRITION_SPECIALIST_CHAPTERS,
     CLUB_CHAPTER,
   ]
   for (const c of all) {
@@ -83,10 +87,27 @@ test("Meer bevat de verplichte onderdelen", () => {
   }
 })
 
+// F4 (BB-06/BB-07): vaste vijf posities voor élke rol, positie 5 heet altijd
+// "Meer", nooit een zesde hoofditem.
+test("BB-06: elke rol heeft precies vijf posities en positie 5 is Meer", () => {
+  const perRol: Record<string, { href: string; label: string }[]> = {
+    athlete: ATHLETE_NAV_ENTRIES,
+    coach: COACH_NAV_ENTRIES,
+    parent: PARENT_NAV_ENTRIES,
+    nutrition_specialist: NUTRITION_SPECIALIST_NAV_ENTRIES,
+  }
+  for (const [rol, entries] of Object.entries(perRol)) {
+    assert.equal(entries.length, 5, `${rol}: precies vijf posities (BB-06/BB-07)`)
+    assert.equal(entries[4]!.label, "Meer", `${rol}: positie 5 heet Meer`)
+    assert.equal(entries[4]!.href, "/meer", `${rol}: positie 5 wijst naar /meer`)
+  }
+})
+
 test("coach en ouder behouden hun bestaande navigatie", () => {
   assert.deepEqual(
     COACH_NAV_ENTRIES.map((e) => e.href),
-    ["/", "/invitations", "/you"],
+    // F4 (BB-06): coach op vijf vaste posities.
+    ["/", "/invitations", "/samen", "/you", "/meer"],
   )
   assert.deepEqual(
     PARENT_NAV_ENTRIES.map((e) => e.href),
