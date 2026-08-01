@@ -27,6 +27,16 @@ Bronnen gelezen: docs/build-packages (alle *_MIRROR_TOETS), docs/SPARKI_EVIDENCE
 - K1–K6 governance-correctiepakket: vraag staat uit bij René (`.agents/open-choices.md`).
 - MEDIA_UITLEG_01 F3: wacht op rechtenvrij testmediabestand (input-gap; afhankelijk van K6).
 
+## Blokrapport P0/P1 eerste ronde (01-08)
+- **F-P0-03 + F-P1-01 rol-URL**: start `d86550d4`, eind `9ab1008c`. Rolbezit-poort op /rol-start/<rol> (globale rollen + actieve clubrollen, fail-closed, vers autorisatiebesluit zonder stale cache); e2e wp-f3-rolstart 11/11 op productiebuild (incl. negatieve preconditie + geen structuurlek), evidence in e2e/evidence/wp-f3-rolstart/. Architect-review gedaan; beide echte punten (stale-cache-gate, niet-idempotente fixture) gedicht. Kanttekening review: UI-poort is presentatielaag — server-side rechten gelden op elke doelroute/API zelf.
+- **F-P1-06 versie**: version.json krijgt omgeving+service (web, lokaal bewezen `{"sha":"541d03f0",...,"service":"web"}`); prod-bewijs volgt na Publish.
+
+## Consentservice-dekkingsaudit (F-P0-01, uitgevoerd 01-08)
+Centrale service: `api-server/src/lib/consent-service.ts` (consent_grants + audit-log); centrale leeftijd: `lib/age.ts` computeAge; minderjarigen-gate in privacy.ts gebruikt de service. **Nog niet via de service (geregistreerd, volgende herstelblok):**
+- directe privacy_settings-writes: privacy.ts (141-147), account.ts (202-205, 237-239), legal.ts (98-101);
+- eigen leeftijdshulpjes: dev.ts computeAgeFrom (28-43), parent-permissions.ts eigen getAgeClass-categorisering (80), simpele jaartal-berekening in seeds/tests;
+- parent_athlete_links-writes in links.ts/invitations.ts/parent.ts zijn het bewuste legacy-rollbackpad van migratie 0017 (relatieregistratie, geen consent-SSOT) — geen defect, wel documenteren.
+
 ## Volgorde van uitvoering
 1. ✅ Blok A (dit register).
 2. P0: F-P0-03 rol-URL-gate (audit+fix+test) → F-P0-01 consentservice-dekking → F-P0-04/05 matrices.
