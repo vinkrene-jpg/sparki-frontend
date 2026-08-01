@@ -155,4 +155,5 @@
 - [Routegebruik-telling 02a](sparki-route-usage-telling.md) — maandtelling DB-uniek (user+route+Ams-maand), registreer vóór res.send in exports, 20%-vlag uit (geen server-side routedekking), tier-snapshot nooit herrekend.
 - [Route-zoeklaag bekend-eerst](sparki-route-search-layer.md) — bekende routes vóór generatie: pure rank+verify-laag, fail-closed blokkadecheck ook op oude routes, gedeeld matcht op kijkersgeometrie, hybride alleen op eigen basis.
 - [Merknaam-lint UI-copy](sparki-brand-copy-lint.md) — UI spreekt direct, nooit "Sparki <werkwoord>"; check-brand-copy.mjs in typecheck-api, uitzonderingen zin-exact in allowlist.
+- [TEAM-onboarding & organogram-kaarten](sparki-team-onboarding.md) — TEAM = kolom op clubs; kaarten additief+idempotent (advisory lock), TEAM-gate server-side, medisch telt per functietype; e2e-valkuilen.
 - [Sparki Team-abonnement](sparki-team-abonnement.md) — tier TEAM: tier-verbreding raakt álle persoonlijke paden; terminale routes sluiten club; rolmapping definitief: ploegleider aparte rol, medic→medical_staff.
