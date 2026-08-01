@@ -21,23 +21,7 @@ Laatst bijgewerkt: 2026-07-31.
 
 ## Open (wachten op René)
 
-17. **Geschatte FTP en zones/plangeneratie (31-07-2026, uit DATA_TRUST_01-review)** —
-    De geschatte onboarding-FTP is nu overal zichtbaar als schatting en telt NIET
-    meer mee voor belastingscores (TSS/IF) of de Vermogen-as van de radar. Maar:
-    trainingszones, W/kg-weergave, plangeneratie en tijdrit-pacing gebruiken de
-    profiel-FTP nog wél (ook als die geschat is). Dat is bewust productgedrag voor
-    Q&A-only-onboarding (anders heeft een nieuwe gebruiker geen zones en geen plan).
-    KEUZE voor René: (a) zo laten, met duidelijke "(op basis van geschatte FTP)"-
-    labels bij zones/plan/pacing, of (b) deze functies blokkeren tot er een echte/
-    afgeleide FTP is. Advies: (a).
-
-18. **Legacy-migratie per account (ABONNEMENT_01 §1.4, 31-07-2026)** — Er is
-    NIETS gemigreerd; alleen geïnventariseerd (dry-run). Echte accounts met
-    `legacy_unrestricted` in dev: `dev_qa_athlete` (8 routes, 1 entitlement),
-    `user_3FTiMcQbYrQ8KA299tNXu0Ir6EQ`, `user_3HG8jhjNUhHTFf7bqpMzZm5QhL4`
-    (beide leeg); rest zijn test-/seedaccounts. Migratie = per account, alleen
-    na jouw expliciet akkoord; tot die tijd behouden ze volledige toegang en
-    raken webhooks ze niet aan. KEUZE: welke accounts (ooit) migreren?
+(17 en 18 beslist 01-08-2026 — zie archief.)
 
 19. **Degraded-gedrag rechtenlaag (ABONNEMENT_01 §1.2, 31-07-2026) — gemaakte
     veiligheidskeuze ter bevestiging**: bij een onleesbare rechtenbron telt die
@@ -156,10 +140,7 @@ Laatst bijgewerkt: 2026-07-31.
     blokkerend — zonder herkomst geen bronvermelding). Geen pakket start zonder
     expliciete vrijgave.
 
-16. **Besluit D5 — ploegleiderrol (TRAINER_CLUB_01)** — clubRoles kent wél
-    `teammanager`, geen `ploegleider`. Keuze René: (a) ploegleider = teammanager
-    (term verdwijnt uit productcommunicatie) of (b) eigen rol met eigen rechten
-    (apart besluit). Tot die keuze: bouwen op `teammanager` en dat melden.
+(16 beslist 01-08-2026: ploegleider = eigen rolwaarde — SPARKI-BESLUIT-2026-010; zie archief.)
 
 ## Geparkeerd (48-uurs afbouwsprint, besluit René 31-07-2026)
 
@@ -183,6 +164,18 @@ Laatst bijgewerkt: 2026-07-31.
     **Samen** ooit een eigen plek op het eerste niveau, en zo ja ten koste van welke tab?
 
 ## Beslist (archief)
+- **2026-08-01 — Keuze 17 (geschatte FTP): beslist.** Geschatte FTP mag voorlopige
+  zones/plan voeden onder harde voorwaarden (altijd "Geschatte FTP"-label, herkomst
+  vastgelegd, wijzigingsvoorstel i.p.v. stille wijziging, trainer leidend, bij te
+  dunne data om test/handmatige invoer vragen). SPARKI-BESLUIT-2026-011.
+- **2026-08-01 — Keuze 18 (legacy-migratie): beslist.** Per account, nooit globaal;
+  dry-run+preview+herleidbaarheid+idempotent+auditlog verplicht; nooit betrouwbaardere
+  data overschrijven; gefaseerde uitrol na bewezen test. SPARKI-BESLUIT-2026-012.
+  Welke accounts wanneer migreren blijft een per-account-akkoord van René.
+- **2026-08-01 — Keuze 16/D5 (ploegleiderrol): beslist.** Eigen server-side rolwaarde
+  `ploegleider` naast `teammanager` (niet samenvoegen/hernoemen); medic→medical_staff
+  met beschrijvend functietype. SPARKI-BESLUIT-2026-010; 15m daarmee SUPERSEDED
+  voor de rolmapping ploegleider/medic.
 - **2026-07-30/31 — Keuze 9 (Samen-volgorde): "Samen trainen" bovenaan** (besluitendocument
   30-07); hoofdnav blijft ongewijzigd. Keuze 11 (volgorde niveaus-werk vs. #505) is vervallen:
   de aanvullende opdracht van 30-07 legt de volgorde zelf vast (§15: eerst rechtenlek — gedaan

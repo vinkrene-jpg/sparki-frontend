@@ -199,3 +199,44 @@ teamtrainerinzage + clubvoortgang → F zones/PDC/koolhydraat → G ramp-rate-vo
   idempotent vangnet (medic→medical_staff) en de kolom `medical_specialty`.
 - **Synchronisatie:** geldt voor CLUB_RECHTEN_01, TEAM_ABONNEMENT_01,
   TEAM_ONBOARDING_01, PLOEGLEIDER_01, TEAM_MECHANIEKER_01 en hoofdstuk J.
+
+---
+
+## SPARKI-BESLUIT-2026-011 — Geschatte FTP (keuze 17, 01-08-2026)
+
+- **Besluit (René):** een geschatte FTP mag worden gebruikt voor **voorlopige
+  trainingszones en een voorlopig trainingsplan**, onder voorwaarden:
+  altijd zichtbaar als "Geschatte FTP"; bron, datum en betrouwbaarheid vastgelegd;
+  nooit gepresenteerd als gemeten of bevestigde FTP; gebruiker kan bevestigen,
+  aanpassen of vervangen; nieuwe betrouwbare data levert een wijzigingsVOORSTEL op
+  (geen stille wijziging); bij gekoppelde trainer blijft de trainer leidend;
+  bij onvoldoende betrouwbare data vraagt Sparki om een FTP-test of handmatige invoer.
+- **Productregel:** een geschatte FTP mag Sparki bruikbaar maken, maar nooit een
+  sportfeit suggereren dat niet bewezen is.
+- **Gevolg:** huidige gedrag (zones/plan/pacing op geschatte profiel-FTP; belasting-
+  scores en Vermogen-as sluiten schattingen uit) blijft; labels en voorstel-flow
+  toetsen tegen deze voorwaarden bij de eerstvolgende relevante bouwronde.
+
+---
+
+## SPARKI-BESLUIT-2026-012 — Legacy-migratie per account (keuze 18, 01-08-2026)
+
+- **Besluit (René):** legacy-migratie gebeurt **per account**, nooit als één globale
+  migratie. Verplicht: inventarisatie + dry-run per account; preview van over te
+  nemen gegevens; volledige herleidbaarheid naar bron; idempotent; nooit nieuwere of
+  betrouwbaardere data overschrijven; conflicten zichtbaar houden; migratiestatus
+  per account; auditlog + herstelmogelijkheid; gefaseerde uitrol na bewezen test.
+- **Productregel:** migratie is een gecontroleerde accounttransformatie, geen
+  database-import.
+- **Status:** er is nog níéts gemigreerd (alleen dry-run-inventarisatie);
+  `legacy_unrestricted`-accounts behouden volledige toegang tot per-account akkoord.
+
+---
+
+## Statusbesluit 01-08-2026 — ABONNEE_ADMIN_01 blijft geblokkeerd
+
+Vrijgave volgt pas na een succesvolle Mirror-hertoets van DATA_TRUST_01,
+ABONNEMENT_01 en de volledige gekoppelde keten (geen mock/seed/fallback zichtbaar;
+rechten uitsluitend uit echte abonnementstoestand; Stripe-events deterministisch;
+dubbele webhooks veilig; typecheck/build/tests groen; negatieve tests uitgevoerd;
+audittrail compleet).

@@ -84,6 +84,15 @@ Neem minimaal deze rollen mee:
 - ouder/verzorger bij jeugd
 - mechanieker
 - teammanager indien bestaand maar niet als vervanging van ploegleider
+- soigneur en medical_staff (functietype beschrijvend, geen rechten) waar de flow hen raakt
+
+> **Synchronisatie 01-08-2026 (SPARKI-BESLUIT-2026-010 + besluitendocument
+> SPARKI_BESLUITEN_EN_BOUWVERDELING_CLUB_TEAM_ROLLEN_2026-08-01):** `ploegleider`
+> bestaat inmiddels als eigen server-side rolwaarde naast `teammanager` (met
+> trainings-/wedstrijdbeheer en team-scoped ledeninzage, bewezen via
+> `test:team-organisatie`). Dit pakket bouwt uitsluitend de operationele
+> ploegleiderflow en géén rechtenarchitectuur; het centrale rollenmodel is en
+> blijft eigendom van CLUB_RECHTEN_01.
 
 Maak een server-side rechtenmatrix met per actie: bekijken, aanmaken, wijzigen, verwijderen/intrekken, exporteren/delen, gevoelige data zien en auditgegevens zien. Test zowel toegestane als verboden combinaties.
 
