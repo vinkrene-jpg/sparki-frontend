@@ -25,6 +25,21 @@ K4=A (elf hard stops) · K5=A (benoemde verplichte testset) · K6=A (input≠toe
 Doorgevoerd: `docs/SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01.md` + correctierapport
 `docs/audits/GOVERNANCE_CORRECTIE_RAPPORT_2026-08-01.md` + flag-inventaris.
 
+
+## Besluiten René 01-08-2026 — BUILD_01-navigatie en nutrition_specialist
+
+- **Coach-navigatielabels positie 2–4:** NIET vastleggen in ABONNEMENT_01 of in code.
+  Positie 1 (= eerste mobiele prioriteit MUX-76a) en positie 5 ("Meer") liggen vast.
+  Labels 2–4 zijn een voorstel (MRU-22); MULTIROLE_CONTEXT_01 is eigenaar en stelt ze
+  definitief vast in MRC-F1. Doorgevoerd: labels komen uit
+  `artifacts/sparki/src/config/role-nav-labels.json` (voorlopige waarden).
+- **nutrition_specialist commerciële plaatsing:** OPEN. Configureerbaar gebouwd met
+  lege waarde (`NUTRITION_SPECIALIST_TIER`, default leeg): geen tier gehardcodeerd,
+  geen prijs aangenomen, geen terugval op trainer- of Complete-rechten. Zodra René
+  een tier kiest wordt alleen de configuratie gevuld.
+- F5 van SPARKI_BUILD_01 gaat door; geen van beide keuzes blokkeert.
+- Taak #537 (ABONNEE_ADMIN_01) blijft ongemoeid en niet afgerond (herbevestigd 01-08).
+
 ## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
 
 - **ABONNEE_ADMIN_01** (files_10, 31-07-2026) — door René AANGENOMEN als volledige

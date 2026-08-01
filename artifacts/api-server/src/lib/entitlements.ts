@@ -103,6 +103,29 @@ export function __setEntitlementsReadFailureForTests(v: boolean): void {
   forcedEntitlementReadError = v;
 }
 
+// ── BB-14: commerciële plaatsing nutrition_specialist ────────────────────────
+// Besluit René 01-08-2026: de rolwaarde bestaat (BB-14), maar de commerciële
+// plaatsing is NIET besloten. Configureerbaar met lege waarde: geen tier
+// hardcoderen, geen prijs aannemen, geen terugval op trainer- of
+// Complete-rechten. Leeg (default) = geen commerciële voorwaarde — de rol
+// volgt dan uitsluitend het bestaande regime (rolbezit + entitlementmodus).
+// Zodra een geldige tier is geconfigureerd (NUTRITION_SPECIALIST_TIER), eist
+// wisselen naar deze rol in subscription-modus precies die tier.
+export function nutritionSpecialistRequiredTier(): CommercialTier | null {
+  const raw = (process.env.NUTRITION_SPECIALIST_TIER ?? "").trim();
+  if (!raw) return null;
+  if ((COMMERCIAL_TIERS as readonly string[]).includes(raw)) {
+    return raw as CommercialTier;
+  }
+  // Ongeldige configuratie mag nooit stil een recht verzinnen of blokkeren
+  // op een verzonnen tier: behandelen als "niet besloten" en luid loggen.
+  logger.warn(
+    { waarde: raw },
+    "NUTRITION_SPECIALIST_TIER ongeldig — genegeerd (plaatsing blijft onbeslist)",
+  );
+  return null;
+}
+
 function isEntitlementActive(e: UserEntitlement, now: Date): boolean {
   if (e.status !== "active") return false; // onbekende status ⇒ fail-closed
   if (e.startsAt && e.startsAt > now) return false;

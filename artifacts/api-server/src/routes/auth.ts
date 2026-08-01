@@ -8,6 +8,10 @@ import {
   getClerkVerifiedEmail,
 } from "../lib/auth";
 import { writeAudit } from "../lib/security/audit";
+import {
+  nutritionSpecialistRequiredTier,
+  resolveEntitlements,
+} from "../lib/entitlements";
 import { ensureAccount } from "../lib/account";
 import { isAdmin } from "../lib/flags";
 import { assignHeadTesterNumber } from "../engines/insights";
@@ -176,6 +180,30 @@ router.put("/me/role", requireAuth, async (req, res) => {
     if (!profile.roles.includes(role as Role)) {
       res.status(403).json({ error: "User does not have this role" });
       return;
+    }
+
+    // BB-14 (besluit 01-08-2026): commerciële plaatsing van
+    // nutrition_specialist is configureerbaar met lege waarde. Alleen wanneer
+    // een tier expliciet geconfigureerd is, eist wisselen naar deze rol in
+    // subscription-modus precies die tier — nooit een terugval op trainer- of
+    // Complete-rechten. Leeg (default) = geen commerciële voorwaarde.
+    if (role === "nutrition_specialist") {
+      const vereisteTier = nutritionSpecialistRequiredTier();
+      if (vereisteTier) {
+        const rechten = await resolveEntitlements(clerkId);
+        if (rechten.entitlementMode === "subscription") {
+          const [rij] = await db
+            .select({ commercialTier: userProfilesTable.commercialTier })
+            .from(userProfilesTable)
+            .where(eq(userProfilesTable.clerkId, clerkId));
+          if (rij?.commercialTier !== vereisteTier) {
+            res.status(403).json({
+              error: `Deze rol vereist het ${vereisteTier}-abonnement`,
+            });
+            return;
+          }
+        }
+      }
     }
 
     const [updated] = await db

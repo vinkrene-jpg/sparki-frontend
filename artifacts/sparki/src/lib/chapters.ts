@@ -118,11 +118,31 @@ export const ATHLETE_NAV_ENTRIES: NavEntry[] = [
 // 1 startpunt · 2 hoofdonderwerp · 3 uitvoeren · 4 terugkijken · 5 Meer.
 // Labels 1–4 mogen per rol verschillen; aantal, volgorde en betekenis niet.
 // Positie 5 heet altijd "Meer". Nooit een zesde hoofditem (BB-07).
+//
+// Besluit René 01-08-2026: de labels voor positie 2–4 zijn een VOORSTEL
+// (MRU-22) en worden definitief vastgesteld in MRC-F1 van MULTIROLE_CONTEXT_01
+// (eigenaar). Daarom komen ze uit configuratie (config/role-nav-labels.json)
+// en liggen ze hier niet in code vast. Positie 1 (MUX-76a) en 5 ("Meer")
+// liggen wél vast.
+import roleNavLabels from "../config/role-nav-labels.json"
+
+type RoleNavConfigEntry = { positie: number; href: string; label: string }
+
+function middenPosities(rol: "coach" | "nutrition_specialist"): NavEntry[] {
+  const cfg = (roleNavLabels as Record<string, unknown>)[rol]
+  const entries = Array.isArray(cfg) ? (cfg as RoleNavConfigEntry[]) : []
+  return [2, 3, 4].map((positie) => {
+    const e = entries.find((x) => x && x.positie === positie && x.href && x.label)
+    // Ontbrekende configuratie ⇒ generiek positielabel (MRU-23), nooit een
+    // gat of een zesde item.
+    if (!e) return { href: "/meer", label: positie === 2 ? "Onderwerp" : positie === 3 ? "Uitvoeren" : "Overzicht" }
+    return { href: e.href, label: e.label }
+  })
+}
+
 export const COACH_NAV_ENTRIES: NavEntry[] = [
-  { href: "/", label: "Vandaag" }, // 1 startpunt
-  { href: "/invitations", label: "Sporters" }, // 2 hoofdonderwerp: gekoppelde sporters
-  { href: "/samen", label: "Samen" }, // 3 uitvoeren: werken met het team
-  { href: "/you", label: "Profiel" }, // 4 terugkijken: jouw gegevens & historie
+  { href: "/", label: "Vandaag" }, // 1 startpunt (MUX-76a)
+  ...middenPosities("coach"), // 2–4 uit configuratie (voorstel MRU-22)
   { href: "/meer", label: "Meer" }, // 5 Meer (vast)
 ]
 
@@ -136,11 +156,10 @@ export const PARENT_NAV_ENTRIES: NavEntry[] = [
 ]
 
 // BB-14: onderbalk voedingsdeskundige — Voeding eerst; BB-06: vijf posities.
+// Posities 2–4 uit configuratie (zelfde regel als coach, besluit 01-08-2026).
 export const NUTRITION_SPECIALIST_NAV_ENTRIES: NavEntry[] = [
-  { href: "/", label: "Voeding" }, // 1 startpunt
-  { href: "/invitations", label: "Sporters" }, // 2 hoofdonderwerp: koppelingen
-  { href: "/support", label: "Hulp" }, // 3 uitvoeren: koppeling/hulp aanvragen
-  { href: "/you", label: "Profiel" }, // 4 terugkijken
+  { href: "/", label: "Voeding" }, // 1 startpunt (MUX-76a)
+  ...middenPosities("nutrition_specialist"),
   { href: "/meer", label: "Meer" }, // 5 Meer (vast)
 ]
 

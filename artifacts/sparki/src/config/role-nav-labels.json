@@ -1,0 +1,13 @@
+{
+  "_uitleg": "Voorlopige labels voor onderbalk-posities 2-4 per rol (besluit René 01-08-2026): niet in code vastleggen. Positie 1 (MUX-76a) en positie 5 ('Meer') liggen vast en staan NIET in dit bestand. De labels 2-4 zijn een VOORSTEL (MRU-22); MULTIROLE_CONTEXT_01 is eigenaar en stelt ze definitief vast in MRC-F1. Waar het MRU-22-label (coach: Planning/Communicatie) nog geen bestaand scherm heeft, staat hier per MRU-23 het label van het bestaande doelscherm.",
+  "coach": [
+    { "positie": 2, "href": "/invitations", "label": "Sporters" },
+    { "positie": 3, "href": "/samen", "label": "Samen" },
+    { "positie": 4, "href": "/you", "label": "Profiel" }
+  ],
+  "nutrition_specialist": [
+    { "positie": 2, "href": "/invitations", "label": "Sporters" },
+    { "positie": 3, "href": "/support", "label": "Hulp" },
+    { "positie": 4, "href": "/you", "label": "Profiel" }
+  ]
+}
