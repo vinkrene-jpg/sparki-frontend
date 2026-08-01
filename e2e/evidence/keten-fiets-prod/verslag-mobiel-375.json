@@ -1,25 +1,25 @@
 {
-  "sha": "51939e71",
+  "sha": "ae836745",
   "viewport": "mobiel-375",
   "stappen": [
     {
       "stap": "versiecontrole",
       "status": "OK",
-      "detail": "web=51939e71 api=51939e71 apiStart=2026-08-01T15:20:43.603Z",
-      "t": "2026-08-01T15:41:17.499Z"
+      "detail": "web=ae836745 api=ae836745 apiStart=2026-08-01T17:51:58.618Z",
+      "t": "2026-08-01T18:26:27.447Z"
     },
     {
       "stap": "login",
       "status": "OK",
       "detail": "identiteit geverifieerd via /api/auth/me",
-      "t": "2026-08-01T15:41:32.875Z"
+      "t": "2026-08-01T18:26:46.036Z"
     },
     {
       "stap": "FATAAL",
       "status": "FOUT",
-      "detail": "Generatie gaf een fout (na 95955ms) — zie screenshot",
-      "t": "2026-08-01T15:43:15.143Z"
+      "detail": "Generatie gaf een fout (na 210120ms) — zie screenshot",
+      "t": "2026-08-01T18:30:23.356Z"
     }
   ],
-  "fataal": "Generatie gaf een fout (na 95955ms) — zie screenshot"
+  "fataal": "Generatie gaf een fout (na 210120ms) — zie screenshot"
 }
