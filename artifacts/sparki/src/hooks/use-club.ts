@@ -153,10 +153,13 @@ export type ClubDashboard = {
   consents?: { athleteClerkId: string; status: string; grantedByRelation: string }[]
 }
 
-export function useMyClubs() {
+export function useMyClubs(opts?: { authzFresh?: boolean }) {
   return useQuery<ClubMembershipRow[]>({
     queryKey: ["clubs"],
     queryFn: () => apiFetch("/api/clubs"),
+    // Voor autorisatiebeslissingen (rolbezit-poort) mag geen stale cache
+    // meetellen: altijd vers ophalen bij mount.
+    ...(opts?.authzFresh ? { staleTime: 0, refetchOnMount: "always" as const } : {}),
   })
 }
 

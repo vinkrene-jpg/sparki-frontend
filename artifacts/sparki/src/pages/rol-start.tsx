@@ -28,15 +28,18 @@ export default function RolStartPage() {
   // server-side profiel, clubrollen uit actieve club_members-lidmaatschappen.
   // Zonder bezit tonen we een eerlijke geen-toegang-toestand die géén
   // rolstructuur of navigatielabels lekt.
+  // Vers autorisatiebesluit per bezoek: geen stale cache voor deze poort
+  // (staleTime 0 + refetchOnMount "always"), en een lopende her-fetch of
+  // fetch-fout telt als "nog niet bewezen bezit" — dus geen toegang tonen.
   const { profile, isLoading: profileLoading } = useUserProfile()
-  const clubsQuery = useMyClubs()
+  const clubsQuery = useMyClubs({ authzFresh: true })
   const ownedRoles = new Set<string>([
     ...(profile?.roles ?? []),
     ...(clubsQuery.data ?? [])
       .map((row) => row?.membership?.role as string | undefined)
       .filter((r): r is string => typeof r === "string"),
   ])
-  const ownershipLoading = profileLoading || clubsQuery.isLoading
+  const ownershipLoading = profileLoading || clubsQuery.isFetching
 
   if (start && ownershipLoading) {
     return (

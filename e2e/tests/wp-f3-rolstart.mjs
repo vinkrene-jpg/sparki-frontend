@@ -93,6 +93,16 @@ try {
   );
   await page.screenshot({ path: path.join(EVIDENCE, "voeding-start.png") });
 
+  // Negatieve preconditie hard maken: geen actief clublidmaatschap vóór 3a
+  // (idempotentie — een eerdere run mag geen toegang achterlaten).
+  psql(
+    `UPDATE club_members SET ended_at = now(), ended_reason = 'e2e-cleanup', updated_at = now() WHERE clerk_id = '${userId}' AND ended_at IS NULL`,
+  );
+  log(
+    "preconditie: geen actief clublidmaatschap",
+    psql(`SELECT count(*) FROM club_members WHERE clerk_id='${userId}' AND ended_at IS NULL`) === "0",
+  );
+
   // 3a (F-P0-03): rolbezit-poort — zonder clublidmaatschap toont
   // /rol-start/mechanieker een eerlijke geen-toegang-toestand die géén
   // ingangen of rolstructuur lekt.
