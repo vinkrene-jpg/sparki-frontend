@@ -142,7 +142,7 @@ Totdat de lusrouteketen de bewijsronde doorstaat:
 - geen tweede route-engine;
 - geen Product Proven-claim voor Routes;
 - hoofdstuk J mag alleen als kalibratie-/onderzoekswerk doorgaan;
-- overige nieuwe productbouw alleen na expliciete vrijgave door René.
+- overige nieuwe productbouw start zodra René de betreffende bouwopdracht geeft; de opdracht zelf is de vrijgave en loopt daarna zelfstandig volledig door (`GOV-B1`, 01-08-2026). Een volgende opdracht in een reeks start niet vanzelf.
 
 ## 9. Publicatie- en releasegrens
 

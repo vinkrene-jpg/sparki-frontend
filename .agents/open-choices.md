@@ -5,13 +5,23 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-07-31.
+Laatst bijgewerkt: 2026-08-01.
+
+> **Uitvoeringsregel per 01-08-2026 (`GOV-B1`, `SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`):**
+> een door René gegeven bouwopdracht is zelf de vrijgave en loopt zelfstandig volledig door;
+> Mirror toetst parallel (geen wachtpoort); productiepublicatie is een automatische technische
+> poort; wachten op ontbrekende input blijft, wachten op toestemming vervalt; een volgende
+> opdracht in een reeks start niet vanzelf. "Vrijgave" hieronder betekent dus: René geeft de
+> opdracht — niet: een aparte toestemmingsstap binnen een al gegeven opdracht.
 
 ## Aangenomen bouwopdrachten (wachten op triggervoorwaarde, niet op een keuze)
 
 - **ABONNEE_ADMIN_01** (files_10, 31-07-2026) — door René AANGENOMEN als volledige
-  bouwopdracht. Uitvoeren integraal zodra DATA_TRUST_01 én ABONNEMENT_01 door Mirror
-  zijn goedgekeurd. Bindende regels René: geen tweede abonnements-/rechtensysteem;
+  bouwopdracht. Technische afhankelijkheid (geen vrijgavepoort, `GOV-B1`): dit pakket
+  gebruikt het gebouwde en groen geteste resultaat van DATA_TRUST_01 (herkomstregels,
+  zeven lege toestanden) én ABONNEMENT_01 (statusvertaling, webhook-idempotentie,
+  entitlementpoorten); die opdrachten zijn nog niet gegeven (K2: een reeks start niet
+  vanzelf; René bevestigde 01-08 dat DATA_TRUST_01 nu niet start). Taak #537 wacht. Bindende regels René: geen tweede abonnements-/rechtensysteem;
   bestaande Clerk/Stripe/billing/support/privacy/audit hergebruiken; alle
   niet-geblokkeerde onderdelen uitvoeren; open product-/juridische besluiten apart
   melden (J-1…J-6, P-1…P-5, T-1…T-3 in files_10_uitgepakt); configureerbare

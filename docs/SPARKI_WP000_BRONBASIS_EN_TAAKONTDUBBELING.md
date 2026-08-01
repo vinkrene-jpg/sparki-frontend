@@ -1,5 +1,8 @@
 # SPARKI WP-000 — Bronbasis, live git-verificatie en taakontdubbeling
 
+> De uitvoeringsregel is op 1 augustus 2026 gewijzigd (`SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`). Dit rapport beschrijft de situatie onder de eerdere regel en is niet herschreven.
+
+
 **Controle uitgevoerd:** 2026-07-29 11:20 UTC · **HEAD op moment van controle:** `ddeb94089f3a73109412f38ebd09cad02d7e0a32` (`ddeb9408`)
 **Karakter:** read-only inventarisatie. Applicatiecode, database en de twee bronbestanden zijn niet gewijzigd.
 

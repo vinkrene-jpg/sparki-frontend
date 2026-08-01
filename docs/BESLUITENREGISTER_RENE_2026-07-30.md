@@ -181,4 +181,29 @@ teamtrainerinzage + clubvoortgang → F zones/PDC/koolhydraat → G ramp-rate-vo
   niets automatisch verwijderd of onbereikbaar gemaakt.
 - **Gevolg:** hiermee is de laatste blokkade voor `ROUTE_PAKKET_02c` (opslag, verval
   en downgrade) vervallen. De keuzeflow zelf wordt gebouwd in `ABONNEMENT_01`
-  (alleen de flow) en `02c` (opslag/verval); beide starten pas na expliciete vrijgave.
+  (alleen de flow) en `02c` (opslag/verval); beide starten zodra René de betreffende opdracht geeft — een volgende opdracht in een reeks start niet vanzelf (`GOV-B1`).
+
+## GOV-B1 — Continue uitvoeringsregel (besluit René, 01-08-2026)
+
+- **Besluit (01-08-2026, `SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`):** zodra René een
+  volledige bouwopdracht geeft, is de volledige daarin beschreven bouw-, test-, herstel-,
+  migratie-, deployment-, productie- en rollbackstraat vrijgegeven; Replit voert alle fasen
+  zelfstandig achter elkaar uit en rapporteert per fase zonder te wachten op antwoord.
+  Mirror toetst parallel en is geen wachtpoort (`MIRROR_PROVEN`=door · `HERSTEL NODIG`=zelf
+  herstellen en door · `AFGEKEURD`=alleen de geraakte lijn stopt · `NIET BEWIJSBAAR`=bewijs
+  herstellen, bouw ligt niet stil). Productiepublicatie is een automatische poort met
+  uitsluitend technische voorwaarden (build/typecheck/verplichte tests groen, migraties
+  gevalideerd, rollback beschikbaar, geen actieve harde stop) — `RENE_APPROVED` verdwijnt
+  uit de deployketen en blijft alleen bestaan voor productbesluiten (release, prijs, merk).
+  Elf hard stops (o.a. dataverlies, consentlek, verzonnen persoonsgegevens, onveilige
+  jeugd-/medische functionaliteit, destructieve migratie zonder rollback, betaalstromen
+  onbedoeld bij Sparki, blijvend rood, onoplosbare producttegenstrijdigheid, prod-DB
+  onbereikbaar, ontbrekende juridische bewaartermijnkeuze vóór betaalde publieke release,
+  ontbrekende rollback bij destructieve wijziging). Featureflags alleen om technische
+  redenen (rollback, migratie, A/B, providerbeperking, incompatibele overgang), nooit als
+  standaard bouw- of vrijgavepoort. Wachten op ontbrekende input blijft; wachten op
+  toestemming vervalt. Een volgende opdracht in een reeks start niet vanzelf.
+- **Nummering:** voorlopig geregistreerd als `GOV-B1`; definitief nummer volgt na
+  opschoning van de nummerreeks. `SPARKI-BESLUIT-2026-004` is in dit register/de repo
+  niet aangetroffen en kon daarom niet als INGETROKKEN worden gemarkeerd (gemeld).
+- **Status:** **besloten** (01-08-2026).

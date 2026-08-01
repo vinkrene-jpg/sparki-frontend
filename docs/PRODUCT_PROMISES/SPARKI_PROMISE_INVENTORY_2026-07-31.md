@@ -1,5 +1,8 @@
 # Sparki belofte-inventaris — 31-07-2026
 
+> De uitvoeringsregel is op 1 augustus 2026 gewijzigd (`SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`). Dit rapport beschrijft de situatie onder de eerdere regel en is niet herschreven.
+
+
 **Status van dit document: inventarisatie en beoordeling, géén herschrijving.**
 Er is niets verwijderd, hernummerd, verruimd of van status veranderd. De kolom
 "Huidige status" geeft weer wat er nú in de bron staat (letterlijke

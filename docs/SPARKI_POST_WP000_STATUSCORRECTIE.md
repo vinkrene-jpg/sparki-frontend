@@ -1,5 +1,8 @@
 # SPARKI — Statuscorrectie na WP-000
 
+> De uitvoeringsregel is op 1 augustus 2026 gewijzigd (`SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`). Dit rapport beschrijft de situatie onder de eerdere regel en is niet herschreven.
+
+
 **Uitgevoerd:** 2026-07-29, na WP-000 (`docs/SPARKI_WP000_BRONBASIS_EN_TAAKONTDUBBELING.md`).
 **Karakter:** alleen statusadministratie. Geen applicatiecode gewijzigd, geen databasecorrectie uitgevoerd, geen nieuwe functionele bouw gestart.
 

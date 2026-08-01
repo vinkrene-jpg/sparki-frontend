@@ -2,6 +2,13 @@
 
 **Besluit René:** 31-07-2026. Bron: sprintbesluit "48-UURS VOLLEDIGE AFBOUWSPRINT".
 **Regel:** afgerond = uitsluitend MIRROR_PROVEN. "Gebouwd maar niet getoetst" telt niet.
+**Uitvoeringsregel per 01-08-2026 (`SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01`, `GOV-B1`):**
+MIRROR_PROVEN blijft de bewijsstatus, maar Mirror is geen wachtpoort meer: Mirror toetst
+parallel, "TECHNISCH GROEN — WACHT OP MIRROR" is een bewijstoestand (vergelijkbaar met
+BUILT_UNPROVEN) en geen bouwstop, en "WACHT OP VOORGANGER" betekent uitsluitend een
+technische afhankelijkheid (het onderdeel gebruikt het resultaat van zijn voorganger),
+geen vrijgavepoort. Opdrachten die nog niet gegeven zijn (o.a. 02c, 02d, taak #536)
+starten niet vanzelf.
 **Bijhouden:** dit bestand is het enige actuele totaaloverzicht; elke statuswijziging
 wordt hier bijgewerkt met datum en bewijsverwijzing.
 
