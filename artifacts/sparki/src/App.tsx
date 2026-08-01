@@ -75,6 +75,7 @@ import { FeatureFlagProvider, useFeatureFlags } from "@/contexts/FeatureFlagCont
 import { GoGateSwitch } from "@/components/sparki/go-gate";
 import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import { DevPreview } from "@/components/sparki/dev-preview";
+import { UpdateBanner } from "@/components/sparki/update-banner";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { STALE } from "@/lib/query-keys";
 import { SoundProvider } from "@/contexts/SoundContext";
@@ -651,6 +652,7 @@ function AppRouter() {
             <SoundProvider>
             <ErrorBoundary>
               <VersionBlockScreen />
+              <UpdateBanner />
               <ScrollToTop />
               {DEV_PREVIEW ? (
                 <DevPreview />

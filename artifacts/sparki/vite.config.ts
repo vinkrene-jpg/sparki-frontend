@@ -63,6 +63,60 @@ export default defineConfig(({ command }) => {
     }
   }
 
+  // Eén mobiele waarheid (besluit 01-08-2026): elke build schrijft version.json
+  // met de echte commit-SHA zodat de app zichzelf kan vergelijken met de server
+  // en een nieuwe release zichtbaar kan aanbieden. In dev serveert een
+  // middleware dezelfde vorm en krijgt het manifest een DEV-naam, zodat een
+  // per ongeluk vanuit de ontwikkelomgeving geïnstalleerde PWA herkenbaar is.
+  const versionPlugin = {
+    name: "sparki-version-truth",
+    closeBundle() {
+      const outDir = path.resolve(import.meta.dirname, "dist/public");
+      try {
+        fs.writeFileSync(
+          path.join(outDir, "version.json"),
+          JSON.stringify({
+            sha: buildSha,
+            builtAt: new Date().toISOString(),
+          }),
+        );
+      } catch {
+        /* build faalt hier niet op; ontbrekend version.json is eerlijk "onbekend" */
+      }
+    },
+    configureServer(server: {
+      middlewares: {
+        use: (
+          fn: (
+            req: { url?: string },
+            res: {
+              setHeader: (k: string, v: string) => void;
+              end: (b: string) => void;
+            },
+            next: () => void,
+          ) => void,
+        ) => void;
+      };
+    }) {
+      server.middlewares.use((req, res, next) => {
+        if ((req.url ?? "").split("?")[0] === `${basePath}version.json`) {
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify({ sha: buildSha, dev: true }));
+          return;
+        }
+        next();
+      });
+    },
+    transformIndexHtml(html: string, ctx: { server?: unknown }) {
+      if (!ctx.server) return html; // productie: standaardmanifest
+      return html.replace(
+        '<link rel="manifest" href="/manifest.webmanifest" />',
+        '<link rel="manifest" href="/manifest-dev.webmanifest" />',
+      );
+    },
+  };
+
   return {
     base: basePath,
     define: {
@@ -72,6 +126,7 @@ export default defineConfig(({ command }) => {
       react(),
       tailwindcss({ optimize: false }),
       runtimeErrorOverlay(),
+      versionPlugin,
       ...devPlugins,
     ],
     resolve: {
