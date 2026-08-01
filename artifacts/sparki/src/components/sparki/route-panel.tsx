@@ -1415,7 +1415,9 @@ function RouteCard({
                           Voorstel verstuurd
                         </span>
                       ) : (
-                        "Stel voor aan fietsmaatje"
+                        route.sport === "walking" || route.sport === "hiking"
+                          ? "Stel voor aan wandelmaatje"
+                          : "Stel voor aan fietsmaatje"
                       )}
                       <span className="mt-0.5 block text-[10px] text-white/35">
                         Je maatje kan accepteren, afwijzen of aanpassen
@@ -1425,8 +1427,10 @@ function RouteCard({
                       <div className="border-t border-white/[0.08] pt-1">
                         {cardFriends.length === 0 ? (
                           <p className="px-3 py-2 text-[11px] text-white/40">
-                            Nog geen fietsmaatjes — voeg eerst iemand toe via
-                            Samen.
+                            {route.sport === "walking" ||
+                            route.sport === "hiking"
+                              ? "Nog geen wandelmaatjes — voeg eerst iemand toe via Samen."
+                              : "Nog geen fietsmaatjes — voeg eerst iemand toe via Samen."}
                           </p>
                         ) : (
                           cardFriends.map((f) => (

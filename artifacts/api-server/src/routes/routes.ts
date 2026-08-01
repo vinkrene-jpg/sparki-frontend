@@ -2397,10 +2397,15 @@ router.get("/:id/remarks", requireAuth, async (req, res) => {
     // gebruikt dit om KLAAR en NAVIGEER eerlijk te blokkeren op routes die
     // vóór de generatiepoort zijn opgeslagen.
     const obstacles = countRouteObstacles(remarks);
-    const hard =
-      obstacles.forbidden > 0 ||
-      obstacles.steps > 0 ||
-      obstacles.blockedGates > 0;
+    // Voetroutes (walking/hiking) worden op VOETregels beoordeeld: een trap of
+    // fietsverbod is te voet géén blokkade — alleen privéterrein en een
+    // op-slot-poort zijn hard. Fietsroutes houden de fietsregels.
+    const isFootRoute = route.sport === "walking" || route.sport === "hiking";
+    const hard = isFootRoute
+      ? obstacles.forbiddenFoot > 0 || obstacles.blockedGatesFoot > 0
+      : obstacles.forbidden > 0 ||
+        obstacles.steps > 0 ||
+        obstacles.blockedGates > 0;
     const blockage = { ...obstacles, hard };
     // Verificatiestatus (taak #505): geslaagde meting is hier gegarandeerd
     // (remarks==null gaf hierboven al een eerlijke 502 = unverifiable voor de

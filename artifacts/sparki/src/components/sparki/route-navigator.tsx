@@ -2805,7 +2805,9 @@ export function RouteNavigator({
             {/* Group riding — puur informatief (wie rijdt er mee). */}
             <div>
               <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
-                Rij je met anderen?
+                {sport === "walking" || sport === "hiking"
+                  ? "Ben je met anderen op pad?"
+                  : "Rij je met anderen?"}
               </p>
               <div className="flex items-center gap-1.5">
                 <button
@@ -2835,7 +2837,9 @@ export function RouteNavigator({
               </div>
               {withOthers && (
                 <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-                  Je rijdt met anderen — dat zie je terug in het ritverslag.
+                  {sport === "walking" || sport === "hiking"
+                    ? "Je bent met anderen op pad — dat zie je terug in het verslag."
+                    : "Je rijdt met anderen — dat zie je terug in het ritverslag."}
                 </p>
               )}
             </div>
