@@ -21,7 +21,7 @@ Regel: dit bestand bevat uitsluitend nog niet afgeronde P0/P1-punten. Afgerond =
 | ~~F-P1-01~~ | ~~Rolstartschermen: onbekende/lege rolparams~~ | **KLAAR** — onbekende rol = eerlijke melding (e2e-bewezen); lege param valt op onbekend-pad | — |
 | F-P1-02 | Mobiele routeplanner-wizard standaard | GEBOUWD+BEWEZEN | wacht op nieuwe Publish (prod draait oude build) |
 | F-P1-03 | Wandelen/Hiken alle fases | GEBOUWD+BEWEZEN (nav op wandeltempo eerlijk open) | nieuwe Publish; migratie 0018 gaat automatisch mee via publish-flow |
-| F-P1-04 | Routegeneratie: elke job eindigt in succes of expliciete fout | deels (jobmodel bestaat) | fout-scenario's timeout/no-candidate/blokkadepoort hertesten |
+| ~~F-P1-04~~ | ~~Routegeneratie-jobs eindigen expliciet~~ | **KLAAR** — test:route-generation-errors 5/5 (ongeldige aanvraag→expliciete fout, onbekend id 404, ownership 404, finishJob idempotent, crash→502) | — |
 | ~~F-P1-05~~ | ~~Analyse mobiel~~ | **KLAAR** — e2e/tests/analyse-mobiel-overflow.mjs: 375px+412px, alle 5 tabbladen met echte kliks, 12/12 geen horizontale overflow (productiebuild) | — |
 | F-P1-06 | Productieversie | code KLAAR — /api/version én web /version.json (sha+buildtijd+omgeving+service, lokaal bewezen) | na Publish prod-curl bewijzen |
 | F-P1-07 | CI start niet op PR #2/#3/#4 | open | connector mist workflow-scope; webeditor-route (zie github-actions-ci-env) |
