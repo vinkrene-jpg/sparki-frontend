@@ -4,219 +4,219 @@
       "stap": "mobiel: login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-08-01T10:33:45.140Z"
+      "t": "2026-08-01T10:52:50.014Z"
     },
     {
       "stap": "mobiel: wizard op stap 4",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:47.809Z"
+      "t": "2026-08-01T10:52:52.713Z"
     },
     {
       "stap": "mobiel: 422 NO_SUITABLE_ROUTE → fout op stap 4",
       "status": "OK",
       "detail": "Er kon geen veilige route worden gemaakt met deze instellingen. Pas je wensen aan of kies ",
-      "t": "2026-08-01T10:33:49.856Z"
+      "t": "2026-08-01T10:52:54.622Z"
     },
     {
       "stap": "mobiel: stap 4 blijft actief (geen sprong naar stap 3)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:49.858Z"
+      "t": "2026-08-01T10:52:54.624Z"
     },
     {
       "stap": "mobiel: knop hersteld (niet blijven hangen)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:49.865Z"
+      "t": "2026-08-01T10:52:54.630Z"
     },
     {
       "stap": "mobiel: servercode technisch gelogd",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:49.865Z"
+      "t": "2026-08-01T10:52:54.630Z"
     },
     {
       "stap": "mobiel: fout blijft zichtbaar zonder actie",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:51.369Z"
+      "t": "2026-08-01T10:52:56.133Z"
     },
     {
       "stap": "mobiel: precies één foutmelding",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:51.455Z"
+      "t": "2026-08-01T10:52:56.226Z"
     },
     {
       "stap": "mobiel: retry na fout doet echte nieuwe aanvraag",
       "status": "OK",
       "detail": "starts 1→2",
-      "t": "2026-08-01T10:33:52.709Z"
+      "t": "2026-08-01T10:52:57.480Z"
     },
     {
       "stap": "mobiel: terug naar stap 3 werkt en wist de fout",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:53.928Z"
+      "t": "2026-08-01T10:52:58.714Z"
     },
     {
       "stap": "mobiel: CLIMB_NOT_ON_ROUTE → begrijpelijke tekst",
       "status": "OK",
       "detail": "De gekozen klim kon niet betrouwbaar in de route worden opgenomen. Kies een andere klim of",
-      "t": "2026-08-01T10:33:55.799Z"
+      "t": "2026-08-01T10:53:00.587Z"
     },
     {
       "stap": "mobiel: CLIMB-code technisch gelogd",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:55.799Z"
+      "t": "2026-08-01T10:53:00.587Z"
     },
     {
       "stap": "mobiel: keuzes bewaard na fouten",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:55.893Z"
+      "t": "2026-08-01T10:53:00.680Z"
     },
     {
       "stap": "mobiel: onbekende 500 → eerlijke standaardtekst",
       "status": "OK",
       "detail": "De route kon niet worden gemaakt. Je instellingen zijn bewaard. Probeer opnieuw of pas je ",
-      "t": "2026-08-01T10:33:57.718Z"
+      "t": "2026-08-01T10:53:02.502Z"
     },
     {
       "stap": "mobiel: timeout → eerlijke fout op stap 4",
       "status": "OK",
       "detail": "De route kon niet worden gemaakt. Je instellingen zijn bewaard. Probeer opnieuw of pas je ",
-      "t": "2026-08-01T10:33:57.885Z"
+      "t": "2026-08-01T10:53:02.672Z"
     },
     {
       "stap": "mobiel: dubbelklik geblokkeerd + max 1 extra start",
       "status": "OK",
       "detail": "starts=1",
-      "t": "2026-08-01T10:33:57.885Z"
+      "t": "2026-08-01T10:53:02.672Z"
     },
     {
       "stap": "mobiel: knop hersteld na timeout",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:57.893Z"
+      "t": "2026-08-01T10:53:02.675Z"
     },
     {
       "stap": "mobiel: snel terug/vooruit 3↔4 blijft heel",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:33:58.124Z"
+      "t": "2026-08-01T10:53:02.894Z"
     },
     {
       "stap": "desktop: login",
       "status": "OK",
       "detail": "auth/me=200",
-      "t": "2026-08-01T10:34:00.842Z"
+      "t": "2026-08-01T10:53:05.770Z"
     },
     {
       "stap": "desktop: wizard op stap 4",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:03.525Z"
+      "t": "2026-08-01T10:53:08.463Z"
     },
     {
       "stap": "desktop: 422 NO_SUITABLE_ROUTE → fout op stap 4",
       "status": "OK",
       "detail": "Er kon geen veilige route worden gemaakt met deze instellingen. Pas je wensen aan of kies ",
-      "t": "2026-08-01T10:34:05.733Z"
+      "t": "2026-08-01T10:53:10.667Z"
     },
     {
       "stap": "desktop: stap 4 blijft actief (geen sprong naar stap 3)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:05.736Z"
+      "t": "2026-08-01T10:53:10.670Z"
     },
     {
       "stap": "desktop: knop hersteld (niet blijven hangen)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:05.741Z"
+      "t": "2026-08-01T10:53:10.677Z"
     },
     {
       "stap": "desktop: servercode technisch gelogd",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:05.741Z"
+      "t": "2026-08-01T10:53:10.678Z"
     },
     {
       "stap": "desktop: fout blijft zichtbaar zonder actie",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:07.244Z"
+      "t": "2026-08-01T10:53:12.181Z"
     },
     {
       "stap": "desktop: precies één foutmelding",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:07.578Z"
+      "t": "2026-08-01T10:53:12.504Z"
     },
     {
       "stap": "desktop: retry na fout doet echte nieuwe aanvraag",
       "status": "OK",
       "detail": "starts 1→2",
-      "t": "2026-08-01T10:34:08.827Z"
+      "t": "2026-08-01T10:53:13.750Z"
     },
     {
       "stap": "desktop: terug naar stap 3 werkt en wist de fout",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:10.045Z"
+      "t": "2026-08-01T10:53:14.966Z"
     },
     {
       "stap": "desktop: CLIMB_NOT_ON_ROUTE → begrijpelijke tekst",
       "status": "OK",
       "detail": "De gekozen klim kon niet betrouwbaar in de route worden opgenomen. Kies een andere klim of",
-      "t": "2026-08-01T10:34:11.915Z"
+      "t": "2026-08-01T10:53:16.836Z"
     },
     {
       "stap": "desktop: CLIMB-code technisch gelogd",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:11.915Z"
+      "t": "2026-08-01T10:53:16.836Z"
     },
     {
       "stap": "desktop: keuzes bewaard na fouten",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:12.220Z"
+      "t": "2026-08-01T10:53:17.138Z"
     },
     {
       "stap": "desktop: onbekende 500 → eerlijke standaardtekst",
       "status": "OK",
       "detail": "De route kon niet worden gemaakt. Je instellingen zijn bewaard. Probeer opnieuw of pas je ",
-      "t": "2026-08-01T10:34:14.056Z"
+      "t": "2026-08-01T10:53:18.973Z"
     },
     {
       "stap": "desktop: timeout → eerlijke fout op stap 4",
       "status": "OK",
       "detail": "De route kon niet worden gemaakt. Je instellingen zijn bewaard. Probeer opnieuw of pas je ",
-      "t": "2026-08-01T10:34:14.482Z"
+      "t": "2026-08-01T10:53:19.355Z"
     },
     {
       "stap": "desktop: dubbelklik geblokkeerd + max 1 extra start",
       "status": "OK",
       "detail": "starts=1",
-      "t": "2026-08-01T10:34:14.482Z"
+      "t": "2026-08-01T10:53:19.355Z"
     },
     {
       "stap": "desktop: knop hersteld na timeout",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:14.484Z"
+      "t": "2026-08-01T10:53:19.357Z"
     },
     {
       "stap": "desktop: snel terug/vooruit 3↔4 blijft heel",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-01T10:34:14.946Z"
+      "t": "2026-08-01T10:53:19.861Z"
     }
   ],
   "exitCode": 0,
-  "t": "2026-08-01T10:34:14.964Z"
+  "t": "2026-08-01T10:53:19.878Z"
 }

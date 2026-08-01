@@ -2647,13 +2647,22 @@ export function RouteGenerator({
               Stap {step} van 4
             </span>
           </div>
+          {/* Toegankelijkheid: de voortgang zelf is een aparte (onzichtbare)
+              progressbar; de tikbare segmenten zijn gewone knoppen in een
+              groep. Interactieve elementen mogen geen descendants van een
+              progressbar zijn (ARIA maakt die presentational). */}
           <div
-            className="mt-2 flex gap-1.5"
             role="progressbar"
             aria-valuemin={1}
             aria-valuemax={4}
             aria-valuenow={step}
             aria-label={`Stap ${step} van 4`}
+            className="sr-only"
+          />
+          <div
+            className="mt-2 flex gap-1.5"
+            role="group"
+            aria-label="Stapnavigatie"
           >
             {[1, 2, 3, 4].map((n) => (
               <button
@@ -3644,7 +3653,7 @@ export function RouteGenerator({
               ? // F1: primaire actie altijd bereikbaar op telefoon — vaste balk
                 // onderaan het paneel, met veilige schermrand. Desktop
                 // ongewijzigd (lg:static).
-                "sticky bottom-16 z-30 -mx-5 w-auto max-w-none rounded-2xl bg-map-panel/95 px-5 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-md lg:static lg:z-auto lg:mx-auto lg:w-full lg:max-w-md lg:rounded-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+                "sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 -mx-5 w-auto max-w-none rounded-2xl bg-map-panel/95 px-5 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-md lg:static lg:z-auto lg:mx-auto lg:w-full lg:max-w-md lg:rounded-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
               : ""
           }`}
           data-testid={mobielV2 ? "mobiele-actiebalk" : undefined}

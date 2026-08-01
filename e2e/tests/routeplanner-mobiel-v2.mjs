@@ -10,7 +10,7 @@
 // - desktop (flag aan) ⇒ ongewijzigde stappenteller.
 //
 // Draaien: node e2e/tests/routeplanner-mobiel-v2.mjs
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { launchBrowser, ensureE2eUser, mintTicket, TestRun } from "../harness.mjs";
 import { startProdServer } from "../serve-prod.mjs";
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -42,11 +42,15 @@ function log(stap, ok, detail = "") {
   console.log(`[${status}] ${stap}${detail ? ` — ${detail}` : ""}`);
 }
 
-function psql(sql) {
+// psql zonder shell-interpolatie: execFileSync + psql-variabelen (:'cid')
+// zodat waarden nooit in de SQL-string worden geplakt (geen injectiepad).
+function psql(sql, vars = {}) {
   const oneLine = sql.replace(/\s+/g, " ").trim();
-  return execSync(`psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c ${JSON.stringify(oneLine)}`, {
-    encoding: "utf8",
-  });
+  // Let op: psql interpoleert :'var' NIET bij -c; daarom via stdin (-f -).
+  const args = [process.env.DATABASE_URL, "-v", "ON_ERROR_STOP=1"];
+  for (const [k, v] of Object.entries(vars)) args.push("-v", `${k}=${v}`);
+  args.push("-f", "-");
+  return execFileSync("psql", args, { encoding: "utf8", input: oneLine });
 }
 
 // Gerichte activatie voor de testidentiteit (opdracht §16) — nooit globaal.
@@ -56,8 +60,9 @@ function setOverride(clerkId, enabled) {
   );
   psql(
     `INSERT INTO user_flag_overrides (clerk_id, flag_key, enabled, set_by, reason)
-     VALUES ('${clerkId}', 'mobile_routeplanner_v2', ${enabled}, 'e2e', 'MOBILE_ROUTE_WALKING_01 F1 e2e')
+     VALUES (:'cid', 'mobile_routeplanner_v2', ${enabled ? "true" : "false"}, 'e2e', 'MOBILE_ROUTE_WALKING_01 F1 e2e')
      ON CONFLICT (clerk_id, flag_key) DO UPDATE SET enabled = EXCLUDED.enabled;`,
+    { cid: clerkId },
   );
 }
 
@@ -113,6 +118,32 @@ try {
       !!box && box.y + box.height <= viewport.height && box.y >= 0,
       box ? `y=${Math.round(box.y)} h=${Math.round(box.height)} vp=${viewport.height}` : "geen box",
     );
+
+    // Hit-test: de primaire actie mag niet worden afgedekt door de bottom nav
+    // (z-50). elementFromPoint op het midden én de onderrand van de knop moet
+    // in de knop zelf uitkomen.
+    if (box) {
+      const hit = await page.evaluate(({ x, ys }) => {
+        const btn = [...document.querySelectorAll("button")].find((b) =>
+          (b.textContent ?? "").includes("Verder →"),
+        );
+        if (!btn) return { ok: false, wie: "knop niet gevonden" };
+        for (const y of ys) {
+          const el = document.elementFromPoint(x, y);
+          if (!el || !(btn === el || btn.contains(el) || el.contains(btn)))
+            return { ok: false, wie: el ? `${el.tagName}.${el.className}`.slice(0, 80) : "niets", y };
+        }
+        return { ok: true };
+      }, {
+        x: box.x + box.width / 2,
+        ys: [box.y + box.height / 2, box.y + box.height - 2],
+      });
+      log(
+        `${naam}: primaire actie niet afgedekt (hit-test)`,
+        hit.ok,
+        hit.ok ? undefined : `raakt ${hit.wie} op y=${Math.round(hit.y ?? 0)}`,
+      );
+    }
 
     // Geen horizontale overflow op stap 1.
     let ov = await geenHorizontaleOverflow(page);
