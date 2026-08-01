@@ -66,6 +66,7 @@ import raceRoomsRouter from "./race-rooms";
 import goalsRouter from "./goals";
 import engagementRouter from "./engagement";
 import clubRouter from "./club";
+import workObjectsRouter from "./work-objects";
 import rideStoryRouter from "./ride-story";
 import sprintsRouter from "./sprints";
 import climbsRouter from "./climbs";
@@ -205,6 +206,13 @@ router.use("/alerts", alertsRouter);
 router.use("/attention", attentionRouter);
 router.use("/share", shareRouter);
 router.use("/clubs", killSwitchGuard("club_features"), clubRouter);
+// Werkobjectlaag (SPARKI_INHAAL_01 BUILD_02): één gedeelde plan-laag voor de
+// club — zelfde kill-switch en clubrechten als de rest van de clubomgeving.
+router.use(
+  "/clubs/:clubId/work-objects",
+  killSwitchGuard("club_features"),
+  workObjectsRouter,
+);
 router.use("/release", releaseRouter);
 router.use("/entitlements", entitlementsRouter);
 router.use("/billing", billingRouter);
