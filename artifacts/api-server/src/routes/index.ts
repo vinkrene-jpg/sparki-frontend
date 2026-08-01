@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import e2eProofRouter from "./e2e-proof";
 import authRouter from "./auth";
 import flagsRouter from "./flags";
 import athleteRouter from "./athlete";
@@ -126,6 +127,8 @@ router.use("/search", searchRouter);
 router.use("/foundation", aiFoundationRouter);
 router.use("/journey", journeyRouter);
 router.use("/health-flow", healthFlowRouter);
+// Bewijs-endpoint (fail-closed: 404 zonder E2E_PROOF_TOKEN/E2E_PROOF_EMAIL)
+router.use("/e2e", e2eProofRouter);
 router.use("/passport", passportRouter);
 router.use("/onboarding", onboardingRouter);
 router.use("/connectors", connectorsRouter);

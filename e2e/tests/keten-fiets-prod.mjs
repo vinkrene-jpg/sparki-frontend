@@ -10,17 +10,28 @@
 // Let op: dit logt in als een ECHT persoon (expliciete toestemming René,
 // 01-08-2026). Consent-documenten worden NOOIT automatisch geaccepteerd —
 // verschijnt de poort, dan stopt de test hard.
-import { launchBrowser, mintTicket, TestRun } from "../harness.mjs";
+import { launchBrowser, TestRun } from "../harness.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BASE = process.env.PROD_URL ?? "https://sparki-frontend.replit.app";
-const RENE = process.env.RENE_CLERK_ID;
+const PROOF_TOKEN = process.env.E2E_PROOF_TOKEN;
 const EXPECT_SHA = process.env.EXPECT_SHA;
 const VIEWPORT = process.argv[2] === "desktop" ? { width: 1440, height: 900 } : { width: 375, height: 812 };
 const VIEWNAME = process.argv[2] === "desktop" ? "desktop" : "mobiel-375";
-if (!RENE || !EXPECT_SHA) throw new Error("RENE_CLERK_ID en EXPECT_SHA zijn verplicht");
+if (!PROOF_TOKEN || !EXPECT_SHA) throw new Error("E2E_PROOF_TOKEN en EXPECT_SHA zijn verplicht");
+
+// Ticket via het afgeschermde bewijs-endpoint op de server zelf (de live
+// Clerk-sleutel bestaat alleen dáár). Eenmalig, 300 s geldig, vast account.
+async function proofTicket() {
+  const r = await fetch(`${BASE}/api/e2e/proof-ticket`, {
+    method: "POST",
+    headers: { "x-e2e-proof-token": PROOF_TOKEN },
+  });
+  if (!r.ok) throw new Error(`proof-ticket faalde: ${r.status}`);
+  return r.json(); // { userId, ticket }
+}
 
 const EVIDENCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../evidence/keten-fiets-prod");
 mkdirSync(EVIDENCE, { recursive: true });
@@ -44,11 +55,12 @@ let run;
 const GEO = { latitude: 51.905, longitude: 5.66 }; // Betuwe, NL
 
 async function login(runObj) {
-  await runObj.loginWithTicket(await mintTicket(RENE));
+  const { userId, ticket } = await proofTicket();
+  await runObj.loginWithTicket(ticket);
   await runObj.page.goto(`${BASE}/vandaag`, { waitUntil: "networkidle" });
   const gate = await runObj.page.getByText("Eerst even akkoord", { exact: false }).isVisible().catch(() => false);
   if (gate) throw new Error("Consent-poort actief op René's account — STOP, geen automatische acceptatie");
-  const me = await runObj.verifyIdentity({ expectClerkId: RENE });
+  const me = await runObj.verifyIdentity({ expectClerkId: userId });
   if (me.status !== 200) throw new Error(`auth/me=${me.status} — geen geldige sessie`);
   log("login", "OK", "identiteit geverifieerd via /api/auth/me");
 }
