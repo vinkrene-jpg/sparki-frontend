@@ -1747,11 +1747,55 @@ function MobielDetailSheet({
   onClose: () => void
   children: ReactNode
 }) {
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  // Echte modal-semantiek: achtergrond scrollt niet mee, Escape sluit, focus
+  // gaat de sheet in en bij sluiten terug naar de knop die hem opende.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    const vorigeOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    panelRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation()
+        onClose()
+        return
+      }
+      // Eenvoudige focus-trap: Tab blijft binnen de sheet.
+      if (e.key === "Tab" && panelRef.current) {
+        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+        )
+        if (focusables.length === 0) return
+        const eerste = focusables[0]!
+        const laatste = focusables[focusables.length - 1]!
+        const actief = document.activeElement
+        if (e.shiftKey && (actief === eerste || actief === panelRef.current)) {
+          e.preventDefault()
+          laatste.focus()
+        } else if (!e.shiftKey && actief === laatste) {
+          e.preventDefault()
+          eerste.focus()
+        } else if (actief && !panelRef.current.contains(actief)) {
+          e.preventDefault()
+          eerste.focus()
+        }
+      }
+    }
+    document.addEventListener("keydown", onKey, true)
+    return () => {
+      document.removeEventListener("keydown", onKey, true)
+      document.body.style.overflow = vorigeOverflow
+      opener?.focus?.()
+    }
+  }, [onClose])
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center lg:hidden">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
-        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-white/[0.1] bg-[#070d16]"
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-white/[0.1] bg-[#070d16] outline-none"
         role="dialog"
         aria-modal="true"
         aria-label={title}

@@ -191,17 +191,36 @@ try {
       const sheetOk = await sheet.isVisible().catch(() => false);
       log("F2: bottom sheet opent", sheetOk ? "OK" : "FOUT");
       if (!sheetOk) exitCode = 1;
-      // Inhoud: wegdekpaneel of uitlegtekst moet in de sheet staan (echte data).
-      const inhoudOk =
-        (await sheet.getByText(/Wegdek|WEGDEK/i).first().isVisible().catch(() => false)) ||
-        (await sheet.getByText(/route/i).first().isVisible().catch(() => false));
-      log("F2: sheet bevat detailinhoud", inhoudOk ? "OK" : "FOUT");
+      // Inhoud: een SPECIFIEK detailpaneel moet in de sheet staan — de
+      // stap-voor-stap-lijst is er altijd bij een echt voorstel.
+      const inhoudOk = await sheet
+        .getByText("STAP-VOOR-STAP", { exact: false })
+        .first()
+        .isVisible()
+        .catch(() => false);
+      log("F2: sheet bevat stap-voor-stap-paneel", inhoudOk ? "OK" : "FOUT");
       if (!inhoudOk) exitCode = 1;
+      // Modal-gedrag: achtergrond scrollt niet mee zolang de sheet open is.
+      const scrollLock = await page.evaluate(() => document.body.style.overflow === "hidden");
+      log("F2: achtergrond-scroll vergrendeld", scrollLock ? "OK" : "FOUT");
+      if (!scrollLock) exitCode = 1;
       await run.shot("f2-detail-sheet");
-      await sheet.getByRole("button", { name: "Sluiten" }).click();
+      // Escape sluit de sheet en de scroll-vergrendeling verdwijnt.
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+      const dichtNaEscape = !(await page.getByTestId("route-detail-sheet").isVisible().catch(() => false));
+      const scrollVrij = await page.evaluate(() => document.body.style.overflow !== "hidden");
+      log("F2: Escape sluit sheet", dichtNaEscape ? "OK" : "FOUT");
+      log("F2: scroll weer vrij na sluiten", scrollVrij ? "OK" : "FOUT");
+      if (!dichtNaEscape || !scrollVrij) exitCode = 1;
+      // Sluiten-knop werkt ook (tweede opening).
+      await detailsKnop.click();
+      const sheet2 = page.getByTestId("route-detail-sheet");
+      await sheet2.waitFor({ timeout: 5000 });
+      await sheet2.getByRole("button", { name: "Sluiten" }).click();
       await page.waitForTimeout(300);
       const dicht = !(await page.getByTestId("route-detail-sheet").isVisible().catch(() => false));
-      log("F2: sheet sluit", dicht ? "OK" : "FOUT");
+      log("F2: Sluiten-knop sluit sheet", dicht ? "OK" : "FOUT");
       if (!dicht) exitCode = 1;
     }
     // Desktopcontrole op dezelfde pagina/kandidaat: knop weg, panelen inline.
