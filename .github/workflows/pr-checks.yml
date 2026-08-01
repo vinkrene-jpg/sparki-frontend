@@ -1,0 +1,111 @@
+# Taak 507 — PR-governance: verplichte checks op elke PR naar main.
+# De job-namen hieronder MOETEN exact overeenkomen met de verplichte
+# status-checks in de branch protection op main (zie
+# scripts/setup-github-pr-governance.mjs).
+name: pr-checks
+on:
+  pull_request:
+    branches: [main]
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validators:
+    name: validators (promise-calibration + sanity-reports)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      # De validator-scripts importeren workspace-pakketten (o.a. "yaml");
+      # zonder install faalt de job op ERR_MODULE_NOT_FOUND — dit was de
+      # eerste echte foutoorzaak van de rode validators-job.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Promise-calibratie
+        run: node scripts/check-promise-calibration.mjs
+      - name: Sanity-rapporten (checker-zelftest + fail-closed check)
+        run: |
+          node scripts/test-check-sanity-reports.mjs
+          node scripts/check-sanity-reports.mjs
+  typecheck:
+    name: typecheck (libs + api-server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck libs (tsc --build)
+        run: pnpm run typecheck:libs
+      - name: Typecheck api-server
+        run: pnpm --filter @workspace/api-server run typecheck
+  admin-smoke:
+    name: admin-smoke (echte app tegen verse Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sparki_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sparki_ci
+      SESSION_SECRET: ci-only-session-secret
+      NODE_ENV: development
+      DEV_AUTH_BYPASS: "true"
+      # Verse CI-database heeft géén user_profiles-rijen; zonder dev-identiteit
+      # resolvet de dev-auth naar niemand en geeft elke route 401 — dit was de
+      # eerste echte foutoorzaak van de rode admin-smoke-job. De identiteit
+      # wordt hieronder als echte rij geseed; de test zelf bewijst onverminderd
+      # eerst de strikte niet-admin-poort (isAdmin:false zonder SPARKI_ADMIN_IDS).
+      DEV_AUTH_CLERK_ID: ci_admin_smoke
+      # CI heeft geen echte geheimen nodig: de app eist alleen dat deze
+      # variabelen bestaan (formaat-check bij het laden). De dev-bypass
+      # handelt de inlog af; er wordt in deze smoke-test nooit echt een
+      # AI-dienst of Clerk aangeroepen. Nep-waarden zijn hier dus eerlijk
+      # en veilig — er staat geen enkel echt geheim in deze workflow.
+      CLERK_SECRET_KEY: sk_test_ci-dummy-not-a-real-key
+      CLERK_PUBLISHABLE_KEY: pk_test_Y2ktZHVtbXkubm90LXJlYWwuY2xlcmsuYWNjb3VudHMuZGV2JA
+      AI_INTEGRATIONS_ANTHROPIC_BASE_URL: http://localhost:9/ci-dummy
+      AI_INTEGRATIONS_ANTHROPIC_API_KEY: ci-dummy
+      AI_INTEGRATIONS_GEMINI_BASE_URL: http://localhost:9/ci-dummy
+      AI_INTEGRATIONS_GEMINI_API_KEY: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Schema naar verse Postgres (drizzle push)
+        run: pnpm --filter @workspace/db run push-force
+      - name: Seed dev-identiteit (verse DB heeft geen gebruikers)
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d sparki_ci -v ON_ERROR_STOP=1 \
+            -c "INSERT INTO user_profiles (clerk_id, email) VALUES ('ci_admin_smoke', 'ci-admin-smoke@sparki.test') ON CONFLICT DO NOTHING"
+      - name: Admin-smoke (echte Express-app)
+        run: pnpm --filter @workspace/api-server run test:admin-smoke
