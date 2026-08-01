@@ -25,6 +25,14 @@ import {
   useSetClubPackage,
   useCreateClubInvite,
   useUpdateClub,
+  useClubOnboarding,
+  useActivateClub,
+  useSetClubLogo,
+  useAddOnboardingManager,
+  useCreateClubImport,
+  useConfirmClubImport,
+  useCancelClubImport,
+  type ClubImportRow,
   useRegenerateJoinCode,
   useClubLocations,
   useCreateClubLocation,
@@ -860,6 +868,250 @@ function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean 
   )
 }
 
+// ── CLUB_ONBOARDING_01: club in oprichting — stappen met zichtbare voortgang.
+// Alles wordt server-side bewaard: weggaan en later verdergaan kan altijd.
+function OnboardingSection({ clubId }: { clubId: number }) {
+  const { data: ob } = useClubOnboarding(clubId)
+  const activate = useActivateClub(clubId)
+  const setLogo = useSetClubLogo(clubId)
+  const addManager = useAddOnboardingManager(clubId)
+  const createImport = useCreateClubImport(clubId)
+  const confirmImport = useConfirmClubImport(clubId)
+  const cancelImport = useCancelClubImport(clubId)
+
+  const [logoError, setLogoError] = useState<string | null>(null)
+  const [mgrEmail, setMgrEmail] = useState("")
+  const [mgrRole, setMgrRole] = useState<"admin" | "hoofdtrainer" | "trainer">("trainer")
+  const [mgrMsg, setMgrMsg] = useState<string | null>(null)
+  const [batch, setBatch] = useState<{ id: number; rows: ClubImportRow[]; klaar: number } | null>(null)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [activateMsg, setActivateMsg] = useState<string[] | null>(null)
+
+  async function onLogoFile(file: File) {
+    setLogoError(null)
+    try {
+      const contentType = file.type || "application/octet-stream"
+      if (!["image/jpeg", "image/png", "image/webp", "image/svg+xml"].includes(contentType)) {
+        setLogoError("Dit bestandstype kan niet als logo. Gebruik JPG, PNG, WebP of SVG.")
+        return
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setLogoError("Het logobestand is te groot (maximaal 5 MB). Verklein het en probeer opnieuw.")
+        return
+      }
+      const { apiFetch } = await import("@/lib/api")
+      const { uploadURL, objectPath } = (await apiFetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        body: JSON.stringify({ name: file.name, size: file.size, contentType }),
+      })) as { uploadURL: string; objectPath: string }
+      const put = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": contentType }, body: file })
+      if (!put.ok) throw new Error("Uploaden van het logobestand is mislukt.")
+      await setLogo.mutateAsync({ logoUrl: objectPath, contentType, size: file.size })
+    } catch (e) {
+      setLogoError(e instanceof Error ? e.message : "Logo opslaan is niet gelukt.")
+    }
+  }
+
+  function parseCsv(text: string): { email: string; name?: string }[] {
+    // Eenvoudig en eerlijk: één rij per regel, e-mail + optioneel naam,
+    // gescheiden door ; of , — kopregel wordt herkend en overgeslagen.
+    return text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => {
+        const parts = l.split(/[;,]/).map((p) => p.trim())
+        const email = parts.find((p) => p.includes("@")) ?? parts[0] ?? ""
+        const name = parts.filter((p) => p !== email && !/^e-?mail$/i.test(p)).join(" ") || undefined
+        return { email, name }
+      })
+      .filter((r) => !/^e-?mail$/i.test(r.email))
+  }
+
+  async function onImportFile(file: File) {
+    setImportMsg(null)
+    setBatch(null)
+    const rows = parseCsv(await file.text())
+    if (rows.length === 0) {
+      setImportMsg("Het bestand bevat geen rijen om te importeren.")
+      return
+    }
+    createImport.mutate(
+      { fileName: file.name, rows },
+      {
+        onSuccess: (r) => setBatch({ id: r.batch.id, rows: r.rows, klaar: r.klaar }),
+        onError: (e) => setImportMsg(e instanceof Error ? e.message : "Import klaarzetten is niet gelukt."),
+      },
+    )
+  }
+
+  const steps: { label: string; done: boolean; hint?: string }[] = ob
+    ? [
+        { label: "Clubnaam", done: ob.steps.profiel },
+        { label: "Contactgegevens", done: ob.steps.contact, hint: "e-mailadres of telefoonnummer, hieronder bij Clubprofiel" },
+        { label: "Logo (optioneel)", done: ob.steps.logo },
+        { label: "Seizoen (aanbevolen)", done: ob.steps.seizoen, hint: "hieronder bij Seizoenen & teams" },
+        { label: "Minstens één team", done: ob.steps.teams > 0, hint: "hieronder bij Seizoenen & teams" },
+      ]
+    : []
+
+  return (
+    <section aria-label="Club in oprichting">
+      <h2 className={H2}><Settings2 className="h-3 w-3" /> Club in oprichting</h2>
+      <div className={`${CARD} space-y-4`}>
+        <p className="text-[12px] text-white/60">
+          Doorloop de stappen in je eigen tempo — alles wordt direct bewaard, dus je kunt
+          altijd weggaan en later verdergaan. Zolang de club in oprichting is, zijn leden
+          voor niemand anders zichtbaar en vertrekt er geen uitnodiging.
+        </p>
+
+        {/* Voortgang */}
+        <ul className="space-y-1.5">
+          {steps.map((s) => (
+            <li key={s.label} className="flex items-center gap-2 text-[13px]">
+              <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${s.done ? "border-emerald-300/50 bg-emerald-300/15 text-emerald-200" : "border-white/20 text-white/25"}`}>
+                {s.done ? <IconCheck className="h-2.5 w-2.5" /> : null}
+              </span>
+              <span className={s.done ? "text-white/80" : "text-white/50"}>{s.label}</span>
+              {!s.done && s.hint && <span className="text-[11px] text-white/35">— {s.hint}</span>}
+            </li>
+          ))}
+        </ul>
+
+        {/* Logo */}
+        <div>
+          <p className="mb-1 text-[12px] text-white/60">Clublogo (JPG, PNG, WebP of SVG, max 5 MB)</p>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/svg+xml"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void onLogoFile(f) }}
+            className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-cyan-300/40 file:bg-cyan-300/10 file:px-3 file:py-1.5 file:text-[12px] file:text-cyan-200"
+          />
+          {setLogo.isPending && <p className="mt-1 text-[11px] text-white/45">Logo wordt opgeslagen…</p>}
+          {logoError && <p className="mt-1 text-[11px] text-rose-300/85">{logoError}</p>}
+        </div>
+
+        {/* Eerste beheerders en trainers */}
+        <div>
+          <p className="mb-1 text-[12px] text-white/60">
+            Eerste beheerders en trainers — direct toewijzen aan een bestaand account
+            (uitnodigen van nieuwe accounts kan na activatie).
+          </p>
+          <form
+            className="flex flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setMgrMsg(null)
+              if (!mgrEmail.trim()) return
+              addManager.mutate(
+                { email: mgrEmail.trim(), role: mgrRole },
+                {
+                  onSuccess: () => { setMgrMsg("Toegevoegd."); setMgrEmail("") },
+                  onError: (err) => setMgrMsg(err instanceof Error ? err.message : "Niet gelukt."),
+                },
+              )
+            }}
+          >
+            <input value={mgrEmail} onChange={(e) => setMgrEmail(e.target.value)} placeholder="E-mailadres van bestaand account" className={INPUT} />
+            <select value={mgrRole} onChange={(e) => setMgrRole(e.target.value as typeof mgrRole)} className={`${INPUT} sm:w-44`}>
+              <option value="admin">Beheerder</option>
+              <option value="hoofdtrainer">Hoofdtrainer</option>
+              <option value="trainer">Trainer</option>
+            </select>
+            <button type="submit" disabled={addManager.isPending} className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40">
+              Toewijzen
+            </button>
+          </form>
+          {mgrMsg && <p className="mt-1 text-[11px] text-white/60">{mgrMsg}</p>}
+        </div>
+
+        {/* Ledenimport */}
+        <div>
+          <p className="mb-1 text-[12px] text-white/60">
+            Ledenimport (CSV: e-mailadres, optioneel naam). Er wordt pas iets toegevoegd
+            na jouw bevestiging.
+          </p>
+          <input
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void onImportFile(f) }}
+            className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-white/20 file:bg-white/5 file:px-3 file:py-1.5 file:text-[12px] file:text-white/70"
+          />
+          {importMsg && <p className="mt-1 text-[11px] text-rose-300/85">{importMsg}</p>}
+          {batch && (
+            <div className="mt-2 space-y-2">
+              <p className="text-[12px] text-white/70">
+                {batch.rows.length} rijen gelezen — {batch.klaar} klaar om toe te voegen,{" "}
+                {batch.rows.length - batch.klaar} niet (per rij hieronder). Nog niets toegevoegd.
+              </p>
+              <ul className="max-h-44 space-y-1 overflow-y-auto">
+                {batch.rows.map((r) => (
+                  <li key={r.id} className="flex items-baseline gap-2 text-[11px]">
+                    <span className="text-white/35">#{r.rowNumber}</span>
+                    <span className="text-white/70">{r.email ?? "—"}</span>
+                    <span className={r.status === "klaar" || r.status === "toegevoegd" ? "text-emerald-300/80" : "text-amber-300/80"}>
+                      {r.status === "klaar" ? "klaar" : r.message ?? r.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex gap-2">
+                <button
+                  onClick={() =>
+                    confirmImport.mutate(batch.id, {
+                      onSuccess: (r) => { setImportMsg(null); setBatch(null); setMgrMsg(null); setActivateMsg(null); setImportMsg(`Import afgerond: ${r.toegevoegd} toegevoegd, ${r.nietVerwerkt} niet verwerkt.`) },
+                      onError: (e) => setImportMsg(e instanceof Error ? e.message : "Bevestigen is niet gelukt."),
+                    })
+                  }
+                  disabled={confirmImport.isPending || batch.klaar === 0}
+                  className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-emerald-200 disabled:opacity-40"
+                >
+                  Bevestig import ({batch.klaar})
+                </button>
+                <button
+                  onClick={() => cancelImport.mutate(batch.id, { onSettled: () => setBatch(null) })}
+                  className="rounded-lg border border-white/20 px-3 py-1.5 text-[12px] text-white/70"
+                >
+                  Annuleren
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Activatie */}
+        <div className="border-t border-white/10 pt-3">
+          {ob && !ob.klaarVoorActivatie && (
+            <p className="mb-2 text-[12px] text-amber-200/85">
+              Nog nodig voor activatie: {ob.missing.join(" · ")}
+            </p>
+          )}
+          <button
+            onClick={() => {
+              setActivateMsg(null)
+              activate.mutate(undefined, {
+                onError: (e) => {
+                  const anyErr = e as Error & { ontbreekt?: string[] }
+                  setActivateMsg(anyErr.ontbreekt ?? [anyErr.message ?? "Activeren is niet gelukt."])
+                },
+              })
+            }}
+            disabled={activate.isPending}
+            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-[13px] font-medium text-emerald-200 disabled:opacity-40"
+          >
+            Club activeren
+          </button>
+          {activateMsg && (
+            <ul className="mt-2 space-y-0.5 text-[12px] text-rose-300/85">
+              {activateMsg.map((m) => <li key={m}>{m}</li>)}
+            </ul>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function ClubBeheerPage() {
   const { data: myClubs, isLoading } = useMyClubs()
   const [, navigate] = useLocation()
@@ -910,10 +1162,22 @@ export default function ClubBeheerPage() {
           </section>
         )}
 
+        {mine.club?.status === "concept" && <OnboardingSection clubId={clubId} />}
+
         <BeheerSignalen clubId={clubId} />
         {mine.club && <ClubSettingsSection club={mine.club} isOwner={myRole === "owner"} />}
         {mine.club && <JoinCodeSection club={mine.club} />}
-        <InviteSection clubId={clubId} />
+        {mine.club?.status === "concept" ? (
+          <section aria-label="Uitnodigingen">
+            <h2 className={H2}><Link2 className="h-3 w-3" /> Uitnodigingen</h2>
+            <p className={`${CARD} text-[12px] text-white/50`}>
+              Zolang de club in oprichting is, vertrekt er geen enkele uitnodiging.
+              Activeer de club eerst; daarna kun je leden uitnodigen.
+            </p>
+          </section>
+        ) : (
+          <InviteSection clubId={clubId} />
+        )}
         <LocationsSection clubId={clubId} />
         <MembersSection clubId={clubId} myRole={myRole} />
         <SeasonsTeamsSection clubId={clubId} />

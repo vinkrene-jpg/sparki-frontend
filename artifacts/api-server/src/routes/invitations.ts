@@ -157,6 +157,13 @@ router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowM
         res.status(403).json({ error: "Alleen de clubbeheerder kan clubuitnodigingen maken." });
         return;
       }
+      // CLUB_ONBOARDING_01: in concept vertrekt geen enkele uitnodiging.
+      if (ctx.club.status === "concept") {
+        res.status(409).json({
+          error: "Deze club is nog in oprichting. Activeer de club eerst; daarna kun je uitnodigen.",
+        });
+        return;
+      }
       const cap = await checkCapacityForNew(
         ctx,
         relationship === "club_trainer" ? "trainer" : "member",

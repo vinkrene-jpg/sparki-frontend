@@ -188,7 +188,8 @@
     "test:route-privacy-zones": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-privacy-zones",
     "test:wp-r1-parent-rights": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs wp-r1-parent-rights",
     "test:route-search": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-search",
-    "test:route-search-sharing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-search-sharing"
+    "test:route-search-sharing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-search-sharing",
+    "test:club-onboarding": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-onboarding"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

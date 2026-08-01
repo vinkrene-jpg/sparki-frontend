@@ -28,6 +28,9 @@ import {
   invitationsTable,
   clubRoles,
   clubSignupStatuses,
+  clubImportBatchesTable,
+  clubImportRowsTable,
+  adminOpsLogTable,
   type ClubRole,
 } from "@workspace/db";
 import { billingSubscriptionsTable } from "@workspace/db";
@@ -151,6 +154,9 @@ router.post("/", requireAuth, async (req, res) => {
       const [club] = await tx
         .insert(clubsTable)
         .values({
+          // CLUB_ONBOARDING_01: via de onboarding start een club als "concept"
+          // (geen uitnodigingen, leden onzichtbaar) tot expliciete activatie.
+          status: req.body?.concept === true ? "concept" : "actief",
           name,
           description: str(req.body?.description),
           location: str(req.body?.location),
@@ -436,6 +442,15 @@ router.put("/:clubId", requireAuth, async (req, res) => {
       }
       if (!hasClubRole(ctx, ["owner"])) {
         res.status(403).json({ error: "Alleen de clubeigenaar kan de clubstatus wijzigen." });
+        return;
+      }
+      // CLUB_ONBOARDING_01: een club in oprichting wordt UITSLUITEND actief via
+      // POST /activate (die de voorwaarden controleert). Elke andere
+      // statuswijziging vanuit concept is een omzeiling van die poort.
+      if (ctx.club.status === "concept") {
+        res.status(409).json({
+          error: "Deze club is nog in oprichting. Activeer de club eerst via de onboarding; daarna kun je de status wijzigen.",
+        });
         return;
       }
       patch["status"] = status;
@@ -787,6 +802,11 @@ router.get("/:clubId/members", requireAuth, async (req, res) => {
     const isTeamManager = hasClubRole(ctx, ["teammanager"]);
     if (!manage && !isTrainer && !isTeamManager) {
       res.status(403).json({ error: "Geen inzage in de ledenlijst." });
+      return;
+    }
+    // Concept: leden zijn voor niemand anders zichtbaar dan het clubbeheer.
+    if (ctx.club.status === "concept" && !manage) {
+      res.status(403).json({ error: "Deze club is nog in oprichting; de ledenlijst is nog niet zichtbaar." });
       return;
     }
     const includeHistory = manage && req.query["historie"] === "1";
@@ -2823,6 +2843,576 @@ router.get("/:clubId/audit", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club audit failed");
     res.status(500).json({ error: "Logboek ophalen is niet gelukt." });
+  }
+});
+
+// ── CLUB_ONBOARDING_01: van registratie tot actief ───────────────────────────
+// Een club in "concept" is in oprichting: elke stap wordt server-side bewaard
+// (hervatbaar), er vertrekt geen uitnodiging en leden zijn niet zichtbaar voor
+// anderen. Activatie is één server-side handeling die de voorwaarden
+// controleert en eerlijk weigert met een lijst van wat ontbreekt.
+
+// Bewaartermijn importrijen (persoonsgegevens). Besluitpunt — configureerbaar.
+function importRetentionDays(): number {
+  const n = Number(process.env["SPARKI_IMPORT_RETENTION_DAYS"]);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 365) : 30;
+}
+
+// Opportunistische opschoning: verlopen batches verliezen hun rijen
+// (persoonsgegevens weg), de batch zelf blijft als telling/auditspoor.
+async function purgeExpiredImportRows(clubId: number): Promise<void> {
+  const expired = await db
+    .select({ id: clubImportBatchesTable.id })
+    .from(clubImportBatchesTable)
+    .where(
+      and(
+        eq(clubImportBatchesTable.clubId, clubId),
+        sql`${clubImportBatchesTable.purgeAfter} < now()`,
+      ),
+    );
+  const ids = expired.map((b) => b.id);
+  if (ids.length === 0) return;
+  await db.delete(clubImportRowsTable).where(inArray(clubImportRowsTable.batchId, ids));
+  await db
+    .update(clubImportBatchesTable)
+    .set({ status: "verlopen", updatedAt: new Date() })
+    .where(
+      and(
+        inArray(clubImportBatchesTable.id, ids),
+        eq(clubImportBatchesTable.status, "wacht_op_bevestiging"),
+      ),
+    );
+}
+
+async function writeAdminOpsLog(entry: {
+  action: string;
+  actorClerkId: string;
+  newState?: Record<string, unknown>;
+  reason?: string | null;
+}): Promise<void> {
+  // Fire-and-forget: audit mag een geslaagde handeling nooit blokkeren.
+  try {
+    await db.insert(adminOpsLogTable).values({
+      action: entry.action,
+      actorClerkId: entry.actorClerkId,
+      previousState: null,
+      newState: entry.newState ?? null,
+      reason: entry.reason ?? null,
+      actorIp: null,
+    });
+  } catch {
+    // Bewust stil: de handeling zelf is geslaagd; het clubauditlog heeft de
+    // gebeurtenis al vastgelegd.
+  }
+}
+
+// Activatievoorwaarden — één plek, gebruikt door checklist én activatie.
+async function onboardingMissing(clubId: number) {
+  const [club] = await db.select().from(clubsTable).where(eq(clubsTable.id, clubId));
+  if (!club) return { club: null, missing: ["club"] as string[], teams: 0, seasons: 0 };
+  const teams = await db
+    .select({ id: clubTeamsTable.id })
+    .from(clubTeamsTable)
+    .where(eq(clubTeamsTable.clubId, clubId));
+  const seasons = await db
+    .select({ id: clubSeasonsTable.id })
+    .from(clubSeasonsTable)
+    .where(eq(clubSeasonsTable.clubId, clubId));
+  const owner = await db
+    .select({ id: clubMembersTable.id })
+    .from(clubMembersTable)
+    .where(
+      and(
+        eq(clubMembersTable.clubId, clubId),
+        eq(clubMembersTable.role, "owner"),
+        isNull(clubMembersTable.endedAt),
+      ),
+    );
+  const missing: string[] = [];
+  if (!club.name?.trim()) missing.push("Een clubnaam");
+  if (!club.contactEmail?.trim() && !club.contactPhone?.trim())
+    missing.push("Contactgegevens (e-mailadres of telefoonnummer)");
+  if (owner.length === 0) missing.push("Een eigenaar");
+  if (teams.length === 0) missing.push("Minstens één team");
+  return { club, missing, teams: teams.length, seasons: seasons.length };
+}
+
+// Onboardingtoestand — hervatbaar: alles komt uit wat al echt is opgeslagen.
+router.get("/:clubId/onboarding", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag de onboarding uitvoeren." });
+      return;
+    }
+    const { club, missing, teams, seasons } = await onboardingMissing(ctx.club.id);
+    if (!club) {
+      res.status(404).json({ error: "Club niet gevonden." });
+      return;
+    }
+    const admins = await db
+      .select({ id: clubMembersTable.id, role: clubMembersTable.role })
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clubId, club.id), isNull(clubMembersTable.endedAt)));
+    res.json({
+      status: club.status,
+      missing,
+      steps: {
+        profiel: Boolean(club.name?.trim()),
+        contact: Boolean(club.contactEmail?.trim() || club.contactPhone?.trim()),
+        logo: Boolean(club.logoUrl),
+        seizoen: seasons > 0,
+        teams,
+        beheerders: admins.filter((m) => ["owner", "admin"].includes(m.role)).length,
+        trainers: admins.filter((m) => ["hoofdtrainer", "trainer"].includes(m.role)).length,
+        leden: admins.length,
+      },
+      klaarVoorActivatie: missing.length === 0,
+    });
+  } catch (err) {
+    req.log.error({ err }, "club onboarding state failed");
+    res.status(500).json({ error: "Onboardingtoestand ophalen is niet gelukt." });
+  }
+});
+
+// Logo koppelen — eerlijke fout bij te groot of verkeerd type.
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+const LOGO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+router.post("/:clubId/logo", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag het logo wijzigen." });
+      return;
+    }
+    const logoUrl = str(req.body?.logoUrl);
+    if (!logoUrl) {
+      res.status(400).json({ error: "Geen logobestand ontvangen." });
+      return;
+    }
+    // Server-side waarheid: het object moet echt bestaan, door de aanvrager
+    // zelf zijn geüpload, en de OPGESLAGEN metadata (niet de clientclaim)
+    // bepaalt type en grootte.
+    const { ObjectStorageService } = await import("../lib/objectStorage");
+    const { getObjectAclPolicy } = await import("../lib/objectAcl");
+    let contentType = "";
+    let size = 0;
+    try {
+      const storage = new ObjectStorageService();
+      const file = await storage.getObjectEntityFile(logoUrl);
+      const acl = await getObjectAclPolicy(file);
+      if (acl && acl.owner !== ctx.membership.clerkId) {
+        res.status(403).json({ error: "Dit bestand is niet door jou geüpload." });
+        return;
+      }
+      const [metadata] = await file.getMetadata();
+      contentType = String(metadata.contentType ?? "").toLowerCase().split(";")[0]!.trim();
+      size = Number(metadata.size ?? 0);
+    } catch {
+      res.status(400).json({ error: "Het logobestand is niet gevonden. Upload het opnieuw." });
+      return;
+    }
+    if (!LOGO_TYPES.includes(contentType)) {
+      res.status(400).json({
+        error: "Dit bestandstype kan niet als logo. Gebruik JPG, PNG, WebP of SVG.",
+      });
+      return;
+    }
+    if (!Number.isFinite(size) || size <= 0 || size > LOGO_MAX_BYTES) {
+      res.status(400).json({
+        error: "Het logobestand is te groot (maximaal 5 MB). Verklein het bestand en probeer opnieuw.",
+      });
+      return;
+    }
+    const [updated] = await db
+      .update(clubsTable)
+      .set({ logoUrl, updatedAt: new Date() })
+      .where(eq(clubsTable.id, ctx.club.id))
+      .returning();
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "clublogo_gewijzigd",
+      targetType: "club",
+      targetId: ctx.club.id,
+    });
+    res.json({ logoUrl: updated?.logoUrl ?? logoUrl });
+  } catch (err) {
+    req.log.error({ err }, "club logo failed");
+    res.status(500).json({ error: "Logo opslaan is niet gelukt." });
+  }
+});
+
+// Eerste beheerders/trainers in concept: direct toewijzen aan een BESTAAND
+// account op geverifieerd e-mailadres. Bewust géén uitnodiging — in concept
+// vertrekt er geen (productregel 2).
+router.post("/:clubId/onboarding/managers", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag rollen toewijzen." });
+      return;
+    }
+    const email = str(req.body?.email)?.toLowerCase();
+    const role = str(req.body?.role);
+    const allowed = ["admin", "hoofdtrainer", "trainer"];
+    if (!email || !role || !allowed.includes(role)) {
+      res.status(400).json({ error: "Geef een e-mailadres en een rol (beheerder, hoofdtrainer of trainer)." });
+      return;
+    }
+    const [profile] = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .where(sql`lower(${userProfilesTable.email}) = ${email}`);
+    if (!profile) {
+      res.status(404).json({
+        error: "Er bestaat nog geen account met dit e-mailadres. Uitnodigen kan zodra de club actief is.",
+      });
+      return;
+    }
+    const existing = await getClubContext(ctx.club.id, profile.clerkId);
+    if (existing) {
+      res.status(409).json({ error: "Dit account is al lid van de club." });
+      return;
+    }
+    const cap = await checkCapacityForNew(ctx, role === "admin" ? "member" : "trainer");
+    if (!cap.ok) {
+      res.status(409).json({ error: cap.reason });
+      return;
+    }
+    await db.insert(clubMembersTable).values({
+      clubId: ctx.club.id,
+      clerkId: profile.clerkId,
+      role,
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "onboarding_rol_toegewezen",
+      targetType: "member",
+      detail: { role },
+    });
+    res.status(201).json({ toegevoegd: true, role });
+  } catch (err) {
+    req.log.error({ err }, "club onboarding manager failed");
+    res.status(500).json({ error: "Rol toewijzen is niet gelukt." });
+  }
+});
+
+// Ledenimport stap 1: rijen aanleveren → batch "wacht_op_bevestiging".
+// Er wordt hier NOOIT iets toegevoegd (productregel 6).
+router.post("/:clubId/import", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag leden importeren." });
+      return;
+    }
+    await purgeExpiredImportRows(ctx.club.id);
+    const rows = Array.isArray(req.body?.rows) ? req.body.rows : null;
+    if (!rows || rows.length === 0) {
+      res.status(400).json({ error: "Het bestand bevat geen rijen om te importeren." });
+      return;
+    }
+    if (rows.length > 2000) {
+      res.status(400).json({ error: "Maximaal 2000 rijen per import." });
+      return;
+    }
+    // Bestaande ACTIEVE leden op e-mailadres (dubbel = geverifieerd
+    // e-mailadres, nooit naam — productregel 7).
+    const activeMembers = await db
+      .select({ clerkId: clubMembersTable.clerkId, email: userProfilesTable.email })
+      .from(clubMembersTable)
+      .innerJoin(userProfilesTable, eq(userProfilesTable.clerkId, clubMembersTable.clerkId))
+      .where(and(eq(clubMembersTable.clubId, ctx.club.id), isNull(clubMembersTable.endedAt)));
+    const memberEmails = new Set(activeMembers.map((m) => m.email.toLowerCase()));
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const seen = new Set<string>();
+    const prepared: {
+      rowNumber: number;
+      email: string | null;
+      name: string | null;
+      role: string;
+      status: string;
+      message: string | null;
+      matchedClerkId: string | null;
+    }[] = [];
+    const emails = rows
+      .map((r: Record<string, unknown>) => (typeof r?.["email"] === "string" ? r["email"].trim().toLowerCase() : ""))
+      .filter((e: string) => emailRe.test(e));
+    const profiles = emails.length
+      ? await db
+          .select({ clerkId: userProfilesTable.clerkId, email: userProfilesTable.email })
+          .from(userProfilesTable)
+          .where(inArray(sql`lower(${userProfilesTable.email})`, emails))
+      : [];
+    const profileByEmail = new Map(profiles.map((p) => [p.email.toLowerCase(), p.clerkId]));
+    rows.forEach((r: Record<string, unknown>, i: number) => {
+      const email = typeof r?.["email"] === "string" ? r["email"].trim().toLowerCase() : "";
+      const name = typeof r?.["name"] === "string" ? r["name"].trim() || null : null;
+      const row = {
+        rowNumber: i + 1,
+        email: email || null,
+        name,
+        role: "member",
+        status: "ongeldig",
+        message: null as string | null,
+        matchedClerkId: null as string | null,
+      };
+      if (!emailRe.test(email)) {
+        row.message = "Geen geldig e-mailadres.";
+      } else if (seen.has(email)) {
+        row.status = "dubbel";
+        row.message = "Dit e-mailadres staat al eerder in dit bestand.";
+      } else if (memberEmails.has(email)) {
+        row.status = "dubbel";
+        row.message = "Dit e-mailadres hoort al bij een actief clublid.";
+      } else {
+        seen.add(email);
+        const clerkId = profileByEmail.get(email);
+        if (!clerkId) {
+          row.status = "geen_account";
+          row.message = "Nog geen account met dit e-mailadres — uitnodigen kan na activatie.";
+        } else {
+          row.status = "klaar";
+          row.matchedClerkId = clerkId;
+        }
+      }
+      prepared.push(row);
+    });
+    const okCount = prepared.filter((r) => r.status === "klaar").length;
+    const purgeAfter = new Date(Date.now() + importRetentionDays() * 24 * 60 * 60 * 1000);
+    const batch = await db.transaction(async (tx) => {
+      const [b] = await tx
+        .insert(clubImportBatchesTable)
+        .values({
+          clubId: ctx.club.id,
+          createdByClerkId: ctx.membership.clerkId,
+          fileName: str(req.body?.fileName),
+          totalRows: prepared.length,
+          purgeAfter,
+        })
+        .returning();
+      await tx
+        .insert(clubImportRowsTable)
+        .values(prepared.map((r) => ({ ...r, batchId: b!.id })));
+      return b!;
+    });
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "ledenimport_klaargezet",
+      targetType: "import",
+      targetId: batch.id,
+      detail: { totalRows: prepared.length, klaar: okCount },
+    });
+    const rowsOut = await db
+      .select()
+      .from(clubImportRowsTable)
+      .where(eq(clubImportRowsTable.batchId, batch.id))
+      .orderBy(asc(clubImportRowsTable.rowNumber));
+    res.status(201).json({ batch, rows: rowsOut, klaar: okCount });
+  } catch (err) {
+    req.log.error({ err }, "club import failed");
+    res.status(500).json({ error: "Import klaarzetten is niet gelukt." });
+  }
+});
+
+// Ledenimport stap 2: expliciete bevestiging → één transactie, alles of niets.
+router.post("/:clubId/import/:batchId/confirm", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag een import bevestigen." });
+      return;
+    }
+    const batchId = Number(req.params["batchId"]);
+    const result = await db.transaction(async (tx) => {
+      // Eén club-brede lock serialiseert confirm, cancel en capaciteitspaden;
+      // de batchstatus wordt PAS na de lock gelezen en geclaimd, zodat een
+      // tweede confirm (of een gelijktijdige cancel) eerlijk 409/404 krijgt.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(881100, ${ctx.club.id})`);
+      const [batch] = await tx
+        .select()
+        .from(clubImportBatchesTable)
+        .where(
+          and(eq(clubImportBatchesTable.id, batchId), eq(clubImportBatchesTable.clubId, ctx.club.id)),
+        );
+      if (!batch) return { notFound: true } as const;
+      if (batch.status !== "wacht_op_bevestiging") {
+        return { error: `Deze import is al ${batch.status.replace(/_/g, " ")}.` } as const;
+      }
+      const rows = await tx
+        .select()
+        .from(clubImportRowsTable)
+        .where(eq(clubImportRowsTable.batchId, batch.id));
+      const ready = rows.filter((r) => r.status === "klaar" && r.matchedClerkId);
+      // Capaciteit: hele import past of niets (alles-of-niets, eerlijk).
+      const [subscription] = await tx
+        .select()
+        .from(clubSubscriptionsTable)
+        .where(eq(clubSubscriptionsTable.clubId, ctx.club.id));
+      const active = await tx
+        .select({ id: clubMembersTable.id })
+        .from(clubMembersTable)
+        .where(and(eq(clubMembersTable.clubId, ctx.club.id), isNull(clubMembersTable.endedAt)));
+      const maxMembers = subscription?.maxMembers ?? 0;
+      if (subscription && active.length + ready.length > maxMembers) {
+        return {
+          error: `Deze import past niet binnen het ledenmaximum (${maxMembers}). Er is niets toegevoegd.`,
+        } as const;
+      }
+      if (ready.length > 0) {
+        await tx.insert(clubMembersTable).values(
+          ready.map((r) => ({ clubId: ctx.club.id, clerkId: r.matchedClerkId!, role: "member" })),
+        );
+        await tx
+          .update(clubImportRowsTable)
+          .set({ status: "toegevoegd", message: null })
+          .where(
+            inArray(
+              clubImportRowsTable.id,
+              ready.map((r) => r.id),
+            ),
+          );
+      }
+      const failed = rows.length - ready.length;
+      await tx
+        .update(clubImportBatchesTable)
+        .set({
+          status: "bevestigd",
+          okRows: ready.length,
+          failedRows: failed,
+          confirmedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(clubImportBatchesTable.id, batch.id));
+      return { ok: ready.length, failed, batchId: batch.id } as const;
+    });
+    if ("notFound" in result) {
+      res.status(404).json({ error: "Importbatch niet gevonden." });
+      return;
+    }
+    if ("error" in result) {
+      res.status(409).json({ error: result.error });
+      return;
+    }
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "ledenimport_bevestigd",
+      targetType: "import",
+      targetId: result.batchId,
+      detail: { toegevoegd: result.ok, nietVerwerkt: result.failed },
+    });
+    await writeAdminOpsLog({
+      action: "club_ledenimport_bevestigd",
+      actorClerkId: ctx.membership.clerkId,
+      newState: { clubId: ctx.club.id, batchId: result.batchId, toegevoegd: result.ok, nietVerwerkt: result.failed },
+    });
+    res.json({ toegevoegd: result.ok, nietVerwerkt: result.failed });
+  } catch (err) {
+    req.log.error({ err }, "club import confirm failed");
+    res.status(500).json({ error: "Import bevestigen is niet gelukt. Er is niets toegevoegd." });
+  }
+});
+
+// Ledenimport annuleren — rijen (persoonsgegevens) meteen weg.
+router.post("/:clubId/import/:batchId/cancel", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag een import annuleren." });
+      return;
+    }
+    const batchId = Number(req.params["batchId"]);
+    // Zelfde club-lock als confirm: annuleren en bevestigen kunnen elkaar
+    // nooit doorkruisen; de status wordt pas NA de lock gelezen.
+    const cancelled = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(881100, ${ctx.club.id})`);
+      const [batch] = await tx
+        .select()
+        .from(clubImportBatchesTable)
+        .where(
+          and(eq(clubImportBatchesTable.id, batchId), eq(clubImportBatchesTable.clubId, ctx.club.id)),
+        );
+      if (!batch || batch.status !== "wacht_op_bevestiging") return false;
+      await tx.delete(clubImportRowsTable).where(eq(clubImportRowsTable.batchId, batch.id));
+      await tx
+        .update(clubImportBatchesTable)
+        .set({ status: "geannuleerd", updatedAt: new Date() })
+        .where(eq(clubImportBatchesTable.id, batch.id));
+      return true;
+    });
+    if (!cancelled) {
+      res.status(404).json({ error: "Geen openstaande importbatch gevonden." });
+      return;
+    }
+    res.json({ geannuleerd: true });
+  } catch (err) {
+    req.log.error({ err }, "club import cancel failed");
+    res.status(500).json({ error: "Import annuleren is niet gelukt." });
+  }
+});
+
+// Activatie — één server-side handeling; weigert met wat ontbreekt.
+router.post("/:clubId/activate", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de eigenaar of clubbeheerder mag de club activeren." });
+      return;
+    }
+    if (ctx.club.status === "actief") {
+      res.json({ status: "actief", alActief: true });
+      return;
+    }
+    if (ctx.club.status !== "concept") {
+      res.status(409).json({ error: "Deze club is niet in oprichting en kan zo niet worden geactiveerd." });
+      return;
+    }
+    const { missing } = await onboardingMissing(ctx.club.id);
+    if (missing.length > 0) {
+      res.status(422).json({
+        error: "De club kan nog niet worden geactiveerd. Dit ontbreekt nog:",
+        ontbreekt: missing,
+      });
+      return;
+    }
+    await db
+      .update(clubsTable)
+      .set({ status: "actief", updatedAt: new Date() })
+      .where(and(eq(clubsTable.id, ctx.club.id), eq(clubsTable.status, "concept")));
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "club_geactiveerd",
+      targetType: "club",
+      targetId: ctx.club.id,
+    });
+    await writeAdminOpsLog({
+      action: "club_geactiveerd",
+      actorClerkId: ctx.membership.clerkId,
+      newState: { clubId: ctx.club.id, naam: ctx.club.name },
+    });
+    await createNotification({
+      clerkId: ctx.membership.clerkId,
+      type: "club_update",
+      source: "club-onboarding",
+      title: "Je club is actief",
+      body: `${ctx.club.name} is geactiveerd. Vanaf nu kun je leden uitnodigen.`,
+    }).catch(() => undefined);
+    res.json({ status: "actief" });
+  } catch (err) {
+    req.log.error({ err }, "club activate failed");
+    res.status(500).json({ error: "Club activeren is niet gelukt." });
   }
 });
 

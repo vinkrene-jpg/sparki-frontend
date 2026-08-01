@@ -191,9 +191,99 @@ export function useHoofdtrainerOverview(clubId: number | null, enabled: boolean)
 export function useCreateClub() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string; description?: string; location?: string }) =>
+    mutationFn: (body: { name: string; description?: string; location?: string; concept?: boolean }) =>
       apiFetch("/api/clubs", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+// ── CLUB_ONBOARDING_01: van registratie tot actief ──────────────────────────
+export type ClubOnboardingState = {
+  status: string
+  missing: string[]
+  steps: {
+    profiel: boolean
+    contact: boolean
+    logo: boolean
+    seizoen: boolean
+    teams: number
+    beheerders: number
+    trainers: number
+    leden: number
+  }
+  klaarVoorActivatie: boolean
+}
+
+export function useClubOnboarding(clubId: number | null, enabled = true) {
+  return useQuery<ClubOnboardingState>({
+    queryKey: ["clubs", clubId, "onboarding"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/onboarding`),
+    enabled: clubId != null && enabled,
+  })
+}
+
+export function useActivateClub(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => apiFetch(`/api/clubs/${clubId}/activate`, { method: "POST" }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export function useSetClubLogo(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { logoUrl: string; contentType: string; size: number }) =>
+      apiFetch(`/api/clubs/${clubId}/logo`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export function useAddOnboardingManager(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { email: string; role: "admin" | "hoofdtrainer" | "trainer" }) =>
+      apiFetch(`/api/clubs/${clubId}/onboarding/managers`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export type ClubImportRow = {
+  id: number
+  rowNumber: number
+  email: string | null
+  name: string | null
+  status: string
+  message: string | null
+}
+
+export function useCreateClubImport(clubId: number | null) {
+  return useMutation({
+    mutationFn: (body: { fileName?: string; rows: { email: string; name?: string }[] }) =>
+      apiFetch(`/api/clubs/${clubId}/import`, { method: "POST", body: JSON.stringify(body) }) as Promise<{
+        batch: { id: number; totalRows: number }
+        rows: ClubImportRow[]
+        klaar: number
+      }>,
+  })
+}
+
+export function useConfirmClubImport(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (batchId: number) =>
+      apiFetch(`/api/clubs/${clubId}/import/${batchId}/confirm`, { method: "POST" }) as Promise<{
+        toegevoegd: number
+        nietVerwerkt: number
+      }>,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export function useCancelClubImport(clubId: number | null) {
+  return useMutation({
+    mutationFn: (batchId: number) =>
+      apiFetch(`/api/clubs/${clubId}/import/${batchId}/cancel`, { method: "POST" }),
   })
 }
 

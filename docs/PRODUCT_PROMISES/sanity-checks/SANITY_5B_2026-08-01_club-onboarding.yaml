@@ -1,0 +1,45 @@
+# Poort 5b sanity-check rapport — CLUB_ONBOARDING_01 (Variant 1)
+# Club van registratie tot actief: hervatbare onboarding, activatiepoort,
+# ledenimport met bevestiging, eerlijke fouttoestanden.
+
+delivery: "CLUB_ONBOARDING_01: clubregistratie start als 'concept'; server-side hervatbare onboarding (GET /onboarding als voortgangs-SSOT); activatie eist naam+contact+eigenaar+≥1 team en weigert met ontbreekt-lijst (422); in concept geen uitnodigingen (409) en leden onzichtbaar voor niet-beheer (403); ledenimport altijd via bevestigingsstap, transactioneel alles-of-niets, dubbel = geverifieerd e-mailadres; logo eerlijk geweigerd bij te groot/verkeerd type; bestaande clubs blijven 'actief'."
+date: "2026-08-01"
+checked_by: "replit"
+surfaces:
+  - "DEV Preview /club/beheer desktop 1280x1800 en mobiel 402x874, identiteit dev_qa_athlete (eigenaar concept-club 'Wielerclub De Voorbeeldronde')"
+  - "API-contract via test:club-onboarding (13 scenario's, echte Express-app + dev-db)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Activatieknop bij onvolledige club: server 422 met ontbreekt-lijst; UI toont 'Nog nodig voor activatie: …' vooraf (screenshot desktop) — knop leidt nooit naar een stil niets"
+        result: "pass"
+      - case: "Import-bevestigknop is disabled bij 0 rijen 'klaar'; annuleren wist de klaargezette rijen (scenario 8, DB-assert rijen=0)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "In concept vertrekt geen uitnodiging: POST /api/invitations → 409 én 0 rijen in invitations (scenario 4); UI toont in concept een eerlijke uitleg in plaats van het uitnodigingsformulier"
+        result: "pass"
+      - case: "Leden in concept onzichtbaar voor niet-beheer: trainer krijgt 403 op ledenlijst; aansluiten met clubcode → 409 (scenario 4)"
+        result: "pass"
+      - case: "Dubbel lid herkend op geverifieerd e-mailadres, nooit op naam: zelfde e-mail/andere naam = 'dubbel', zelfde naam/ander adres = 'klaar' (scenario 8)"
+        result: "pass"
+      - case: "Bestaande clubs ongemoeid: club zonder concept-flag is direct 'actief' met eigenaar (scenario 12); migratie-UPDATE raakte 0 rijen op verse db én kopie dev-db (bewijs in docs/build-packages/13_CLUB_ONBOARDING_01/bewijs/)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Onboarding-voortgang toont alleen echte serverwaarden (GET /onboarding): onafgevinkte stappen blijven leeg met hint, geen fake-groen; 100-rijen-import meldt exact 97 klaar + 3 foutrijen met eigen melding vóór er iets wordt toegevoegd (scenario 6+7)"
+        result: "pass"
+      - case: "Logo: verkeerd type en >5 MB krijgen elk een eigen eerlijke melding (geen generieke 'er ging iets mis'); geldig logo wordt zichtbaar opgeslagen (scenario 5)"
+        result: "pass"
+
+# Beperkingen:
+# - Screenshots tonen de concept-toestand desktop+mobiel; overige toestanden
+#   (422-lijst, importresultaat per rij, dubbel, logo-fout, al-actief) zijn
+#   bewezen via test:club-onboarding (13/13), niet als aparte screenshots.
+# - E-mail bij directe roltoewijzing bestaat bewust niet: in concept vertrekt
+#   niets naar buiten; rijen zonder bestaand account zijn 'geen_account' en
+#   worden na activatie via uitnodigingen opgelost.
+# - DATA_TRUST_01-startvoorwaarde: expliciete ontheffing van René (31-07/01-08).
+
+verdict: "deliverable"

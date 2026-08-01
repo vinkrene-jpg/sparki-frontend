@@ -304,3 +304,9 @@ Laatst bijgewerkt: 2026-07-31.
    MIRROR_PROVEN zijn. ROUTE_PAKKET_01 is dat; DATA_TRUST_01 nog niet (register:
    "nog geen Mirror-oordeel"). OPEN: René kiest — eerst Mirror-toets DATA_TRUST_01,
    of expliciete ontheffing van deze voorwaarde.
+   → BESLOTEN 01-08-2026: René verleende expliciete ontheffing; CLUB_ONBOARDING_01
+   is volledig uitgevoerd (BUILD_DELIVERED). DATA_TRUST_01 blijft een apart
+   traject; bevindingen daaruit volgen later als gerichte herstelactie.
+   Nog open besluitpunten uit de uitvoering (defaults gekozen, af te stemmen):
+   - Bewaartermijn importrijen: 30 dagen (SPARKI_IMPORT_RETENTION_DAYS).
+   - Clublogo-limieten: 5 MB, JPG/PNG/WebP/SVG (raakvlak DOCUMENTEN_COMMUNICATIE_01).

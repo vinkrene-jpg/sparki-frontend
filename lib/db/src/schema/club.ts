@@ -48,7 +48,9 @@ export type ClubRole = (typeof clubRoles)[number];
 
 // Clubstatus (commerciële voorbereiding): beperkt = geen nieuwe toevoegingen,
 // geschorst/beeindigd = alleen-lezen voor iedereen behalve eigenaar/beheer.
-export const clubStatuses = ["actief", "beperkt", "geschorst", "beeindigd"] as const;
+// CLUB_ONBOARDING_01: "concept" = club in oprichting — geen uitnodigingen,
+// geen leden zichtbaar voor anderen, activatie zet hem op "actief".
+export const clubStatuses = ["concept", "actief", "beperkt", "geschorst", "beeindigd"] as const;
 export type ClubStatus = (typeof clubStatuses)[number];
 
 // Beschikbare modules per club (aan/uit); default alles aan.
@@ -500,6 +502,76 @@ export const clubConsentsTable = pgTable(
   },
   (t) => [uniqueIndex("club_consents_unique").on(t.clubId, t.athleteClerkId, t.scope)],
 );
+
+// ── CLUB_ONBOARDING_01: ledenimport ──────────────────────────────────────────
+// Import voegt nooit stilzwijgend toe: een batch staat eerst op
+// "wacht_op_bevestiging" en pas een expliciete bevestiging verwerkt de rijen
+// in één transactie (alles of niets). Rijen bevatten persoonsgegevens en
+// worden na een configureerbare bewaartermijn opgeschoond (purgeAfter).
+export const clubImportBatchStatuses = [
+  "wacht_op_bevestiging",
+  "bevestigd",
+  "geannuleerd",
+  "verlopen",
+] as const;
+export type ClubImportBatchStatus = (typeof clubImportBatchStatuses)[number];
+
+// Rijstatus vóór bevestiging: klaar | dubbel | ongeldig | geen_account.
+// Ná bevestiging: toegevoegd (klaar-rijen). Dubbel = geverifieerd e-mailadres
+// is al actief lid (nooit op naam). geen_account = geen bestaand account met
+// dit e-mailadres; uitnodigen kan pas ná activatie (CLUB_LEDEN_01).
+export const clubImportRowStatuses = [
+  "klaar",
+  "dubbel",
+  "ongeldig",
+  "geen_account",
+  "toegevoegd",
+] as const;
+export type ClubImportRowStatus = (typeof clubImportRowStatuses)[number];
+
+export const clubImportBatchesTable = pgTable(
+  "club_import_batches",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    fileName: text("file_name"),
+    status: text("status").notNull().default("wacht_op_bevestiging"),
+    totalRows: integer("total_rows").notNull().default(0),
+    okRows: integer("ok_rows").notNull().default(0),
+    failedRows: integer("failed_rows").notNull().default(0),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    // Bewaartermijn persoonsgegevens (besluitpunt; configureerbaar via env).
+    purgeAfter: timestamp("purge_after", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_import_batches_club_idx").on(t.clubId)],
+);
+export type ClubImportBatch = typeof clubImportBatchesTable.$inferSelect;
+
+export const clubImportRowsTable = pgTable(
+  "club_import_rows",
+  {
+    id: serial("id").primaryKey(),
+    batchId: integer("batch_id")
+      .notNull()
+      .references(() => clubImportBatchesTable.id, { onDelete: "cascade" }),
+    rowNumber: integer("row_number").notNull(),
+    email: text("email"),
+    name: text("name"),
+    role: text("role").notNull().default("member"),
+    status: text("status").notNull().default("ongeldig"),
+    message: text("message"),
+    // Gevonden account (user_profiles.clerkId) bij een e-mailmatch.
+    matchedClerkId: text("matched_clerk_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_import_rows_batch_idx").on(t.batchId)],
+);
+export type ClubImportRow = typeof clubImportRowsTable.$inferSelect;
 
 // ── Commerciële clubadministratie (geen boekhouding) ─────────────────────────
 // Pakket + limieten + status. Overschrijding blokkeert nieuwe toevoegingen,

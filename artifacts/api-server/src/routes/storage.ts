@@ -28,6 +28,7 @@ const ALLOWED_UPLOAD_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/svg+xml", // clublogo (CLUB_ONBOARDING_01)
   "image/heic",
   "image/heif",
   "application/pdf",

@@ -1,0 +1,17 @@
+== KOPIE dev-db: rijaantallen VÓÓR migratie ==
+clubs|0
+clubs actief|0
+club_members|0
+== KOPIE: migratie 0011 ==
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+UPDATE 0
+exit=0
+== KOPIE: rijaantallen NÁ migratie ==
+clubs|0
+clubs actief|0
+club_members|0
+club_import_batches|0
+club_import_rows|0

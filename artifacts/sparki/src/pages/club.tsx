@@ -585,7 +585,9 @@ function StartClubCard() {
             setError(null)
             if (!name.trim()) { setError("Geef de club een naam."); return }
             create.mutate(
-              { name: name.trim(), location: location.trim() || undefined },
+              // Nieuwe clubs starten in oprichting ("concept"): eerst inrichten
+              // en activeren, dan pas uitnodigen (CLUB_ONBOARDING_01).
+              { name: name.trim(), location: location.trim() || undefined, concept: true },
               { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
             )
           }}

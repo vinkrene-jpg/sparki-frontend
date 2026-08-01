@@ -1,0 +1,15 @@
+== VERSE DB: migratie 0011 ==
+psql:migrations/0011_club_onboarding.sql:18: NOTICE:  relation "club_import_batches" already exists, skipping
+CREATE TABLE
+psql:migrations/0011_club_onboarding.sql:19: NOTICE:  relation "club_import_batches_club_idx" already exists, skipping
+CREATE INDEX
+psql:migrations/0011_club_onboarding.sql:32: NOTICE:  relation "club_import_rows" already exists, skipping
+CREATE TABLE
+psql:migrations/0011_club_onboarding.sql:33: NOTICE:  relation "club_import_rows_batch_idx" already exists, skipping
+CREATE INDEX
+UPDATE 0
+exit=0
+== VERSE DB: tabellen + rijaantallen ==
+club_import_batches|0
+club_import_rows|0
+clubs|0
