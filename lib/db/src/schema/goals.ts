@@ -33,6 +33,26 @@ export const goalStatuses = [
 ] as const;
 export type GoalStatus = (typeof goalStatuses)[number];
 
+// ── DOELEN_01 ────────────────────────────────────────────────────────────────
+// Doelsoorten (DOE-09) + schuifbalkvorm onder 14 (DOE-13). "slider" is de
+// doelvorm van de jongste band: thema + richting, zonder enige meetwaarde.
+export const goalKinds = ["event", "prestatie", "gedrag", "slider"] as const;
+export type GoalKind = (typeof goalKinds)[number];
+
+// Herkomst van een doel (DOE-43). "legacy" markeert rijen van vóór DOELEN_01
+// die niet volledig herleidbaar zijn (DOE-58 / O-4).
+export const goalOrigins = [
+  "sporter",
+  "trainervoorstel",
+  "sparki-voorstel",
+  "legacy",
+] as const;
+export type GoalOrigin = (typeof goalOrigins)[number];
+
+// Leeftijdsbanden (DOE-12): serverzijdig bepaald, onbekend ⇒ meest beschermend.
+export const goalAgeBands = ["under14", "14-16", "16-18", "18+"] as const;
+export type GoalAgeBand = (typeof goalAgeBands)[number];
+
 export const athleteGoalsTable = pgTable(
   "athlete_goals",
   {
@@ -57,6 +77,26 @@ export const athleteGoalsTable = pgTable(
     priority: integer("priority").notNull().default(2), // 1 = hoofddoel, 2/3 = subdoel
     status: text("status").notNull().default("active"),
     statusReason: text("status_reason"),
+    // ── DOELEN_01 ─────────────────────────────────────────────────────────
+    // Doelsoort (DOE-09/DOE-43). Null = legacy rij van vóór DOELEN_01; wordt
+    // nooit met verzonnen waarden aangevuld (DOE-58).
+    kind: text("kind"), // GoalKind
+    // Thema bij schuifbalkdoelen (band <14, DOE-13); null bij gewone doelen.
+    theme: text("theme"),
+    // Schuifbalkstand 0..100 ("zo houden" → "hier wil ik aan werken").
+    // Interne waarde; wordt in de band <14 nooit als getal getoond.
+    themeLevel: integer("theme_level"),
+    // Herkomst (DOE-43): sporter | trainervoorstel | sparki-voorstel | legacy.
+    origin: text("origin"),
+    // Leeftijdsband bij aanmaak (DOE-43); null = legacy.
+    ageBandAtCreation: text("age_band_at_creation"),
+    // Bij origin=trainervoorstel: de voorstellende trainer. Draagt de
+    // doelinzage (DOE-32/36/37): alleen díé trainer ziet de doelen zolang dit
+    // doel bestaat.
+    trainerClerkId: text("trainer_clerk_id"),
+    // Vertaal-audit (DOE-44): { originalInput, followUpCount, proposedGoal,
+    // confirmed } — alleen gevuld bij een via vrije invoer vertaald doel.
+    translation: jsonb("translation"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -113,6 +153,7 @@ export const goalProposalKinds = [
   "recovery", // herstel/rust inbouwen
   "goal_adjust", // het doel zelf bijstellen (datum/meetlat/status)
   "goal_review", // overige doelen herzien na behaald/vervallen doel
+  "goal_new", // DOELEN_01: nieuw doel voorgesteld (trainer of Sparki)
 ] as const;
 export type GoalProposalKind = (typeof goalProposalKinds)[number];
 
@@ -138,6 +179,13 @@ export const goalProposalsTable = pgTable(
     proposedChange: jsonb("proposed_change"),
     status: text("status").notNull().default("open"), // open | accepted | rejected | expired
     decidedAt: timestamp("decided_at", { withTimezone: true }),
+    // ── DOELEN_01 (DOE-45): trainervoorstel ───────────────────────────────
+    // Wie stelde voor: "sparki" (default, bestaande rijen) of "trainer".
+    proposerRole: text("proposer_role").notNull().default("sparki"),
+    // ClerkId van de voorstellende trainer (alleen bij proposerRole=trainer).
+    proposerClerkId: text("proposer_clerk_id"),
+    // Optionele reden bij weigering (DOE-25); nooit verplicht.
+    declineReason: text("decline_reason"),
     // Idempotency for the monthly job: one proposal per goal+kind+period.
     dedupeKey: text("dedupe_key").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })

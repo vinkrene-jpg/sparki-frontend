@@ -30,9 +30,12 @@ import {
   useCreateGoal,
   useUpdateGoal,
   useDecideGoalProposal,
+  useGoalPolicy,
   type Goal,
   type DerivedGoal,
   type GoalProgress,
+  type GoalPolicy,
+  type GoalInput,
 } from "@/hooks/use-goals"
 
 // Doelen-werkblad (/you). Sparki gathers the goal picture first: manual doelen
@@ -290,12 +293,114 @@ function DerivedRow({ goal }: { goal: DerivedGoal }) {
   )
 }
 
+// DOELEN_01 F4 — schuifbalkvorm voor sporters onder 14 (DOE-13/14): thema's
+// met een schuifbalk, zonder getallen, meetwaarden of streefdatums in beeld.
+function SliderGoalForm({
+  policy,
+  onClose,
+}: {
+  policy: GoalPolicy
+  onClose: () => void
+}) {
+  const create = useCreateGoal()
+  const [theme, setTheme] = useState<string | null>(null)
+  const [level, setLevel] = useState(50)
+
+  const themeLabel = policy.themes.find((t) => t.key === theme)?.label ?? ""
+
+  const submit = () => {
+    if (!theme) return
+    create.mutate(
+      {
+        title: themeLabel,
+        kind: "slider",
+        theme,
+        themeLevel: level,
+        priority: 1,
+      },
+      { onSuccess: onClose },
+    )
+  }
+
+  return (
+    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.85] p-4 backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+          Waar wil je aan werken?
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-white/40 transition-colors hover:text-white/70"
+          aria-label="Sluiten"
+        >
+          <X className="h-4 w-4" strokeWidth={2} />
+        </button>
+      </div>
+      <p className="mt-2 text-[12px] leading-relaxed text-white/50">{policy.description}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {policy.themes.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTheme(t.key)}
+            className={`rounded-full px-3 py-1.5 text-[12px] ring-1 transition-colors ${
+              theme === t.key
+                ? "bg-cyan-300/15 text-cyan-300 ring-cyan-300/40"
+                : "text-white/55 ring-white/15 hover:text-white/80"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {theme && (
+        <div className="mt-4">
+          <div className="flex justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+            <span>Klein beetje</span>
+            <span>Heel graag</span>
+          </div>
+          {/* Bewust géén cijfer in beeld: de stand is gevoel, geen meetlat. */}
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={level}
+            onChange={(e) => setLevel(Number(e.target.value))}
+            aria-label={`Hoe graag wil je werken aan ${themeLabel}?`}
+            className="mt-1 w-full accent-cyan-300"
+          />
+        </div>
+      )}
+      {create.isError && (
+        <p className="mt-2 text-[12px] text-rose-300">Opslaan lukte niet. Probeer het opnieuw.</p>
+      )}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!theme || create.isPending}
+        className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 transition-colors hover:bg-cyan-300/25 disabled:opacity-40"
+      >
+        {create.isPending ? "Bezig…" : "Dit wordt mijn doel"}
+      </button>
+    </div>
+  )
+}
+
 function AddGoalForm({ onClose }: { onClose: () => void }) {
   const create = useCreateGoal()
+  const { data: policy } = useGoalPolicy()
   const [title, setTitle] = useState("")
   const [horizon, setHorizon] = useState<Goal["horizon"]>("season")
   const [targetDate, setTargetDate] = useState("")
   const [measure, setMeasure] = useState("")
+  const [kind, setKind] = useState<string | null>(null)
+
+  // Onder 14: uitsluitend de schuifbalkvorm (server dwingt dit ook af).
+  if (policy?.form === "slider") {
+    return <SliderGoalForm policy={policy} onClose={onClose} />
+  }
 
   const submit = () => {
     if (!title.trim()) return
@@ -306,6 +411,7 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
         targetDate: targetDate || null,
         measure: measure.trim() || null,
         priority: 1,
+        ...(kind ? { kind: kind as NonNullable<GoalInput["kind"]> } : {}),
       },
       { onSuccess: onClose },
     )

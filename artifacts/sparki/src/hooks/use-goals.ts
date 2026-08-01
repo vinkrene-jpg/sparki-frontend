@@ -76,7 +76,69 @@ export type GoalInput = {
   // Atomaire update-of-aanmaak op titelprefix (server-side, race-vrij) —
   // gebruikt door het Wattage-lab zodat dubbelkliks nooit duplicaten maken.
   dedupeTitlePrefix?: string;
+  // DOELEN_01: doelsoort en (bij schuifbalkdoelen) thema + stand.
+  kind?: "event" | "prestatie" | "gedrag" | "slider";
+  theme?: string | null;
+  themeLevel?: number | null;
+  // DOE-44: vertaal-audit bij een via vrije invoer vertaald doel.
+  translation?: {
+    originalInput: string;
+    followUpCount: number;
+    proposedGoal: unknown;
+    confirmed: boolean;
+  } | null;
 };
+
+// DOELEN_01 — leeftijdsband + toegestane doelsoorten/thema's. De server
+// bepaalt dit; de frontend rendert alleen wat hier terugkomt (DOE-46).
+export type GoalPolicy = {
+  band: "under14" | "14-16" | "16-18" | "18+";
+  form: "slider" | "regular";
+  allowedKinds: string[];
+  blockWeightRelated: boolean;
+  description: string;
+  themes: { key: string; label: string }[];
+  kinds: { key: string; label: string; uitleg: string }[];
+};
+
+export function useGoalPolicy() {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: ["goals", "policy"] as const,
+    queryFn: () => apiFetch<GoalPolicy>("/api/goals/policy"),
+    enabled: isSignedIn === true || DEV_PREVIEW,
+    staleTime: STALE.session,
+  });
+}
+
+// DOELEN_01 F3 — vertaalstap (DOE-18 t/m DOE-21).
+export type TranslateResult =
+  | { status: "question"; question: string; followUpCount: number }
+  | {
+      status: "proposal";
+      goal: {
+        kind: "event" | "prestatie" | "gedrag";
+        title: string;
+        measure: string | null;
+        targetValue: string | null;
+        targetDate: string | null;
+      };
+      followUpCount: number;
+      fallback: boolean;
+    };
+
+export function useTranslateGoal() {
+  return useMutation({
+    mutationFn: (input: {
+      input: string;
+      history: { question: string; answer: string }[];
+    }) =>
+      apiFetch<TranslateResult>("/api/goals/translate", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+  });
+}
 
 const GOALS_KEY = ["goals", "picture"] as const;
 

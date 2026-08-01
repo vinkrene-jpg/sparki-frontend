@@ -38,3 +38,8 @@ routes.ts) moet profielbewust zijn, niet alleen de lusgeneratie.
 **E2e-valkuil:** Overpass-mirrors zijn soms tijdelijk onbereikbaar ⇒ eerlijke
 UnverifiableRouteError; generatietests moeten die uitkomst herkennen en één keer
 opnieuw proberen. Desktop-sportkeuze staat óók in stap 2 (eerst "Verder" klikken).
+
+## Sport-bewuste copy & veiligheid t/m navigatie (01-08-2026)
+- ALLE veiligheidsbeoordelingen moeten per sport vertakken: fiets = forbidden/steps/blockedGates, voet = forbiddenFoot/blockedGatesFoot. Dat geldt op ÉLK pad: generatiepoort, bekende-routes-zoeklaag (verifyKnownRoutes krijgt sport via opts) én het bewaarde-route remarks-endpoint (hard/verification). Eén vergeten pad = voetroute geblokkeerd door een trap.
+- UI-copy fiets↔voet: route-panel/route-navigator vertakken op sport ("doorfietsen"→"verder gaan", fietscomputer→sporthorloge, fietsmaatje→wandelmaatje enz.). Nieuwe copy meteen sport-bewust schrijven.
+- Node-page-testdrift: Bewaard rendert alleen de deep-linked route (?route=<id>) — testmocks moeten useSearch "route=<id>" geven; mocks moeten het VOLLEDIGE import-oppervlak dekken (FEATURE_KEYS, useMutation/useQueryClient, @/lib/dev).

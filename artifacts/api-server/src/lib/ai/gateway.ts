@@ -124,6 +124,18 @@ export const AI_PURPOSES = {
     timeoutMs: 60_000,
     maxRetries: 1,
   },
+  goal_translate: {
+    label: "Doelvertaling (vrije invoer naar meetbaar doel)",
+    provider: "anthropic",
+    model: MODEL,
+    promptVersion: "goal-translate-v1",
+    inputCategories: ["doeltekst"],
+    consent: "ai_coaching",
+    sensitive: false,
+    minorBlocked: false,
+    timeoutMs: 30_000,
+    maxRetries: 1,
+  },
   helpdesk: {
     label: "Helpdesk-antwoord (verwoording uit beheerde bronnen)",
     provider: "anthropic",
