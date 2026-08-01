@@ -30,6 +30,43 @@ export function useClimbSearch(q: string, name: string, radiusKm: number) {
   })
 }
 
+// Zoek klimmen rond bekende coördinaten (Route maken: rond de startlocatie) —
+// geen geocodeerstap; optioneel naamfilter. Vuurt alleen met échte coördinaten.
+export function useClimbSearchNearby(
+  at: { lat: number; lon: number } | null,
+  name: string,
+  radiusKm: number,
+  active: boolean,
+) {
+  const { isSignedIn } = useUser()
+  const enabled = useFeatureFlag("climb_explorer")
+  const nameFilter = name.trim()
+  return useQuery({
+    queryKey: [
+      "climbs",
+      "nearby",
+      at ? `${at.lat.toFixed(3)},${at.lon.toFixed(3)}` : null,
+      nameFilter,
+      radiusKm,
+    ],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        lat: String(at!.lat),
+        lon: String(at!.lon),
+        radiusKm: String(radiusKm),
+      })
+      if (nameFilter) params.set("name", nameFilter)
+      return apiFetch<ClimbSearchResult>(
+        `/api/climbs/search?${params.toString()}`,
+      )
+    },
+    enabled:
+      (isSignedIn === true || DEV_PREVIEW) && enabled && active && at != null,
+    staleTime: STALE.flags,
+    retry: false,
+  })
+}
+
 export function useClimbDetail(osmId: string | null) {
   const { isSignedIn } = useUser()
   const enabled = useFeatureFlag("climb_explorer")

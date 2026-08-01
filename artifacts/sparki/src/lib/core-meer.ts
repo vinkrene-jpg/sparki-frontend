@@ -121,9 +121,12 @@ function groepeerAtleet(isClubMember: boolean, isAdmin: boolean): MeerGroep[] {
       ].filter(Boolean),
     },
     {
+      // Klimmen is verplaatst naar Ontdekken (besluit 01-08-2026): de
+      // Klimmenverkenner is inspiratie & zoeken en leeft in de Ontdekken-feed
+      // (/feed → sectie Klimmen); route-integratie zit in Route maken.
       titel: "Sport & materiaal",
       items: [
-        ...["/lichaam", "/mechanieker", "/klimmen", "/geluid"]
+        ...["/lichaam", "/mechanieker", "/geluid"]
           .map((h) => byHref.get(h)!)
           .filter(Boolean),
         PHOTO_LAB_ITEM,

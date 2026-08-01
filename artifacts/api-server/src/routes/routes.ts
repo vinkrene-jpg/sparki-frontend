@@ -3610,6 +3610,36 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
   let viaPoints = mode === "loop" ? parseWaypoints(body.viaPoints) : [];
   let viaLoop = mode === "loop" && viaPoints.length > 0;
 
+  // Gekozen klim (Route maken → "Klimmen toevoegen → specifieke klim"): de
+  // klim reist als via-punten mee én wordt na generatie AANTOONBAAR
+  // geverifieerd — ligt de top niet op de route, dan bieden we de route
+  // eerlijk niet aan (422), nooit een stil "hij zit er vast wel in".
+  const climbCheckRaw =
+    body.climbCheck && typeof body.climbCheck === "object"
+      ? (body.climbCheck as Record<string, unknown>)
+      : null;
+  const climbCheck =
+    climbCheckRaw &&
+    typeof climbCheckRaw.name === "string" &&
+    climbCheckRaw.name.trim() &&
+    finiteNum(climbCheckRaw.summitLat) != null &&
+    finiteNum(climbCheckRaw.summitLon) != null
+      ? {
+          osmId:
+            typeof climbCheckRaw.osmId === "string" ? climbCheckRaw.osmId : null,
+          name: climbCheckRaw.name.trim().slice(0, 120),
+          summitLat: finiteNum(climbCheckRaw.summitLat)!,
+          summitLon: finiteNum(climbCheckRaw.summitLon)!,
+        }
+      : null;
+  if (climbCheck && !viaLoop) {
+    res.status(400).json({
+      error:
+        "Een gekozen klim vereist via-punten door de klim (voet en top) — stuur viaPoints mee.",
+    });
+    return;
+  }
+
   // Vermijd-voorkeuren met een EERLIJK rapport: wat is echt toegepast en wat
   // kan de routebron niet garanderen. Nooit stilletjes negeren.
   const avoidBody =
@@ -3911,6 +3941,62 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     const ptpGeomKey = routeGeometryCacheKey(ptpGeomKeyParams);
     const ptpGeomCached = ROUTE_GEOMETRY_CACHE.get(ptpGeomKey);
 
+    // Gekozen klim aantoonbaar verifiëren: de top moet op de gegenereerde
+    // route liggen (minimale afstand top → routelijn). Puur meetkundig — geen
+    // aannames. Resultaat reist als `climbInclusion` mee op de kandidaat.
+    let climbInclusion: {
+      osmId: string | null;
+      name: string;
+      verified: boolean;
+      offsetM: number;
+    } | null = null;
+    const verifyClimbOnPath = (path: RoutePathPoint[]): boolean => {
+      if (!climbCheck) return true;
+      let minM = Infinity;
+      // RoutePathPoint = [lat, lon] (vaste conventie in de routeketen).
+      // Afstand top → routeLIJN: projecteer lokaal (equirectangulair rond de
+      // top) en meet punt-tot-SEGMENT, niet alleen punt-tot-punt — anders
+      // wordt een top midden op een lang segment ten onrechte afgekeurd.
+      const kLat = 111_000;
+      const kLon = 111_000 * Math.cos((climbCheck.summitLat * Math.PI) / 180);
+      const toXY = (p: RoutePathPoint): [number, number] => [
+        (p[1] - climbCheck.summitLon) * kLon,
+        (p[0] - climbCheck.summitLat) * kLat,
+      ];
+      for (let i = 0; i < path.length; i++) {
+        const [ax, ay] = toXY(path[i]!);
+        let d = Math.sqrt(ax * ax + ay * ay);
+        if (i + 1 < path.length) {
+          const [bx, by] = toXY(path[i + 1]!);
+          const dx = bx - ax;
+          const dy = by - ay;
+          const len2 = dx * dx + dy * dy;
+          if (len2 > 0) {
+            // Projectie van de top (origin) op segment a→b, geklemd op [0,1].
+            const t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+            const px = ax + t * dx;
+            const py = ay + t * dy;
+            d = Math.min(d, Math.sqrt(px * px + py * py));
+          }
+        }
+        if (d < minM) minM = d;
+      }
+      const verified = minM <= 250;
+      climbInclusion = {
+        osmId: climbCheck.osmId,
+        name: climbCheck.name,
+        verified,
+        offsetM: Math.round(minM),
+      };
+      if (!verified) {
+        res.status(422).json({
+          error: `De route kon niet aantoonbaar over ${climbCheck.name} worden gelegd (dichtstbijzijnde punt ${Math.round(minM)} m van de top). Kies een andere klim of een ander startpunt.`,
+          code: "CLIMB_NOT_ON_ROUTE",
+        });
+      }
+      return verified;
+    };
+
     // Helper: build and return the PTP/waypoints candidate from geometry +
     // geocoded names. Always called with a fresh putCandidate so the candidateId
     // is always owned by the current user / linked to the current plannedWorkoutId.
@@ -4025,6 +4111,9 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         plannedWorkoutId,
         targetDistanceKm: null,
         avoidReport,
+        // Gekozen klim: aantoonbaar-op-route-verificatie (alleen via-loop met
+        // climbCheck; null in alle andere gevallen).
+        climbInclusion,
         // Hybride herkomst (taak #512): welke bekende route de basis vormde.
         hybride: hybrideBase
           ? {
@@ -4092,6 +4181,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     if (ptpGeomCached) {
       // Geometry cache hit: skip ORS + geocoding entirely.
       if (await rejectIfBlocked(ptpGeomCached.geometry.path)) return;
+      if (!verifyClimbOnPath(ptpGeomCached.geometry.path)) return;
       res.json({
         candidate: buildPtpResponse(
           ptpGeomCached.geometry,
@@ -4163,6 +4253,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
     });
 
     if (await rejectIfBlocked(ptpGeom.path)) return;
+    if (!verifyClimbOnPath(ptpGeom.path)) return;
     res.json({
       candidate: buildPtpResponse(ptpGeom, startName, endName, false),
     });

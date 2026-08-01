@@ -44,6 +44,8 @@ import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
 import { racefietsVerification } from "@/lib/racefiets-verification"
 import { zoekCriteriaKey } from "@/lib/route-search-criteria"
+import { useClimbSearchNearby, useClimbDetail } from "@/hooks/use-climbs"
+import { KIND_LABEL, type ClimbHit } from "@/lib/climb-types"
 import { ArrowLeft, MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon, Lock } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
@@ -562,6 +564,187 @@ function NavigateInfoCard() {
             {more ? "− minder" : "+ Meer over navigeren"}
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Klimmen toevoegen (Route maken) ─────────────────────────────────────────
+// Zoeker: klimmen rond de gekozen startlocatie (geen geocodeerstap). Alleen
+// echte treffers — leeg is eerlijk leeg.
+function KlimZoeker({
+  start,
+  naamFilter,
+  setNaamFilter,
+  onKies,
+}: {
+  start: { lat: number; lon: number }
+  naamFilter: string
+  setNaamFilter: (v: string) => void
+  onKies: (k: ClimbHit) => void
+}) {
+  const zoek = useClimbSearchNearby(start, naamFilter, 30, true)
+  const hits = zoek.data?.climbs ?? []
+  return (
+    <div data-testid="klim-zoeker">
+      <input
+        type="text"
+        value={naamFilter}
+        onChange={(e) => setNaamFilter(e.target.value)}
+        placeholder="Filter op naam (optioneel)"
+        aria-label="Klimnaam filteren"
+        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 placeholder:text-white/30 focus:border-accent-cyan/40 focus:outline-none"
+      />
+      {zoek.isLoading && (
+        <p className="mt-2 text-[12px] text-white/45">
+          Klimmen zoeken rond je startpunt…
+        </p>
+      )}
+      {zoek.error != null && (
+        <p className="mt-2 text-[12px] text-amber-300/80">
+          {zoek.error instanceof Error
+            ? zoek.error.message
+            : "Klimmen zoeken is nu niet beschikbaar."}
+        </p>
+      )}
+      {zoek.data && hits.length === 0 && (
+        <p className="mt-2 text-[12px] text-white/45">
+          Geen klimmen gevonden binnen {zoek.data.radiusKm} km rond je start
+          {naamFilter.trim() ? " met deze naam" : ""}. Vlak gebied is eerlijk
+          vlak — probeer een ander startpunt of een andere naam.
+        </p>
+      )}
+      {hits.length > 0 && (
+        <div className="mt-2 flex max-h-56 flex-col overflow-y-auto rounded-xl border border-white/[0.08]">
+          {hits.slice(0, 12).map((k) => (
+            <button
+              key={k.osmId}
+              type="button"
+              onClick={() => onKies(k)}
+              className="flex min-h-11 items-baseline gap-3 border-b border-white/[0.05] px-3 py-2.5 text-left last:border-0 hover:bg-white/[0.04]"
+            >
+              <span className="flex-1 text-[13px] text-white/85">{k.name}</span>
+              <span className="font-mono text-[10px] text-white/40">
+                {KIND_LABEL[k.kind]}
+                {k.elevationM != null ? ` · ${Math.round(k.elevationM)} m` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Gekozen klim: kaart + hoogteprofiel laden pas hier (ná selectie). Vervangen
+// of verwijderen kan altijd, zonder verlies van de andere invoer.
+function GekozenKlimKaart({
+  klim,
+  detail,
+  onVervang,
+  onVerwijder,
+}: {
+  klim: ClimbHit
+  detail: {
+    data?: import("@/lib/climb-types").ClimbDetail
+    isLoading: boolean
+    error: unknown
+  }
+  onVervang: () => void
+  onVerwijder: () => void
+}) {
+  const p = detail.data?.profile ?? null
+  return (
+    <div
+      className="mt-2.5 rounded-2xl border border-accent-cyan/25 bg-accent-cyan/[0.06] p-3"
+      data-testid="gekozen-klim"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[13px] font-medium text-white/90">
+          {klim.name}
+        </span>
+        <span className="font-mono text-[10px] text-white/40">
+          {KIND_LABEL[klim.kind]}
+        </span>
+      </div>
+      {detail.isLoading && (
+        <p className="mt-2 text-[12px] text-white/45">
+          Klimprofiel en kaart laden…
+        </p>
+      )}
+      {!detail.isLoading && detail.data && p && (
+        <>
+          <p className="mt-1.5 font-mono text-[11px] tabular-nums text-white/55">
+            {p.lengthKm} km · {p.elevationGainM} hm · gem. {p.avgGradePct}% ·
+            max {p.maxGradePct}%
+          </p>
+          <div className="mt-2 overflow-hidden rounded-xl">
+            <RouteMap
+              geometry={p.points}
+              center={[klim.lat, klim.lon]}
+              meetpoints={[
+                { name: klim.name, lat: klim.lat, lon: klim.lon, note: null },
+              ]}
+              height={160}
+            />
+          </div>
+          <svg
+            viewBox="0 0 100 24"
+            preserveAspectRatio="none"
+            className="mt-2 h-12 w-full"
+            aria-label={`Hoogteprofiel van ${klim.name}`}
+          >
+            <polyline
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              className="text-accent-cyan/80"
+              points={(() => {
+                const vals = p.profile
+                if (vals.length < 2) return ""
+                const min = Math.min(...vals)
+                const max = Math.max(...vals)
+                const span = Math.max(max - min, 1)
+                return vals
+                  .map(
+                    (v, i) =>
+                      `${(i / (vals.length - 1)) * 100},${22 - ((v - min) / span) * 20}`,
+                  )
+                  .join(" ")
+              })()}
+            />
+          </svg>
+        </>
+      )}
+      {!detail.isLoading && detail.data && !p && (
+        <p className="mt-2 text-[12px] leading-relaxed text-amber-300/80">
+          {detail.data.profileUnavailableReason ??
+            "Voor deze klim is geen betrouwbaar klimprofiel beschikbaar."}{" "}
+          Deze klim kan daardoor niet in de route worden gelegd — vervang of
+          verwijder hem.
+        </p>
+      )}
+      {!detail.isLoading && detail.error != null && (
+        <p className="mt-2 text-[12px] text-amber-300/80">
+          Klimdetails konden niet geladen worden — probeer het opnieuw of
+          vervang de klim.
+        </p>
+      )}
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={onVervang}
+          className="min-h-11 flex-1 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+        >
+          Vervangen
+        </button>
+        <button
+          type="button"
+          onClick={onVerwijder}
+          className="min-h-11 flex-1 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+        >
+          Verwijderen
+        </button>
       </div>
     </div>
   )
@@ -1693,6 +1876,38 @@ export function RouteGenerator({
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
   const [wish, setWish] = useState("")
+  // Klimmen toevoegen (alleen lus): voorkeur of een specifieke, aantoonbaar
+  // op de route gelegde klim. Deep-link vanuit de Klimmenverkenner
+  // (?klim=<osmId>&klimNaam=&klimLat=&klimLon=) start direct met die klim.
+  const klimParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : "",
+  )
+  const klimDeepLink = ((): ClimbHit | null => {
+    const osmId = klimParams.get("klim")
+    const naam = klimParams.get("klimNaam")
+    const lat = Number(klimParams.get("klimLat"))
+    const lon = Number(klimParams.get("klimLon"))
+    if (!osmId || !naam || !Number.isFinite(lat) || !Number.isFinite(lon))
+      return null
+    // Bereikvalidatie: onzinnige coördinaten in de link nooit overnemen. De
+    // deep-link is bovendien alleen de startselectie — naam, top en voet voor
+    // de echte controle komen canoniek uit het serverdetail (osmId).
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null
+    return {
+      osmId,
+      name: naam,
+      lat,
+      lon,
+      elevationM: null,
+      kind: "road",
+      hasDescription: false,
+    }
+  })()
+  const [klimKeuze, setKlimKeuze] = useState<
+    "geen" | "enkele" | "max" | "specifiek"
+  >(klimDeepLink ? "specifiek" : "geen")
+  const [gekozenKlim, setGekozenKlim] = useState<ClimbHit | null>(klimDeepLink)
+  const [klimNaamFilter, setKlimNaamFilter] = useState("")
   const [destination, setDestination] = useState("")
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
   // De ECHTE positie van de rijder (alleen gezet na geslaagde geolocatie) —
@@ -1883,6 +2098,31 @@ export function RouteGenerator({
   const effectiefVermijdN = heeft("nWegen") && avoidBusyRoads
   const effectieveHoogte = heeft("hoogte") ? elevationPreference : "any"
   const effectiefTrainingstype = heeft("training") ? trainingType : "duurtraining"
+  // Klimmen toevoegen: alleen in de lus-modus en wanneer de weergave de optie
+  // toont — verborgen keuzes sturen nooit stiekem mee.
+  const klimActief = mode === "loop" && heeft("klimmen")
+  const effectieveKlimKeuze = klimActief ? klimKeuze : "geen"
+  const effectieveKlim =
+    effectieveKlimKeuze === "specifiek" ? gekozenKlim : null
+  // Kaart en hoogteprofiel van de klim worden pas geladen ná selectie (het
+  // detail levert ook de voet van de klim voor de via-punten).
+  const klimDetail = useClimbDetail(effectieveKlim?.osmId ?? null)
+  const klimVoet: [number, number] | null =
+    klimDetail.data?.profile?.points?.[0] ?? null
+  // Hoogtevoorkeur-doorwerking van de klimkeuze: "enkele"/"zoveel mogelijk"
+  // sturen de echte kandidaatselectie; een specifieke klim stuurt via de
+  // via-punten en laat de hoogtevoorkeur ongemoeid.
+  const effectieveHoogteMetKlim =
+    effectieveKlimKeuze === "enkele" || effectieveKlimKeuze === "max"
+      ? "hilly"
+      : effectieveHoogte
+  const klimHoogtedoel = (() => {
+    if (effectieveKlimKeuze !== "max") return undefined
+    const d = parseInt(distance)
+    if (!Number.isFinite(d) || d <= 0) return undefined
+    // Eerlijk doel, geen garantie: ~20 hm per km als rangschikkingsdoel.
+    return Math.min(Math.round(d * 20), 10000)
+  })()
 
   // Contract "eerst bekend, dán nieuw": de bekende-routes-lijst hoort bij
   // PRECIES één set zoekcriteria. Wijzigt een zoek-bepalend gegeven (start,
@@ -1912,6 +2152,14 @@ export function RouteGenerator({
     setBekend(null)
     setBekendFilter("alles")
   }, [zoekKey])
+
+  // Klimkeuze is óók zoek-bepalend: wijzigt de keuze of de gekozen klim, dan
+  // vervalt de bekende-routes-lijst en doorloopt een nieuwe aanvraag opnieuw
+  // de verplichte zoekstap.
+  useEffect(() => {
+    setBekend(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectieveKlimKeuze, effectieveKlim?.osmId])
 
   // Weergave omlaag gezet terwijl de eigen routebouwer actief was? Dan terug
   // naar Lus — een verborgen modus mag nooit stilletjes waypoints meesturen.
@@ -2036,7 +2284,8 @@ export function RouteGenerator({
         startLon: start.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference: effectieveHoogte,
+        targetElevationGainM: klimHoogtedoel,
+        elevationPreference: effectieveHoogteMetKlim,
         trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
@@ -2124,6 +2373,15 @@ export function RouteGenerator({
     // a newer one when the user taps again before the first result arrives.
     generateReqId.current += 1
     const myReqId = generateReqId.current
+    // Gekozen klim: de lus wordt als echte wegroute door voet + top gelegd en
+    // de server verifieert aantoonbaar dat de top op de route ligt. Naam en
+    // top komen CANONIEK uit het serverdetail (opgehaald op osmId) — nooit uit
+    // deep-link-parameters, die zijn alleen de startselectie.
+    const klimCanoniek = klimDetail.data ?? null
+    const klimVia: [number, number][] | undefined =
+      mode === "loop" && effectieveKlim && klimCanoniek && klimVoet
+        ? [klimVoet, [klimCanoniek.lat, klimCanoniek.lon]]
+        : undefined
     generate.mutate(
       {
         mode,
@@ -2131,7 +2389,18 @@ export function RouteGenerator({
         startLon: start?.lon,
         sport,
         bikeType: sport === "cycling" ? bikeType : undefined,
-        elevationPreference: effectieveHoogte,
+        viaPoints: klimVia,
+        climbCheck:
+          klimVia && klimCanoniek
+            ? {
+                osmId: klimCanoniek.osmId,
+                name: klimCanoniek.name,
+                summitLat: klimCanoniek.lat,
+                summitLon: klimCanoniek.lon,
+              }
+            : undefined,
+        targetElevationGainM: klimHoogtedoel,
+        elevationPreference: effectieveHoogteMetKlim,
         trainingType: effectiefTrainingstype,
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
@@ -2706,6 +2975,80 @@ export function RouteGenerator({
       </div>
       )}
 
+      {/* Klimmen toevoegen — ná startlocatie en afstand: voorkeur of een
+          specifieke klim die aantoonbaar in de route komt te liggen. Alleen
+          in de lus-modus; kaart en hoogteprofiel van de klim laden pas na
+          selectie. */}
+      {stepVisible(2) && klimActief && (
+      <div className="mt-4" data-testid="klimmen-toevoegen">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          KLIMMEN TOEVOEGEN
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              { value: "geen", label: "Geen voorkeur" },
+              { value: "enkele", label: "Enkele klimmen" },
+              { value: "max", label: "Zoveel mogelijk" },
+              { value: "specifiek", label: "Specifieke klim zoeken" },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => {
+                setKlimKeuze(o.value)
+                if (o.value !== "specifiek") setGekozenKlim(null)
+              }}
+              className={`min-h-11 rounded-xl border px-3 py-2.5 text-[13px] transition-colors ${klimKeuze === o.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {klimKeuze === "enkele" && (
+          <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+            De echte kandidaat met wat klimwerk wint — een voorkeur, geen
+            garantie in vlak gebied.
+          </p>
+        )}
+        {klimKeuze === "max" && (
+          <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+            De route met de meeste echte hoogtemeters rond je start wint — een
+            eerlijke keuze uit echte kandidaten, geen garantie.
+          </p>
+        )}
+        {klimKeuze === "specifiek" && !gekozenKlim && (
+          <div className="mt-2.5">
+            {!start ? (
+              <p className="text-[12px] leading-relaxed text-white/50">
+                Kies eerst een startpunt (stap 1) — Sparki zoekt dan klimmen in
+                de buurt van je start.
+              </p>
+            ) : (
+              <KlimZoeker
+                start={start}
+                naamFilter={klimNaamFilter}
+                setNaamFilter={setKlimNaamFilter}
+                onKies={(k) => setGekozenKlim(k)}
+              />
+            )}
+          </div>
+        )}
+        {klimKeuze === "specifiek" && gekozenKlim && (
+          <GekozenKlimKaart
+            klim={gekozenKlim}
+            detail={klimDetail}
+            onVervang={() => setGekozenKlim(null)}
+            onVerwijder={() => {
+              setGekozenKlim(null)
+              setKlimKeuze("geen")
+            }}
+          />
+        )}
+      </div>
+      )}
+
       {/* Training type + workout link — alleen in de Wedstrijd-weergave */}
       {stepVisible(2) && heeft("training") && (
       <div className="mt-4 grid grid-cols-2 gap-3">
@@ -3136,6 +3479,18 @@ export function RouteGenerator({
                 {effectieveWens}
               </p>
             )}
+            {klimActief && effectieveKlimKeuze !== "geen" && (
+              <p>
+                <span className="text-white/40">Klimmen: </span>
+                {effectieveKlimKeuze === "enkele"
+                  ? "enkele klimmen (voorkeur)"
+                  : effectieveKlimKeuze === "max"
+                    ? "zoveel mogelijk klimmen (voorkeur)"
+                    : effectieveKlim
+                      ? `via ${effectieveKlim.name}`
+                      : "specifieke klim — nog niet gekozen"}
+              </p>
+            )}
             <p>
               <span className="text-white/40">Gezelschap: </span>
               {withOthers
@@ -3193,9 +3548,28 @@ export function RouteGenerator({
           ) : (
             <button
               type="button"
-              onClick={() =>
-                mode === "loop" ? runGenerateOptions() : runGenerate()
-              }
+              onClick={() => {
+                // Specifieke klim: één voorstel via voet + top (via-punten) —
+                // de 3-afstanden-kiezer kan geen via-punten meesturen.
+                if (effectieveKlim) {
+                  if (klimDetail.isLoading) {
+                    setError(
+                      "Het klimprofiel wordt nog geladen — probeer het zo weer.",
+                    )
+                    return
+                  }
+                  if (!klimVoet) {
+                    setError(
+                      "Voor deze klim is geen betrouwbaar klimprofiel beschikbaar — vervang of verwijder de klim.",
+                    )
+                    return
+                  }
+                  runGenerate()
+                  return
+                }
+                if (mode === "loop") runGenerateOptions()
+                else runGenerate()
+              }}
               disabled={genPending}
               className="min-w-0 flex-1 rounded-2xl bg-accent-cyan py-3.5 font-sans text-[13px] font-semibold text-on-accent disabled:opacity-50"
             >
@@ -3520,6 +3894,82 @@ export function RouteGenerator({
               ? `Gebaseerd op jouw eerdere route “${candidate.hybride.baseRouteName}”`
               : "Nieuw voorstel van Sparki"}
           </p>
+
+          {/* Klimmen op deze route — vóór bevestiging (eis: aantal klimmen,
+              totale hoogtemeters, zwaarste klim, extra afstand). Alleen echte
+              gemeten waarden; de gekozen klim draagt zijn meetkundige
+              verificatie zichtbaar mee. */}
+          {klimActief && effectieveKlimKeuze !== "geen" && (
+            <div
+              className="mt-3 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-3.5"
+              data-testid="klim-resultaat"
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+                Klimmen op deze route
+              </span>
+              {candidate.climbInclusion && (
+                <p
+                  className={`mt-1.5 text-[12px] leading-relaxed ${candidate.climbInclusion.verified ? "text-emerald-300/85" : "text-amber-300/85"}`}
+                >
+                  {candidate.climbInclusion.verified
+                    ? `✓ ${candidate.climbInclusion.name} ligt aantoonbaar op deze route (top ${candidate.climbInclusion.offsetM} m van de routelijn).`
+                    : `${candidate.climbInclusion.name} kon niet op de route worden geverifieerd.`}
+                </p>
+              )}
+              <div className="mt-2 flex flex-col gap-1 font-mono text-[12px] tabular-nums text-white/70">
+                <span>
+                  Aantal klimmen: {candidate.climbs.length}
+                </span>
+                <span>
+                  Totale hoogtemeters:{" "}
+                  {candidate.elevationGainM != null
+                    ? `${Math.round(candidate.elevationGainM)} m`
+                    : "onbekend"}
+                </span>
+                <span>
+                  Zwaarste klim:{" "}
+                  {(() => {
+                    if (candidate.climbs.length === 0)
+                      return "geen gedetecteerde klim"
+                    const zwaarste = [...candidate.climbs].sort(
+                      (a, b) =>
+                        b.lengthKm * b.avgGradePct - a.lengthKm * a.avgGradePct,
+                    )[0]!
+                    return `${zwaarste.name} (${zwaarste.lengthKm} km · ${zwaarste.avgGradePct}%)`
+                  })()}
+                </span>
+                <span>
+                  Extra afstand t.o.v. je doel:{" "}
+                  {(() => {
+                    const doel = parseInt(distance)
+                    if (
+                      candidate.distanceKm == null ||
+                      !Number.isFinite(doel) ||
+                      doel <= 0
+                    )
+                      return "onbekend"
+                    const delta = candidate.distanceKm - doel
+                    return `${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(1)} km (${Math.round(candidate.distanceKm)} km i.p.v. ${doel} km doel)`
+                  })()}
+                </span>
+              </div>
+              {effectieveKlim && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Terug naar de stappen om de klim te vervangen of te
+                    // verwijderen — alle andere invoer blijft staan.
+                    setCandidate(null)
+                    setOptions(null)
+                    setStep(2)
+                  }}
+                  className="mt-2.5 min-h-11 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+                >
+                  Klim vervangen of verwijderen
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Andere echte voorstellen uit dezelfde generatieronde — de motor
               bouwde meerdere lussen; wissel gerust, de huidige blijft kiesbaar. */}

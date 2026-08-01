@@ -122,6 +122,16 @@ function DetailView({
         </p>
       )}
 
+      {/* Geen doodlopend klimdetail: vanaf hier direct door naar Route maken —
+          de klim reist mee en wordt daar aantoonbaar in de route gelegd. */}
+      <a
+        href={`/routes?view=maken&klim=${encodeURIComponent(climb.osmId)}&klimNaam=${encodeURIComponent(climb.name)}&klimLat=${climb.lat}&klimLon=${climb.lon}`}
+        className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-accent-cyan px-4 py-3 font-sans text-[13px] font-semibold text-on-accent"
+        data-testid="klim-naar-route"
+      >
+        Gebruik deze klim in Route maken
+      </a>
+
       {isLoading && (
         <div className="mt-4 space-y-3">
           <div className="h-4 w-40 animate-pulse rounded bg-white/[0.06]" />

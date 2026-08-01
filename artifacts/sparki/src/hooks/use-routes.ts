@@ -101,6 +101,21 @@ export type GenerateRouteInput = {
   // Hybride voorstel (taak #512): id van een EIGEN bekende route als basis —
   // de heenweg volgt die route, de terugweg wordt opnieuw gepland. Alleen lus.
   baseRouteId?: number;
+  // Klimmen toevoegen (Route maken): via-punten ([lat, lon]) waar de lus als
+  // echte wegroute doorheen wordt gelegd (bv. voet + top van een gekozen
+  // klim). Alleen lus-modus.
+  viaPoints?: [number, number][];
+  // Gekozen klim: de server verifieert AANTOONBAAR dat de top op de
+  // gegenereerde route ligt en weigert anders eerlijk (422).
+  climbCheck?: {
+    osmId?: string | null;
+    name: string;
+    summitLat: number;
+    summitLon: number;
+  };
+  // Hoogtemeter-doel (alleen lus): rangschikt echte kandidaten op dit doel —
+  // een eerlijke keuze, nooit een garantie.
+  targetElevationGainM?: number;
 };
 
 // Eerlijk rapport over vermijd-voorkeuren: wat is echt toegepast en wat kon de
@@ -154,6 +169,14 @@ export type RouteCandidate = {
   // opnieuw gepland. Herkomst zit ook in naam + rationale, zodat zij bij het
   // opslaan mee de bibliotheek in reist.
   hybride?: { baseRouteId: number; baseRouteName: string };
+  // Gekozen klim (Klimmen toevoegen): meetkundige verificatie dat de top van
+  // de gekozen klim écht op deze route ligt. null/afwezig = geen klim gekozen.
+  climbInclusion?: {
+    osmId: string | null;
+    name: string;
+    verified: boolean;
+    offsetM: number;
+  } | null;
 };
 
 export type KnownRouteVerification =

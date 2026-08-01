@@ -1,0 +1,99 @@
+{
+  "baseUrl": "http://127.0.0.1:33261",
+  "geo": {
+    "latitude": 50.865,
+    "longitude": 5.83
+  },
+  "stappen": [
+    {
+      "stap": "login",
+      "status": "OK",
+      "detail": "auth/me=200",
+      "t": "2026-08-01T06:36:26.277Z"
+    },
+    {
+      "stap": "planner-zichtbaar",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:28.846Z"
+    },
+    {
+      "stap": "startpunt",
+      "status": "OK",
+      "detail": "Valkenburg vastgeklikt",
+      "t": "2026-08-01T06:36:28.904Z"
+    },
+    {
+      "stap": "klimblok-na-start-afstand",
+      "status": "OK",
+      "detail": "KLIMMEN TOEVOEGEN zichtbaar in stap 2",
+      "t": "2026-08-01T06:36:29.361Z"
+    },
+    {
+      "stap": "geen-detail-voor-selectie",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:29.430Z"
+    },
+    {
+      "stap": "klim-gekozen",
+      "status": "OK",
+      "detail": "Hoscheit",
+      "t": "2026-08-01T06:36:35.849Z"
+    },
+    {
+      "stap": "vervangen",
+      "status": "OK",
+      "detail": "zoeker terug zonder invoerverlies",
+      "t": "2026-08-01T06:36:39.815Z"
+    },
+    {
+      "stap": "samenvatting-klimregel",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:40.869Z"
+    },
+    {
+      "stap": "resultaat",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:53.509Z"
+    },
+    {
+      "stap": "klim-verificatie",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:53.514Z"
+    },
+    {
+      "stap": "feit: Aantal klimmen:",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:53.516Z"
+    },
+    {
+      "stap": "feit: Totale hoogtemeters:",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:53.518Z"
+    },
+    {
+      "stap": "feit: Zwaarste klim:",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:53.520Z"
+    },
+    {
+      "stap": "feit: Extra afstand",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-01T06:36:53.522Z"
+    },
+    {
+      "stap": "bewaard",
+      "status": "OK",
+      "detail": "http://127.0.0.1:33261/routes?view=bewaard&route=570",
+      "t": "2026-08-01T06:36:53.875Z"
+    }
+  ]
+}
