@@ -1,7 +1,7 @@
 // DB gathering for the source-quality register. Reads only real rows; every
 // absence flows through as an honest gap in the assessment.
 
-import { and, desc, eq, gte, or } from "drizzle-orm";
+import { and, desc, eq, gte, or, isNull } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
@@ -125,7 +125,7 @@ export async function gatherSourceInput(
           eq(coachAthleteLinksTable.athleteClerkId, clerkId),
           or(
             eq(coachAthleteLinksTable.status, "active"),
-            eq(coachAthleteLinksTable.status, "accepted"),
+            eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
           ),
         ),
       ),

@@ -119,7 +119,7 @@ async function hasAcceptedCoachOrParentLink(
       and(
         eq(coachAthleteLinksTable.coachClerkId, viewer),
         eq(coachAthleteLinksTable.athleteClerkId, owner),
-        eq(coachAthleteLinksTable.status, "accepted"),
+        eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
       ),
     )
     .limit(1);
@@ -131,7 +131,7 @@ async function hasAcceptedCoachOrParentLink(
       and(
         eq(parentAthleteLinksTable.parentClerkId, viewer),
         eq(parentAthleteLinksTable.athleteClerkId, owner),
-        eq(parentAthleteLinksTable.status, "accepted"),
+        eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
       ),
     )
     .limit(1);
@@ -144,7 +144,7 @@ async function areFriends(viewer: string, owner: string): Promise<boolean> {
     .from(friendLinksTable)
     .where(
       and(
-        eq(friendLinksTable.status, "accepted"),
+        eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
         or(
           and(
             eq(friendLinksTable.requesterClerkId, viewer),
@@ -267,7 +267,7 @@ export async function relatedOwnerIds(viewer: string): Promise<{
         .where(
           and(
             eq(coachAthleteLinksTable.coachClerkId, viewer),
-            eq(coachAthleteLinksTable.status, "accepted"),
+            eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
           ),
         ),
       db
@@ -276,7 +276,7 @@ export async function relatedOwnerIds(viewer: string): Promise<{
         .where(
           and(
             eq(parentAthleteLinksTable.parentClerkId, viewer),
-            eq(parentAthleteLinksTable.status, "accepted"),
+            eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
           ),
         ),
       db
@@ -287,7 +287,7 @@ export async function relatedOwnerIds(viewer: string): Promise<{
         .from(friendLinksTable)
         .where(
           and(
-            eq(friendLinksTable.status, "accepted"),
+            eq(friendLinksTable.status, "accepted"), isNull(friendLinksTable.endedAt),
             or(
               eq(friendLinksTable.requesterClerkId, viewer),
               eq(friendLinksTable.addresseeClerkId, viewer),

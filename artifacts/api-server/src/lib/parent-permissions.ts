@@ -122,7 +122,9 @@ export async function effectiveParentAccess(
     permissions: allOff(),
     parentMayEdit: tier === "u16",
   };
-  if (link.status !== "accepted" || level === "none") return base;
+  // BB-09 (BUILD_01 F2): een beëindigde koppeling geeft nooit toegang.
+  if (link.status !== "accepted" || link.endedAt != null || level === "none")
+    return base;
 
   // Herbevestiging nodig wanneer de leeftijdscategorie is gewijzigd sinds de
   // laatste bevestiging. Een koppeling zonder bevestiging heeft nooit meer dan

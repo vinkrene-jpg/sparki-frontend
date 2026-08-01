@@ -214,7 +214,7 @@ export async function orchestrateTrainerToday(coachId: string): Promise<RoleToda
       .where(
         and(
           eq(coachAthleteLinksTable.coachClerkId, coachId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       ),
     clubAssignedAthleteIds(coachId),
@@ -503,7 +503,7 @@ export async function orchestrateOuderToday(parentId: string): Promise<RoleToday
       .where(
         and(
           eq(parentAthleteLinksTable.parentClerkId, parentId),
-          eq(parentAthleteLinksTable.status, "accepted"),
+          eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
         ),
       ),
     availableTodayRoles(parentId),

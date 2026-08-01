@@ -429,7 +429,8 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
               coachAthleteLinksTable.coachClerkId,
               coachAthleteLinksTable.athleteClerkId,
             ],
-            set: { status: "accepted" },
+            // Heropening na eerdere beëindiging: verse periode (BB-09).
+            set: { status: "accepted", endedAt: null, startedAt: new Date() },
           });
       } else if (relationship === "parent_athlete") {
         await tx
@@ -444,7 +445,7 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
               parentAthleteLinksTable.parentClerkId,
               parentAthleteLinksTable.athleteClerkId,
             ],
-            set: { status: "accepted" },
+            set: { status: "accepted", endedAt: null, startedAt: new Date() },
           });
       } else if (relationship === "friend_athlete") {
         // Vriendenuitnodiging: direct geaccepteerde vriendschap tussen
@@ -462,7 +463,12 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
               friendLinksTable.requesterClerkId,
               friendLinksTable.addresseeClerkId,
             ],
-            set: { status: "accepted", respondedAt: new Date() },
+            set: {
+              status: "accepted",
+              respondedAt: new Date(),
+              endedAt: null,
+              startedAt: new Date(),
+            },
           });
       } else if (relationship === "head_tester") {
         // Mark the accepter as Sparki's Hoofdtester. No peer link row.

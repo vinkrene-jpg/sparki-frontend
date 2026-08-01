@@ -799,7 +799,7 @@ async function canViewSharedRoute(
         and(
           eq(coachAthleteLinksTable.coachClerkId, viewerClerkId),
           eq(coachAthleteLinksTable.athleteClerkId, route.clerkId),
-          eq(coachAthleteLinksTable.status, "accepted"),
+          eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
         ),
       )
       .limit(1);
@@ -1102,7 +1102,7 @@ router.get("/gedeeld", requireAuth, async (req, res) => {
         .where(
           and(
             eq(coachAthleteLinksTable.coachClerkId, clerkId),
-            eq(coachAthleteLinksTable.status, "accepted"),
+            eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
           ),
         ),
       activeClubIds(clerkId),
@@ -3397,7 +3397,7 @@ router.post(
           .where(
             and(
               eq(coachAthleteLinksTable.coachClerkId, clerkId),
-              eq(coachAthleteLinksTable.status, "accepted"),
+              eq(coachAthleteLinksTable.status, "accepted"), isNull(coachAthleteLinksTable.endedAt),
             ),
           ),
         activeClubIds(clerkId),

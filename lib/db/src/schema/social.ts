@@ -49,6 +49,12 @@ export const friendLinksTable = pgTable(
       .notNull()
       .defaultNow(),
     respondedAt: timestamp("responded_at", { withTimezone: true }),
+    // SPARKI_BUILD_01 F2 (BB-09): relatiehistorie. endedAt gezet = beëindigd —
+    // geen actuele toegang meer, rij blijft bestaan als historie.
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
   },
   (t) => [unique().on(t.requesterClerkId, t.addresseeClerkId)],
 );

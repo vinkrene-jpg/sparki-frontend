@@ -331,7 +331,7 @@ export async function isLinkedParent(
       and(
         eq(parentAthleteLinksTable.parentClerkId, parentClerkId),
         eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
-        eq(parentAthleteLinksTable.status, "accepted"),
+        eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return !!row;

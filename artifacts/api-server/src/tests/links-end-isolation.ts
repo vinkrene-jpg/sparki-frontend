@@ -45,7 +45,7 @@ import {
   parentAthleteLinksTable,
   userProfilesTable,
 } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
 
@@ -137,6 +137,7 @@ async function coachLinkExists(
       and(
         eq(coachAthleteLinksTable.coachClerkId, coach),
         eq(coachAthleteLinksTable.athleteClerkId, athlete),
+        isNull(coachAthleteLinksTable.endedAt),
       ),
     );
   return rows.length > 0;
@@ -153,6 +154,7 @@ async function parentLinkExists(
       and(
         eq(parentAthleteLinksTable.parentClerkId, parent),
         eq(parentAthleteLinksTable.athleteClerkId, athlete),
+        isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return rows.length > 0;
@@ -261,7 +263,7 @@ async function main() {
 
   // ── COACH ENDS ITS OWN LINK ──────────────────────────────────────────────────
   await scenario(
-    "coach ends link: C removes its own link to A → row gone, C denied 403, C2 untouched",
+    "coach ends link: C removes its own link to A → beëindigd (endedAt gezet, historie blijft), C denied 403, C2 untouched",
     async () => {
       assert(
         await coachLinkExists(clerkCoach, clerkAthlete),
@@ -306,7 +308,7 @@ async function main() {
 
   // ── PARENT ENDS ITS OWN LINK ──────────────────────────────────────────────────
   await scenario(
-    "parent ends link: P removes its own link to A → row gone, P denied 403, P2 untouched",
+    "parent ends link: P removes its own link to A → beëindigd (endedAt gezet, historie blijft), P denied 403, P2 untouched",
     async () => {
       assert(
         await parentLinkExists(clerkParent, clerkAthlete),

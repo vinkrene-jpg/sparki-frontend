@@ -45,7 +45,7 @@ import {
   parentAthleteLinksTable,
   userProfilesTable,
 } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
 
@@ -137,6 +137,7 @@ async function coachLinkExists(
       and(
         eq(coachAthleteLinksTable.coachClerkId, coach),
         eq(coachAthleteLinksTable.athleteClerkId, athlete),
+        isNull(coachAthleteLinksTable.endedAt),
       ),
     );
   return rows.length > 0;
@@ -153,6 +154,7 @@ async function parentLinkExists(
       and(
         eq(parentAthleteLinksTable.parentClerkId, parent),
         eq(parentAthleteLinksTable.athleteClerkId, athlete),
+        isNull(parentAthleteLinksTable.endedAt),
       ),
     );
   return rows.length > 0;
@@ -250,7 +252,7 @@ async function main() {
 
   // ── SELF UNLINK: coach ───────────────────────────────────────────────────────
   await scenario(
-    "self-unlink coach: A removes its own coach link → row gone, coach denied 403",
+    "self-unlink coach: A removes its own coach link → beëindigd (endedAt gezet, historie blijft), coach denied 403",
     async () => {
       assert(
         await coachLinkExists(clerkCoach, clerkSelf),
@@ -290,7 +292,7 @@ async function main() {
 
   // ── SELF UNLINK: parent ──────────────────────────────────────────────────────
   await scenario(
-    "self-unlink parent: A removes its own parent link → row gone, parent denied 403",
+    "self-unlink parent: A removes its own parent link → beëindigd (endedAt gezet, historie blijft), parent denied 403",
     async () => {
       assert(
         await parentLinkExists(clerkParent, clerkSelf),
