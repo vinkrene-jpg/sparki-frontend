@@ -93,8 +93,32 @@ try {
   );
   await page.screenshot({ path: path.join(EVIDENCE, "voeding-start.png") });
 
-  // 3: clubrol-startpunten (dunne rol met eerlijke lege toestand + beheerrol).
+  // 3a (F-P0-03): rolbezit-poort — zonder clublidmaatschap toont
+  // /rol-start/mechanieker een eerlijke geen-toegang-toestand die géén
+  // ingangen of rolstructuur lekt.
   await page.goto(`${baseUrl}/rol-start/mechanieker`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
+  const geenToegang = await page
+    .locator('[data-testid="rolstart-geen-toegang"]')
+    .isVisible()
+    .catch(() => false);
+  const geenLek = !(await page
+    .locator('[data-testid="rolstart-mechanieker"]')
+    .isVisible()
+    .catch(() => false));
+  log("niet-bezeten rol → geen toegang zonder structuurlek", geenToegang && geenLek);
+  await page.screenshot({ path: path.join(EVIDENCE, "rolstart-geen-toegang.png") });
+
+  // 3b: clubrol-startpunten — mét echt (actief) clublidmaatschap.
+  psql(
+    `INSERT INTO clubs (name, owner_clerk_id, join_code) VALUES ('E2E Rolstart Club', '${userId}', 'E2EROLSTART') ON CONFLICT DO NOTHING`,
+  );
+  const clubId = psql(`SELECT id FROM clubs WHERE name='E2E Rolstart Club' LIMIT 1`);
+  psql(
+    `INSERT INTO club_members (club_id, clerk_id, role) VALUES (${Number(clubId)}, '${userId}', 'mechanieker') ON CONFLICT (club_id, clerk_id) WHERE ended_at IS NULL DO UPDATE SET role='mechanieker'`,
+  );
+  await page.goto(`${baseUrl}/rol-start/mechanieker`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
   const mech = await page
     .locator('[data-testid="rolstart-mechanieker"]')
     .isVisible()
@@ -106,7 +130,11 @@ try {
   log("startpunt mechanieker met eerlijke lege toestand", mech && mechLeeg);
   await page.screenshot({ path: path.join(EVIDENCE, "rolstart-mechanieker.png") });
 
+  psql(
+    `UPDATE club_members SET role='admin', updated_at=now() WHERE club_id=${Number(clubId)} AND clerk_id='${userId}' AND ended_at IS NULL`,
+  );
   await page.goto(`${baseUrl}/rol-start/admin`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
   const adminFunctie = await page
     .locator('[data-testid="rolstart-functie-/club-beheer"]')
     .isVisible()
