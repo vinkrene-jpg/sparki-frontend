@@ -76,7 +76,7 @@ export const CLUB_ROLE_STARTS: RoleStart[] = [
     role: "owner",
     label: "Clubeigenaar",
     functies: [
-      { href: "/club-beheer", label: "Clubbeheer" },
+      { href: "/club/beheer", label: "Clubbeheer" },
       { href: "/club", label: "Cluboverzicht" },
     ],
   },
@@ -84,7 +84,7 @@ export const CLUB_ROLE_STARTS: RoleStart[] = [
     role: "admin",
     label: "Clubbeheerder",
     functies: [
-      { href: "/club-beheer", label: "Clubbeheer" },
+      { href: "/club/beheer", label: "Clubbeheer" },
       { href: "/club", label: "Cluboverzicht" },
     ],
   },
@@ -93,13 +93,13 @@ export const CLUB_ROLE_STARTS: RoleStart[] = [
     label: "Hoofdtrainer",
     functies: [
       { href: "/club", label: "Cluboverzicht & toewijzingen" },
-      { href: "/coach-cockpit", label: "Trainerwerkruimte" },
+      { href: "/club", label: "Trainerwerkruimte (via cluboverzicht)" },
     ],
   },
   {
     role: "trainer",
     label: "Trainer (club)",
-    functies: [{ href: "/coach-cockpit", label: "Trainerwerkruimte" }],
+    functies: [{ href: "/club", label: "Trainerwerkruimte (via cluboverzicht)" }],
   },
   {
     role: "assistent",

@@ -146,7 +146,7 @@ try {
   await page.goto(`${baseUrl}/rol-start/admin`, { waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   const adminFunctie = await page
-    .locator('[data-testid="rolstart-functie-/club-beheer"]')
+    .locator('[data-testid="rolstart-functie-/club/beheer"]')
     .isVisible()
     .catch(() => false);
   log("startpunt clubbeheerder linkt naar clubbeheer", adminFunctie);

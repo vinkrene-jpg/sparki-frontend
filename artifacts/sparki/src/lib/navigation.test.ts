@@ -103,6 +103,37 @@ test("BB-06: elke rol heeft precies vijf posities en positie 5 is Meer", () => {
   }
 })
 
+// F-P2-02 (SPARKI_AUDIT_RECOVERY_AND_COMPLETION_01): integrale menu-matrix.
+// Élke rol (globaal + club) × élk menu-item/startfunctie moet naar een echt
+// geregistreerde route wijzen — niets in enige rolomgeving mag doodlopen.
+test("menu-matrix: elk item van elke rol wijst naar een bestaande route", async () => {
+  const { GLOBAL_ROLE_STARTS, CLUB_ROLE_STARTS } = await import("./role-start")
+  const rollen = [...GLOBAL_ROLE_STARTS, ...CLUB_ROLE_STARTS]
+  assert.ok(rollen.length >= 8, `verwacht ≥8 rolstartprofielen, gevonden ${rollen.length}`)
+  for (const rol of rollen) {
+    for (const f of rol.functies) {
+      assert.ok(routeExists(f.href), `rol ${rol.role}: functie ${f.href} (${f.label}) heeft geen route`)
+    }
+    if (rol.leeg?.vervolgstap) {
+      assert.ok(
+        routeExists(rol.leeg.vervolgstap.href),
+        `rol ${rol.role}: lege-toestand-vervolgstap ${rol.leeg.vervolgstap.href} heeft geen route`,
+      )
+    }
+  }
+  // Hoofdstukken per rol, mét en zonder clubkoppeling (beide varianten reëel).
+  for (const rolNaam of ["athlete", "coach", "parent", "nutrition_specialist"] as const) {
+    for (const metClub of [true, false]) {
+      for (const c of chaptersForRole(rolNaam, metClub)) {
+        assert.ok(
+          routeExists(c.href),
+          `chaptersForRole(${rolNaam}, club=${metClub}): ${c.href} (${c.label}) heeft geen route`,
+        )
+      }
+    }
+  }
+})
+
 test("coach en ouder behouden hun bestaande navigatie", () => {
   assert.deepEqual(
     COACH_NAV_ENTRIES.map((e) => e.href),
