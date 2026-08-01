@@ -7,6 +7,8 @@ import {
   GLOBAL_ROLE_STARTS,
   CLUB_ROLE_STARTS,
   roleStartFor,
+  clubStartRole,
+  CLUB_START_PRIORITY,
 } from "./role-start"
 import { NUTRITION_SPECIALIST_NAV_ENTRIES, chaptersForRole } from "./chapters"
 
@@ -97,5 +99,29 @@ test("voedingsdeskundige: Voeding eerst, geen sporter-navigatie of -hoofdstukken
   const hrefs = chaptersForRole("nutrition_specialist", false).map((c) => c.href)
   for (const sporterPad of ["/vandaag", "/train", "/routes", "/races"]) {
     assert.ok(!hrefs.includes(sporterPad), `terugval op sporterhoofdstuk ${sporterPad}`)
+  }
+})
+
+// ── BB-08 laatste stap: inlogroutering voor club-only accounts ──────────────
+
+test("clubStartRole: teammanager gaat vóór ploegleider en staf", () => {
+  assert.equal(clubStartRole(["mechanieker", "ploegleider", "teammanager"]), "teammanager")
+  assert.equal(clubStartRole(["soigneur", "ploegleider"]), "ploegleider")
+})
+
+test("clubStartRole: elke server-side clubrol levert een startpunt", () => {
+  for (const role of serverClubRoles) {
+    assert.equal(clubStartRole([role]), role, `clubrol zonder startroutering: ${role}`)
+  }
+})
+
+test("clubStartRole: geen clubrollen ⇒ null (geen verzonnen startscherm)", () => {
+  assert.equal(clubStartRole([]), null)
+  assert.equal(clubStartRole(["tovenaar"]), null)
+})
+
+test("CLUB_START_PRIORITY dekt alle server-side clubrollen", () => {
+  for (const role of serverClubRoles) {
+    assert.ok(CLUB_START_PRIORITY.includes(role), `clubrol ontbreekt in prioriteit: ${role}`)
   }
 })

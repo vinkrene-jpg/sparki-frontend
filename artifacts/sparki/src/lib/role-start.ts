@@ -205,3 +205,41 @@ export function roleStartFor(role: string): RoleStart | null {
     null
   )
 }
+
+// ── BB-08 laatste stap (SPARKI_INHAAL_01 §1) — inlogroutering naar rolstart ─
+//
+// Een account dat GEEN sporter is (geen "athlete" in user_profiles.roles) maar
+// wél een actieve clubrol heeft, landde bij inloggen op de atleetweergave. De
+// startschermen bestonden al (/rol-start/:rol); dit is de routering ernaartoe.
+// Deterministische voorrang: leidinggevende rollen eerst, daarna staf, daarna
+// meekijkrollen — zodat iemand met meerdere clubrollen altijd op hetzelfde
+// startpunt uitkomt. Rollen met een eigen volwaardige omgeving (owner/admin →
+// clubbeheer) staan óók in de lijst: beter een eerlijk rolstartpunt dan de
+// sporterweergave van iemand die geen sporter is.
+export const CLUB_START_PRIORITY: string[] = [
+  "teammanager", // staat boven ploegleider (besluitenpatch B)
+  "ploegleider",
+  "owner",
+  "admin",
+  "hoofdtrainer",
+  "trainer",
+  "assistent",
+  "mechanieker",
+  "soigneur",
+  "medical_staff",
+  "vrijwilliger",
+  "member",
+  "parent",
+  "alleen_lezen",
+]
+
+/**
+ * Beste rolstart voor een account zonder sporterrol: de hoogst geprioriteerde
+ * actieve clubrol met een geregistreerd startpunt, of null als er geen is.
+ */
+export function clubStartRole(activeClubRoles: string[]): string | null {
+  for (const role of CLUB_START_PRIORITY) {
+    if (activeClubRoles.includes(role) && roleStartFor(role)) return role
+  }
+  return null
+}

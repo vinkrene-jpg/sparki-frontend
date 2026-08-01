@@ -73,6 +73,8 @@ import { OnboardingCheckFailed } from "@/components/sparki/onboarding-check-fail
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider, useUserProfile } from "@/contexts/UserContext";
+import { useMyClubs } from "@/hooks/use-club";
+import { clubStartRole } from "@/lib/role-start";
 import { FeatureFlagProvider, useFeatureFlags } from "@/contexts/FeatureFlagContext";
 import { GoGateSwitch } from "@/components/sparki/go-gate";
 import { FeedbackProvider } from "@/contexts/FeedbackContext";
@@ -432,14 +434,40 @@ function SignedInHomeReady() {
 // DsMobileNav). ScreenShell heeft nu ook DsMobileNav en een desktop sidebar
 // (zelfde COMMERCIAL_DESKTOP_NAV-bron), dus beide paden geven een consistente
 // navigatie-ervaring — hetzelfde patroon als alle andere flag-switch-pagina's.
+// BB-08 laatste stap (SPARKI_INHAAL_01 §1): een account dat géén sporter is
+// (geen "athlete" in profile.roles) maar wél een actieve clubrol heeft, hoort
+// bij inloggen op het eigen rolstartscherm te landen — nooit op de
+// atleetweergave. De schermen bestonden al (/rol-start/:rol); dit is de
+// routering ernaartoe. Zolang de clublidmaatschappen nog laden tonen we
+// bewust even niets in plaats van een flitsende (onjuiste) sporterweergave.
+function useClubOnlyStartPath(): string | null | "loading" {
+  const { profile } = useUserProfile();
+  const clubsQuery = useMyClubs();
+  const globalRoles = profile?.roles ?? [];
+  const needsClubStart =
+    !!profile &&
+    profile.activeRole === "athlete" &&
+    !globalRoles.includes("athlete");
+  if (!needsClubStart) return null;
+  if (clubsQuery.isLoading) return "loading";
+  const activeClubRoles = (clubsQuery.data ?? [])
+    .map((row) => row?.membership?.role as string | undefined)
+    .filter((r): r is string => typeof r === "string");
+  const rol = clubStartRole(activeClubRoles);
+  return rol ? `/rol-start/${rol}` : null;
+}
+
 function RoleHome() {
   const { profile } = useUserProfile();
   const { flags, isLoading: flagsLoading } = useFeatureFlags();
+  const clubStart = useClubOnlyStartPath();
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
   // BB-14: eigen startscherm, nooit terugval op de sporterweergave.
   if (profile?.activeRole === "nutrition_specialist")
     return <NutritionSpecialistHome />;
+  if (clubStart === "loading") return null;
+  if (clubStart) return <Redirect to={clubStart} />;
   if (flagsLoading || flags.commercial_shell) return <CommercialToday />;
   return <StartPage />;
 }
@@ -457,10 +485,13 @@ function VandaagPage() {
   // flag is explicitly off.
   const { flags, isLoading: flagsLoading } = useFeatureFlags();
   const commercialShell = flags.commercial_shell;
+  const clubStart = useClubOnlyStartPath();
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
   if (profile?.activeRole === "nutrition_specialist")
     return <NutritionSpecialistHome />;
+  if (clubStart === "loading") return null;
+  if (clubStart) return <Redirect to={clubStart} />;
   if (flagsLoading || commercialShell) return <CommercialToday />;
   return <DayHome />;
 }
