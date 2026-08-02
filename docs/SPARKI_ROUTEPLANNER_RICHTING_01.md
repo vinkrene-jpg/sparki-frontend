@@ -173,6 +173,24 @@ Praktisch komt dat uit dezelfde kaartgegevens die de routeketen al gebruikt — 
 
 ---
 
+## 9a. Privacy-instellingen bij het profiel
+
+Alle privacygevoelige keuzes rond routes en zichtbaarheid horen op **één plek: bij jouw profiel**. Niet verspreid over losse schermen, maar één hoofdstuk "Privacy" waar de gebruiker zelf zijn AVG-gevoelige keuzes maakt en terugvindt:
+
+- **privacyzones** — het huisadres is altijd impliciet gemaskeerd; extra zones (werk, school) voegt de gebruiker hier toe. Maskeren gebeurt bij het lezen, dus het werkt met terugwerkende kracht op alles wat al gedeeld is;
+- **routes delen** — of eigen routes deelbaar of openbaar mogen zijn. Standaard uit;
+- **live zichtbaarheid voor vrienden** (hoofdstuk 8) — standaard uit, per vriend afzonderlijk, alleen tijdens een rit, grofmazig. Jeugd heeft deze keuze niet: voor hen bestaat de functie niet;
+- **wie meekijkt** — de bestaande deelregels richting trainer en ouder blijven aparte, expliciete keuzes en worden hier vindbaar;
+- **inzage en verwijdering** — de bestaande export- en verwijderfunctie is vanaf dezelfde plek bereikbaar.
+
+Drie vaste regels:
+
+1. **Standaard staat alles op de veiligste stand.** Delen is altijd een bewuste keuze, nooit een gevolg van een ander vinkje.
+2. **Uitzetten werkt direct en overal door**, ook op wat eerder gedeeld werd — geen nalooptijd, geen achterblijvende kopieën.
+3. **Nieuwe functies brengen geen eigen losse schakelaar mee**, maar registreren hun keuze in deze ene privacylaag. Voor minderjarigen geldt overal fail-closed.
+
+---
+
 ## 10. Wat níét verandert
 
 - de fail-closed blokkadecontrole uit taak #505

@@ -113,6 +113,19 @@ E-bikebereik toont **"onbekend"** zolang er geen bron is. Nooit een geschat geta
 
 ---
 
+## 6a. Privacy-instellingen bij het profiel
+
+Bij het profiel komt één hoofdstuk "Privacy" waar de gebruiker zelf zijn AVG-gevoelige keuzes maakt — dit is de enige plek voor die keuzes, ook in de app:
+
+- privacyzones beheren (huisadres altijd impliciet gemaskeerd; maskering is een lees-transformatie en werkt dus ook op al gedeelde routes);
+- of eigen routes deelbaar/openbaar mogen zijn — standaard uit;
+- live zichtbaarheid voor vrienden: standaard uit, per vriend, alleen tijdens een rit, grofmazig; voor jeugd bestaat de keuze niet (fail-closed);
+- vindplaats van de bestaande deelregels (trainer/ouder) en van export/verwijdering.
+
+Regels voor de bouw: veiligste stand als standaard, uitzetten werkt direct en met terugwerkende kracht door op alle lees-paden, en nieuwe functies voegen geen losse schakelaars elders toe maar registreren hun keuze in deze ene laag.
+
+---
+
 ## 7. Buiten scope in deze ronde
 
 - vrienden op de kaart — apart traject, raakt privacy en jeugd
