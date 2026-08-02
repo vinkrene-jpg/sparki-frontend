@@ -100,6 +100,7 @@
 - [Sparki Mechanieker & materiaalkring](sparki-mechanieker.md) — km altijd afgeleid (nooit teller), defect alleen uit eigen registratie, onConflictDoUpdate partial index needs `targetWhere` not `where`.
 - [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen echte waarden; short-by-default + "Uitgebreid" alleen bij echte diepte ([tiered](sparki-tiered-explanation.md)).
 - Node-page-test traps: [happy-dom URL query](happydom-url-query.md) pass url to GlobalRegistrator.register; [tsx module-mock/CJS](tsx-module-mock-cjs.md) mock.module first + lazy `import()`.
+- [Sparki licht thema](sparki-licht-thema.md) — ÉÉN licht thema app-breed (besluit 03-08), overruled donkere cinematic-bg; kaart-HUD/foto-scrims blijven donker; nooit globale text-white-override.
 - [Sparki designsysteem](sparki-design-system.md) — tokens in index.css @theme + .type-* + ds/-primitives, /_dev/design; node-page-tests: classic JSX eist React-import, mocks dekken VOLLEDIG import-oppervlak ([cinematic bg](sparki-cinematic-bg.md): glass cards 82%, OLED-safe, geen flat-black/wit).
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
 - [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.
