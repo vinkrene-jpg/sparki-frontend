@@ -78,28 +78,35 @@ export function orderedMirrors(now = Date.now()): string[] {
   return [...healthy, ...cooling];
 }
 
-// ── Seriële uitvoering ──────────────────────────────────────────────────────
-// Eén keten voor het hele proces: aanvragen wachten netjes op elkaar, met een
-// minimumtussenruimte. Dit dooft de burst die de rate-limits veroorzaakte.
+// ── Per-mirror seriële uitvoering ───────────────────────────────────────────
+// Beleefdheid geldt PER mirror: naar één mirror nooit twee aanvragen tegelijk
+// en altijd een minimumtussenruimte. Verschillende mirrors zijn onafhankelijke
+// diensten — die mogen parallel bevraagd worden. De oude proces-brede keten
+// liet één trage/dode mirror álle metingen (poort, omgeving, wegobjecten)
+// ophouden; dat was 02-08-2026 een hoofdoorzaak van minutenlang wachten.
 const MIN_GAP_MS = 700;
-let chain: Promise<void> = Promise.resolve();
-let lastRequestAt = 0;
+const mirrorChains = new Map<string, { chain: Promise<void>; lastAt: number }>();
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-function serialize<T>(fn: () => Promise<T>): Promise<T> {
-  const run = chain.then(async () => {
-    const wait = lastRequestAt + MIN_GAP_MS - Date.now();
+function serializeOn<T>(endpoint: string, fn: () => Promise<T>): Promise<T> {
+  const state = mirrorChains.get(endpoint) ?? {
+    chain: Promise.resolve(),
+    lastAt: 0,
+  };
+  const run = state.chain.then(async () => {
+    const wait = state.lastAt + MIN_GAP_MS - Date.now();
     if (wait > 0) await sleep(wait);
     try {
       return await fn();
     } finally {
-      lastRequestAt = Date.now();
+      state.lastAt = Date.now();
     }
   });
-  chain = run.then(
+  state.chain = run.then(
     () => undefined,
     () => undefined,
   );
+  mirrorChains.set(endpoint, state);
   return run;
 }
 
@@ -227,7 +234,11 @@ export function normalizeBbox(
 }
 
 // ── Netwerklaag ─────────────────────────────────────────────────────────────
-const DEFAULT_TIMEOUT_MS = 25_000;
+// 15 s: onze queries zijn compacte unies die op een gezonde mirror in 1–3 s
+// antwoorden. Een mirror die 15 s zwijgt is praktisch dood — dan is snel
+// doorschakelen naar de volgende mirror (fail-closed) sneller én eerlijker
+// dan 25 s wachten (02-08-2026: dit was een hoofdoorzaak van 3–4 min wachten).
+const DEFAULT_TIMEOUT_MS = 15_000;
 // Oplopende pauzes op DEZELFDE mirror bij 429/timeout (opdracht 2.1): eerst
 // kort wachten en herkansen, pas daarna doorschuiven naar de volgende mirror.
 const SAME_MIRROR_PAUSES_MS = [2_000, 5_000];
@@ -242,10 +253,13 @@ async function attempt(
   endpoint: string,
   query: string,
   timeoutMs: number,
+  outerSignal?: AbortSignal,
 ): Promise<AttemptOutcome> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const onOuterAbort = () => ctrl.abort();
+    outerSignal?.addEventListener("abort", onOuterAbort, { once: true });
     let res: Response;
     try {
       res = await fetch(endpoint, {
@@ -260,6 +274,7 @@ async function attempt(
       });
     } finally {
       clearTimeout(timer);
+      outerSignal?.removeEventListener("abort", onOuterAbort);
     }
     if (res.status === 429 || res.status === 504 || res.status === 503) {
       return { kind: "ratelimit" };
@@ -289,12 +304,68 @@ export type RunOverpassOptions = {
   /** Persistente cache gebruiken (default true). */
   cache?: boolean;
   cacheTtlMs?: number;
+  /**
+   * Alleen voor KRITIEKE vragen (de blokkade-poortmeting): geeft de eerste
+   * hedged ronde over alle mirrors niets, wacht dan deze pauze en probeer
+   * één keer opnieuw. Mirrors flip-floppen per minuut (gemeten 02-08-2026);
+   * één herkansing binnen het jobbudget redt de generatie vaak, terwijl
+   * meteen opgeven na 30 s de gebruiker een onnodige 503 bezorgt.
+   */
+  retryOnceAfterMs?: number;
 };
 
+// Hedge-vertraging: antwoordt de eerste mirror niet binnen deze tijd, dan
+// wordt de volgende mirror er PARALLEL bij gestart (het eerste echte antwoord
+// wint, de rest wordt afgebroken). Per mirror blijft het verkeer serieel en
+// beleefd; alleen spiegelpech kost zo geen 15-25 s meer per vraag.
+const HEDGE_DELAY_MS = 4_000;
+
+// Lopende netwerk-aanvragen per query-hash — identieke vragen delen één ronde.
+const IN_FLIGHT = new Map<string, Promise<OverpassAnswer | null>>();
+
+// Eén volledige poging-met-herkansingen op één mirror (binnen diens eigen
+// seriële keten). Geeft het antwoord of null; zet de cooldown bij falen.
+async function runOnMirror(
+  endpoint: string,
+  query: string,
+  timeoutMs: number,
+  maxRequests: number,
+  outerSignal: AbortSignal,
+): Promise<OverpassAnswer | null> {
+  return serializeOn(endpoint, async () => {
+    for (let i = 0; i <= SAME_MIRROR_PAUSES_MS.length; i++) {
+      if (outerSignal.aborted) return null; // een andere mirror won al
+      const s = stats();
+      if (s) {
+        if (s.requests >= maxRequests) {
+          s.budgetDenied++;
+          return null;
+        }
+        s.requests++;
+        if (i > 0) s.retries++;
+        s.perMirror[endpoint] ??= { ok: 0, fail: 0 };
+      }
+      const out = await attempt(endpoint, query, timeoutMs, outerSignal);
+      if (out.kind === "ok") {
+        if (s) s.perMirror[endpoint]!.ok++;
+        return out.answer;
+      }
+      if (outerSignal.aborted) return null; // afgebroken telt niet als mirrorfout
+      if (s) s.perMirror[endpoint]!.fail++;
+      if (out.kind === "hard" || out.kind === "timeout") break; // volgende mirror
+      const pause = SAME_MIRROR_PAUSES_MS[i];
+      if (pause == null) break;
+      await sleep(pause);
+    }
+    cooldownUntil.set(endpoint, Date.now() + MIRROR_COOLDOWN_MS);
+    return null;
+  });
+}
+
 /**
- * Voer één Overpass-query uit: cache → serieel netwerk met beleefde
- * herkansing en mirror-gezondheid. `null` = eerlijk gat (alle mirrors op,
- * of het aanvraagbudget van deze generatie is bereikt).
+ * Voer één Overpass-query uit: cache → per-mirror serieel netwerk met
+ * beleefde herkansing, mirror-gezondheid en hedged doorschakelen. `null` =
+ * eerlijk gat (alle mirrors op, of het aanvraagbudget is bereikt).
  */
 export async function runOverpassQuery(
   query: string,
@@ -310,6 +381,16 @@ export async function runOverpassQuery(
       const s = stats();
       if (s) s.cacheHits++;
       return hit;
+    }
+    // In-flight-samenvoeging: staat exact deze vraag al op het netwerk uit
+    // (bv. de gebieds-warm-up), dan wachten we op dát antwoord in plaats van
+    // een tweede netwerkronde te starten. Zonder dit was de warm-up zinloos:
+    // de kandidaten stelden dezelfde vraag opnieuw terwijl hij nog liep.
+    const inflight = IN_FLIGHT.get(key);
+    if (inflight) {
+      const s = stats();
+      if (s) s.cacheHits++; // gedeeld antwoord — telt als treffer, niet als aanvraag
+      return inflight;
     }
   }
 
@@ -327,37 +408,72 @@ export async function runOverpassQuery(
 
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  const answer = await serialize(async () => {
-    for (const endpoint of orderedMirrors()) {
-      // Eerste poging + oplopende herkansingen op dezelfde mirror.
-      for (let i = 0; i <= SAME_MIRROR_PAUSES_MS.length; i++) {
-        const s = stats();
-        if (s) {
-          if (s.requests >= (ctx?.max ?? Infinity)) {
-            s.budgetDenied++;
-            return null;
-          }
-          s.requests++;
-          if (i > 0) s.retries++;
-          s.perMirror[endpoint] ??= { ok: 0, fail: 0 };
-        }
-        const out = await attempt(endpoint, query, timeoutMs);
-        if (out.kind === "ok") {
-          if (s) s.perMirror[endpoint]!.ok++;
-          return out.answer;
-        }
-        if (s) s.perMirror[endpoint]!.fail++;
-        if (out.kind === "hard") break; // deze mirror is stuk voor deze query
-        if (out.kind === "timeout") break; // dood — niet herkansen, volgende mirror
-        const pause = SAME_MIRROR_PAUSES_MS[i];
-        if (pause == null) break; // herkansingen op deze mirror op
-        await sleep(pause);
+  // Hedged uitvoering: start op de beste mirror; blijft het antwoord
+  // HEDGE_DELAY_MS uit (of faalt een mirror), dan doet de volgende mirror
+  // parallel mee. Eerste echte antwoord wint; de rest wordt afgebroken.
+  // Fail-closed blijft: pas als ÁLLE mirrors op zijn is het antwoord null.
+  const maxRequests = ctx?.max ?? Infinity;
+  const hedgedRound = () => new Promise<OverpassAnswer | null>((resolve) => {
+    const mirrors = orderedMirrors();
+    const winnerCtl = new AbortController();
+    let settled = false;
+    let nextIdx = 0;
+    let pending = 0;
+    let hedgeTimer: NodeJS.Timeout | null = null;
+
+    const finish = (ans: OverpassAnswer | null) => {
+      if (settled) return;
+      settled = true;
+      if (hedgeTimer) clearTimeout(hedgeTimer);
+      winnerCtl.abort(); // lopende verliezers afbreken
+      resolve(ans);
+    };
+
+    const launchNext = () => {
+      if (settled || nextIdx >= mirrors.length) return;
+      const endpoint = mirrors[nextIdx++]!;
+      pending++;
+      // Hedge-timer voor de dáárop volgende mirror.
+      if (nextIdx < mirrors.length) {
+        if (hedgeTimer) clearTimeout(hedgeTimer);
+        hedgeTimer = setTimeout(launchNext, HEDGE_DELAY_MS);
       }
-      // Mirror faalde ondanks herkansing: tijdelijk achteraan.
-      cooldownUntil.set(endpoint, Date.now() + MIRROR_COOLDOWN_MS);
-    }
-    return null;
+      void runOnMirror(endpoint, query, timeoutMs, maxRequests, winnerCtl.signal)
+        .catch(() => null)
+        .then((ans) => {
+          pending--;
+          if (ans) return finish(ans);
+          if (settled) return;
+          // Deze mirror is klaar en had niets: meteen de volgende erbij
+          // (niet op de hedge-timer wachten).
+          launchNext();
+          if (pending === 0 && nextIdx >= mirrors.length) finish(null);
+        });
+    };
+
+    launchNext();
   });
+
+  // Eén ronde, plus (alleen voor kritieke vragen) één herkansing na een
+  // pauze — mirrors flip-floppen per minuut, dus "zo weer terug" is reëel.
+  const networkRound = (async () => {
+    const first = await hedgedRound();
+    if (first || !opts.retryOnceAfterMs) return first;
+    const ctx2 = budgetStore.getStore();
+    if (ctx2 && ctx2.stats.requests >= ctx2.max) return null;
+    await sleep(opts.retryOnceAfterMs);
+    return hedgedRound();
+  })();
+
+  // Registreer de lopende ronde zodat identieke vragen (warm-up + poort-
+  // metingen) hem delen; opruimen zodra hij klaar is.
+  if (useCache) IN_FLIGHT.set(key, networkRound);
+  let answer: OverpassAnswer | null;
+  try {
+    answer = await networkRound;
+  } finally {
+    if (useCache && IN_FLIGHT.get(key) === networkRound) IN_FLIGHT.delete(key);
+  }
 
   if (answer && useCache) await cacheWrite(key, answer);
   return answer;

@@ -1,0 +1,39 @@
+Er is een test gedaan op de live productie-app. Hieronder de punten, met de oorzaken die ik in de code heb nagekeken. Werk ze in deze volgorde af, zelfstandig, zonder per punt op goedkeuring te wachten — de uitvoeringsregel van 01-08 geldt.
+
+**1. AI-toestemming: er is geen scherm om die te geven**
+
+De poort in `lib/ai/gateway.ts` is fail-closed op toestemming (regel 690–708). Zonder toestemming wordt elke aanroep geblokkeerd met `blocked_consent`. Dat verklaart 35/35 route-uitleg, 4/4 planvoorstellen, 1/1 trainingsaanpassing en 2/2 foto-lab.
+
+De oorzaak is niet een verkeerde vlag maar een ontbrekend scherm: de enige toestemmingenpagina in de app is `parent-toestemmingen.tsx`, voor ouders. Een volwassen sporter kan `ai_coaching`, `ai_vision`, `ai_memory` en `ai_health` nergens aanzetten.
+
+Bouw dat scherm: per doeleinde in gewone taal wat het inhoudt, aan of uit, intrekken werkt direct. Zet niets standaard aan zonder dat de gebruiker het heeft gezien. Fail-closed blijft fail-closed — niet omzeilen met een standaardwaarde in de database.
+
+**2. Crash op het menu-icoon rechtsboven**
+
+De app valt volledig om met "Er ging iets mis op deze pagina". Reproduceerbaar op productie. Los op, en zorg dat een fout in één component niet de hele pagina meeneemt.
+
+**3. Analyse-pagina wijkt af**
+
+Lichte lay-out tegenover de rest van de app. Gelijktrekken met de gedeelde schil.
+
+**4. De abonnementslaag is niet zichtbaar**
+
+In de rechtenlaag verschillen de pakketten wél — `COMPLEET_FEATURE_KEYS` heeft zes rechten die serverzijdig worden afgedwongen, Go heeft `route_library_manage`. Dat is dus gebouwd. Wat ontbreekt: er is geen prijzenpagina (geen route ervoor in `App.tsx`), geen upgrade- of downgradepad, en beide bestaande accounts hebben alles aanstaan, waardoor het verschil nergens zichtbaar wordt.
+
+Bouw de prijzenpagina en het upgradepad, en zet een testaccount per laag klaar zodat het verschil aantoonbaar is zonder de huidige accounts te breken.
+
+**5. Rollen**
+
+Het rolveld in het profiel is informatief; er zit geen werkende wisselaar achter. `/coach` en `/club` bestaan niet als route. De datamodellen voor trainer- en ouderkoppelingen bestaan wel en zijn leeg.
+
+Dit valt samen met wat al in de wachtrij staat: de rolbepaling en de rolstartschermen. Werk dat af zoals afgesproken, en meld welke rolwaarden na afloop een eigen scherm hebben.
+
+**6. Geplande taken**
+
+`job:health` en `job:goal-review` hebben nog nooit gedraaid. Inschakelen als geplande uitvoering.
+
+**Twee dingen tot slot**
+
+Bij deze test is per ongeluk een langetermijndoel op mijn eigen productieaccount opgeslagen ("Recreatief & fit"). Zet dat terug.
+
+En er is getest op mijn echte account op productie. Zorg dat er testaccounts zijn waarmee dat niet meer nodig is — dat hoort bij de fixtureset die al openstaat.

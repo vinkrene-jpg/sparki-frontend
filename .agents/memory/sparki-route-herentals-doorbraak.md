@@ -19,6 +19,20 @@ door aan `routeObstaclesOf` zodat álle kandidaten dezelfde gebiedsvraag delen
 (1 netwerkronde, daarna cache-treffers). Filtering op afstand tot de routelijn
 blijft per route — superset-bbox is veilig, nooit fail-open.
 
+## Les 3b — netwerklaag: per-mirror serieel + hedged + in-flight dedupe + kritieke retry
+Vier lagen die samen de minuten eruit haalden (02-08-2026):
+1. Beleefdheid geldt PER mirror (eigen wachtrij + MIN_GAP), niet proces-breed —
+   één trage/dode mirror mag niet álle metingen ophouden.
+2. Hedged doorschakelen: geen antwoord binnen ~4 s ⇒ volgende mirror parallel
+   erbij; eerste echte antwoord wint, verliezers geabort. Fail-closed blijft:
+   pas null als álle mirrors op zijn.
+3. In-flight-samenvoeging op query-hash: zonder dit is een warm-up ZINLOOS —
+   kandidaten stellen dezelfde vraag opnieuw terwijl het antwoord nog onderweg
+   is (gemeten: 47 requests/0 hits → 7 requests/4 hits).
+4. Alleen de kritieke poortmeting krijgt `retryOnceAfterMs` (~20 s): mirrors
+   flip-floppen per minuut, één herkansing binnen het jobbudget redt de
+   generatie i.p.v. een onnodig snelle eerlijke 503.
+
 ## Les 3 — dode mirror = meteen door, lange cooldown
 Overpass-mirrors wisselen per minuut van gezondheid (mail.ru/kumi vielen samen weg).
 Netwerkfout/timeout ⇒ direct naar de volgende mirror (geen same-mirror-herkansing;

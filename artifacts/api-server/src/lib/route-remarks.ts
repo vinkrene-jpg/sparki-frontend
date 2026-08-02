@@ -452,6 +452,10 @@ export type OverpassElement = {
 async function runOverpass(query: string): Promise<OverpassElement[] | null> {
   const answer = await runOverpassQuery(query, {
     timeoutMs: OVERPASS_TIMEOUT_MS,
+    // Kritieke poortmeting: geeft de eerste ronde over alle mirrors niets,
+    // dan één herkansing na 20 s (mirrors herstellen vaak binnen een minuut)
+    // in plaats van de generatie meteen op een eerlijke 503 te laten lopen.
+    retryOnceAfterMs: 20_000,
   });
   return answer ? (answer.elements as OverpassElement[]) : null;
 }

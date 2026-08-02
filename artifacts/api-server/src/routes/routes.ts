@@ -3341,6 +3341,14 @@ async function buildLoopCandidate(
       ctx.start.lat + areaRadiusDeg,
       ctx.start.lon + areaRadiusDeg / areaLonScale,
     ];
+    // Warm de gedeelde gebiedsvraag alvast op, PARALLEL aan de kandidaatbouw
+    // (fire-and-forget met mini-geometrie binnen het gebied). Slaagt de warm-up,
+    // dan zijn alle poortmetingen daarna cache-treffers; mislukt hij, dan meet
+    // de poort gewoon zelf — fail-closed blijft onaangetast.
+    void routeObstaclesOf({ queryBbox: areaQueryBbox })([
+      [ctx.start.lat, ctx.start.lon],
+      [ctx.start.lat + 0.001, ctx.start.lon + 0.001],
+    ]).catch(() => null);
 
     const _t_loop0 = performance.now();
     const orsResult = await generateVariedLoop(
