@@ -52,6 +52,7 @@ import TesterQrPage from "@/pages/tester-qr";
 import TesterWelcomePage from "@/pages/tester-welcome";
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import CoachCockpitPage from "@/pages/coach-cockpit";
+import FacturatiePage from "@/pages/facturatie";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
 import AdminOpsPage from "@/pages/admin-ops";
@@ -722,6 +723,10 @@ function AppRouter() {
                 </Route>
                 <Route path="/club/beheer">
                   <ProtectedPage component={ClubBeheerPage} />
+                </Route>
+                {/* SPARKI_BUILD_04 F14 — facturatiewerkplek van de trainer. */}
+                <Route path="/facturatie">
+                  <ProtectedPage component={FacturatiePage} />
                 </Route>
                 <Route path="/club">
                   <ProtectedPage component={ClubPage} />

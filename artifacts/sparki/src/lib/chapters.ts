@@ -81,6 +81,8 @@ export const COACH_CHAPTERS: Chapter[] = [
   { href: "/vandaag", icon: Home, label: "Vandaag", hint: "Dagstart" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
   { href: "/invitations", icon: UserPlus, label: "Uitnodigen", hint: "Sporters koppelen" },
+  // SPARKI_BUILD_04 F14 — facturatiewerkplek van de trainer.
+  { href: "/facturatie", icon: IdCard, label: "Facturatie", hint: "Facturen & opvolging" },
   { href: "/you", icon: User, label: "Profiel", hint: "Jouw gegevens" },
 ]
 
