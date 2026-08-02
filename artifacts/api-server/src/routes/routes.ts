@@ -3325,11 +3325,15 @@ async function buildLoopCandidate(
         ? Promise.resolve(ctx.startName)
         : ctx.provider.reverseGeocode(ctx.start).catch(() => null);
 
-    // Gedeeld zoekterrein voor de obstakelmeting: elke lus-kandidaat blijft
-    // binnen ~halve doelafstand van de start. Eén gebiedsvraag voor álle
+    // Gedeeld zoekterrein voor de obstakelmeting: één gebiedsvraag voor álle
     // kandidaten → één Overpass-netwerkronde, daarna cache-treffers (bewezen
     // 02-08-2026 Herentals: per-kandidaat-vragen liepen tegen het 5-min-budget).
-    const areaRadiusDeg = (targetDistanceKm / 2 + 2) / 111;
+    // Geometrisch maximum: een lus van lengte L reikt hooguit L/2 van de start;
+    // round_trip kan de doelafstand overschieten, dus reken met 130% + marge.
+    // Dekt de gedeelde bbox een kandidaat tóch niet (of is hij te groot), dan
+    // valt getRouteRemarks eerlijk terug op de eigen route-bbox — nooit een
+    // gemiste meting, hooguit trager.
+    const areaRadiusDeg = ((targetDistanceKm * 1.3) / 2 + 2) / 111;
     const areaLonScale = Math.max(0.2, Math.cos((ctx.start.lat * Math.PI) / 180));
     const areaQueryBbox: [number, number, number, number] = [
       ctx.start.lat - areaRadiusDeg,
