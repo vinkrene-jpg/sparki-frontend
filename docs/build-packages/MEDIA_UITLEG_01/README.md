@@ -12,6 +12,9 @@
 **Uitvoerder na goedkeuring:** Replit · **Toetser:** Mirror · **Eindvrijgever:** René
 **Datum:** 1 augustus 2026 · **Status:** `OPEN` — niets gebouwd, niets gecommit, geen Replit-taak gestart.
 
+> **MIRROR-SYNC 01-08-2026 — statuscorrectie.** Deze regel claimt "niets gebouwd, niets gecommit". Dat klopt uitsluitend voor F3/CMP-41 (toegankelijke mediaspeler) — daarvoor is geen code gevonden. Voor F4 (gebruikersstatus mediacontent) bestaat wel degelijk werkende code (commits ca048b7 en a0dd4bf, bestand media-status.ts), terwijl het pakket zelf stelt dat F4 pas mag starten nadat F3 volledig MIRROR_PROVEN is. F4 is technisch correct (fail-closed leeftijdscheck, acute-content-regel, versie-heraanbiedregel) maar wordt momenteel door geen enkel frontend-scherm aangeroepen — dus geen actief gebruikersrisico, wel een procesafwijking. Advies: F3 alsnog bouwen en toetsen, F4 daarna integraal hertoetsen samen met F3, conform de eigen regel van dit pakket.
+> 
+
 > **Vervangt** het eerdere 5-delige concept van dezelfde dag. Dat concept is `INGETROKKEN`; dit pakket is de enige geldige versie.
 
 ---
