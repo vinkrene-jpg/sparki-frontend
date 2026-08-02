@@ -58,7 +58,7 @@
 - [AI-reviewgovernance v3 + ontwikkelstraat 31-07](sparki-ai-review-governance.md) — reviewketen; nieuwe statussen: Replit meldt alleen BUILD_DELIVERED, GitHub-first (alles pushen), alleen René geeft vrij.
 - [Product Proof Doctrine](sparki-product-proof-doctrine.md) — GOVERNING: beloftegedreven bouwen, "gereed" = belofte objectief bewezen ≥9,0; geen uitbreiding op module <9; onafhankelijke proof.
 - [GitHub Actions CI-env](github-actions-ci-env.md) — connector mist workflow-scope (webeditor als uitweg); kale CI eist dummy Clerk/AI-vars + geseede dev-user of alles 500t.
-- [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
+- [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided. 02-08: NOOIT meer taken/concepten voorstellen — één bouwplan via GitHub-bouwdocumenten.
 - [48-uurs afbouwsprint](sparki-48h-sprint.md) — BINDEND 31-07: groene Mirror = automatisch door (geen per-stap-vrijgave); #10/#12/#13 geparkeerd; alleen MIRROR_PROVEN telt; statusregister in docs/.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
