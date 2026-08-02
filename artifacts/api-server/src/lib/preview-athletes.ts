@@ -54,6 +54,14 @@ export const PREVIEW_PERSONAS: readonly PreviewPersona[] = [
   { clerkId: "governor-fixture-athlete-adult", group: "Rollen (testfixtures)" },
   { clerkId: "governor-fixture-athlete-jeugd", group: "Rollen (testfixtures)" },
   { clerkId: "governor-fixture-athlete-compleet", group: "Rollen (testfixtures)" },
+  // Mirror-accountstanden A t/m E (02-08-2026) + ontbrekende rol-fixtures.
+  { clerkId: "governor-fixture-stand-a-gratis", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-stand-b-go", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-stand-c-compleet", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-stand-d-provider", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-stand-e-provider-fout", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-voedingsdeskundige", group: "Rollen (testfixtures)" },
+  { clerkId: "governor-fixture-medical-staff", group: "Rollen (testfixtures)" },
 ] as const;
 
 export const PREVIEW_CLERK_IDS = PREVIEW_PERSONAS.map((p) => p.clerkId);

@@ -38,6 +38,9 @@ import {
   clubTrainerAssignmentsTable,
   clubTeamMembersTable,
   clubSubscriptionsTable,
+  connectorConnectionsTable,
+  connectorActivitiesTable,
+  trainingSessionsTable,
 } from "@workspace/db";
 import { and, eq, like, inArray, isNull, sql } from "drizzle-orm";
 
@@ -98,6 +101,25 @@ export const PERSONAS: Persona[] = [
   { key: "tester", name: "TESTFIXTURE Tester", roles: ["athlete"], activeRole: "athlete", birthDate: "1994-06-08", entitlementMode: "legacy_unrestricted", isHeadTester: true },
   // Controlegeval buiten de club (niet-gekoppeld aan wat dan ook).
   { key: "outsider", name: "TESTFIXTURE Buitenstaander", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription" },
+
+  // ── Mirror-accountstanden A t/m E (02-08-2026) ─────────────────────────────
+  // A/B/C: VERS — nooit gekoppeld (geen club, geen links, geen activiteit).
+  // Gratis = subscription zonder enig recht (fail-closed), Go/Compleet via trial.
+  { key: "stand-a-gratis", name: "TESTFIXTURE Stand A Gratis Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1992-03-15", entitlementMode: "subscription" },
+  { key: "stand-b-go", name: "TESTFIXTURE Stand B Go Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1988-07-22", entitlementMode: "subscription", tierTrial: "GO" },
+  { key: "stand-c-compleet", name: "TESTFIXTURE Stand C Compleet Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1985-11-02", entitlementMode: "subscription", tierTrial: "COMPLETE" },
+  // D: account met via de providertabellen geïmporteerde activiteiten (zie
+  //    seedProviderStanden — connector_connections + connector_activities +
+  //    training_sessions met source "strava", duidelijk TESTFIXTURE-gemarkeerd).
+  { key: "stand-d-provider", name: "TESTFIXTURE Stand D Providerdata", roles: ["athlete"], activeRole: "athlete", birthDate: "1993-01-30", entitlementMode: "subscription", tierTrial: "GO" },
+  // E: account met een FALENDE providerkoppeling (status "error").
+  { key: "stand-e-provider-fout", name: "TESTFIXTURE Stand E Providerfout", roles: ["athlete"], activeRole: "athlete", birthDate: "1991-09-14", entitlementMode: "subscription", tierTrial: "GO" },
+
+  // ── Eerder gemelde ontbrekende rol-fixtures (Mirror P1) ────────────────────
+  // Voedingsdeskundige: echte server-side rolwaarde (BB-14), eigen startscherm.
+  { key: "voedingsdeskundige", name: "TESTFIXTURE Voedingsdeskundige", roles: ["nutrition_specialist"], activeRole: "nutrition_specialist", entitlementMode: "subscription" },
+  // Medische staf: clubrol (least privilege; sportdata alleen via consent).
+  { key: "medical-staff", name: "TESTFIXTURE Medische Staf", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "medical_staff" },
 ];
 
 export const clerkIdFor = (key: string) => `${GOVERNOR_FIXTURE_PREFIX}${key}`;
@@ -308,7 +330,132 @@ async function createFixturesInner() {
       });
   }
 
+  // 7. Mirror-standen D en E: providerkoppelingen + geïmporteerde activiteiten.
+  await seedProviderStanden();
+
   return { clubId, teamIds };
+}
+
+// Stand D: werkende Strava-koppeling met twee via de echte providertabellen
+// geïmporteerde activiteiten (connector_connections → connector_activities →
+// training_sessions met source "strava"). Stand E: falende koppeling.
+// Idempotent: vaste externalActivityIds + delete-vooraf op de sessies van
+// deze twee fixture-accounts (uitsluitend prefix-accounts, dus veilig).
+async function seedProviderStanden() {
+  const now = new Date();
+  const dId = clerkIdFor("stand-d-provider");
+  const eId = clerkIdFor("stand-e-provider-fout");
+
+  // D: verbinding "connected" met echte importmetadata.
+  await db
+    .insert(connectorConnectionsTable)
+    .values({
+      clerkId: dId,
+      provider: "strava",
+      status: "connected",
+      lastSyncAt: now,
+      importedDataTypes: ["activities"],
+      externalUserId: "testfixture-strava-d",
+    })
+    .onConflictDoUpdate({
+      target: [connectorConnectionsTable.clerkId, connectorConnectionsTable.provider],
+      set: {
+        status: "connected",
+        lastSyncAt: now,
+        importedDataTypes: ["activities"],
+        errorStatus: null,
+        permissionRevoked: false,
+        externalUserId: "testfixture-strava-d",
+      },
+    });
+
+  // E: verbinding in fouttoestand — er is gekoppeld, maar sync faalt.
+  await db
+    .insert(connectorConnectionsTable)
+    .values({
+      clerkId: eId,
+      provider: "strava",
+      status: "error",
+      lastSyncAt: null,
+      importedDataTypes: [],
+      errorStatus: "token_expired (TESTFIXTURE — bewust falende koppeling)",
+      externalUserId: "testfixture-strava-e",
+    })
+    .onConflictDoUpdate({
+      target: [connectorConnectionsTable.clerkId, connectorConnectionsTable.provider],
+      set: {
+        status: "error",
+        lastSyncAt: null,
+        importedDataTypes: [],
+        errorStatus: "token_expired (TESTFIXTURE — bewust falende koppeling)",
+        externalUserId: "testfixture-strava-e",
+      },
+    });
+
+  // Twee geïmporteerde ritten voor D (vaste external ids ⇒ idempotent).
+  await db.delete(trainingSessionsTable).where(eq(trainingSessionsTable.clerkId, dId));
+  const rides = [
+    {
+      externalActivityId: "testfixture-d-ride-1",
+      title: "TESTFIXTURE Strava-rit 1 (duurrit)",
+      daysAgo: 5,
+      durationMin: 95,
+      distanceKm: 52,
+      elevationM: 210,
+      avgPower: 178,
+      avgHR: 138,
+    },
+    {
+      externalActivityId: "testfixture-d-ride-2",
+      title: "TESTFIXTURE Strava-rit 2 (interval)",
+      daysAgo: 2,
+      durationMin: 70,
+      distanceKm: 34,
+      elevationM: 120,
+      avgPower: 205,
+      avgHR: 152,
+    },
+  ];
+  for (const r of rides) {
+    const startedAt = new Date(now.getTime() - r.daysAgo * 24 * 60 * 60 * 1000);
+    const [session] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: dId,
+        sessionDate: startedAt.toISOString().slice(0, 10),
+        type: "ride",
+        title: r.title,
+        durationMin: r.durationMin,
+        distanceKm: String(r.distanceKm),
+        elevationM: r.elevationM,
+        avgPower: r.avgPower,
+        avgHR: r.avgHR,
+        sport: "cycling",
+        source: "strava",
+        sources: ["strava"],
+        externalRef: `strava:${r.externalActivityId}`,
+      })
+      .returning({ id: trainingSessionsTable.id });
+    await db
+      .insert(connectorActivitiesTable)
+      .values({
+        clerkId: dId,
+        provider: "strava",
+        externalActivityId: r.externalActivityId,
+        sport: "cycling",
+        startedAt,
+        raw: { testfixture: true, title: r.title },
+        normalizedSessionId: session.id,
+      })
+      .onConflictDoUpdate({
+        target: [
+          connectorActivitiesTable.clerkId,
+          connectorActivitiesTable.provider,
+          connectorActivitiesTable.externalActivityId,
+        ],
+        set: { startedAt, normalizedSessionId: session.id },
+      });
+  }
 }
 
 export async function removeFixtures() {
