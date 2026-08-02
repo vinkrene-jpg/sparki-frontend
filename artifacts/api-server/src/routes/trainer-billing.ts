@@ -25,6 +25,7 @@ import {
   trainerBusinessTable,
   creditNotesTable,
   retentionPoliciesTable,
+  trainerLetterheadsTable,
   workObjectsTable,
   SERVICE_UNITS,
   BILLING_CYCLES,
@@ -550,11 +551,23 @@ router.post("/invoices/:id/send", requireAuth, async (req, res) => {
         .from(trainerBusinessTable)
         .where(eq(trainerBusinessTable.clerkId, trainerClerkId));
       if (!biz) return { error: 422 as const };
+      // F7: templateversie bevriezen op het moment van verzending. Geen
+      // actief briefpapier = versie 0 (standaardtemplate) — ook bevroren.
+      const [letterhead] = await tx
+        .select({ v: trainerLetterheadsTable.templateVersion })
+        .from(trainerLetterheadsTable)
+        .where(
+          and(
+            eq(trainerLetterheadsTable.trainerClerkId, trainerClerkId),
+            eq(trainerLetterheadsTable.active, true),
+          ),
+        );
       const invoiceNumber = await allocateNumber(tx, trainerClerkId);
       const [row] = await tx
         .update(trainerInvoicesTable)
         .set({
           invoiceNumber,
+          templateVersion: letterhead?.v ?? 0,
           invoiceDate: today,
           dueDate: inv.dueDate ?? today,
           status: "verzonden",

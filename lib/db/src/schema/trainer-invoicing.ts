@@ -219,3 +219,33 @@ export const creditNotesTable = pgTable(
 );
 
 export type CreditNote = typeof creditNotesTable.$inferSelect;
+
+// 4.6 — briefpapier. Oude facturen bewaren hun templateversie; een nieuwe
+// upload verandert nooit een bestaande factuur. Versie 0 = het standaard
+// Sparki-template (fallback, bestaat niet als rij).
+export const trainerLetterheadsTable = pgTable(
+  "trainer_letterheads",
+  {
+    id: serial("id").primaryKey(),
+    trainerClerkId: text("trainer_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    filePath: text("file_path").notNull(),
+    fileFormat: text("file_format").notNull(),
+    templateVersion: integer("template_version").notNull(),
+    marginsOk: boolean("margins_ok").notNull().default(false),
+    readabilityOk: boolean("readability_ok").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("trainer_letterheads_version_uq").on(t.trainerClerkId, t.templateVersion),
+  ],
+);
+
+export type TrainerLetterhead = typeof trainerLetterheadsTable.$inferSelect;

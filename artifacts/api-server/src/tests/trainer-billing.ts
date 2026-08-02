@@ -24,6 +24,7 @@ import {
   billingPartiesTable,
   trainerBusinessTable,
   creditNotesTable,
+  trainerLetterheadsTable,
   workObjectsTable,
   workObjectSectionsTable,
   workObjectHistoryTable,
@@ -95,6 +96,9 @@ async function cleanup() {
   if (invIds.length)
     await db.delete(trainerInvoiceLinesTable).where(inArray(trainerInvoiceLinesTable.invoiceId, invIds));
   await db.delete(creditNotesTable).where(inArray(creditNotesTable.trainerClerkId, ALL));
+  await db
+    .delete(trainerLetterheadsTable)
+    .where(inArray(trainerLetterheadsTable.trainerClerkId, ALL));
   await db.delete(trainerInvoicesTable).where(inArray(trainerInvoicesTable.trainerClerkId, ALL));
   await db.delete(recurringBillingTable).where(inArray(recurringBillingTable.trainerClerkId, ALL));
   await db.delete(trainerServicesTable).where(inArray(trainerServicesTable.trainerClerkId, ALL));
@@ -360,6 +364,72 @@ async function main() {
     );
     const emptyCsv = (await empty.text()).trim();
     assert(emptyCsv.split("\n").length === 1, "lege periode = alleen kopregel");
+  });
+
+  await scenario("F7: briefpapier — marges/leesbaarheid echt gecontroleerd, versie bevroren op verzonden factuur", async () => {
+    const sharp = (await import("sharp")).default;
+    const white = await sharp({
+      create: { width: 1200, height: 1600, channels: 3, background: "#ffffff" },
+    })
+      .png()
+      .toBuffer();
+    // Te krappe marges: zwarte rand tot de bestandsrand.
+    const edged = await sharp(white)
+      .composite([
+        {
+          input: await sharp({
+            create: { width: 1200, height: 40, channels: 3, background: "#000000" },
+          })
+            .png()
+            .toBuffer(),
+          top: 0,
+          left: 0,
+        },
+      ])
+      .png()
+      .toBuffer();
+    const rejMargin = await api(T1, "POST", "/api/trainer/letterhead", {
+      base64: edged.toString("base64"),
+      mediaType: "image/png",
+    });
+    assert(rejMargin.status === 422 && rejMargin.json.error.includes("Margecontrole"), `marge: ${rejMargin.status}`);
+    // Onleesbaar klein bestand.
+    const tiny = await sharp({
+      create: { width: 400, height: 600, channels: 3, background: "#ffffff" },
+    })
+      .png()
+      .toBuffer();
+    const rejRead = await api(T1, "POST", "/api/trainer/letterhead", {
+      base64: tiny.toString("base64"),
+      mediaType: "image/png",
+    });
+    assert(rejRead.status === 422 && rejRead.json.error.includes("Leesbaarheid"), `leesbaar: ${rejRead.status}`);
+    // Geldig briefpapier = versie 1, actief.
+    const ok1 = await api(T1, "POST", "/api/trainer/letterhead", {
+      base64: white.toString("base64"),
+      mediaType: "image/png",
+    });
+    assert(ok1.status === 201 && ok1.json.templateVersion === 1, `v1: ${ok1.status}`);
+    // Factuur verzenden bevriest die versie.
+    const d = await api(T1, "POST", "/api/trainer/billing/invoices/draft", {
+      clientId,
+      lines: [{ description: "Met briefpapier", unitPriceCents: 5000 }],
+    });
+    const s = await api(T1, "POST", `/api/trainer/billing/invoices/${d.json.id}/send`);
+    assert(s.status === 200 && s.json.templateVersion === 1, `bevroren: ${s.json.templateVersion}`);
+    // Nieuwe upload = versie 2; de verzonden factuur blijft op versie 1.
+    const ok2 = await api(T1, "POST", "/api/trainer/letterhead", {
+      base64: white.toString("base64"),
+      mediaType: "image/png",
+    });
+    assert(ok2.json.templateVersion === 2 && ok2.json.active === true, "v2 actief");
+    const det = await api(T1, "GET", `/api/trainer/billing/invoices/${d.json.id}`);
+    assert(det.json.templateVersion === 1, "oude factuur onveranderd na nieuwe upload");
+    const active = await api(T1, "GET", "/api/trainer/letterhead/active");
+    assert(active.json.templateVersion === 2 && active.json.fallback === false, "actief = v2");
+    // Andere trainer zonder upload: eerlijk de standaardtemplate.
+    const fb = await api(T2, "GET", "/api/trainer/letterhead/active");
+    assert(fb.json.fallback === true && fb.json.templateVersion === 0, "fallback standaardtemplate");
   });
 
   await scenario("F11: opzegging — archief read-only, export blijft, niets verdwijnt", async () => {
