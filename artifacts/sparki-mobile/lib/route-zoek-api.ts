@@ -55,6 +55,9 @@ export type ZoekCriteria = {
   // Afstand-óf-duur (hoofdstuk 3): bij een geplande training sturen we de
   // duur mee en rekent de server die met het juiste tempo naar afstand om.
   targetDurationMin?: number | null;
+  // Voorstel van vandaag (hoofdstuk 1): de generator kent duur/type alleen
+  // via een gekoppelde geplande training — server-side ownership-gecheckt.
+  plannedWorkoutId?: number | null;
 };
 
 export type ZoekResult = {
@@ -142,7 +145,12 @@ export async function genereerNieuweVoorstellen(
           mode: "loop",
           startLat: input.startLat,
           startLon: input.startLon,
-          targetDistanceKm: input.targetDistanceKm,
+          // Duur-pad: bij een gekoppelde training bepaalt de SERVER afstand en
+          // trainingstype uit die training — dan sturen we bewust géén
+          // concurrerende afstand mee. Anders geldt het afstandsfilter.
+          ...(input.plannedWorkoutId != null
+            ? { plannedWorkoutId: input.plannedWorkoutId }
+            : { targetDistanceKm: input.targetDistanceKm }),
           elevationPreference: input.elevationPreference,
           ...(input.trainingType ? { trainingType: input.trainingType } : {}),
           ...(input.bikeType ? { bikeType: input.bikeType } : {}),

@@ -269,7 +269,11 @@ export default function RoutePlannenScreen() {
   }, [startpunt, location]);
 
   const doZoek = useCallback(
-    (opts?: { trainingType?: string | null; targetDurationMin?: number | null }) => {
+    (opts?: {
+      trainingType?: string | null;
+      targetDurationMin?: number | null;
+      plannedWorkoutId?: number | null;
+    }) => {
       if (!startLatLon) return;
       const criteria: ZoekCriteria = {
         startLat: startLatLon.lat,
@@ -280,6 +284,9 @@ export default function RoutePlannenScreen() {
         bikeType: fiets,
         ...(opts?.targetDurationMin != null
           ? { targetDurationMin: opts.targetDurationMin }
+          : {}),
+        ...(opts?.plannedWorkoutId != null
+          ? { plannedWorkoutId: opts.plannedWorkoutId }
           : {}),
       };
       criteriaRef.current = criteria;
@@ -596,6 +603,7 @@ export default function RoutePlannenScreen() {
                         doZoek({
                           trainingType: trainingTypeVanWorkout(workout),
                           targetDurationMin: workout.targetDurationMin,
+                          plannedWorkoutId: workout.id,
                         })
                       }
                       style={[
