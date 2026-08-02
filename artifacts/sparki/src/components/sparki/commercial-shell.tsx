@@ -32,7 +32,7 @@ import {
 } from "@/hooks/use-today"
 import { TodayDebugPanel } from "@/components/sparki/role-today"
 import { Users, Bell, ShieldCheck, Building2 } from "lucide-react"
-import { useMyClubs } from "@/hooks/use-club"
+import { useMyClubs, useShellOrganisatie } from "@/hooks/use-club"
 import { useUserProfile } from "@/contexts/UserContext"
 import {
   COACH_NAV_ENTRIES,
@@ -42,7 +42,6 @@ import {
 } from "@/lib/chapters"
 import type { Role } from "@/contexts/UserContext"
 import { DsContextRegel } from "@/components/ds/context"
-import { useTeamIdentity } from "@/hooks/use-social"
 import { cn } from "@/lib/utils"
 import {
   DsButton,
@@ -324,20 +323,21 @@ export function CommercialShell({
 function ShellContextRegel() {
   const { profile } = useUserProfile()
   const rol = (profile?.activeRole as Role | undefined) ?? "athlete"
-  // Reviewfix F4: de teamidentiteit is sporter-context. In een andere actieve
-  // rol tonen we haar NIET — anders lekt context uit een niet-actieve rol.
-  const { data } = useTeamIdentity()
-  const team = rol === "athlete" ? data?.team : null
+  // HERSTEL_EN_AANVULLING_01 F2 (HA-06): organisatiecontext via één gedeelde
+  // hook — sporters tonen hun teamidentiteit, elke andere rol de club(s)
+  // waarvan dit account actief lid is. Zo valt op élk scherm te benoemen wie
+  // je bent en waar je bent.
+  const org = useShellOrganisatie()
   // Eerlijk label: een onbekende rolwaarde toont zichzelf — nooit doen alsof
   // het een sporter is.
   const rolLabel = ROLE_LABELS[rol] ?? String(rol)
   return (
     <DsContextRegel
       rolLabel={rolLabel}
-      clubNaam={team?.clubName ?? null}
-      teamNaam={team?.teamName ?? null}
-      clubKleur={team?.primaryColor ?? null}
-      clubLogoUrl={team?.logoUrl ?? null}
+      clubNaam={org ? `${org.naam}${org.extra > 0 ? ` +${org.extra}` : ""}` : null}
+      teamNaam={org?.teamNaam ?? null}
+      clubKleur={org?.kleur ?? null}
+      clubLogoUrl={org?.logoUrl ?? null}
       testomgeving={DEV_PREVIEW}
     />
   )

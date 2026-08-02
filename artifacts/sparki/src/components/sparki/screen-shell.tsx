@@ -47,7 +47,7 @@ import {
 } from "@/lib/commercial-shell"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
-import { useMyClubs } from "@/hooks/use-club"
+import { useMyClubs, useShellOrganisatie } from "@/hooks/use-club"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
@@ -253,20 +253,20 @@ function ClubCrest() {
 function ContextRegel() {
   const { profile } = useUserProfile()
   const rol = (profile?.activeRole as Role | undefined) ?? "athlete"
-  // Reviewfix F4: teamidentiteit is sporter-context — in een andere actieve
-  // rol niet tonen (geen context uit niet-actieve rollen).
-  const { data } = useTeamIdentity()
-  const team = rol === "athlete" ? data?.team : null
+  // HERSTEL_EN_AANVULLING_01 F2 (HA-06): organisatiecontext via één gedeelde
+  // hook — sporters tonen hun teamidentiteit, elke andere rol de club(s)
+  // waarvan dit account actief lid is.
+  const org = useShellOrganisatie()
   // Eerlijk label: een onbekende rolwaarde toont zichzelf — nooit doen alsof
   // het een sporter is.
   const rolLabel = ROLE_LABELS[rol] ?? String(rol)
   return (
     <DsContextRegel
       rolLabel={rolLabel}
-      clubNaam={team?.clubName ?? null}
-      teamNaam={team?.teamName ?? null}
-      clubKleur={team?.primaryColor ?? null}
-      clubLogoUrl={team?.logoUrl ?? null}
+      clubNaam={org ? `${org.naam}${org.extra > 0 ? ` +${org.extra}` : ""}` : null}
+      teamNaam={org?.teamNaam ?? null}
+      clubKleur={org?.kleur ?? null}
+      clubLogoUrl={org?.logoUrl ?? null}
       testomgeving={DEV_PREVIEW}
     />
   )

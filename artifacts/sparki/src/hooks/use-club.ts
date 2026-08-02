@@ -22,6 +22,41 @@ export function useClubMembership() {
   }
 }
 
+// HERSTEL_EN_AANVULLING_01 F2 (HA-06): organisatiecontext voor de schil.
+// Sporters tonen hun teamidentiteit (bestaand gedrag); elke andere rol toont
+// de club(s) waarvan dit account actief lid is — je moet op elk scherm kunnen
+// benoemen in welke organisatie je zit. Eén hook zodat beide schillen
+// (CommercialShell + ScreenShell) exact dezelfde context tonen.
+export function useShellOrganisatie() {
+  const { profile } = useUserProfile()
+  const rol = profile?.activeRole ?? "athlete"
+  const athlete = rol === "athlete"
+  const { data: teamData } = useTeamIdentity()
+  const clubsQuery = useMyClubs()
+  if (athlete) {
+    const team = teamData?.team ?? null
+    return team
+      ? {
+          naam: team.clubName,
+          teamNaam: team.teamName ?? null,
+          kleur: team.primaryColor ?? null,
+          logoUrl: team.logoUrl ?? null,
+          extra: 0,
+        }
+      : null
+  }
+  const rows = (clubsQuery.data ?? []).filter((r) => r.club != null)
+  const eerste = rows[0]?.club
+  if (!eerste) return null
+  return {
+    naam: eerste.name,
+    teamNaam: null,
+    kleur: eerste.primaryColor ?? null,
+    logoUrl: eerste.logoUrl ?? null,
+    extra: rows.length - 1,
+  }
+}
+
 // ── Echte clubomgeving ───────────────────────────────────────────────────────
 
 export type ClubRole =
