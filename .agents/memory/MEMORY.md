@@ -157,3 +157,4 @@
 - [48-uurs afbouwsprint](sparki-48h-sprint.md) update 01-08: BREDE VRIJGAVE René — vier bouwpakketten + Mobile UX + Wandelen/Hiken volledig vrij; groene automatische controles volstaan, ook richting productie (Publish-klik blijft bij René).
 - [Club-wedstrijdlaag BUILD_03](sparki-club-race-build03.md) — één-wedstrijd-sync (targetWhere-trap), vervanger zonder spoor, noodinfo-inzagelog, availabilityNote-afscherming, app-only dagmodus.
 - [Routefamilies & voet-geschiktheid](sparki-route-families-foot.md) — isRouteSportActive is de enige poort (geen vrijgaveflags); te voet: trap/fietsverbod ok, access=private/locked=yes hard; sport server-side via kandidaat-store.
+- [Shell pipe exitcode-trap](shell-pipe-exitcode-trap.md) — `check | tail && commit` commit ook bij rode check; poortchecks kaal draaien of pipefail.
