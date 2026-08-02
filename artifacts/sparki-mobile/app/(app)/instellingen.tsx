@@ -352,6 +352,30 @@ export default function InstellingenScreen() {
         <Text style={[styles.title, { color: c.foreground }]}>Instellingen</Text>
       </View>
 
+      {/* ---------- Volledige omgeving (MOBIEL_ROLLEN_01 F1: sessiebrug) ---------- */}
+      {Platform.OS !== "web" && (
+        <>
+          <Text style={[styles.sectionTitle, { color: c.mutedForeground }]}>
+            Volledige omgeving
+          </Text>
+          <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
+            <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
+              Alle rol- en beheerschermen uit de browserversie, hier in de app —
+              ingelogd met je huidige account.
+            </Text>
+            <Pressable
+              style={[styles.btn, { borderColor: c.border }]}
+              onPress={() => router.push("/web" as Href)}
+            >
+              <Ionicons name="globe-outline" size={16} color={c.foreground} />
+              <Text style={[styles.btnText, { color: c.foreground }]}>
+                Open de volledige omgeving
+              </Text>
+            </Pressable>
+          </View>
+        </>
+      )}
+
       {/* ---------- Machtigingen ---------- */}
       <Text style={[styles.sectionTitle, { color: c.mutedForeground }]}>
         Machtigingen

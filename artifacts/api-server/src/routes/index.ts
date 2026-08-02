@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import e2eProofRouter from "./e2e-proof";
 import authRouter from "./auth";
+import mobileWebSessionRouter from "./mobile-web-session";
 import flagsRouter from "./flags";
 import athleteRouter from "./athlete";
 import racesRouter from "./races";
@@ -111,6 +112,7 @@ router.use(healthRouter);
 // versies geaccepteerd zijn. Zie middlewares/consentGate.ts.
 router.use(consentGate);
 router.use("/auth", authRouter);
+router.use("/mobile-web", mobileWebSessionRouter);
 router.use("/flags", flagsRouter);
 // WP-R1: in de ouderrol zijn sporter-schrijfroutes (training/rit/doel/
 // wedstrijd) server-side geblokkeerd — zie lib/parent-write-block.ts.
