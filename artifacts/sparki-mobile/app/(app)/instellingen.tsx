@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@clerk/expo";
 import { customFetch } from "@workspace/api-client-react";
 
 import { useColors } from "@/hooks/useColors";
@@ -113,6 +114,7 @@ export default function InstellingenScreen() {
   const c = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { signOut } = useAuth();
 
   // ---------- Machtigingen (echte status, stil uitgelezen — nooit gevraagd) ----------
   const [locStatus, setLocStatus] = useState<PermStatus>("onbekend");
@@ -223,21 +225,33 @@ export default function InstellingenScreen() {
   const [deleteInput, setDeleteInput] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
+  // GF8-05: "direct definitief" als expliciete keuze naast de bevestigingszin.
+  const [directDefinitief, setDirectDefinitief] = useState(false);
 
   const requestDelete = async () => {
     if (deleteInput.trim() !== DELETE_PHRASE || deleteBusy) return;
     setDeleteBusy(true);
     setDeleteMsg(null);
     try {
-      const r = await customFetch<{ hersteltermijnDagen: number }>(
-        "/api/account/delete",
-        { method: "POST", body: JSON.stringify({ confirm: DELETE_PHRASE }) },
-      );
-      setDeleteMsg(
-        `Verwijderverzoek geregistreerd. Je kunt dit nog ${r.hersteltermijnDagen} dagen ongedaan maken.`,
-      );
+      const r = await customFetch<{
+        hersteltermijnDagen?: number;
+        definitief?: boolean;
+      }>("/api/account/delete", {
+        method: "POST",
+        body: JSON.stringify({ confirm: DELETE_PHRASE, directDefinitief }),
+      });
+      if (r.definitief) {
+        setDeleteMsg(
+          "Je account en gegevens zijn definitief verwijderd. Inloggen is niet meer mogelijk.",
+        );
+      } else {
+        setDeleteMsg(
+          `Verwijderverzoek geregistreerd. Je kunt dit nog ${r.hersteltermijnDagen} dagen ongedaan maken.`,
+        );
+      }
       setShowDelete(false);
       setDeleteInput("");
+      setDirectDefinitief(false);
       void loadPrivacy();
     } catch (e) {
       setDeleteMsg(
@@ -645,6 +659,17 @@ export default function InstellingenScreen() {
           Een volledige export van je gegevens (JSON) download je via de
           Sparki-webapp (Jij → Account → Export).
         </Text>
+        {/* GF8-03: gewone uitlogknop voor dit apparaat (raakt andere apparaten
+            niet). Overal uitloggen blijft de webapp-noodknop. */}
+        <Pressable
+          style={[styles.btn, { borderColor: c.border }]}
+          onPress={() => void signOut()}
+        >
+          <Ionicons name="log-out-outline" size={16} color={c.foreground} />
+          <Text style={[styles.btnText, { color: c.foreground }]}>
+            Uitloggen op dit apparaat
+          </Text>
+        </Pressable>
         {privacy?.deleteRequestedAt ? (
           <>
             <Text style={[styles.cardMeta, { color: "#fb923c" }]}>
@@ -663,6 +688,12 @@ export default function InstellingenScreen() {
           </>
         ) : showDelete ? (
           <>
+            {/* GF8-04: uitdraai vóór het verwijderen — verwijs naar de export. */}
+            <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
+              Wil je eerst alles bewaren? Download een volledige uitdraai van je
+              gegevens via de Sparki-webapp (Jij → Account → Export) voordat je
+              verder gaat.
+            </Text>
             <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
               Dit verwijdert je account en gegevens na een hersteltermijn.
               Typ ter bevestiging exact: {DELETE_PHRASE}
@@ -678,6 +709,23 @@ export default function InstellingenScreen() {
                 { color: c.foreground, borderColor: c.border },
               ]}
             />
+            {/* GF8-05: direct definitief — expliciete keuze met extra waarschuwing. */}
+            <Pressable
+              style={styles.permRow}
+              onPress={() => setDirectDefinitief((v) => !v)}
+            >
+              <Text style={[styles.rowLabel, { color: "#ef4444" }]}>
+                Direct definitief verwijderen (onomkeerbaar)
+              </Text>
+              <Switch value={directDefinitief} onValueChange={setDirectDefinitief} />
+            </Pressable>
+            {directDefinitief && (
+              <Text style={[styles.cardMeta, { color: "#ef4444" }]}>
+                Je account en alle gegevens worden meteen verwijderd, zonder
+                hersteltermijn. Dit is niet terug te draaien en inloggen is hierna
+                niet meer mogelijk.
+              </Text>
+            )}
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Pressable
                 style={[styles.btn, { borderColor: "#ef4444", flex: 1 }]}
@@ -688,7 +736,9 @@ export default function InstellingenScreen() {
                   <ActivityIndicator size="small" color="#ef4444" />
                 ) : (
                   <Text style={[styles.btnText, { color: "#ef4444" }]}>
-                    Definitief aanvragen
+                    {directDefinitief
+                      ? "Nu definitief verwijderen"
+                      : "Definitief aanvragen"}
                   </Text>
                 )}
               </Pressable>
@@ -697,6 +747,7 @@ export default function InstellingenScreen() {
                 onPress={() => {
                   setShowDelete(false);
                   setDeleteInput("");
+                  setDirectDefinitief(false);
                 }}
               >
                 <Text style={[styles.btnText, { color: c.foreground }]}>Annuleren</Text>

@@ -1472,6 +1472,28 @@ router.get("/sessions", requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * Maximale snelheid uit de echte per-sample snelheidsstroom. De stream is al
+ * per tijdvenster gemiddeld (buckets), zodat een enkele GPS-uitschieter nooit
+ * de max wordt; we nemen de hoogste bucketwaarde onder een fysieke bovengrens.
+ * Null wanneer er geen echte snelheidssamples zijn — nooit een verzonnen 0.
+ */
+function maxSpeedFromStreams(
+  streams: Record<string, unknown> | null,
+): number | null {
+  if (!streams) return null;
+  const speeds = streams["speedKph"];
+  if (!Array.isArray(speeds)) return null;
+  const MAX_PLAUSIBLE_KPH = 120;
+  let best: number | null = null;
+  for (const v of speeds) {
+    if (typeof v !== "number" || !Number.isFinite(v)) continue;
+    if (v > MAX_PLAUSIBLE_KPH) continue;
+    if (best == null || v > best) best = v;
+  }
+  return best != null && best > 0 ? Math.round(best * 10) / 10 : null;
+}
+
 // ── GET /api/athlete/sessions/:id ────────────────────────────────────────────
 // One session in full (all measured fields + notes) plus the REAL ridden track
 // when the session came from an activity file whose import stored the parsed
@@ -1692,6 +1714,12 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       apparaat: imp?.fileType ? `bestand (${imp.fileType})` : null,
     });
 
+    // Maximale snelheid uit de ECHTE per-sample snelheidsstroom (al gebucket,
+    // dus gemiddeld per venster — één GPS-uitschieter telt niet als max). Alleen
+    // wanneer de rit echte snelheidssamples droeg; anders eerlijk null (oude
+    // ritten zonder stream tonen dus geen max snelheid, nooit een 0).
+    const maxSpeedKph = maxSpeedFromStreams(streams);
+
     res.json({
       session,
       track: outTrack,
@@ -1699,6 +1727,7 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       climbs,
       segments: segments.length > 0 ? segments : null,
       streams,
+      maxSpeedKph,
       plannedWorkout,
       trimEdit: trimValid ? trim : null,
       trackPointCount: track?.length ?? 0,

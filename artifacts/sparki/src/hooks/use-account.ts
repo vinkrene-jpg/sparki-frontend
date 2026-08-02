@@ -30,6 +30,8 @@ export type AccountOverview = {
     club: RoleVisibilityEntry;
     vrienden: RoleVisibilityEntry;
   };
+  hersteltermijnDagen: number;
+  directDefinitiefMogelijk: boolean;
   verwijdering: {
     aangevraagdOp: string;
     definitiefOp: string;
@@ -124,11 +126,17 @@ export function useRevokeLegal() {
 export function useRequestAccountDeletion() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (confirm: string) =>
-      apiFetch<{ ok: true; definitiefOp: string }>("/api/account/delete", {
-        method: "POST",
-        body: JSON.stringify({ confirm }),
-      }),
+    mutationFn: (input: { confirm: string; directDefinitief?: boolean }) =>
+      apiFetch<{ ok: true; definitiefOp?: string; definitief?: boolean }>(
+        "/api/account/delete",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            confirm: input.confirm,
+            directDefinitief: input.directDefinitief === true,
+          }),
+        },
+      ),
     onSuccess: () => void qc.invalidateQueries({ queryKey: KEY }),
   });
 }

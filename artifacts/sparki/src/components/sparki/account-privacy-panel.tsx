@@ -139,9 +139,14 @@ export function AccountPrivacyPanel() {
 
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [confirmText, setConfirmText] = useState("")
+  const [directDefinitief, setDirectDefinitief] = useState(false)
   const [sessionsMsg, setSessionsMsg] = useState<string | null>(null)
 
   const pendingDelete = overview?.verwijdering ?? null
+  // Termijn komt UITSLUITEND uit de API — geen lokale beleidswaarde. Zolang de
+  // overview nog niet geladen is, is dit null en tonen we geen termijntekst.
+  const recoveryDays = overview?.hersteltermijnDagen ?? null
+  const directDefinitiefMogelijk = overview?.directDefinitiefMogelijk ?? false
 
   return (
     <section className="pt-2" id="cfg-account">
@@ -239,7 +244,9 @@ export function AccountPrivacyPanel() {
             <span className="text-[13px] font-medium text-white/85">Account verwijderen</span>
           </div>
 
-          {pendingDelete ? (
+          {isLoading || !overview || recoveryDays === null ? (
+            <div className="mt-3 h-16 animate-pulse rounded bg-white/[0.06]" />
+          ) : pendingDelete ? (
             <div className="mt-2">
               <div className="flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-3">
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300/80" />
@@ -262,7 +269,7 @@ export function AccountPrivacyPanel() {
           ) : !deleteOpen ? (
             <div className="mt-2">
               <p className="text-[12px] leading-snug text-white/40">
-                Al je gegevens worden na een hersteltermijn van 14 dagen definitief verwijderd —
+                Al je gegevens worden na een hersteltermijn van {recoveryDays} dagen definitief verwijderd —
                 trainingen, gesprekken, koppelingen en je inlogaccount.
               </p>
               <button
@@ -275,6 +282,24 @@ export function AccountPrivacyPanel() {
             </div>
           ) : (
             <div className="mt-2">
+              {/* GF8-04: uitdraai eerst aanbieden, vóór het verwijderen. */}
+              <div className="mb-3 flex items-start gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                <Download className="mt-0.5 h-4 w-4 shrink-0 text-white/50" strokeWidth={1.75} />
+                <div className="flex-1">
+                  <p className="text-[12px] leading-snug text-white/55">
+                    Wil je eerst alles bewaren? Download een volledige uitdraai van je gegevens voordat je verder gaat.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={exportAccount.isPending}
+                    onClick={() => exportAccount.mutate()}
+                    className="mt-2 rounded-lg border border-white/15 px-3 py-1 text-[12px] text-white/80 disabled:opacity-40"
+                  >
+                    {exportAccount.isPending ? "Bezig…" : "Uitdraai downloaden"}
+                  </button>
+                </div>
+              </div>
+
               <p className="text-[12px] leading-snug text-white/50">
                 Typ ter bevestiging exact: <span className="font-medium text-white/75">{CONFIRM_PHRASE}</span>
               </p>
@@ -285,6 +310,25 @@ export function AccountPrivacyPanel() {
                 placeholder={CONFIRM_PHRASE}
                 className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/85 outline-none placeholder:text-white/20"
               />
+
+              {/* GF8-05: direct definitief als expliciete, extra gewaarschuwde keuze.
+                  GF8-08: alleen tonen wanneer het accounttype het toestaat. */}
+              {directDefinitiefMogelijk && (
+                <label className="mt-3 flex items-start gap-2 rounded-xl border border-red-400/20 bg-red-400/[0.05] p-3">
+                  <input
+                    type="checkbox"
+                    checked={directDefinitief}
+                    onChange={(e) => setDirectDefinitief(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-red-400"
+                  />
+                  <span className="text-[12px] leading-snug text-red-100/80">
+                    <span className="font-medium text-red-200/90">Direct definitief verwijderen</span> — sla de hersteltermijn over.
+                    Je account en alle gegevens worden meteen verwijderd. Dit is <span className="font-medium">onomkeerbaar</span>:
+                    je kunt hierna niet meer inloggen en niets terugdraaien.
+                  </span>
+                </label>
+              )}
+
               {requestDelete.isError && (
                 <p className="mt-1 text-[12px] text-red-400/80">
                   {(requestDelete.error as Error).message}
@@ -295,23 +339,32 @@ export function AccountPrivacyPanel() {
                   type="button"
                   disabled={confirmText !== CONFIRM_PHRASE || requestDelete.isPending}
                   onClick={() =>
-                    requestDelete.mutate(confirmText, {
-                      onSuccess: () => {
-                        setDeleteOpen(false)
-                        setConfirmText("")
+                    requestDelete.mutate(
+                      { confirm: confirmText, directDefinitief },
+                      {
+                        onSuccess: () => {
+                          setDeleteOpen(false)
+                          setConfirmText("")
+                          setDirectDefinitief(false)
+                        },
                       },
-                    })
+                    )
                   }
                   className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-[#05070e] disabled:opacity-40"
                   style={{ background: confirmText === CONFIRM_PHRASE ? "#f87171" : "rgba(255,255,255,0.25)" }}
                 >
-                  {requestDelete.isPending ? "Bezig…" : "Definitief aanvragen"}
+                  {requestDelete.isPending
+                    ? "Bezig…"
+                    : directDefinitief
+                      ? "Nu definitief verwijderen"
+                      : "Definitief aanvragen"}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setDeleteOpen(false)
                     setConfirmText("")
+                    setDirectDefinitief(false)
                   }}
                   className="rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/70"
                 >
@@ -319,7 +372,9 @@ export function AccountPrivacyPanel() {
                 </button>
               </div>
               <p className="mt-2 text-[11px] leading-snug text-white/30">
-                Na aanvraag heb je 14 dagen om dit terug te draaien. Daarna is verwijdering definitief.
+                {directDefinitief
+                  ? "Zonder hersteltermijn is verwijdering direct definitief en niet terug te draaien."
+                  : `Na aanvraag heb je ${recoveryDays} dagen om dit terug te draaien. Daarna is verwijdering definitief.`}{" "}
                 Het beveiligingslogboek bewaart alleen het bewijs van je verzoek, zonder persoonlijke inhoud.
               </p>
             </div>

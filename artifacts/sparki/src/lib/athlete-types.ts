@@ -191,6 +191,8 @@ export type TrainingSession = {
   notes: string | null;
   feelScore: number | null;
   source: string;
+  /** Canonieke sportfamilie (zie data-hub/sports.ts): "cycling" | "hiking" | … */
+  sport?: string | null;
   createdAt: string;
   updatedAt: string;
 };

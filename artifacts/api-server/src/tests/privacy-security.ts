@@ -44,7 +44,13 @@ import {
 } from "../lib/token-crypto";
 import { writeAudit } from "../lib/security/audit";
 import { coachSharingLevel } from "../lib/sharing";
-import { processDueAccountDeletions } from "../lib/account-privacy";
+import {
+  processDueAccountDeletions,
+  recoveryDaysFor,
+  allowsDirectDeletion,
+  resolveAccountType,
+  type AccountType,
+} from "../lib/account-privacy";
 
 type Status = "pass" | "fail";
 const results: { scenario: string; status: Status; note?: string }[] = [];
@@ -130,6 +136,7 @@ const clerkA = `${RUN}_a`; // volwassen atleet
 const clerkB = `${RUN}_b`; // tweede atleet (isolatie)
 const clerkMinor = `${RUN}_minor`; // minderjarige
 const clerkDel = `${RUN}_del`; // wordt verwijderd
+const clerkDirect = `${RUN}_direct`; // direct definitief (GF8-05/08)
 const coachId = `${RUN}_coach`;
 
 async function main() {
@@ -144,6 +151,7 @@ async function main() {
     [clerkB, "b"],
     [clerkMinor, "minor"],
     [clerkDel, "del"],
+    [clerkDirect, "direct"],
     [coachId, "coach"],
   ] as const) {
     const p = await ensureAccount(id, `${RUN}_${mail}@example.test`, mail, silentLogger);
@@ -260,7 +268,10 @@ async function main() {
     const r = await req("POST", "/api/account/delete", clerkA, {
       confirm: "VERWIJDER MIJN ACCOUNT",
     });
-    assert(r.status === 200 && r.json.hersteltermijnDagen === 14, "verzoek faalde");
+    assert(
+      r.status === 200 && r.json.hersteltermijnDagen === recoveryDaysFor("athlete"),
+      "verzoek faalde",
+    );
     let [ps] = await db
       .select()
       .from(privacySettingsTable)
@@ -275,6 +286,76 @@ async function main() {
       .where(eq(privacySettingsTable.clerkId, clerkA));
     assert(!ps?.deleteRequestedAt, "cancel wiste verzoek niet");
   });
+
+  // ── 10b: accounttype-beleid (GF8-08) ────────────────────────────────────
+  await scenario("beleidshelpers: club = 30 dagen + geen direct definitief", () => {
+    // De helpers zijn de ENE bron voor het beleid; de routes leunen erop.
+    assert(recoveryDaysFor("club") === 30, "club-termijn moet altijd 30 zijn");
+    assert(
+      allowsDirectDeletion("club") === false,
+      "club mag NOOIT direct definitief verwijderen",
+    );
+    assert(
+      allowsDirectDeletion("athlete") === true,
+      "atleet mag wél direct definitief verwijderen",
+    );
+  });
+  await scenario("resolveAccountType is de enige plek en geeft vandaag 'athlete'", async () => {
+    const t = await resolveAccountType(clerkA);
+    assert(t === "athlete", `verwacht athlete, kreeg ${t}`);
+  });
+  await scenario("overview geeft server-side termijn + directDefinitiefMogelijk", async () => {
+    const r = await req("GET", "/api/account/overview", clerkA);
+    const type = await resolveAccountType(clerkA);
+    assert(r.status === 200, `overview ${r.status}`);
+    assert(
+      r.json.hersteltermijnDagen === recoveryDaysFor(type),
+      "hersteltermijnDagen wijkt af van server-side beleid",
+    );
+    assert(
+      r.json.directDefinitiefMogelijk === allowsDirectDeletion(type),
+      "directDefinitiefMogelijk wijkt af van server-side beleid",
+    );
+  });
+  await scenario(
+    "delete-route dwingt directDefinitief-beleid af per accounttype",
+    async () => {
+      // Contract: de route MOET direct definitief weigeren met 403 precies wanneer
+      // allowsDirectDeletion(type) false is, en anders meteen definitief verwijderen.
+      // Vandaag is elk account 'athlete' (toegestaan); een 'club' zou 403 geven.
+      const type: AccountType = await resolveAccountType(clerkDirect);
+      const r = await req("POST", "/api/account/delete", clerkDirect, {
+        confirm: "VERWIJDER MIJN ACCOUNT",
+        directDefinitief: true,
+      });
+      if (allowsDirectDeletion(type)) {
+        // Toegestaan → meteen definitief, geen hersteltermijn gepland.
+        assert(
+          r.status === 200 && r.json.definitief === true,
+          `direct definitief zou moeten slagen, kreeg ${r.status}`,
+        );
+        const [row] = await db
+          .select()
+          .from(userProfilesTable)
+          .where(eq(userProfilesTable.clerkId, clerkDirect));
+        assert(!row, "account niet direct verwijderd bij direct definitief");
+        const audit = await latestAudit("delete_executed", clerkDirect);
+        assert(audit, "delete_executed-audit ontbreekt bij direct definitief");
+        assert(
+          (audit!.meta as any)?.reason === "direct_verzoek",
+          "reden is niet direct_verzoek",
+        );
+      } else {
+        // Niet toegestaan (bijv. club) → 403, account blijft bestaan.
+        assert(r.status === 403, `verwacht 403 voor ${type}, kreeg ${r.status}`);
+        const [row] = await db
+          .select()
+          .from(userProfilesTable)
+          .where(eq(userProfilesTable.clerkId, clerkDirect));
+        assert(row, "account tóch verwijderd terwijl beleid dit verbiedt");
+      }
+    },
+  );
 
   // ── 11+12: hersteltermijn + definitieve verwijdering ────────────────────
   await scenario("niet-verstreken verzoek wordt NIET uitgevoerd", async () => {
@@ -293,7 +374,9 @@ async function main() {
     assert(row, "account te vroeg verwijderd");
   });
   await scenario("verstreken verzoek: cascade-verwijdering + audit met uitzonderingen", async () => {
-    const past = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const past = new Date(
+      Date.now() - (recoveryDaysFor("athlete") + 1) * 24 * 60 * 60 * 1000,
+    );
     await db
       .update(privacySettingsTable)
       .set({ deleteRequestedAt: past })
@@ -415,7 +498,7 @@ async function main() {
   });
 
   // ── Cleanup ─────────────────────────────────────────────────────────────
-  for (const id of [clerkA, clerkB, clerkMinor, clerkDel, coachId]) {
+  for (const id of [clerkA, clerkB, clerkMinor, clerkDel, clerkDirect, coachId]) {
     await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, id));
   }
 

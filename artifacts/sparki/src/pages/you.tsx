@@ -6,7 +6,6 @@ import { StateCard } from "@/components/sparki/state-card"
 import { PerformanceNumbers } from "@/components/sparki/performance-numbers"
 import { SportPassport } from "@/components/sparki/sport-passport"
 import { ProfileSettings } from "@/components/sparki/profile-settings"
-import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useMotionPreference } from "@/hooks/use-motion-preference"
 import { HoofdstukTabs, type HoofdstukTab } from "@/components/sparki/hoofdstuk-tabs"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
@@ -1250,15 +1249,14 @@ export default function YouPage() {
   )
 }
 
-// MEDIA_UITLEG_01 F1 — instelling "Verminder beweging" (T-4: vindbare plek in
-// de instellingen, server-side bewaard). Achter de flag media_uitleg_motion
-// totdat de keten is bewezen. Werkt onafhankelijk van de systeeminstelling:
-// staat één van beide aan, dan is beweging uit.
+// MEDIA_UITLEG_01 F1 / GF8-02 — instelling "Verminder beweging" (vindbare plek
+// in de instellingen, server-side bewaard). De instelling staat ALTIJD in de
+// instellingen (uit de flag-gate gehaald): alles blijft volledig bruikbaar met
+// beweging uit. Werkt onafhankelijk van de systeeminstelling: staat één van
+// beide aan, dan is beweging uit.
 function VerminderBewegingInstelling() {
-  const enabled = useFeatureFlag("media_uitleg_motion")
   const { sparkiReduced, sparkiReducedLoaded, setSparkiReduced, saving, systemReduced } =
     useMotionPreference()
-  if (!enabled) return null
   return (
     <div className="mb-6 flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3.5 backdrop-blur-md">
       <span>

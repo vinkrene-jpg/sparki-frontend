@@ -28,6 +28,9 @@ export type RouteSummary = {
   durationSec: number | null;
   source: string;
   createdAt: string;
+  /** Sport waarvoor de route bedoeld is ("cycling" | "hiking" | "walking" | …),
+   * null bij oudere routes waarvan de sport niet bewijsbaar bekend is. */
+  sport?: string | null;
   /** Routeversie — telt op bij inhoudelijke wijzigingen (Golf 19). */
   version?: number;
   /** 02c — gezet zodra de gratis bewaartermijn verstreken is (herstelbaar). */

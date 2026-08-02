@@ -101,6 +101,8 @@ console.log("Ritoverzicht (eerlijk)")
   check("afstand ~1 km", Math.abs(sum.distanceKm - 1.0) < 0.05, `d=${sum.distanceKm}`)
   check("totale tijd 90 s", sum.totalSec === 90)
   check("gem. snelheid ~40 km/u", sum.avgKmh != null && Math.abs(sum.avgKmh - 40) < 2, `v=${sum.avgKmh}`)
+  // Constante ~40 km/u ⇒ max ≈ gemiddelde (geen uitschieters).
+  check("max. snelheid ~40 km/u", sum.maxKmh != null && Math.abs(sum.maxKmh - 40) < 3, `vmax=${sum.maxKmh}`)
   check("geen hoogte ⇒ hoogtemeters eerlijk null", sum.elevationM === null)
   check("gem. watt uit echte samples", sum.avgWatts === 210)
   check("gem. cadans uit echte samples", sum.avgCadence === 91)
@@ -116,6 +118,59 @@ console.log("Ritoverzicht (eerlijk)")
   check("GPX bevat vermogen + cadans", gpx.includes("<power>250</power>") && gpx.includes("<gpxtpx:cad>95</gpxtpx:cad>"))
   check("naam veilig ontdaan van <>&", gpx.includes("<name>Testrit </name>"))
   check("sensor-sample matcht alleen ≤5 s", !gpx.split("\n")[5]?.includes("power") || true)
+
+  // GPS-spike: één sample-snelheid van 80–119 km/u (ONDER de 120-grens, dus niet
+  // hard weggefilterd) mag NOOIT de maximumsnelheid worden — ongeacht het
+  // sample-interval. Bij grote intervallen was elke stap vroeger zijn eigen
+  // "gemiddelde"; de smoothing eist nu een vol venster (≥3 s én ≥3 samples).
+  //
+  // Bouwt een constante rit van `stepKmh` km/u met vaste `intervalSec` en zet
+  // op positie `spikeIndex` één stap met snelheid `spikeKmh` (het volgende punt
+  // ligt `spikeKmh` ver van het vorige, over precies één interval).
+  const CONST_KMH = 30
+  function trackMet(
+    intervalSec: number,
+    n: number,
+    spikeIndex: number | null,
+    spikeKmh: number,
+  ): TrackPoint[] {
+    const pts: TrackPoint[] = [{ lat: 52, lon: 5, t: t0 }]
+    for (let i = 1; i < n; i++) {
+      const kmh = spikeIndex != null && i === spikeIndex ? spikeKmh : CONST_KMH
+      const meters = (kmh / 3.6) * intervalSec
+      const dLat = meters / 111_320 // ~m per graad breedte
+      const prev = pts[i - 1]!
+      pts.push({ lat: prev.lat + dLat, lon: 5, t: prev.t + intervalSec * 1000 })
+    }
+    return pts
+  }
+
+  for (const intervalSec of [1, 3, 5]) {
+    const spikeMid = summarizeRide(trackMet(intervalSec, 12, 6, 95), 0, [])
+    check(
+      `GPS-spike (95 km/u) midden bij ${intervalSec}s-interval telt niet als max`,
+      spikeMid.maxKmh != null && spikeMid.maxKmh < 60,
+      `interval=${intervalSec}s vmax=${spikeMid.maxKmh}`,
+    )
+    // Spike als LAATSTE punt (laatste stap) — mag ook niet zijn eigen max zijn.
+    const spikeLast = summarizeRide(trackMet(intervalSec, 12, 11, 110), 0, [])
+    check(
+      `GPS-spike (110 km/u) als laatste punt bij ${intervalSec}s-interval telt niet als max`,
+      spikeLast.maxKmh != null && spikeLast.maxKmh < 60,
+      `interval=${intervalSec}s vmax=${spikeLast.maxKmh}`,
+    )
+  }
+
+  // Zonder spike blijft de max ~gelijk aan de constante snelheid, bij elk
+  // interval (smoothing verlaagt een echte constante rit niet).
+  for (const intervalSec of [1, 3, 5]) {
+    const flat = summarizeRide(trackMet(intervalSec, 12, null, 0), 0, [])
+    check(
+      `constante ${CONST_KMH} km/u ⇒ max ~gemiddelde bij ${intervalSec}s-interval`,
+      flat.maxKmh != null && Math.abs(flat.maxKmh - CONST_KMH) < 3,
+      `interval=${intervalSec}s vmax=${flat.maxKmh}`,
+    )
+  }
 }
 
 if (failed > 0) {

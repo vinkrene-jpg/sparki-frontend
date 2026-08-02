@@ -103,6 +103,10 @@ export type SessionDetailResponse = {
   // chart honestly, never draw a fabricated line.
   profile: number[] | null;
   climbs: SessionClimb[];
+  // Maximale snelheid (km/u) uit de echte per-sample snelheidsstroom, al
+  // gladgestreken per tijdvenster. Null wanneer de rit geen snelheidssamples
+  // droeg (o.a. oude ritten) — dan wordt de waarde eerlijk weggelaten.
+  maxSpeedKph?: number | null;
   // Actieve trim; de getoonde track/profiel zijn dan al ingekort. De ruwe
   // opname blijft op de server bewaard (volledig herstelbaar).
   trimEdit?: SessionTrimEdit | null;

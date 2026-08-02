@@ -22,8 +22,11 @@ import {
   exportAccountData,
   executeAccountDeletion,
   DELETE_CONFIRM_PHRASE,
-  DELETE_RECOVERY_DAYS,
+  recoveryDaysFor,
+  allowsDirectDeletion,
+  resolveAccountType,
 } from "../lib/account-privacy";
+import { createNotification } from "../lib/notifications";
 
 const router = Router();
 
@@ -120,6 +123,8 @@ router.get("/overview", requireAuth, async (req, res) => {
       return;
     }
     const deleteRequestedAt = privacy?.deleteRequestedAt ?? null;
+    const accountType = await resolveAccountType(clerkId);
+    const recoveryDays = recoveryDaysFor(accountType);
     res.json({
       profiel: {
         email: profile.email,
@@ -134,12 +139,15 @@ router.get("/overview", requireAuth, async (req, res) => {
       coachLinks,
       ouderLinks: parentLinks,
       wieZietWat: roleVisibility(privacy ?? null),
+      // Hersteltermijn expliciet meegeven zodat de UI 'm nooit hoeft te hardcoden.
+      hersteltermijnDagen: recoveryDays,
+      directDefinitiefMogelijk: allowsDirectDeletion(accountType),
       verwijdering: deleteRequestedAt
         ? {
             aangevraagdOp: deleteRequestedAt,
             definitiefOp: new Date(
               new Date(deleteRequestedAt).getTime() +
-                DELETE_RECOVERY_DAYS * 24 * 60 * 60 * 1000,
+                recoveryDays * 24 * 60 * 60 * 1000,
             ),
             herstelbaar: true,
           }
@@ -189,7 +197,10 @@ router.post(
   rateLimit({ scope: "account_delete", max: 5, windowMs: 60 * 60_000 }),
   async (req, res) => {
     const clerkId = getClerkUserId(req)!;
-    const confirm = String((req.body as Record<string, unknown>)?.confirm ?? "");
+    const body = (req.body as Record<string, unknown>) ?? {};
+    const confirm = String(body.confirm ?? "");
+    // GF8-05: "direct definitief" is een expliciete keuze naast de bevestigingszin.
+    const directDefinitief = body.directDefinitief === true;
     if (confirm !== DELETE_CONFIRM_PHRASE) {
       res.status(400).json({
         error: `Bevestig de verwijdering door exact "${DELETE_CONFIRM_PHRASE}" mee te sturen.`,
@@ -197,7 +208,39 @@ router.post(
       return;
     }
     try {
+      const accountType = await resolveAccountType(clerkId);
+      // GF8-05: direct definitief verwijderen — geen hersteltermijn, meteen uit.
+      if (directDefinitief) {
+        // GF8-08: sommige accounttypes (club) mogen dit nooit — server weigert.
+        if (!allowsDirectDeletion(accountType)) {
+          res.status(403).json({
+            error:
+              "Direct definitief verwijderen is voor dit account niet mogelijk; de hersteltermijn van 30 dagen geldt altijd.",
+          });
+          return;
+        }
+        // GF8-06: bericht op het moment van verwijderen, vóór het account weg is.
+        await createNotification({
+          clerkId,
+          type: "system",
+          category: "privacy",
+          title: "Je account wordt nu definitief verwijderd",
+          body: "Je koos voor direct definitief verwijderen. Al je gegevens worden nu verwijderd en dit is niet meer terug te draaien.",
+          source: "account",
+        });
+        const result = await executeAccountDeletion(clerkId, {
+          reason: "direct_verzoek",
+        });
+        res.json({
+          ok: true,
+          definitief: true,
+          uitzonderingen: result.exceptions,
+        });
+        return;
+      }
+
       const now = new Date();
+      const recoveryDays = recoveryDaysFor(accountType);
       await db
         .insert(privacySettingsTable)
         .values({ clerkId, deleteRequestedAt: now, updatedAt: now })
@@ -210,17 +253,28 @@ router.post(
           event: "delete_requested",
           actorClerkId: clerkId,
           subjectClerkId: clerkId,
-          meta: { hersteltermijnDagen: DELETE_RECOVERY_DAYS },
+          meta: { hersteltermijnDagen: recoveryDays },
           req,
         },
         { required: true },
       );
+      // GF8-06: bericht op het moment van aanvragen. Bewust GÉÉN aparte
+      // herinnering halverwege de termijn (dat is een besluit, geen omissie).
+      await createNotification({
+        clerkId,
+        type: "system",
+        category: "privacy",
+        title: "Je verwijderverzoek is geregistreerd",
+        body: `Over ${recoveryDays} dagen worden al je gegevens definitief verwijderd. Tot die tijd kun je dit nog terugdraaien in je instellingen.`,
+        source: "account",
+        dedupeKey: `account_delete_requested:${clerkId}`,
+      });
       res.json({
         ok: true,
         definitiefOp: new Date(
-          now.getTime() + DELETE_RECOVERY_DAYS * 24 * 60 * 60 * 1000,
+          now.getTime() + recoveryDays * 24 * 60 * 60 * 1000,
         ),
-        hersteltermijnDagen: DELETE_RECOVERY_DAYS,
+        hersteltermijnDagen: recoveryDays,
       });
     } catch (err) {
       req.log.error({ err }, "account.delete failed");

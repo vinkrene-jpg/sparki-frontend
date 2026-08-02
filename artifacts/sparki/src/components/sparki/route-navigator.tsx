@@ -3667,6 +3667,14 @@ export function RouteNavigator({
                     </p>
                     <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">gem. km/u</p>
                   </div>
+                  {summary.maxKmh != null && (
+                    <div>
+                      <p className="text-[18px] font-semibold tabular-nums text-white/95">
+                        {summary.maxKmh.toFixed(1).replace(".", ",")}
+                      </p>
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">max km/u</p>
+                    </div>
+                  )}
                   {summary.elevationM != null && (
                     <div>
                       <p className="text-[18px] font-semibold tabular-nums text-white/95">

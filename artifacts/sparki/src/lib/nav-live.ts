@@ -178,9 +178,67 @@ export type RideSummary = {
   totalSec: number
   movingSec: number
   avgKmh: number | null
+  maxKmh: number | null
   elevationM: number | null
   avgWatts: number | null
   avgCadence: number | null
+}
+
+// Maximale snelheid uit de echte trackpunten: per stap afstand/tijd, en dan
+// gladgestreken met een lopend gemiddelde over een klein tijdvenster zodat één
+// GPS-uitschieter (een sprong van tientallen meters in één sample) nooit als
+// "max" telt. Null zolang er te weinig echte beweging is om iets te meten.
+const MAX_SPEED_WINDOW_SEC = 3
+// Een venster telt pas mee als het écht gladgestreken is: minimaal een vol
+// tijdvenster van 3 s ÉN minstens 3 samples. Zo kan een enkele uitschieter —
+// ook bij grote sample-intervallen (bijv. één stap van 5 s) — nooit zijn eigen
+// gemiddelde zijn; hij wordt altijd verdund door de buren of valt weg.
+const MAX_SPEED_MIN_SAMPLES = 3
+// Fysieke bovengrens: een sample-snelheid hierboven is per definitie een
+// GPS-sprong en telt niet mee (fietsen/wandelen zit hier ruim onder).
+const MAX_PLAUSIBLE_KMH = 120
+
+export function maxSpeedKmh(track: TrackPoint[]): number | null {
+  if (track.length < 2) return null
+  // Per stap de ruwe snelheid (km/u), alleen als er echte tijd verstreek.
+  type Step = { kmh: number; dtSec: number }
+  const steps: Step[] = []
+  for (let i = 1; i < track.length; i++) {
+    const dtSec = (track[i]!.t - track[i - 1]!.t) / 1000
+    if (dtSec <= 0) continue
+    const meters = haversineMeters(track[i - 1]!, track[i]!)
+    const kmh = (meters / dtSec) * 3.6
+    if (kmh > MAX_PLAUSIBLE_KMH) continue
+    steps.push({ kmh, dtSec })
+  }
+  if (steps.length === 0) return null
+  // Lopend gemiddelde over een tijdvenster: pak per startpunt de stappen tot
+  // het venster ECHT vol is (≥3 s én ≥3 samples) en middel de snelheid gewogen
+  // naar tijd. Alleen zo'n vol venster levert een kandidaat-max; onvolledige
+  // vensters (te kort in tijd of te weinig samples, bijv. aan het einde van de
+  // rit of één losse spike-stap) tellen niet mee. De hoogste gladgestreken
+  // waarde is de eerlijke maximumsnelheid.
+  let best: number | null = null
+  for (let i = 0; i < steps.length; i++) {
+    let sumTime = 0
+    let sumDist = 0
+    let count = 0
+    for (let j = i; j < steps.length; j++) {
+      const s = steps[j]!
+      sumTime += s.dtSec
+      sumDist += (s.kmh / 3.6) * s.dtSec
+      count += 1
+      if (sumTime >= MAX_SPEED_WINDOW_SEC && count >= MAX_SPEED_MIN_SAMPLES) {
+        break
+      }
+    }
+    // Alleen een venster dat beide drempels haalt telt als kandidaat.
+    if (sumTime >= MAX_SPEED_WINDOW_SEC && count >= MAX_SPEED_MIN_SAMPLES) {
+      const kmh = (sumDist / sumTime) * 3.6
+      if (best == null || kmh > best) best = kmh
+    }
+  }
+  return best != null && best > 0 ? Math.round(best * 10) / 10 : null
 }
 
 export function summarizeRide(
@@ -224,6 +282,7 @@ export function summarizeRide(
     totalSec,
     movingSec,
     avgKmh,
+    maxKmh: maxSpeedKmh(track),
     elevationM,
     avgWatts: watts.length > 0 ? Math.round(watts.reduce((a, b) => a + b, 0) / watts.length) : null,
     avgCadence: cads.length > 0 ? Math.round(cads.reduce((a, b) => a + b, 0) / cads.length) : null,

@@ -34,7 +34,31 @@ import {
   Activity,
   TrendingDown,
   ChevronDown,
+  Timer,
 } from "lucide-react"
+
+// Numeriek uit een DB-string (numerieke kolommen komen als string via JSON).
+function parseNum(v: string | number | null | undefined): number | null {
+  if (v == null || v === "") return null
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+// Tempo per kilometer (min/km) uit echte afstand + tijd — de wandelmaat (F7).
+// Null zolang er geen echte afstand én tijd is (nooit een verzonnen tempo).
+function walkPacePerKm(
+  distanceKm: number | null,
+  durationMin: number | null,
+): string | null {
+  if (distanceKm == null || durationMin == null) return null
+  if (!(distanceKm > 0) || !(durationMin > 0)) return null
+  const paceMinPerKm = durationMin / distanceKm
+  const m = Math.floor(paceMinPerKm)
+  const s = Math.round((paceMinPerKm - m) * 60)
+  const mm = s === 60 ? m + 1 : m
+  const ss = s === 60 ? 0 : s
+  return `${mm}:${String(ss).padStart(2, "0")}`
+}
 
 function fmtSegTime(sec: number): string {
   const m = Math.floor(sec / 60)
@@ -476,6 +500,11 @@ export function SessionDetailDrawer({
     return "onbekend"
   }
 
+  // Wandelen (F7): de analyse wijkt af van fietsen — geen max. snelheid, wél
+  // tempo per kilometer. Afgeleid uit de sport van de sessie.
+  const isWalkSession =
+    session?.sport === "hiking" || session?.sport === "walking"
+
   // Which real metrics do we actually have? Honest readback only.
   const metrics: Array<{
     icon: typeof Clock
@@ -507,6 +536,30 @@ export function SessionDetailDrawer({
         value: `${session.elevationM} m`,
         bron: bronVoor("elevationM"),
       })
+    // Wandelen (F7): de analyse is bewust rijker dan bij fietsen. Gem. snelheid
+    // en tempo per kilometer (min/km) horen erbij; max. snelheid zegt bij
+    // wandelen niets en blijft weg. Alleen bij wandelsporten, alleen als het
+    // echt uit afstand + tijd te berekenen valt.
+    if (isWalkSession) {
+      const avgSpeed = parseNum(session.avgSpeedKph)
+      if (avgSpeed != null)
+        metrics.push({
+          icon: Gauge,
+          label: "Gem. snelheid",
+          value: `${avgSpeed.toFixed(1)} km/u`,
+          bron: bronVoor("avgSpeedKph"),
+        })
+      const pace = walkPacePerKm(
+        parseNum(session.distanceKm),
+        session.durationMin,
+      )
+      if (pace != null)
+        metrics.push({
+          icon: Timer,
+          label: "Tempo",
+          value: `${pace} min/km`,
+        })
+    }
     if (session.tss != null)
       metrics.push({
         icon: Activity,

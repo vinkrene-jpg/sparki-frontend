@@ -60,6 +60,19 @@ function fmtNum(v: string | number | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Tempo per kilometer (min/km) uit echte afstand + tijd — de wandelmaat (F7).
+// Null zolang er geen echte afstand én tijd is (nooit een verzonnen tempo).
+function fmtPacePerKm(distanceKm: number | null, durationMin: number | null): string | null {
+  if (distanceKm == null || durationMin == null) return null;
+  if (!(distanceKm > 0) || !(durationMin > 0)) return null;
+  const paceMinPerKm = durationMin / distanceKm;
+  const m = Math.floor(paceMinPerKm);
+  const s = Math.round((paceMinPerKm - m) * 60);
+  const mm = s === 60 ? m + 1 : m;
+  const ss = s === 60 ? 0 : s;
+  return `${mm}:${String(ss).padStart(2, "0")}`;
+}
+
 /**
  * Detail of one saved ride: the REAL ridden track on the map (when the
  * activity import stored one) plus every measured value and the athlete's own
@@ -229,6 +242,11 @@ export default function RideDetailScreen() {
   const bronVoor = (field: string): string | null =>
     bronVoorVeld(data?.herkomst, field);
 
+  // Wandelen (F7): de analyse is bewust anders dan bij fietsen. Max. snelheid
+  // zegt bij wandelen niets en vervalt; in plaats daarvan komt tempo per
+  // kilometer (min/km), afgeleid uit echte afstand en tijd.
+  const isWalk = session?.sport === "hiking" || session?.sport === "walking";
+
   // Every measured value the session really carries — absent values are simply
   // not listed (never zeros or dashes).
   const metrics: {
@@ -247,6 +265,19 @@ export default function RideDetailScreen() {
     const speed = fmtNum(session.avgSpeedKph);
     if (speed != null)
       metrics.push({ icon: "speedometer-outline", label: "Gem. snelheid", value: `${speed.toFixed(1)} km/u`, bron: bronVoor("avgSpeedKph") });
+    // Max. snelheid alleen bij fietssporten (bij wandelen zegt hij niets, F7)
+    // en alleen als hij echt uit de snelheidsstroom berekend kon worden.
+    const maxSpeed = fmtNum(data?.maxSpeedKph ?? null);
+    if (maxSpeed != null && !isWalk)
+      metrics.push({ icon: "speedometer-outline", label: "Max. snelheid", value: `${maxSpeed.toFixed(1)} km/u` });
+    // Wandelen (F7): tempo per kilometer in plaats van max. snelheid, afgeleid
+    // uit echte afstand + tijd. Alleen bij wandelsporten en alleen als het echt
+    // te berekenen is.
+    if (isWalk) {
+      const pace = fmtPacePerKm(distance, session.durationMin);
+      if (pace != null)
+        metrics.push({ icon: "walk-outline", label: "Tempo", value: `${pace} min/km` });
+    }
     if (session.elevationM != null)
       metrics.push({ icon: "trending-up-outline", label: "Hoogtemeters", value: `${session.elevationM} m`, bron: bronVoor("elevationM") });
     if (session.avgPower != null)

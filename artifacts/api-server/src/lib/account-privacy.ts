@@ -10,7 +10,7 @@
 // verwijderd kan of mag worden, wordt expliciet als uitzondering geregistreerd
 // in het onveranderbare auditlog.
 
-import { sql, eq, and, lt, isNotNull } from "drizzle-orm";
+import { sql, eq, isNotNull } from "drizzle-orm";
 import {
   db,
   privacySettingsTable,
@@ -23,7 +23,57 @@ import { decryptSecret } from "./token-crypto";
 import { writeAudit } from "./security/audit";
 import { logger } from "./logger";
 
-export const DELETE_RECOVERY_DAYS = 14;
+// Hersteltermijn na een verwijderverzoek. Besloten op 1 augustus 2026: dertig
+// dagen. Configureerbaar via DELETE_RECOVERY_DAYS (positief geheel getal); een
+// ontbrekende of ongeldige waarde valt terug op de default.
+const DEFAULT_DELETE_RECOVERY_DAYS = 30;
+
+function readRecoveryDays(): number {
+  const raw = process.env.DELETE_RECOVERY_DAYS;
+  if (raw == null || raw.trim() === "") return DEFAULT_DELETE_RECOVERY_DAYS;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_DELETE_RECOVERY_DAYS;
+}
+
+export type AccountType = "athlete" | "club";
+
+/**
+ * Bepaal SERVER-side het accounttype voor een gebruiker. Vandaag is er nog geen
+ * club-account, dus dit geeft altijd "athlete" terug — maar het is de ENE plek
+ * waar dat onderscheid straks landt (GF8-08). De rest van de code roept alleen
+ * deze functie aan en hardcodet nooit een type.
+ */
+export async function resolveAccountType(
+  _clerkId: string,
+): Promise<AccountType> {
+  // TODO (GF8-08): club-accounts herkennen (bijv. via user_profiles.roles of een
+  // apart clubprofiel) en hier "club" teruggeven. Tot die tijd: iedereen atleet.
+  return "athlete";
+}
+
+/**
+ * De geldende hersteltermijn (in dagen) voor een accounttype.
+ *
+ * Één plek voor de termijn, zodat een later onderscheid per accounttype mogelijk
+ * is zonder de kale constante overal te vervangen. GF8-08: voor een club geldt
+ * ALTIJD dertig dagen (nooit configureerbaar korter, nooit "direct definitief").
+ * Dat clubpad valt buiten deze fase, maar het onderscheid is hier al voorzien.
+ */
+export function recoveryDaysFor(accountType: AccountType = "athlete"): number {
+  if (accountType === "club") return 30;
+  return readRecoveryDays();
+}
+
+/** Mag dit accounttype "direct definitief" verwijderen? Een club nooit (GF8-08). */
+export function allowsDirectDeletion(
+  accountType: AccountType = "athlete",
+): boolean {
+  return accountType !== "club";
+}
+
+// Backwards-compatibele constante voor bestaande gebruikers. Leest de
+// (configureerbare) atleettermijn. Nieuwe code gebruikt recoveryDaysFor().
+export const DELETE_RECOVERY_DAYS = recoveryDaysFor();
 export const DELETE_CONFIRM_PHRASE = "VERWIJDER MIJN ACCOUNT";
 
 // Kolomnamen die per tabel een gebruiker aanwijzen.
@@ -218,21 +268,25 @@ export async function executeAccountDeletion(
 export async function processDueAccountDeletions(
   now: Date = new Date(),
 ): Promise<number> {
-  const cutoff = new Date(
-    now.getTime() - DELETE_RECOVERY_DAYS * 24 * 60 * 60 * 1000,
-  );
-  const due = await db
-    .select({ clerkId: privacySettingsTable.clerkId })
+  // De termijn hangt af van het accounttype (GF8-08). We halen alle openstaande
+  // verzoeken op en beslissen per rij op basis van het server-side resolved type
+  // of de termijn is verstreken — nooit een hardcoded type.
+  const pending = await db
+    .select({
+      clerkId: privacySettingsTable.clerkId,
+      deleteRequestedAt: privacySettingsTable.deleteRequestedAt,
+    })
     .from(privacySettingsTable)
-    .where(
-      and(
-        isNotNull(privacySettingsTable.deleteRequestedAt),
-        lt(privacySettingsTable.deleteRequestedAt, cutoff),
-      ),
-    );
+    .where(isNotNull(privacySettingsTable.deleteRequestedAt));
   let count = 0;
-  for (const row of due) {
+  for (const row of pending) {
+    if (!row.deleteRequestedAt) continue;
     try {
+      const type = await resolveAccountType(row.clerkId);
+      const cutoff = new Date(
+        now.getTime() - recoveryDaysFor(type) * 24 * 60 * 60 * 1000,
+      );
+      if (new Date(row.deleteRequestedAt) >= cutoff) continue;
       await executeAccountDeletion(row.clerkId, {
         reason: "hersteltermijn_verstreken",
       });

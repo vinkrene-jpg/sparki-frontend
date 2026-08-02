@@ -212,6 +212,10 @@ export default function NavigateScreen() {
   }, [isError, routeId]);
   const route = fetchedRoute ?? offlineRoute;
   const usingOfflineRoute = !fetchedRoute && !!offlineRoute;
+  // Wandelen (F7): onderweg toont wandelen afstand gelopen, te gaan, totaal en
+  // snelheid — en géén fietsgegevens (geen vermogen/cadans/accu). Fietsweergave
+  // blijft ongemoeid. Afgeleid uit de sport van de route.
+  const isWalk = route?.sport === "hiking" || route?.sport === "walking";
   // Golf 28 — de locatiestream (en dus de systeemvraag) start pas nadat de
   // toegang al verleend is óf de renner de uitlegkaart bewust heeft doorlopen.
   const locConsent = useLocationConsent();
@@ -688,6 +692,9 @@ export default function NavigateScreen() {
   });
   // Beschikbare breedte per metric in de databalk (3 naast elkaar).
   const metricW = metricContainerWidthPx(screenWidth - 32, 3);
+  // Wandelen toont vier waarden (gelopen, te gaan, totaal, snelheid); fietsen
+  // drie. De containerbreedte volgt het aantal zodat alles leesbaar past.
+  const walkMetricW = metricContainerWidthPx(screenWidth - 32, 4);
 
   // Verkeerslichten langs de route uit de Sparki Traffic Database (echte
   // OSM- en detectiedata). Best-effort: zonder data geen regel in de HUD.
@@ -1333,40 +1340,88 @@ export default function NavigateScreen() {
               </Text>
             </Pressable>
           )}
-          <View style={[styles.progressBar, { backgroundColor: HUD_BG, borderColor: c.border }]}>
-            <Metric
-              label="Snelheid"
-              value={
-                location?.speedMps != null
-                  ? `${Math.round(location.speedMps * 3.6)}`
-                  : "—"
-              }
-              unit="km/u"
-              highlight
-              widthPx={metricW}
-              fontScale={fontScale}
-              c={c}
-            />
-            <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
-            <Metric
-              label="Resterend"
-              value={progress ? progress.remainingKm.toFixed(1) : "—"}
-              unit="km"
-              widthPx={metricW}
-              fontScale={fontScale}
-              c={c}
-            />
-            <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
-            <Metric
-              label="Totaal"
-              value={route.distanceKm != null ? route.distanceKm.toFixed(1) : "—"}
-              unit="km"
-              widthPx={metricW}
-              fontScale={fontScale}
-              c={c}
-            />
-          </View>
-          {live.anyConnected && (
+          {isWalk ? (
+            // Wandelen (F7): gelopen · te gaan · totaal · snelheid. Geen
+            // fietsgegevens.
+            <View style={[styles.progressBar, { backgroundColor: HUD_BG, borderColor: c.border }]}>
+              <Metric
+                label="Gelopen"
+                value={progress ? progress.traveledKm.toFixed(1) : "—"}
+                unit="km"
+                widthPx={walkMetricW}
+                fontScale={fontScale}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
+              <Metric
+                label="Te gaan"
+                value={progress ? progress.remainingKm.toFixed(1) : "—"}
+                unit="km"
+                widthPx={walkMetricW}
+                fontScale={fontScale}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
+              <Metric
+                label="Totaal"
+                value={route.distanceKm != null ? route.distanceKm.toFixed(1) : "—"}
+                unit="km"
+                widthPx={walkMetricW}
+                fontScale={fontScale}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
+              <Metric
+                label="Snelheid"
+                value={
+                  location?.speedMps != null
+                    ? `${Math.round(location.speedMps * 3.6)}`
+                    : "—"
+                }
+                unit="km/u"
+                highlight
+                widthPx={walkMetricW}
+                fontScale={fontScale}
+                c={c}
+              />
+            </View>
+          ) : (
+            <View style={[styles.progressBar, { backgroundColor: HUD_BG, borderColor: c.border }]}>
+              <Metric
+                label="Snelheid"
+                value={
+                  location?.speedMps != null
+                    ? `${Math.round(location.speedMps * 3.6)}`
+                    : "—"
+                }
+                unit="km/u"
+                highlight
+                widthPx={metricW}
+                fontScale={fontScale}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
+              <Metric
+                label="Resterend"
+                value={progress ? progress.remainingKm.toFixed(1) : "—"}
+                unit="km"
+                widthPx={metricW}
+                fontScale={fontScale}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
+              <Metric
+                label="Totaal"
+                value={route.distanceKm != null ? route.distanceKm.toFixed(1) : "—"}
+                unit="km"
+                widthPx={metricW}
+                fontScale={fontScale}
+                c={c}
+              />
+            </View>
+          )}
+          {/* Fietssensoren (vermogen/hartslag/cadans) — nooit bij wandelen. */}
+          {!isWalk && live.anyConnected && (
             <View style={[styles.progressBar, { backgroundColor: HUD_BG, borderColor: c.border }]}>
               <Metric
                 label="Vermogen"
