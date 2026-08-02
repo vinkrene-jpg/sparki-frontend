@@ -18,3 +18,5 @@ description: René test uitsluitend op de installeerbare Android-APK (EAS-profie
 - EAS-logbestanden zijn NDJSON; download-URL verloopt na 15 min — meteen parsen (`json.loads` per regel, veld `msg`).
 - Upload is de hele monorepo (1,2 GB) — .easignore kan dit ooit verkleinen.
 - Een geweigerde `EXPO_TOKEN` geeft "bearer token is invalid" — check rechtstreeks met `eas whoami`; René plakte eerst een verkeerde waarde (token is de eenmalig getoonde reeks, niet project-ID/wachtwoord).
+- OTA-export bugt in deze monorepo bij gemixte @babel-versies: generator 7.29.1 + nieuwere parser crasht met "[Worklets] Babel plugin exception … reading 'length'" (en hermesc "private properties are not supported" bij verouderde cache). Fix: root-`pnpm.overrides` die @babel/generator/traverse/parser ^7 op één patchversie pinnen; NOOIT losse @babel/plugin-transform-* toevoegen (trekt Babel 8-helpers binnen). `babel-preset-expo` moet expliciet in devDependencies (pnpm-strictheid).
+- EAS-manifestvalidatie weigert dubbele `android.intentFilters`; app.json-lijsten ontdubbelen vóór `eas update`.

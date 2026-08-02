@@ -157,3 +157,4 @@
 - [Club-wedstrijdlaag BUILD_03](sparki-club-race-build03.md) — één-wedstrijd-sync (targetWhere-trap), vervanger zonder spoor, noodinfo-inzagelog, availabilityNote-afscherming, app-only dagmodus.
 - [Routefamilies & voet-geschiktheid](sparki-route-families-foot.md) — isRouteSportActive is de enige poort (geen vrijgaveflags); te voet: trap/fietsverbod ok, access=private/locked=yes hard; sport server-side via kandidaat-store.
 - [Shell pipe exitcode-trap](shell-pipe-exitcode-trap.md) — `check | tail && commit` commit ook bij rode check; poortchecks kaal draaien of pipefail.
+- [Praktijktest-APK + OTA](sparki-praktijktest-apk.md) — René test alleen APK+web; eas update --channel praktijktest hoort bij elke mobiele oplevering; babel-mix/intentFilter-valkuilen.
