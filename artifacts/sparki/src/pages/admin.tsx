@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Redirect } from "wouter";
-import { ArrowLeft } from "lucide-react";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { useUserProfile } from "@/contexts/UserContext";
 import { ACCENT } from "@/components/sparki/ui";
+import { ScreenShell } from "@/components/sparki/screen-shell";
+import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs";
+import { BeheerSheet } from "@/components/sparki/beheer-popup";
 import {
   useAdminWhoami,
   useAdminStatus,
@@ -677,10 +679,22 @@ export function DataTrustCleanupSection() {
   );
 }
 
+// F9-herindeling: vier échte tabs i.p.v. ~12 stapelende secties in één lange
+// scroll. De hoofdhandeling (Controleer nu) en kerninformatie (gezondheids-
+// banner + kerncijfers) staan in beeld bij openen op 402×874 (TUX-24/26);
+// alles wat vroeger inline onder elkaar stond leeft nu onder een tab of — voor
+// de destructieve gegevens-opschoning — in een stappenvenster (TUX-27). Rol +
+// omgeving zijn zichtbaar via de bestaande ScreenShell-ContextRegel.
+type AdminTab = "overzicht" | "gezondheid" | "signalen" | "gegevens";
+
 export default function AdminPage() {
   const { isSignedIn } = useUser();
   const { data: who, isLoading: whoLoading } = useAdminWhoami();
   const isAdmin = who?.isAdmin === true;
+  const [tab, setTab] = useState<AdminTab>("overzicht");
+  // Destructieve gegevens-opschoning leeft in een apart venster met een
+  // expliciete droogdraai-dan-bevestigen-flow — nooit inline op de pagina.
+  const [cleanupOpen, setCleanupOpen] = useState(false);
 
   // WP-S1: geen DEV_PREVIEW-escape meer — de geïmpersoneerde identiteit
   // krijgt uitsluitend de rechten die de echte rij heeft (server beslist).
@@ -717,88 +731,149 @@ export default function AdminPage() {
   const agg = health?.aggregates ?? {};
   const status = statusData?.status ?? {};
 
+  const TABS: { id: AdminTab; label: string }[] = [
+    { id: "overzicht", label: "Overzicht" },
+    { id: "gezondheid", label: "Gezondheid" },
+    { id: "signalen", label: "Signalen" },
+    { id: "gegevens", label: "Gegevens" },
+  ];
+
   return (
-    <main className="relative min-h-dvh px-5 pb-28 pt-6">
-      <div className="mx-auto w-full max-w-2xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
-            >
-              <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug
-            </Link>
-            <Link
-              href="/admin/ops"
-              className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
-            >
-              Ops-dashboard →
-            </Link>
+    <ScreenShell section="admin" bare terug={false}>
+      <div className="flex flex-col gap-5">
+        {/* Kop + één primaire actie in beeld bij openen (TUX-24/26). Rol en
+            omgeving staan al zichtbaar via de ScreenShell-ContextRegel. */}
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate font-sans text-2xl font-extralight text-white/90">
+              Beheer & gezondheid
+            </h1>
+            <p className="mt-1 text-[13px] text-white/40">
+              Elke status komt uit een echte test. Grijs betekent: nog niet
+              gekoppeld.
+            </p>
           </div>
           <button
             type="button"
             onClick={() => runChecks.mutate()}
             disabled={runChecks.isPending}
-            className="rounded-full border px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition disabled:opacity-40"
+            className="shrink-0 rounded-full border px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition disabled:opacity-40"
             style={{ borderColor: ACCENT, color: ACCENT }}
           >
             {runChecks.isPending ? "Bezig met controleren…" : "Controleer nu"}
           </button>
-        </div>
-
-        <h1 className="mt-4 font-sans text-2xl font-extralight text-white/90">
-          Beheer & gezondheid
-        </h1>
-        <p className="mt-1 text-[13px] text-white/40">
-          Elke status komt uit een echte test. Grijs betekent: nog niet
-          gekoppeld.
-        </p>
+        </header>
 
         {isLoading || !health ? (
-          <p className="mt-8 text-[13px] text-white/30">Laden…</p>
+          <p className="text-[13px] text-white/30">Laden…</p>
         ) : (
           <>
-            <div className="mt-5">
-              <OverallBanner
-                overall={health.overall}
-                lastRunAt={health.lastRunAt}
-              />
-            </div>
+            {/* Kerninformatie meteen in beeld: de gezondheidsbanner. */}
+            <OverallBanner
+              overall={health.overall}
+              lastRunAt={health.lastRunAt}
+            />
 
-            {scheduledData && scheduledData.tasks.length > 0 && (
-              <section className="mt-6">
-                <div className="flex items-center justify-between gap-3">
+            <HoofdstukTabs<AdminTab>
+              tabs={TABS}
+              actief={tab}
+              onKies={(id) => setTab(id)}
+              ariaLabel="Beheer-onderdelen"
+            />
+
+            {/* ── Overzicht: kerncijfers, aandachtspunten, geplande taken en de
+                doorverwijzing naar het operationele beheer. ───────────────── */}
+            {tab === "overzicht" && (
+              <div className="flex flex-col gap-5">
+                <section>
                   <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-                    Geplande taken
+                    In één oogopslag
                   </p>
-                  {scheduledData.missing > 0 && (
-                    <span
-                      className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
-                      style={{
-                        color: STATUS_META.orange.color,
-                        background: STATUS_META.orange.bg,
-                      }}
-                    >
-                      {scheduledData.missing} nog opzetten
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-[12px] leading-snug text-white/40">
-                  Deze taken horen als Scheduled Deployment te draaien. De status
-                  komt uit de echte data-sporen die elke taak achterlaat — geen
-                  zichtbare run betekent dat de geplande taak mogelijk nog niet is
-                  aangemaakt.
-                </p>
-                <div className="mt-3 space-y-2.5">
-                  {scheduledData.tasks.map((t) => (
-                    <ScheduledTaskRow key={t.key} t={t} />
-                  ))}
-                </div>
-              </section>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {AGG_LABELS.map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md"
+                      >
+                        <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/35">
+                          {label}
+                        </p>
+                        <p
+                          className="mt-0.5 font-sans text-2xl font-extralight tabular-nums"
+                          style={{ color: ACCENT }}
+                        >
+                          {agg[key] ?? 0}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {health.openErrors.length > 0 && (
+                  <section>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                      Aandachtspunten ({health.openErrors.length})
+                    </p>
+                    <div className="mt-3 space-y-2.5">
+                      {health.openErrors.map((c) => (
+                        <CheckRow key={c.checkKey} c={c} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {scheduledData && scheduledData.tasks.length > 0 && (
+                  <section>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                        Geplande taken
+                      </p>
+                      {scheduledData.missing > 0 && (
+                        <span
+                          className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
+                          style={{
+                            color: STATUS_META.orange.color,
+                            background: STATUS_META.orange.bg,
+                          }}
+                        >
+                          {scheduledData.missing} nog opzetten
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[12px] leading-snug text-white/40">
+                      Deze taken horen als Scheduled Deployment te draaien. De
+                      status komt uit de echte data-sporen die elke taak
+                      achterlaat — geen zichtbare run betekent dat de geplande
+                      taak mogelijk nog niet is aangemaakt.
+                    </p>
+                    <div className="mt-3 space-y-2.5">
+                      {scheduledData.tasks.map((t) => (
+                        <ScheduledTaskRow key={t.key} t={t} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <Link
+                  href="/admin/ops"
+                  className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3.5 py-3 backdrop-blur-md transition hover:border-white/20"
+                >
+                  <span className="text-[13px] text-white/85">
+                    Operationeel beheer
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                    Ops-dashboard →
+                  </span>
+                </Link>
+              </div>
             )}
 
+            {/* ── Gezondheid: datasync, denkkracht, checks per categorie,
+                testgeschiedenis en release-controles. ─────────────────────── */}
+            {tab === "gezondheid" && (
+              <div className="flex flex-col gap-5">
             {syncDiag && syncDiag.providers.length > 0 && (
-              <section className="mt-6">
+              <section>
                 <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
                   Automatische datasync
                 </p>
@@ -958,45 +1033,8 @@ export default function AdminPage() {
               </section>
             )}
 
-            {health.openErrors.length > 0 && (
-              <section className="mt-6">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-                  Aandachtspunten ({health.openErrors.length})
-                </p>
-                <div className="mt-3 space-y-2.5">
-                  {health.openErrors.map((c) => (
-                    <CheckRow key={c.checkKey} c={c} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            <section className="mt-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-                In één oogopslag
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {AGG_LABELS.map(({ key, label }) => (
-                  <div
-                    key={key}
-                    className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md"
-                  >
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/35">
-                      {label}
-                    </p>
-                    <p
-                      className="mt-0.5 font-sans text-2xl font-extralight tabular-nums"
-                      style={{ color: ACCENT }}
-                    >
-                      {agg[key] ?? 0}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             {grouped.map(([category, checks]) => (
-              <section key={category} className="mt-6">
+              <section key={category}>
                 <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
                   {CATEGORY_LABEL[category] ?? category}
                 </p>
@@ -1008,7 +1046,7 @@ export default function AdminPage() {
               </section>
             ))}
 
-            <section className="mt-8">
+            <section>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
                 Testgeschiedenis
               </p>
@@ -1042,10 +1080,16 @@ export default function AdminPage() {
                 )}
               </div>
             </section>
+              </div>
+            )}
 
+            {/* ── Signalen: bugmeldingen, sporterfeedback, mislukte imports en
+                de kwaliteit van analyses. ─────────────────────────────────── */}
+            {tab === "signalen" && (
+              <div className="flex flex-col gap-5">
             <FeedbackInbox reports={bugData?.reports ?? []} />
 
-            <section className="mt-6">
+            <section>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
                 Feedback van sporters ({feedbackData?.feedback?.length ?? 0})
               </p>
@@ -1082,7 +1126,7 @@ export default function AdminPage() {
               </div>
             </section>
 
-            <section className="mt-6">
+            <section>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
                 Mislukte imports ({importsData?.imports?.length ?? 0})
               </p>
@@ -1124,13 +1168,7 @@ export default function AdminPage() {
               </div>
             </section>
 
-            <ProvenanceSection />
-
-            <DataTrustDashboardSection enabled={enabled} />
-
-            <DataTrustCleanupSection />
-
-            <section className="mt-8">
+            <section>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
                 Kwaliteit van analyses
               </p>
@@ -1236,38 +1274,83 @@ export default function AdminPage() {
                 </>
               )}
             </section>
-
-            <SupportAdminSection />
-
-            <ReleaseAdminSection />
-
-            <EntitlementsAdminSection />
-
-            <KennisbankAdminSection />
-
-            <section className="mt-8">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-                Cijfers
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {Object.entries(status).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="rounded-lg border border-white/[0.05] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
-                  >
-                    <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
-                      {key}
-                    </p>
-                    <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-white/70">
-                      {value}
-                    </p>
-                  </div>
-                ))}
               </div>
-            </section>
+            )}
+
+            {/* ── Gegevens: broncontrole, gegevensvertrouwen, support/release/
+                rechten/kennisbank en cijfers. De destructieve opschoning zit
+                achter een apart venster met expliciete bevestiging. ───────── */}
+            {tab === "gegevens" && (
+              <div className="flex flex-col gap-5">
+                <ProvenanceSection />
+
+                <DataTrustDashboardSection enabled={enabled} />
+
+                {/* Destructieve gegevens-opschoning: nooit inline. Openen als
+                    stappenvenster (droogdraai → expliciet bevestigen). */}
+                <section>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                    Gegevens-opschoning
+                  </p>
+                  <p className="mt-1 text-[12px] leading-snug text-white/40">
+                    Opruimen van vervuiling (Engelstalige observaties, dubbele
+                    import-rijen) en losmaken van foute automatische koppelingen.
+                    Echte data blijft altijd staan. Opent in een apart venster
+                    met een droogdraai en een expliciete bevestiging.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCleanupOpen(true)}
+                    className="mt-3 rounded-lg border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition"
+                    style={{ borderColor: ACCENT, color: ACCENT }}
+                  >
+                    Opschoning openen
+                  </button>
+                </section>
+
+                <SupportAdminSection />
+
+                <ReleaseAdminSection />
+
+                <EntitlementsAdminSection />
+
+                <KennisbankAdminSection />
+
+                <section>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                    Cijfers
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {Object.entries(status).map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="rounded-lg border border-white/[0.05] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
+                      >
+                        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                          {key}
+                        </p>
+                        <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-white/70">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            )}
           </>
         )}
       </div>
-    </main>
+
+      {/* Stappenvenster (TUX-27): destructieve gegevens-opschoning met een
+          expliciete droogdraai-dan-bevestigen-flow, weg van de pagina. */}
+      <BeheerSheet
+        open={cleanupOpen}
+        onOpenChange={(o) => !o && setCleanupOpen(false)}
+        titel="Gegevens-opschoning"
+      >
+        {cleanupOpen && <DataTrustCleanupSection />}
+      </BeheerSheet>
+    </ScreenShell>
   );
 }

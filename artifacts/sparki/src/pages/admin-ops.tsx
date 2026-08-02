@@ -9,6 +9,8 @@ import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/api"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
+import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import { Link } from "wouter"
 
 const SYSTEM_MODES = [
@@ -42,17 +44,14 @@ function ModeTag({ mode }: { mode: SystemMode }) {
   )
 }
 
-function SystemModePanel() {
+// Niet-destructieve modi staan inline; het stoppen van de dienst is
+// destructief en leeft in een apart venster met expliciete bevestiging.
+const SAFE_MODES = SYSTEM_MODES.filter((m) => m.value !== "SERVICE_SHUTDOWN")
+const SHUTDOWN_MODE = SYSTEM_MODES.find((m) => m.value === "SERVICE_SHUTDOWN")!
+
+function useSetSystemMode() {
   const qc = useQueryClient()
-  const { data, isLoading } = useQuery<ModeRow>({
-    queryKey: ["/api/admin/system-mode"],
-    queryFn: () => apiFetch("/api/admin/system-mode"),
-  })
-
-  const [newMode, setNewMode] = useState<SystemMode | "">("")
-  const [reason, setReason] = useState("")
-
-  const mutation = useMutation({
+  return useMutation({
     mutationFn: (body: { mode: SystemMode; reason?: string }) =>
       apiFetch<{ ok: boolean }>("/api/admin/system-mode", {
         method: "POST",
@@ -62,10 +61,19 @@ function SystemModePanel() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["/api/admin/system-mode"] })
       void qc.invalidateQueries({ queryKey: ["/api/admin/ops-log"] })
-      setNewMode("")
-      setReason("")
     },
   })
+}
+
+function SystemModePanel({ onShutdown }: { onShutdown: () => void }) {
+  const { data, isLoading } = useQuery<ModeRow>({
+    queryKey: ["/api/admin/system-mode"],
+    queryFn: () => apiFetch("/api/admin/system-mode"),
+  })
+
+  const [newMode, setNewMode] = useState<SystemMode | "">("")
+  const [reason, setReason] = useState("")
+  const mutation = useSetSystemMode()
 
   if (isLoading || !data) {
     return <p className="text-sm text-white/40">Modus laden…</p>
@@ -88,13 +96,13 @@ function SystemModePanel() {
         </p>
       )}
 
-      {/* Modus wijzigen */}
+      {/* Modus wijzigen — alleen de niet-destructieve modi inline. */}
       <div className="mt-5 border-t border-white/[0.07] pt-4">
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/40">
           Modus wijzigen
         </h3>
         <div className="flex flex-wrap gap-2 mb-3">
-          {SYSTEM_MODES.map((m) => (
+          {SAFE_MODES.map((m) => (
             <button
               key={m.value}
               type="button"
@@ -121,12 +129,6 @@ function SystemModePanel() {
           disabled={!newMode || mutation.isPending}
           onClick={() => {
             if (!newMode) return
-            if (newMode === "SERVICE_SHUTDOWN") {
-              const ok = window.confirm(
-                "SERVICE_SHUTDOWN vereist bevestiging van twee beheerders. Weet je zeker dat je dit wilt activeren?",
-              )
-              if (!ok) return
-            }
             mutation.mutate({ mode: newMode, reason: reason || undefined })
           }}
           className="rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40 hover:bg-white/15 transition-colors"
@@ -137,7 +139,99 @@ function SystemModePanel() {
           <p className="mt-2 text-xs text-red-400">Kon modus niet opslaan.</p>
         )}
       </div>
+
+      {/* Destructief: dienst stoppen. Nooit inline naast de gewone modi —
+          altijd via een apart venster met expliciete bevestiging. */}
+      <div className="mt-5 border-t border-red-400/20 pt-4">
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-widest text-red-400/80">
+          Dienst stoppen
+        </h3>
+        <p className="mb-3 text-xs text-white/40">
+          {SHUTDOWN_MODE.label} zet de hele dienst stil. Dit opent een apart
+          bevestigingsvenster.
+        </p>
+        <button
+          type="button"
+          onClick={onShutdown}
+          className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15"
+        >
+          Dienst stoppen openen
+        </button>
+      </div>
     </div>
+  )
+}
+
+// Apart stappenvenster (TUX-27) voor de destructieve shutdown: expliciete
+// reden + dubbele bevestiging voordat de dienst wordt stilgezet.
+function ShutdownSheet({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const [reason, setReason] = useState("")
+  const [confirmed, setConfirmed] = useState(false)
+  const mutation = useSetSystemMode()
+
+  return (
+    <BeheerSheet open={open} onOpenChange={onOpenChange} titel="Dienst stoppen">
+      <div className="space-y-4">
+        <p className="text-sm text-white/60">
+          {SHUTDOWN_MODE.label} ({SHUTDOWN_MODE.value}) zet de volledige dienst
+          stil en vereist bevestiging van twee beheerders. Er gebeurt niets
+          totdat je hieronder expliciet bevestigt.
+        </p>
+        <input
+          type="text"
+          placeholder="Reden (verplicht)"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-white/25"
+        />
+        <label className="flex items-start gap-2 text-sm text-white/70">
+          <input
+            type="checkbox"
+            checked={confirmed}
+            onChange={(e) => setConfirmed(e.target.checked)}
+            className="mt-0.5"
+          />
+          Ik begrijp dat dit de dienst voor iedereen stilzet.
+        </label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={!reason.trim() || !confirmed || mutation.isPending}
+            onClick={() => {
+              mutation.mutate(
+                { mode: "SERVICE_SHUTDOWN", reason: reason.trim() },
+                {
+                  onSuccess: () => {
+                    setReason("")
+                    setConfirmed(false)
+                    onOpenChange(false)
+                  },
+                },
+              )
+            }}
+            className="rounded-xl border border-red-500/40 bg-red-500/15 px-5 py-2.5 text-sm font-semibold text-red-200 disabled:opacity-40 hover:bg-red-500/25 transition-colors"
+          >
+            {mutation.isPending ? "Bezig…" : "Dienst stoppen"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-xl border border-white/15 px-5 py-2.5 text-sm text-white/70"
+          >
+            Annuleren
+          </button>
+        </div>
+        {mutation.isError && (
+          <p className="text-xs text-red-400">Kon de dienst niet stoppen.</p>
+        )}
+      </div>
+    </BeheerSheet>
   )
 }
 
@@ -276,26 +370,55 @@ function OpsLogPanel() {
   )
 }
 
+// F9-herindeling: drie échte tabs i.p.v. drie stapelende panelen. De
+// hoofdinformatie (systeemmodus) staat in beeld bij openen; de destructieve
+// shutdown zit achter een apart bevestigingsvenster (TUX-27).
+type OpsTab = "systeem" | "beoordelingen" | "auditlog"
+
 export default function AdminOpsPage() {
+  const [tab, setTab] = useState<OpsTab>("systeem")
+  const [shutdownOpen, setShutdownOpen] = useState(false)
+
+  const TABS: { id: OpsTab; label: string }[] = [
+    { id: "systeem", label: "Systeem" },
+    { id: "beoordelingen", label: "Beoordelingen" },
+    { id: "auditlog", label: "Auditlog" },
+  ]
+
   return (
-    <ScreenShell section="admin" terug={false}>
-      <div className="px-4 pb-24 pt-2">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-white">Operationeel beheer</h1>
-          <Link href="/admin" className="text-xs text-white/40 hover:text-white/70">
+    <ScreenShell section="admin" bare terug={false}>
+      <div className="flex flex-col gap-5">
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold text-white">Operationeel beheer</h1>
+            <p className="mt-1 text-sm text-white/50">
+              Systeemmodus en auditlog. De modus is fail-open (NORMAL bij
+              leesfout). Wijzigingen worden opgeslagen in de admin-ops-log.
+            </p>
+          </div>
+          <Link
+            href="/admin"
+            className="shrink-0 text-xs text-white/40 hover:text-white/70"
+          >
             ← Admin
           </Link>
-        </div>
-        <p className="mb-6 text-sm text-white/50">
-          Systeemmodus en auditlog. De modus is fail-open (NORMAL bij leesfout). Wijzigingen
-          worden opgeslagen in de admin-ops-log.
-        </p>
-        <div className="space-y-5">
-          <SystemModePanel />
-          <BuildRatingsPanel />
-          <OpsLogPanel />
-        </div>
+        </header>
+
+        <HoofdstukTabs<OpsTab>
+          tabs={TABS}
+          actief={tab}
+          onKies={(id) => setTab(id)}
+          ariaLabel="Operationeel-beheer-onderdelen"
+        />
+
+        {tab === "systeem" && (
+          <SystemModePanel onShutdown={() => setShutdownOpen(true)} />
+        )}
+        {tab === "beoordelingen" && <BuildRatingsPanel />}
+        {tab === "auditlog" && <OpsLogPanel />}
       </div>
+
+      <ShutdownSheet open={shutdownOpen} onOpenChange={setShutdownOpen} />
     </ScreenShell>
   )
 }

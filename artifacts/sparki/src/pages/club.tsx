@@ -16,6 +16,8 @@ import {
   FileText,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
+import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import { ClubDocumentsList } from "@/components/sparki/club-documents"
 import { MessageBubble, MessageComposer } from "@/components/sparki/message-thread"
 import {
@@ -241,18 +243,139 @@ function RolStartBlock({ clubId }: { clubId: number }) {
   )
 }
 
+// F9_CLUB_LID: het lid-scherm van de club. Herindeling volgt het club-beheer-
+// patroon (HoofdstukTabs + BeheerSheet-stappenvensters): kop + één primaire
+// actie + kerninfo in beeld bij openen (TUX-24/26), daarna vier échte tabs.
+// Zware blokken (berichtcomposer, toestemming) openen als stappenvenster;
+// niets wordt weggelaten, alles blijft bereikbaar.
+type ClubLidTab = "vandaag" | "berichten" | "documenten" | "meer"
+
+// Wedstrijd-/selectiekaart — losse component zodat de "Meer"-tab hem hergebruikt.
+function RaceCard({
+  clubId,
+  race,
+}: {
+  clubId: number
+  race: NonNullable<ReturnType<typeof useClubRaces>["data"]>[number]
+}) {
+  const availability = useClubAvailability(clubId)
+  const r = race
+  return (
+    <div className={CARD}>
+      <p className="text-[13px] text-white/85">{r.name}</p>
+      <p className="text-[11px] text-white/40">
+        {formatDate(r.raceDate)}
+        {r.location ? ` · ${r.location}` : ""}
+        {r.meetTime ? ` · verzamelen ${r.meetTime}` : ""}
+        {r.meetPoint ? ` bij ${r.meetPoint}` : ""}
+      </p>
+      {r.mySelection && (
+        <p className="mt-1 text-[11px] text-cyan-200/85">
+          Je staat in de selectie als {r.mySelection.role}.
+        </p>
+      )}
+      <div className="mt-2 flex items-center gap-2">
+        <span className="text-[11px] text-white/45">Beschikbaarheid:</span>
+        {(["beschikbaar", "niet_beschikbaar"] as const).map((a) => (
+          <button
+            key={a}
+            onClick={() => availability.mutate({ eventId: r.id, availability: a })}
+            disabled={availability.isPending}
+            className={`rounded-lg border px-2 py-0.5 text-[11px] ${
+              r.mySelection?.availability === a
+                ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
+                : "border-white/15 text-white/60 hover:border-white/30"
+            }`}
+          >
+            {a === "beschikbaar" ? "Beschikbaar" : "Niet beschikbaar"}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Toestemmingsblok — leeft nu in een stappenvenster (F8/privacy ongewijzigd).
+function ConsentSection({ clubId }: { clubId: number }) {
+  const { data: consent } = useMyClubConsent(clubId)
+  const setConsent = useSetClubConsent(clubId)
+  return (
+    <div className={CARD}>
+      {consent?.isMinor ? (
+        <p className="text-[12px] text-white/55">
+          Voor jeugdleden kan alleen een gekoppelde ouder of verzorger
+          toestemming geven om trainingssamenvattingen met clubtrainers te
+          delen. {consent?.consent?.status === "granted"
+            ? "Er is toestemming gegeven."
+            : "Er is nu geen toestemming actief — trainers zien geen trainingsgegevens."}
+        </p>
+      ) : (
+        <>
+          <p className="text-[12px] text-white/55">
+            Kies per onderdeel wat je toegewezen clubtrainers mogen zien.
+            Zonder toestemming zien trainers níéts van je trainingsgegevens.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {CONSENT_SCOPES.map(({ key, label }) => {
+              const granted = (consent?.consents ?? []).some(
+                (c) => c.scope === key && c.status === "granted",
+              )
+              return (
+                <button
+                  key={key}
+                  onClick={() => setConsent.mutate({ action: granted ? "revoke" : "grant", scope: key })}
+                  disabled={setConsent.isPending}
+                  className={`rounded-lg border px-2.5 py-1 text-[11px] ${
+                    granted
+                      ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
+                      : "border-white/15 text-white/60 hover:border-white/30"
+                  }`}
+                >
+                  {granted && (
+                    <IconCheck className="mr-1 inline h-3 w-3" aria-hidden />
+                  )}
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// Berichtcomposer in een stappenvenster (F7-UI ongewijzigd, alleen herplaatst).
+function ComposerSection({ clubId, onSent }: { clubId: number; onSent: () => void }) {
+  const post = usePostClubMessage(clubId)
+  return (
+    <MessageComposer
+      placeholder="Bericht aan de hele club…"
+      sending={post.isPending}
+      serverError={(post.error as Error | null)?.message ?? null}
+      onSend={({ body, files, links }) => {
+        const attachments: ComposeAttachment[] = [
+          ...files.map((f) => ({ kind: "file" as const, base64: f.base64, name: f.name })),
+          ...links.map((l) => ({ kind: "link" as const, url: l.url, title: l.title })),
+        ]
+        post.mutate({ body, scope: "club", attachments }, { onSuccess: () => onSent() })
+      }}
+    />
+  )
+}
+
 function RealClubView({ clubId }: { clubId: number }) {
   const { data: dash } = useClubDashboard(clubId)
   const { data: trainings } = useClubTrainings(clubId)
   const { data: races } = useClubRaces(clubId)
   const { data: messages } = useClubMessages(clubId)
-  const { data: consent } = useMyClubConsent(clubId)
-  const setConsent = useSetClubConsent(clubId)
-  const availability = useClubAvailability(clubId)
-  const post = usePostClubMessage(clubId)
   const markRead = useMarkClubMessageRead(clubId)
   const revokeAttachment = useRevokeClubAttachment(clubId)
   const [, navigate] = useLocation()
+  const [tab, setTab] = useState<ClubLidTab>("vandaag")
+  // Eén stappenvenster tegelijk: composer of toestemming. Nooit inline.
+  const [sheet, setSheet] = useState<"bericht" | "toestemming" | null>(null)
+  const closeSheet = () => setSheet(null)
 
   const canManage = dash?.membership.role === "owner" || dash?.membership.role === "admin"
   const isHoofdtrainer = dash?.membership.role === "hoofdtrainer"
@@ -263,8 +386,15 @@ function RealClubView({ clubId }: { clubId: number }) {
 
   if (!dash) return <p className="text-sm text-white/50">Club wordt geladen…</p>
 
+  const TABS: { id: ClubLidTab; label: string }[] = [
+    { id: "vandaag", label: "Vandaag" },
+    { id: "berichten", label: "Berichten" },
+    { id: "documenten", label: "Documenten" },
+    { id: "meer", label: "Meer" },
+  ]
+
   return (
-    <div className="-mt-2 flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
       <header className="flex items-center gap-3">
         {dash.club.logoUrl ? (
           <img src={clubLogoSrc(dash.club.logoUrl)} alt="" className="h-10 w-10 object-contain" />
@@ -293,203 +423,169 @@ function RealClubView({ clubId }: { clubId: number }) {
         )}
       </header>
 
+      {/* Kerninfo + hoofdhandeling in beeld bij openen (TUX-24/26): het
+          rolgestuurde startblok geeft precies één begrijpelijke eerste actie. */}
       <RolStartBlock clubId={clubId} />
 
-      {canManage && (dash.signals?.length ?? 0) > 0 && (
-        <section aria-label="Signalen" className="space-y-1.5">
-          {dash.signals!.map((s, i) => (
-            <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
-              {s}
-            </p>
-          ))}
-        </section>
-      )}
+      <HoofdstukTabs<ClubLidTab>
+        tabs={TABS}
+        actief={tab}
+        onKies={(id) => setTab(id)}
+        ariaLabel="Clubonderdelen"
+      />
 
-      {isHoofdtrainer && hoofdOverview && hoofdOverview.trainers.length > 0 && (
-        <section aria-label="Hoofdtraineroverzicht">
-          <h2 className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-white/80">
-            <Users className="h-3 w-3" /> Trainers in jouw organisatie
-          </h2>
-          <div className="space-y-1.5">
-            {hoofdOverview.trainers.map((t) => (
-              <div key={t.clerkId} className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-[13px] text-white/85">{t.displayName ?? "Trainer"}</p>
-                  <p className="shrink-0 text-[11px] text-white/45">
-                    {t.assignedAthleteCount} sporters · {t.trainingsLast30Days} trainingen (30 d)
-                  </p>
-                </div>
-                {t.assignments.length > 0 && (
-                  <p className="mt-0.5 truncate text-[11px] text-white/45">
-                    {t.assignments.map((a) => a.team ?? a.group).filter(Boolean).join(" · ")}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="mt-1.5 text-[11px] text-white/35">
-            Organisatorisch overzicht — gezondheids- of privégegevens staan hier bewust niet in.
-          </p>
-        </section>
-      )}
-
-      <section aria-label="Clubtrainingen" id="club-trainingen">
-        <h2 className={H2}><CalendarDays className="h-3 w-3" /> Clubtrainingen</h2>
-        {(trainings ?? []).length === 0 ? (
-          <p className={EMPTY}>Er staan nog geen clubtrainingen gepland.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {(trainings ?? []).slice(0, 8).map((t) => (
-              <TrainingCard key={t.id} t={t} clubId={clubId} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section aria-label="Clubwedstrijden">
-        <h2 className={H2}><Trophy className="h-3 w-3" /> Wedstrijden & selectie</h2>
-        {(races ?? []).length === 0 ? (
-          <p className={EMPTY}>Nog geen clubwedstrijden gepland.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {(races ?? []).map((r) => (
-              <div key={r.id} className={CARD}>
-                <p className="text-[13px] text-white/85">{r.name}</p>
-                <p className="text-[11px] text-white/40">
-                  {formatDate(r.raceDate)}
-                  {r.location ? ` · ${r.location}` : ""}
-                  {r.meetTime ? ` · verzamelen ${r.meetTime}` : ""}
-                  {r.meetPoint ? ` bij ${r.meetPoint}` : ""}
+      {/* ── Vandaag: signalen (beheer) + clubtrainingen (aan-/afmelden). ──── */}
+      {tab === "vandaag" && (
+        <div className="flex flex-col gap-5">
+          {canManage && (dash.signals?.length ?? 0) > 0 && (
+            <section aria-label="Signalen" className="space-y-1.5">
+              {dash.signals!.map((s, i) => (
+                <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
+                  {s}
                 </p>
-                {r.mySelection && (
-                  <p className="mt-1 text-[11px] text-cyan-200/85">
-                    Je staat in de selectie als {r.mySelection.role}.
-                  </p>
-                )}
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-[11px] text-white/45">Beschikbaarheid:</span>
-                  {(["beschikbaar", "niet_beschikbaar"] as const).map((a) => (
-                    <button
-                      key={a}
-                      onClick={() => availability.mutate({ eventId: r.id, availability: a })}
-                      disabled={availability.isPending}
-                      className={`rounded-lg border px-2 py-0.5 text-[11px] ${
-                        r.mySelection?.availability === a
-                          ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-                          : "border-white/15 text-white/60 hover:border-white/30"
-                      }`}
-                    >
-                      {a === "beschikbaar" ? "Beschikbaar" : "Niet beschikbaar"}
-                    </button>
-                  ))}
-                </div>
+              ))}
+            </section>
+          )}
+
+          <section aria-label="Clubtrainingen" id="club-trainingen">
+            <h2 className={H2}><CalendarDays className="h-3 w-3" /> Clubtrainingen</h2>
+            {(trainings ?? []).length === 0 ? (
+              <p className={EMPTY}>Er staan nog geen clubtrainingen gepland.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {(trainings ?? []).slice(0, 8).map((t) => (
+                  <TrainingCard key={t.id} t={t} clubId={clubId} />
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+            )}
+          </section>
+        </div>
+      )}
 
-      <section aria-label="Clubberichten" id="club-berichten">
-        <h2 className={H2}><MessageCircle className="h-3 w-3" /> Berichten</h2>
-        {rootMessages.length === 0 ? (
-          <p className={EMPTY}>Nog geen clubberichten.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {rootMessages.map((m) => {
-              // F7 lijn 3a: een groepsbericht van de clubtrainer is één richting.
-              // Geen antwoordknop; we tonen dat het een mededeling is. Ook op
-              // team-/clubberichten met reacties uit tonen we dat eerlijk.
-              const isMededeling = !m.allowReplies
-              const canRevoke = canManage || m.authorClerkId === dash.membership.clerkId
-              return (
-                <div key={m.id} className="space-y-1">
-                  <MessageBubble
-                    message={{ ...m, authorName: m.authorName }}
-                    mine={m.authorClerkId === dash.membership.clerkId}
-                    currentClerkId={canRevoke ? m.authorClerkId : dash.membership.clerkId}
-                    onRevoke={
-                      canRevoke
-                        ? (attId) => revokeAttachment.mutate({ messageId: m.id, attachmentId: attId })
-                        : undefined
-                    }
-                    onSeen={() => markRead.mutate(m.id)}
-                  />
-                  {isMededeling && (
-                    <p className="pl-1 text-[11px] text-white/35">
-                      Mededeling — hierop kun je niet reageren.
-                    </p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-        {canPost && (
-          <MessageComposer
-            placeholder="Bericht aan de hele club…"
-            sending={post.isPending}
-            serverError={(post.error as Error | null)?.message ?? null}
-            onSend={({ body, files, links }) => {
-              const attachments: ComposeAttachment[] = [
-                ...files.map((f) => ({ kind: "file" as const, base64: f.base64, name: f.name })),
-                ...links.map((l) => ({ kind: "link" as const, url: l.url, title: l.title })),
-              ]
-              post.mutate({ body, scope: "club", attachments })
-            }}
-          />
-        )}
-      </section>
-
-      <section aria-label="Clubdocumenten" id="club-documenten">
-        <h2 className={H2}><FileText className="h-3 w-3" /> Documenten</h2>
-        <ClubDocumentsList clubId={clubId} />
-      </section>
-
-      <section aria-label="Toestemming">
-        <h2 className={H2}><Shield className="h-3 w-3" /> Delen met trainers</h2>
-        <div className={CARD}>
-          {consent?.isMinor ? (
-            <p className="text-[12px] text-white/55">
-              Voor jeugdleden kan alleen een gekoppelde ouder of verzorger
-              toestemming geven om trainingssamenvattingen met clubtrainers te
-              delen. {consent?.consent?.status === "granted"
-                ? "Er is toestemming gegeven."
-                : "Er is nu geen toestemming actief — trainers zien geen trainingsgegevens."}
-            </p>
-          ) : (
-            <>
-              <p className="text-[12px] text-white/55">
-                Kies per onderdeel wat je toegewezen clubtrainers mogen zien.
-                Zonder toestemming zien trainers níéts van je trainingsgegevens.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {CONSENT_SCOPES.map(({ key, label }) => {
-                  const granted = (consent?.consents ?? []).some(
-                    (c) => c.scope === key && c.status === "granted",
-                  )
+      {/* ── Berichten: F7-berichtenlijst; sturen opent als stappenvenster. ── */}
+      {tab === "berichten" && (
+        <div className="flex flex-col gap-5">
+          {canPost && (
+            <button
+              onClick={() => setSheet("bericht")}
+              className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100"
+            >
+              <MessageCircle className="h-4 w-4" /> Bericht sturen
+            </button>
+          )}
+          <section aria-label="Clubberichten" id="club-berichten">
+            <h2 className={H2}><MessageCircle className="h-3 w-3" /> Berichten</h2>
+            {rootMessages.length === 0 ? (
+              <p className={EMPTY}>Nog geen clubberichten.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {rootMessages.map((m) => {
+                  // F7 lijn 3a: een groepsbericht van de clubtrainer is één richting.
+                  // Geen antwoordknop; we tonen dat het een mededeling is. Ook op
+                  // team-/clubberichten met reacties uit tonen we dat eerlijk.
+                  const isMededeling = !m.allowReplies
+                  const canRevoke = canManage || m.authorClerkId === dash.membership.clerkId
                   return (
-                    <button
-                      key={key}
-                      onClick={() => setConsent.mutate({ action: granted ? "revoke" : "grant", scope: key })}
-                      disabled={setConsent.isPending}
-                      className={`rounded-lg border px-2.5 py-1 text-[11px] ${
-                        granted
-                          ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-                          : "border-white/15 text-white/60 hover:border-white/30"
-                      }`}
-                    >
-                      {granted && (
-                        <IconCheck className="mr-1 inline h-3 w-3" aria-hidden />
+                    <div key={m.id} className="space-y-1">
+                      <MessageBubble
+                        message={{ ...m, authorName: m.authorName }}
+                        mine={m.authorClerkId === dash.membership.clerkId}
+                        currentClerkId={canRevoke ? m.authorClerkId : dash.membership.clerkId}
+                        onRevoke={
+                          canRevoke
+                            ? (attId) => revokeAttachment.mutate({ messageId: m.id, attachmentId: attId })
+                            : undefined
+                        }
+                        onSeen={() => markRead.mutate(m.id)}
+                      />
+                      {isMededeling && (
+                        <p className="pl-1 text-[11px] text-white/35">
+                          Mededeling — hierop kun je niet reageren.
+                        </p>
                       )}
-                      {label}
-                    </button>
+                    </div>
                   )
                 })}
               </div>
-            </>
-          )}
+            )}
+          </section>
         </div>
-      </section>
+      )}
+
+      {/* ── Documenten: F8-documentensectie, ongewijzigd hergebruikt. ─────── */}
+      {tab === "documenten" && (
+        <section aria-label="Clubdocumenten" id="club-documenten">
+          <h2 className={H2}><FileText className="h-3 w-3" /> Documenten</h2>
+          <ClubDocumentsList clubId={clubId} />
+        </section>
+      )}
+
+      {/* ── Meer: wedstrijden & selectie, hoofdtraineroverzicht, toestemming. */}
+      {tab === "meer" && (
+        <div className="flex flex-col gap-5">
+          {isHoofdtrainer && hoofdOverview && hoofdOverview.trainers.length > 0 && (
+            <section aria-label="Hoofdtraineroverzicht">
+              <h2 className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-white/80">
+                <Users className="h-3 w-3" /> Trainers in jouw organisatie
+              </h2>
+              <div className="space-y-1.5">
+                {hoofdOverview.trainers.map((t) => (
+                  <div key={t.clerkId} className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-[13px] text-white/85">{t.displayName ?? "Trainer"}</p>
+                      <p className="shrink-0 text-[11px] text-white/45">
+                        {t.assignedAthleteCount} sporters · {t.trainingsLast30Days} trainingen (30 d)
+                      </p>
+                    </div>
+                    {t.assignments.length > 0 && (
+                      <p className="mt-0.5 truncate text-[11px] text-white/45">
+                        {t.assignments.map((a) => a.team ?? a.group).filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11px] text-white/35">
+                Organisatorisch overzicht — gezondheids- of privégegevens staan hier bewust niet in.
+              </p>
+            </section>
+          )}
+
+          <section aria-label="Clubwedstrijden">
+            <h2 className={H2}><Trophy className="h-3 w-3" /> Wedstrijden & selectie</h2>
+            {(races ?? []).length === 0 ? (
+              <p className={EMPTY}>Nog geen clubwedstrijden gepland.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {(races ?? []).map((r) => (
+                  <RaceCard key={r.id} clubId={clubId} race={r} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section aria-label="Toestemming">
+            <h2 className={H2}><Shield className="h-3 w-3" /> Delen met trainers</h2>
+            <div className={CARD}>
+              <p className="text-[12px] text-white/60">
+                Kies wat je toegewezen clubtrainers van je trainingsgegevens mogen zien.
+                De keuzes openen als stappenvenster.
+              </p>
+              <button onClick={() => setSheet("toestemming")} className="mt-2 rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-[12px] text-cyan-200">
+                <Shield className="mr-1 inline h-3 w-3" /> Delen instellen
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ── Stappenvensters (TUX-27..30): sheets over het scherm, eigen sluit. */}
+      <BeheerSheet open={sheet === "bericht"} onOpenChange={(o) => !o && closeSheet()} titel="Bericht sturen">
+        {sheet === "bericht" && <ComposerSection clubId={clubId} onSent={closeSheet} />}
+      </BeheerSheet>
+      <BeheerSheet open={sheet === "toestemming"} onOpenChange={(o) => !o && closeSheet()} titel="Delen met trainers">
+        {sheet === "toestemming" && <ConsentSection clubId={clubId} />}
+      </BeheerSheet>
     </div>
   )
 }

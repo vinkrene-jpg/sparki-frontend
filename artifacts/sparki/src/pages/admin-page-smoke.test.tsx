@@ -384,6 +384,26 @@ mock.module("@/components/sparki/entitlements-admin", {
   namedExports: { EntitlementsAdminSection: () => "[entitlements-admin]" },
 });
 
+// ScreenShell trekt de volledige app-schil (telemetry, clubs, contexten) mee;
+// voor de smoke-test is een doorgeef-schil genoeg. De HoofdstukTabs en de
+// BeheerSheet blijven écht zodat de tabwissel en het stappenvenster getest
+// worden zoals ze in de app draaien.
+mock.module("@/components/sparki/screen-shell", {
+  namedExports: {
+    ScreenShell: (props: { children?: unknown }) => props.children ?? null,
+  },
+});
+
+// BeheerSheet is in de app een Radix-portaal met zware sub-imports; voor de
+// smoke-test volstaat een venster dat zijn inhoud alleen rendert als het open
+// is — zo blijft de "destructief achter een venster"-eis toetsbaar.
+mock.module("@/components/sparki/beheer-popup", {
+  namedExports: {
+    BeheerSheet: (props: { open?: boolean; children?: unknown }) =>
+      props.open ? props.children : null,
+  },
+});
+
 mock.module("@/lib/health-status", {
   namedExports: {
     STATUS_META: {
@@ -402,9 +422,12 @@ const adminPromise = import("./admin");
 const rtlPromise = import("@testing-library/react");
 const reactPromise = import("react");
 
+let rtlModule: Awaited<typeof rtlPromise>;
+
 async function renderPage() {
   const admin = await adminPromise;
   const rtl = await rtlPromise;
+  rtlModule = rtl;
   const React = (await reactPromise).default;
   // tsx compileert de JSX in admin.tsx hier met de klassieke runtime
   // (React.createElement) — maak React dus global vóór het renderen.
@@ -412,64 +435,110 @@ async function renderPage() {
   return rtl.render(React.createElement(admin.default));
 }
 
+// F9-herindeling: de secties leven nu onder vier tabs. Klik een tab aan de
+// hand van zijn label; de tabknoppen komen uit de échte HoofdstukTabs.
+function clickTab(view: ReturnType<typeof rtlModule.render>, label: string) {
+  const tab = Array.from(
+    view.container.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+  ).find((b) => b.textContent === label);
+  assert.ok(tab, `tab ontbreekt: "${label}"`);
+  rtlModule.fireEvent.click(tab!);
+}
+
+function clickButton(container: HTMLElement, label: string) {
+  const btn = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent === label,
+  );
+  assert.ok(btn, `knop ontbreekt: "${label}"`);
+  rtlModule.fireEvent.click(btn!);
+}
+
 test("adminpagina rendert álle secties zonder crash bij gevulde data", async () => {
   filled = true;
   const view = await renderPage();
   try {
-    const text = view.container.textContent!;
-    const expected = [
-      // Kop & banner
-      "Beheer & gezondheid",
-      "Er is een storing",
-      // Geplande taken
+    // Kop, banner en primaire actie staan altijd in beeld (buiten de tabs).
+    let text = view.container.textContent!;
+    assert.ok(text.includes("Beheer & gezondheid"), "kop ontbreekt");
+    assert.ok(text.includes("Er is een storing"), "banner ontbreekt");
+    const controleer = Array.from(view.container.querySelectorAll("button")).find(
+      (b) => b.textContent === "Controleer nu",
+    );
+    assert.ok(controleer, "Controleer nu-knop aanwezig");
+
+    // Overzicht (standaardtab): kerncijfers, aandachtspunten, geplande taken.
+    text = view.container.textContent!;
+    for (const needle of [
+      "In één oogopslag",
+      "Aandachtspunten (1)",
+      "E-mailbezorging",
       "Geplande taken",
       "Maandelijkse doelen-review",
       "1 nog opzetten",
-      // Datasync
+      "Operationeel beheer",
+    ]) {
+      assert.ok(text.includes(needle), `Overzicht mist: "${needle}"`);
+    }
+
+    // Gezondheid: datasync, denkkracht, checks per categorie, geschiedenis.
+    clickTab(view, "Gezondheid");
+    text = view.container.textContent!;
+    for (const needle of [
       "Automatische datasync",
       "strava",
       "Mislukte webhook-meldingen",
-      // Denkkracht-gateway
       "Sparki-denkkracht (gateway)",
       "Dagelijkse briefing",
       "Recente niet-geslaagde aanroepen",
-      // Aandachtspunten + checks per categorie
-      "Aandachtspunten (1)",
-      "E-mailbezorging",
-      "In één oogopslag",
       "Infrastructuur",
       "Databaseverbinding",
-      // Testgeschiedenis & release-controles
       "Testgeschiedenis",
       "Release-controles",
-      // Feedback-inbox (gemockte subsectie met echte reports-prop)
+    ]) {
+      assert.ok(text.includes(needle), `Gezondheid mist: "${needle}"`);
+    }
+
+    // Signalen: bugmeldingen, sporterfeedback, mislukte imports, kwaliteit.
+    clickTab(view, "Signalen");
+    text = view.container.textContent!;
+    for (const needle of [
       "[feedback-inbox:1]",
-      // Feedback van sporters
       "Feedback van sporters (1)",
       "Te zwaar",
-      // Mislukte imports
       "Mislukte imports (1)",
       "rit-zondag.fit",
-      // Gegevensbroncontrole + opschoning (echte secties, eigen account)
-      "Dit is jouw huidige account",
-      // Kwaliteit van analyses
       "Kwaliteit van analyses",
       "Recent als onjuist gemeld",
-      // Subsecties
+    ]) {
+      assert.ok(text.includes(needle), `Signalen mist: "${needle}"`);
+    }
+
+    // Gegevens: broncontrole + subsecties + cijfers, en de opschoning achter
+    // een apart venster (destructief; nooit inline).
+    clickTab(view, "Gegevens");
+    text = view.container.textContent!;
+    for (const needle of [
+      "Dit is jouw huidige account",
+      "Gegevens-opschoning",
       "[support-admin]",
       "[release-admin]",
       "[kennisbank-admin]",
-      // Cijfers
       "Cijfers",
-    ];
-    for (const needle of expected) {
-      assert.ok(text.includes(needle), `sectie/inhoud ontbreekt: "${needle}"`);
+    ]) {
+      assert.ok(text.includes(needle), `Gegevens mist: "${needle}"`);
     }
-    // Controleer-knop aanwezig.
-    const btn = Array.from(view.container.querySelectorAll("button")).find(
-      (b) => b.textContent === "Controleer nu",
+    // De destructieve opschoning zelf verschijnt pas na het openen van het
+    // stappenvenster (droogdraai-knop leeft in het venster, niet inline).
+    assert.equal(
+      view.baseElement.textContent!.includes("Droogdraai"),
+      false,
+      "droogdraai mag niet inline op de pagina staan",
     );
-    assert.ok(btn, "Controleer nu-knop aanwezig");
+    clickButton(view.container, "Opschoning openen");
+    assert.ok(
+      view.baseElement.textContent!.includes("Droogdraai"),
+      "opschoningsvenster opent met de droogdraai-actie",
+    );
   } finally {
     view.unmount();
   }
@@ -479,14 +548,39 @@ test("adminpagina rendert zonder crash bij lege data (eerlijke lege staten)", as
   filled = false;
   const view = await renderPage();
   try {
-    const text = view.container.textContent!;
+    // Kop + banner altijd in beeld.
+    let text = view.container.textContent!;
+    assert.ok(text.includes("Beheer & gezondheid"), "kop ontbreekt");
+    assert.ok(text.includes("Nog niet gecontroleerd"), "lege banner ontbreekt");
+
+    // Gezondheid: lege geschiedenis + release-controles.
+    clickTab(view, "Gezondheid");
+    text = view.container.textContent!;
+    assert.ok(text.includes("Nog geen controles uitgevoerd."));
+    assert.ok(text.includes("Nog geen release-controles uitgevoerd"));
+    // Secties die alleen bij data verschijnen, ontbreken netjes (geen crash).
+    assert.equal(text.includes("Automatische datasync"), false);
+    assert.equal(text.includes("Sparki-denkkracht (gateway)"), false);
+
+    // Overzicht toont geen geplande taken bij lege data.
+    clickTab(view, "Overzicht");
+    assert.equal(
+      view.container.textContent!.includes("Geplande taken"),
+      false,
+    );
+
+    // Signalen: eerlijke lege staten.
+    clickTab(view, "Signalen");
+    text = view.container.textContent!;
+    assert.ok(text.includes("Nog geen feedback ontvangen."));
+    assert.ok(
+      text.includes("Geen mislukte imports. Alle uploads zijn goed verwerkt."),
+    );
+
+    // Gegevens: subsecties + cijfers renderen zonder crash.
+    clickTab(view, "Gegevens");
+    text = view.container.textContent!;
     for (const needle of [
-      "Beheer & gezondheid",
-      "Nog niet gecontroleerd",
-      "Nog geen controles uitgevoerd.",
-      "Nog geen release-controles uitgevoerd",
-      "Nog geen feedback ontvangen.",
-      "Geen mislukte imports. Alle uploads zijn goed verwerkt.",
       "[support-admin]",
       "[release-admin]",
       "[kennisbank-admin]",
@@ -494,10 +588,6 @@ test("adminpagina rendert zonder crash bij lege data (eerlijke lege staten)", as
     ]) {
       assert.ok(text.includes(needle), `lege staat ontbreekt: "${needle}"`);
     }
-    // Secties die alleen bij data verschijnen, ontbreken netjes (geen crash).
-    assert.equal(text.includes("Geplande taken"), false);
-    assert.equal(text.includes("Automatische datasync"), false);
-    assert.equal(text.includes("Sparki-denkkracht (gateway)"), false);
   } finally {
     view.unmount();
   }

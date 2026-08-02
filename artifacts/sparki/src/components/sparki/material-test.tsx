@@ -13,6 +13,8 @@ import { useSessions } from "@/hooks/use-sessions"
 // modelschatting vooraf voor een geplande upgrade. Eerlijkheidsregels:
 // de schatting is expliciet "modelschatting — geen meting", en de test is
 // alleen zinvol op dezelfde dag / gelijke omstandigheden (staat in de UI).
+// F9-herindeling: de twee panelen zijn losse exports zodat ze elk als eigen
+// stappenvenster (sheet) kunnen openen in de Mechanieker.
 
 const CATEGORY_OPTIONS: { value: GarageComponentCategory; label: string }[] = [
   { value: "wielen", label: "Wielen" },
@@ -73,19 +75,15 @@ function EstimateCard({ estimate }: { estimate: UpgradeEstimate }) {
   )
 }
 
-export function MaterialTest() {
+// Modelschatting vooraf — losstaand paneel, opent als stappenvenster (sheet).
+export function ModelSchattingPanel() {
   const { data: garage } = useGarage()
-  const { data: sessions } = useSessions(30)
   const estimateMutation = useTestEstimate()
 
   const [category, setCategory] = useState<GarageComponentCategory>("wielen")
   const [brand, setBrand] = useState("")
   const [model, setModel] = useState("")
   const [currentComponentId, setCurrentComponentId] = useState<number | null>(null)
-  const [rideA, setRideA] = useState<number | null>(null)
-  const [rideB, setRideB] = useState<number | null>(null)
-
-  const compare = useCompareTestRides(rideA, rideB)
 
   const currentOptions = useMemo(() => {
     const comps = (garage?.bikes ?? []).flatMap((b) => b.components ?? [])
@@ -93,111 +91,109 @@ export function MaterialTest() {
     return [...comps, ...loose].filter((c) => c.category === category)
   }, [garage, category])
 
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <h3 className="text-sm font-semibold text-white">
+        Van plan iets te kopen? Vraag eerst een modelschatting
+      </h3>
+      <p className="mt-1 text-xs text-white/55">
+        Vul merk en type van de geplande upgrade in. De klasse wordt vergeleken
+        met je huidige uitrusting en de best passende test voorgesteld — een
+        schatting op klasse-niveau, geen meting.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <select
+          className={inputCls}
+          value={category}
+          onChange={(e) => {
+            setCategory(e.target.value as GarageComponentCategory)
+            setCurrentComponentId(null)
+            estimateMutation.reset()
+          }}
+        >
+          {CATEGORY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className={inputCls}
+          value={currentComponentId ?? ""}
+          onChange={(e) =>
+            setCurrentComponentId(e.target.value ? Number(e.target.value) : null)
+          }
+        >
+          <option value="">Huidig onderdeel (optioneel)</option>
+          {currentOptions.map((c) => (
+            <option key={c.id} value={c.id}>
+              {[c.brand, c.model].filter(Boolean).join(" ") || "Zonder naam"}
+            </option>
+          ))}
+        </select>
+        <input
+          className={inputCls}
+          placeholder="Merk (bijv. Zipp)"
+          value={brand}
+          onChange={(e) => setBrand(e.target.value)}
+          maxLength={80}
+        />
+        <input
+          className={inputCls}
+          placeholder="Type (bijv. 404 Firecrest)"
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          maxLength={120}
+        />
+      </div>
+      <button
+        type="button"
+        disabled={estimateMutation.isPending || (!brand.trim() && !model.trim())}
+        onClick={() =>
+          estimateMutation.mutate({
+            category,
+            brand: brand.trim(),
+            model: model.trim(),
+            ...(currentComponentId != null ? { currentComponentId } : {}),
+          })
+        }
+        className="mt-3 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20 disabled:opacity-40"
+      >
+        {estimateMutation.isPending ? "Bezig…" : "Geef modelschatting"}
+      </button>
+      {estimateMutation.isError && (
+        <p className="mt-2 text-sm text-amber-200/90">
+          {estimateMutation.error instanceof Error
+            ? estimateMutation.error.message
+            : "Kon de modelschatting niet opstellen"}
+        </p>
+      )}
+      {estimateMutation.data && (
+        <div className="mt-3">
+          <EstimateCard estimate={estimateMutation.data.estimate} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Rit-vergelijking — twee echte ritten naast elkaar. Losstaand paneel, opent
+// als stappenvenster (sheet).
+export function RitVergelijkingPanel() {
+  const { data: sessions } = useSessions(30)
+  const [rideA, setRideA] = useState<number | null>(null)
+  const [rideB, setRideB] = useState<number | null>(null)
+  const compare = useCompareTestRides(rideA, rideB)
   const rides = sessions ?? []
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-lg font-semibold text-white">Vergelijkingstest</h2>
-        <p className="mt-1 text-sm text-white/55">
-          Test een upgrade: twee ritten op dezelfde route — één met je huidige
-          opstelling, één met de nieuwe. De metingen worden naast elkaar gezet.
-        </p>
-        <p className="mt-2 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-white/60">
-          Let op: een vergelijkingstest is alleen zinvol op dezelfde dag, op
-          dezelfde route en bij gelijke omstandigheden (wind, temperatuur, vorm
-          van de dag). Anders vergelijk je het weer en je benen — niet je
-          materiaal.
-        </p>
-      </div>
-
-      {/* Modelschatting vooraf */}
-      <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-        <h3 className="text-sm font-semibold text-white">
-          Van plan iets te kopen? Vraag eerst een modelschatting
-        </h3>
-        <p className="mt-1 text-xs text-white/55">
-          Vul merk en type van de geplande upgrade in. De klasse wordt
-          vergeleken met je huidige uitrusting en de best passende test
-          voorgesteld — een schatting op klasse-niveau, geen meting.
-        </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <select
-            className={inputCls}
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value as GarageComponentCategory)
-              setCurrentComponentId(null)
-              estimateMutation.reset()
-            }}
-          >
-            {CATEGORY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <select
-            className={inputCls}
-            value={currentComponentId ?? ""}
-            onChange={(e) =>
-              setCurrentComponentId(e.target.value ? Number(e.target.value) : null)
-            }
-          >
-            <option value="">Huidig onderdeel (optioneel)</option>
-            {currentOptions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {[c.brand, c.model].filter(Boolean).join(" ") || "Zonder naam"}
-              </option>
-            ))}
-          </select>
-          <input
-            className={inputCls}
-            placeholder="Merk (bijv. Zipp)"
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-            maxLength={80}
-          />
-          <input
-            className={inputCls}
-            placeholder="Type (bijv. 404 Firecrest)"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            maxLength={120}
-          />
-        </div>
-        <button
-          type="button"
-          disabled={estimateMutation.isPending || (!brand.trim() && !model.trim())}
-          onClick={() =>
-            estimateMutation.mutate({
-              category,
-              brand: brand.trim(),
-              model: model.trim(),
-              ...(currentComponentId != null
-                ? { currentComponentId }
-                : {}),
-            })
-          }
-          className="mt-3 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20 disabled:opacity-40"
-        >
-          {estimateMutation.isPending ? "Bezig…" : "Geef modelschatting"}
-        </button>
-        {estimateMutation.isError && (
-          <p className="mt-2 text-sm text-amber-200/90">
-            {estimateMutation.error instanceof Error
-              ? estimateMutation.error.message
-              : "Kon de modelschatting niet opstellen"}
-          </p>
-        )}
-        {estimateMutation.data && (
-          <div className="mt-3">
-            <EstimateCard estimate={estimateMutation.data.estimate} />
-          </div>
-        )}
-      </div>
-
-      {/* Rit-vergelijking */}
+    <div className="flex flex-col gap-4">
+      <p className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-white/60">
+        Let op: een vergelijkingstest is alleen zinvol op dezelfde dag, op
+        dezelfde route en bij gelijke omstandigheden (wind, temperatuur, vorm
+        van de dag). Anders vergelijk je het weer en je benen — niet je
+        materiaal.
+      </p>
       <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
         <h3 className="text-sm font-semibold text-white">Vergelijk twee ritten</h3>
         <p className="mt-1 text-xs text-white/55">
@@ -297,9 +293,7 @@ export function MaterialTest() {
                             {m.delta != null ? (
                               <span
                                 className={
-                                  m.delta === 0
-                                    ? "text-white/60"
-                                    : "text-cyan-200"
+                                  m.delta === 0 ? "text-white/60" : "text-cyan-200"
                                 }
                               >
                                 {m.delta > 0 ? "+" : ""}
@@ -320,8 +314,8 @@ export function MaterialTest() {
                   </p>
                 ) : (
                   <p className="mt-3 text-xs text-white/55">
-                    Deze twee ritten zijn niet schoon genoeg om een conclusie
-                    over materiaal te trekken — zie de kanttekeningen hierboven.
+                    Deze twee ritten zijn niet schoon genoeg om een conclusie over
+                    materiaal te trekken — zie de kanttekeningen hierboven.
                   </p>
                 )}
               </div>
