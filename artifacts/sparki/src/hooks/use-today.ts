@@ -34,7 +34,28 @@ export type TodayRole =
   | "trainer"
   | "ouder"
   | "clubbeheer"
-  | "hoofdtrainer";
+  | "hoofdtrainer"
+  // Begeleidende clubrollen (02-08): eigen eerlijke rolweergave op de server —
+  // het contract moet elke rolwaarde kunnen ontvangen en tonen.
+  | "ploegleider"
+  | "teammanager"
+  | "soigneur"
+  | "medical_staff"
+  | "vrijwilliger";
+
+// Eén bron van waarheid voor het zichtbare label per rolweergave.
+export const TODAY_ROLE_LABELS: Record<TodayRole, string> = {
+  atleet: "Sporter",
+  trainer: "Trainer",
+  ouder: "Ouder",
+  clubbeheer: "Clubbeheer",
+  hoofdtrainer: "Hoofdtrainer",
+  ploegleider: "Ploegleider",
+  teammanager: "Teammanager",
+  soigneur: "Soigneur",
+  medical_staff: "Medische staf",
+  vrijwilliger: "Vrijwilliger",
+};
 
 export type TodayResult = {
   date: string;
