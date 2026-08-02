@@ -2,10 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Linking,
   PanResponder,
   Pressable,
   ScrollView,
@@ -136,7 +137,7 @@ export default function RoutePlannenScreen() {
   const c = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { location, error: locError } = useLiveLocation(true);
+  const { location, permission, error: locError } = useLiveLocation(true);
   const schermH = Dimensions.get("window").height;
 
   // ── Startpunt: GPS, of een gezochte plaats via het zoekveld ────────────────
@@ -351,6 +352,55 @@ export default function RoutePlannenScreen() {
       .finally(() => setPlaatsBusy(false));
   }, [zoekTekst]);
 
+  // Zoek al tijdens het typen (vanaf drie tekens, kort vertraagd) zodat je
+  // nooit afhankelijk bent van de zoektoets op het toetsenbord.
+  useEffect(() => {
+    const q = zoekTekst.trim();
+    if (q.length < 3) return;
+    const timer = setTimeout(() => {
+      setPlaatsBusy(true);
+      setPlaatsFout(null);
+      zoekPlaats(q)
+        .then((res) => {
+          setPlaatsen(res);
+          if (res.length === 0) setPlaatsFout("Geen plaats gevonden.");
+        })
+        .catch(() => {
+          // Tijdens typen niet alarmeren; de zichtbare zoekknop meldt fouten wél.
+        })
+        .finally(() => setPlaatsBusy(false));
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [zoekTekst]);
+
+  // Eerlijke uitleg + uitweg wanneer er nog geen startpunt is: dit scherm mag
+  // nooit doodlopen op een grijze knop zonder verklaring.
+  const startpuntUitleg =
+    startLatLon != null ? null : (
+      <View style={{ gap: 6 }}>
+        <Text style={[styles.honest, { color: c.destructive }]}>
+          {permission === "denied"
+            ? "De routeknop staat uit omdat de app je locatie niet mag gebruiken."
+            : "De routeknop staat uit omdat je positie nog niet bekend is (wachten op GPS)."}
+        </Text>
+        <Text style={[styles.honest, { color: c.mutedForeground }]}>
+          Je kunt ook zonder GPS verder: typ een plaats in het zoekveld bovenaan
+          en kies die als startpunt.
+        </Text>
+        {permission === "denied" ? (
+          <Pressable
+            onPress={() => void Linking.openSettings()}
+            style={styles.ctaRow}
+          >
+            <Ionicons name="settings-outline" size={15} color={c.primary} />
+            <Text style={[styles.ctaText, { color: c.primary }]}>
+              Locatietoestemming aanzetten in instellingen
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+
   // ── Kaartlijn: gekozen bibliotheekroute of het (eerste) nieuwe voorstel ────
   const kaartPad = useMemo(() => {
     if (kaartVoorstel?.geometry && kaartVoorstel.geometry.length >= 2) {
@@ -412,6 +462,11 @@ export default function RoutePlannenScreen() {
               style={[styles.zoekInput, { color: c.foreground }]}
             />
             {plaatsBusy ? <ActivityIndicator size="small" color={c.primary} /> : null}
+            {!plaatsBusy && zoekTekst.trim().length >= 2 ? (
+              <Pressable hitSlop={8} onPress={doPlaatsZoek}>
+                <Ionicons name="arrow-forward-circle" size={20} color={c.primary} />
+              </Pressable>
+            ) : null}
             {startpunt ? (
               <Pressable
                 hitSlop={8}
@@ -620,10 +675,15 @@ export default function RoutePlannenScreen() {
                         <Ionicons name="sparkles" size={18} color={c.primaryForeground} />
                       )}
                       <Text style={[styles.primaryBtnText, { color: c.primaryForeground }]}>
-                        {!startLatLon ? "Wachten op GPS…" : "Zoek een passende route"}
+                        {!startLatLon
+                          ? permission === "denied"
+                            ? "Geen locatietoestemming"
+                            : "Wachten op GPS…"
+                          : "Zoek een passende route"}
                       </Text>
                     </Pressable>
                   )}
+                  {startpuntUitleg}
                   <Pressable onPress={() => setVandaagOvergeslagen(true)} style={styles.ctaRow}>
                     <Text style={[styles.ctaText, { color: c.mutedForeground }]}>Overslaan</Text>
                   </Pressable>
@@ -685,9 +745,6 @@ export default function RoutePlannenScreen() {
                     : "Rondrit vanaf je huidige locatie"}{" "}
                   — stel de bolletjes bovenaan in en zoek.
                 </Text>
-                {locError && !startpunt ? (
-                  <Text style={[styles.honest, { color: c.destructive }]}>{locError}</Text>
-                ) : null}
                 <Pressable
                   disabled={!startLatLon || zoek.isPending}
                   onPress={() => doZoek()}
@@ -706,12 +763,15 @@ export default function RoutePlannenScreen() {
                   )}
                   <Text style={[styles.primaryBtnText, { color: c.primaryForeground }]}>
                     {!startLatLon
-                      ? "Wachten op GPS…"
+                      ? permission === "denied"
+                        ? "Geen locatietoestemming"
+                        : "Wachten op GPS…"
                       : zoek.isPending
                         ? "Bekende routes zoeken…"
                         : "Zoek een route"}
                   </Text>
                 </Pressable>
+                {startpuntUitleg}
                 <ZoekResultaten />
               </>
             ) : null}
