@@ -67,6 +67,8 @@ export async function effectiveReleaseGroup(clerkId: string): Promise<ReleaseGro
 // oudere builds) betekent: geen plafond.
 const CHANNEL_GROUPS: Record<string, ReleaseGroup> = {
   ontwikkeling: "intern",
+  // René's installeerbare praktijktest-APK (EAS build-profiel "praktijktest").
+  praktijktest: "intern",
   "android-intern": "intern",
   "play-gesloten": "test",
   testflight: "test",

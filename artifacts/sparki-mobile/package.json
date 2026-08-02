@@ -82,6 +82,7 @@
     "expo-sharing": "~14.0.8",
     "expo-speech": "~14.0.8",
     "expo-task-manager": "~14.0.9",
+    "expo-updates": "~29.0.19",
     "react-native-ble-plx": "^3.5.1",
     "react-native-view-shot": "4.0.3",
     "react-native-webview": "13.15.0"
