@@ -5,7 +5,7 @@
 // Trainer-contact verschijnt alleen wanneer de bestaande toestemmingslaag
 // (categorie "communicatie") dat toelaat.
 import { Link } from "wouter"
-import { Users, UserPlus, ChevronRight, Contact } from "lucide-react"
+import { Users, UserPlus, ChevronRight, Contact, Eye } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useUserProfile } from "@/contexts/UserContext"
@@ -73,7 +73,13 @@ const tierLabel: Record<string, string> = {
   unknown: "leeftijd onbekend — veiligheidsminimum",
 }
 
-function TrainerBlock({ athleteClerkId }: { athleteClerkId: string }) {
+function TrainerBlock({
+  athleteClerkId,
+  isMinor,
+}: {
+  athleteClerkId: string
+  isMinor: boolean
+}) {
   const { data, isLoading, isError } = useParentTrainers(athleteClerkId)
   if (isLoading)
     return <div className="mt-3 h-5 w-40 animate-pulse rounded bg-white/[0.06]" />
@@ -99,17 +105,33 @@ function TrainerBlock({ athleteClerkId }: { athleteClerkId: string }) {
   return (
     <div className="mt-3 space-y-1.5" data-testid="trainer-contact">
       {data.trainers.map((t, i) => (
-        <div key={i} className="flex items-center gap-2 text-[12px] text-white/60">
-          <Contact className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-          <span className="text-white/80">{t.displayName}</span>
-          {t.email && (
-            <a
-              href={`mailto:${t.email}`}
-              className="underline-offset-2 hover:underline"
+        <div key={i} className="space-y-1">
+          <div className="flex items-center gap-2 text-[12px] text-white/60">
+            <Contact className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+            <span className="text-white/80">{t.displayName}</span>
+            {t.email && (
+              <a
+                href={`mailto:${t.email}`}
+                className="underline-offset-2 hover:underline"
+                style={{ color: ACCENT }}
+              >
+                contact
+              </a>
+            )}
+          </div>
+          {/* F7 — ouder-meelezen: bij een kind <16 leest de ouder de volledige
+              trainer↔kind-berichtenlijn mee (alleen-lezen, server-side
+              afgedwongen). */}
+          {isMinor && (
+            <Link
+              href={`/coach-messages/${t.coachClerkId}/${athleteClerkId}`}
+              className="inline-flex items-center gap-1.5 text-[12px]"
               style={{ color: ACCENT }}
+              data-testid="ouder-meelees-link"
             >
-              contact
-            </a>
+              <Eye className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Berichten met de trainer meelezen
+            </Link>
           )}
         </div>
       ))}
@@ -162,7 +184,10 @@ function KindCard({
           </button>
         )}
       </div>
-      <TrainerBlock athleteClerkId={child.athleteClerkId} />
+      <TrainerBlock
+        athleteClerkId={child.athleteClerkId}
+        isMinor={child.access.tier === "u16" || child.access.tier === "unknown"}
+      />
       {selected && <DoelenBlock athleteClerkId={child.athleteClerkId} />}
       {selected && (
         <Link

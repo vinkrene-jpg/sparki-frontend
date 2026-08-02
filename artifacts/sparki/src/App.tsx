@@ -53,6 +53,7 @@ import TesterQrPage from "@/pages/tester-qr";
 import TesterWelcomePage from "@/pages/tester-welcome";
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import CoachCockpitPage from "@/pages/coach-cockpit";
+import CoachMessagesPage from "@/pages/coach-messages";
 import FacturatiePage from "@/pages/facturatie";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
@@ -866,6 +867,17 @@ function AppRouter() {
                 </Route>
                 <Route path="/coach/athletes/:athleteId/cockpit">
                   <ProtectedPage component={CoachCockpitPage} />
+                </Route>
+                {/* F7 — trainer↔sporter-berichten (coach_link). Ook het
+                    landingspad voor de neutrale notificatie die de backend zet:
+                    /coach-messages/:coachClerkId/:athleteClerkId. */}
+                <Route path="/coach-messages/:coachClerkId/:athleteClerkId">
+                  <ProtectedPage component={CoachMessagesPage} />
+                </Route>
+                {/* F7 — clubnotificatie deep-linkt hierheen; land op de
+                    clubomgeving waar de berichten al leven. */}
+                <Route path="/clubs/:clubId/berichten">
+                  <Redirect to="/club" />
                 </Route>
                 <Route path="/invite/:token">
                   <InviteRoute />

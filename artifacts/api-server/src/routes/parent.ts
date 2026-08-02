@@ -580,6 +580,7 @@ router.get("/athletes/:athleteId/trainers", requireAuth, async (req, res) => {
     res.json({
       allowed: true,
       trainers: links.map((l) => ({
+        coachClerkId: l.coachClerkId,
         displayName: l.displayName ?? "Trainer",
         email: l.email,
       })),

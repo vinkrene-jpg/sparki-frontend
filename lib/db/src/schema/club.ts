@@ -472,16 +472,40 @@ export const clubRaceSelectionsTable = pgTable(
 // ── Communicatie ──────────────────────────────────────────────────────────────
 // Gericht clubbericht (club/team/groep), optioneel gekoppeld aan een training
 // of wedstrijd. Reacties zijn rijen met parentId. Geen openbaar netwerk.
+//
+// F7 (communicatie met bijlagen) generaliseert deze ENE berichtenlaag i.p.v.
+// een tweede berichtensysteem te bouwen (bindend §"wat er niet bij hoort"):
+// - `context` = "club" (het bestaande clubverkeer) of "coach_link" (de
+//   zelfstandige trainer ↔ gekoppelde sporter — dit valt buiten de club, dus
+//   clubId is dan de sentinel 0 en de lijn loopt op coachClerkId/athleteClerkId
+//   via coach_athlete_links). Zo hergebruikt lijn 3b exact deze tabel.
+// - Bijlagen hangen aan het bericht via message_attachments (files + links).
+export const clubMessageContexts = ["club", "coach_link"] as const;
+export type ClubMessageContext = (typeof clubMessageContexts)[number];
+
 export const clubMessagesTable = pgTable(
   "club_messages",
   {
     id: serial("id").primaryKey(),
-    clubId: integer("club_id")
-      .notNull()
-      .references(() => clubsTable.id, { onDelete: "cascade" }),
-    scope: text("scope").notNull().default("club"), // club | team | group
+    // Voor context "coach_link" bestaat er geen club: dan is club_id NULL en
+    // loopt de lijn op coachClerkId/athleteClerkId (zie hieronder). Voor
+    // context "club" is club_id verplicht (afgedwongen op het schrijf-pad).
+    clubId: integer("club_id").references(() => clubsTable.id, { onDelete: "cascade" }),
+    // F7: welke berichtenlijn. "club" = clubverkeer; "coach_link" = zelfstandige
+    // trainer ↔ gekoppelde sporter (buiten de club, twee richtingen).
+    context: text("context").notNull().default("club"),
+    scope: text("scope").notNull().default("club"), // club | team | group | coach_link
     teamId: integer("team_id").references(() => clubTeamsTable.id, { onDelete: "cascade" }),
     groupId: integer("group_id").references(() => clubGroupsTable.id, { onDelete: "cascade" }),
+    // Alleen bij context "coach_link": de twee deelnemers van het gesprek.
+    coachClerkId: text("coach_clerk_id").references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+    athleteClerkId: text("athlete_clerk_id").references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
     trainingId: integer("training_id").references(() => clubTrainingsTable.id, {
       onDelete: "set null",
     }),
@@ -496,8 +520,38 @@ export const clubMessagesTable = pgTable(
     parentId: integer("parent_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("club_messages_club_idx").on(t.clubId, t.createdAt)],
+  (t) => [
+    index("club_messages_club_idx").on(t.clubId, t.createdAt),
+    index("club_messages_coach_link_idx").on(t.coachClerkId, t.athleteClerkId),
+  ],
 );
+
+// ── F7: bijlagen op berichten ────────────────────────────────────────────────
+// Eén of meer per bericht: een bestand/afbeelding (fileId → files) of een link
+// (linkUrl, geen file). Alleen wie het bericht mag lezen kan de bijlage openen
+// (de rechtencheck zit in het serve-pad: bericht-zichtbaarheid → file-toegang).
+export const messageAttachmentKinds = ["bestand", "afbeelding", "link"] as const;
+export type MessageAttachmentKind = (typeof messageAttachmentKinds)[number];
+
+export const messageAttachmentsTable = pgTable(
+  "message_attachments",
+  {
+    id: serial("id").primaryKey(),
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => clubMessagesTable.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().default("bestand"), // bestand | afbeelding | link
+    // Alleen bij bestand/afbeelding: verwijzing naar het generieke file-record.
+    fileId: integer("file_id"),
+    // Alleen bij link: de URL (er wordt geen file opgeslagen).
+    linkUrl: text("link_url"),
+    linkTitle: text("link_title"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("message_attachments_message_idx").on(t.messageId)],
+);
+
+export type MessageAttachment = typeof messageAttachmentsTable.$inferSelect;
 
 export const clubMessageReadsTable = pgTable(
   "club_message_reads",

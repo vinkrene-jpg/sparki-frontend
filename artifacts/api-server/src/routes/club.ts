@@ -18,6 +18,8 @@ import {
   healthSafetyInfoTable,
   clubMessagesTable,
   clubMessageReadsTable,
+  messageAttachmentsTable,
+  filesTable,
   clubConsentsTable,
   clubSubscriptionsTable,
   clubAuditLogTable,
@@ -76,9 +78,11 @@ import {
   canPostMessages,
   canViewConsentedData,
   clubStatusAllowsMutation,
+  linkedParentsOf,
   type ClubContext,
 } from "../lib/club-permissions";
 import { computeAge } from "../lib/age";
+import { registerFile, getFile } from "../lib/files";
 import { writeVogAudit } from "../lib/security/vog-audit";
 import { securityAuditLogTable } from "@workspace/db";
 import { isAdmin } from "../lib/flags";
@@ -3126,6 +3130,142 @@ async function readableScopeFilter(ctx: ClubContext) {
   return { teamIds, groupIds };
 }
 
+// F7: kan dit lid het bericht LEZEN? Wordt gebruikt door het bijlage-serve-pad
+// (bericht-zichtbaarheid → file-toegang) én de gelezenstatus.
+async function canReadClubMessage(
+  ctx: ClubContext,
+  msg: typeof clubMessagesTable.$inferSelect,
+): Promise<boolean> {
+  if (msg.clubId !== ctx.club.id) return false;
+  if (canManageClub(ctx)) return true;
+  if (msg.scope === "club") return true;
+  const { teamIds, groupIds } = await readableScopeFilter(ctx);
+  if (msg.scope === "team" && msg.teamId != null && teamIds.has(msg.teamId)) return true;
+  if (msg.scope === "group" && msg.groupId != null && groupIds.has(msg.groupId)) return true;
+  // Eigen bericht mag je altijd lezen.
+  if (msg.authorClerkId === ctx.membership.clerkId) return true;
+  return false;
+}
+
+// F7: verwerk binnenkomende bijlagen (files + links) op een net geplaatst
+// bericht. Files worden door de VOLLEDIGE scanketen gehaald (sniff + her-
+// encode + limits) vóór opslag. Geweigerd type ⇒ nette fout, niets opgeslagen.
+type AttachmentInput =
+  | { kind: "link"; url: string; title?: string | null }
+  | { kind: "file"; base64: string; name: string };
+
+function parseAttachments(raw: unknown): AttachmentInput[] | { error: string } {
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) return { error: "Bijlagen moeten een lijst zijn." };
+  const out: AttachmentInput[] = [];
+  for (const a of raw) {
+    if (!a || typeof a !== "object") return { error: "Ongeldige bijlage." };
+    const o = a as Record<string, unknown>;
+    if (typeof o["url"] === "string" && o["url"].trim()) {
+      const u = o["url"].trim();
+      if (!/^https?:\/\//i.test(u)) return { error: "Een link moet met http(s):// beginnen." };
+      out.push({ kind: "link", url: u, title: typeof o["title"] === "string" ? o["title"] : null });
+    } else if (typeof o["base64"] === "string" && o["base64"].length > 0) {
+      const name = typeof o["name"] === "string" ? o["name"] : "bestand";
+      out.push({ kind: "file", base64: o["base64"], name });
+    } else {
+      return { error: "Een bijlage is een link of een bestand." };
+    }
+  }
+  return out;
+}
+
+// F7: bepaal de ontvangers van een clubbericht (voor gerichte notificaties),
+// exclusief de auteur. Fail-safe: bij twijfel geen bulk-melding.
+async function clubMessageRecipients(
+  clubId: number,
+  scope: string,
+  teamId: number | null,
+  groupId: number | null,
+  authorClerkId: string,
+): Promise<string[]> {
+  const ids = new Set<string>();
+  if (scope === "club") {
+    const rows = await db
+      .select({ clerkId: clubMembersTable.clerkId })
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clubId, clubId), isNull(clubMembersTable.endedAt)));
+    for (const r of rows) ids.add(r.clerkId);
+  } else if (scope === "team" && teamId != null) {
+    const rows = await db
+      .select({ clerkId: clubTeamMembersTable.clerkId })
+      .from(clubTeamMembersTable)
+      .where(and(eq(clubTeamMembersTable.teamId, teamId), isNull(clubTeamMembersTable.endedAt)));
+    for (const r of rows) ids.add(r.clerkId);
+  } else if (scope === "group" && groupId != null) {
+    const rows = await db
+      .select({ clerkId: clubGroupMembersTable.clerkId })
+      .from(clubGroupMembersTable)
+      .where(and(eq(clubGroupMembersTable.groupId, groupId), isNull(clubGroupMembersTable.endedAt)));
+    for (const r of rows) ids.add(r.clerkId);
+  }
+  ids.delete(authorClerkId);
+  return [...ids];
+}
+
+// F7: neutrale melding "Nieuw bericht in <context>" — NOOIT berichttekst of
+// bestandsnaam. actionUrl deep-linkt naar de clubberichten.
+async function notifyClubMessage(
+  clubId: number,
+  msg: typeof clubMessagesTable.$inferSelect,
+  scope: string,
+  teamId: number | null,
+  groupId: number | null,
+): Promise<void> {
+  const recipients = await clubMessageRecipients(clubId, scope, teamId, groupId, msg.authorClerkId);
+  const contextLabel =
+    scope === "team" ? "je team" : scope === "group" ? "je groep" : "je club";
+  for (const clerkId of recipients) {
+    await createNotification({
+      clerkId,
+      type: "club_update",
+      title: `Nieuw bericht in ${contextLabel}`,
+      body: null,
+      actionUrl: `/clubs/${clubId}/berichten`,
+      source: "club",
+      audience: "club",
+    });
+  }
+}
+
+async function persistAttachments(
+  messageId: number,
+  ownerClerkId: string,
+  attachments: AttachmentInput[],
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  for (const a of attachments) {
+    if (a.kind === "link") {
+      await db.insert(messageAttachmentsTable).values({
+        messageId,
+        kind: "link",
+        linkUrl: a.url,
+        linkTitle: a.title ?? null,
+      });
+      continue;
+    }
+    const result = await registerFile({
+      ownerClerkId,
+      base64: a.base64,
+      originalName: a.name,
+      retentionCategory: "club_message",
+    });
+    if (!result.ok) {
+      return { ok: false, status: result.status, error: result.reason };
+    }
+    await db.insert(messageAttachmentsTable).values({
+      messageId,
+      kind: result.file.contentType.startsWith("image/") ? "afbeelding" : "bestand",
+      fileId: result.file.id,
+    });
+  }
+  return { ok: true };
+}
+
 router.post("/:clubId/messages", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
@@ -3137,7 +3277,13 @@ router.post("/:clubId/messages", requireAuth, async (req, res) => {
     }
     if (!statusGuard(ctx, res)) return;
     const body = str(req.body?.body);
-    if (!body) {
+    const parsedAttachments = parseAttachments(req.body?.attachments);
+    if ("error" in parsedAttachments) {
+      res.status(400).json({ error: parsedAttachments.error });
+      return;
+    }
+    // Bericht mag leeg zijn als er minstens één bijlage is.
+    if (!body && parsedAttachments.length === 0) {
       res.status(400).json({ error: "Het bericht mag niet leeg zijn." });
       return;
     }
@@ -3176,10 +3322,17 @@ router.post("/:clubId/messages", requireAuth, async (req, res) => {
           teamId: parent.teamId,
           groupId: parent.groupId,
           authorClerkId: ctx.membership.clerkId,
-          body,
+          body: body ?? "",
           parentId,
         })
         .returning();
+      const att = await persistAttachments(msg!.id, ctx.membership.clerkId, parsedAttachments);
+      if (!att.ok) {
+        // Geweigerde bijlage ⇒ niets opgeslagen: rol het bericht terug.
+        await db.delete(clubMessagesTable).where(eq(clubMessagesTable.id, msg!.id));
+        res.status(att.status).json({ error: att.error });
+        return;
+      }
       res.status(201).json(msg);
       return;
     }
@@ -3195,6 +3348,10 @@ router.post("/:clubId/messages", requireAuth, async (req, res) => {
       res.status(403).json({ error: "Je mag geen bericht sturen naar deze doelgroep." });
       return;
     }
+    // F7 lijn 3a: clubtrainer → groep is ÉÉN richting. Reacties op groep-scope
+    // berichten staan daarom standaard uit (allowReplies wordt genegeerd voor
+    // group), zodat groepsleden nooit terug kunnen reageren in die scope.
+    const allowReplies = scope === "group" ? false : req.body?.allowReplies !== false;
     const [msg] = await db
       .insert(clubMessagesTable)
       .values({
@@ -3205,11 +3362,19 @@ router.post("/:clubId/messages", requireAuth, async (req, res) => {
         trainingId: req.body?.trainingId != null ? intParam(req.body.trainingId) : null,
         raceEventId: req.body?.raceEventId != null ? intParam(req.body.raceEventId) : null,
         authorClerkId: ctx.membership.clerkId,
-        body,
-        allowReplies: req.body?.allowReplies !== false,
+        body: body ?? "",
+        allowReplies,
       })
       .returning();
+    const att = await persistAttachments(msg!.id, ctx.membership.clerkId, parsedAttachments);
+    if (!att.ok) {
+      await db.delete(clubMessagesTable).where(eq(clubMessagesTable.id, msg!.id));
+      res.status(att.status).json({ error: att.error });
+      return;
+    }
     await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "bericht_geplaatst", targetType: "message", targetId: msg!.id, detail: { scope } });
+    // F7: neutrale notificatie — nooit berichttekst of bestandsnaam.
+    await notifyClubMessage(ctx.club.id, msg!, scope, teamId, groupId).catch(() => {});
     res.status(201).json(msg);
   } catch (err) {
     req.log.error({ err }, "club message post failed");
@@ -3248,11 +3413,47 @@ router.get("/:clubId/messages", requireAuth, async (req, res) => {
       );
     const readSet = new Set(reads.map((r) => r.messageId));
     const names = await profilesByIds(visible.map((m) => m.authorClerkId));
+    // F7: bijlagen per zichtbaar bericht (links + files). Ingetrokken files
+    // worden gemarkeerd zodat de client ze niet meer aanbiedt.
+    const visibleIds = visible.length > 0 ? visible.map((m) => m.id) : [-1];
+    const attachments = await db
+      .select()
+      .from(messageAttachmentsTable)
+      .where(inArray(messageAttachmentsTable.messageId, visibleIds));
+    const fileIds = attachments
+      .map((a) => a.fileId)
+      .filter((v): v is number => v != null);
+    const files =
+      fileIds.length > 0
+        ? await db.select().from(filesTable).where(inArray(filesTable.id, fileIds))
+        : [];
+    const fileById = new Map(files.map((f) => [f.id, f]));
+    const attByMessage = new Map<number, unknown[]>();
+    for (const a of attachments) {
+      const f = a.fileId != null ? fileById.get(a.fileId) : null;
+      const entry =
+        a.kind === "link"
+          ? { id: a.id, kind: "link", url: a.linkUrl, title: a.linkTitle }
+          : {
+              id: a.id,
+              kind: a.kind,
+              fileId: a.fileId,
+              name: f?.originalName ?? null,
+              contentType: f?.contentType ?? null,
+              sizeBytes: f?.sizeBytes ?? null,
+              revoked: f?.revokedAt != null,
+              url: `/api/clubs/${ctx.club.id}/messages/${a.messageId}/attachments/${a.id}`,
+            };
+      const list = attByMessage.get(a.messageId) ?? [];
+      list.push(entry);
+      attByMessage.set(a.messageId, list);
+    }
     res.json(
       visible.map((m) => ({
         ...m,
         authorName: names.get(m.authorClerkId)?.displayName ?? null,
         read: readSet.has(m.id),
+        attachments: attByMessage.get(m.id) ?? [],
       })),
     );
   } catch (err) {
@@ -3284,6 +3485,125 @@ router.post("/:clubId/messages/:messageId/read", requireAuth, async (req, res) =
     res.status(500).json({ error: "Gelezen-status opslaan is niet gelukt." });
   }
 });
+
+// F7: download een bijlage. Rechten volgen het BERICHT: alleen wie het bericht
+// mag lezen krijgt de bytes. Onbevoegd ⇒ 403, ook met directe attachment-id.
+// Ingetrokken bestand ⇒ 410, óók via een oudere link. Altijd als download
+// (Content-Disposition: attachment) met nosniff — nooit inline in de app.
+router.get(
+  "/:clubId/messages/:messageId/attachments/:attachmentId",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const ctx = await ctxOr403(req, res);
+      if (!ctx) return;
+      const messageId = intParam(req.params["messageId"]);
+      const attachmentId = intParam(req.params["attachmentId"]);
+      const [msg] = await db
+        .select()
+        .from(clubMessagesTable)
+        .where(and(eq(clubMessagesTable.id, messageId ?? -1), eq(clubMessagesTable.clubId, ctx.club.id)));
+      if (!msg) {
+        res.status(404).json({ error: "Bericht niet gevonden." });
+        return;
+      }
+      // Bericht-zichtbaarheid → file-toegang.
+      if (!(await canReadClubMessage(ctx, msg))) {
+        res.status(403).json({ error: "Geen toegang tot deze bijlage." });
+        return;
+      }
+      const [att] = await db
+        .select()
+        .from(messageAttachmentsTable)
+        .where(
+          and(
+            eq(messageAttachmentsTable.id, attachmentId ?? -1),
+            eq(messageAttachmentsTable.messageId, msg.id),
+          ),
+        );
+      if (!att || att.fileId == null) {
+        res.status(404).json({ error: "Bijlage niet gevonden." });
+        return;
+      }
+      const file = await getFile(att.fileId);
+      if (!file) {
+        res.status(404).json({ error: "Bestand niet gevonden." });
+        return;
+      }
+      const { serveFile } = await import("../lib/files");
+      const served = await serveFile(file);
+      if (!served.ok) {
+        res.status(served.status).json({ error: served.reason });
+        return;
+      }
+      res.setHeader("Content-Type", served.contentType);
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${served.downloadName.replace(/"/g, "")}"`,
+      );
+      res.setHeader("Cache-Control", "private, max-age=0, no-store");
+      served.stream.pipe(res);
+    } catch (err) {
+      req.log.error({ err }, "club attachment serve failed");
+      res.status(500).json({ error: "Bijlage ophalen is niet gelukt." });
+    }
+  },
+);
+
+// F7: een bijlage (bestand) intrekken — alleen de auteur van het bericht of
+// clubbeheer. Trekt het onderliggende file in (fail-closed): daarna is het
+// nergens meer downloadbaar, ook niet via een oudere link.
+router.post(
+  "/:clubId/messages/:messageId/attachments/:attachmentId/revoke",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const ctx = await ctxOr403(req, res);
+      if (!ctx) return;
+      const messageId = intParam(req.params["messageId"]);
+      const attachmentId = intParam(req.params["attachmentId"]);
+      const [msg] = await db
+        .select()
+        .from(clubMessagesTable)
+        .where(and(eq(clubMessagesTable.id, messageId ?? -1), eq(clubMessagesTable.clubId, ctx.club.id)));
+      if (!msg) {
+        res.status(404).json({ error: "Bericht niet gevonden." });
+        return;
+      }
+      if (!canManageClub(ctx) && msg.authorClerkId !== ctx.membership.clerkId) {
+        res.status(403).json({ error: "Alleen de afzender of clubbeheer kan een bijlage intrekken." });
+        return;
+      }
+      const [att] = await db
+        .select()
+        .from(messageAttachmentsTable)
+        .where(
+          and(
+            eq(messageAttachmentsTable.id, attachmentId ?? -1),
+            eq(messageAttachmentsTable.messageId, msg.id),
+          ),
+        );
+      if (!att || att.fileId == null) {
+        res.status(404).json({ error: "Bijlage niet gevonden." });
+        return;
+      }
+      const { revokeFile } = await import("../lib/files");
+      await revokeFile(att.fileId, ctx.membership.clerkId);
+      await writeClubAudit({
+        clubId: ctx.club.id,
+        actorClerkId: ctx.membership.clerkId,
+        action: "bijlage_ingetrokken",
+        targetType: "attachment",
+        targetId: att.id,
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      req.log.error({ err }, "club attachment revoke failed");
+      res.status(500).json({ error: "Bijlage intrekken is niet gelukt." });
+    }
+  },
+);
 
 // ── Jeugd-toestemming ─────────────────────────────────────────────────────────
 // Sportdata delen met toegewezen trainers. Volwassen sporter: zelf. Minderjarig

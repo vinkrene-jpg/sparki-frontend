@@ -73,6 +73,7 @@ import clubRaceLogisticsRouter from "./club-race-logistics";
 import clubRaceDocumentsRouter from "./club-race-documents";
 import clubDocumentsRouter from "./club-documents";
 import clubRaceDayRouter, { raceGuestPublicRouter } from "./club-race-day";
+import coachMessagesRouter from "./coach-messages";
 import rideStoryRouter from "./ride-story";
 import sprintsRouter from "./sprints";
 import climbsRouter from "./climbs";
@@ -222,6 +223,9 @@ router.use("/alerts", alertsRouter);
 router.use("/attention", attentionRouter);
 router.use("/share", shareRouter);
 router.use("/clubs", killSwitchGuard("club_features"), clubRouter);
+// SPARKI_BUILD_01 F7 lijn 3b: zelfstandige trainer ↔ gekoppelde sporter.
+// Buiten de club, twee richtingen, ouder <16 leest mee. Zelfde berichtenlaag.
+router.use("/coach-messages", coachMessagesRouter);
 // Werkobjectlaag (SPARKI_INHAAL_01 BUILD_02): één gedeelde plan-laag voor de
 // club — zelfde kill-switch en clubrechten als de rest van de clubomgeving.
 router.use(

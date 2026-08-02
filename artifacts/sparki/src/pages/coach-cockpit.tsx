@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { useUserProfile } from "@/contexts/UserContext"
 import { useCoachAthleteDetail } from "@/hooks/use-coach"
 import {
   useCoachSignals,
@@ -572,6 +573,25 @@ function MessagesSection({ athleteId, name }: { athleteId: string; name: string 
   )
 }
 
+// F7 — ingang naar de trainer↔sporter-berichtenlijn met bijlagen (coach_link).
+// Aparte laag van de cockpitberichten hierboven: hier kunnen bestanden,
+// afbeeldingen en links mee, met gelezenstatus per ontvanger. Bij een sporter
+// <16 leest de gekoppelde ouder volledig mee (server-side afgedwongen).
+function CoachLinkMessagesLink({ athleteId, name }: { athleteId: string; name: string }) {
+  const { profile } = useUserProfile()
+  const coachClerkId = profile?.clerkId ?? null
+  if (!coachClerkId) return null
+  return (
+    <Link
+      href={`/coach-messages/${coachClerkId}/${athleteId}`}
+      className="flex items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] py-3 text-[13px] text-cyan-100/90 hover:border-cyan-300/40"
+    >
+      <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
+      Berichten met bijlagen naar {name}
+    </Link>
+  )
+}
+
 // ── Context ─────────────────────────────────────────────────────────────────
 
 const KIND_LABEL: Record<string, string> = {
@@ -1119,6 +1139,7 @@ function CockpitBody({
 
         <SectionLabel n="04" title="Berichten" />
         <MessagesSection athleteId={athleteId} name={name} />
+        <CoachLinkMessagesLink athleteId={athleteId} name={name} />
 
         <SectionLabel n="05" title="Afspraken & context" />
         <ContextSection athleteId={athleteId} />

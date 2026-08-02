@@ -15,6 +15,7 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { MessageBubble, MessageComposer } from "@/components/sparki/message-thread"
 import {
   useClubMembership,
   useMyClubs,
@@ -27,6 +28,8 @@ import {
   useClubMessages,
   usePostClubMessage,
   useMarkClubMessageRead,
+  useRevokeClubAttachment,
+  type ComposeAttachment,
   useMyClubConsent,
   useSetClubConsent,
   useCreateClub,
@@ -246,7 +249,7 @@ function RealClubView({ clubId }: { clubId: number }) {
   const availability = useClubAvailability(clubId)
   const post = usePostClubMessage(clubId)
   const markRead = useMarkClubMessageRead(clubId)
-  const [reply, setReply] = useState("")
+  const revokeAttachment = useRevokeClubAttachment(clubId)
   const [, navigate] = useLocation()
 
   const canManage = dash?.membership.role === "owner" || dash?.membership.role === "admin"
@@ -384,50 +387,54 @@ function RealClubView({ clubId }: { clubId: number }) {
         )}
       </section>
 
-      <section aria-label="Clubberichten">
+      <section aria-label="Clubberichten" id="club-berichten">
         <h2 className={H2}><MessageCircle className="h-3 w-3" /> Berichten</h2>
         {rootMessages.length === 0 ? (
           <p className={EMPTY}>Nog geen clubberichten.</p>
         ) : (
           <div className="space-y-1.5">
-            {rootMessages.map((m) => (
-              <div
-                key={m.id}
-                className={`${CARD} ${m.read ? "" : "border-cyan-300/25"}`}
-                onClick={() => { if (!m.read) markRead.mutate(m.id) }}
-              >
-                <p className="text-[11px] text-white/40">
-                  {m.authorName ?? "Clublid"} · {new Date(m.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
-                  {!m.read && <span className="ml-1.5 text-cyan-300/85">nieuw</span>}
-                </p>
-                <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-white/85">{m.body}</p>
-              </div>
-            ))}
+            {rootMessages.map((m) => {
+              // F7 lijn 3a: een groepsbericht van de clubtrainer is één richting.
+              // Geen antwoordknop; we tonen dat het een mededeling is. Ook op
+              // team-/clubberichten met reacties uit tonen we dat eerlijk.
+              const isMededeling = !m.allowReplies
+              const canRevoke = canManage || m.authorClerkId === dash.membership.clerkId
+              return (
+                <div key={m.id} className="space-y-1">
+                  <MessageBubble
+                    message={{ ...m, authorName: m.authorName }}
+                    mine={m.authorClerkId === dash.membership.clerkId}
+                    currentClerkId={canRevoke ? m.authorClerkId : dash.membership.clerkId}
+                    onRevoke={
+                      canRevoke
+                        ? (attId) => revokeAttachment.mutate({ messageId: m.id, attachmentId: attId })
+                        : undefined
+                    }
+                    onSeen={() => markRead.mutate(m.id)}
+                  />
+                  {isMededeling && (
+                    <p className="pl-1 text-[11px] text-white/35">
+                      Mededeling — hierop kun je niet reageren.
+                    </p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
         {canPost && (
-          <form
-            className="mt-2 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (!reply.trim()) return
-              post.mutate({ body: reply.trim(), scope: "club" }, { onSuccess: () => setReply("") })
+          <MessageComposer
+            placeholder="Bericht aan de hele club…"
+            sending={post.isPending}
+            serverError={(post.error as Error | null)?.message ?? null}
+            onSend={({ body, files, links }) => {
+              const attachments: ComposeAttachment[] = [
+                ...files.map((f) => ({ kind: "file" as const, base64: f.base64, name: f.name })),
+                ...links.map((l) => ({ kind: "link" as const, url: l.url, title: l.title })),
+              ]
+              post.mutate({ body, scope: "club", attachments })
             }}
-          >
-            <input
-              value={reply}
-              onChange={(e) => setReply(e.target.value)}
-              placeholder="Bericht aan de hele club…"
-              className="min-w-0 flex-1 rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={post.isPending || !reply.trim()}
-              className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40"
-            >
-              Plaats
-            </button>
-          </form>
+          />
         )}
       </section>
 

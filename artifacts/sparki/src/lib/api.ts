@@ -68,3 +68,38 @@ export async function apiFetch<T = unknown>(
   }
   return res.json() as Promise<T>;
 }
+
+// F7 — beveiligde bijlagen. Serve-endpoints geven de bytes met een download-
+// header terug (nooit inline). Voor een afbeeldingspreview of download halen we
+// de bytes met dezelfde auth (cookies + dev-header) op en maken er een lokale
+// object-URL van. Een geweigerd/ingetrokken bestand levert een nette fout met
+// statuscode (bv. 410) die de aanroeper kan tonen.
+export async function apiFetchBlob(path: string): Promise<Blob> {
+  const devHeader: Record<string, string> = {};
+  if (DEV_PREVIEW) {
+    const devAthlete = getDevAthleteId();
+    if (devAthlete) devHeader["x-dev-clerk-id"] = devAthlete;
+  }
+  const res = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
+    headers: {
+      "X-Sparki-App-Version": APP_VERSION,
+      "X-Sparki-Platform": "web",
+      "X-Sparki-Session": SESSION_ID,
+      ...devHeader,
+    },
+  });
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const data = (await res.json()) as { error?: string };
+      if (data.error) message = data.error;
+    } catch {
+      // val terug op statusText
+    }
+    const err = new Error(message) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
+  return res.blob();
+}

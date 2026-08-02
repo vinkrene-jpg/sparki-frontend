@@ -265,7 +265,7 @@ export function useSendParentMessage() {
 export type ParentChildTrainers = {
   allowed: boolean;
   reason?: string;
-  trainers: { displayName: string; email: string | null }[];
+  trainers: { coachClerkId: string; displayName: string; email: string | null }[];
 };
 
 export function useParentTrainers(athleteClerkId: string | null) {

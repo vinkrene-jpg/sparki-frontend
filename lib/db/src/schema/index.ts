@@ -54,6 +54,7 @@ export * from "./journey";
 export * from "./coach-cockpit";
 export * from "./support";
 export * from "./club";
+export * from "./files";
 export * from "./trainer";
 export * from "./trainer-clients";
 export * from "./trainer-groups";

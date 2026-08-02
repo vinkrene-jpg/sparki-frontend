@@ -142,6 +142,22 @@ export type ClubRaceEvent = {
   mySelection: { role: string; availability: string | null } | null
 }
 
+// F7 — bijlage op een bericht. Een link, óf een bestand/afbeelding dat via het
+// beveiligde serve-endpoint (url) gedownload wordt. Een ingetrokken bestand
+// (revoked) wordt niet meer aangeboden; het serve-endpoint geeft dan 410.
+export type MessageAttachment =
+  | { id: number; kind: "link"; url: string; title: string | null }
+  | {
+      id: number
+      kind: "afbeelding" | "bestand"
+      fileId: number | null
+      name: string | null
+      contentType: string | null
+      sizeBytes: number | null
+      revoked: boolean
+      url: string
+    }
+
 export type ClubMessage = {
   id: number
   scope: string
@@ -154,6 +170,7 @@ export type ClubMessage = {
   allowReplies: boolean
   read: boolean
   createdAt: string
+  attachments: MessageAttachment[]
 }
 
 export type ClubMemberRow = {
@@ -490,11 +507,39 @@ export function useClubMessages(clubId: number | null) {
   })
 }
 
+// F7 — bijlage-invoer bij het opstellen: een link of een base64-bestand. De
+// server blijft de waarheid (type/grootte/inhoud); een weigering komt terug als
+// nette 4xx-melding.
+export type ComposeAttachment =
+  | { kind: "link"; url: string; title: string | null }
+  | { kind: "file"; base64: string; name: string }
+
 export function usePostClubMessage(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { body: string; scope?: string; teamId?: number; groupId?: number; parentId?: number }) =>
+    mutationFn: (body: {
+      body: string
+      scope?: string
+      teamId?: number
+      groupId?: number
+      parentId?: number
+      attachments?: ComposeAttachment[]
+    }) =>
       apiFetch(`/api/clubs/${clubId}/messages`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId, "messages"] }),
+  })
+}
+
+// F7 — een bijlage (bestand) intrekken. Alleen de afzender of clubbeheer; daarna
+// is het bestand nergens meer downloadbaar (410), ook niet via een oude link.
+export function useRevokeClubAttachment(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ messageId, attachmentId }: { messageId: number; attachmentId: number }) =>
+      apiFetch(
+        `/api/clubs/${clubId}/messages/${messageId}/attachments/${attachmentId}/revoke`,
+        { method: "POST" },
+      ),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId, "messages"] }),
   })
 }

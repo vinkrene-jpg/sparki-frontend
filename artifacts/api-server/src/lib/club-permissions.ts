@@ -12,6 +12,7 @@ import {
   clubConsentsTable,
   clubAuditLogTable,
   parentAthleteLinksTable,
+  coachAthleteLinksTable,
   athleteProfilesTable,
   type Club,
   type ClubMember,
@@ -332,6 +333,62 @@ export async function isLinkedParent(
         eq(parentAthleteLinksTable.parentClerkId, parentClerkId),
         eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
         eq(parentAthleteLinksTable.status, "accepted"), isNull(parentAthleteLinksTable.endedAt),
+      ),
+    );
+  return !!row;
+}
+
+// ── F7 Jeugdveiligheid (server-side, fail-closed) ─────────────────────────────
+// Algemene minderjarig-check (<16), NIET clubgebonden — voor de zelfstandige
+// trainer ↔ sporter-lijn. Onbekende leeftijd = fail-closed als <16
+// (memory-les ouderomgeving): geen bekende leeftijd ⇒ behandel als jeugd.
+export async function isMinorUser(athleteClerkId: string): Promise<boolean> {
+  const [athlete] = await db
+    .select({
+      birthDate: athleteProfilesTable.birthDate,
+      birthYear: athleteProfilesTable.birthYear,
+    })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, athleteClerkId));
+  if (!athlete) return true; // fail-closed
+  const age = computeAge(athlete.birthDate, athlete.birthYear);
+  if (age == null) return true; // fail-closed
+  return age < 16;
+}
+
+// Alle ACTIEF gekoppelde ouders van een sporter (voor de meelees-toegang van
+// de ouder bij een jeugdsporter <16). Geen kopie-opslag: de ouder leest de
+// ORIGINELE berichten mee via deze koppeling.
+export async function linkedParentsOf(athleteClerkId: string): Promise<string[]> {
+  const rows = await db
+    .select({ parentClerkId: parentAthleteLinksTable.parentClerkId })
+    .from(parentAthleteLinksTable)
+    .where(
+      and(
+        eq(parentAthleteLinksTable.athleteClerkId, athleteClerkId),
+        eq(parentAthleteLinksTable.status, "accepted"),
+        isNull(parentAthleteLinksTable.endedAt),
+      ),
+    );
+  return rows.map((r) => r.parentClerkId);
+}
+
+// Is er een ACTIEVE (geaccepteerde) zelfstandige-trainer ↔ sporter-koppeling?
+// Dit is de bestaande koppeling waarop lijn 3b (twee richtingen) rust — zonder
+// koppeling bestaat er geen gesprekspad (ongevraagd contact ⇒ geweigerd).
+export async function hasActiveCoachLink(
+  coachClerkId: string,
+  athleteClerkId: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ x: coachAthleteLinksTable.coachClerkId })
+    .from(coachAthleteLinksTable)
+    .where(
+      and(
+        eq(coachAthleteLinksTable.coachClerkId, coachClerkId),
+        eq(coachAthleteLinksTable.athleteClerkId, athleteClerkId),
+        eq(coachAthleteLinksTable.status, "accepted"),
+        isNull(coachAthleteLinksTable.endedAt),
       ),
     );
   return !!row;

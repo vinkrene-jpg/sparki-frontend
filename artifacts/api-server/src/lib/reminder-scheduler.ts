@@ -25,6 +25,7 @@ import { runHealthChecks } from "./health/engine";
 import { eq, sql } from "drizzle-orm";
 import { db, pool, athleteGoalsTable } from "@workspace/db";
 import { buildMonthlyProposals } from "./goals";
+import { runClubMessageRetention } from "./club-message-retention";
 
 let started = false;
 let inFlight = false;
@@ -272,6 +273,29 @@ async function maybeRunGoalReview(): Promise<void> {
   }
 }
 
+// SPARKI_BUILD_01 F7: dagelijkse retentie-opruiming van clubberichten +
+// bijlagen (job:club-message-retention). Max één run per Amsterdamse dag over
+// alle instanties heen (withJobClaim). Bewaartermijn is configureerbaar
+// (CLUB_MESSAGE_RETENTION_DAYS, default 365), nooit hardcoded.
+async function maybeRunClubMessageRetention(): Promise<void> {
+  const { day, hour } = amsterdamParts();
+  // Ochtendvenster 03:00–03:59 Amsterdam (los van de andere nachtjobs).
+  if (hour < 3 || hour >= 4) return;
+  const won = await withJobClaim(`job:club-message-retention:${day}`, async () => {
+    const result = await runClubMessageRetention();
+    logger.info(
+      { clubMessageRetention: "scheduler", day, ...result },
+      "in-process club message retention run done",
+    );
+  });
+  if (!won) {
+    logger.info(
+      { clubMessageRetention: "scheduler", day },
+      "club message retention al geclaimd door andere instantie — overslaan",
+    );
+  }
+}
+
 function intEnv(name: string, fallback: number): number {
   const v = process.env[name];
   if (!v) return fallback;
@@ -369,6 +393,12 @@ export function startReminderScheduler(): void {
         await maybeRunGoalReview();
       } catch (err) {
         logger.error({ err }, "in-process goal-review failed");
+      }
+      // SPARKI_BUILD_01 F7: retentie-opschoning clubberichten + bijlagen.
+      try {
+        await maybeRunClubMessageRetention();
+      } catch (err) {
+        logger.error({ err }, "in-process club message retention failed");
       }
     } catch (err) {
       logger.error({ err, reminders: "scheduler" }, "in-process reminder run failed");
