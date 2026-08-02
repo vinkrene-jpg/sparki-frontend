@@ -57,6 +57,10 @@ export const trainerBusinessTable = pgTable(
     // in de verzend-transactie (F8) en mag nooit omlaag.
     invoicePrefix: text("invoice_prefix"),
     nextInvoiceNumber: integer("next_invoice_number"),
+    // F11/BB-67 — opzegging: gezet = geen nieuwe facturen, geen nieuwe
+    // verzending, archief read-only; export en herleidbaarheid blijven.
+    // Opzegging verwijdert NOOIT een factuur.
+    endedAt: timestamp("ended_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

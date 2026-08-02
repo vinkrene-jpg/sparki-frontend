@@ -24,6 +24,7 @@ import {
   trainerClientsTable,
   trainerBusinessTable,
   creditNotesTable,
+  retentionPoliciesTable,
   workObjectsTable,
   SERVICE_UNITS,
   BILLING_CYCLES,
@@ -53,6 +54,18 @@ function minIso(a: string, b: string): string {
   return a < b ? a : b;
 }
 
+// F11/BB-67 — opgezegde onderneming: geen nieuwe facturen, geen nieuwe
+// verzending, archief read-only. Export/lezen/betaalstatus blijven werken.
+async function isTerminated(trainerClerkId: string): Promise<boolean> {
+  const [biz] = await db
+    .select({ endedAt: trainerBusinessTable.endedAt })
+    .from(trainerBusinessTable)
+    .where(eq(trainerBusinessTable.clerkId, trainerClerkId));
+  return Boolean(biz?.endedAt);
+}
+const TERMINATED_MSG =
+  "De facturatie is opgezegd: het archief is read-only. Exporteren en inzien blijven mogelijk; er worden geen nieuwe facturen gemaakt of verzonden.";
+
 async function ownedClient(clientId: number, trainerClerkId: string) {
   const [c] = await db
     .select()
@@ -81,6 +94,10 @@ router.get("/services", requireAuth, async (req, res) => {
 router.post("/services", requireAuth, async (req, res) => {
   try {
     const trainerClerkId = getClerkUserId(req)!;
+    if (await isTerminated(trainerClerkId)) {
+      res.status(409).json({ error: TERMINATED_MSG });
+      return;
+    }
     const name = str(req.body?.name);
     const priceCents = int(req.body?.priceCents);
     const unit = str(req.body?.unit) ?? "maand";
@@ -127,6 +144,10 @@ router.get("/recurring-billing", requireAuth, async (req, res) => {
 router.post("/recurring-billing", requireAuth, async (req, res) => {
   try {
     const trainerClerkId = getClerkUserId(req)!;
+    if (await isTerminated(trainerClerkId)) {
+      res.status(409).json({ error: TERMINATED_MSG });
+      return;
+    }
     const clientId = int(req.body?.clientId);
     const cycle = str(req.body?.cycle);
     const description = str(req.body?.description);
@@ -184,6 +205,10 @@ router.post("/recurring-billing", requireAuth, async (req, res) => {
 router.post("/recurring-billing/run-drafts", requireAuth, async (req, res) => {
   try {
     const trainerClerkId = getClerkUserId(req)!;
+    if (await isTerminated(trainerClerkId)) {
+      res.status(409).json({ error: TERMINATED_MSG });
+      return;
+    }
     const todayParam = str(req.body?.today);
     const today =
       todayParam && /^\d{4}-\d{2}-\d{2}$/.test(todayParam)
@@ -269,6 +294,10 @@ router.post("/recurring-billing/run-drafts", requireAuth, async (req, res) => {
 router.post("/invoices/draft", requireAuth, async (req, res) => {
   try {
     const trainerClerkId = getClerkUserId(req)!;
+    if (await isTerminated(trainerClerkId)) {
+      res.status(409).json({ error: TERMINATED_MSG });
+      return;
+    }
     const clientId = int(req.body?.clientId);
     const lines = Array.isArray(req.body?.lines) ? req.body.lines : [];
     if (!clientId || lines.length === 0) {
@@ -492,6 +521,10 @@ async function allocateNumber(
 router.post("/invoices/:id/send", requireAuth, async (req, res) => {
   try {
     const trainerClerkId = getClerkUserId(req)!;
+    if (await isTerminated(trainerClerkId)) {
+      res.status(409).json({ error: TERMINATED_MSG });
+      return;
+    }
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(
       new Date(),
     );
@@ -642,6 +675,10 @@ router.post("/invoices/:id/mark-paid", requireAuth, async (req, res) => {
 router.post("/invoices/:id/credit", requireAuth, async (req, res) => {
   try {
     const trainerClerkId = getClerkUserId(req)!;
+    if (await isTerminated(trainerClerkId)) {
+      res.status(409).json({ error: TERMINATED_MSG });
+      return;
+    }
     const reason = str(req.body?.reason);
     const amountCents = int(req.body?.amountCents);
     if (!reason) {
@@ -805,6 +842,46 @@ async function buildExportRows(trainerClerkId: string, from: string, to: string)
   rows.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
   return rows;
 }
+
+// ── F11: opzegging (BB-67) en bewaartermijnregister ─────────────────────────
+// Opzeggen: archief wordt read-only; export, inzien en betaalregistratie
+// blijven; er verdwijnt NOOIT een factuur door opzegging.
+router.post("/terminate", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const [biz] = await db
+      .select()
+      .from(trainerBusinessTable)
+      .where(eq(trainerBusinessTable.clerkId, trainerClerkId));
+    if (!biz) {
+      res.status(404).json({ error: "Geen bedrijfsgegevens gevonden." });
+      return;
+    }
+    if (biz.endedAt) {
+      res.json({ endedAt: biz.endedAt, alreadyTerminated: true });
+      return;
+    }
+    const [row] = await db
+      .update(trainerBusinessTable)
+      .set({ endedAt: new Date() })
+      .where(eq(trainerBusinessTable.clerkId, trainerClerkId))
+      .returning();
+    res.json({ endedAt: row!.endedAt, alreadyTerminated: false });
+  } catch (err) {
+    req.log.error({ err }, "terminate failed");
+    res.status(500).json({ error: "Opzeggen is niet gelukt." });
+  }
+});
+
+// Bewaartermijnen: centraal register, GEEN hardcoded juridische waarde.
+// NULL retentionDays = nog niet vastgesteld ⇒ fail-closed: bewaren.
+router.get("/retention", requireAuth, async (_req, res) => {
+  const rows = await db.select().from(retentionPoliciesTable);
+  res.json({
+    policies: rows,
+    note: "Een ontbrekende of lege termijn betekent: bewaren. Termijnen worden pas van kracht na expliciete vastlegging (open juridisch besluit).",
+  });
+});
 
 // ── Signalen (3c.4) — altijd voorstel, nooit actie ───────────────────────────
 router.get("/signals", requireAuth, async (req, res) => {

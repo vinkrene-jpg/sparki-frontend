@@ -362,6 +362,46 @@ async function main() {
     assert(emptyCsv.split("\n").length === 1, "lege periode = alleen kopregel");
   });
 
+  await scenario("F11: opzegging — archief read-only, export blijft, niets verdwijnt", async () => {
+    const rowsBefore = await db
+      .select({ id: trainerInvoicesTable.id })
+      .from(trainerInvoicesTable)
+      .where(inArray(trainerInvoicesTable.trainerClerkId, [T1]));
+    const term = await api(T1, "POST", "/api/trainer/billing/terminate");
+    assert(term.status === 200 && term.json.endedAt, `opzeggen: ${term.status}`);
+    // Daarna exporteren: blijft werken.
+    const exp = await fetch(
+      `${base}/api/trainer/billing/invoices/export?from=2026-07-01&to=2026-09-30`,
+      { headers: { "x-dev-clerk-id": T1 } },
+    );
+    assert(exp.status === 200 && (await exp.text()).includes("CC-2026-118"), "export na opzegging");
+    // Daarna een factuur proberen te maken/verzenden: geweigerd.
+    const draft = await api(T1, "POST", "/api/trainer/billing/invoices/draft", {
+      clientId,
+      lines: [{ description: "Na opzegging", unitPriceCents: 100 }],
+    });
+    const run = await api(T1, "POST", "/api/trainer/billing/recurring-billing/run-drafts", {
+      today: "2026-12-01",
+    });
+    assert(draft.status === 409 && run.status === 409, `${draft.status}/${run.status}`);
+    // Verwijderen: er bestaat geen DELETE-route (405/404), en geen factuur
+    // verdween door de opzegging.
+    const del = await fetch(`${base}/api/trainer/billing/invoices/${rowsBefore[0]!.id}`, {
+      method: "DELETE",
+      headers: { "x-dev-clerk-id": T1 },
+    });
+    assert(del.status === 404 || del.status === 405, `delete: ${del.status}`);
+    const rowsAfter = await db
+      .select({ id: trainerInvoicesTable.id })
+      .from(trainerInvoicesTable)
+      .where(inArray(trainerInvoicesTable.trainerClerkId, [T1]));
+    assert(rowsAfter.length === rowsBefore.length, "geen factuur verdwenen door opzegging");
+    // Bewaartermijnregister: centraal, zonder hardcoded juridische waarde.
+    const ret = await api(T1, "GET", "/api/trainer/billing/retention");
+    assert(ret.status === 200 && Array.isArray(ret.json.policies), "register bereikbaar");
+    assert(ret.json.note.includes("bewaren"), "fail-closed: ontbrekende termijn = bewaren");
+  });
+
   await scenario("cross-account fail-closed", async () => {
     const r = await api(T2, "POST", "/api/trainer/billing/recurring-billing", {
       clientId,
