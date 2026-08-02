@@ -16,7 +16,9 @@
       "distribution": "internal",
       "channel": "praktijktest",
       "autoIncrement": true,
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_CHANNEL": "praktijktest"
       }
@@ -26,7 +28,9 @@
       "developmentClient": false,
       "distribution": "store",
       "channel": "android-intern",
-      "android": { "buildType": "app-bundle" },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_CHANNEL": "android-intern"
       }
@@ -34,7 +38,9 @@
     "play-gesloten": {
       "distribution": "store",
       "channel": "play-gesloten",
-      "android": { "buildType": "app-bundle" },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_CHANNEL": "play-gesloten"
       }
@@ -49,7 +55,9 @@
     "pilot": {
       "distribution": "store",
       "channel": "pilot",
-      "android": { "buildType": "app-bundle" },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_CHANNEL": "pilot"
       }
@@ -58,7 +66,9 @@
       "distribution": "store",
       "channel": "productie",
       "autoIncrement": true,
-      "android": { "buildType": "app-bundle" },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_CHANNEL": "productie"
       }

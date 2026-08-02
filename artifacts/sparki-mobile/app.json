@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Sparki",
-    "slug": "sparki-mobile",
+    "slug": "rene",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -28,6 +28,7 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Sparki gebruikt je locatie ook op de achtergrond, zodat je rit volledig wordt opgenomen als het scherm op slot staat. Dit gebeurt alleen tijdens een rit die jij zelf start.",
         "NSBluetoothAlwaysUsageDescription": "Sparki gebruikt Bluetooth om je wattagemeter, hartslagband of cadanssensor live uit te lezen tijdens een rit.",
         "UIBackgroundModes": [
+          "location",
           "location"
         ],
         "LSSupportsOpeningDocumentsInPlace": true,
@@ -39,9 +40,33 @@
             "LSItemContentTypes": [
               "com.topografix.gpx"
             ]
+          },
+          {
+            "CFBundleTypeName": "GPX-route",
+            "LSHandlerRank": "Alternate",
+            "CFBundleTypeRole": "Viewer",
+            "LSItemContentTypes": [
+              "com.topografix.gpx"
+            ]
           }
         ],
         "UTImportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.topografix.gpx",
+            "UTTypeDescription": "GPX-route",
+            "UTTypeConformsTo": [
+              "public.xml",
+              "public.data"
+            ],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": [
+                "gpx"
+              ],
+              "public.mime-type": [
+                "application/gpx+xml"
+              ]
+            }
+          },
           {
             "UTTypeIdentifier": "com.topografix.gpx",
             "UTTypeDescription": "GPX-route",
@@ -75,9 +100,29 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.BLUETOOTH_SCAN",
-        "android.permission.BLUETOOTH_CONNECT"
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
@@ -85,6 +130,55 @@
         "android.permission.ACTIVITY_RECOGNITION"
       ],
       "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "scheme": "content",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\.gpx"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\.gpx"
+            },
+            {
+              "scheme": "content",
+              "pathPattern": ".*\\.gpx"
+            },
+            {
+              "scheme": "file",
+              "pathPattern": ".*\\.gpx"
+            }
+          ]
+        },
+        {
+          "action": "SEND",
+          "category": [
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "mimeType": "application/octet-stream"
+            }
+          ]
+        },
         {
           "action": "VIEW",
           "category": [
@@ -169,6 +263,18 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "10dbf18a-550c-4fc1-8d1a-e0c73ff28e34"
+      }
+    },
+    "owner": "futur-holding",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/10dbf18a-550c-4fc1-8d1a-e0c73ff28e34"
     }
   }
 }
