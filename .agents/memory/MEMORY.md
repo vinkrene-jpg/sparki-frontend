@@ -130,6 +130,7 @@
 - [Sparki bewijsarchief](sparki-bewijsarchief.md) — evidence files live in bewijsarchief/ + SHA-256 inventory; never modify/delete; public export-zips only removed after byte-identical verified private copy.
 - [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
 - [Sparki e2e-harness (WP-S1)](sparki-e2e-harness.md) — BINDEND: schermacceptatie alleen via echte browserklik (e2e/), DEV Preview nooit bewijs; isAdmin strikt zonder dev-bypass.
+- [Prod-account toegang](sparki-prod-account-access.md) — workspace Clerk-keys ≠ prod-instance; schrijven op prod-account alleen via /api/e2e/proof-ticket + browser-ticket-login.
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp; [NixOS-chromium](nix-playwright-chromium.md) via Nix-pakket + executablePath.
 - Billing: [Gratis vs Go paywall](sparki-go-paywall.md) GO_FEATURE_KEYS commercieel-only, UI faalt open; [Stripe-testomgeving](sparki-stripe-testmode.md) flag+allowlist AND, webhook idempotent-in-tx, fake gateway + echte HMAC, rawBody-verify.
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.

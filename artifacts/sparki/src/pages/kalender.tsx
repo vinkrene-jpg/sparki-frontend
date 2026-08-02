@@ -118,7 +118,7 @@ export default function KalenderPage() {
         title: r.name,
         meta: r.location,
         icon: Trophy,
-        href: "/races",
+        href: `/races/${r.id}`,
       })),
     ...(lifeEvents ?? [])
       .filter((ev) => (ev.endDate ?? ev.startDate) >= today)

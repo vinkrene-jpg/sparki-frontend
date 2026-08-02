@@ -36,6 +36,7 @@ import MechaniekerPage from "@/pages/mechanieker";
 import RoutesPage from "@/pages/routes";
 import KalenderPage from "@/pages/kalender";
 import RacesPage from "@/pages/races";
+import RaceDetailPage from "@/pages/race-detail";
 import WedstrijdRoomPage from "@/pages/wedstrijd-room";
 import JourneyPage from "@/pages/journey";
 import KnowledgePage from "@/pages/knowledge";
@@ -806,6 +807,11 @@ function AppRouter() {
                 </Route>
                 <Route path="/races">
                   <ProtectedPage component={RacesPage} />
+                </Route>
+                {/* Detail per geplande wedstrijd — bereikbaar vanuit de
+                    kalender en de wedstrijdlijst. */}
+                <Route path="/races/:id">
+                  <ProtectedPage component={RaceDetailPage} />
                 </Route>
                 {/* /sprinten is bewust NIET meer gerout — Bordjes sprinten is
                     gestopt (veiligheidsrisico op openbare weg, besluit

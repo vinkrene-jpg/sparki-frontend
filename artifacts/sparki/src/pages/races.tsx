@@ -440,6 +440,24 @@ export default function RacesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus])
 
+  // Deep-link ?edit=<id> (bv. vanaf het wedstrijddetail) opent meteen het
+  // werkblad van die wedstrijd, daarna strippen we de parameter zodat een
+  // ververs/terug hem niet opnieuw opent.
+  const editHandled = useRef(false)
+  useEffect(() => {
+    if (editHandled.current || !races) return
+    const editId = Number(
+      new URLSearchParams(window.location.search).get("edit") ?? "",
+    )
+    if (!Number.isFinite(editId) || editId <= 0) return
+    const target = races.find((r) => r.id === editId)
+    if (!target) return
+    editHandled.current = true
+    startEdit(target)
+    setLocation("/races", { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [races])
+
   function startCreate(source: "handmatig" | "kalender" = "handmatig") {
     setForm(EMPTY_FORM)
     setTeamRiders([])
@@ -754,7 +772,7 @@ export default function RacesPage() {
             <button
               key={r.id}
               type="button"
-              onClick={() => startEdit(r)}
+              onClick={() => setLocation(`/races/${r.id}`)}
               className="block w-full rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/20"
             >
               <div className="flex items-start justify-between gap-3">
@@ -1243,7 +1261,7 @@ function KindTag({ label, strong }: { label: string; strong?: boolean }) {
   )
 }
 
-function RaceWerkbladPanel({ raceId }: { raceId: number }) {
+export function RaceWerkbladPanel({ raceId }: { raceId: number }) {
   // Go-poort (taak 385): het wedstrijddossier hoort bij Sparki Go.
   const goAccess = useFeatureAccess("race_intel")
   const raceGoBlocked = goAccess.known && !goAccess.entitled

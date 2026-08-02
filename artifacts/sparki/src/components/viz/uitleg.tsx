@@ -90,6 +90,21 @@ export function UitlegDot({
     }
   }, [open])
 
+  // Golf 21 — beheerde bronnen bij dit onderwerp (alleen opgehaald zodra de
+  // uitleg openstaat; geen bronnen = sectie eerlijk afwezig).
+  // LET OP: deze hook staat bewust VÓÓR de conditionele return hieronder —
+  // een hook achter een vroege return wisselt het aantal hooks per render en
+  // crasht de hele pagina (React #310, zelfde fout als in het hoofdmenu).
+  const bronnenQuery = useQuery({
+    queryKey: ["uitleg-bronnen", uitlegKey ?? null],
+    queryFn: () =>
+      apiFetch<{ bronnen: Bron[] }>(
+        `/api/knowledge/bronnen?topic=${encodeURIComponent(String(uitlegKey))}`,
+      ),
+    enabled: open && uitlegKey != null,
+    staleTime: 5 * 60 * 1000,
+  })
+
   if (!uitleg) return null
 
   const LEVELS: Array<{ key: "wat" | "waarom" | "hoe"; label: string }> = [
@@ -100,18 +115,6 @@ export function UitlegDot({
 
   const contextRegels =
     uitlegKey != null ? buildUitlegContextRegels(String(uitlegKey), persoonlijk) : []
-
-  // Golf 21 — beheerde bronnen bij dit onderwerp (alleen opgehaald zodra de
-  // uitleg openstaat; geen bronnen = sectie eerlijk afwezig).
-  const bronnenQuery = useQuery({
-    queryKey: ["uitleg-bronnen", uitlegKey ?? null],
-    queryFn: () =>
-      apiFetch<{ bronnen: Bron[] }>(
-        `/api/knowledge/bronnen?topic=${encodeURIComponent(String(uitlegKey))}`,
-      ),
-    enabled: open && uitlegKey != null,
-    staleTime: 5 * 60 * 1000,
-  })
 
   return (
     <>
