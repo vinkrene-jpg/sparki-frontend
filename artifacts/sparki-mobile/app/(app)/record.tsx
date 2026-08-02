@@ -432,19 +432,28 @@ export default function RecordScreen() {
           onPress={() => setShowSensors((s) => !s)}
           hitSlop={12}
           style={[
-            styles.backBtn,
+            styles.titlePill,
             {
               backgroundColor: c.card,
               borderColor: live.anyConnected ? c.primary : c.border,
               marginLeft: "auto",
+              gap: 6,
             },
           ]}
         >
           <Ionicons
             name="bluetooth"
-            size={20}
+            size={18}
             color={live.anyConnected ? c.primary : c.mutedForeground}
           />
+          <Text
+            style={[
+              styles.titlePillText,
+              { color: live.anyConnected ? c.primary : c.mutedForeground, fontSize: 13 },
+            ]}
+          >
+            Sensoren
+          </Text>
         </Pressable>
       </View>
 
@@ -475,58 +484,18 @@ export default function RecordScreen() {
         </View>
       )}
 
-      {/* ---------- Live stats while recording ---------- */}
-      {recorder.recording && (
-        <View style={[styles.bottomStats, { bottom: insets.bottom + 96 }]} pointerEvents="box-none">
-          {!following && showMap && path.length >= 2 && (
-            <Pressable
-              onPress={() => setFollowing(true)}
-              style={[styles.recenter, { backgroundColor: c.primary }]}
-            >
-              <Ionicons name="locate" size={20} color={c.primaryForeground} />
-              <Text style={{ color: c.primaryForeground, fontFamily: "Inter_600SemiBold" }}>
-                Centreer
-              </Text>
-            </Pressable>
-          )}
-          <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Metric label="Tijd" value={fmtElapsed(recorder.elapsedSec)} c={c} />
-            <View style={[styles.divider, { backgroundColor: c.border }]} />
-            <Metric label="Afstand" value={`${recorder.distanceKm.toFixed(1)} km`} c={c} />
-            <View style={[styles.divider, { backgroundColor: c.border }]} />
-            <Metric
-              label="Snelheid"
-              value={
-                location?.speedMps != null
-                  ? `${Math.round(location.speedMps * 3.6)} km/u`
-                  : "—"
-              }
-              c={c}
-            />
-          </View>
-          {live.anyConnected && (
-            <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
-              <Metric
-                label="Vermogen"
-                value={live.values.watts != null ? `${live.values.watts} W` : "—"}
-                c={c}
-              />
-              <View style={[styles.divider, { backgroundColor: c.border }]} />
-              <Metric
-                label="Hartslag"
-                value={
-                  live.values.heartRate != null ? `${live.values.heartRate}` : "—"
-                }
-                c={c}
-              />
-              <View style={[styles.divider, { backgroundColor: c.border }]} />
-              <Metric
-                label="Cadans"
-                value={live.values.cadence != null ? `${live.values.cadence}` : "—"}
-                c={c}
-              />
-            </View>
-          )}
+      {/* ---------- Centreer-knop (los, boven de vaste onderbalk) ---------- */}
+      {recorder.recording && !following && showMap && path.length >= 2 && (
+        <View style={[styles.bottomStats, { bottom: insets.bottom + 260 }]} pointerEvents="box-none">
+          <Pressable
+            onPress={() => setFollowing(true)}
+            style={[styles.recenter, { backgroundColor: c.primary }]}
+          >
+            <Ionicons name="locate" size={20} color={c.primaryForeground} />
+            <Text style={{ color: c.primaryForeground, fontFamily: "Inter_600SemiBold" }}>
+              Centreer
+            </Text>
+          </Pressable>
         </View>
       )}
 
@@ -738,25 +707,63 @@ export default function RecordScreen() {
               </View>
             </View>
           )}
+          {/* Datavakken: altijd op dezelfde plek in de onderbalk — geen overlap
+              met de knoppen, en de pauzestatus verandert de indeling niet. */}
+          <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Metric label="Tijd" value={fmtElapsed(recorder.elapsedSec)} c={c} />
+            <View style={[styles.divider, { backgroundColor: c.border }]} />
+            <Metric label="Afstand" value={`${recorder.distanceKm.toFixed(1)} km`} c={c} />
+            <View style={[styles.divider, { backgroundColor: c.border }]} />
+            <Metric
+              label="Snelheid"
+              value={
+                location?.speedMps != null
+                  ? `${Math.round(location.speedMps * 3.6)} km/u`
+                  : "—"
+              }
+              c={c}
+            />
+          </View>
+          {live.anyConnected && (
+            <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
+              <Metric
+                label="Vermogen"
+                value={live.values.watts != null ? `${live.values.watts} W` : "—"}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <Metric
+                label="Hartslag"
+                value={live.values.heartRate != null ? `${live.values.heartRate}` : "—"}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <Metric
+                label="Cadans"
+                value={live.values.cadence != null ? `${live.values.cadence}` : "—"}
+                c={c}
+              />
+            </View>
+          )}
+          {/* Voeding onderweg: compact — één tik = één bidon of eetmoment,
+              gaat bij het opslaan naar je voedingslog. */}
           <View style={styles.fuelRow}>
             <Pressable
               onPress={() => setBidons((v) => v + 1)}
               style={[styles.fuelBtn, { backgroundColor: c.card, borderColor: c.border }]}
             >
-              <Ionicons name="water-outline" size={26} color={c.primary} />
-              <Text style={[styles.fuelBtnLabel, { color: c.foreground }]}>Bidon</Text>
-              <Text style={[styles.fuelBtnCount, { color: c.mutedForeground }]}>
-                {bidons} × ~{BIDON_ML} ml
+              <Ionicons name="water-outline" size={18} color={c.primary} />
+              <Text style={[styles.fuelBtnLabel, { color: c.foreground }]}>
+                Bidon{bidons > 0 ? ` · ${bidons}` : ""}
               </Text>
             </Pressable>
             <Pressable
               onPress={() => setEetmomenten((v) => v + 1)}
               style={[styles.fuelBtn, { backgroundColor: c.card, borderColor: c.border }]}
             >
-              <Ionicons name="fast-food-outline" size={26} color={c.primary} />
-              <Text style={[styles.fuelBtnLabel, { color: c.foreground }]}>Eetmoment</Text>
-              <Text style={[styles.fuelBtnCount, { color: c.mutedForeground }]}>
-                {eetmomenten} × ~{EETMOMENT_G} g
+              <Ionicons name="fast-food-outline" size={18} color={c.primary} />
+              <Text style={[styles.fuelBtnLabel, { color: c.foreground }]}>
+                Eetmoment{eetmomenten > 0 ? ` · ${eetmomenten}` : ""}
               </Text>
             </Pressable>
           </View>
@@ -993,17 +1000,18 @@ function Metric({
 }
 
 const styles = StyleSheet.create({
-  fuelRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  fuelRow: { flexDirection: "row", gap: 10 },
   fuelBtn: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    borderRadius: 16,
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 999,
     borderWidth: 1,
-    paddingVertical: 14,
+    paddingVertical: 10,
   },
-  fuelBtnLabel: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
-  fuelBtnCount: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  fuelBtnLabel: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
   fill: { flex: 1 },
   center: { alignItems: "center", justifyContent: "center", gap: 12 },
   stateTitle: { fontFamily: "Inter_600SemiBold", fontSize: 18 },
