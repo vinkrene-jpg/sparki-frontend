@@ -1,5 +1,24 @@
 # SPARKI_MIRROR_MULTIROLE_TESTSTANDARD
 
+> **Vaste werkinstructie:** `docs/product/MIRROR_WERKWIJZE_01.md` (MW-01 t/m MW-20) geldt
+> automatisch mee bij elke Mirror-opdracht: rapporteer herstelpunten aan Replit,
+> samenhangvragen aan Claude, René krijgt per pakket één regel in gewone taal;
+> nooit stilstaan, niets zelf oplossen.
+>
+> **Vast contextblok (02-08-2026 — geldt voor elke Mirror-toets)**
+> Lees vóór het toetsen eerst `docs/besluiten/BESLUITEN_VOOR_REPLIT_2026-08-02.md` en
+> `docs/besluiten/BOUWSTRAAT_2026-08-02.md`. Daarin staat wat als productbesluit vastligt
+> en waar het te toetsen onderdeel in de bouwvolgorde zit.
+>
+> **Deze stukken zijn context, geen bewijs.** Ze vertellen wat de bedoeling en de prioriteit
+> is — ze zeggen niets over wat er werkelijk gebouwd is. Wat Mirror toetst, stelt Mirror
+> zelf vast op een vaste SHA. Wijkt de werkelijkheid af van een besluit, dan is dat een
+> **bevinding**, geen aanleiding om het besluit aan te passen.
+>
+> Komt Mirror iets tegen dat buiten de opdracht valt maar wél een besluit raakt, dan meldt
+> Mirror dat apart onder **"Signalen buiten scope"** — Mirror lost het niet zelf op.
+
+
 > **0. Uitvoeringsregel (01-08-2026 — SPARKI_CONTINUOUS_EXECUTION_GOVERNANCE_01, K1–K6 beslist)**
 > Alle in dit document beschreven wacht- en vrijgavepoorten (wachten op René, wachten op
 > Mirror-goedkeuring, per-fase-vrijgave, featureflag-als-vrijgavepoort, `RENE_APPROVED` in de
