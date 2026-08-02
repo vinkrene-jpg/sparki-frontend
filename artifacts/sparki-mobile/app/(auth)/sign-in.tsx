@@ -40,7 +40,75 @@ export default function SignInScreen() {
   const [password, setPassword] = React.useState("");
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [resetStep, setResetStep] = React.useState<
+    "none" | "code" | "new_password"
+  >("none");
+  const [resetCode, setResetCode] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
   const busy = fetchStatus === "fetching";
+
+  const finalizeSignIn = async () => {
+    await signIn.finalize({
+      navigate: ({ decorateUrl }) => {
+        const url = decorateUrl("/");
+        if (url.startsWith("http")) {
+          if (typeof window !== "undefined") window.location.href = url;
+        } else {
+          router.replace(url as Href);
+        }
+      },
+    });
+  };
+
+  const handleForgotPassword = async () => {
+    setGeneralError(null);
+    const { error: createError } = await signIn.create({
+      identifier: emailAddress.trim(),
+    });
+    if (createError) {
+      setGeneralError(clerkErrorMessage(createError));
+      return;
+    }
+    const { error } = await signIn.resetPasswordEmailCode.sendCode();
+    if (error) {
+      setGeneralError(clerkErrorMessage(error));
+      return;
+    }
+    setResetCode("");
+    setNewPassword("");
+    setResetStep("code");
+  };
+
+  const handleVerifyResetCode = async () => {
+    setGeneralError(null);
+    const { error } = await signIn.resetPasswordEmailCode.verifyCode({
+      code: resetCode.trim(),
+    });
+    if (error) {
+      setGeneralError(clerkErrorMessage(error));
+      return;
+    }
+    setResetStep("new_password");
+  };
+
+  const handleSubmitNewPassword = async () => {
+    setGeneralError(null);
+    const { error } = await signIn.resetPasswordEmailCode.submitPassword({
+      password: newPassword,
+    });
+    if (error) {
+      setGeneralError(clerkErrorMessage(error));
+      return;
+    }
+    if (signIn.status === "complete") {
+      await finalizeSignIn();
+    } else {
+      setResetStep("none");
+      setGeneralError(
+        "Je wachtwoord is gewijzigd, maar er is een extra stap nodig. Meld je opnieuw aan.",
+      );
+    }
+  };
 
   const handleSubmit = async () => {
     setGeneralError(null);
@@ -81,9 +149,95 @@ export default function SignInScreen() {
         </View>
         <Text style={[styles.brand, { color: c.foreground }]}>Sparki</Text>
         <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
-          Meld je aan om je routes te navigeren.
+          {resetStep === "code"
+            ? "Vul de herstelcode in die we naar je e-mailadres stuurden."
+            : resetStep === "new_password"
+              ? "Kies een nieuw wachtwoord."
+              : "Meld je aan om je routes te navigeren."}
         </Text>
 
+        {resetStep === "code" ? (
+          <>
+            <Text style={[styles.label, { color: c.mutedForeground }]}>Herstelcode</Text>
+            <TextInput
+              style={[styles.input, { color: c.foreground, borderColor: c.input, backgroundColor: c.card }]}
+              keyboardType="numeric"
+              value={resetCode}
+              placeholder="123456"
+              placeholderTextColor={c.mutedForeground}
+              onChangeText={setResetCode}
+            />
+            {generalError && (
+              <Text style={[styles.error, { color: c.destructive }]}>{generalError}</Text>
+            )}
+            <PrimaryButton
+              label="Code bevestigen"
+              onPress={handleVerifyResetCode}
+              loading={busy}
+              disabled={!resetCode}
+              style={{ marginTop: 20 }}
+            />
+            <PrimaryButton
+              label="Nieuwe code sturen"
+              variant="secondary"
+              onPress={handleForgotPassword}
+              style={{ marginTop: 12 }}
+            />
+            <Pressable
+              onPress={() => {
+                setResetStep("none");
+                setGeneralError(null);
+              }}
+              style={{ marginTop: 20, alignSelf: "center" }}
+              hitSlop={8}
+            >
+              <Text style={{ color: c.mutedForeground, fontFamily: "Inter_500Medium" }}>
+                Terug naar aanmelden
+              </Text>
+            </Pressable>
+          </>
+        ) : resetStep === "new_password" ? (
+          <>
+            <Text style={[styles.label, { color: c.mutedForeground }]}>Nieuw wachtwoord</Text>
+            <View style={styles.passwordWrap}>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.passwordInput,
+                  { color: c.foreground, borderColor: c.input, backgroundColor: c.card },
+                ]}
+                secureTextEntry={!showPassword}
+                value={newPassword}
+                placeholder="Kies een nieuw wachtwoord"
+                placeholderTextColor={c.mutedForeground}
+                onChangeText={setNewPassword}
+              />
+              <Pressable
+                style={styles.eyeButton}
+                onPress={() => setShowPassword((v) => !v)}
+                accessibilityLabel={showPassword ? "Wachtwoord verbergen" : "Wachtwoord tonen"}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={c.mutedForeground}
+                />
+              </Pressable>
+            </View>
+            {generalError && (
+              <Text style={[styles.error, { color: c.destructive }]}>{generalError}</Text>
+            )}
+            <PrimaryButton
+              label="Wachtwoord opslaan"
+              onPress={handleSubmitNewPassword}
+              loading={busy}
+              disabled={newPassword.length < 8}
+              style={{ marginTop: 20 }}
+            />
+          </>
+        ) : (
+          <>
         <Text style={[styles.label, { color: c.mutedForeground }]}>E-mailadres</Text>
         <TextInput
           style={[styles.input, { color: c.foreground, borderColor: c.input, backgroundColor: c.card }]}
@@ -128,6 +282,17 @@ export default function SignInScreen() {
           <Text style={[styles.error, { color: c.destructive }]}>{generalError}</Text>
         )}
 
+        <Pressable
+          onPress={handleForgotPassword}
+          disabled={!emailAddress || busy}
+          style={{ marginTop: 12, alignSelf: "flex-end", opacity: emailAddress ? 1 : 0.5 }}
+          hitSlop={8}
+        >
+          <Text style={{ color: c.primary, fontFamily: "Inter_500Medium", fontSize: 13 }}>
+            Wachtwoord vergeten?
+          </Text>
+        </Pressable>
+
         <PrimaryButton
           label="Aanmelden"
           onPress={handleSubmit}
@@ -146,6 +311,8 @@ export default function SignInScreen() {
             </Text>
           </Link>
         </View>
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
