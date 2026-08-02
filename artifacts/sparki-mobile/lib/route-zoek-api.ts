@@ -117,7 +117,10 @@ export type GenerateOutcome =
   | { ok: false; error: string };
 
 const POLL_INTERVAL_MS = 2500;
-const POLL_DEADLINE_MS = 4 * 60_000;
+// Ruim boven het 5-minuten-serverbudget: de server geeft bij een lange
+// berekening zélf een eerlijke einduitslag (route, 422, 503 of 504) — de app
+// moet die afwachten in plaats van er 60 s vóór al zelf op te geven.
+const POLL_DEADLINE_MS = 5.5 * 60_000;
 
 type JobPoll =
   | { done: false; phase: string | null }

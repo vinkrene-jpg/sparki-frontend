@@ -131,7 +131,12 @@ export function customModelFor(
       rules.push(ROAD_SURFACE_RULE, ROAD_UNKNOWN_SURFACE_RULE, STEPS_RULE);
       break;
     case "cycling-regular":
-      rules.push(GRAVEL_SURFACE_RULE, STEPS_RULE);
+      // Zelfde wegdeksturing als de racefiets: de harde afkeurpoort eist voor
+      // de gewone fiets óók 0% onverhard (taak #441) — een motor die gravel
+      // vrij laat bouwt dan alleen kandidaten die de poort daarna afkeurt.
+      // Bewezen 02-08-2026 rond Herentals: elke kandidaat bevatte onverhard,
+      // de generatie maalde 5 minuten en eindigde eerlijk maar leeg.
+      rules.push(ROAD_SURFACE_RULE, ROAD_UNKNOWN_SURFACE_RULE, STEPS_RULE);
       break;
     case "cycling-gravel":
       // Gravel (taak #445): onverhard is welkom; alleen zand/gras en trappen

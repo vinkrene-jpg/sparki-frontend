@@ -90,6 +90,15 @@ const NEAR_SURFACE_M = 10;
 // punten), dus in bochten kan een echte poort een paar meter naast het
 // rechtgetrokken segment liggen.
 const NEAR_GATE_M = 15;
+// Trappen: een trap is alleen een blokkade als de route er daadwerkelijk
+// OVERHEEN loopt (afstand ≈ 0 op de segmenten). Met de generieke 30 m telde
+// elke trap NAAST de weg (kerktrap, tunneltrap, trap naar een brug) mee en
+// keurde de fail-closed poort rond stadskernen ALLE kandidaten af — bewezen
+// 02-08-2026 rond Herentals: forbidden=0 maar steps=2-4 op elke kandidaat,
+// waardoor "route zoeken" tot de 5-minutengrens bleef draaien. 10 m dekt
+// GPS/kaart-offset ruim; gemeten wordt tegen de routesegmenten (niet alleen
+// de bemonsterde punten), net als bij poorten.
+const NEAR_STEPS_M = 10;
 
 const SOURCE = {
   name: "OpenStreetMap (via Overpass API)",
@@ -557,6 +566,13 @@ export function gatePassageSides(
  */
 export async function getRouteRemarks(
   geometry: RoutePathPoint[] | null | undefined,
+  opts?: {
+    // Gedeelde gebiedsvraag (routegeneratie): alle kandidaten uit één zoekterrein
+    // gebruiken exact dezelfde Overpass-bbox → één netwerkronde, daarna louter
+    // cache-treffers. [minLat, minLon, maxLat, maxLon]. Alleen gebruikt als het
+    // gebied de route volledig omvat; anders eerlijk de eigen route-bbox.
+    queryBbox?: [number, number, number, number];
+  },
 ): Promise<RouteRemark[] | null> {
   if (!geometry || geometry.length < 2) return null;
 
@@ -575,6 +591,21 @@ export async function getRouteRemarks(
     if (la > maxLat) maxLat = la;
     if (lo < minLon) minLon = lo;
     if (lo > maxLon) maxLon = lo;
+  }
+  const qb = opts?.queryBbox;
+  if (
+    qb != null &&
+    qb[0] <= minLat &&
+    qb[1] <= minLon &&
+    qb[2] >= maxLat &&
+    qb[3] >= maxLon &&
+    qb[2] - qb[0] <= 1 &&
+    qb[3] - qb[1] <= 1.5
+  ) {
+    // Gedeeld zoekterrein dekt de route: gebruik het als vraag-bbox zodat de
+    // Overpass-cache over kandidaten heen wordt hergebruikt. De filtering op
+    // afstand tot de routelijn hieronder blijft per route exact hetzelfde.
+    [minLat, minLon, maxLat, maxLon] = qb;
   }
   // Zeer grote gebieden: eerlijk overslaan i.p.v. een halve provincie ophalen.
   if (maxLat - minLat > 1 || maxLon - minLon > 1.5) return null;
@@ -638,7 +669,8 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
     const isAccess = cls.kind === "beperkte_toegang";
     const isSurface = cls.kind === "onverhard" || cls.kind === "slecht_wegdek";
     const isGate = cls.kind === "poort";
-    const needsRefine = isAccess || isSurface || isGate;
+    const isSteps = cls.kind === "trap";
+    const needsRefine = isAccess || isSurface || isGate || isSteps;
     const nearLimit =
       cls.kind === "natuurgebied"
         ? NEAR_AREA_M
@@ -648,7 +680,9 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
             ? NEAR_SURFACE_M
             : isGate
               ? NEAR_GATE_M
-              : NEAR_ROUTE_M;
+              : isSteps
+                ? NEAR_STEPS_M
+                : NEAR_ROUTE_M;
     // Grofmazige poort op de bemonsterde route; voor toegangsbeperkingen
     // daarna verfijnen op de VOLLEDIGE geometrie rond het dichtstbijzijnde
     // sample (samples liggen op lange routes honderden meters uit elkaar —
@@ -685,11 +719,11 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
             nearestIdx = gi;
           }
         }
-        if (isGate) {
-          // Puntobstakel: routegeometrie is bemonsterd, dus meet tegen de
+        if (isGate || isSteps) {
+          // Puntobstakel/trap: routegeometrie is bemonsterd, dus meet tegen de
           // SEGMENTEN rond het dichtstbijzijnde punt — anders valt een echte
-          // poort halverwege twee routepunten buiten de boot, of telt een
-          // hekje op een zijpad juist mee via een schuin punt.
+          // poort of trap halverwege twee routepunten buiten de boot, of telt
+          // een trap naast de weg juist mee via een schuin punt.
           let segBest = nearestM;
           for (let gi = Math.max(1, lo); gi <= hi; gi++) {
             const d = segmentDistM(p, geometry[gi - 1]!, geometry[gi]!);
@@ -1097,8 +1131,9 @@ export type RouteObstacles = {
  */
 export async function getRouteObstacles(
   geometry: RoutePathPoint[] | null | undefined,
+  opts?: { queryBbox?: [number, number, number, number] },
 ): Promise<RouteObstacles | null> {
-  const remarks = await getRouteRemarks(geometry);
+  const remarks = await getRouteRemarks(geometry, opts);
   if (remarks === null) return null;
   return countRouteObstacles(remarks);
 }
@@ -1162,9 +1197,12 @@ export function countRouteObstacles(remarks: RouteRemark[]): RouteObstacles {
  * `budgetMs` (interactieve paden) geeft een trage bron eerlijk `null` terug
  * — de renner wacht nooit op Overpass; achtergrondpaden meten volledig.
  */
-export function routeObstaclesOf(opts?: { budgetMs?: number }) {
+export function routeObstaclesOf(opts?: {
+  budgetMs?: number;
+  queryBbox?: [number, number, number, number];
+}) {
   return (path: RoutePathPoint[]): Promise<RouteObstacles | null> => {
-    const p = getRouteObstacles(path);
+    const p = getRouteObstacles(path, { queryBbox: opts?.queryBbox });
     if (opts?.budgetMs == null) return p;
     return Promise.race([
       p,

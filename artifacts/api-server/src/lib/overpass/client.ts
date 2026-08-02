@@ -58,8 +58,13 @@ const MIRRORS = [
 ] as const;
 
 // Een falende mirror gaat deze periode achteraan in plaats van elke aanvraag
-// opnieuw de rij op te houden. Kort genoeg om herstel snel op te merken.
-const MIRROR_COOLDOWN_MS = 90_000;
+// opnieuw de rij op te houden. Bewijs 02-08-2026: met 90s stond een DODE
+// mirror (maps.mail.ru gaf niets binnen 30s) elke ~2 vragen wéér vooraan en
+// verbrandde per vraag tot ~80s — de routegeneratie liep daardoor tegen de
+// 5-minutengrens terwijl overpass-api.de in <1s antwoordde. 10 minuten houdt
+// een kapotte mirror achteraan; herstel wordt vanzelf opgemerkt zodra de
+// gezonde mirrors zelf falen of de cooldown afloopt.
+const MIRROR_COOLDOWN_MS = 10 * 60_000;
 const cooldownUntil = new Map<string, number>();
 
 /** Mirrors in probeer-volgorde: gezonde eerst (vaste volgorde), koelende achteraan. */
@@ -229,7 +234,8 @@ const SAME_MIRROR_PAUSES_MS = [2_000, 5_000];
 
 type AttemptOutcome =
   | { kind: "ok"; answer: OverpassAnswer }
-  | { kind: "ratelimit" } // 429/504/timeout — herkansbaar op dezelfde mirror
+  | { kind: "ratelimit" } // 429/503/504 — herkansbaar op dezelfde mirror
+  | { kind: "timeout" } // geen antwoord binnen de tijd — mirror is (nu) dood, meteen door
   | { kind: "hard" }; // overige fouten — meteen volgende mirror
 
 async function attempt(
@@ -269,9 +275,12 @@ async function attempt(
       answer: { elements: json.elements, remark: json.remark ?? null },
     };
   } catch {
-    // AbortError (timeout) of netwerkfout: behandelen als herkansbaar —
-    // precies het intermitterende gedrag dat we eerder zagen.
-    return { kind: "ratelimit" };
+    // AbortError (timeout) of netwerkfout: een mirror die binnen de volle
+    // wachttijd niets terugstuurt herstelt vrijwel nooit binnen 2-5s —
+    // meteen doorschuiven naar de volgende mirror in plaats van hier nog
+    // 2× 25s te verbranden (bewijs 02-08-2026: dat joeg generaties over de
+    // 5-minutengrens).
+    return { kind: "timeout" };
   }
 }
 
@@ -339,6 +348,7 @@ export async function runOverpassQuery(
         }
         if (s) s.perMirror[endpoint]!.fail++;
         if (out.kind === "hard") break; // deze mirror is stuk voor deze query
+        if (out.kind === "timeout") break; // dood — niet herkansen, volgende mirror
         const pause = SAME_MIRROR_PAUSES_MS[i];
         if (pause == null) break; // herkansingen op deze mirror op
         await sleep(pause);

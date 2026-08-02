@@ -3325,6 +3325,19 @@ async function buildLoopCandidate(
         ? Promise.resolve(ctx.startName)
         : ctx.provider.reverseGeocode(ctx.start).catch(() => null);
 
+    // Gedeeld zoekterrein voor de obstakelmeting: elke lus-kandidaat blijft
+    // binnen ~halve doelafstand van de start. Eén gebiedsvraag voor álle
+    // kandidaten → één Overpass-netwerkronde, daarna cache-treffers (bewezen
+    // 02-08-2026 Herentals: per-kandidaat-vragen liepen tegen het 5-min-budget).
+    const areaRadiusDeg = (targetDistanceKm / 2 + 2) / 111;
+    const areaLonScale = Math.max(0.2, Math.cos((ctx.start.lat * Math.PI) / 180));
+    const areaQueryBbox: [number, number, number, number] = [
+      ctx.start.lat - areaRadiusDeg,
+      ctx.start.lon - areaRadiusDeg / areaLonScale,
+      ctx.start.lat + areaRadiusDeg,
+      ctx.start.lon + areaRadiusDeg / areaLonScale,
+    ];
+
     const _t_loop0 = performance.now();
     const orsResult = await generateVariedLoop(
       ctx.provider,
@@ -3363,14 +3376,14 @@ async function buildLoopCandidate(
         // Obstakel-poort (kort tijdbudget, interactief): trap/fietsverbod/
         // afgesloten poort = harde afkeur; minste poorten wint (grenzen
         // René 30-07-2026).
-        obstaclesOf: routeObstaclesOf({ budgetMs: 2500 }),
+        obstaclesOf: routeObstaclesOf({ budgetMs: 2500, queryBbox: areaQueryBbox }),
         // Fail-closed eindverificatie (taak #505): de WINNAAR wordt vóór
         // levering BLOKKEREND gemeten — het 2500 ms-budget hierboven is
         // alleen een selectie-heuristiek en liet 11/12 lussen met blokkades
         // door (Overpass 14–98 s, timeout was fail-open). Hard geblokkeerd ⇒
         // volgende kandidaat; meting definitief mislukt ⇒ eerlijke fout,
         // nooit een ongecontroleerde route leveren.
-        verifyObstaclesOf: routeObstaclesOf(),
+        verifyObstaclesOf: routeObstaclesOf({ queryBbox: areaQueryBbox }),
         // Meerdere voorstellen: naast de winnaar ook max 2 écht anders
         // lopende, niet-afgekeurde kandidaten uit de interne pool teruggeven
         // — die werden voorheen stil weggegooid.

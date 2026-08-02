@@ -143,7 +143,8 @@
 - [Ritgeschiedenis-routekandidaten](sparki-ridden-route-candidates.md) — "route candidates" is al de provider-store (naamclash!); ritten-engine apart; save altijd door blokkadepoort; nieuwe tabellen eisen SQL-migratie naast push.
 - [Route-hm ruisdrempel](sparki-elevation-gain-noise.md) — SRTM-ruis: summarizeTrack smooth±150m + 3m-drempel is hm-SSOT; profiel-y-as min 100 m; nooit rauwe provider-ascend prefereren.
 - [Kernwaarden herkomst-herstel](sparki-kernwaarden-herkomst.md) — elk kernwaarde-schrijfpad eist paspoort-event in zelfde tx (recordEventsForPatch); /profile levert `herkomst`; uppercase-CSS ⇒ e2e case-insensitive.
-- [Routegebruik-telling 02a](sparki-route-usage-telling.md) — maandtelling DB-uniek (user+route+Ams-maand), registreer vóór res.send in exports, 20%-vlag uit (geen server-side routedekking), tier-snapshot nooit herrekend.
+- [Routegebruik-telling 02a](sparki-route-usage-telling.md) — maandtelling DB-uniek (user+route+Ams-maand), registreer vóór res.send in exports, 20%-vlag AAN via gereden-dekking-endpoint, tier-snapshot nooit herrekend.
+- [Gratis-routelimieten F5](sparki-gratis-limieten-f5.md) — 8/maand+3 bewaard+30d; handhaving op ELK insert/gebruikspad (ook navigatie-start, aangepaste voorstellen, planroutes); invariant-na-insert tegen races.
 - [Klimmen in Route maken](sparki-klim-in-route.md) — specifieke klim = via-lus (enkelvoudig generate-pad), punt-tot-segment-verificatie ≤250 m of 422; deep-link nooit vertrouwen, canoniek uit osmId-detail.
 - [Route-zoeklaag bekend-eerst](sparki-route-search-layer.md) — bekende routes vóór generatie: pure rank+verify-laag, fail-closed blokkadecheck ook op oude routes, gedeeld matcht op kijkersgeometrie, hybride alleen op eigen basis.
 - [Merknaam-lint UI-copy](sparki-brand-copy-lint.md) — UI spreekt direct, nooit "Sparki <werkwoord>"; check-brand-copy.mjs in typecheck-api, uitzonderingen zin-exact in allowlist.
