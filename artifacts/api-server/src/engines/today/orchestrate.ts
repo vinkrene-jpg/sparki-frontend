@@ -184,7 +184,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
         ? "Je staat op ziek. Trainen wacht; rust is nu de snelste weg terug."
         : "Je staat op geblesseerd. Volg je herstelplan; er wordt niets ingepland tot je hersteld gemeld bent.",
       actions: [
-        { id: "health", label: "Bekijk je herstelstatus", href: "/vandaag?zelf=1" },
+        { id: "health", label: "Bekijk je herstelstatus", href: "/dashboard?zelf=1" },
       ],
       source: "athlete_profiles.health_status",
       confidence: null,
@@ -241,7 +241,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
       body: parts.join(" "),
       actions: [
         { id: "propose", label: "Laat een training voorstellen", href: "/trainen/toevoegen" },
-        { id: "rest", label: "Kies bewust voor herstel", href: "/vandaag?zelf=1" },
+        { id: "rest", label: "Kies bewust voor herstel", href: "/dashboard?zelf=1" },
       ],
       source: "planned_workouts + state-engine + races",
       confidence: state?.confidence ?? null,
@@ -284,7 +284,7 @@ export async function orchestrateToday(clerkId: string): Promise<TodayResult> {
       slot: "insight",
       title: state.movement.label,
       body: state.why[0]!.reading,
-      actions: [{ id: "state", label: "Bekijk de onderbouwing", href: "/vandaag?zelf=1" }],
+      actions: [{ id: "state", label: "Bekijk de onderbouwing", href: "/dashboard?zelf=1" }],
       source: "state-engine trend (7-daagse echte reeksen)",
       confidence: state.confidence,
       urgent: false,
