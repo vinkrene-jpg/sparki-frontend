@@ -449,13 +449,16 @@ export type OverpassElement = {
 // Herkansing met oplopende pauze op dezelfde mirror, mirror-gezondheid en de
 // persistente cache zitten in de gedeelde client; hier blijft alleen het
 // eerlijke contract over: null = geen antwoord, nooit "geen blokkades".
-async function runOverpass(query: string): Promise<OverpassElement[] | null> {
+async function runOverpass(
+  query: string,
+  retryOnceAfterMs?: number,
+): Promise<OverpassElement[] | null> {
   const answer = await runOverpassQuery(query, {
     timeoutMs: OVERPASS_TIMEOUT_MS,
-    // Kritieke poortmeting: geeft de eerste ronde over alle mirrors niets,
-    // dan één herkansing na 20 s (mirrors herstellen vaak binnen een minuut)
-    // in plaats van de generatie meteen op een eerlijke 503 te laten lopen.
-    retryOnceAfterMs: 20_000,
+    // Alleen de kritieke blokkade-poortmeting (verifyObstaclesOf) zet dit:
+    // één herkansing na een pauze i.p.v. meteen een eerlijke 503. Gewone
+    // remarks-reads en korte selectiemetingen blijven één ronde.
+    retryOnceAfterMs,
   });
   return answer ? (answer.elements as OverpassElement[]) : null;
 }
@@ -576,6 +579,8 @@ export async function getRouteRemarks(
     // cache-treffers. [minLat, minLon, maxLat, maxLon]. Alleen gebruikt als het
     // gebied de route volledig omvat; anders eerlijk de eigen route-bbox.
     queryBbox?: [number, number, number, number];
+    // Kritiek pad (blokkadepoort): één Overpass-herkansing na een pauze.
+    criticalRetry?: boolean;
   },
 ): Promise<RouteRemark[] | null> {
   if (!geometry || geometry.length < 2) return null;
@@ -641,7 +646,10 @@ way["leisure"="nature_reserve"](${bbox});
 way["boundary"~"^(protected_area|national_park)$"](${bbox});
 );out geom(${bbox}) 1200;`;
 
-  const elements = await runOverpass(query);
+  const elements = await runOverpass(
+    query,
+    opts?.criticalRetry ? 20_000 : undefined,
+  );
   if (elements === null) return null;
 
   // Cumulatieve km langs de volledige geometrie voor km-posities.
@@ -1135,7 +1143,10 @@ export type RouteObstacles = {
  */
 export async function getRouteObstacles(
   geometry: RoutePathPoint[] | null | undefined,
-  opts?: { queryBbox?: [number, number, number, number] },
+  opts?: {
+    queryBbox?: [number, number, number, number];
+    criticalRetry?: boolean;
+  },
 ): Promise<RouteObstacles | null> {
   const remarks = await getRouteRemarks(geometry, opts);
   if (remarks === null) return null;
@@ -1204,9 +1215,15 @@ export function countRouteObstacles(remarks: RouteRemark[]): RouteObstacles {
 export function routeObstaclesOf(opts?: {
   budgetMs?: number;
   queryBbox?: [number, number, number, number];
+  // Alleen zetten op de blokkerende eindmeting (verifyObstaclesOf), nooit op
+  // korte selectiemetingen met budgetMs.
+  criticalRetry?: boolean;
 }) {
   return (path: RoutePathPoint[]): Promise<RouteObstacles | null> => {
-    const p = getRouteObstacles(path, { queryBbox: opts?.queryBbox });
+    const p = getRouteObstacles(path, {
+      queryBbox: opts?.queryBbox,
+      criticalRetry: opts?.criticalRetry,
+    });
     if (opts?.budgetMs == null) return p;
     return Promise.race([
       p,

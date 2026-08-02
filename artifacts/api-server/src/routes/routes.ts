@@ -3395,7 +3395,10 @@ async function buildLoopCandidate(
         // door (Overpass 14–98 s, timeout was fail-open). Hard geblokkeerd ⇒
         // volgende kandidaat; meting definitief mislukt ⇒ eerlijke fout,
         // nooit een ongecontroleerde route leveren.
-        verifyObstaclesOf: routeObstaclesOf({ queryBbox: areaQueryBbox }),
+        verifyObstaclesOf: routeObstaclesOf({
+          queryBbox: areaQueryBbox,
+          criticalRetry: true,
+        }),
         // Meerdere voorstellen: naast de winnaar ook max 2 écht anders
         // lopende, niet-afgekeurde kandidaten uit de interne pool teruggeven
         // — die werden voorheen stil weggegooid.

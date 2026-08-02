@@ -457,12 +457,19 @@ export async function runOverpassQuery(
   // Eén ronde, plus (alleen voor kritieke vragen) één herkansing na een
   // pauze — mirrors flip-floppen per minuut, dus "zo weer terug" is reëel.
   const networkRound = (async () => {
-    const first = await hedgedRound();
-    if (first || !opts.retryOnceAfterMs) return first;
-    const ctx2 = budgetStore.getStore();
-    if (ctx2 && ctx2.stats.requests >= ctx2.max) return null;
-    await sleep(opts.retryOnceAfterMs);
-    return hedgedRound();
+    let ans = await hedgedRound();
+    if (!ans && opts.retryOnceAfterMs) {
+      const ctx2 = budgetStore.getStore();
+      if (!ctx2 || ctx2.stats.requests < ctx2.max) {
+        await sleep(opts.retryOnceAfterMs);
+        ans = await hedgedRound();
+      }
+    }
+    // Cache-persist BINNEN de gedeelde promise: pas daarna mag de
+    // in-flight-registratie weg, anders kan een derde vrager in het gaatje
+    // tussen delete en cacheWrite alsnog een dubbele netwerkronde starten.
+    if (ans && useCache) await cacheWrite(key, ans);
+    return ans;
   })();
 
   // Registreer de lopende ronde zodat identieke vragen (warm-up + poort-
