@@ -315,3 +315,20 @@ Conform dezelfde afspraak als MUX-B1 t/m B4: pas een definitief
   stops · K5=A/benoemde testset · K6=A/input≠toestemming). *(Correctie 01-08-2026: eerdere
   doorvoering las K2 als B; René's definitieve beslisblok zegt K2=A — een volgende opdracht in
   een reeks start niet vanzelf; `ROUTE_PAKKET_02c/02d` en taak #536 zijn nog niet geautoriseerd.)*
+
+---
+
+## Technische keuze Replit (MR-09, MOBIEL_ROLLEN_01 F0) — Samenvoegroute app + browser (02-08-2026)
+
+- **Keuze (Replit, geen productbesluit):** Route B — native kern + ingebedde
+  webomgeving met Clerk-sessiebrug. De vier native onderdelen (navigeren, rit
+  opnemen, wedstrijddagmodus, achtergrondlocatie) blijven de bestaande native
+  schermen; alle rolomgevingen rendert de app via een geauthenticeerde
+  webweergave van `artifacts/sparki` — zelfde code, zelfde schil, zelfde publish.
+- **Reden:** rolomgevingen bestaan al volledig in de webcodebasis; elke andere
+  route bouwt ze een tweede keer (herstelgrond MR-24) of degradeert de
+  rijfuncties (MR-08). Rechten blijven uitsluitend server-side (MR-16/MR-28).
+- **Onderbouwing + migratiepad per scherm:**
+  `docs/build-packages/MOBIEL_ROLLEN_01/F0_SAMENVOEGROUTE.md`.
+- **Terug te draaien** met één zin van René; tot en met F1 is niets gebouwd dat
+  een andere route blokkeert.
