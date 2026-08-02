@@ -7,6 +7,17 @@
 
 Laatst bijgewerkt: 2026-08-01.
 
+## Beslist 02-08-2026 — Abonnementen testen + Gratis-instap (René)
+
+- Testers (vink.rene@gmail.com, rene@fpsbouw.nl) kiezen ná acceptatie van de
+  voorwaarden ZELF welk abonnement (Gratis/Go/Complete/Team) ze testen — geen
+  handmatige admin-actie per wissel nodig.
+- Productrichting Gratis: géén inlog nodig; bezoeker start direct op de
+  routeplanner. Betaalde functies tonen op logische "kruispunten" een nette
+  melding dat daar een betaald abonnement voor nodig is (commercieel blijven).
+  Kanttekening (nog uit te werken): anonieme toegang botst met de huidige
+  account-poort; scope en privacy-randen bepalen we in het bouwpakket.
+
 ## Beslist 01-08-2026 — BREDE VRIJGAVE (René)
 
 - De al gegeven opdrachten voor de VIER bouwpakketten (DATA_TRUST_01, ABONNEMENT_01,
