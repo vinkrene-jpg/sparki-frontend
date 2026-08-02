@@ -4,6 +4,7 @@ import { Redirect, Stack } from "expo-router";
 import React, { useEffect } from "react";
 
 import ConsentGate from "@/components/ConsentGate";
+import TestContextBanner from "@/components/TestContextBanner";
 import colors from "@/constants/colors";
 import { useUploadQueue } from "@/hooks/useUploadQueue";
 
@@ -30,6 +31,8 @@ export default function AppLayout() {
   // (/api/legal/status); de server blokkeert persoonlijke routes zelf al.
   return (
     <ConsentGate>
+      {/* Niet-productie: permanente omgevings- en identiteitsmarkering. */}
+      <TestContextBanner />
       <Stack
         screenOptions={{
           headerShown: false,
