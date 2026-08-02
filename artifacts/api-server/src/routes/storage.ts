@@ -133,6 +133,16 @@ router.get(
           res.status(404).json({ error: "Bestand niet gevonden" });
           return;
         }
+        // F7/F8: berichten-bijlagen en clubdocumenten hebben een EIGEN serve-pad
+        // met attachment/nosniff-poort en een breder zichtbaarheidsmodel. De
+        // generieke route weigert ze altijd fail-closed met 404 — óók voor de
+        // eigenaar en óók na intrekking (nooit via een statuscode onthullen dat
+        // er iets bestond).
+        const moduleOwned = new Set(["club_message", "club_document"]);
+        if (owned.every((f) => moduleOwned.has(f.retentionCategory))) {
+          res.status(404).json({ error: "Bestand niet gevonden" });
+          return;
+        }
         // KORREKTE dedupe-revoke-semantiek: serveer zolang er ≥1 LEVENDE rij van
         // de rechthebbende is (ingetrokken rijen tellen niet mee). Intrekken van
         // rij A mag de nog levende rij B NIET doden — anders zou een gedeeld

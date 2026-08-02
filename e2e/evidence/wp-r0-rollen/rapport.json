@@ -1,5 +1,35 @@
 [
   {
+    "identiteit": "governor-fixture-parent",
+    "rol": "parent",
+    "regels": [
+      {
+        "status": "GEKLIKT",
+        "detail": "identiteit TESTFIXTURE Ouder gekozen (echte klik + herlaad)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/auth/me → governor-fixture-parent rol parent"
+      },
+      {
+        "status": "OK",
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE OUDER · ROL PARENT\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-parent-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "paginalijst rolbewust (\"Start (ouder)\", geen Club-beheer)"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
+      },
+      {
+        "status": "FOUT",
+        "detail": "/api/parent/athletes → 200, 2 kinderen; verwacht 1"
+      }
+    ]
+  },
+  {
     "identiteit": "governor-fixture-trainer-zelfstandig",
     "rol": "coach",
     "regels": [
@@ -13,7 +43,11 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TRAINER ZELFSTANDIG · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-zelfstandig-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE TRAINER ZELFSTANDIG · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-zelfstandig-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "FOUT",
+        "detail": "paginalijst mist rol-startknop \"Start (trainer)\""
       },
       {
         "status": "OK",
@@ -43,7 +77,11 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TRAINER EEN · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-1-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE TRAINER EEN · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-1-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "FOUT",
+        "detail": "paginalijst mist rol-startknop \"Start (trainer)\""
       },
       {
         "status": "OK",
@@ -73,7 +111,11 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TRAINER TWEE (NIET GEKOPPELD) · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-2-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE TRAINER TWEE (NIET GEKOPPELD) · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-trainer-2-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "FOUT",
+        "detail": "paginalijst mist rol-startknop \"Start (trainer)\""
       },
       {
         "status": "OK",
@@ -103,7 +145,11 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE HOOFDTRAINER · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-hoofdtrainer-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE HOOFDTRAINER · ROL COACH\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-hoofdtrainer-desktop-03-home-als-identiteit.png)"
+      },
+      {
+        "status": "FOUT",
+        "detail": "paginalijst mist rol-startknop \"Start (trainer)\""
       },
       {
         "status": "OK",
@@ -133,7 +179,7 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE CLUBBEHEERDER · ROL ATHLETE\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-clubbeheerder-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE CLUBBEHEERDER · ROL ATHLETE\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-clubbeheerder-desktop-03-home-als-identiteit.png)"
       },
       {
         "status": "OK",
@@ -159,7 +205,7 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE MECHANIEKER · ROL ATHLETE\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-mechanieker-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE MECHANIEKER · ROL ATHLETE\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-mechanieker-desktop-03-home-als-identiteit.png)"
       },
       {
         "status": "OK",
@@ -185,7 +231,7 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 98644090 · TESTFIXTURE TESTER · ROL ATHLETE · HOOFDTESTER\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-tester-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE TESTER · ROL ATHLETE · HOOFDTESTER\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-tester-desktop-03-home-als-identiteit.png)"
       },
       {
         "status": "OK",
@@ -194,36 +240,6 @@
       {
         "status": "OK",
         "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
-      }
-    ]
-  },
-  {
-    "identiteit": "governor-fixture-parent",
-    "rol": "parent",
-    "regels": [
-      {
-        "status": "GEKLIKT",
-        "detail": "identiteit TESTFIXTURE Ouder gekozen (echte klik + herlaad)"
-      },
-      {
-        "status": "OK",
-        "detail": "/api/auth/me → governor-fixture-parent rol parent"
-      },
-      {
-        "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ BB408B36 · TESTFIXTURE OUDER · ROL PARENT\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-parent-desktop-03-home-als-identiteit.png)"
-      },
-      {
-        "status": "OK",
-        "detail": "paginalijst rolbewust (\"Start (ouder)\", geen Club-beheer)"
-      },
-      {
-        "status": "OK",
-        "detail": "/api/admin/status → 403 (403-bewijs waar verwacht)"
-      },
-      {
-        "status": "OK",
-        "detail": "/api/parent/athletes → 1 kind(eren)"
       }
     ]
   },
@@ -241,7 +257,7 @@
       },
       {
         "status": "OK",
-        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ BB408B36 · TESTFIXTURE ADMIN TESTBEHEER · ROL ATHLETE · ADMIN\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-admin-desktop-03-home-als-identiteit.png)"
+        "detail": "banner: \"TESTCONTEXT · DEV PREVIEW @ 857AEC22 · TESTFIXTURE ADMIN TESTBEHEER · ROL ATHLETE · ADMIN\" (bewijs: /home/runner/workspace/e2e/evidence/wp-r0-rollen/rol-admin-desktop-03-home-als-identiteit.png)"
       },
       {
         "status": "OK",
