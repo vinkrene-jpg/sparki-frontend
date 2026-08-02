@@ -17,6 +17,14 @@ Laatst bijgewerkt: 2026-08-01.
   melding dat daar een betaald abonnement voor nodig is (commercieel blijven).
   Kanttekening (nog uit te werken): anonieme toegang botst met de huidige
   account-poort; scope en privacy-randen bepalen we in het bouwpakket.
+- Gratis-limiet (02-08): 8 routes per maand uit ÉÉN potje, met daarin 8×
+  een GPX-download. "Gebruikt" = minstens 20% van die route daadwerkelijk
+  gereden. Kanttekening: de bestaande maandtelling (routegebruik 02a) telt
+  nu bij registratie/export; de 20%-gereden-regel staat bewust uit omdat er
+  nog geen server-side routedekking gemeten wordt — die meting is dus
+  onderdeel van de bouw vóór deze regel eerlijk kan gelden.
+- De taakvoorstellen #549/#550 zijn door René geannuleerd; richting blijft
+  vastgelegd hier, bouw start pas op expliciete opdracht.
 
 ## Beslist 01-08-2026 — BREDE VRIJGAVE (René)
 
