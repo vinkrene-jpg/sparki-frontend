@@ -37,12 +37,87 @@ function isActiveHref(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href)
 }
 
+// Buitencomponent: gate't puur op `open`. Bevat GEEN hooks die conditioneel
+// mogen wegvallen — er staat één useEffect die altijd draait (met een
+// vroege return in de body, niet in de hooklijst), zodat de Rules of Hooks
+// nooit worden geschonden. Alle risicovolle hooks/berekeningen zitten in
+// MainMenuContent, die alleen wordt gemount als het menu open is. Zo kan
+// open→close→open nooit "rendered fewer hooks" veroorzaken.
 export function MainMenu({
   open,
   onClose,
   onOpenChat,
 }: {
   open: boolean
+  onClose: () => void
+  onOpenChat?: () => void
+}) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prev
+    }
+  }, [open, onClose])
+
+  if (!open) return null
+
+  // De boundary omhult het HELE binnencomponent — dus óók alle risicovolle
+  // berekeningen (contexts/chapters/clubs-mapping) die daarin gebeuren. Een
+  // fout in het menu toont zo de fallback IN het overlay en neemt nooit de
+  // onderliggende pagina mee.
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex flex-col overflow-y-auto overscroll-contain">
+      <button
+        type="button"
+        aria-label="Menu sluiten"
+        onClick={onClose}
+        className="fixed inset-0 bg-[#03050a]/80 backdrop-blur-md"
+      />
+      {/* Foutisolatie: een fout binnen het menu mag NOOIT de onderliggende
+          pagina meenemen. De boundary vangt de fout op en toont een nette
+          Nederlandse melding IN het menu-overlay, met een sluitknop die
+          onClose aanroept zodat je gewoon terug bent op de pagina. */}
+      <ErrorBoundary
+        fallback={
+          <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
+            <p className="text-base font-semibold text-white/85">
+              Het menu kon niet worden geladen
+            </p>
+            <p className="max-w-xs text-sm text-white/45">
+              Er ging iets mis in het menu. De pagina zelf blijft gewoon staan —
+              sluit het menu en probeer het opnieuw.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-2 rounded-full border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            >
+              Menu sluiten
+            </button>
+          </div>
+        }
+      >
+        <MainMenuContent onClose={onClose} onOpenChat={onOpenChat} />
+      </ErrorBoundary>
+    </div>,
+    document.body,
+  )
+}
+
+// Binnencomponent: alle hooks en risicovolle berekeningen wonen hier. Wordt
+// uitsluitend gemount als het menu open is, dus de hooklijst verdwijnt netjes
+// bij sluiten zonder de Rules of Hooks te breken.
+function MainMenuContent({
+  onClose,
+  onOpenChat,
+}: {
   onClose: () => void
   onOpenChat?: () => void
 }) {
@@ -75,22 +150,6 @@ export function MainMenu({
           : billing
             ? "Gratis"
             : null
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.removeEventListener("keydown", onKey)
-      document.body.style.overflow = prev
-    }
-  }, [open, onClose])
-
-  if (!open) return null
 
   // Fail-closed op de hoofdstukkenlijst: een onbekende rolwaarde uit
   // productie mag nooit een niet-array of misvormde rij (zonder icon/label)
@@ -189,38 +248,7 @@ export function MainMenu({
     ? contexts.filter((c) => c.label.toLowerCase().includes(contextFilter.trim().toLowerCase()))
     : contexts
 
-  return createPortal(
-    <div className="fixed inset-0 z-[80] flex flex-col overflow-y-auto overscroll-contain">
-      <button
-        type="button"
-        aria-label="Menu sluiten"
-        onClick={onClose}
-        className="fixed inset-0 bg-[#03050a]/80 backdrop-blur-md"
-      />
-      {/* Foutisolatie: een fout binnen het menu mag NOOIT de onderliggende
-          pagina meenemen. De boundary vangt de fout op en toont een nette
-          Nederlandse melding IN het menu-overlay, met een sluitknop die
-          onClose aanroept zodat je gewoon terug bent op de pagina. */}
-      <ErrorBoundary
-        fallback={
-          <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
-            <p className="text-base font-semibold text-white/85">
-              Het menu kon niet worden geladen
-            </p>
-            <p className="max-w-xs text-sm text-white/45">
-              Er ging iets mis in het menu. De pagina zelf blijft gewoon staan —
-              sluit het menu en probeer het opnieuw.
-            </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-2 rounded-full border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-            >
-              Menu sluiten
-            </button>
-          </div>
-        }
-      >
+  return (
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pb-16 pt-12">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -454,8 +482,5 @@ export function MainMenu({
           )}
         </div>
       </div>
-      </ErrorBoundary>
-    </div>,
-    document.body,
   )
 }

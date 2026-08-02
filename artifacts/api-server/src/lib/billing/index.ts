@@ -230,6 +230,49 @@ export function deriveBillingState(args: {
   return base;
 }
 
+/**
+ * Kiest — consistent met getBillingState — de gezaghebbende subscription-rij
+ * uit meerdere rijen (her-abonneren): de MEEST RECENT bijgewerkte. Nooit de
+ * oudste, want een oude verlopen rij mag een nieuw actief Stripe-abonnement
+ * niet maskeren.
+ */
+export function latestSubscription(
+  subs: BillingSubscription[],
+): BillingSubscription | null {
+  return subs
+    .slice()
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0] ?? null;
+}
+
+/**
+ * Loopt er nog een facturatie/recht op EEN van deze subscription-rijen? Beoordeelt
+ * alle rijen (niet alleen de nieuwste) fail-closed: bij twijfel = ja, blokkeer.
+ * "Lopend" = Stripe kan nog factureren of de gebruiker heeft nog betaalde toegang:
+ * active, grace (grace nog niet voorbij), canceled (periode nog niet voorbij),
+ * paused (abonnement bestaat nog bij Stripe, alleen bevroren). incomplete/expired/
+ * blocked/unknown tellen NIET als lopend (geen doorlopende facturatie).
+ */
+export function hasOngoingBilling(
+  subs: BillingSubscription[],
+  now = new Date(),
+): boolean {
+  return subs.some((sub) => {
+    switch (sub.status) {
+      case "active":
+      case "paused":
+        return true;
+      case "grace":
+        // Onbekende grace-datum ⇒ fail-closed als lopend.
+        return sub.graceUntil == null || sub.graceUntil > now;
+      case "canceled":
+        // Opgezegd maar toegang tot periode-einde ⇒ lopend tot dat einde.
+        return sub.currentPeriodEnd == null || sub.currentPeriodEnd > now;
+      default:
+        return false;
+    }
+  });
+}
+
 /** Volledige status voor de ingelogde gebruiker (server is bron van waarheid). */
 export async function getBillingState(clerkId: string): Promise<BillingStateView> {
   const [profile] = await db
@@ -252,8 +295,7 @@ export async function getBillingState(clerkId: string): Promise<BillingStateView
     .from(billingSubscriptionsTable)
     .where(eq(billingSubscriptionsTable.clerkId, clerkId));
   // Meerdere rijen (her-abonneren): neem de meest recent bijgewerkte.
-  const sub =
-    subs.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0] ?? null;
+  const sub = latestSubscription(subs);
   const trialRows = await db
     .select({
       entitlementKey: userEntitlementsTable.entitlementKey,
@@ -594,56 +636,65 @@ export async function downgradeToFree(clerkId: string): Promise<
   | { ok: true; revokedTrials: number }
   | { ok: false; reason: "legacy" | "actief_abonnement" }
 > {
-  const [profile] = await db
-    .select({ entitlementMode: userProfilesTable.entitlementMode })
-    .from(userProfilesTable)
-    .where(eq(userProfilesTable.clerkId, clerkId));
-  if (!profile || profile.entitlementMode === "legacy_unrestricted") {
-    return { ok: false, reason: "legacy" };
-  }
-  const [sub] = await db
-    .select({ status: billingSubscriptionsTable.status })
-    .from(billingSubscriptionsTable)
-    .where(eq(billingSubscriptionsTable.clerkId, clerkId))
-    .orderBy(billingSubscriptionsTable.updatedAt);
-  if (sub && (sub.status === "active" || sub.status === "grace")) {
-    // Een echt betaald abonnement zeg je op via de betaalprovider (portal),
-    // nooit door hier de rechten weg te halen terwijl de facturatie doorloopt.
-    return { ok: false, reason: "actief_abonnement" };
-  }
   const now = new Date();
-  await db
-    .update(userProfilesTable)
-    .set({ commercialTier: "FREE", productVariant: null, updatedAt: now })
-    .where(
-      and(
-        eq(userProfilesTable.clerkId, clerkId),
-        eq(userProfilesTable.entitlementMode, "subscription"),
-      ),
+  // Beslissing + update ATOMAIR: één transactie, en alle subscription-rijen
+  // van deze gebruiker worden vergrendeld (FOR UPDATE) zodat een gelijktijdige
+  // webhook/heractivatie de beslissing niet onder ons kan verschuiven.
+  return db.transaction(async (tx) => {
+    const [profile] = await tx
+      .select({ entitlementMode: userProfilesTable.entitlementMode })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    if (!profile || profile.entitlementMode === "legacy_unrestricted") {
+      return { ok: false as const, reason: "legacy" as const };
+    }
+    // ALLE rijen (her-abonneren geeft meerdere), vergrendeld. Een oude verlopen
+    // rij mag een nieuw actief Stripe-abonnement nooit maskeren: we beoordelen
+    // álle rijen, consistent met deriveBillingState/hasOngoingBilling.
+    const subs = await tx
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.clerkId, clerkId))
+      .for("update");
+    if (hasOngoingBilling(subs, now)) {
+      // Een echt betaald/lopend abonnement zeg je op via de betaalprovider
+      // (portal), nooit door hier de rechten weg te halen terwijl de facturatie
+      // doorloopt.
+      return { ok: false as const, reason: "actief_abonnement" as const };
+    }
+    await tx
+      .update(userProfilesTable)
+      .set({ commercialTier: "FREE", productVariant: null, updatedAt: now })
+      .where(
+        and(
+          eq(userProfilesTable.clerkId, clerkId),
+          eq(userProfilesTable.entitlementMode, "subscription"),
+        ),
+      );
+    const revoked = await tx
+      .update(userEntitlementsTable)
+      .set({ status: "revoked", updatedAt: now })
+      .where(
+        and(
+          eq(userEntitlementsTable.clerkId, clerkId),
+          eq(userEntitlementsTable.entitlementType, "trial"),
+          eq(userEntitlementsTable.status, "active"),
+        ),
+      )
+      .returning({ id: userEntitlementsTable.id });
+    await tx
+      .update(subscriptionChoiceIntentsTable)
+      .set({ status: "geannuleerd", updatedAt: now })
+      .where(
+        and(
+          eq(subscriptionChoiceIntentsTable.clerkId, clerkId),
+          eq(subscriptionChoiceIntentsTable.status, "in_afwachting"),
+        ),
+      );
+    logger.info(
+      { clerkId, revokedTrials: revoked.length },
+      "downgrade to free applied (rights lowered, no payment needed)",
     );
-  const revoked = await db
-    .update(userEntitlementsTable)
-    .set({ status: "revoked", updatedAt: now })
-    .where(
-      and(
-        eq(userEntitlementsTable.clerkId, clerkId),
-        eq(userEntitlementsTable.entitlementType, "trial"),
-        eq(userEntitlementsTable.status, "active"),
-      ),
-    )
-    .returning({ id: userEntitlementsTable.id });
-  await db
-    .update(subscriptionChoiceIntentsTable)
-    .set({ status: "geannuleerd", updatedAt: now })
-    .where(
-      and(
-        eq(subscriptionChoiceIntentsTable.clerkId, clerkId),
-        eq(subscriptionChoiceIntentsTable.status, "in_afwachting"),
-      ),
-    );
-  logger.info(
-    { clerkId, revokedTrials: revoked.length },
-    "downgrade to free applied (rights lowered, no payment needed)",
-  );
-  return { ok: true, revokedTrials: revoked.length };
+    return { ok: true as const, revokedTrials: revoked.length };
+  });
 }

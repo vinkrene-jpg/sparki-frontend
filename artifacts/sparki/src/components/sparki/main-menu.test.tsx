@@ -21,6 +21,10 @@ GlobalRegistrator.register({ url: "http://localhost/vandaag" })
 let mockMyClubs: unknown = []
 let mockRoles: string[] = ["athlete"]
 let mockActiveRole = "athlete"
+// Bestuurbaar vangnet om een fout IN de menu-inhoud af te dwingen; useMyClubs
+// wordt binnen MainMenuContent aangeroepen, dus een throw hier valt netjes
+// binnen de ErrorBoundary die om de binnencomponent staat.
+let mockClubsThrow = false
 
 mock.module("@/contexts/UserContext", {
   namedExports: {
@@ -50,7 +54,10 @@ mock.module("@clerk/react", {
 mock.module("@/hooks/use-club", {
   namedExports: {
     useClubMembership: () => ({ isMember: false }),
-    useMyClubs: () => ({ data: mockMyClubs }),
+    useMyClubs: () => {
+      if (mockClubsThrow) throw new Error("geforceerde menu-fout")
+      return { data: mockMyClubs }
+    },
   },
 })
 
@@ -93,15 +100,19 @@ const reactPromise = import("react")
 const rtlPromise = import("@testing-library/react")
 const componentPromise = import("./main-menu")
 
-async function renderMenu() {
+async function renderMenu(open = true) {
   const React = (await reactPromise).default
   ;(globalThis as Record<string, unknown>).React = React
   const rtl = await rtlPromise
   const mod = await componentPromise
   const utils = rtl.render(
-    React.createElement(mod.MainMenu, { open: true, onClose: () => {} }),
+    React.createElement(mod.MainMenu, { open, onClose: () => {} }),
   )
-  return { ...utils, rtl }
+  const rerenderOpen = (next: boolean) =>
+    utils.rerender(
+      React.createElement(mod.MainMenu, { open: next, onClose: () => {} }),
+    )
+  return { ...utils, rtl, rerenderOpen }
 }
 
 test("(a) normale clubdata: menu rendert zonder throw", async () => {
@@ -169,6 +180,66 @@ test("onbekende actieve rol: geen crash op ROLE_LABEL-indexering", async () => {
     assert.ok(text.includes("HOOFDMENU"), "menu blijft staan bij onbekende rol")
     assert.ok(!text.includes("Het menu kon niet worden geladen"), "geen fout-fallback")
   } finally {
+    view.rtl.cleanup()
+  }
+})
+
+// (d) Rules-of-Hooks-regressie: open → close → open. Vroeger deed MainMenu een
+// `if (!open) return null` VÓÓR useMemo/andere hooks. Na een open render volgde
+// bij sluiten "rendered fewer hooks" en crashte React. De splitsing (gate in
+// buiten-, hooks in binnencomponent) moet open→close→open zonder throw laten.
+test("(d) open→close→open zonder crash (Rules of Hooks)", async () => {
+  mockActiveRole = "athlete"
+  mockRoles = ["athlete", "coach"]
+  mockMyClubs = []
+  mockClubsThrow = false
+  const view = await renderMenu(true)
+  try {
+    assert.ok(
+      (document.body.textContent ?? "").includes("HOOFDMENU"),
+      "menu is zichtbaar na eerste open",
+    )
+    // Sluiten: binnencomponent (met alle hooks) wordt ontkoppeld.
+    view.rerenderOpen(false)
+    assert.ok(
+      !(document.body.textContent ?? "").includes("HOOFDMENU"),
+      "menu is weg na sluiten",
+    )
+    // Opnieuw openen: mag niet crashen op de hooklijst.
+    view.rerenderOpen(true)
+    const text = document.body.textContent ?? ""
+    assert.ok(text.includes("HOOFDMENU"), "menu is weer zichtbaar na heropenen")
+    assert.ok(!text.includes("Het menu kon niet worden geladen"), "geen fout-fallback")
+  } finally {
+    view.rtl.cleanup()
+  }
+})
+
+// (e) Boundary-dekking: een geforceerde fout IN de menu-inhoud (useMyClubs
+// gooit) moet de fallback IN het menu-overlay tonen — niet de hele pagina
+// meenemen. De ErrorBoundary staat om het binnencomponent, dus de risicovolle
+// berekeningen vallen binnen de beschermde zone.
+test("(e) geforceerde fout in menu-inhoud toont fallback IN het menu", async () => {
+  mockActiveRole = "athlete"
+  mockRoles = ["athlete"]
+  mockMyClubs = []
+  mockClubsThrow = true
+  const view = await renderMenu(true)
+  try {
+    const text = document.body.textContent ?? ""
+    assert.ok(
+      text.includes("Het menu kon niet worden geladen"),
+      "fout-fallback is zichtbaar IN het menu",
+    )
+    assert.ok(text.includes("Menu sluiten"), "fallback biedt een sluitknop")
+    // De rest van het overlay (sluitknop-laag) blijft staan: de portal-root
+    // is niet ontkoppeld, dus de pagina eronder valt niet om.
+    assert.ok(
+      document.querySelector('[aria-label="Menu sluiten"]') != null,
+      "overlay-sluitknop blijft staan (pagina eronder valt niet om)",
+    )
+  } finally {
+    mockClubsThrow = false
     view.rtl.cleanup()
   }
 })

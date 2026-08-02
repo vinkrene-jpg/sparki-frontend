@@ -22,12 +22,71 @@ import { runSurfaceBackfill } from "./surface-backfill";
 import { runScheduledObservationCleanup } from "../jobs/observation-cleanup";
 import { runParentAgeTransition } from "./parent-age-transition";
 import { runHealthChecks } from "./health/engine";
-import { eq } from "drizzle-orm";
-import { db, athleteGoalsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { db, pool, athleteGoalsTable } from "@workspace/db";
 import { buildMonthlyProposals } from "./goals";
 
 let started = false;
 let inFlight = false;
+
+// Cross-instance vergrendeling voor de geplande jobs. Proces-lokale booleans
+// zijn NIET genoeg zodra er meer dan één instantie draait: dan zou elke
+// instantie de dag- of maand-job draaien. We combineren daarom twee lagen:
+//   1. Een Postgres ADVISORY LOCK (pg_try_advisory_lock) — voorkomt dat twee
+//      instanties tegelijk aan dezelfde job beginnen. LET OP (memory-les):
+//      advisory locks zijn SESSIE-gebonden, dus lock én unlock MOETEN op
+//      dezelfde verbinding gebeuren. We houden daarom één toegewijde client
+//      vast voor de hele claim-en-run, en geven die pas in finally vrij.
+//   2. Een DB-CLAIM per Amsterdamse dag/maand (INSERT ON CONFLICT DO NOTHING in
+//      route_library_daily_state) — de instantie die de rij als eerste plaatst,
+//      wint en draait; verlies = stil overslaan. Zo draait de job hooguit één
+//      keer per dag/maand, óók na een herstart (de claim overleeft het proces).
+// Vaste namespace voor de scheduler-advisory-locks (los van andere locks).
+const SCHEDULER_LOCK_NS = 748_120_001;
+
+/**
+ * Draait `job` hooguit één keer per unieke `claimKey`, over ALLE instanties
+ * heen. Retourneert of deze instantie de claim won (en dus draaide). Fouten uit
+ * `job` propageren naar de aanroeper (die ze logt); de lock/claim wordt altijd
+ * netjes opgeruimd.
+ */
+async function withJobClaim(
+  claimKey: string,
+  job: () => Promise<void>,
+): Promise<boolean> {
+  // Toegewijde verbinding: advisory lock + unlock op DEZELFDE sessie.
+  const client = await pool.connect();
+  let locked = false;
+  try {
+    const lock = await client.query<{ locked: boolean }>(
+      "SELECT pg_try_advisory_lock($1, hashtext($2)) AS locked",
+      [SCHEDULER_LOCK_NS, claimKey],
+    );
+    locked = lock.rows[0]?.locked === true;
+    if (!locked) return false; // een andere instantie is er al mee bezig
+
+    // DB-claim: wie de rij als eerste plaatst, draait — anders stil overslaan.
+    const claimed = await db.execute(sql`
+      INSERT INTO route_library_daily_state (key, count) VALUES (${claimKey}, 0)
+      ON CONFLICT (key) DO NOTHING
+      RETURNING key
+    `);
+    if (claimed.rows.length === 0) return false;
+
+    await job();
+    return true;
+  } finally {
+    if (locked) {
+      await client
+        .query("SELECT pg_advisory_unlock($1, hashtext($2))", [
+          SCHEDULER_LOCK_NS,
+          claimKey,
+        ])
+        .catch(() => {});
+    }
+    client.release();
+  }
+}
 
 // Nachtelijke bibliotheek-backfill: max één poging per Amsterdamse nacht
 // vanuit dit proces (goedkope pre-check); de échte éénmaligheid over ALLE
@@ -115,8 +174,10 @@ async function maybeRunSurfaceBackfill(): Promise<void> {
 // (default: aan in productie). Elke run schrijft een health_check_batches-rij
 // met triggeredBy "scheduler" — precies de trace die /admin leest, zodat
 // "nog nooit gedraaid" meetbaar verdwijnt. Fouten worden gelogd, nooit fataal.
-let lastHealthCheckDay = "";
-
+//
+// Éénmaligheid over ALLE instanties heen loopt via withJobClaim (advisory lock
+// + DB-claim per Amsterdamse dag); de proces-lokale boolean is vervangen omdat
+// die bij meerdere instanties tot dubbelruns leidde.
 async function maybeRunHealthCheck(): Promise<void> {
   const flag = process.env.HEALTH_CHECK_IN_PROCESS;
   const enabled =
@@ -128,23 +189,29 @@ async function maybeRunHealthCheck(): Promise<void> {
   if (!enabled) return;
   const { day, hour } = amsterdamParts();
   if (hour < 4 || hour >= 6) return;
-  if (day === lastHealthCheckDay) return;
-  lastHealthCheckDay = day;
-  const { batchId, outcomes } = await runHealthChecks({
-    mode: "daily",
-    triggeredBy: "scheduler",
+  const won = await withJobClaim(`job:health:${day}`, async () => {
+    const { batchId, outcomes } = await runHealthChecks({
+      mode: "daily",
+      triggeredBy: "scheduler",
+    });
+    const counts = outcomes.reduce(
+      (acc, o) => {
+        acc[o.statusColor] = (acc[o.statusColor] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+    logger.info(
+      { healthCheck: "scheduler", batchId, total: outcomes.length, ...counts },
+      "in-process health check run done",
+    );
   });
-  const counts = outcomes.reduce(
-    (acc, o) => {
-      acc[o.statusColor] = (acc[o.statusColor] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-  logger.info(
-    { healthCheck: "scheduler", batchId, total: outcomes.length, ...counts },
-    "in-process health check run done",
-  );
+  if (!won) {
+    logger.info(
+      { healthCheck: "scheduler", day },
+      "health check al geclaimd door andere instantie — overslaan",
+    );
+  }
 }
 
 // Maandelijkse doelen-review (job:goal-review): max één automatische run per
@@ -154,8 +221,10 @@ async function maybeRunHealthCheck(): Promise<void> {
 // er wordt niets toegepast zonder expliciete bevestiging in de app. Elke run
 // schrijft goal_proposals-rijen — de trace die /admin leest. Los in-/
 // uitschakelbaar met GOAL_REVIEW_IN_PROCESS (default: aan in productie).
-let lastGoalReviewMonth = "";
-
+//
+// Éénmaligheid over ALLE instanties heen loopt via withJobClaim (advisory lock
+// + DB-claim per Amsterdamse MAAND); de proces-lokale boolean is vervangen
+// omdat die bij meerdere instanties tot dubbelruns leidde.
 async function maybeRunGoalReview(): Promise<void> {
   const flag = process.env.GOAL_REVIEW_IN_PROCESS;
   const enabled =
@@ -170,31 +239,37 @@ async function maybeRunGoalReview(): Promise<void> {
   if (hour < 6 || hour >= 7) return;
   // day is "YYYY-MM-DD"; de maand-sleutel "YYYY-MM" begrenst tot 1×/maand.
   const monthKey = day.slice(0, 7);
-  if (monthKey === lastGoalReviewMonth) return;
-  lastGoalReviewMonth = monthKey;
 
-  const rows = await db
-    .selectDistinct({ clerkId: athleteGoalsTable.clerkId })
-    .from(athleteGoalsTable)
-    .where(eq(athleteGoalsTable.status, "active"));
+  const won = await withJobClaim(`job:goal-review:${monthKey}`, async () => {
+    const rows = await db
+      .selectDistinct({ clerkId: athleteGoalsTable.clerkId })
+      .from(athleteGoalsTable)
+      .where(eq(athleteGoalsTable.status, "active"));
 
-  let created = 0;
-  let skipped = 0;
-  let failed = 0;
-  for (const { clerkId } of rows) {
-    try {
-      const result = await buildMonthlyProposals(clerkId);
-      created += result.created;
-      skipped += result.skipped;
-    } catch (err) {
-      failed++;
-      logger.error({ err, clerkId }, "in-process goal-review athlete failed");
+    let created = 0;
+    let skipped = 0;
+    let failed = 0;
+    for (const { clerkId } of rows) {
+      try {
+        const result = await buildMonthlyProposals(clerkId);
+        created += result.created;
+        skipped += result.skipped;
+      } catch (err) {
+        failed++;
+        logger.error({ err, clerkId }, "in-process goal-review athlete failed");
+      }
     }
+    logger.info(
+      { goalReview: "scheduler", athletes: rows.length, created, skipped, failed },
+      "in-process goal-review run done",
+    );
+  });
+  if (!won) {
+    logger.info(
+      { goalReview: "scheduler", monthKey },
+      "goal-review al geclaimd door andere instantie — overslaan",
+    );
   }
-  logger.info(
-    { goalReview: "scheduler", athletes: rows.length, created, skipped, failed },
-    "in-process goal-review run done",
-  );
 }
 
 function intEnv(name: string, fallback: number): number {

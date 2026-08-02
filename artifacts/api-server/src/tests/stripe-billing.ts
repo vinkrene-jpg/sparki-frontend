@@ -33,6 +33,7 @@ import {
   ensureBillingFlagSeed,
   getBillingState,
   sweepTrialNotices,
+  downgradeToFree,
 } from "../lib/billing";
 import {
   setStripeGatewayForTests,
@@ -916,6 +917,76 @@ async function main() {
     assert(row?.status === "unknown", `verdwenen sub veranderde rij-status naar ${row?.status}`);
     ent = await resolveEntitlements(user);
     assert(!ent.commercialFeatures["premium"], "verdwenen sub gaf tóch rechten");
+  });
+
+  // 23. Downgrade-integriteit (regressie): meerdere billing_subscriptions-rijen
+  //     — een OUDE verlopen rij + een NIEUWE actieve rij. De downgrade moet
+  //     geweigerd worden zodra ER ENIGE lopende subscription is, ongeacht welke
+  //     rij het oudst is. Beschermt tegen het masking-bug waarbij de oudste rij
+  //     (expired) werd gelezen terwijl de nieuwste (active) doorfactureert.
+  await scenario("23. downgrade weigert bij oude expired + nieuwe active rij", async () => {
+    const user = `${RUN}_downgrade_race`;
+    await ensureAccount(user, `${user}@test.sparki.local`, user, silentLogger);
+    await db
+      .update(userProfilesTable)
+      .set({ entitlementMode: "subscription", commercialTier: "GO" })
+      .where(eq(userProfilesTable.clerkId, user));
+    // OUDE verlopen rij: lang geleden bijgewerkt.
+    const oud = new Date(Date.now() - 90 * 24 * 3600 * 1000);
+    await db.insert(billingSubscriptionsTable).values({
+      clerkId: user,
+      stripeCustomerId: `cus_${user}_oud`,
+      stripeSubscriptionId: `sub_${RUN}_downgrade_oud`,
+      tier: "GO",
+      interval: "month",
+      status: "expired",
+      currentPeriodEnd: oud,
+      createdAt: oud,
+      updatedAt: oud,
+    });
+    // NIEUWE actieve rij: recent bijgewerkt (de waarheid), factureert door.
+    const nu = new Date();
+    await db.insert(billingSubscriptionsTable).values({
+      clerkId: user,
+      stripeCustomerId: `cus_${user}_nieuw`,
+      stripeSubscriptionId: `sub_${RUN}_downgrade_nieuw`,
+      tier: "GO",
+      interval: "month",
+      status: "active",
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 3600 * 1000),
+      createdAt: nu,
+      updatedAt: nu,
+    });
+    // getBillingState kiest de nieuwste (active) — consistent uitgangspunt.
+    const state = await getBillingState(user);
+    assert(state.status === "active", `voorbereiding: state ${state.status} ≠ active`);
+    // Downgrade MOET geweigerd worden (facturatie loopt door).
+    const res = await downgradeToFree(user);
+    assert(
+      res.ok === false && res.reason === "actief_abonnement",
+      `downgrade werd niet geweigerd: ${JSON.stringify(res)}`,
+    );
+    // En het profiel is NIET stilzwijgend naar FREE gezet.
+    const [prof] = await db
+      .select({ commercialTier: userProfilesTable.commercialTier })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, user));
+    assert(prof?.commercialTier === "GO", `profieltier onterecht gewijzigd: ${prof?.commercialTier}`);
+
+    // Tegenproef: zijn ALLE rijen verlopen, dan mag de downgrade wél door.
+    await db
+      .update(billingSubscriptionsTable)
+      .set({ status: "expired", updatedAt: new Date() })
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, `sub_${RUN}_downgrade_nieuw`));
+    const res2 = await downgradeToFree(user);
+    assert(res2.ok === true, `downgrade met enkel verlopen rijen faalde: ${JSON.stringify(res2)}`);
+    const [prof2] = await db
+      .select({ commercialTier: userProfilesTable.commercialTier })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, user));
+    assert(prof2?.commercialTier === "FREE", `downgrade zette tier niet op FREE: ${prof2?.commercialTier}`);
+
+    await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, user));
   });
 
   await cleanup();
