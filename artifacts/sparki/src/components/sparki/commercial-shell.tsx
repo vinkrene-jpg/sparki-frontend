@@ -1076,6 +1076,32 @@ export function CommercialToday() {
   const hideTraining =
     todayLead != null && !todayLead.key.startsWith("lead:workout_today:")
 
+  // HERSTEL_EN_AANVULLING_01 F1 (HA-04, client-kant): heeft dit account geen
+  // enkele rolweergave, dan stuurt de server role:null + een eerlijke
+  // emptyState. Die tonen we hier — nooit stilzwijgend het atleetscherm.
+  const roleEmpty =
+    today.data != null && today.data.role == null && today.data.emptyState != null
+      ? today.data.emptyState
+      : null
+  if (roleEmpty) {
+    return (
+      <CommercialShell actief="/vandaag">
+        <div className="mx-auto w-full max-w-screen-md px-5 py-16 lg:px-10">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8">
+            <h1 className="type-title text-white">{roleEmpty.title}</h1>
+            <p className="mt-3 text-white/75">{roleEmpty.body}</p>
+            <a
+              href={roleEmpty.action.href}
+              className="mt-6 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black"
+            >
+              {roleEmpty.action.label}
+            </a>
+          </div>
+        </div>
+      </CommercialShell>
+    )
+  }
+
   return (
     <CommercialShell actief="/vandaag">
       <HeroVandaag presentation={presentation} planWeek={planWeek} />
