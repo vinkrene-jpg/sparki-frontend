@@ -22,3 +22,13 @@ Rol getest: `governor-fixture-hoofdtrainer` (coach + clubRole hoofdtrainer, club
 - `UX_AUDIT_MODULES_SCREENSHOTS/hoofdtrainer_start_{desktop,mobiel}.png`
 - `UX_AUDIT_MODULES_SCREENSHOTS/hoofdtrainer_club_{desktop,mobiel}.png` (incl. leeg-scenario)
 - Codebewijs: `artifacts/sparki/src/pages/club.tsx` r252-326, `artifacts/api-server/src/lib/club-permissions.ts` r60/91.
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). Bestaande tekst klopt: geen eigen scherm, hoofdtrainer = CoachHome op `/` + extra sectie op `/club`. Beide gebruiken `ScreenShell`; rol+omgeving is aanwezig via `DsContextRegel` en de `RoleViewSwitch` toont "Hoofdtrainer".
+
+### F9-regelovertredingen (werklijst)
+1. **`/club` telt met de hoofdtraineroverzicht-sectie erbij ~7 secties** (schendt "max vier kaarten boven de vouw" + `TUX-24`): het overzicht "Trainers in jouw organisatie" komt bovenop de al volle clubpagina; op mobiel staat het ver onder de vouw.
+2. **Geen tabs** (schendt "2–4 echte tabs"): het hoofdtraineroverzicht en de clubsecties staan gestapeld; scheiding via tabs ontbreekt.
+3. **Geen eigen rolstartscherm** — conform F9 mag hier géén nieuw scherm bij, maar de herindeling moet het hoofdtraineroverzicht als eigen tab/sectie herpositioneren zodat de hoofdhandeling ("eerste training plannen") in beeld staat (`TUX-26`).
+4. Eén primaire actie is hier wél haalbaar (planning); het overzicht is puur lezen. Geen uitgegrijsde beheeropties waargenomen (organisatorisch overzicht zonder privédata is correct).

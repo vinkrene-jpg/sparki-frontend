@@ -15,3 +15,11 @@
 
 ## Route, tabs, formulieren, toestanden
 n.v.t. (geen scherm). Doodlopend risico: soigneur die inlogt landt op een generiek sporter-startscherm zonder rolcontext.
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). Vaststelling blijft: `soigneur` is uitsluitend een clubrol, geen schermmodule. Zichtbaar in de rol-dropdown van `/club/beheer` (Leden & rollen) en in organogram-stafplekken.
+
+### F9-relevantie (werklijst)
+1. **Geen zichtbare rolcontext bij landing** (schendt F9-regel "rol+omgeving zichtbaar" + `TUX-04`): soigneur landt op een generiek sporter-startscherm; zijn rol wordt niet in de `DsContextRegel` weerspiegeld. F9 bouwt géén nieuw rolstartscherm (F3-grens), maar de herindeling moet minimaal de actieve rol tonen en de "Verzorging"-lege toestand (`niet_toegewezen`) bereikbaar maken i.p.v. een doodlopend generiek scherm.
+2. Geen schermovertredingen op kaarten/tabs/formulieren mogelijk zolang er geen scherm bestaat — dit blijft een navigatie-/landingsgap, geen indelingsgap.

@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { IconCheck } from "@/components/ds"
 import { Redirect, useLocation } from "wouter"
-import { ArrowLeft, Users, CalendarDays, Trophy, Package, ClipboardList, Link2, MapPin, QrCode, Settings2 } from "lucide-react"
+import { ArrowLeft, Users, CalendarDays, Trophy, Package, ClipboardList, Link2, MapPin, QrCode, Settings2, Plus } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { RoleTodaySection } from "@/components/sparki/role-today"
+import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
+import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import {
   useMyClubs,
   useClubDashboard,
@@ -1606,12 +1608,31 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
   )
 }
 
+// F9-herindeling: vier échte tabs i.p.v. één lange scroll. De hoofdhandeling
+// en kerninformatie staan in beeld bij openen (TUX-24/26); alles wat vroeger
+// inline stond leeft nu onder een tab of in een stappenvenster (TUX-27) — geen
+// functionaliteit verdwenen, alleen herschikt.
+type BeheerTab = "overzicht" | "leden" | "structuur" | "instellingen"
+
+// Welk stappenvenster staat open — allemaal sheets over het scherm heen, met
+// een eigen terug/sluiten via de Sheet-primitief. Nooit een lang scrolscherm.
+type BeheerSheetKind =
+  | "uitnodigen"
+  | "training"
+  | "wedstrijd"
+  | "locatie"
+  | "seizoenTeam"
+  | "document"
+  | null
+
 export default function ClubBeheerPage() {
   const { data: myClubs, isLoading } = useMyClubs()
   const [, navigate] = useLocation()
   const mine = (myClubs ?? []).find((r) => r.membership.role === "owner" || r.membership.role === "admin")
   const clubId = mine?.membership.clubId ?? null
   const { data: dash } = useClubDashboard(clubId)
+  const [tab, setTab] = useState<BeheerTab>("overzicht")
+  const [sheet, setSheet] = useState<BeheerSheetKind>(null)
 
   if (isLoading) {
     return (
@@ -1623,72 +1644,180 @@ export default function ClubBeheerPage() {
   if (!mine || clubId == null) return <Redirect to="/club" />
 
   const myRole = mine.membership.role
+  const isOwner = myRole === "owner"
+  const isConcept = mine.club?.status === "concept"
+  const closeSheet = () => setSheet(null)
+
+  const TABS: { id: BeheerTab; label: string }[] = [
+    { id: "overzicht", label: "Overzicht" },
+    { id: "leden", label: "Leden" },
+    { id: "structuur", label: "Structuur" },
+    { id: "instellingen", label: "Instellingen" },
+  ]
 
   return (
     <ScreenShell bg={null} section="club" bare terug={false}>
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-5">
+        {/* Kop + hoofdhandeling in beeld bij openen (TUX-24/26). Eén primaire
+            actie: club activeren als de club nog in oprichting is, anders een
+            lid uitnodigen. Alle andere acties zijn secundair (tabs/sheets). */}
         <header className="flex items-center gap-3">
           <button
             onClick={() => navigate("/club")}
-            className="flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[12px] text-white/75 hover:border-white/30"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[12px] text-white/75 hover:border-white/30"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Terug
           </button>
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-white">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-white">
               Beheer — {mine.club?.name ?? "club"}
             </h1>
-            <p className="text-[12px] text-white/50">Je rol: {ROLE_LABELS[myRole]}</p>
+            <p className="text-[11px] text-white/50">Je rol: {ROLE_LABELS[myRole]}</p>
           </div>
         </header>
 
-        {/* WP-T2: clubbeheer-Vandaag — operationele prioriteiten bovenaan
-            (teams zonder trainer, open uitnodigingen, ledenstand). */}
+        {isConcept ? (
+          <button
+            onClick={() => setTab("structuur")}
+            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-300/40 bg-emerald-300/10 px-4 py-3 text-[14px] font-medium text-emerald-200"
+          >
+            Club in oprichting afronden
+          </button>
+        ) : (
+          <button
+            onClick={() => setSheet("uitnodigen")}
+            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100"
+          >
+            <Plus className="h-4 w-4" /> Nieuw lid uitnodigen
+          </button>
+        )}
+
+        {/* Kerninformatie meteen in beeld: operationele prioriteiten. */}
         <RoleTodaySection rol="clubbeheer" />
 
-        {(dash?.signals?.length ?? 0) > 0 && (
-          <section aria-label="Signalen" className="space-y-1.5">
-            {dash!.signals!.map((s, i) => (
-              <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
-                {s}
+        <HoofdstukTabs<BeheerTab>
+          tabs={TABS}
+          actief={tab}
+          onKies={(id) => setTab(id)}
+          ariaLabel="Clubbeheer-onderdelen"
+        />
+
+        {/* ── Overzicht: signalen, inrichting, snelle plan-acties. ─────────── */}
+        {tab === "overzicht" && (
+          <div className="flex flex-col gap-5">
+            {(dash?.signals?.length ?? 0) > 0 && (
+              <section aria-label="Signalen" className="space-y-1.5">
+                {dash!.signals!.map((s, i) => (
+                  <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
+                    {s}
+                  </p>
+                ))}
+              </section>
+            )}
+            <BeheerSignalen clubId={clubId} />
+
+            {!isConcept && (
+              <section aria-label="Plannen">
+                <h2 className={H2}><CalendarDays className="h-3 w-3" /> Plannen</h2>
+                <div className={`${CARD} flex flex-wrap gap-2`}>
+                  <button onClick={() => setSheet("training")} className={BTN}>
+                    <Plus className="mr-1 inline h-3 w-3" /> Training plannen
+                  </button>
+                  <button
+                    onClick={() => setSheet("wedstrijd")}
+                    className="rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/70 hover:border-white/30"
+                  >
+                    Wedstrijd aanmaken
+                  </button>
+                </div>
+              </section>
+            )}
+
+            <section aria-label="Logboek">
+              <h2 className={H2}><ClipboardList className="h-3 w-3" /> Verantwoording</h2>
+              <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
+                Elke beheeractie (rollen, uitnodigingen, trainingen, selecties, export) wordt vastgelegd
+                in het clublogboek. Uitschrijven bewaart altijd de historie — er wordt nooit data verwijderd.
               </p>
-            ))}
-          </section>
+            </section>
+          </div>
         )}
 
-        {mine.club?.status === "concept" && <OnboardingSection clubId={clubId} />}
-
-        <BeheerSignalen clubId={clubId} />
-        {mine.club && <ClubSettingsSection club={mine.club} isOwner={myRole === "owner"} />}
-        {mine.club && <JoinCodeSection club={mine.club} />}
-        {mine.club?.status === "concept" ? (
-          <section aria-label="Uitnodigingen">
-            <h2 className={H2}><Link2 className="h-3 w-3" /> Uitnodigingen</h2>
-            <p className={`${CARD} text-[12px] text-white/50`}>
-              Zolang de club in oprichting is, vertrekt er geen enkele uitnodiging.
-              Activeer de club eerst; daarna kun je leden uitnodigen.
-            </p>
-          </section>
-        ) : (
-          <InviteSection clubId={clubId} />
+        {/* ── Leden: ledenlijst + uitnodigingen. ──────────────────────────── */}
+        {tab === "leden" && (
+          <div className="flex flex-col gap-5">
+            {isConcept ? (
+              <section aria-label="Uitnodigingen">
+                <h2 className={H2}><Link2 className="h-3 w-3" /> Uitnodigingen</h2>
+                <p className={`${CARD} text-[12px] text-white/50`}>
+                  Zolang de club in oprichting is, vertrekt er geen enkele uitnodiging.
+                  Activeer de club eerst; daarna kun je leden uitnodigen.
+                </p>
+              </section>
+            ) : (
+              <div className={`${CARD}`}>
+                <p className="text-[12px] text-white/60">
+                  Nodig een nieuw lid uit via een link of e-mail — de stappen openen als venster.
+                </p>
+                <button onClick={() => setSheet("uitnodigen")} className={`${BTN} mt-2`}>
+                  <Plus className="mr-1 inline h-3 w-3" /> Lid uitnodigen
+                </button>
+              </div>
+            )}
+            <MembersSection clubId={clubId} myRole={myRole} />
+          </div>
         )}
-        <LocationsSection clubId={clubId} />
-        <MembersSection clubId={clubId} myRole={myRole} />
-        <SeasonsTeamsSection clubId={clubId} />
-        <PlanTrainingSection clubId={clubId} />
-        <PlanRaceSection clubId={clubId} />
-        <DocumentsBeheerSection clubId={clubId} />
-        <TeamSubscriptionSection clubId={clubId} isOwner={myRole === "owner"} />
-        <PackageSection clubId={clubId} isOwner={myRole === "owner"} />
 
-        <section aria-label="Logboek">
-          <h2 className={H2}><ClipboardList className="h-3 w-3" /> Verantwoording</h2>
-          <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
-            Elke beheeractie (rollen, uitnodigingen, trainingen, selecties, export) wordt vastgelegd
-            in het clublogboek. Uitschrijven bewaart altijd de historie — er wordt nooit data verwijderd.
-          </p>
-        </section>
+        {/* ── Structuur: oprichting, seizoenen/teams, locaties, documenten. ─ */}
+        {tab === "structuur" && (
+          <div className="flex flex-col gap-5">
+            {isConcept && <OnboardingSection clubId={clubId} />}
+            <SeasonsTeamsSection clubId={clubId} />
+            <div className={`${CARD}`}>
+              <p className="text-[12px] text-white/60">Vaste locaties beheren opent als venster.</p>
+              <button onClick={() => setSheet("locatie")} className={`${BTN} mt-2`}>
+                <MapPin className="mr-1 inline h-3 w-3" /> Locaties beheren
+              </button>
+            </div>
+            <div className={`${CARD}`}>
+              <p className="text-[12px] text-white/60">Clubdocumenten uploaden en publiceren opent als venster.</p>
+              <button onClick={() => setSheet("document")} className={`${BTN} mt-2`}>
+                <FileText className="mr-1 inline h-3 w-3" /> Documenten beheren
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Instellingen: clubprofiel, clubcode, pakket (eigenaar). ──────── */}
+        {tab === "instellingen" && (
+          <div className="flex flex-col gap-5">
+            {mine.club && <ClubSettingsSection club={mine.club} isOwner={isOwner} />}
+            {mine.club && <JoinCodeSection club={mine.club} />}
+            {/* Onbevoegden (niet-eigenaar) zien pakket & facturatie niet —
+                weggelaten, niet uitgegrijsd (F9-regel 4). */}
+            {isOwner && <TeamSubscriptionSection clubId={clubId} isOwner={isOwner} />}
+            {isOwner && <PackageSection clubId={clubId} isOwner={isOwner} />}
+          </div>
+        )}
       </div>
+
+      {/* ── Stappenvensters (TUX-27..30): sheets over het scherm, met terug/
+          sluiten via de Sheet-primitief, altijd een volgende actie. ──────── */}
+      <BeheerSheet open={sheet === "uitnodigen"} onOpenChange={(o) => !o && closeSheet()} titel="Nieuw lid uitnodigen">
+        {sheet === "uitnodigen" && <InviteSection clubId={clubId} />}
+      </BeheerSheet>
+      <BeheerSheet open={sheet === "training"} onOpenChange={(o) => !o && closeSheet()} titel="Training plannen">
+        {sheet === "training" && <PlanTrainingSection clubId={clubId} />}
+      </BeheerSheet>
+      <BeheerSheet open={sheet === "wedstrijd"} onOpenChange={(o) => !o && closeSheet()} titel="Wedstrijd aanmaken">
+        {sheet === "wedstrijd" && <PlanRaceSection clubId={clubId} />}
+      </BeheerSheet>
+      <BeheerSheet open={sheet === "locatie"} onOpenChange={(o) => !o && closeSheet()} titel="Vaste locaties">
+        {sheet === "locatie" && <LocationsSection clubId={clubId} />}
+      </BeheerSheet>
+      <BeheerSheet open={sheet === "document"} onOpenChange={(o) => !o && closeSheet()} titel="Clubdocumenten" breed>
+        {sheet === "document" && <DocumentsBeheerSection clubId={clubId} />}
+      </BeheerSheet>
     </ScreenShell>
   )
 }

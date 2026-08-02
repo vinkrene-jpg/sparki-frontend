@@ -31,3 +31,14 @@
 - `UX_AUDIT_MODULES_SCREENSHOTS/ploegleider_wedstrijdroom_{desktop,mobiel}.png` (leeg-scenario)
 - `UX_AUDIT_MODULES_SCREENSHOTS/ploegleider_meer_{desktop,mobiel}.png`
 - Codebewijs: `artifacts/sparki/src/pages/wedstrijd-room.tsx`, `artifacts/sparki/src/components/sparki/volgauto-panel.tsx`, `artifacts/api-server/src/routes/volgauto.ts`, `artifacts/api-server/src/routes/club.ts` r2113/r3821.
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). `/wedstrijd-room` staat nu op `App.tsx` r820 en gebruikt `ScreenShell` (rol+omgeving aanwezig). Bestaande tekst klopt, inclusief het bereikbaarheidsaandachtspunt.
+
+### F9-regelovertredingen (werklijst)
+1. **Wedstrijd-room alleen via directe URL bereikbaar** (schendt "hoofdhandeling in beeld"/bereikbaarheid): geen Meer-menu-ingang gevonden; ploegleider die inlogt landt op `/club` en vindt de room niet zonder de URL. Herindeling moet de room als bereikbare ingang plaatsen (verplaatsen, geen nieuwe functie).
+2. **Per room drie inhoudsblokken zonder tabs** (grensgeval "2–4 echte tabs"): "Foto's & clips", "Updates", "Dagcompilatie" staan gestapeld; op mobiel valt Dagcompilatie onder de vouw (`TUX-24`).
+3. **Meerdere primaire acties** (schendt "max één primaire actie"): "+ Room maken", "Uploaden", "Maak dagcompilatie", volgauto aan/uit naast elkaar.
+4. **Room maken als inline formulier** (schendt `TUX-27`): 3–4 velden (titel, startdatum, aantal dagen, optioneel wedstrijd) inline i.p.v. stappenvenster.
+5. `/club`-rolblok deelt de clubpagina-overtredingen (zie UX_AUDIT_CLUB, Aanvulling). Geen uitgegrijsde functies waargenomen.

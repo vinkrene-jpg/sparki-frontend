@@ -13,3 +13,11 @@
 
 ## Route, tabs, formulieren, toestanden
 n.v.t. (geen scherm). Feitelijk aandachtspunt: rol bestaat en is toewijsbaar, maar er is geen omgeving waar deze rol iets kán zien zolang consents ontbreken; landing = generiek startscherm.
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). Vaststelling blijft: `medical_staff` is een clubrol met verplicht `medicalSpecialty`, geen schermmodule. Functietype is puur beschrijvend en geeft géén rechten; inzage vereist expliciete consent per sporter.
+
+### F9-relevantie (werklijst)
+1. **Geen zichtbare rolcontext + doodlopende landing** (schendt "rol+omgeving zichtbaar" + `TUX-04`): medical_staff landt op een generiek startscherm; rol en functietype worden niet getoond en de `geen_toestemming`-lege toestand is niet bereikbaar. F9 mag geen nieuw rolstartscherm bouwen, maar de herindeling moet de actieve rol tonen en de consent-lege toestand als eindpunt aanbieden i.p.v. een doodlopend scherm.
+2. Geen kaart-/tab-/formulierindeling om te toetsen zolang er geen scherm is. Dit blijft een navigatie-/rechtengap, geen indelingsgap.

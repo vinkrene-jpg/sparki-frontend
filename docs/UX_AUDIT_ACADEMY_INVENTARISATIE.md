@@ -10,3 +10,10 @@ Er bestaat **geen Academy-module/route**. Wel bestaat "academy" als **contenttyp
 
 ## Toetsbaarheid
 Schermaudit n.v.t. (geen module). Er is conform stopregels **niets gebouwd**. Voor MEDIA_UITLEG_01 F8 is dit de vastgestelde herbruikbare basis (route + Help-code, zie F0-inventarisatie).
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). Vaststelling blijft: er is **geen Academy-module/route**; "academy" bestaat alleen als contenttype (`kind: "academy"`) in de Intel-/kennislaag, weergegeven via `AcademyBody` binnen `/kennis` (flag `knowledge_base`). Geen route `/academy`, geen Meer-menu-ingang, geen eigen navigatie.
+
+### F9-relevantie (werklijst)
+- **Geen schermmodule → geen indelingsgap.** F9 herindeelt schermen; academy is content en valt buiten scope. Geen actie voor F9 anders dan bevestigen dat er niets te herindelen is. De weergave (`intel-reader.tsx`) valt onder de kennis-omgeving, niet onder een rolmodule.

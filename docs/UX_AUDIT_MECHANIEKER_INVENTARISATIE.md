@@ -22,3 +22,15 @@ Rol getest: `governor-fixture-mechanieker` (athlete + clubRole mechanieker). Mob
 - `UX_AUDIT_MODULES_SCREENSHOTS/mechanieker_mechanieker_{desktop,mobiel}.png` (incl. leeg-scenario's)
 - `UX_AUDIT_MODULES_SCREENSHOTS/mechanieker_meer_{desktop,mobiel}.png`
 - Codebewijs: `artifacts/sparki/src/pages/mechanieker.tsx`, `components/sparki/{bike-garage,material-test,material-coach,maintenance-signals,bike-3d-werkblad}.tsx`, `artifacts/api-server/src/lib/club-permissions.ts` r82/96.
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). `/mechanieker` staat nu op `App.tsx` r800 en gebruikt `ScreenShell` (rol+omgeving aanwezig). Bestaande tekst klopt.
+
+### F9-regelovertredingen (werklijst) — zwaar geval na clubbeheer/club
+1. **Negen secties op één pagina** (schendt "max vier kaarten boven de vouw" + `TUX-25`): Onderhoudssignalen, Fietsengarage, Persoonlijke uitrusting, Draadloze onderdelen, Nieuwe ontwikkelingen, Profploegen en hun materiaal, Vergelijkingstest, Modelschatting, Materiaalcoach. Te vol — moet gesplitst in tabs of aparte schermen.
+2. **Geen tabs** (schendt "2–4 echte tabs"): leent zich voor bv. Garage · Uitrusting · Kennis · Materiaalcoach.
+3. **Meerdere primaire acties** (schendt "max één primaire actie"): "Fiets toevoegen", "Uitrusting toevoegen", "Draadloos onderdeel", "Foto toevoegen", plus vergelijkingstest en modelschatting.
+4. **Meerveldige handelingen inline** (schendt `TUX-27`): vergelijkingstest (~5 velden) en modelschatting (2 velden + dropdowns) zijn inline formulieren, geen stappenvenster.
+5. **Kerninformatie/hoofdhandeling niet in beeld bij openen** (schendt `TUX-26`): op een lege garage staat er eerst uitleg en signalen; de eerste handeling ("Fiets toevoegen") kan onder de vouw vallen.
+6. Lege toestanden ("Nog geen fietsen in de garage") zijn correct en eerlijk — geen nepdata, geen uitgegrijsde beheeropties.

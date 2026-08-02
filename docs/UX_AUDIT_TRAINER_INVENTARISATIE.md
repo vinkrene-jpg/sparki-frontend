@@ -29,3 +29,14 @@ Rol getest: `governor-fixture-trainer-1` (2 gekoppelde fixture-sporters: volwass
 - `UX_AUDIT_MODULES_SCREENSHOTS/trainer_invitations_{desktop,mobiel}.png`
 - `UX_AUDIT_MODULES_SCREENSHOTS/trainer_meer_{desktop,mobiel}.png` (Meer-menu)
 - Codebewijs: `artifacts/sparki/src/components/sparki/coach-home.tsx`, `pages/coach-cockpit.tsx`, `pages/coach-athlete-plan.tsx`.
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). Routes staan nu op `App.tsx` r865 (`/coach/athletes/:athleteId/plan`) en r868 (cockpit); `/invitations` r856. CoachHome draait binnen `CommercialShell`; de cockpit binnen `ScreenShell`. Bestaande tekst klopt. RoleViewSwitch is de tab-achtige rolwissel (`role-today.tsx` r193), niet een echte tabbalk.
+
+### F9-regelovertredingen (werklijst)
+1. **Cockpit is een lang gestapeld scherm** (schendt `TUX-24`/"max vier kaarten"): Signalen, Planning, Sparki-voorstellen, Berichten, Context & afspraken, Privénotities staan onder elkaar; de hoofdhandeling (signaal accepteren of training plannen) staat niet gegarandeerd in beeld bij openen.
+2. **Meerdere primaire acties** (schendt "max één primaire actie"): op CoachHome "Cockpit openen" + BulkPlanner + "Sporter uitnodigen"; in de cockpit accepteer/pas aan/wijs af + WorkoutForm opslaan.
+3. **Lange formulieren i.p.v. stappenvenster** (schendt `TUX-27`/`TUX-41`): BulkPlanner (datum, titel, duur, omschrijving + sporterselectie) en WorkoutForm (5 velden: datum, titel, omschrijving, duur, TSS) zijn inline formulieren, geen stappenvenster.
+4. **Cockpit-secties lenen zich voor 2–4 tabs** (schendt "2–4 echte tabs"): bv. Signalen · Planning · Berichten · Notities.
+5. **"Deelt niet"-kaart als uitgegrijsd item** (grensgeval bij "beheeropties weglaten i.p.v. uitgrijzen"): de privacy-kaart zonder cockpitlink (`coach-home.tsx` r149) is bewust getoond zonder link — dit is een correcte informatieve lege toestand, geen rechtenlek, maar bij herindeling moet de niet-klikbare kaart duidelijk als toestand (niet als uitgegrijsde knop) blijven.

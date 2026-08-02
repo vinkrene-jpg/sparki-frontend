@@ -23,3 +23,13 @@ Rol getest: `governor-fixture-clubbeheerder`. TEAM-gate server-side (memory/test
 ## Bewijs
 - `UX_AUDIT_MODULES_SCREENSHOTS/team_beheer_teams_{desktop,mobiel}.png`
 - Codebewijs: `artifacts/sparki/src/pages/club-beheer.tsx` r631+, `artifacts/api-server/src/routes/club.ts` r166/739/3458/3587, `artifacts/api-server/src/lib/organogram-templates.ts`.
+
+## Aanvulling 02-08-2026 (F9)
+
+> Nagelezen tegen main `56985d32e8909a55fb30f8c1aadf0c0460a888ff` (2 augustus 2026). Bestaande tekst klopt: TEAM heeft geen eigen scherm, leeft binnen `/club/beheer` (sectie Seizoenen & teams). Rol+omgeving via `ScreenShell`/`DsContextRegel`.
+
+### F9-regelovertredingen (werklijst)
+1. **Erft alle overtredingen van `/club/beheer`** (zie UX_AUDIT_CLUB, Aanvulling): de team-onderdelen zitten diep in een 13-secties-pagina en vallen ver onder de vouw (`TUX-24`/`TUX-25`).
+2. **Team aanmaken + trainer koppelen + organogram-kaart** zijn drie inline formulierhandelingen (schendt "max één primaire actie" + `TUX-27`): geen stappenvenster.
+3. **Geen apart teamdetailscherm** (schendt "details apart scherm"): teams, staf en organogram worden inline bewerkt.
+4. Signaalkaarten ("Team B heeft geen trainer") zijn correcte lege/actietoestanden — geen uitgegrijsde beheeropties waargenomen.
