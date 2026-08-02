@@ -15,8 +15,13 @@ Laatst bijgewerkt: 2026-08-02.
   geen vrijgave per pakket; Mirror parallel/niet-blokkerend; elf harde stops;
   Claude = controlerol, vrijgave bij René; open punten A/B/C — prijzen/namen/
   instellingen blokkeren nooit (configureerbaar met lege waarde).
-- Bouwvolgorde ná het lopende mobiele routepakket (1.8):
-  DATA_TRUST_01 → CLUB_RECHTEN_01 → ABONNEMENT_01.
+- Bouwvolgorde: zie `docs/besluiten/BOUWSTRAAT_2026-08-02.md` — DE enige
+  wachtrij (vervangt losse Replit-wachtrij én Claude-pakketlijst; nieuwer dan
+  1.8 uit het besluitenoverzicht: CLUB_RECHTEN_01 gaat op in SPARKI_BUILD_01).
+  Golf 0 (parallel): 0.1 CI-herstel (belangrijkste blokkade; connector mist
+  workflow-scope → René via webeditor of Replit levert bestanden), 0.2 keten-
+  bewijs (René), 0.3 mobiel routepakket (loopt, H2 volgende), 0.4 vier
+  P1-herstelpunten Mirror. Poort golf 1: CI groen + één routerit e2e.
 - Acties voor Replit uit het document:
   1) H5: toetsvoorstel — zeven bewaartermijnen naast de zes lege
      configuratiewaarden in de code leggen; René bekrachtigt.
