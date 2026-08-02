@@ -880,6 +880,26 @@ export const organisationStaffSlotsTable = pgTable(
 export const insertClubSchema = createInsertSchema(clubsTable).omit({ id: true });
 export const selectClubSchema = createSelectSchema(clubsTable);
 
+// HERSTEL_EN_AANVULLING_01 F4: uitgifteregister van documentuitdraaien per
+// evenement — het versienummer op een PDF is het aantal eerdere uitgiftes van
+// dat type + 1, atomair bepaald bij het aanmaken van de rij (geen SELECT-dan-
+// INSERT-race: de versie wordt in dezelfde INSERT berekend).
+export const clubRaceDocumentIssuesTable = pgTable(
+  "club_race_document_issues",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => clubRaceEventsTable.id, { onDelete: "cascade" }),
+    docType: text("doc_type").notNull(), // RT-12 | RT-13 | RT-14 | …
+    version: integer("version").notNull(),
+    issuedByClerkId: text("issued_by_clerk_id").notNull(),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("club_race_document_issues_unique").on(t.eventId, t.docType, t.version)],
+);
+export type ClubRaceDocumentIssue = typeof clubRaceDocumentIssuesTable.$inferSelect;
+
 export type Club = typeof clubsTable.$inferSelect;
 export type InsertClub = z.infer<typeof insertClubSchema>;
 export type ClubMember = typeof clubMembersTable.$inferSelect;

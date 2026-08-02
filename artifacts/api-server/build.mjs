@@ -182,6 +182,9 @@ async function buildAll() {
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
       "*.node",
+      // pdfkit → fontkit → brotli leest een .br-datafile via dynamic require;
+      // bundelen breekt dat pad (HERSTEL F4 — de éne PDF-engine).
+      "pdfkit",
       "sharp",
       "better-sqlite3",
       "sqlite3",
