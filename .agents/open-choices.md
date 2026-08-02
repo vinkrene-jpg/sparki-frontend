@@ -5,7 +5,28 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-08-01.
+Laatst bijgewerkt: 2026-08-02.
+
+## GEZAGHEBBEND 02-08-2026 — Besluitenoverzicht René
+
+- `docs/besluiten/BESLUITEN_VOOR_REPLIT_2026-08-02.md` bevat ALLE productbesluiten
+  van 1–2 augustus; bij tegenspraak met een ouder document wint dit document.
+- Werkwijze (H1): één goedgekeurde bouwopdracht = hele straat t/m productie;
+  geen vrijgave per pakket; Mirror parallel/niet-blokkerend; elf harde stops;
+  Claude = controlerol, vrijgave bij René; open punten A/B/C — prijzen/namen/
+  instellingen blokkeren nooit (configureerbaar met lege waarde).
+- Bouwvolgorde ná het lopende mobiele routepakket (1.8):
+  DATA_TRUST_01 → CLUB_RECHTEN_01 → ABONNEMENT_01.
+- Acties voor Replit uit het document:
+  1) H5: toetsvoorstel — zeven bewaartermijnen naast de zes lege
+     configuratiewaarden in de code leggen; René bekrachtigt.
+  2) H22: zes bewaartermijnen in code (zelfde toetsvoorstel).
+- Nog open bij René/Claude (H22): sitelijst wetenschapslaag, AIE2 O-11,
+  hergebruikmatrix F0, O-2 ouder-bijsturen, besluitregister -006 t/m -013.
+- Eerdere chat-besluiten die NIET in het document staan blijven gelden zolang
+  ze er niet mee botsen: tester kiest zelf abonnement na akkoord; Gratis
+  zonder inlog met kruispunten; gebruikt = 20% gereden (3.7 bevestigt
+  8 routes/maand, fiets+wandelen één potje).
 
 ## Beslist 02-08-2026 — Abonnementen testen + Gratis-instap (René)
 
