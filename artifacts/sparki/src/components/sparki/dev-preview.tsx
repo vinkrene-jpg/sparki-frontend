@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
 import { apiFetch } from "@/lib/api"
 import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
-import { DayHome, type DevCoachOverride } from "@/components/sparki/day-home"
+import { DashboardAnalyse, type DevCoachOverride } from "@/components/sparki/day-home"
 import { CommercialToday } from "@/components/sparki/commercial-shell"
 import { CoachHome } from "@/components/sparki/coach-home"
 import { ParentHome } from "@/components/sparki/parent-home"
@@ -114,7 +114,7 @@ const VIEWS: DevView[] = [
   { label: "Landing", path: LANDING_PATH },
   { label: "Onboarding", path: ONBOARDING_PATH },
   { label: "Start", path: "/" },
-  { label: "Vandaag", path: "/vandaag" },
+  { label: "Dashboard", path: "/dashboard" },
   { label: "Commercieel", path: COMMERCIAL_PATH },
   { label: "Design system", path: DESIGN_PATH },
   { label: "Activiteiten", path: "/activiteiten" },
@@ -488,10 +488,17 @@ export function DevPreview() {
     // Interne designsysteem-testpagina — tokens, typografie en componenten.
     page = <DevDesignSystemPage />
     showNav = false
-  } else if (location.startsWith("/vandaag")) {
-    // commercial_shell is globally enabled — dev preview follows the same
-    // flag-respecting path as VandaagPage in the real router: coach en ouder
-    // houden hun rolstartpagina op /vandaag (WP-R1).
+  } else if (location.startsWith("/dashboard/analyse")) {
+    // DSH-07: de diepere dagtype-analyse als doorklik vanaf het Dashboard —
+    // een eigen scherm, geen tweede gedaante. De dagtype-kiezer in het
+    // devpaneel stuurt hier de weergave.
+    page = <DashboardAnalyse devDayTypeOverride={dayType} devCoachOverride={devCoachOverride} />
+    showNav = false
+    isHome = true
+  } else if (location.startsWith("/dashboard") || location.startsWith("/vandaag")) {
+    // DSH-01/03: /dashboard is de nieuwe naam; /vandaag blijft als alias werken
+    // (in productie een redirect). commercial_shell is globally enabled — coach
+    // en ouder houden hun rolstartpagina hier (WP-R1).
     if (profile?.activeRole === "coach") {
       page = <CoachHome />
     } else if (profile?.activeRole === "parent") {

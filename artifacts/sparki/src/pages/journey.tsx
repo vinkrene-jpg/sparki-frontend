@@ -130,7 +130,7 @@ function TimelineView() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setLocation("/vandaag")}
+            onClick={() => setLocation("/dashboard")}
             className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
           >
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />

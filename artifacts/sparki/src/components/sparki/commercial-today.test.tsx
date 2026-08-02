@@ -62,7 +62,7 @@ mock.module("@/hooks/use-races", {
 mock.module("wouter", {
   namedExports: {
     useLocation: () => [
-      "/vandaag",
+      "/dashboard",
       (href: string) => {
         navCalls.push(href);
       },
@@ -230,7 +230,7 @@ test("hiërarchie: kop → boodschap → week → training → herstel → seizo
 
     // Kop: h1 + dagcontext + woordmerk.
     const h1 = view.container.querySelector("h1");
-    assert.ok(h1 && h1.textContent === "Vandaag", "paginakop Vandaag");
+    assert.ok(h1 && h1.textContent === "Dashboard", "paginakop Dashboard");
     assert.ok(text.includes("trainingsweek 3"), "dagcontext met planweek");
     assert.ok(text.includes("SPARKI"), "woordmerk aanwezig");
 
@@ -510,7 +510,7 @@ test("mobiele nav: alle items, actieve tab en werkende navigatie", async () => {
       (b) => b.getAttribute("aria-current") === "page",
     );
     assert.equal(actief.length, 1, "precies één actieve tab");
-    assert.equal(actief[0]!.textContent, "Vandaag", "Vandaag is actief");
+    assert.equal(actief[0]!.textContent, "Dashboard", "Dashboard is actief");
 
     const plan = knoppen.find((b) => b.textContent === "Trainen");
     view.rtl.fireEvent.click(plan!);

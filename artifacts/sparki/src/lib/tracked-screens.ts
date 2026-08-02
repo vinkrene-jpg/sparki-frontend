@@ -5,7 +5,7 @@
 // ScreenShell `section`; the rest are sub-surfaces that must call trackScreen
 // explicitly when opened, otherwise they would dishonestly read "nooit geopend".
 export const TRACKED_SCREENS = [
-  { key: "home", label: "Vandaag" },
+  { key: "home", label: "Dashboard" },
   { key: "coach", label: "Coach" },
   { key: "training", label: "Training" },
   { key: "lab", label: "Inzicht" },

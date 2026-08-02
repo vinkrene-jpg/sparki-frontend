@@ -196,11 +196,11 @@ function KindCard({
       {selected && <ClubDocsBlock athleteClerkId={child.athleteClerkId} />}
       {selected && (
         <Link
-          href="/vandaag"
+          href="/dashboard"
           className="mt-3 inline-flex items-center gap-1 text-[13px]"
           style={{ color: ACCENT }}
         >
-          Naar Vandaag van dit kind
+          Naar het Dashboard van dit kind
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       )}
@@ -298,7 +298,7 @@ export default function ParentKinderenPage() {
         <div>
           <SectionLabel n="01" title="Kinderen" />
           <p className="mt-2 text-[13px] text-white/45">
-            Kies welk kind centraal staat — Vandaag en Toestemmingen volgen je
+            Kies welk kind centraal staat — Dashboard en Toestemmingen volgen je
             keuze. Je ziet alleen kinderen die aan jou gekoppeld zijn.
           </p>
         </div>

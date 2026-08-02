@@ -5,7 +5,7 @@
 // exactly one day-type homepage — not a single page with a swapped header.
 
 import { useEffect, useState, type ReactElement } from "react"
-import { useLocation, useSearch } from "wouter"
+import { useLocation } from "wouter"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
 import {
@@ -26,7 +26,6 @@ import {
   type CoachScenarioKey,
 } from "@/lib/coach-engine"
 import { CoachDecisionProvider } from "@/contexts/CoachDecisionContext"
-import { HomeViewProvider, useHomeView } from "@/contexts/HomeViewContext"
 import { DEV_PREVIEW } from "@/lib/dev"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { StateCard } from "@/components/sparki/state-card"
@@ -107,11 +106,11 @@ export type DevCoachOverride = {
   scenario: CoachScenarioKey
 }
 
-// Vandaag's default surface: the calm State Card. It carries its own loading /
-// error / empty states, so it never has to wait on the dashboard or races
-// queries. The State Card is a generic engine consumer; Vandaag is the host that
-// injects what its drill-in does (open the full day-type analysis) via the
-// HomeView context — the card itself stays surface-agnostic.
+// The Dashboard's top layers use the calm State Card. It carries its own
+// loading / error / empty states, so it never has to wait on the dashboard or
+// races queries. The State Card is a generic engine consumer; the Dashboard is
+// the host that injects what its drill-in does (open the full day-type analysis
+// at /dashboard/analyse) via onShowDetails — the card stays surface-agnostic.
 function relativeDate(iso: string): string {
   const then = new Date(iso + "T12:00:00Z").getTime()
   const days = Math.floor((Date.now() - then) / 86_400_000)
@@ -175,9 +174,12 @@ function HealthMomentBlock() {
 }
 
 function StateDayHome() {
-  const homeView = useHomeView()
   const { focus } = useFixParams()
   const [, navigate] = useLocation()
+  // The deeper day-type analysis is a drill-through from the dashboard — no
+  // longer a second surface under the same name (DSH-07/24). Opening it is a
+  // normal route push; the shell renders its own back navigation.
+  const openAnalyse = () => navigate("/dashboard/analyse")
   const [voedingOpen, setVoedingOpen] = useState(false)
   const { data: nutritionData } = useNutritionLogs()
   const { data: dashboard } = useAthleteDashboard()
@@ -195,7 +197,7 @@ function StateDayHome() {
   useEffect(() => {
     if (focus !== "nutrition") return
     setVoedingOpen(true)
-    navigate("/", { replace: true })
+    navigate("/dashboard", { replace: true })
   }, [focus, navigate])
 
   // ── De aandachtswet (Fase 2, §5.1): resolve the SINGLE leading Momentblok
@@ -260,7 +262,7 @@ function StateDayHome() {
       <ScreenShell section="Home" bg="/atmosphere/training-renster-heide.webp">
         <StateCard
           checkInFirst
-          onShowDetails={() => homeView?.setView("full")}
+          onShowDetails={openAnalyse}
         />
 
         <section className="mt-2">
@@ -319,7 +321,7 @@ function StateDayHome() {
         <RideMomentBlock />
       ) : (
         // Calm toestand leads (voorstel/voor-training/herstel/balans).
-        <StateCard hideCheckIn onShowDetails={() => homeView?.setView("full")} />
+        <StateCard hideCheckIn onShowDetails={openAnalyse} />
       )}
 
       {/* ── Non-blocking chips (§5.2 #1): check-in + evening follow-up, never at
@@ -336,7 +338,7 @@ function StateDayHome() {
           the State is always reachable — just not as the leader. */}
       {!stateLeads && (
         <div className="mt-6">
-          <StateCard hideCheckIn onShowDetails={() => homeView?.setView("full")} />
+          <StateCard hideCheckIn onShowDetails={openAnalyse} />
         </div>
       )}
 
@@ -413,50 +415,29 @@ function StateDayHome() {
   )
 }
 
-export function DayHome(props: {
-  devDayTypeOverride?: DayType
-  devCoachOverride?: DevCoachOverride
-} = {}) {
-  return (
-    <HomeViewProvider>
-      <DayHomeInner {...props} />
-    </HomeViewProvider>
-  )
+// DSH-05/06/07/24 — the athlete Dashboard is ONE screen (the three-layer
+// StateDayHome). The former `HomeViewContext` state|full split is gone: the
+// deeper day-type analysis is now a drill-through route (/dashboard/analyse),
+// not a second surface under the same name. Self-update deep-links
+// (?focus=nutrition, ?materiaal=…) land here, on the single screen where those
+// panels live — equivalent to the old behaviour of forcing the state view.
+export function DayHome() {
+  return <StateDayHome />
 }
 
-function DayHomeInner({
+// DSH-07 — the deeper day-type analysis, reached by drilling in from the
+// Dashboard (/dashboard/analyse). It renders the registered homepage component
+// for today's DayType (the full CTL/ATL/TSB/HRV/readiness read). This is the
+// content that used to be the `view: "full"` surface, now a first-class screen.
+export function DashboardAnalyse({
   devDayTypeOverride,
   devCoachOverride,
 }: {
   devDayTypeOverride?: DayType
   devCoachOverride?: DevCoachOverride
-}) {
-  const homeView = useHomeView()
-  const view = homeView?.view ?? "state"
-  const search = useSearch()
+} = {}) {
   const { data, isLoading } = useAthleteDashboard()
   const { context: raceContext, isLoading: racesLoading } = useRaceContext()
-
-  // Self-update deep-links (coach "vul je voeding in" → ?focus=nutrition; material
-  // nudge → ?materiaal=…) target the calm State Card surface, where the nutrition
-  // and material panels now live. If the athlete happens to be in the full
-  // day-type analysis when such a link fires, switch back to the state view so the
-  // panel is actually mounted and its own scroll/open effect can run.
-  useEffect(() => {
-    const params = new URLSearchParams(search)
-    const wantsSelfUpdate =
-      params.get("focus") === "nutrition" || params.has("materiaal")
-    if (wantsSelfUpdate && homeView && homeView.view !== "state") {
-      homeView.setView("state")
-    }
-  }, [search, homeView])
-
-  // Default surface — the State Card. Shown unless the athlete drills into the
-  // full day-type analysis. Rendered before the dashboard/races gate so it never
-  // blocks on data it doesn't need.
-  if (view === "state") {
-    return <StateDayHome />
-  }
 
   const profile = data?.athleteProfile
   const todayWorkout = data?.todayWorkout ?? null
@@ -488,7 +469,7 @@ function DayHomeInner({
   const dayType = devDayTypeOverride ?? detectDayType(ctx)
   const briefing = getDayTypeBriefing(dayType, ctx)
   // Defensive: an unregistered day type must never render `undefined` (a blank
-  // crash). Fall back to the General homepage so Vandaag always shows something.
+  // crash). Fall back to the General homepage so the analysis always shows something.
   const Component = dayHomeRegistry[dayType] ?? GeneralDayHome
 
   // ── Adaptive Coach Engine ─────────────────────────────────────────────────

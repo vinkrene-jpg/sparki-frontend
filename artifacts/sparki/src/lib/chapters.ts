@@ -34,7 +34,7 @@ export type Chapter = {
 }
 
 export const ATHLETE_CHAPTERS: Chapter[] = [
-  { href: "/vandaag", icon: Home, label: "Vandaag", hint: "Dagstart & moment" },
+  { href: "/dashboard", icon: Home, label: "Dashboard", hint: "Waar sta je vandaag" },
   { href: "/train", icon: Dumbbell, label: "Trainen", hint: "Schema & verloop" },
   { href: "/races", icon: Trophy, label: "Wedstrijd", hint: "Races & voorbereiding" },
   { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
@@ -78,7 +78,7 @@ export const CLUB_CHAPTER: Chapter = {
 }
 
 export const COACH_CHAPTERS: Chapter[] = [
-  { href: "/vandaag", icon: Home, label: "Vandaag", hint: "Dagstart" },
+  { href: "/dashboard", icon: Home, label: "Dashboard", hint: "Dagstart" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
   { href: "/invitations", icon: UserPlus, label: "Uitnodigen", hint: "Sporters koppelen" },
   // SPARKI_BUILD_04 F14 — facturatiewerkplek van de trainer.
@@ -109,7 +109,7 @@ export const NUTRITION_SPECIALIST_CHAPTERS: Chapter[] = [
 export type NavEntry = { href: string; label: string }
 
 export const ATHLETE_NAV_ENTRIES: NavEntry[] = [
-  { href: "/vandaag", label: "Vandaag" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/train", label: "Trainen" },
   { href: "/routes", label: "Routes" },
   { href: "/races", label: "Wedstrijd" },
@@ -143,7 +143,7 @@ function middenPosities(rol: "coach" | "nutrition_specialist"): NavEntry[] {
 }
 
 export const COACH_NAV_ENTRIES: NavEntry[] = [
-  { href: "/", label: "Vandaag" }, // 1 startpunt (MUX-76a)
+  { href: "/", label: "Dashboard" }, // 1 startpunt (MUX-76a)
   ...middenPosities("coach"), // 2–4 uit configuratie (voorstel MRU-22)
   { href: "/meer", label: "Meer" }, // 5 Meer (vast)
 ]
@@ -151,7 +151,7 @@ export const COACH_NAV_ENTRIES: NavEntry[] = [
 // WP-R1 bindende ouderonderbalk (besluit 31-07-2026).
 export const PARENT_NAV_ENTRIES: NavEntry[] = [
   { href: "/kinderen", label: "Kinderen" },
-  { href: "/vandaag", label: "Vandaag" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/meldingen", label: "Meldingen" },
   { href: "/toestemmingen", label: "Toestemmingen" },
   { href: "/meer", label: "Meer" },

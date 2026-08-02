@@ -153,8 +153,8 @@ function groepeerAtleet(isClubMember: boolean, isAdmin: boolean): MeerGroep[] {
 }
 
 function groepeerCoach(): MeerGroep[] {
-  // COACH_CHAPTERS: /vandaag, /samen, /invitations, /you.
-  // Indeling: 1 = /you; 2 = /vandaag, /samen, /invitations; 5 = Support.
+  // COACH_CHAPTERS: /dashboard, /samen, /invitations, /you.
+  // Indeling: 1 = /you; 2 = /dashboard, /samen, /invitations; 5 = Support.
   const byHref = new Map<string, Chapter>()
   for (const ch of COACH_CHAPTERS) byHref.set(ch.href, ch)
 
@@ -165,7 +165,7 @@ function groepeerCoach(): MeerGroep[] {
     },
     {
       titel: "Veelgebruikt",
-      items: ["/vandaag", "/samen", "/invitations"]
+      items: ["/dashboard", "/samen", "/invitations"]
         .map((h) => byHref.get(h)!)
         .filter(Boolean),
     },
@@ -181,8 +181,8 @@ function groepeerCoach(): MeerGroep[] {
 }
 
 function groepeerOuder(): MeerGroep[] {
-  // PARENT_CHAPTERS: /vandaag, /feed, /invitations, /you.
-  // Indeling: 1 = /you; 2 = /vandaag, /feed, /invitations; 5 = Support.
+  // PARENT_CHAPTERS: /you, /support, /invitations, /feed.
+  // Indeling: 1 = /you; 2 = /feed, /invitations; 5 = Support.
   const byHref = new Map<string, Chapter>()
   for (const ch of PARENT_CHAPTERS) byHref.set(ch.href, ch)
 
@@ -193,7 +193,7 @@ function groepeerOuder(): MeerGroep[] {
     },
     {
       titel: "Veelgebruikt",
-      items: ["/vandaag", "/feed", "/invitations"]
+      items: ["/feed", "/invitations"]
         .map((h) => byHref.get(h)!)
         .filter(Boolean),
     },

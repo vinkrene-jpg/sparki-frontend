@@ -42,7 +42,7 @@ import {
 // Icoon-lookup uit chapters.ts. Connect, Support en Admin hebben daar geen
 // icoon-definitie (losse knoppen in de oude pagina) — we kennen ze hier toe.
 const ICON_MAP: Record<string, LucideIcon> = {
-  "/vandaag": Home,
+  "/dashboard": Home,
   "/train": Dumbbell,
   "/races": Trophy,
   "/activiteiten": Activity,

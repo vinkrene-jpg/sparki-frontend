@@ -34,7 +34,7 @@ function StatusLine() {
   const color = BAND_COLOR[state.band]
   return (
     <Link
-      href="/vandaag"
+      href="/dashboard"
       className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#070d16]/[0.82] px-4 py-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
     >
       <span className="flex min-w-0 items-center gap-3">
@@ -68,7 +68,7 @@ function Aandachtspunten() {
       {signals.slice(0, 3).map((s, i) => (
         <Link
           key={i}
-          href="/vandaag"
+          href="/dashboard"
           className="flex items-start gap-2.5 rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-2.5 backdrop-blur-sm transition-colors hover:border-cyan-300/25"
         >
           <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-cyan-300/70" />

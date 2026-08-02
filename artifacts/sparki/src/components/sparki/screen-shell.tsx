@@ -70,7 +70,6 @@ import {
 import type { Role } from "@/contexts/UserContext"
 import { DsContextRegel } from "@/components/ds/context"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
-import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
 import { screenForSection } from "@/lib/tracked-screens"
 
@@ -85,7 +84,7 @@ const COACH_CARD_SECTIONS = new Set(["home"])
 // op lg+ breakpoint (≥1024px). Dezelfde nav-items als CommercialShell zodat de
 // gebruiker één consistent navigatiesysteem ziet ongeacht welke pagina hij bezoekt.
 const SHELL_MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
-  "/vandaag": IconHome,
+  "/dashboard": IconHome,
   "/train": IconPlan,
   "/routes": IconRijden,
   "/activiteiten": IconActiviteiten,
@@ -169,7 +168,7 @@ const SECTION_DISPLAY: Record<string, string> = {
   start: "START",
   club: "CLUB",
   paspoort: "SPORTPASPOORT",
-  home: "VANDAAG",
+  home: "DASHBOARD",
   train: "TRAINING",
   races: "RACES",
   feed: "NIEUWS",
@@ -306,6 +305,8 @@ function navRootsForRole(role: string | null | undefined): Set<string> {
         : ATHLETE_NAV_ENTRIES
   const roots = new Set(entries.map((e) => e.href))
   roots.add("/")
+  roots.add("/dashboard")
+  // /vandaag blijft een nav-wortel zolang de doorverwijzing bestaat (DSH-03).
   roots.add("/vandaag")
   return roots
 }
@@ -350,18 +351,20 @@ export function ScreenShell({
   const sectionLabel = SECTION_DISPLAY[section.toLowerCase()] ?? section.toUpperCase()
   const SectionIcon = SECTION_ICON[section.toLowerCase()] ?? Sparkles
   const coachDecision = useCoachDecision()
-  // Vandaag's two surfaces (see HomeViewContext). On the calm State Card surface
-  // the dashboard/coach cards are suppressed; on the full analysis surface a top
-  // "Terug" returns to the State Card. Null outside Vandaag → unchanged elsewhere.
-  const homeView = useHomeView()
-  const stateSurface = isHome && homeView?.view === "state"
-  const fullSurface = isHome && homeView?.view === "full"
+  const [pathname, setLocation] = useLocation()
+  // DSH-05/06/07: the Dashboard is ONE screen. Its calm three-layer surface
+  // lives at /dashboard (isHome) and keeps the injected coach chrome suppressed
+  // so layer 1 + the layer-2 action stay above the fold. The deeper day-type
+  // analysis is a drill-through at /dashboard/analyse — a first-class screen
+  // (not a second gedaante) where the full coaching read IS shown.
+  const analyseSurface = isHome && pathname.startsWith("/dashboard/analyse")
+  const dashboardSurface = isHome && !analyseSurface
 
-  // The full Vandaag analysis surface IS the "Coach" screen for coverage: it's
+  // The full day-type analysis surface IS the "Coach" screen for coverage: it's
   // where Sparki's full coaching read is shown. Tracked only when actually open.
   useEffect(() => {
-    if (fullSurface) trackScreen("coach")
-  }, [fullSurface])
+    if (analyseSurface) trackScreen("coach")
+  }, [analyseSurface])
   const { profile } = useUserProfile()
   const [chatOpen, setChatOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -371,7 +374,6 @@ export function ScreenShell({
   // voor de actieve rol krijgt bovenaan een terugknop, tenzij de pagina zelf
   // al één heeft (terug={false}). Terug = browsergeschiedenis; zonder
   // geschiedenis (direct geopend) valt hij terug op het startoverzicht.
-  const [pathname, setLocation] = useLocation()
   const navRoots = navRootsForRole(profile?.activeRole)
   // WP-R1: rol-bewuste hoofdnavigatie (ouder/coach eigen onderbalk + zijbalk).
   // Besluitenpatch 2026-08-01: actieve clubrol ⇒ "Club" vervangt Analyse.
@@ -515,37 +517,30 @@ export function ScreenShell({
           </button>
         )}
 
-        {/* Top-anchored Terug from the full analysis back to the State Card. */}
-        {fullSurface && (
-          <button
-            type="button"
-            onClick={() => homeView!.setView("state")}
-            className="flex items-center gap-1.5 self-start rounded-full border border-white/15 px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Terug naar Sparki
-          </button>
-        )}
+        {/* DSH-05/06: on the calm Dashboard surface the injected coach chrome is
+            suppressed so layer 1 + the layer-2 action stay above the fold; it
+            only appears on the /dashboard/analyse drill-through. Terug daarheen
+            loopt via de gewone automatische terugknop hierboven — geen aparte
+            "Terug naar Sparki"-schakelaar meer (DSH-07/24). */}
+        {!bare && analyseSurface && <HomeProfilePrompt />}
+        {!bare && analyseSurface && <ConnectorRecoveryNudge />}
+        {!bare && analyseSurface && <CoachInputNeeds />}
 
-        {!bare && isHome && !stateSurface && <HomeProfilePrompt />}
-        {!bare && isHome && !stateSurface && <ConnectorRecoveryNudge />}
-        {!bare && isHome && !stateSurface && <CoachInputNeeds />}
-
-        {!bare && showCoachCard && !stateSurface && (
-          <CoachAnalysisCard variant={isHome ? "hero" : "card"} />
+        {!bare && showCoachCard && analyseSurface && (
+          <CoachAnalysisCard variant="hero" />
         )}
 
         {/* Adaptive Coach Engine output — the engine's decision (onderwerp /
-            advies / vraag / prioriteit) for today, surfaced on every home
-            day-type. Driven by the CoachDecision context from the dispatcher. */}
-        {!bare && isHome && !stateSurface && coachDecision && (
+            advies / vraag / prioriteit) for today, surfaced on the analysis
+            drill-through. Driven by the CoachDecision context from the dispatcher. */}
+        {!bare && analyseSurface && coachDecision && (
           <CoachDecisionCard decision={coachDecision} />
         )}
 
         {/* Ontwikkelprioriteit — the single biggest long-term limiter + next
-            action, reusing the Core engine verbatim. Glanceable here where
-            athletes start their day; taps through to the full Ontwikkelkompas. */}
-        {!bare && isHome && !stateSurface && <OntwikkelprioriteitHomeCard />}
+            action, reusing the Core engine verbatim. Shown on the analysis
+            drill-through; taps through to the full Ontwikkelkompas. */}
+        {!bare && analyseSurface && <OntwikkelprioriteitHomeCard />}
 
         {children}
       </div>
@@ -554,7 +549,7 @@ export function ScreenShell({
           Development Preview Mode. Renders nothing when no follow-up is due.
           Suppressed on the Circle route ("samen"), where the Circle feed is the
           calm home for follow-ups — so we never double-ask the same question. */}
-      {!bare && section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
+      {!bare && section.toLowerCase() !== "samen" && !dashboardSurface && <FollowUpPrompt />}
 
       {/* Mobiele bottom-nav — alleen op kleine schermen, zelfde items als CommercialShell.
           Verborgen op bare-pagina's (onboarding, tester-welcome, wedstrijd-room). */}

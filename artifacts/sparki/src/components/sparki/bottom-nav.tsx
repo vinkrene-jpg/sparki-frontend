@@ -29,7 +29,7 @@ type NavItem = NavEntry & { icon: LucideIcon }
 // De lijsten zelf staan in lib/chapters (één bron van waarheid + testbaar);
 // hier worden alleen de iconen eraan gekoppeld.
 const NAV_ICONS: Record<string, LucideIcon> = {
-  "/vandaag": Sun,
+  "/dashboard": Sun,
   "/train": Dumbbell,
   "/routes": Map,
   "/races": Trophy,

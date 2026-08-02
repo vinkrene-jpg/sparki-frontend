@@ -28,7 +28,7 @@ export interface DsNavItem {
 
 /** Standaardindeling volgens de Figma-basis. */
 export const DS_NAV_STANDAARD: DsNavItem[] = [
-  { href: "/vandaag", label: "Vandaag", icon: IconHome },
+  { href: "/dashboard", label: "Dashboard", icon: IconHome },
   { href: "/plan", label: "Plan", icon: IconPlan },
   { href: "/rijden", label: "Rijden", icon: IconRijden },
   { href: "/analyse", label: "Analyse", icon: IconAnalyse },

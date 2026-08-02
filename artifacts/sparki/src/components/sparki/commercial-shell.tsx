@@ -113,7 +113,7 @@ const ATMOSFEER_TINT: Record<PresentationState, string> = {
 }
 
 const MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
-  "/vandaag": IconHome,
+  "/dashboard": IconHome,
   "/train": IconPlan,
   "/routes": IconRijden,
   "/activiteiten": IconActiviteiten,
@@ -386,7 +386,7 @@ function HeroVandaag({
       />
       <div className="relative mx-auto w-full max-w-2xl px-5 pb-8 pt-6 lg:max-w-3xl lg:px-10 lg:pt-10">
         <p className="type-wordmark lg:hidden">SPARKI</p>
-        <h1 className="type-display mt-8 lg:mt-2">Vandaag</h1>
+        <h1 className="type-display mt-8 lg:mt-2">Dashboard</h1>
         <p className="type-body mt-1 text-content-secondary">
           {formatDayHeader()}
           {planWeek != null ? ` · trainingsweek ${planWeek}` : ""}
@@ -1085,7 +1085,7 @@ export function CommercialToday() {
       : null
   if (roleEmpty) {
     return (
-      <CommercialShell actief="/vandaag">
+      <CommercialShell actief="/dashboard">
         <div className="mx-auto w-full max-w-screen-md px-5 py-16 lg:px-10">
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8">
             <h1 className="type-title text-white">{roleEmpty.title}</h1>
@@ -1103,7 +1103,7 @@ export function CommercialToday() {
   }
 
   return (
-    <CommercialShell actief="/vandaag">
+    <CommercialShell actief="/dashboard">
       <HeroVandaag presentation={presentation} planWeek={planWeek} />
       <TodayOrchestratorSection />
       {/* Paginaspecifieke kolomindeling: op desktop twee kolommen (2:1),

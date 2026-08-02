@@ -31,7 +31,7 @@ export const GLOBAL_ROLE_STARTS: RoleStart[] = [
     role: "athlete",
     label: "Sporter",
     functies: [
-      { href: "/vandaag", label: "Vandaag" },
+      { href: "/dashboard", label: "Dashboard" },
       { href: "/train", label: "Trainen" },
       { href: "/routes", label: "Routes" },
     ],
@@ -40,7 +40,7 @@ export const GLOBAL_ROLE_STARTS: RoleStart[] = [
     role: "coach",
     label: "Trainer",
     functies: [
-      { href: "/vandaag", label: "Jouw sporters" },
+      { href: "/dashboard", label: "Jouw sporters" },
       { href: "/invitations", label: "Sporters koppelen" },
     ],
   },
@@ -143,7 +143,7 @@ export const CLUB_ROLE_STARTS: RoleStart[] = [
     role: "member",
     label: "Sporter (clublid)",
     functies: [
-      { href: "/vandaag", label: "Vandaag" },
+      { href: "/dashboard", label: "Dashboard" },
       { href: "/club", label: "Club" },
     ],
   },

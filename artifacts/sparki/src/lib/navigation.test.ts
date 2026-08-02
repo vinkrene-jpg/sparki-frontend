@@ -47,11 +47,11 @@ test("sporter heeft precies vijf hoofdkeuzes in de vaste volgorde", () => {
   assert.equal(ATHLETE_NAV_ENTRIES.length, 5)
   assert.deepEqual(
     ATHLETE_NAV_ENTRIES.map((e) => e.label),
-    ["Vandaag", "Trainen", "Routes", "Wedstrijd", "Meer"],
+    ["Dashboard", "Trainen", "Routes", "Wedstrijd", "Meer"],
   )
   assert.deepEqual(
     ATHLETE_NAV_ENTRIES.map((e) => e.href),
-    ["/vandaag", "/train", "/routes", "/races", "/meer"],
+    ["/dashboard", "/train", "/routes", "/races", "/meer"],
   )
 })
 
@@ -143,8 +143,9 @@ test("coach en ouder behouden hun bestaande navigatie", () => {
   assert.deepEqual(
     PARENT_NAV_ENTRIES.map((e) => e.href),
     // WP-R1 (besluit 31-07-2026): bindende ouderonderbalk
-    // Kinderen · Vandaag · Meldingen · Toestemmingen · Meer.
-    ["/kinderen", "/vandaag", "/meldingen", "/toestemmingen", "/meer"],
+    // Kinderen · Dashboard · Meldingen · Toestemmingen · Meer
+    // (DASHBOARD_01 DSH-01: "Vandaag" hernoemd naar "Dashboard").
+    ["/kinderen", "/dashboard", "/meldingen", "/toestemmingen", "/meer"],
   )
   assert.deepEqual(
     chaptersForRole("coach", false).map((c) => c.href),

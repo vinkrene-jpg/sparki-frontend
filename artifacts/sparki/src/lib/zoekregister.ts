@@ -23,7 +23,7 @@ export type ZoekIngang = {
 // Trefwoorden per pagina (href → synoniemen). Alleen begrippen die echt op de
 // pagina thuishoren — geen loze termen die naar een dood spoor leiden.
 const TREFWOORDEN: Record<string, string[]> = {
-  "/vandaag": ["vandaag", "dagstart", "home", "moment", "dag"],
+  "/dashboard": ["dashboard", "vandaag", "dagstart", "home", "moment", "dag", "waar sta je", "vorm", "overzicht"],
   "/train": ["trainen", "training", "schema", "plan", "verloop", "blok"],
   "/races": ["wedstrijd", "wedstrijden", "races", "race", "koers", "voorbereiding"],
   "/activiteiten": ["activiteiten", "ritten", "rit", "sessies", "geschiedenis"],

@@ -16,7 +16,7 @@ import { labelSignal } from "@/lib/signal-labels"
 export type CommercialNavItem = { href: string; label: string }
 
 export const COMMERCIAL_MOBILE_NAV: CommercialNavItem[] = [
-  { href: "/vandaag", label: "Vandaag" },
+  { href: "/dashboard", label: "Dashboard" },
   // Label gelijkgetrokken met het menu-label "Trainen" (Beslisblok 01,
   // veilige fix 1) — de paginatitel en de nav zeggen nu hetzelfde.
   { href: "/train", label: "Trainen" },
@@ -45,7 +45,7 @@ export function withClubNav(
 // te zijn, en desktop krijgt een duidelijk Meer-equivalent (zelfde inhoud als
 // het mobiele Meer-overzicht, geen 1-op-1 kopie van de mobiele onderbalk).
 export const COMMERCIAL_DESKTOP_NAV: CommercialNavItem[] = [
-  { href: "/vandaag", label: "Vandaag" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/train", label: "Trainen" },
   { href: "/routes", label: "Rijden" },
   { href: "/races", label: "Wedstrijd" },

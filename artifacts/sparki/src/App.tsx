@@ -13,7 +13,7 @@ import { nlNL } from "@clerk/localizations";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { Zap } from "lucide-react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { DayHome } from "@/components/sparki/day-home";
+import { DayHome, DashboardAnalyse } from "@/components/sparki/day-home";
 import { CommercialToday } from "@/components/sparki/commercial-shell";
 import { CoachHome } from "@/components/sparki/coach-home";
 import { ParentHome } from "@/components/sparki/parent-home";
@@ -433,7 +433,7 @@ function SignedInHomeReady() {
 
 // Home is role-aware: coaches see their roster, parents see the wellbeing view,
 // athletes land on the Startscherm (chapter overview). The day-type engine
-// (dagplanning) lives in its own hoofdstuk on /vandaag.
+// (dagplanning) lives in its own hoofdstuk on /dashboard.
 //
 // Fail-open patroon: zolang flags laden renderen we CommercialToday (met
 // DsMobileNav). ScreenShell heeft nu ook DsMobileNav en een desktop sidebar
@@ -477,10 +477,10 @@ function RoleHome() {
   return <StartPage />;
 }
 
-// Vandaag — the daily-planning chapter. Athletes get the day-type homepage
-// engine; coach and parent keep their role home here too, so "Vandaag" in
-// their navigation always works.
-function VandaagPage() {
+// Dashboard — the athlete home (DASHBOARD_01). Athletes get the single
+// three-layer dashboard (DayHome → StateDayHome); coach and parent keep their
+// role home here too, so "Dashboard" in their navigation always works.
+function DashboardPage() {
   const { profile } = useUserProfile();
   // Fail-open: while flags are loading useFeatureFlag returns false, which would
   // briefly render the legacy ScreenShell page (no mobile nav). Instead we read
@@ -499,6 +499,30 @@ function VandaagPage() {
   if (clubStart) return <Redirect to={clubStart} />;
   if (flagsLoading || commercialShell) return <CommercialToday />;
   return <DayHome />;
+}
+
+// Dashboard → diepere dagtype-analyse (DSH-07): een doorklik vanaf het
+// Dashboard, een eigen scherm — geen tweede gedaante onder dezelfde naam. Alleen
+// zinvol voor de sporter; andere rollen keren terug naar hun Dashboard.
+function DashboardAnalysePage() {
+  const { profile } = useUserProfile();
+  if (
+    profile?.activeRole === "coach" ||
+    profile?.activeRole === "parent" ||
+    profile?.activeRole === "nutrition_specialist"
+  ) {
+    return <Redirect to="/dashboard" />;
+  }
+  return <DashboardAnalyse />;
+}
+
+// DSH-03: /vandaag blijft bestaan als doorverwijzing naar /dashboard. Bestaande
+// links, bladwijzers en meldingen (incl. deep-links als
+// /vandaag?state=… of ?focus=nutrition/?materiaal=…) mogen niet doodlopen — de
+// querystring blijft behouden zodat het deep-link-gedrag equivalent blijft.
+function VandaagRedirect() {
+  const search = window.location.search;
+  return <Redirect to={`/dashboard${search}`} replace />;
 }
 
 // Plan/Activiteiten/Meer/Analyse — zelfde flag-switch als Vandaag: met
@@ -722,8 +746,18 @@ function AppRouter() {
                 <Route path="/voorwaarden">
                   <LegalPage kind="terms" />
                 </Route>
+                {/* DSH-07: diepere analyse als doorklik — vóór /dashboard zodat
+                    de meer-specifieke route eerst matcht. */}
+                <Route path="/dashboard/analyse">
+                  <ProtectedPage component={DashboardAnalysePage} />
+                </Route>
+                <Route path="/dashboard">
+                  <ProtectedPage component={DashboardPage} />
+                </Route>
+                {/* DSH-03: /vandaag blijft als doorverwijzing bestaan
+                    (querystring behouden voor deep-links). */}
                 <Route path="/vandaag">
-                  <ProtectedPage component={VandaagPage} />
+                  <VandaagRedirect />
                 </Route>
                 <Route path="/club/beheer">
                   <ProtectedPage component={ClubBeheerPage} />

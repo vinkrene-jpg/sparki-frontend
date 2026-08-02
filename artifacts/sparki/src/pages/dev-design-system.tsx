@@ -206,7 +206,7 @@ function Sectie({
 }
 
 export default function DevDesignSystemPage() {
-  const [navPad, setNavPad] = useState("/vandaag");
+  const [navPad, setNavPad] = useState("/dashboard");
   const [actieDemo, setActieDemo] = useState(false);
 
   return (
@@ -399,7 +399,7 @@ export default function DevDesignSystemPage() {
               actiefPad={navPad}
               onNavigeer={setNavPad}
               items={[
-                { href: "/vandaag", label: "Vandaag", icon: IconHome },
+                { href: "/dashboard", label: "Dashboard", icon: IconHome },
                 {
                   href: "/plan",
                   label: "Plan",

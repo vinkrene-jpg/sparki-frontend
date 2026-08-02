@@ -55,10 +55,10 @@ function scenario(name: string, fn: () => void) {
 }
 
 // ── Navigatie ────────────────────────────────────────────────────────────────
-scenario("mobiele nav is Vandaag/Trainen/Rijden/Analyse/Meer", () => {
+scenario("mobiele nav is Dashboard/Trainen/Rijden/Analyse/Meer", () => {
   assert(
     COMMERCIAL_MOBILE_NAV.map((i) => i.label).join(",") ===
-      "Vandaag,Trainen,Rijden,Analyse,Meer",
+      "Dashboard,Trainen,Rijden,Analyse,Meer",
     "mobiele nav-labels wijken af",
   )
 })
@@ -73,7 +73,7 @@ scenario("desktop nav heeft Ontdekken, Wedstrijd en een Meer-equivalent", () => 
 
 scenario("alle nav-doelen zijn bestaande app-routes", () => {
   const known = new Set([
-    "/vandaag",
+    "/dashboard",
     "/train",
     "/routes",
     "/activiteiten",

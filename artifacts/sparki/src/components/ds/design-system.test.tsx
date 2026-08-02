@@ -162,13 +162,13 @@ test("DsMobileNav: 5 standaarditems, actieve tab en aandachtstatus", () => {
   render(
     <DsMobileNav
       vast={false}
-      actiefPad="/vandaag"
+      actiefPad="/dashboard"
       onNavigeer={(href) => (genavigeerd = href)}
     />,
   );
   const knoppen = screen.getAllByRole("button");
   assert.equal(knoppen.length, 5, "vijf navigatie-items");
-  const actief = screen.getByRole("button", { name: /Vandaag/ });
+  const actief = screen.getByRole("button", { name: /Dashboard/ });
   assert.equal(actief.getAttribute("aria-current"), "page");
   fireEvent.click(screen.getByRole("button", { name: /Plan/ }));
   assert.equal(genavigeerd, "/plan");
