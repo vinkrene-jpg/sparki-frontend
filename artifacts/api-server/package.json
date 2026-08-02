@@ -9,6 +9,8 @@
     "build:deploy": "DEPLOY_BUILD=true node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
+    "test:vog-auditlogging": "node ./scripts/run-test.mjs vog-auditlogging --dev-auth",
+    "vog:migrate": "pnpm run build && node --enable-source-maps ./dist/scripts/vog-migrate-existing.mjs",
     "test:trainer-invoice-pdf": "node ./scripts/run-test.mjs trainer-invoice-pdf --dev-auth",
     "test:subscription-payers": "node ./scripts/run-test.mjs subscription-payers --dev-auth",
     "test:club-documents": "node ./scripts/run-test.mjs club-documents --dev-auth",

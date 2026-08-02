@@ -117,6 +117,8 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/road-objects.ts"),
       path.resolve(artifactDir, "src/tests/world-social.ts"),
       path.resolve(artifactDir, "src/tests/afvaldoel-touchpoints.ts"),
+      path.resolve(artifactDir, "src/tests/vog-auditlogging.ts"),
+      path.resolve(artifactDir, "src/scripts/vog-migrate-existing.ts"),
 ];
 
 async function buildAll() {

@@ -79,6 +79,9 @@ import {
   type ClubContext,
 } from "../lib/club-permissions";
 import { computeAge } from "../lib/age";
+import { writeVogAudit } from "../lib/security/vog-audit";
+import { securityAuditLogTable } from "@workspace/db";
+import { isAdmin } from "../lib/flags";
 
 const router = Router();
 
@@ -140,6 +143,42 @@ function statusGuard(ctx: ClubContext, res: import("express").Response): boolean
     return false;
   }
   return true;
+}
+
+// F6: is een trainingsgroep een JEUGDgroep? Fail-closed benadering die geen
+// nieuw statusveld toevoegt: het niveau-label wijst op jeugd (bv. "jeugd",
+// "U15", "welpen", "aspiranten"), OF er zit een minderjarig actief lid in de
+// groep. Zo blokkeren we ook groepen die niet als "jeugd" gelabeld zijn maar
+// wél minderjarigen bevatten.
+function levelSuggestsYouth(level: string | null | undefined): boolean {
+  if (!level) return false;
+  const l = level.toLowerCase();
+  return (
+    /\bjeugd\b|welp|pupil|aspirant|junior|nieuweling|\bu\s?-?\d{1,2}\b/.test(l)
+  );
+}
+
+async function groupIsYouth(groupId: number): Promise<boolean> {
+  const [group] = await db
+    .select({ level: clubGroupsTable.level })
+    .from(clubGroupsTable)
+    .where(eq(clubGroupsTable.id, groupId));
+  if (levelSuggestsYouth(group?.level)) return true;
+  const members = await db
+    .select({ clerkId: clubGroupMembersTable.clerkId })
+    .from(clubGroupMembersTable)
+    .where(and(eq(clubGroupMembersTable.groupId, groupId), isNull(clubGroupMembersTable.endedAt)));
+  for (const m of members) {
+    if (await isMinorForClub(m.clerkId)) return true;
+  }
+  return false;
+}
+
+// F6: is een VOG-afgiftedatum ouder dan 3 jaar (⇒ waarschuwing, geen blokkade)?
+const VOG_EXPIRY_MS = 3 * 365.25 * 24 * 3600 * 1000;
+function vogIsExpired(issuedOn: string | null | undefined): boolean {
+  if (!issuedOn) return false;
+  return Date.now() - Date.parse(issuedOn) > VOG_EXPIRY_MS;
 }
 
 async function profilesByIds(ids: string[]) {
@@ -973,20 +1012,54 @@ router.put("/:clubId/members/:memberId/vog", requireAuth, async (req, res) => {
         return;
       }
     }
-    const [updated] = await db
-      .update(clubMembersTable)
-      .set(
-        issuedOn == null
-          ? { vogIssuedOn: null, vogRecordedAt: null, vogRecordedByClerkId: null, updatedAt: new Date() }
-          : {
-              vogIssuedOn: issuedOn,
-              vogRecordedAt: new Date(),
-              vogRecordedByClerkId: ctx.membership.clerkId,
-              updatedAt: new Date(),
-            },
-      )
-      .where(eq(clubMembersTable.id, memberId))
-      .returning();
+    // F6: geen echte wijziging als de afgiftedatum ongewijzigd blijft. Dan
+    // ontstaat er GEEN auditrecord (één wijziging = precies één record).
+    const oudeAfgiftedatum = target.vogIssuedOn ?? null;
+    const nieuweAfgiftedatum = issuedOn ?? null;
+    if (oudeAfgiftedatum === nieuweAfgiftedatum) {
+      res.json(target);
+      return;
+    }
+    const toelichting = str(req.body?.toelichting);
+    // F6 (memory-les Sportpaspoort): de wijziging én het auditrecord staan in
+    // DEZELFDE transactie. Faalt de audit, dan rolt de wijziging terug — geen
+    // best-effort, geen fire-and-forget. Precies één auditrecord per wijziging.
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(clubMembersTable)
+        .set(
+          issuedOn == null
+            ? { vogIssuedOn: null, vogRecordedAt: null, vogRecordedByClerkId: null, updatedAt: new Date() }
+            : {
+                vogIssuedOn: issuedOn,
+                vogRecordedAt: new Date(),
+                vogRecordedByClerkId: ctx.membership.clerkId,
+                updatedAt: new Date(),
+              },
+        )
+        .where(eq(clubMembersTable.id, memberId))
+        .returning();
+      await writeVogAudit(
+        {
+          event: issuedOn == null ? "vog_registratie_verwijderd" : "vog_registratie_gewijzigd",
+          actorClerkId: ctx.membership.clerkId,
+          subjectClerkId: target.clerkId,
+          meta: {
+            actorRol: ctx.membership.role,
+            clubId: ctx.club.id,
+            clubNaam: ctx.club.name,
+            clubMemberId: memberId,
+            oudeAfgiftedatum,
+            nieuweAfgiftedatum,
+            ...(toelichting != null ? { toelichting } : {}),
+          },
+        },
+        tx,
+      );
+      return row;
+    });
+    // Naast het beveiligings-auditlog blijft ook het clubauditlog gevuld
+    // (bestaand gedrag, niet afzwakken).
     await writeClubAudit({
       clubId: ctx.club.id,
       actorClerkId: ctx.membership.clerkId,
@@ -999,6 +1072,64 @@ router.put("/:clubId/members/:memberId/vog", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club member vog failed");
     res.status(500).json({ error: "VOG registreren is niet gelukt." });
+  }
+});
+
+// F6 — VOG-audithistorie van één persoon binnen deze club. Alleen clubbeheer
+// (canManageClub) en platformbeheer (isAdmin) mogen dit lezen; onbevoegden
+// krijgen 403, ook via een directe API-aanroep. Zelfde afscherming als elders
+// waar security_audit_log wordt getoond (admin-only overzicht in admin.ts).
+// Toont uitsluitend de VOG-gebeurtenissen (append-only, nooit het document).
+router.get("/:clubId/members/:memberId/vog-audit", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const platform = isAdmin(ctx.membership.clerkId);
+    if (!canManageClub(ctx) && !platform) {
+      res.status(403).json({ error: "Alleen clubbeheer of platformbeheer mag de VOG-historie inzien." });
+      return;
+    }
+    const memberId = intParam(req.params["memberId"]);
+    if (memberId == null) {
+      res.status(400).json({ error: "Ongeldig lid." });
+      return;
+    }
+    const [target] = await db
+      .select()
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.id, memberId), eq(clubMembersTable.clubId, ctx.club.id)));
+    if (!target) {
+      res.status(404).json({ error: "Lid niet gevonden." });
+      return;
+    }
+    // Alleen de VOG-gebeurtenissen over dit subject binnen DEZE club. Filter op
+    // clubId in meta zodat een persoon in meerdere clubs niet lekt.
+    const rows = await db
+      .select({
+        id: securityAuditLogTable.id,
+        at: securityAuditLogTable.at,
+        event: securityAuditLogTable.event,
+        actorClerkId: securityAuditLogTable.actorClerkId,
+        subjectClerkId: securityAuditLogTable.subjectClerkId,
+        meta: securityAuditLogTable.meta,
+      })
+      .from(securityAuditLogTable)
+      .where(
+        and(
+          eq(securityAuditLogTable.subjectClerkId, target.clerkId),
+          inArray(securityAuditLogTable.event, [
+            "vog_registratie_gewijzigd",
+            "vog_registratie_verwijderd",
+            "vog_registratie_gemigreerd",
+          ]),
+          sql`(${securityAuditLogTable.meta} ->> 'clubId')::int = ${ctx.club.id}`,
+        ),
+      )
+      .orderBy(desc(securityAuditLogTable.at));
+    res.json({ memberId, subjectClerkId: target.clerkId, historie: rows });
+  } catch (err) {
+    req.log.error({ err }, "club member vog-audit failed");
+    res.status(500).json({ error: "VOG-historie ophalen is niet gelukt." });
   }
 });
 
@@ -1697,6 +1828,14 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
         return;
       }
     }
+    // F6-gedrag (waarschuwing, geen blokkade): een VOG ouder dan 3 jaar mag de
+    // toewijzing NIET tegenhouden — we melden het alleen.
+    const vogWarnings: string[] = [];
+    if (vogIsExpired(trainerCtx.membership.vogIssuedOn)) {
+      vogWarnings.push(
+        "Let op: de VOG-registratie van deze trainer is ouder dan 3 jaar. Vraag om een actuele VOG.",
+      );
+    }
     if (groupId != null) {
       const [group] = await db
         .select({ id: clubGroupsTable.id })
@@ -1706,6 +1845,19 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
         res.status(400).json({ error: "Deze groep hoort niet bij deze club." });
         return;
       }
+      // F6-gedrag (blokkade): een trainer ZONDER VOG-registratie mag niet aan
+      // een jeugdgroep worden toegevoegd. Gasten (alleen_lezen) vallen erbuiten;
+      // die kan sowieso geen trainer zijn. Eerlijke melding, geen stille afwijzing.
+      if (
+        trainerCtx.membership.vogIssuedOn == null &&
+        (await groupIsYouth(groupId))
+      ) {
+        res.status(409).json({
+          error:
+            "Deze trainer heeft geen geregistreerde VOG en kan daarom niet aan een jeugdgroep worden toegewezen. Registreer eerst een VOG met afgiftedatum.",
+        });
+        return;
+      }
     }
     const [row] = await db
       .insert(clubTrainerAssignmentsTable)
@@ -1713,7 +1865,7 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
       .onConflictDoNothing()
       .returning();
     await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "trainer_toegewezen", targetType: "member", targetId: trainerClerkId, detail: { teamId, groupId } });
-    res.status(201).json(row ?? { trainerClerkId, teamId, groupId });
+    res.status(201).json({ ...(row ?? { trainerClerkId, teamId, groupId }), ...(vogWarnings.length ? { waarschuwingen: vogWarnings } : {}) });
   } catch (err) {
     req.log.error({ err }, "club trainer assignment failed");
     res.status(500).json({ error: "Trainer toewijzen is niet gelukt." });

@@ -63,9 +63,24 @@ export const securityEventKinds = [
   "entitlement_granted",
   "entitlement_revoked",
   "entitlements_viewed_by_admin",
+  // F6 — VOG en jeugdveiligheid (auditgedeelte). Elke wijziging aan de
+  // VOG-registratie op een clublidmaatschap levert PRECIES één record op.
+  // Geen statusmachine, geen statusveld: alleen dát er een registratie is en
+  // de afgiftedatum. Nooit het VOG-document zelf.
+  "vog_registratie_gewijzigd", // afgiftedatum toegevoegd of gewijzigd
+  "vog_registratie_verwijderd", // registratie gewist
+  "vog_registratie_gemigreerd", // server-side beheer-/migratiescript
 ] as const;
 export type SecurityEventKind = (typeof securityEventKinds)[number];
 
+// F6 — OPEN PUNT (blokkeert niet): retentie/bewaartermijn van deze tabel.
+// Voor het CLUBauditlog (andere tabel) is 3 jaar besloten; voor
+// security_audit_log is die termijn NOG NIET vastgesteld. De retentie is
+// daarom configureerbaar gemaakt via de env-variabele
+// SECURITY_AUDIT_RETENTION_DAYS, maar staat bewust LEEG/UIT: er wordt op dit
+// moment NIETS opgeruimd. Zolang de waarde leeg is blijft dit log volledig
+// append-only en wordt er niets verwijderd. Pas na bevestiging (René) mag hier
+// een concrete termijn worden ingevuld — tot dan geen retentiejob activeren.
 export const securityAuditLogTable = pgTable("security_audit_log", {
   id: serial("id").primaryKey(),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
