@@ -52,6 +52,9 @@ export type ZoekCriteria = {
   // training je doet — null = vrije rit. Ondergrond stuurt via het fietstype.
   trainingType: string | null;
   bikeType: "racefiets" | "gravel" | "mtb" | null;
+  // Afstand-óf-duur (hoofdstuk 3): bij een geplande training sturen we de
+  // duur mee en rekent de server die met het juiste tempo naar afstand om.
+  targetDurationMin?: number | null;
 };
 
 export type ZoekResult = {
@@ -81,7 +84,9 @@ export function useZoekBekendeRoutes() {
           startLat: input.startLat,
           startLon: input.startLon,
           mode: "loop",
-          targetDistanceKm: input.targetDistanceKm,
+          ...(input.targetDurationMin != null
+            ? { targetDurationMin: input.targetDurationMin }
+            : { targetDistanceKm: input.targetDistanceKm }),
           elevationPreference: input.elevationPreference,
           ...(input.trainingType ? { trainingType: input.trainingType } : {}),
           ...(input.bikeType ? { bikeType: input.bikeType } : {}),
@@ -333,6 +338,26 @@ export async function haalVoorstelWeer(
   } catch {
     return null;
   }
+}
+
+// ── Startpunt zoeken (hoofdstuk 1: zoekveld bovenop de kaart) ────────────────
+
+export type PlaatsResultaat = {
+  name: string;
+  lat: number;
+  lon: number;
+};
+
+/**
+ * Zoek een plaats/adres als startpunt — zelfde woonplaats-bewuste geocoder als
+ * op web (GET /api/routes/geocode). Lege lijst = eerlijk geen treffer.
+ */
+export async function zoekPlaats(q: string): Promise<PlaatsResultaat[]> {
+  const res = await customFetch<{ results: PlaatsResultaat[] }>(
+    `/api/routes/geocode?q=${encodeURIComponent(q)}`,
+    { responseType: "json" },
+  );
+  return Array.isArray(res.results) ? res.results : [];
 }
 
 function errBody(err: unknown): string | null {

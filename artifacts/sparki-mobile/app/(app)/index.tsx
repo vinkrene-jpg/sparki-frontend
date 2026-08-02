@@ -150,7 +150,7 @@ export default function RouteListScreen() {
 
       <View style={styles.recordRow}>
         <Pressable
-          onPress={() => router.push("/route-aanvraag" as Href)}
+          onPress={() => router.push("/route-plannen" as Href)}
           style={[
             styles.ridesBtn,
             { backgroundColor: c.card, borderColor: c.primary },

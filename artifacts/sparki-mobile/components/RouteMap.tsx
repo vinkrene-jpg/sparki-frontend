@@ -46,15 +46,24 @@ export function RouteMap({
     mapRef.current.animateCamera(cam, { duration: 800 });
   }, [location, following]);
 
-  if (path.length < 2) return null;
+  // Hoofdstuk 1 (MOBILE_ROUTE_NAV_AFBOUW_01): het planscherm is kaart-eerst —
+  // de kaart moet dus óók zonder gekozen route kunnen renderen, gecentreerd op
+  // de rijder. Alleen zonder route én zonder locatie is er niets te tonen.
+  const center =
+    path.length > 0
+      ? path[0]
+      : location
+        ? { latitude: location.latitude, longitude: location.longitude }
+        : null;
+  if (!center) return null;
 
   return (
     <MapView
       ref={mapRef}
       style={StyleSheet.absoluteFill}
       initialRegion={{
-        latitude: path[0].latitude,
-        longitude: path[0].longitude,
+        latitude: center.latitude,
+        longitude: center.longitude,
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
       }}
@@ -74,8 +83,12 @@ export function RouteMap({
     >
       <UrlTile urlTemplate={MAPBOX_TILE_URL} tileSize={512} zIndex={-1} />
       {/* Witte omlijning onder de routelijn zodat de lijn op elke ondergrond afsteekt. */}
-      <Polyline coordinates={path} strokeColor="rgba(255,255,255,0.9)" strokeWidth={10} />
-      <Polyline coordinates={path} strokeColor={primary} strokeWidth={6} />
+      {path.length >= 2 && (
+        <>
+          <Polyline coordinates={path} strokeColor="rgba(255,255,255,0.9)" strokeWidth={10} />
+          <Polyline coordinates={path} strokeColor={primary} strokeWidth={6} />
+        </>
+      )}
       {/* Herberekend verbindingsstuk (gestippeld geel) bovenop de routelijn. */}
       {detourPath && detourPath.length >= 2 && (
         <>
@@ -92,12 +105,16 @@ export function RouteMap({
           />
         </>
       )}
-      <Marker coordinate={path[0]} anchor={{ x: 0.5, y: 0.5 }}>
-        <View style={[styles.pin, { backgroundColor: primary, borderColor: background }]} />
-      </Marker>
-      <Marker coordinate={path[path.length - 1]} anchor={{ x: 0.5, y: 1 }}>
-        <Ionicons name="flag" size={26} color={primary} />
-      </Marker>
+      {path.length >= 2 && (
+        <>
+          <Marker coordinate={path[0]} anchor={{ x: 0.5, y: 0.5 }}>
+            <View style={[styles.pin, { backgroundColor: primary, borderColor: background }]} />
+          </Marker>
+          <Marker coordinate={path[path.length - 1]} anchor={{ x: 0.5, y: 1 }}>
+            <Ionicons name="flag" size={26} color={primary} />
+          </Marker>
+        </>
+      )}
       {/* Grote, felle rijrichting-pijl: draait mee met je echte GPS-koers.
           `flat` laat de pijl met de kaart meedraaien, zodat hij in volgmodus
           (camera-koers = rijkoers) altijd recht vooruit wijst. Zonder echte
