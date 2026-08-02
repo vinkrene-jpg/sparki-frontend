@@ -26,6 +26,7 @@ import {
   invitationsTable,
   parentAthleteLinksTable,
   clubMembersTable,
+  clubsTable,
   clubTeamsTable,
   clubTrainerAssignmentsTable,
   clubTrainingsTable,
@@ -62,8 +63,59 @@ export const todayRoles = [
   "ouder",
   "clubbeheer",
   "hoofdtrainer",
+  // Begeleidende clubrollen (besluit 01-08, naar voren gehaald 02-08): elke
+  // server-side bestaande rolwaarde krijgt een eigen, eerlijke Vandaag —
+  // NOOIT terugval op de atleetweergave.
+  "ploegleider",
+  "teammanager",
+  "soigneur",
+  "medical_staff",
+  "vrijwilliger",
 ] as const;
 export type TodayRole = (typeof todayRoles)[number];
+
+// Begeleidende rollen delen één eerlijke, deterministische Vandaag-vorm.
+const BEGELEIDER_ROLLEN = [
+  "ploegleider",
+  "teammanager",
+  "soigneur",
+  "medical_staff",
+  "vrijwilliger",
+] as const;
+type BegeleiderRol = (typeof BEGELEIDER_ROLLEN)[number];
+
+const BEGELEIDER_LABEL: Record<BegeleiderRol, string> = {
+  ploegleider: "Ploegleider",
+  teammanager: "Teammanager",
+  soigneur: "Soigneur",
+  medical_staff: "Medische staf",
+  vrijwilliger: "Vrijwilliger",
+};
+
+// Wat deze rol vandaag KAN (echte, bestaande functies) en wat er (nog)
+// ontbreekt. Eerlijk en kort — geen beloften over onbestaande schermen.
+const BEGELEIDER_KAN: Record<BegeleiderRol, { kan: string; ontbreekt: string }> = {
+  ploegleider: {
+    kan: "Je ziet de teamkalender en teamberichten van je club.",
+    ontbreekt: "Een eigen wedstrijddag-werkomgeving is er nog niet.",
+  },
+  teammanager: {
+    kan: "Je ziet de teamkalender en teamberichten van je club.",
+    ontbreekt: "Een eigen team-beheeromgeving is er nog niet.",
+  },
+  soigneur: {
+    kan: "Je ziet de kalender en berichten van je club.",
+    ontbreekt: "Een eigen verzorgingsoverzicht is er nog niet.",
+  },
+  medical_staff: {
+    kan: "Je ziet de kalender en berichten van je club. Sportdata alleen met expliciete toestemming van de sporter.",
+    ontbreekt: "Een eigen medisch werkoverzicht is er nog niet.",
+  },
+  vrijwilliger: {
+    kan: "Je leest de kalender en berichten van je club.",
+    ontbreekt: "Meer functies horen bewust niet bij deze rol.",
+  },
+};
 
 export interface RoleTodayResult extends TodayResult {
   role: TodayRole;
@@ -97,6 +149,15 @@ export async function availableTodayRoles(clerkId: string): Promise<TodayRole[]>
   if (memberships.some((m) => m.role === "owner" || m.role === "admin"))
     roles.push("clubbeheer");
   if (memberships.some((m) => m.role === "hoofdtrainer")) roles.push("hoofdtrainer");
+  // Clubrol trainer zonder accountrol coach: toch de trainer-Vandaag —
+  // clubtoewijzingen zijn een echte trainerscontext.
+  if (!roles.includes("trainer") && memberships.some((m) => m.role === "trainer"))
+    roles.push("trainer");
+  // Begeleidende clubrollen: elke rolwaarde met een actief lidmaatschap
+  // levert een eigen (eerlijke) rolweergave op — nooit atleet-terugval.
+  for (const rol of BEGELEIDER_ROLLEN) {
+    if (memberships.some((m) => m.role === rol)) roles.push(rol);
+  }
   return roles;
 }
 
@@ -107,6 +168,9 @@ export function defaultTodayRole(activeRole: string, available: TodayRole[]): To
   // Contractgarantie: de impliciete default is ALTIJD een beschikbare rol —
   // anders zou dezelfde weergave impliciet wél en expliciet (?rol=) 403 geven.
   if (available.includes("atleet")) return "atleet";
+  // Géén verzonnen atleet-terugval meer: elke beschikbare rol heeft een eigen
+  // weergave. Alleen een account zonder énige rol (hoort niet te bestaan —
+  // user_profiles.roles bevat minimaal één waarde) valt terug op atleet.
   return available[0] ?? "atleet";
 }
 
@@ -998,6 +1062,70 @@ export async function orchestrateHoofdtrainerToday(clerkId: string): Promise<Rol
   };
 }
 
+// ── Begeleidende clubrollen ─────────────────────────────────────────────────
+// Eén eerlijke, deterministische Vandaag voor ploegleider, teammanager,
+// soigneur, medische staf en vrijwilliger: welke rol, in welke club, wat er
+// vandaag kan, wat er (nog) ontbreekt en één eerste actie. Geen generiek
+// welkom, geen fictieve inhoud, geen atleet-terugval.
+export async function orchestrateBegeleiderToday(
+  clerkId: string,
+  rol: BegeleiderRol,
+): Promise<RoleTodayResult> {
+  const today = amsterdamToday();
+  const passedOver: { key: string; reason: string }[] = [];
+
+  const [memberships, available] = await Promise.all([
+    db
+      .select({ clubId: clubMembersTable.clubId, role: clubMembersTable.role })
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clerkId, clerkId), isNull(clubMembersTable.endedAt))),
+    availableTodayRoles(clerkId),
+  ]);
+  const eigen = memberships.filter((m) => m.role === rol);
+  if (eigen.length === 0) {
+    // Route weigert dit al (403); dubbel slot op de engine-laag.
+    throw Object.assign(new Error(`Geen actieve clubrol ${rol}`), { status: 403 });
+  }
+  const clubIds = eigen.map((m) => m.clubId);
+  const clubs = await db
+    .select({ id: clubsTable.id, name: clubsTable.name })
+    .from(clubsTable)
+    .where(inArray(clubsTable.id, clubIds));
+  const clubNamen = clubs.map((c) => c.name);
+  const label = BEGELEIDER_LABEL[rol];
+  const { kan, ontbreekt } = BEGELEIDER_KAN[rol];
+
+  const lead: TodayItem = {
+    key: `${rol}:lead:context:${clubIds.sort().join(",")}`,
+    slot: "lead",
+    title: `Je bent hier als ${label.toLowerCase()}`,
+    body: `${clubNamen.length === 1 ? `Actief bij ${clubNamen[0]}.` : `Actief bij ${clubNamen.join(" en ")}.`} ${kan} ${ontbreekt}`,
+    actions: [{ id: "rolstart", label: "Open je rolomgeving", href: `/rol-start/${rol}` }],
+    source: "club_members (actief lidmaatschap) + clubs",
+    confidence: null,
+    urgent: false,
+  };
+
+  passedOver.push(
+    { key: `${rol}:support`, reason: "deze rol heeft geen eigen dagsignalen — slot blijft eerlijk leeg" },
+    { key: `${rol}:insight`, reason: "geen sportersdata binnen deze rolrechten — geen inzicht zonder recht" },
+  );
+
+  const rotating = await pickRotatingAndRecord(clerkId, today, [], [lead, null, null], passedOver);
+
+  return {
+    date: today,
+    role: rol,
+    availableRoles: available,
+    profile: baseProfile(rol),
+    lead,
+    support: null,
+    insight: null,
+    rotating,
+    passedOver,
+  };
+}
+
 /** Centrale dispatch: gevraagde/afgeleide rol → juiste orchestrator. */
 export async function orchestrateTodayForRole(
   clerkId: string,
@@ -1012,5 +1140,7 @@ export async function orchestrateTodayForRole(
       return orchestrateClubbeheerToday(clerkId);
     case "hoofdtrainer":
       return orchestrateHoofdtrainerToday(clerkId);
+    default:
+      return orchestrateBegeleiderToday(clerkId, role);
   }
 }
