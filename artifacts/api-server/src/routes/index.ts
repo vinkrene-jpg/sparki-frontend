@@ -98,6 +98,7 @@ import trainerDocumentsRouter from "./trainer-documents";
 import trainerBillingRouter from "./trainer-billing";
 import trainerLetterheadRouter from "./trainer-letterhead";
 import trainerAiDraftsRouter from "./trainer-ai-drafts";
+import contactsRouter from "./contacts";
 import dataOriginRouter from "./data-origin";
 import aiFoundationRouter from "./ai-foundation";
 import searchRouter from "./search";
@@ -279,6 +280,8 @@ router.use("/trainer/billing", trainerBillingRouter);
 router.use("/trainer/letterhead", trainerLetterheadRouter);
 // SPARKI_BUILD_04 F13: AI-concepten (tekst-only, nooit bedragen/verzenden).
 router.use("/trainer/ai-drafts", trainerAiDraftsRouter);
+// SPARKI_BUILD_01 F10 (PD-3): centrale contacten- en relatielaag (beheer-only).
+router.use("/contacts", contactsRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

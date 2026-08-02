@@ -55,6 +55,12 @@ export const trainerClientsTable = pgTable(
     // zelf), koppelt dit veld — optioneel, een klant hoeft geen account te
     // hebben.
     clientClerkId: text("client_clerk_id"),
+    // SPARKI_BUILD_01 F10 (PD-3): verwijzing naar het centrale contactrecord.
+    // Nullable en additief — deze bron VERWIJST naar het contact i.p.v. de
+    // persoonsgegevens te dupliceren. Geen FK-referentie in Drizzle om een
+    // harde importvolgorde tussen schema-bestanden te vermijden; de kolom is
+    // een integer naar contacts.id (soft reference, gevuld door de migratie).
+    contactId: integer("contact_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -118,6 +124,9 @@ export const billingPartiesTable = pgTable(
     address: text("address"),
     email: text("email"),
     vatNumber: text("vat_number"),
+    // SPARKI_BUILD_01 F10 (PD-3): verwijzing naar het centrale contactrecord
+    // (type "betaler"). Nullable/additief; soft reference naar contacts.id.
+    contactId: integer("contact_id"),
     // Eén actieve betaalpartij per klant; historie blijft staan via endedAt.
     startedAt: timestamp("started_at", { withTimezone: true })
       .notNull()

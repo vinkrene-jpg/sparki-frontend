@@ -11,6 +11,8 @@
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
     "test:vog-auditlogging": "node ./scripts/run-test.mjs vog-auditlogging --dev-auth",
     "vog:migrate": "pnpm run build && node --enable-source-maps ./dist/scripts/vog-migrate-existing.mjs",
+    "f10:migrate": "pnpm run build && node --enable-source-maps ./dist/scripts/f10-migrate-contacts.mjs",
+    "test:contacten-relaties": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs contacten-relaties --dev-auth",
     "test:trainer-invoice-pdf": "node ./scripts/run-test.mjs trainer-invoice-pdf --dev-auth",
     "test:subscription-payers": "node ./scripts/run-test.mjs subscription-payers --dev-auth",
     "test:club-documents": "node ./scripts/run-test.mjs club-documents --dev-auth",

@@ -62,6 +62,8 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/scripts/backfill-world-highlights.ts"),
       path.resolve(artifactDir, "src/scripts/run-world-day.ts"),
       path.resolve(artifactDir, "src/scripts/dump-world-samples.ts"),
+      path.resolve(artifactDir, "src/scripts/f10-migrate-contacts.ts"),
+      path.resolve(artifactDir, "src/tests/contacten-relaties.ts"),
       path.resolve(artifactDir, "src/tests/intel.ts"),
       path.resolve(artifactDir, "src/tests/fit-parse.ts"),
       path.resolve(artifactDir, "src/tests/activity-file-ingest.ts"),

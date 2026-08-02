@@ -87,6 +87,9 @@ export const emergencyContactsTable = pgTable(
     phone: text("phone").notNull(),
     relation: text("relation"), // bv. "moeder", "vader", "verzorger"
     priority: integer("priority").notNull().default(1),
+    // SPARKI_BUILD_01 F10 (PD-3): verwijzing naar het centrale contactrecord
+    // (type "noodcontact"). Nullable/additief; soft reference naar contacts.id.
+    contactId: integer("contact_id"),
     createdByClerkId: text("created_by_clerk_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
