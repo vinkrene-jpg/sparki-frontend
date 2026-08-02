@@ -176,7 +176,7 @@ function LCardTitle({ children, className = "" }: { children: ReactNode; classNa
 
 function LLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-white/50">
+    <span className="block min-w-0 [overflow-wrap:anywhere] text-[11px] font-semibold uppercase tracking-[0.05em] text-white/50">
       {children}
     </span>
   )
