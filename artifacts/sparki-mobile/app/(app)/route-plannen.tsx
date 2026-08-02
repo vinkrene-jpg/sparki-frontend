@@ -36,7 +36,13 @@ import {
   type RouteWeerInfo,
   type ZoekCriteria,
 } from "@/lib/route-zoek-api";
-import { useRoute, useRoutes, type RouteSummary } from "@/lib/routes-api";
+import {
+  useDeleteRoute,
+  useHerstelRoute,
+  useRoute,
+  useRoutes,
+  type RouteSummary,
+} from "@/lib/routes-api";
 
 // ── Hoofdstuk 1 MOBILE_ROUTE_NAV_AFBOUW_01: het schermmodel ─────────────────
 // Kaart-eerst (kaart is het scherm), zoekveld + filterbolletjes bovenop de
@@ -205,6 +211,11 @@ export default function RoutePlannenScreen() {
   const [kaartVoorstel, setKaartVoorstel] = useState<RouteOption | null>(null);
   const saveVoorstel = useSaveVoorstel();
   const [saveError, setSaveError] = useState<string | null>(null);
+  // 02c — bewaarlimiet (3 routes) bereikt: bewaar het gekozen voorstel en bied
+  // in de bibliotheek de keuze om een bestaande route te vervangen.
+  const [vervangVoorstel, setVervangVoorstel] = useState<RouteOption | null>(null);
+  const deleteRoute = useDeleteRoute();
+  const herstelRoute = useHerstelRoute();
   const criteriaRef = useRef<ZoekCriteria | null>(null);
   const sessiesRef = useRef(createAanvraagSessies());
 
@@ -320,13 +331,24 @@ export default function RoutePlannenScreen() {
       saveVoorstel.mutate(
         { candidateId: optie.candidateId, name: optie.name },
         {
-          onSuccess: (route) => router.push(`/navigate/${route.id}`),
-          onError: (err) =>
+          onSuccess: (route) => {
+            setVervangVoorstel(null);
+            router.push(`/navigate/${route.id}`);
+          },
+          onError: (err) => {
+            const body = (err as { body?: { error?: string; code?: string } })
+              ?.body;
             setSaveError(
-              (err as { body?: { error?: string } })?.body?.error ??
+              body?.error ??
                 (err as Error)?.message ??
                 "Bewaren is niet gelukt. Probeer het opnieuw.",
-            ),
+            );
+            // 02c — bied de vervang-keuze aan in de bibliotheek.
+            if (body?.code === "bewaarlimiet") {
+              setVervangVoorstel(optie);
+              setTab("bibliotheek");
+            }
+          },
         },
       );
     },
@@ -692,6 +714,23 @@ export default function RoutePlannenScreen() {
               )
             ) : null}
 
+            {tab === "bibliotheek" && vervangVoorstel ? (
+              <View style={[styles.card, { backgroundColor: c.card, borderColor: c.primary }]}>
+                <Text style={[styles.cardName, { color: c.foreground }]}>
+                  Bewaarplek vol (3 van 3)
+                </Text>
+                <Text style={[styles.honest, { color: c.mutedForeground }]}>
+                  Kies hieronder welke route je vervangt door
+                  “{vervangVoorstel.name}”, of upgrade naar Sparki Go voor
+                  onbeperkt bewaren.
+                </Text>
+                <Pressable onPress={() => setVervangVoorstel(null)}>
+                  <Text style={[styles.ctaText, { color: c.mutedForeground }]}>
+                    Toch niet vervangen
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
             {tab === "bibliotheek" ? (
               routesQ.isLoading ? (
                 <ActivityIndicator color={c.primary} />
@@ -722,7 +761,55 @@ export default function RoutePlannenScreen() {
                     </Text>
                     <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
                       {fmtKm(r.distanceKm)} · {fmtHm(r.elevationGainM)}
+                      {r.expiredAt ? " · Vervallen" : ""}
                     </Text>
+                    {r.expiredAt ? (
+                      // 02c — vervallen (bewaartermijn verstreken) maar
+                      // herstelbaar; herstellen loopt door dezelfde poorten
+                      // als opslaan en kan dus eerlijk weigeren.
+                      <Pressable
+                        disabled={herstelRoute.isPending}
+                        onPress={() =>
+                          herstelRoute.mutate(r.id, {
+                            onError: (err) =>
+                              setSaveError(
+                                (err as { body?: { error?: string } })?.body
+                                  ?.error ?? "Herstellen is niet gelukt.",
+                              ),
+                          })
+                        }
+                        style={styles.ctaRow}
+                      >
+                        <Ionicons name="refresh" size={15} color={c.primary} />
+                        <Text style={[styles.ctaText, { color: c.primary }]}>
+                          {herstelRoute.isPending ? "Bezig…" : "Herstel route"}
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                    {vervangVoorstel && !r.expiredAt ? (
+                      <Pressable
+                        disabled={deleteRoute.isPending || saveVoorstel.isPending}
+                        onPress={() => {
+                          const optie = vervangVoorstel;
+                          deleteRoute.mutate(r.id, {
+                            onSuccess: () => kiesVoorstel(optie),
+                            onError: (err) =>
+                              setSaveError(
+                                (err as { body?: { error?: string } })?.body
+                                  ?.error ?? "Vervangen is niet gelukt.",
+                              ),
+                          });
+                        }}
+                        style={styles.ctaRow}
+                      >
+                        <Ionicons name="swap-horizontal" size={15} color={c.destructive} />
+                        <Text style={[styles.ctaText, { color: c.destructive }]}>
+                          {deleteRoute.isPending || saveVoorstel.isPending
+                            ? "Bezig…"
+                            : "Vervang deze route"}
+                        </Text>
+                      </Pressable>
+                    ) : null}
                     {gekozenRouteId === r.id ? (
                       <Pressable
                         onPress={() => router.push(`/navigate/${r.id}`)}

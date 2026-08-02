@@ -17,12 +17,13 @@
 //   16. Direct in de database gezette (seed-)routes tellen niet mee.
 //   17. Go- en Compleet-accounts worden ook geteld; pakket-snapshot wordt
 //       nooit herrekend.
-//   18. Een gratis account gebruikt 12 routes zonder enige blokkade.
+//   18. F5 (02b/02c): een gratis account loopt tegen de limieten — bewaren
+//       geblokkeerd bij 3 bewaard, nieuwe routes bij 8 gebruikt; al-getelde
+//       routes blijven vrij bruikbaar.
 //   19. Een kopie telt afzonderlijk.
-//   20. Met de 20%-vlag uit blijven opslaan/export-tests groen; een
-//       RIDDEN-registratie wordt eerlijk overgeslagen.
-// Tests 8, 9 en 11 (19,9% / 20% gereden) VERVALLEN: de 20%-vlag staat uit
-// omdat de werkelijk afgelegde routeafstand server-side nog niet bestaat.
+//   20. De 20%-vlag staat standaard AAN (F5): gereden-dekking ≥20% telt,
+//       <20% niet; met ROUTE_USAGE_RIDDEN_TRIGGER=false wordt RIDDEN
+//       eerlijk overgeslagen.
 //
 // Run: `pnpm --filter @workspace/api-server run test:route-usage`
 // Vereist DATABASE_URL + NODE_ENV!=production + DEV_AUTH_BYPASS=true.
@@ -204,18 +205,47 @@ async function main() {
       );
     });
 
-    await scenario("20a. 20%-vlag staat uit en RIDDEN wordt overgeslagen", async () => {
-      assert(!isRiddenTriggerEnabled(), "vlag hoort uit te staan in deze omgeving");
+    await scenario("20a. met ROUTE_USAGE_RIDDEN_TRIGGER=false wordt RIDDEN eerlijk overgeslagen", async () => {
+      assert(isRiddenTriggerEnabled(), "vlag hoort standaard AAN te staan (F5)");
       const rid = await directRoute(gratisUser, { name: "ridden-vlag-test" });
-      const r = await recordRouteUsage({
-        clerkId: gratisUser,
-        routeId: rid,
-        usageType: "RIDDEN_20_PERCENT",
-        source: "test",
-      });
-      assert(!r.registered && r.reason === "ridden_vlag_uit", "RIDDEN moet eerlijk geskipt worden");
+      process.env.ROUTE_USAGE_RIDDEN_TRIGGER = "false";
+      try {
+        assert(!isRiddenTriggerEnabled(), "expliciete false hoort uit te schakelen");
+        const r = await recordRouteUsage({
+          clerkId: gratisUser,
+          routeId: rid,
+          usageType: "RIDDEN_20_PERCENT",
+          source: "test",
+        });
+        assert(!r.registered && r.reason === "ridden_vlag_uit", "RIDDEN moet eerlijk geskipt worden");
+      } finally {
+        delete process.env.ROUTE_USAGE_RIDDEN_TRIGGER;
+      }
       const t = await teller(gratisUser);
       assert(t.used === 0, `teller hoort 0 te zijn, is ${t.used}`);
+    });
+
+    await scenario("20c. gereden-dekking ≥20% telt, <20% niet, idempotent", async () => {
+      const rid = await directRoute(gratisUser, { name: "dekking-test" });
+      const laag = await apiReq("POST", `/api/routes/${rid}/gereden-dekking`, gratisUser, { fractie: 0.199 });
+      assert(laag.status === 200 && JSON.parse(laag.text).geteld === false, `<20% mag niet tellen: ${laag.text}`);
+      const before = (await teller(gratisUser)).used;
+      const hoog = await apiReq("POST", `/api/routes/${rid}/gereden-dekking`, gratisUser, { fractie: 0.2 });
+      assert(hoog.status === 200 && JSON.parse(hoog.text).geteld === true, `≥20% hoort te tellen: ${hoog.text}`);
+      const nogEen = await apiReq("POST", `/api/routes/${rid}/gereden-dekking`, gratisUser, { fractie: 0.9 });
+      assert(nogEen.status === 200, `herhaalde melding hoort 200: ${nogEen.text}`);
+      const after = (await teller(gratisUser)).used;
+      assert(after === before + 1, `dekking hoort precies één keer te tellen (${before}→${after})`);
+      // Opruimen: dit vroege scenario mag de tellers van de latere
+      // opslaan/export-scenario's (die op exacte standen toetsen) niet raken.
+      await db
+        .delete(routeUsageRegistrationsTable)
+        .where(
+          and(
+            eq(routeUsageRegistrationsTable.clerkId, gratisUser),
+            eq(routeUsageRegistrationsTable.usageType, "RIDDEN_20_PERCENT"),
+          ),
+        );
     });
 
     await scenario("1. plannen telt niet", async () => {
@@ -389,21 +419,38 @@ async function main() {
       assert(after.used === before + 1, `kopie hoort apart te tellen (${before}→${after.used})`);
     });
 
-    await scenario("18. gratis account gebruikt 12 routes zonder blokkade", async () => {
+    await scenario("18. F5-limieten: gratis opslaan blokkeert eerlijk met 409", async () => {
+      // 02b/02c: een gratis account MAG geblokkeerd worden — bewaarlimiet (3
+      // bewaard) of maandlimiet (8 gebruikt). We slaan op tot een blokkade
+      // komt en controleren dat die eerlijk is én de teller niet ophoogt.
       const before = (await teller(gratisUser)).used;
-      let needed = 12 - before;
-      for (let i = 0; i < needed; i++) {
+      let blokkade: { status: number; text: string } | null = null;
+      for (let i = 0; i < 12 && !blokkade; i++) {
         const r = await apiReq("POST", "/api/routes", gratisUser, {
           content: gpxContent(100 + i),
           name: `Bulk ${i}`,
         });
-        assert(
-          r.status === 201,
-          `opslag ${i + 1} hoort 201 te geven (nooit blokkeren), gaf ${r.status}: ${r.text.slice(0, 120)}`,
-        );
+        if (r.status === 409) blokkade = r;
+        else
+          assert(
+            r.status === 201,
+            `opslag ${i + 1} hoort 201 of 409 te geven, gaf ${r.status}: ${r.text.slice(0, 120)}`,
+          );
       }
+      assert(blokkade != null, "binnen 12 pogingen hoort een 409-limiet te komen");
+      const body = JSON.parse(blokkade!.text);
+      assert(
+        body.code === "bewaarlimiet" || body.code === "maandlimiet",
+        `409 hoort code bewaar-/maandlimiet te dragen: ${blokkade!.text.slice(0, 160)}`,
+      );
+      assert(typeof body.error === "string" && body.upgrade === true, "melding hoort uitleg + upgrade-aanbod te dragen");
       const t = await teller(gratisUser);
-      assert(t.used === 12, `gratis teller hoort 12 te zijn, is ${t.used}`);
+      assert(t.used >= before, "teller mag door een geblokkeerde poging nooit dalen");
+      // Een al-getelde route blijft vrij exporteerbaar, óók onder blokkade.
+      if (savedRouteId) {
+        const vrij = await apiReq("GET", `/api/routes/${savedRouteId}/gpx`, gratisUser);
+        assert(vrij.status === 200, `al-getelde route hoort vrij te blijven, gaf ${vrij.status}`);
+      }
     });
 
     await scenario("20b. met de vlag uit zijn opslaan/export gewoon geteld", async () => {
@@ -635,7 +682,7 @@ async function main() {
   }
   console.log(
     `\n${results.length - failed}/${results.length} scenario's geslaagd. ` +
-      "Tests 8/9/11 (20% gereden) vervallen: 20%-vlag staat uit (geen betrouwbare server-side routedekking).",
+      "20%-vlag staat standaard AAN (F5): gereden-dekking wordt server-side gemeld via POST /:id/gereden-dekking.",
   );
   if (failed > 0) process.exit(1);
 }

@@ -17,6 +17,7 @@ import {
 } from "./lib/billing";
 import { startRouteEnvWarmupScheduler } from "./lib/route-env-warmup";
 import { sweepObservationCleanup } from "./jobs/observation-cleanup";
+import { runRouteBewaartermijnRonde } from "./lib/route-limits";
 
 import { ensureGoVariantGrantSeed } from "./lib/entitlements";
 
@@ -238,6 +239,17 @@ app.listen(port, (err) => {
       );
   runObservationSweep();
   setInterval(runObservationSweep, 24 * 60 * 60 * 1000).unref?.();
+
+  // ROUTE_PAKKET_02c — dagelijkse bewaartermijnronde voor Gratis-routes:
+  // verstreken termijnen naar de herstelbare vervallen-status, termijnen
+  // zetten voor nu-Gratis eigenaren, en RAPPORTEER-ALLEEN voor definitieve
+  // opruiming (er wordt niets verwijderd tot dat expliciet is vrijgegeven).
+  const runRouteBewaarSweep = () =>
+    void runRouteBewaartermijnRonde(logger).catch((err) =>
+      logger.error({ err }, "Route-bewaartermijnronde faalde"),
+    );
+  runRouteBewaarSweep();
+  setInterval(runRouteBewaarSweep, 24 * 60 * 60 * 1000).unref?.();
 
   // Achtergrond-warm-up van de route-omgevingsdata (Overpass + wegobjecten-
   // corridor) rond woonlocaties en recent gegenereerde gebieden, zodat de

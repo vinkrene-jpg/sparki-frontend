@@ -27,6 +27,7 @@ import { isConnectorAvailable } from "../lib/connectors/registry";
 import { isTestIdentity } from "../engines/data-origin/classification";
 import { buildScheduledTasks } from "../lib/scheduled-tasks";
 import { libraryBackfillState } from "../lib/library-backfill";
+import { runRouteBewaartermijnRonde } from "../lib/route-limits";
 import {
   securityAuditLogTable,
   analysisFeedbackTable,
@@ -250,6 +251,24 @@ router.get("/health", requireAuth, requireAdmin, async (req, res) => {
 
 // POST /api/admin/health/run — run the engine now ("Controleer nu").
 // Body: { mode?: "manual"|"weekly", key?: string } — key runs a single check.
+// POST /api/admin/route-bewaartermijn — 02c: draai de dagelijkse
+// bewaartermijnronde handmatig (naast de dagelijkse timer). Definitieve
+// opruiming blijft rapporteer-alleen.
+router.post(
+  "/route-bewaartermijn",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const result = await runRouteBewaartermijnRonde(req.log);
+      res.json({ ok: true, ...result });
+    } catch (err) {
+      req.log.error({ err }, "admin route-bewaartermijn faalde");
+      res.status(500).json({ error: "Ronde mislukt" });
+    }
+  },
+);
+
 router.post("/health/run", requireAuth, requireAdmin, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as { mode?: string; key?: string };

@@ -108,9 +108,11 @@ import {
 } from "@/lib/race-mode";
 import {
   meldNavigatieStart,
+  useMeldGeredenDekking,
   useRejoinRoute,
   useRoute,
   useRouteRoadObjects,
+  useRouteUsageStatus,
   useSaveRide,
   type RejoinResult,
   type RouteDetail,
@@ -234,6 +236,20 @@ export default function NavigateScreen() {
   // Val-alarm: alleen actief tijdens een lopende opname.
   const fall = useFallDetection(location, recorder.recording);
   const saveRide = useSaveRide();
+  // 02b — gratis maandpotje: een NIEUWE (deze maand nog niet getelde) route
+  // definitief in gebruik nemen kan niet bij 8/8. Al-getelde routes blijven
+  // vrij bruikbaar; bij netwerkfout faalt de check open (offline navigeren
+  // blijft mogelijk — de servertelling zelf blijft leidend).
+  const usageQ = useRouteUsageStatus(Number.isInteger(routeId) ? routeId : null);
+  const usageBlocked =
+    usageQ.data != null &&
+    usageQ.data.beperkt &&
+    !usageQ.data.toegestaan &&
+    // Een lopende of net gestopte opname nooit blokkeren.
+    !recorder.recording;
+  // 02b — meld na de rit welk deel van de route werkelijk is afgelegd, zodat
+  // de servertelling (≥20% gereden = gebruikt) op echte dekking draait.
+  const meldDekking = useMeldGeredenDekking();
   const [saved, setSaved] = useState<null | {
     sessionId: number | null;
     synced: boolean;
@@ -724,6 +740,28 @@ export default function NavigateScreen() {
   // ---------- Fail-closed weigering (taak #505) ----------
   // De backend weigerde de navigatiestart bewust (409): route hard
   // geblokkeerd of niet controleerbaar. Eerlijke melding, geen navigatie.
+  // 02b — eerlijke uitleg + upgrade-aanbod in plaats van een dode route.
+  if (usageBlocked) {
+    return (
+      <View style={[styles.fill, styles.center, { backgroundColor: c.background, padding: 32 }]}>
+        <Ionicons name="speedometer-outline" size={40} color={c.mutedForeground} />
+        <Text style={[styles.stateTitle, { color: c.foreground }]}>
+          Maandlimiet bereikt
+        </Text>
+        <Text style={[styles.stateBody, { color: c.mutedForeground }]}>
+          Je hebt deze maand {usageQ.data?.gebruikt} van de {usageQ.data?.limiet}{" "}
+          gratis routes gebruikt (fietsen en wandelen samen). Deze route telt
+          deze maand nog niet mee, dus nieuw in gebruik nemen kan pas volgende
+          maand weer. Routes die al meetellen blijven gewoon bruikbaar — en met
+          Sparki Go vervalt deze limiet.
+        </Text>
+        <Pressable onPress={goBack} style={[styles.backPill, { borderColor: c.border, backgroundColor: c.card }]}>
+          <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold" }}>Terug</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   if (navRefusal) {
     return (
       <View style={[styles.fill, styles.center, { backgroundColor: c.background, padding: 32 }]}>
@@ -1400,6 +1438,18 @@ export default function NavigateScreen() {
         }}
         onStop={async () => {
           recorder.stop();
+          // 02b — werkelijke routedekking melden (fractie 0–1). Fire-and-
+          // forget: het opslaan van de rit hangt hier nooit op.
+          if (progress && Number.isInteger(routeId)) {
+            const totalKm = cumKm[cumKm.length - 1] ?? 0;
+            if (totalKm > 0) {
+              const fractie = Math.max(
+                0,
+                Math.min(1, progress.traveledKm / totalKm),
+              );
+              meldDekking.mutate({ routeId, fractie });
+            }
+          }
           // Rit gestopt = live delen stopt automatisch (geen naloop).
           if (startedShareHereRef.current) {
             startedShareHereRef.current = false;

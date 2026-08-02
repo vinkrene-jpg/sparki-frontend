@@ -16,6 +16,8 @@ import { createNotification } from "../lib/notifications";
 // ROUTE_PAKKET_02A — definitief opslaan (kopie/aangepaste route in eigen
 // bibliotheek) telt als routegebruik. Alleen meten, nooit blokkeren.
 import { recordRouteUsageSafe } from "../lib/route-usage-metering";
+// ROUTE_PAKKET_02b/02c — Gratis-limieten op het bewaren van voorstel-kopieën.
+import { checkOpslag } from "../lib/route-limits";
 import { listFriends } from "../engines/social";
 import {
   getRoutingProvider,
@@ -237,6 +239,17 @@ router.post("/voorstellen/:id/reageer", requireAuth, async (req, res) => {
     // Eén transactie: statuswissel én routekopie slagen of falen samen, zodat
     // een voorstel nooit "geaccepteerd" kan zijn zonder gekopieerde route.
     // Alleen een nog-open voorstel mag beantwoord worden.
+    // 02b/02c — accepteren zet een kopie definitief in de eigen bibliotheek:
+    // Gratis-limieten gelden vóór de transactie start.
+    let savedUntil: Date | null = null;
+    if (actie === "accepteer") {
+      const besluit = await checkOpslag(clerkId, {});
+      if (!besluit.allowed) {
+        res.status(besluit.status).json(besluit);
+        return;
+      }
+      savedUntil = besluit.savedUntil;
+    }
     let copy: RouteRow | null = null;
     let alreadyAnswered = false;
     await db.transaction(async (tx) => {
@@ -280,6 +293,7 @@ router.post("/voorstellen/:id/reageer", requireAuth, async (req, res) => {
               nav: route.nav as never,
               waypoints: route.waypoints as never,
               meetpoints: route.meetpoints as never,
+              savedUntil,
             })
             .returning();
         }
@@ -360,6 +374,12 @@ router.post("/voorstellen/:id/aanpassen", requireAuth, async (req, res) => {
     }
     if (proposal.status !== "open") {
       res.status(409).json({ error: "Dit voorstel is al beantwoord" });
+      return;
+    }
+    // 02b/02c — de aangepaste kopie wordt definitief bewaard: limieten eerst.
+    const besluit = await checkOpslag(clerkId, {});
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
       return;
     }
     const [route] = await db

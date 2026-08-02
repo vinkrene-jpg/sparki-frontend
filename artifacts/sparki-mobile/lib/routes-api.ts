@@ -30,7 +30,77 @@ export type RouteSummary = {
   createdAt: string;
   /** Routeversie — telt op bij inhoudelijke wijzigingen (Golf 19). */
   version?: number;
+  /** 02c — gezet zodra de gratis bewaartermijn verstreken is (herstelbaar). */
+  expiredAt?: string | null;
+  /** 02c — tot wanneer de route bewaard blijft (null = geen termijn). */
+  savedUntil?: string | null;
 };
+
+/** 02b — eerlijke stand van het gratis maandpotje (fiets+wandelen samen). */
+export type RouteUsageStatus = {
+  beperkt: boolean;
+  gebruikt: number;
+  limiet: number;
+  bewaarLimiet: number;
+  bewaard: number | null;
+  ditGeteld: boolean | null;
+  toegestaan: boolean;
+};
+
+export function useRouteUsageStatus(routeId: number | null) {
+  return useQuery({
+    queryKey: ["route-usage-status", routeId],
+    enabled: routeId != null,
+    queryFn: () =>
+      customFetch<RouteUsageStatus>(
+        `/api/routes/usage-status?routeId=${routeId}`,
+        { method: "GET" },
+      ),
+  });
+}
+
+/**
+ * 02b — meld na de rit welk deel van de route werkelijk is afgelegd
+ * (fractie 0–1). Bij ≥20% telt de route deze maand als gebruikt.
+ */
+export function useMeldGeredenDekking() {
+  return useMutation({
+    mutationFn: ({ routeId, fractie }: { routeId: number; fractie: number }) =>
+      customFetch<{ geteld: boolean }>(
+        `/api/routes/${routeId}/gereden-dekking`,
+        { method: "POST", body: JSON.stringify({ fractie }) },
+      ),
+  });
+}
+
+/** Route verwijderen (soft-delete met historie op de server). */
+export function useDeleteRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (routeId: number) =>
+      customFetch<{ ok?: boolean }>(`/api/routes/${routeId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["routes"] });
+    },
+  });
+}
+
+/** 02c — een vervallen route terughalen (zelfde poorten als opslaan). */
+export function useHerstelRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (routeId: number) =>
+      customFetch<{ hersteld: boolean }>(`/api/routes/${routeId}/herstel`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["routes"] });
+    },
+  });
+}
 
 /** Uitkomst van de verplichte navigatiestart-preflight (taak #505). */
 export type NavStartResult =

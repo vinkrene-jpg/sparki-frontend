@@ -67,6 +67,20 @@ import {
   recordRouteUsageSafe,
   settleCandidateOnSaveSafe,
 } from "../lib/route-usage-metering";
+// ROUTE_PAKKET_02b/02c (F5) — Gratis-handhaving: 8 gebruikte routes per
+// kalendermaand (fiets+wandelen één potje), maximaal 3 bewaarde routes en de
+// 30-dagen-bewaartermijn. Betaald/legacy blijft ongelimiteerd.
+import {
+  checkMaandlimiet,
+  checkOpslag,
+  isGratisBeperkt,
+  maandGebruik,
+  isAlGeteld,
+  bewaardAantal,
+  MAAND_LIMIET,
+  BEWAAR_LIMIET,
+  runRouteBewaartermijnRonde,
+} from "../lib/route-limits";
 import {
   createRouteGenerationJob,
   finishJob,
@@ -944,6 +958,133 @@ async function cleanupUnriddenProposals(
   }
 }
 
+// GET /api/routes/usage-status — 02b: eerlijke stand van het maandpotje
+// (fiets en wandelen delen één potje) plus, met ?routeId= of ?candidateId=,
+// of DEZE route/dit voorstel nu vrij bruikbaar is. Al-geteld = altijd vrij.
+router.get("/usage-status", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const beperkt = await isGratisBeperkt(clerkId);
+    const gebruikt = await maandGebruik(clerkId);
+    const routeId = Number(req.query.routeId);
+    const candidateId =
+      typeof req.query.candidateId === "string" ? req.query.candidateId : "";
+    let ditGeteld: boolean | null = null;
+    if (Number.isInteger(routeId) && routeId > 0) {
+      ditGeteld = await isAlGeteld(clerkId, { routeId });
+    } else if (candidateId) {
+      ditGeteld = await isAlGeteld(clerkId, { candidateKey: candidateId });
+    }
+    const vol = beperkt && gebruikt >= MAAND_LIMIET;
+    res.json({
+      beperkt,
+      gebruikt,
+      limiet: MAAND_LIMIET,
+      bewaarLimiet: BEWAAR_LIMIET,
+      bewaard: beperkt ? await bewaardAantal(clerkId) : null,
+      ditGeteld,
+      // "toegestaan" = deze route/kandidaat nu in gebruik nemen mag.
+      toegestaan: !vol || ditGeteld === true,
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.usage-status failed");
+    res.status(500).json({ error: "Kon gebruiksstand niet bepalen" });
+  }
+});
+
+// POST /api/routes/:id/gereden-dekking — de navigatie meldt bij rit-einde
+// welk deel van de route werkelijk is afgelegd (fractie 0–1, uit de
+// route-matching op het toestel). Bij ≥20% telt de route als gebruikt
+// (RIDDEN_20_PERCENT); idempotent per route per kalendermaand. Dit pad
+// blokkeert nooit — de rit is al gereden; eerlijkheid boven blokkade.
+router.post("/:id/gereden-dekking", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  const fractie = Number((req.body as Record<string, unknown> | null)?.fractie);
+  if (!Number.isInteger(id) || !Number.isFinite(fractie) || fractie < 0 || fractie > 1) {
+    res.status(400).json({ error: "Ongeldige route-id of fractie (0–1)" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select({ id: routesTable.id })
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    if (fractie < 0.2) {
+      res.json({ geteld: false, reden: "onder_20_procent" });
+      return;
+    }
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: id,
+      usageType: "RIDDEN_20_PERCENT",
+      source: "nav-dekking",
+    });
+    res.json({ geteld: true });
+  } catch (err) {
+    req.log.error({ err }, "routes.gereden-dekking failed");
+    res.status(500).json({ error: "Kon dekking niet registreren" });
+  }
+});
+
+// POST /api/routes/:id/herstel — 02c: een vervallen route terughalen. Dit is
+// opnieuw bewaren, dus dezelfde poorten als opslaan (maandpotje via de
+// route-identiteit + vrije bewaarplek); daarna loopt een nieuwe 30-dagen-
+// termijn voor Gratis.
+router.post("/:id/herstel", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select({ id: routesTable.id, expiredAt: routesTable.expiredAt })
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.id, id),
+          eq(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    if (!route.expiredAt) {
+      res.json({ hersteld: false, reden: "niet_vervallen" });
+      return;
+    }
+    const besluit = await checkOpslag(clerkId, { routeId: id });
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
+    await db
+      .update(routesTable)
+      .set({ expiredAt: null, savedUntil: besluit.savedUntil })
+      .where(eq(routesTable.id, id));
+    await recordRouteUsageSafe(req.log, {
+      clerkId,
+      routeId: id,
+      usageType: "SAVED",
+      source: "opslaan:herstel-vervallen",
+    });
+    res.json({ hersteld: true, bewaardTot: besluit.savedUntil });
+  } catch (err) {
+    req.log.error({ err }, "routes.herstel failed");
+    res.status(500).json({ error: "Kon route niet herstellen" });
+  }
+});
+
 // GET /api/routes — caller's saved routes, newest first.
 //   ?limit=N                 — cap the number of rows (1–100, default 30)
 //   ?plannedWorkoutId=N      — only routes linked to that planned workout
@@ -1743,6 +1884,12 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Route niet gevonden" });
       return;
     }
+    // 02b/02c — de kopie is een eigen bewaarde route: limieten vóór opslaan.
+    const besluit = await checkOpslag(clerkId, {});
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
     const surface: RouteSurface =
       route.bikeType === "mtb"
         ? "mtb"
@@ -1768,6 +1915,7 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
         engineSurface: route.engineSurface ?? null,
         // Bibliotheekroutes zijn fietsroutes (bikeType-gestuurd).
         sport: "cycling",
+        savedUntil: besluit.savedUntil,
       })
       .returning({ id: routesTable.id });
     await recordRouteUsageSafe(req.log, {
@@ -2655,6 +2803,23 @@ router.get("/:id/gpx", requireAuth, async (req, res) => {
       return;
     }
 
+    // 02c — een vervallen route is niet meer bewaard: eerst herstellen.
+    if (route.expiredAt) {
+      res.status(409).json({
+        code: "vervallen",
+        error:
+          "Deze route is vervallen (bewaartermijn verstreken). Herstel de route eerst om haar weer te gebruiken.",
+      });
+      return;
+    }
+    // 02b — export van een nieuwe (nog niet getelde) route valt onder de
+    // maandlimiet; een deze maand al getelde route blijft vrij exporteerbaar.
+    const besluit = await checkMaandlimiet(clerkId, { routeId: route.id });
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
+
     const gpx = buildGpx({
       name: route.name,
       geometry: (route.geometry as RoutePathPoint[] | null) ?? [],
@@ -2723,6 +2888,22 @@ router.get("/:id/tcx", requireAuth, async (req, res) => {
       return;
     }
 
+    // 02c — een vervallen route is niet meer bewaard: eerst herstellen.
+    if (route.expiredAt) {
+      res.status(409).json({
+        code: "vervallen",
+        error:
+          "Deze route is vervallen (bewaartermijn verstreken). Herstel de route eerst om haar weer te gebruiken.",
+      });
+      return;
+    }
+    // 02b — zelfde maandlimiet-poort als de GPX-export.
+    const besluit = await checkMaandlimiet(clerkId, { routeId: route.id });
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
+
     const tcx = buildTcx({
       name: route.name,
       geometry: (route.geometry as RoutePathPoint[] | null) ?? [],
@@ -2786,6 +2967,16 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
         "Routevoorstel is verlopen of niet gevonden — genereer de route opnieuw.",
     });
     return;
+  }
+
+  // 02b — export van een niet-opgeslagen voorstel telt via de
+  // kandidaat-identiteit en valt dus onder dezelfde maandlimiet.
+  {
+    const besluit = await checkMaandlimiet(clerkId, { candidateKey: candidateId });
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
   }
 
   const gpx = buildGpx({
@@ -2937,6 +3128,15 @@ router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
         "Routevoorstel is verlopen of niet gevonden — genereer de route opnieuw.",
     });
     return;
+  }
+
+  // 02b — zelfde maandlimiet-poort als de kandidaat-GPX-export.
+  {
+    const besluit = await checkMaandlimiet(clerkId, { candidateKey: candidateId });
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
   }
 
   const tcx = buildTcx({
@@ -4712,6 +4912,13 @@ router.post("/", requireAuth, async (req, res) => {
         : stored.name;
     const meetpoints = parseMeetpoints(body.meetpoints);
 
+    // 02b/02c — Gratis: maandlimiet + bewaarplek, vóór het opslaan.
+    const besluit = await checkOpslag(clerkId, { candidateKey: candidateId });
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
+
     try {
       // Re-validate workout ownership defensively (it was checked at /generate).
       let linkedPlannedWorkoutId: number | null = null;
@@ -4755,6 +4962,7 @@ router.post("/", requireAuth, async (req, res) => {
           source: "generated",
           linkedActivityImportId: null,
           linkedPlannedWorkoutId,
+          savedUntil: besluit.savedUntil,
         })
         .returning();
       // Aanvulling 02a: markeer de kandidaat als opgeslagen (latere exports
@@ -4804,6 +5012,13 @@ router.post("/", requireAuth, async (req, res) => {
       ? Number(body.linkedActivityImportId)
       : null;
 
+  // 02b/02c — Gratis: maandlimiet + bewaarplek, vóór het opslaan.
+  const besluit = await checkOpslag(clerkId, {});
+  if (!besluit.allowed) {
+    res.status(besluit.status).json(besluit);
+    return;
+  }
+
   try {
     // Only link an activity import the caller actually owns — never trust a
     // raw id from the client (cross-tenant reference protection).
@@ -4845,6 +5060,7 @@ router.post("/", requireAuth, async (req, res) => {
         nav: null,
         source: "gpx",
         linkedActivityImportId,
+        savedUntil: besluit.savedUntil,
       })
       .returning();
     await recordRouteUsageSafe(req.log, {

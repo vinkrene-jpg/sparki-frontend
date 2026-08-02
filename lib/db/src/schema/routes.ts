@@ -135,6 +135,14 @@ export const routesTable = pgTable("routes", {
   // blijft bestaan zodat historie nooit beschadigt; de bibliotheek verbergt
   // verwijderde routes.
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  // ROUTE_PAKKET_02c — bewaartermijn Gratis. `bewaardTot` (saved_until): tot
+  // wanneer de route bewaard blijft; null = geen termijn (betaald/legacy én
+  // alle routes van vóór 02c — oude code leest null als "gewoon bewaard").
+  // `vervallenOp` (expired_at): gezet zodra de termijn verstreken is; de route
+  // gaat naar een HERSTELBARE vervallen-status (geen verwijdering) en wordt
+  // pas 30 dagen later definitief opgeruimd (start in rapporteer-alleen-modus).
+  savedUntil: timestamp("saved_until", { withTimezone: true }),
+  expiredAt: timestamp("expired_at", { withTimezone: true }),
   linkedActivityImportId: integer("linked_activity_import_id").references(
     () => activityImportsTable.id,
     { onDelete: "set null" },

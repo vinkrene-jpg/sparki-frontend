@@ -42,15 +42,14 @@ export function amsterdamCalendarMonth(d: Date = new Date()): string {
 }
 
 /**
- * Operationele vlag voor de 20%-gereden-trigger. Staat UIT: er bestaat op de
- * server geen betrouwbare vastlegging van de werkelijk afgelegde afstand op
- * een geplande route (geen navigatiesessies/route-dekking server-side), dus
- * dit percentage is nu niet aantoonbaar te bepalen. We gokken niet en bouwen
- * geen benadering — expliciet restpunt van 02a; de registratie is er klaar
- * voor zodra die gegevenslaag bestaat.
+ * Operationele vlag voor de 20%-gereden-trigger. Staat AAN (F5, 02-08-2026):
+ * de navigatie meldt bij rit-einde server-side de werkelijk afgelegde fractie
+ * van de route (POST /api/routes/:id/gereden-dekking), berekend uit de
+ * route-matching tijdens de rit — geen benadering, geen gok. Uitzetten kan
+ * operationeel met ROUTE_USAGE_RIDDEN_TRIGGER=false.
  */
 export function isRiddenTriggerEnabled(): boolean {
-  return process.env.ROUTE_USAGE_RIDDEN_TRIGGER === "true";
+  return process.env.ROUTE_USAGE_RIDDEN_TRIGGER !== "false";
 }
 
 export type RecordRouteUsageResult =

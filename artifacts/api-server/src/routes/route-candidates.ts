@@ -23,6 +23,9 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import { routeObstaclesOf } from "../lib/route-remarks";
 import { scanRouteCandidatesForUser } from "../lib/ridden-route-candidates";
 import { recordRouteUsageSafe } from "../lib/route-usage-metering";
+// ROUTE_PAKKET_02b/02c — Gratis-limieten gelden ook voor het bewaren van een
+// route uit de eigen ritgeschiedenis.
+import { checkOpslag } from "../lib/route-limits";
 
 const router: IRouter = Router();
 
@@ -263,11 +266,19 @@ router.post("/:id/save", requireAuth, async (req, res) => {
         ? String((req.body as Record<string, unknown>).name).trim().slice(0, 120)
         : `Eigen route (${cand.rideCount}× gereden)`;
 
+    // 02b/02c — limieten vóór het definitief bewaren.
+    const besluit = await checkOpslag(clerkId, {});
+    if (!besluit.allowed) {
+      res.status(besluit.status).json(besluit);
+      return;
+    }
+
     const [route] = await db
       .insert(routesTable)
       .values({
         clerkId,
         name,
+        savedUntil: besluit.savedUntil,
         surface: cand.sport === "gravel" ? "gravel" : cand.sport === "mtb" ? "mtb" : "unknown",
         visibility: "private",
         status: "ready",
