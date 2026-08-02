@@ -15,5 +15,12 @@
     "playwright-core": "^1.62.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@babel/generator@^7": "^7.29.7",
+      "@babel/traverse@^7": "^7.29.7",
+      "@babel/parser@^7": "^7.29.7"
+    }
   }
 }

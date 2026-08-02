@@ -178,55 +178,6 @@
               "mimeType": "application/octet-stream"
             }
           ]
-        },
-        {
-          "action": "VIEW",
-          "category": [
-            "DEFAULT",
-            "BROWSABLE"
-          ],
-          "data": [
-            {
-              "scheme": "content",
-              "mimeType": "application/gpx+xml"
-            },
-            {
-              "scheme": "file",
-              "mimeType": "application/gpx+xml"
-            },
-            {
-              "scheme": "content",
-              "mimeType": "application/octet-stream",
-              "pathPattern": ".*\\.gpx"
-            },
-            {
-              "scheme": "file",
-              "mimeType": "application/octet-stream",
-              "pathPattern": ".*\\.gpx"
-            },
-            {
-              "scheme": "content",
-              "pathPattern": ".*\\.gpx"
-            },
-            {
-              "scheme": "file",
-              "pathPattern": ".*\\.gpx"
-            }
-          ]
-        },
-        {
-          "action": "SEND",
-          "category": [
-            "DEFAULT"
-          ],
-          "data": [
-            {
-              "mimeType": "application/gpx+xml"
-            },
-            {
-              "mimeType": "application/octet-stream"
-            }
-          ]
         }
       ]
     },
