@@ -49,7 +49,6 @@
 - [Sparki Performance Intelligence Hub](sparki-intel-hub.md) — /kennis "Voor jou" intel module; gated by knowledge_base flag; feed at root not /feed (decl before /:id); details in topic file.
 - [Sparki hand-rolled modal layering](sparki-modal-layering.md) — custom fixed modals createPortal to body + z-[70]+ (z-50 collides with bottom nav, silent "nothing happens"); [chat overlay](sparki-chat-overlay.md) header SPARKI button, portal z-[80].
 - [Multi-role context & nav](sparki-multirole-context.md) — BB-06 vijf vaste posities per rol; teamcontext alleen in sporter-rol tonen; shellNavForRole moet elke rol expliciet dekken.
-- [Sparki experience-first restructure](sparki-experience-restructure.md) — approved Beleven→Ontdekken→Begrijpen→Verbeteren reorg; 5-tab nav (Vandaag·Activiteiten·Ontdekken·Trainen·Jij).
 - [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.
 - [Drizzle/DB migratie-traps](drizzle-onconflict-partial-index.md) — onConflict partial-index predicate keys; guarded ADD CONSTRAINT ([migratie](db-nondestructive-constraint-migration.md)); drift ([push](drizzle-push-drift-loops.md)).
 - [Reminders & meldingen](sparki-reminder-delivery.md) — idempotent dedupeKey+sentAt, email honest-limited, push SSRF-allowlist ([push](sparki-web-push.md), [daily fold](sparki-notification-daily-fold.md), [attention](sparki-attention-notifications.md)).

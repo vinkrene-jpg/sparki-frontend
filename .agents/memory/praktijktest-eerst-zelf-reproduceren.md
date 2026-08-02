@@ -7,4 +7,8 @@ description: Bij "het werkt niet" van René nooit beginnen met gebruikersinstruc
 
 **Why:** Terugkerend patroon (o.a. FPS Connect, mobiele login 02-08-2026): meerdere beurten "sluit de app helemaal af / cache / andere link"-instructies terwijl de echte oorzaak een defect aan onze kant was (Clerk ging stil `needs_client_trust` vereisen; custom sign-in kende die status niet → eeuwige spinner zonder foutmelding). Kost René veel tijd en vertrouwen; "geen foutmelding + geen verzoek in de logs" betekent vrijwel altijd een client-side defect dat wij kunnen naspelen.
 
+**Aanvullende afspraak René (02-08):** bij een storing is het uitgangspunt dat er iets mis is in de opzet, niet dat hij een stap verkeerd doet. Eerst logboeken + code, dan pas (eventueel) gebruikersstappen.
+
+**UI-regel (René, bindend):** een knop die laadt zonder dat er ooit iets verschijnt, is zélf een defect — los van de oorzaak. Elk statuspad eindigt in resultaat of in een zichtbare foutmelding (sluitende `else`), nooit in stilte. Toegepast op sign-in (needs_client_trust) en sign-up; bij nieuwe flows die op een status wachten altijd zo'n vangnet meebouwen.
+
 **How to apply:** Bij elke klacht zonder foutmelding: (1) check logs of het verzoek ons überhaupt bereikt; (2) speel de exacte flow zelf na (testgebruiker aanmaken kan via Clerk Backend API, daarna opruimen); (3) noem daarna pas eventuele stappen voor René, altijd met verifieerbaar controlepunt. Verwar de browser-voorproef van de Expo-app nooit met Expo Go — platform-gates (`Platform.OS !== "web"`) maken dat "ik zie geen verschil" daar terecht is.

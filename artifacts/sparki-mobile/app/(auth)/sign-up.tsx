@@ -50,7 +50,19 @@ export default function SignUpScreen() {
       setGeneralError(clerkErrorMessage(error));
       return;
     }
-    await signUp.verifications.sendEmailCode();
+    const { error: sendError } = await signUp.verifications.sendEmailCode();
+    if (sendError) {
+      setGeneralError(clerkErrorMessage(sendError));
+      return;
+    }
+    // Vangnet (regel: een ladende knop zonder resultaat is zelf een defect):
+    // elke toestand die we hier niet expliciet verder helpen, krijgt een
+    // leesbare melding in plaats van stilte.
+    if (signUp.status !== "missing_requirements" && signUp.status !== "complete") {
+      setGeneralError(
+        "Registreren is niet afgerond. Probeer het opnieuw of neem contact op als dit blijft gebeuren.",
+      );
+    }
   };
 
   const handleVerify = async () => {
@@ -71,6 +83,12 @@ export default function SignUpScreen() {
           }
         },
       });
+    } else {
+      // Sluitend vangnet: code geaccepteerd maar account niet compleet —
+      // altijd een zichtbare melding, nooit een stil einde.
+      setGeneralError(
+        "De code is geaccepteerd, maar je account is nog niet compleet. Probeer het opnieuw.",
+      );
     }
   };
 
