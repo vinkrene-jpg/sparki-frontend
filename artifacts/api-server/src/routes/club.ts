@@ -2298,17 +2298,37 @@ router.get("/:clubId/races", requireAuth, async (req, res) => {
     // beheer) zien de tekst; iedereen ziet wél de beschikbaarheidsstatus.
     const magNote =
       canManageClub(ctx) || hasClubRole(ctx, ["teammanager", "ploegleider", "medical_staff"]);
+    // HERSTEL F5 (HA-24): mechanieker en soigneur zien van de bezetting alleen
+    // naam, functie en óf de renner rijdt — geen notities, geen wie-besliste-
+    // wat en geen overrule-spoor. Dit is een weergaveregel; rechten blijven
+    // bij CLUB_RECHTEN_01.
+    const beperkteWeergave =
+      !canManageClub(ctx) && !hasClubRole(ctx, ["teammanager", "ploegleider", "hoofdtrainer", "trainer"]) &&
+      hasClubRole(ctx, ["mechanieker", "soigneur"]);
     res.json(
       events.map((e) => ({
         ...e,
         selections: selections
           .filter((s) => s.eventId === e.id)
-          .map((s) => ({
-            ...s,
-            availabilityNote:
-              magNote || s.clerkId === ctx.membership.clerkId ? s.availabilityNote : null,
-            displayName: names.get(s.clerkId)?.displayName ?? null,
-          })),
+          .map((s) =>
+            beperkteWeergave && s.clerkId !== ctx.membership.clerkId
+              ? {
+                  id: s.id,
+                  eventId: s.eventId,
+                  clerkId: s.clerkId,
+                  role: s.role,
+                  rijdt: s.role === "renner" && s.availability !== "niet_beschikbaar",
+                  availability: s.availability,
+                  availabilityNote: null,
+                  displayName: names.get(s.clerkId)?.displayName ?? null,
+                }
+              : {
+                  ...s,
+                  availabilityNote:
+                    magNote || s.clerkId === ctx.membership.clerkId ? s.availabilityNote : null,
+                  displayName: names.get(s.clerkId)?.displayName ?? null,
+                },
+          ),
         mySelection: selections.find((s) => s.eventId === e.id && s.clerkId === ctx.membership.clerkId) ?? null,
       })),
     );
@@ -2371,7 +2391,24 @@ router.put("/:clubId/races/:eventId", requireAuth, async (req, res) => {
   }
 });
 
-// Selectie beheren (beheer/teammanager) — renner/reserve/begeleider.
+// HERSTEL_EN_AANVULLING_01 F5 (HA-22…HA-25): wedstrijdbezetting kent naast
+// renner/reserve/begeleider ook echte staffuncties. Seizoensbezetting
+// (clubrol) is bewust NIET gelijk aan wedstrijdbezetting (deze rijen): een
+// clublid met clubrol mechanieker rijdt alleen mee als hij hier per evenement
+// is toegewezen. CLUB_RECHTEN_01 blijft eigenaar van rollen en rechten —
+// dit is inhoud (wie gaat mee), geen tweede rechtenlaag.
+export const WEDSTRIJD_BEZETTING_ROLLEN = [
+  "renner",
+  "reserve",
+  "begeleider",
+  "ploegleider",
+  "mechanieker",
+  "soigneur",
+  "medical_staff",
+  "chauffeur",
+] as const;
+
+// Selectie beheren (beheer/teammanager) — renners én staf per evenement.
 router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
@@ -2380,7 +2417,7 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
     const eventId = intParam(req.params["eventId"]);
     const clerkId = str(req.body?.clerkId);
     const role = str(req.body?.role) ?? "renner";
-    if (eventId == null || !clerkId || !["renner", "reserve", "begeleider"].includes(role)) {
+    if (eventId == null || !clerkId || !(WEDSTRIJD_BEZETTING_ROLLEN as readonly string[]).includes(role)) {
       res.status(400).json({ error: "Ongeldige selectie." });
       return;
     }
