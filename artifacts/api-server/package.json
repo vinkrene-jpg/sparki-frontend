@@ -79,7 +79,7 @@
     "test:activity-file-ingest": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs activity-file-ingest",
     "test:email-channel": "node ./scripts/run-test.mjs email-channel",
     "test:development-goal": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs development-goal",
-    "test:world-media": "node ./scripts/run-test.mjs world-media",
+    "test:world-media": "node ./scripts/run-test.mjs world-media --dev-auth",
     "seed:sparki-world": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-sparki-world.mjs",
     "seed:world-copy": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-world-copy.mjs",
     "backfill:avatars": "pnpm run build && node --enable-source-maps ./dist/scripts/backfill-avatars.mjs",

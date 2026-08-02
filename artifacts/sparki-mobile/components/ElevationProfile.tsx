@@ -140,6 +140,10 @@ export function ElevationProfile({
         style={styles.chartWrap}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         {...panResponder.panHandlers}
+        // Puur decoratieve datavisualisatie: de hoogtewaarden staan al als
+        // tekst in de readout-rij en de as-labels, dus verbergen voor schermlezers.
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
       >
         {width > 0 ? (
           <Svg width={width} height={CHART_HEIGHT} pointerEvents="none">

@@ -121,6 +121,34 @@ router.get(
       // sfeerbeeld) transparant werken via /api/storage, mét intrekbaarheid.
       const managed = await findFilesByObjectPath(objectPath);
       if (managed.length > 0) {
+        // F11-01: PUBLIEKE centrale bestanden (Sparki World-media: systeem-eigen,
+        // transparant-fictief) mogen door ELKE ingelogde gebruiker gelezen worden
+        // — dezelfde regel als de world-routes (de wereld-feed is voor iedereen
+        // zichtbaar). Intrekking blijft fail-closed: een ingetrokken publiek
+        // bestand valt met 410 dicht, óók via een oude link. Zolang er ≥1 levende
+        // publieke rij is, serveren we.
+        const publicRows = managed.filter((f) => f.visibility === "public");
+        if (publicRows.length > 0) {
+          const livePublic = publicRows.filter((f) => !f.revokedAt);
+          if (livePublic.length === 0) {
+            res
+              .status(410)
+              .json({ error: "Dit bestand is ingetrokken en niet meer beschikbaar." });
+            return;
+          }
+          const served = await serveFile(livePublic[0]!);
+          if (!served.ok) {
+            res.status(served.status).json({ error: served.reason });
+            return;
+          }
+          res.setHeader("Content-Type", served.contentType);
+          res.setHeader("X-Content-Type-Options", "nosniff");
+          // Publieke, onveranderlijke media (uuid-pad) mag door de browser
+          // gecachet worden; privé bestanden hieronder blijven no-store.
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          served.stream.pipe(res);
+          return;
+        }
         // Één opgeslagen object kan meerdere files-rijen delen (dedupe op
         // checksum maakt per eigenaar — en zelfs per eigenaar meermaals — een
         // eigen rij). Beperk tot de rijen van de rechthebbende (admin mag elke

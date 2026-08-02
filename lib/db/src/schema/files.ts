@@ -24,6 +24,9 @@ export const fileRetentionCategories = [
   "document",
   "media",
   "tijdelijk",
+  // Sparki World media (systeem-eigen, transparant-fictief beeld/video). Eigen
+  // categorie zodat de opruimtermijn los staat van gebruikersuploads.
+  "world_media",
   // Legacy/bronspecifiek (behouden voor bestaande rijen):
   "club_message",
   "club_document",
@@ -80,6 +83,14 @@ export const filesTable = pgTable(
     revokedByClerkId: text("revoked_by_clerk_id"),
     // Retentiecategorie: stuurt de opruimtermijn. F7-bijlagen: "club_message".
     retentionCategory: text("retention_category").notNull().default("algemeen"),
+    // Zichtbaarheid van de bytes op het serve-pad. "private" (default) = alleen
+    // de eigenaar/admin; "public" = elke ingelogde gebruiker mag lezen. Bijna
+    // alles is private; Sparki World-media is systeem-eigen, transparant-fictief
+    // en daarom publiek leesbaar (dezelfde regel als de world-routes: elke
+    // ingelogde gebruiker ziet de wereld-feed). serveFile + het serve-pad lezen
+    // deze kolom om de rechtencheck te sturen; intrekking (revokedAt) blijft
+    // fail-closed, óók voor publieke bestanden.
+    visibility: text("visibility").notNull().default("private"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

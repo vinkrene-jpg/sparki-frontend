@@ -56,8 +56,17 @@ export const virtualMediaTable = pgTable("virtual_media", {
   // The full prompt actually sent to the generator (kept for auditing/regen).
   prompt: text("prompt").notNull(),
   // Normalized object-storage path (e.g. "/objects/uploads/<uuid>"), or null
-  // when generation failed (status "failed" + an honest failureReason).
+  // when generation failed (status "failed" + an honest failureReason). This is
+  // the object path of the CENTRAL files-row (files.object_path); the bytes live
+  // and are served through the central bestandslaag (lib/files.ts), never via a
+  // module-eigen pad.
   objectPath: text("object_path"),
+  // F11: koppeling naar de centrale files-rij (lib/db files). Gegenereerde
+  // world-media bytes worden via de centrale laag (registerFile) geregistreerd
+  // en publiek geserveerd; deze kolom is de bron van waarheid voor intrekking en
+  // retentie. NULL is toegestaan voor (a) mislukte generaties (geen bytes) en
+  // (b) bestaande rijen die pas bij de eerstvolgende serve lui gekoppeld worden.
+  fileId: integer("file_id"),
   aspectRatio: text("aspect_ratio").notNull().default("1:1"),
   status: text("status").notNull().default("ready"),
   failureReason: text("failure_reason"),

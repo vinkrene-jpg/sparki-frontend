@@ -154,11 +154,18 @@ export async function scanFile(input: Buffer): Promise<ScanResult> {
   return { ok: true, bytes: input, contentType: "application/pdf", ext: "pdf" };
 }
 
+export type FileVisibility = "private" | "public";
+
 export type RegisterFileInput = {
   ownerClerkId: string;
   base64: string;
   originalName: string;
   retentionCategory?: string;
+  // Zichtbaarheid op het serve-pad. Default "private" (alleen eigenaar/admin).
+  // "public" = elke ingelogde gebruiker mag lezen (bv. Sparki World-media, die
+  // systeem-eigen en transparant-fictief is). De object-ACL wordt hierop gezet
+  // en de kolom files.visibility bewaart de regel voor het serve-pad.
+  visibility?: FileVisibility;
 };
 
 export type RegisterFileResult =
@@ -227,6 +234,8 @@ export async function registerFile(
   const sizeBytes = scan.bytes.length;
   const retentionCategory = normalizeRetentionCategory(input.retentionCategory);
   const safeName = sanitizeName(input.originalName, scan.ext);
+  const visibility: FileVisibility =
+    input.visibility === "public" ? "public" : "private";
 
   // DEDUPE: bestaand object van dezelfde eigenaar hergebruiken?
   let deduped = false;
@@ -245,10 +254,12 @@ export async function registerFile(
     if (!put.ok) {
       return { ok: false, status: 502, reason: "Bestand opslaan is niet gelukt." };
     }
-    // 2. ACL pas NA de PUT: eigenaar privé (serve-pad doet de echte rechtencheck).
+    // 2. ACL pas NA de PUT: eigenaar-privé of publiek (world-media). Het
+    //    serve-pad doet altijd de echte rechtencheck; de object-ACL is de tweede
+    //    laag zodat ook de rauwe object-flow geen private bestand lekt.
     objectPath = await svc.trySetObjectEntityAclPolicy(uploadUrl, {
       owner: input.ownerClerkId,
-      visibility: "private",
+      visibility,
     });
   }
 
@@ -263,6 +274,7 @@ export async function registerFile(
       sha256,
       version: 1,
       retentionCategory,
+      visibility,
     })
     .returning();
   // Eerste versie: logicalId gelijk aan de eigen id (start van de keten).
@@ -272,6 +284,156 @@ export async function registerFile(
     .where(eq(filesTable.id, file!.id))
     .returning();
   return { ok: true, file: linked!, deduped };
+}
+
+// ── Sparki World media (F11-01) ──────────────────────────────────────────────
+// De systeem-eigenaar van alle Sparki World-media. Geen echte, inlogbare
+// gebruiker — een synthetisch profiel (migratie 0042) puur zodat de
+// files.owner_clerk_id-FK bevredigd is voor systeem-eigen bestanden.
+export const WORLD_MEDIA_OWNER = "sparki-world";
+export const WORLD_MEDIA_RETENTION = "world_media";
+
+// Toegestane video-content-types voor world-media (highlight-clips). Video gaat
+// NIET door de her-encode-poort (die is beeld/pdf-only), maar wordt wél via de
+// centrale laag geregistreerd (files-rij, publiek, intrekbaar) — dezelfde
+// keuze als journey-video in F11 DEEL 2.
+const WORLD_MEDIA_VIDEO_TYPES: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
+};
+
+export type RegisterWorldMediaInput = {
+  base64: string;
+  mimeType: string;
+  originalName?: string;
+};
+
+// registerWorldMedia (F11-01): registreert gegenereerde Sparki World-bytes via
+// de CENTRALE laag als systeem-eigen, PUBLIEK bestand.
+//   • Beeld  → volledige scan-/her-encode-poort (registerFile, visibility public).
+//   • Video  → geen her-encode (buiten de poort), maar wél een centrale files-rij
+//              + publieke object-ACL, zodat intrekking/retentie centraal blijft.
+// De cache-first Media Engine (promptKey UNIQUE) blijft ongemoeid: dit is puur
+// het opslaan/registreren van de bytes, niet het cachen.
+export async function registerWorldMedia(
+  input: RegisterWorldMediaInput,
+): Promise<RegisterFileResult> {
+  const mime = input.mimeType.toLowerCase().split(";")[0]!.trim();
+  const originalName = input.originalName || "world-media";
+
+  // Video: raw opslaan (geen her-encode) maar wel centraal geregistreerd.
+  const videoExt = WORLD_MEDIA_VIDEO_TYPES[mime];
+  if (videoExt) {
+    let raw: Buffer;
+    try {
+      raw = Buffer.from(input.base64, "base64");
+    } catch {
+      return { ok: false, status: 400, reason: "Ongeldige mediabytes." };
+    }
+    return registerRawPublicFile({
+      ownerClerkId: WORLD_MEDIA_OWNER,
+      bytes: raw,
+      contentType: mime,
+      ext: videoExt,
+      originalName,
+      retentionCategory: WORLD_MEDIA_RETENTION,
+    });
+  }
+
+  // Beeld: de volledige centrale veiligheidspoort (scan + her-encode), publiek.
+  return registerFile({
+    ownerClerkId: WORLD_MEDIA_OWNER,
+    base64: input.base64,
+    originalName,
+    retentionCategory: WORLD_MEDIA_RETENTION,
+    visibility: "public",
+  });
+}
+
+// registerRawPublicFile: interne helper voor bytes die NIET door de her-encode-
+// poort gaan (video). Slaat de bytes op, zet een publieke object-ACL en legt een
+// centrale files-rij vast met dedupe op checksum (per systeem-eigenaar). Wordt
+// uitsluitend voor world-media video gebruikt.
+async function registerRawPublicFile(input: {
+  ownerClerkId: string;
+  bytes: Buffer;
+  contentType: string;
+  ext: string;
+  originalName: string;
+  retentionCategory: string;
+}): Promise<RegisterFileResult> {
+  if (input.bytes.length > FILES_MAX_UPLOAD_BYTES * 8) {
+    // Video mag groter zijn dan beeld, maar niet ongelimiteerd.
+    return { ok: false, status: 400, reason: "Mediabestand is te groot." };
+  }
+  const sha256 = createHash("sha256").update(input.bytes).digest("hex");
+  const sizeBytes = input.bytes.length;
+  const retentionCategory = normalizeRetentionCategory(input.retentionCategory);
+  const safeName = sanitizeName(input.originalName, input.ext);
+
+  let deduped = false;
+  let objectPath = await findDedupeObjectPath(input.ownerClerkId, sha256, sizeBytes);
+  if (objectPath) {
+    deduped = true;
+  } else {
+    const uploadUrl = await svc.getObjectEntityUploadURL();
+    const put = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": input.contentType },
+      body: input.bytes,
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!put.ok) {
+      return { ok: false, status: 502, reason: "Mediabestand opslaan is niet gelukt." };
+    }
+    objectPath = await svc.trySetObjectEntityAclPolicy(uploadUrl, {
+      owner: input.ownerClerkId,
+      visibility: "public",
+    });
+  }
+
+  const [file] = await db
+    .insert(filesTable)
+    .values({
+      ownerClerkId: input.ownerClerkId,
+      objectPath,
+      originalName: safeName,
+      contentType: input.contentType,
+      sizeBytes,
+      sha256,
+      version: 1,
+      retentionCategory,
+      visibility: "public",
+    })
+    .returning();
+  const [linked] = await db
+    .update(filesTable)
+    .set({ logicalId: file!.id })
+    .where(eq(filesTable.id, file!.id))
+    .returning();
+  return { ok: true, file: linked!, deduped };
+}
+
+// registerWorldMediaFromObjectPath (F11-01, lazy backfill): een BESTAANDE
+// virtual_media-rij (van vóór de omlegging) heeft de bytes al als publiek object
+// staan maar nog geen centrale files-rij. Bij de eerstvolgende serve halen we de
+// bytes op en registreren ze alsnog centraal, zodat óók oude media intrekbaar en
+// centraal beheerd wordt — zonder eenmalige bulk-backfill en zonder stille 500's.
+export async function registerWorldMediaFromObjectPath(
+  objectPath: string,
+): Promise<RegisterFileResult> {
+  let got: { base64: string; mimeType: string };
+  try {
+    got = await svc.getObjectBytes(objectPath);
+  } catch {
+    return { ok: false, status: 404, reason: "Mediabestand niet gevonden." };
+  }
+  return registerWorldMedia({
+    base64: got.base64,
+    mimeType: got.mimeType,
+    originalName: "world-media",
+  });
 }
 
 // claimPresignObject (F11 §5, verplichte eigendomsclaim): een via presign→PUT
@@ -469,6 +631,15 @@ export async function revokeFile(
 export async function getFile(fileId: number): Promise<FileRecord | null> {
   const [row] = await db.select().from(filesTable).where(eq(filesTable.id, fileId));
   return row ?? null;
+}
+
+// Hard-verwijder één files-rij (GEEN object-bytes). Bedoeld om een wees-rij op te
+// ruimen die ontstond doordat twee gelijktijdige lazy-koppelingen elk een rij
+// registreerden en er precies één de virtual_media-claim wint. De bytes zijn
+// dedupe-gedeeld en blijven staan; we verwijderen enkel de overtollige rij zodat
+// er exact één files-rij per virtual_media-rij overblijft.
+export async function deleteFileRow(fileId: number): Promise<void> {
+  await db.delete(filesTable).where(eq(filesTable.id, fileId));
 }
 
 // Zoek een F7-bestand op zijn kanonieke object-pad. Wordt gebruikt door de
