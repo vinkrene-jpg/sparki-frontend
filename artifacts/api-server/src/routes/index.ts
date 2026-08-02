@@ -90,6 +90,7 @@ import trainerRouter from "./trainer";
 import trainerClientsRouter from "./trainer-clients";
 import trainerGroupsRouter from "./trainer-groups";
 import trainerDocumentsRouter from "./trainer-documents";
+import trainerBillingRouter from "./trainer-billing";
 import dataOriginRouter from "./data-origin";
 import aiFoundationRouter from "./ai-foundation";
 import searchRouter from "./search";
@@ -247,6 +248,8 @@ router.use("/trainer/clients", trainerClientsRouter);
 router.use("/trainer/groups", trainerGroupsRouter);
 // SPARKI_BUILD_04 F4: trainerdocumenten op de gedeelde werkobjectlaag.
 router.use("/trainer/documents", trainerDocumentsRouter);
+// SPARKI_BUILD_04 F5: diensten, cycli, conceptfacturen (nooit blind verzenden).
+router.use("/trainer/billing", trainerBillingRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

@@ -57,6 +57,7 @@ export * from "./club";
 export * from "./trainer";
 export * from "./trainer-clients";
 export * from "./trainer-groups";
+export * from "./trainer-invoicing";
 export * from "./work-objects";
 export * from "./release";
 export * from "./route-shares";
