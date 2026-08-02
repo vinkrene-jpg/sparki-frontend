@@ -16,9 +16,13 @@ import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { createAanvraagSessies } from "@/lib/route-aanvraag-state";
 import {
   genereerNieuweVoorstellen,
+  haalRouteInfo,
+  haalVoorstelInfo,
   useSaveVoorstel,
   useZoekBekendeRoutes,
   type KnownRouteMatch,
+  type RouteInfo,
+  type RouteObjectCounts,
   type RouteOption,
   type ZoekCriteria,
 } from "@/lib/route-zoek-api";
@@ -31,10 +35,23 @@ import {
 
 const AFSTANDEN = [20, 40, 60, 80, 100] as const;
 
-const HOOGTE_OPTIES: { value: ZoekCriteria["elevationPreference"]; label: string }[] = [
-  { value: "any", label: "Maakt niet uit" },
-  { value: "flat", label: "Vlak" },
-  { value: "hilly", label: "Klimmen" },
+// Hoofdstuk 3 (MOBILE_ROUTE_NAV_AFBOUW_01): het hoofdfilter is wat voor
+// training je doet — niet vijftien velden. Verkeerslichten, rotondes,
+// spoorwegovergangen, drempels en het weer zijn geen filter meer: die staan
+// als echte informatie bij elke route.
+const TRAINING_OPTIES: { value: string | null; label: string }[] = [
+  { value: null, label: "Vrije rit" },
+  { value: "duurtraining", label: "Duurtraining" },
+  { value: "interval", label: "Interval" },
+  { value: "tempo", label: "Tempo" },
+  { value: "herstel", label: "Herstel" },
+];
+
+const FIETS_OPTIES: { value: ZoekCriteria["bikeType"]; label: string }[] = [
+  { value: null, label: "Maakt niet uit" },
+  { value: "racefiets", label: "Race" },
+  { value: "gravel", label: "Gravel" },
+  { value: "mtb", label: "MTB" },
 ];
 
 const FASE_LABEL: Record<string, string> = {
@@ -49,8 +66,8 @@ export default function RouteAanvraagScreen() {
   const { location, error: locError } = useLiveLocation(true);
 
   const [afstand, setAfstand] = useState<number>(40);
-  const [hoogte, setHoogte] =
-    useState<ZoekCriteria["elevationPreference"]>("any");
+  const [training, setTraining] = useState<string | null>(null);
+  const [fiets, setFiets] = useState<ZoekCriteria["bikeType"]>(null);
 
   const zoek = useZoekBekendeRoutes();
   const [bekend, setBekend] = useState<KnownRouteMatch[] | null>(null);
@@ -59,6 +76,11 @@ export default function RouteAanvraagScreen() {
   const [genFase, setGenFase] = useState<string | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
   const [voorstellen, setVoorstellen] = useState<RouteOption[] | null>(null);
+  // Informatie bij nieuwe voorstellen (hoofdstuk 3): de server verrijkt
+  // kandidaten op de achtergrond; hier komt het resultaat per candidateId.
+  const [voorstelInfo, setVoorstelInfo] = useState<
+    Record<string, Awaited<ReturnType<typeof haalVoorstelInfo>>>
+  >({});
   const saveVoorstel = useSaveVoorstel();
   const [saveError, setSaveError] = useState<string | null>(null);
   // De laatst gezochte criteria — nieuwe voorstellen gebruiken exact dezelfde
@@ -77,6 +99,7 @@ export default function RouteAanvraagScreen() {
     sessiesRef.current.invalideer();
     setBekend(null);
     setVoorstellen(null);
+    setVoorstelInfo({});
     setGenError(null);
     setGenFase(null);
     setGenBusy(false);
@@ -99,8 +122,29 @@ export default function RouteAanvraagScreen() {
       if (!actueel()) return;
       setGenBusy(false);
       setGenFase(null);
-      if (uitkomst.ok) setVoorstellen(uitkomst.options);
-      else setGenError(uitkomst.error);
+      if (uitkomst.ok) {
+        setVoorstellen(uitkomst.options);
+        // Verkeersobject-info per voorstel ophalen: een paar rustige polls —
+        // eerlijk niets tonen als de verrijking (nog) geen data heeft.
+        for (const optie of uitkomst.options) {
+          void (async () => {
+            for (let poging = 0; poging < 6; poging++) {
+              if (!actueel()) return;
+              const info = await haalVoorstelInfo(optie.candidateId);
+              if (info) {
+                if (actueel()) {
+                  setVoorstelInfo((prev) => ({
+                    ...prev,
+                    [optie.candidateId]: info,
+                  }));
+                }
+                return;
+              }
+              await new Promise((r) => setTimeout(r, 3000));
+            }
+          })();
+        }
+      } else setGenError(uitkomst.error);
     },
     [],
   );
@@ -111,7 +155,9 @@ export default function RouteAanvraagScreen() {
       startLat: location.latitude,
       startLon: location.longitude,
       targetDistanceKm: afstand,
-      elevationPreference: hoogte,
+      elevationPreference: "any",
+      trainingType: training,
+      bikeType: fiets,
     };
     criteriaRef.current = criteria;
     const token = sessiesRef.current.nieuweSessie();
@@ -133,7 +179,7 @@ export default function RouteAanvraagScreen() {
         }
       },
     });
-  }, [location, afstand, hoogte, zoek, startGeneratie]);
+  }, [location, afstand, training, fiets, zoek, startGeneratie]);
 
   const kiesVoorstel = useCallback(
     (optie: RouteOption) => {
@@ -201,13 +247,27 @@ export default function RouteAanvraagScreen() {
           ))}
         </View>
         <View style={styles.chipRow}>
-          {HOOGTE_OPTIES.map((o) => (
+          {TRAINING_OPTIES.map((o) => (
             <Chip
-              key={o.value}
+              key={o.label}
               label={o.label}
-              active={hoogte === o.value}
+              active={training === o.value}
               onPress={() => {
-                setHoogte(o.value);
+                setTraining(o.value);
+                resetResultaten();
+              }}
+              c={c}
+            />
+          ))}
+        </View>
+        <View style={styles.chipRow}>
+          {FIETS_OPTIES.map((o) => (
+            <Chip
+              key={o.label}
+              label={o.label}
+              active={fiets === o.value}
+              onPress={() => {
+                setFiets(o.value);
                 resetResultaten();
               }}
               c={c}
@@ -338,6 +398,16 @@ export default function RouteAanvraagScreen() {
                 <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
                   {fmtKm(o.distanceKm)} · {fmtHm(o.elevationGainM)}
                 </Text>
+                {voorstelInfo[o.candidateId] ? (
+                  <Text style={[styles.reasons, { color: c.mutedForeground }]}>
+                    {fmtCounts(voorstelInfo[o.candidateId]!.counts)}
+                  </Text>
+                ) : null}
+                {voorstelInfo[o.candidateId]?.rationale ? (
+                  <Text style={[styles.reasons, { color: c.mutedForeground }]}>
+                    {voorstelInfo[o.candidateId]!.rationale}
+                  </Text>
+                ) : null}
                 <View style={styles.ctaRow}>
                   <Ionicons name="play" size={15} color={c.primary} />
                   <Text style={[styles.ctaText, { color: c.primary }]}>
@@ -414,10 +484,13 @@ function BekendeRouteCard({
           </Text>
         </View>
       ) : onPress ? (
-        <View style={styles.ctaRow}>
-          <Ionicons name="play" size={15} color={c.primary} />
-          <Text style={[styles.ctaText, { color: c.primary }]}>Navigeer</Text>
-        </View>
+        <>
+          <RouteInfoBlok routeId={match.routeId} c={c} />
+          <View style={styles.ctaRow}>
+            <Ionicons name="play" size={15} color={c.primary} />
+            <Text style={[styles.ctaText, { color: c.primary }]}>Navigeer</Text>
+          </View>
+        </>
       ) : (
         // Gedeelde routes zijn nooit direct start-baar vanuit de zoeklaag
         // (privacy-veilige kijkersgeometrie) — zelfde regel als op web.
@@ -426,6 +499,95 @@ function BekendeRouteCard({
           gebruiken.
         </Text>
       )}
+    </Pressable>
+  );
+}
+
+// ── Informatie bij de route (hoofdstuk 3) ───────────────────────────────────
+
+const OBJECT_LABELS: [key: string, enkel: string, meer: string][] = [
+  ["traffic_signal", "verkeerslicht", "verkeerslichten"],
+  ["railway_crossing", "spoorwegovergang", "spoorwegovergangen"],
+  ["roundabout", "rotonde", "rotondes"],
+  ["speed_bump", "drempel", "drempels"],
+];
+
+function fmtCounts(counts: RouteObjectCounts): string | null {
+  const parts: string[] = [];
+  for (const [key, enkel, meer] of OBJECT_LABELS) {
+    const n = counts[key] ?? 0;
+    if (n > 0) parts.push(`${n} ${n === 1 ? enkel : meer}`);
+  }
+  if (parts.length === 0) return "geen verkeerslichten, overwegen, rotondes of drempels bekend op de route";
+  return parts.join(" · ");
+}
+
+function fmtWeer(w: NonNullable<RouteInfo["weather"]>): string | null {
+  const parts: string[] = [];
+  if (w.windKmh != null) {
+    parts.push(
+      `wind ${Math.round(w.windKmh)} km/u${w.windDirLabel ? ` uit ${w.windDirLabel}` : ""}`,
+    );
+  }
+  if (w.tempC != null) parts.push(`${Math.round(w.tempC)}°`);
+  if (w.precipProbPct != null) parts.push(`${Math.round(w.precipProbPct)}% neerslagkans`);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+// Route-informatie voor een eigen bekende route: pas opgehaald wanneer de
+// rijder erom vraagt (één tik) — geen stapel kaartaanvragen voor een hele
+// lijst. Bronnen die niet antwoorden leveren eerlijk "geen gegevens".
+function RouteInfoBlok({
+  routeId,
+  c,
+}: {
+  routeId: number;
+  c: ReturnType<typeof useColors>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [info, setInfo] = useState<RouteInfo | null>(null);
+  const [fout, setFout] = useState<string | null>(null);
+
+  if (info) {
+    const objecten = info.counts ? fmtCounts(info.counts) : null;
+    const weer = info.weather ? fmtWeer(info.weather) : null;
+    return (
+      <View style={{ gap: 3 }}>
+        <Text style={[styles.reasons, { color: c.mutedForeground }]}>
+          {objecten ?? "Verkeersobjecten: geen gegevens voor deze route."}
+        </Text>
+        <Text style={[styles.reasons, { color: c.mutedForeground }]}>
+          {weer ? `Bij vertrek komend uur: ${weer}` : "Weer: geen gegevens voor het startpunt."}
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      disabled={busy}
+      hitSlop={8}
+      onPress={(e) => {
+        // De kaart zelf is óók tikbaar (Navigeer) — dit blok niet laten doorbubbelen.
+        e.stopPropagation();
+        setBusy(true);
+        setFout(null);
+        haalRouteInfo(routeId)
+          .then(setInfo)
+          .catch(() =>
+            setFout("Route-informatie kon niet worden opgehaald."),
+          )
+          .finally(() => setBusy(false));
+      }}
+      style={styles.ctaRow}
+    >
+      {busy ? (
+        <ActivityIndicator size="small" color={c.primary} />
+      ) : (
+        <Ionicons name="information-circle-outline" size={15} color={c.primary} />
+      )}
+      <Text style={[styles.ctaText, { color: fout ? c.destructive : c.primary }]}>
+        {fout ?? (busy ? "Route-informatie ophalen…" : "Toon route-informatie")}
+      </Text>
     </Pressable>
   );
 }

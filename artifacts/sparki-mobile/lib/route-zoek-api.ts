@@ -48,6 +48,10 @@ export type ZoekCriteria = {
   startLon: number;
   targetDistanceKm: number;
   elevationPreference: "flat" | "hilly" | "any";
+  // Hoofdstuk 3 (MOBILE_ROUTE_NAV_AFBOUW_01): het hoofdfilter is wat voor
+  // training je doet — null = vrije rit. Ondergrond stuurt via het fietstype.
+  trainingType: string | null;
+  bikeType: "racefiets" | "gravel" | "mtb" | null;
 };
 
 export type ZoekResult = {
@@ -79,6 +83,8 @@ export function useZoekBekendeRoutes() {
           mode: "loop",
           targetDistanceKm: input.targetDistanceKm,
           elevationPreference: input.elevationPreference,
+          ...(input.trainingType ? { trainingType: input.trainingType } : {}),
+          ...(input.bikeType ? { bikeType: input.bikeType } : {}),
         }),
       }),
   });
@@ -133,6 +139,8 @@ export async function genereerNieuweVoorstellen(
           startLon: input.startLon,
           targetDistanceKm: input.targetDistanceKm,
           elevationPreference: input.elevationPreference,
+          ...(input.trainingType ? { trainingType: input.trainingType } : {}),
+          ...(input.bikeType ? { bikeType: input.bikeType } : {}),
         }),
       },
     );
@@ -233,6 +241,80 @@ export function useSaveVoorstel() {
       qc.invalidateQueries({ queryKey: ["routes"] });
     },
   });
+}
+
+// ── Informatie bij de route (hoofdstuk 3: tonen in plaats van vooraf vragen) ─
+// Verkeersobjecten (verkeerslichten, spoorwegovergangen, rotondes, drempels)
+// en het weer worden nergens meer als filtereis gesteld; ze komen als echte
+// informatie bij één route. Elke bron die niet antwoordt levert eerlijk null.
+
+export type RouteObjectCounts = Record<string, number>;
+
+export type RouteWeerInfo = {
+  tempC: number | null;
+  windKmh: number | null;
+  windBft: number | null;
+  windDirLabel: string | null;
+  precipProbPct: number | null;
+};
+
+export type RouteInfo = {
+  counts: RouteObjectCounts | null;
+  estimatedTimeLossSec: number | null;
+  weather: RouteWeerInfo | null;
+};
+
+/**
+ * Route-informatie voor een BEWAARDE eigen route: verkeersobjecten uit de
+ * Sparki Traffic Database + weer (Open-Meteo) voor het startpunt, via het
+ * bestaande route-paspoort. Owner-only op de server; niet-eigen routes geven
+ * een fout en de kaart toont dan eerlijk niets.
+ */
+export async function haalRouteInfo(routeId: number): Promise<RouteInfo> {
+  const res = await customFetch<{
+    insight: {
+      weather: RouteWeerInfo | null;
+      roadObjects: {
+        counts: RouteObjectCounts;
+        estimatedTimeLossSec: number | null;
+      } | null;
+    };
+  }>(`/api/routes/${routeId}/insight`, { responseType: "json" });
+  return {
+    counts: res.insight.roadObjects?.counts ?? null,
+    estimatedTimeLossSec: res.insight.roadObjects?.estimatedTimeLossSec ?? null,
+    weather: res.insight.weather ?? null,
+  };
+}
+
+/**
+ * Verkeersobject-informatie voor een NIEUW voorstel (kandidaat): de server
+ * verrijkt kandidaten op de achtergrond; deze poll haalt het resultaat op.
+ * `null` = nog niet klaar of mislukt — dan toont de kaart eerlijk niets.
+ */
+export async function haalVoorstelInfo(candidateId: string): Promise<{
+  counts: RouteObjectCounts;
+  estimatedTimeLossSec: number | null;
+  rationale: string | null;
+} | null> {
+  try {
+    const res = await customFetch<{
+      ready: boolean;
+      rationale?: string | null;
+      roadObjects?: {
+        counts: RouteObjectCounts;
+        estimatedTimeLossSec: number | null;
+      } | null;
+    }>(`/api/routes/candidate/${candidateId}/enrich`, { responseType: "json" });
+    if (!res.ready || !res.roadObjects) return null;
+    return {
+      counts: res.roadObjects.counts,
+      estimatedTimeLossSec: res.roadObjects.estimatedTimeLossSec,
+      rationale: res.rationale ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function errBody(err: unknown): string | null {

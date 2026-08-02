@@ -31,6 +31,7 @@ import {
   haversineMeters,
   type MatchLatLon,
   type OffRouteState,
+  type RouteMatch,
 } from "./route-match";
 import {
   offRouteOptions,
@@ -220,7 +221,7 @@ test("na 'negeren' blijft de kaart dicht zolang de afwijking niet wezenlijk groe
   let st = createOffRouteState();
   for (let i = 0; i < fixes.length; i++) {
     const f = fixes[i]!;
-    const match = matchToRoute(route, cumKm, f, hint)!;
+    const match: RouteMatch = matchToRoute(route, cumKm, f, hint)!;
     hint = match.segIndex;
     const upd = updateOffRoute(st, {
       lat: f.lat, lon: f.lon, timestampMs: f.timestampMs,
@@ -255,7 +256,7 @@ test("bewuste afwijking wordt binnen 10 s na de eerste buiten-corridor-fix gemel
   let firstBadMs: number | null = null;
   let enterMs: number | null = null;
   for (const fix of fixes) {
-    const match = matchToRoute(route, cumKm, fix, hint)!;
+    const match: RouteMatch = matchToRoute(route, cumKm, fix, hint)!;
     hint = match.segIndex;
     const corridor = corridorMeters(fix.accuracyM, fix.speedMps);
     const upd = updateOffRoute(state, {
