@@ -2866,6 +2866,62 @@ router.get("/candidate/:candidateId/enrich", requireAuth, (req, res) => {
   res.json({ ready: true, ...entry.result });
 });
 
+// GET /api/routes/candidate/:candidateId/weer — weer bij het startpunt van een
+// nog niet bewaard voorstel (hoofdstuk 3 MOBILE_ROUTE_NAV_AFBOUW_01: weer is
+// informatie bij de route, ook bij nieuwe voorstellen). Zelfde bron en
+// eerlijkheidsregels als het route-paspoort: Open-Meteo voor het komende uur,
+// null wanneer de bron niet antwoordt — nooit een verzonnen waarde.
+router.get("/candidate/:candidateId/weer", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const candidateId = String(req.params.candidateId);
+  const stored = getCandidate(candidateId, clerkId);
+  if (!stored) {
+    res.status(410).json({
+      error:
+        "Routevoorstel is verlopen of niet gevonden — genereer de route opnieuw.",
+    });
+    return;
+  }
+  const start =
+    Array.isArray(stored.geometry) && stored.geometry.length > 0
+      ? stored.geometry[0]
+      : null;
+  if (!start) {
+    res.json({ weather: null });
+    return;
+  }
+  try {
+    const hours = await getHourlyForecast(start[0], start[1], 16);
+    const wantMs = Date.now() + 60 * 60_000;
+    let hour: (typeof hours)[number] | null = null;
+    let best = Infinity;
+    for (const h of hours) {
+      const diff = Math.abs(h.epochMs - wantMs);
+      if (diff < best) {
+        best = diff;
+        hour = h;
+      }
+    }
+    if (best > 90 * 60_000) hour = null;
+    res.json({
+      weather: hour
+        ? {
+            timeLocal: hour.time,
+            tempC: hour.tempC,
+            windKmh: hour.windKmh,
+            windBft: beaufort(hour.windKmh),
+            windDirLabel: windDirectionLabel(hour.windDirDeg),
+            precipProbPct: hour.precipProbPct,
+          }
+        : null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.candidate-weer failed");
+    // Eerlijk: bron antwoordt niet ⇒ geen gegevens, geen fout naar de rijder.
+    res.json({ weather: null });
+  }
+});
+
 // GET /api/routes/candidate/:candidateId/tcx — download a not-yet-saved
 // generated proposal as a TCX Course file. Serialized from the server-trusted
 // candidate store (same honesty guarantee as saving), so the export uses real

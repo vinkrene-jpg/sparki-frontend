@@ -18,11 +18,13 @@ import {
   genereerNieuweVoorstellen,
   haalRouteInfo,
   haalVoorstelInfo,
+  haalVoorstelWeer,
   useSaveVoorstel,
   useZoekBekendeRoutes,
   type KnownRouteMatch,
   type RouteInfo,
   type RouteObjectCounts,
+  type RouteWeerInfo,
   type RouteOption,
   type ZoekCriteria,
 } from "@/lib/route-zoek-api";
@@ -81,6 +83,9 @@ export default function RouteAanvraagScreen() {
   const [voorstelInfo, setVoorstelInfo] = useState<
     Record<string, Awaited<ReturnType<typeof haalVoorstelInfo>>>
   >({});
+  const [voorstelWeer, setVoorstelWeer] = useState<
+    Record<string, RouteWeerInfo | null>
+  >({});
   const saveVoorstel = useSaveVoorstel();
   const [saveError, setSaveError] = useState<string | null>(null);
   // De laatst gezochte criteria — nieuwe voorstellen gebruiken exact dezelfde
@@ -100,6 +105,7 @@ export default function RouteAanvraagScreen() {
     setBekend(null);
     setVoorstellen(null);
     setVoorstelInfo({});
+    setVoorstelWeer({});
     setGenError(null);
     setGenFase(null);
     setGenBusy(false);
@@ -127,6 +133,16 @@ export default function RouteAanvraagScreen() {
         // Verkeersobject-info per voorstel ophalen: een paar rustige polls —
         // eerlijk niets tonen als de verrijking (nog) geen data heeft.
         for (const optie of uitkomst.options) {
+          // Weer bij het startpunt van het voorstel — één aanvraag, eerlijk
+          // null (= geen regel) wanneer de bron niet antwoordt.
+          void haalVoorstelWeer(optie.candidateId).then((weer) => {
+            if (weer && actueel()) {
+              setVoorstelWeer((prev) => ({
+                ...prev,
+                [optie.candidateId]: weer,
+              }));
+            }
+          });
           void (async () => {
             for (let poging = 0; poging < 6; poging++) {
               if (!actueel()) return;
@@ -401,6 +417,12 @@ export default function RouteAanvraagScreen() {
                 {voorstelInfo[o.candidateId] ? (
                   <Text style={[styles.reasons, { color: c.mutedForeground }]}>
                     {fmtCounts(voorstelInfo[o.candidateId]!.counts)}
+                  </Text>
+                ) : null}
+                {voorstelWeer[o.candidateId] ? (
+                  <Text style={[styles.reasons, { color: c.mutedForeground }]}>
+                    Bij vertrek komend uur:{" "}
+                    {fmtWeer(voorstelWeer[o.candidateId]!) ?? "geen gegevens"}
                   </Text>
                 ) : null}
                 {voorstelInfo[o.candidateId]?.rationale ? (

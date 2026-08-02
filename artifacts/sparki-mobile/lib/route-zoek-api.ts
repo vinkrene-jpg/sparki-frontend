@@ -317,6 +317,24 @@ export async function haalVoorstelInfo(candidateId: string): Promise<{
   }
 }
 
+/**
+ * Weer bij het startpunt van een nieuw voorstel — zelfde bron en
+ * eerlijkheidsregels als het route-paspoort. `null` = geen gegevens.
+ */
+export async function haalVoorstelWeer(
+  candidateId: string,
+): Promise<RouteWeerInfo | null> {
+  try {
+    const res = await customFetch<{ weather: RouteWeerInfo | null }>(
+      `/api/routes/candidate/${candidateId}/weer`,
+      { responseType: "json" },
+    );
+    return res.weather ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function errBody(err: unknown): string | null {
   const body = (err as { body?: { error?: string } })?.body;
   return typeof body?.error === "string" && body.error ? body.error : null;
