@@ -268,7 +268,14 @@ export async function assignedAthleteIds(
       .select({ clerkId: clubTeamMembersTable.clerkId })
       .from(clubTeamMembersTable)
       .innerJoin(clubTeamsTable, eq(clubTeamsTable.id, clubTeamMembersTable.teamId))
-      .where(and(inArray(clubTeamMembersTable.teamId, teamIds), eq(clubTeamsTable.clubId, clubId)));
+      .where(
+        and(
+          inArray(clubTeamMembersTable.teamId, teamIds),
+          eq(clubTeamsTable.clubId, clubId),
+          // FIN-01: verlaten teamlid (endedAt gezet) valt direct buiten de trainer-scope.
+          isNull(clubTeamMembersTable.endedAt),
+        ),
+      );
     for (const r of rows) ids.add(r.clerkId);
   }
   if (groupIds.length > 0) {
@@ -276,7 +283,14 @@ export async function assignedAthleteIds(
       .select({ clerkId: clubGroupMembersTable.clerkId })
       .from(clubGroupMembersTable)
       .innerJoin(clubGroupsTable, eq(clubGroupsTable.id, clubGroupMembersTable.groupId))
-      .where(and(inArray(clubGroupMembersTable.groupId, groupIds), eq(clubGroupsTable.clubId, clubId)));
+      .where(
+        and(
+          inArray(clubGroupMembersTable.groupId, groupIds),
+          eq(clubGroupsTable.clubId, clubId),
+          // FIN-01: verlaten groepslid valt direct buiten de trainer-scope.
+          isNull(clubGroupMembersTable.endedAt),
+        ),
+      );
     for (const r of rows) ids.add(r.clerkId);
   }
   return [...ids];

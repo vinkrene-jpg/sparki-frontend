@@ -225,7 +225,8 @@
     "test:consent-service": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs consent-service",
     "test:route-generation-errors": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-generation-errors",
     "test:route-job-deadline": "node ./scripts/run-test.mjs route-job-deadline",
-    "test:club-communicatie-bijlagen": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-communicatie-bijlagen --dev-auth"
+    "test:club-communicatie-bijlagen": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-communicatie-bijlagen --dev-auth",
+    "test:f13-scope": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs f13-scope --dev-auth"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
