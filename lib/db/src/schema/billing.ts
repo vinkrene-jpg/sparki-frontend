@@ -245,3 +245,43 @@ export const CLUB_STAFFEL_TREDES = [
   { vanafLeden: 10, kortingPct: 15 },
   { vanafLeden: 20, kortingPct: 20 },
 ] as const;
+
+// ── Abonnement-keuze zonder betaalstap (productie-bevinding punt 4) ──────────
+// Zolang de echte betaling (Stripe-testsleutels) nog niet beschikbaar is, moet
+// het up-/downgradepad tot AAN de betaalstap wél testbaar zijn. Deze tabel legt
+// uitsluitend de KEUZE van de gebruiker vast (welke laag wil ik) — het kent
+// NOOIT zelf rechten toe. Rechten blijven volledig via de entitlement-resolver
+// lopen. Eén open (in_afwachting) keuze per gebruiker; een nieuwe keuze
+// vervangt de vorige (onConflictDoUpdate op clerk_id). Bij een echte checkout
+// wordt deze rij niet gebruikt — dan loopt alles via billing_subscriptions.
+export const SUBSCRIPTION_CHOICE_STATUSES = [
+  "in_afwachting", // gekozen, wacht op de (nog ontbrekende) betaalstap
+  "geannuleerd",
+] as const;
+export type SubscriptionChoiceStatus =
+  (typeof SUBSCRIPTION_CHOICE_STATUSES)[number];
+
+export const subscriptionChoiceIntentsTable = pgTable(
+  "subscription_choice_intents",
+  {
+    clerkId: text("clerk_id")
+      .primaryKey()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    // Gewenste laag: GO | COMPLETE (FREE loopt via de directe downgrade, niet
+    // via een keuze-intentie). Nooit vrij verzonnen — gevalideerd server-side.
+    desiredTier: text("desired_tier").notNull(),
+    interval: text("interval").notNull().default("month"), // month | year
+    status: text("status").notNull().default("in_afwachting"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+export type SubscriptionChoiceIntent =
+  typeof subscriptionChoiceIntentsTable.$inferSelect;

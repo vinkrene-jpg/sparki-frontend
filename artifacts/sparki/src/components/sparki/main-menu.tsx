@@ -7,10 +7,13 @@ import {
   RefreshCw,
   LogOut,
   Shield,
+  ShieldCheck,
   IdCard,
   LifeBuoy,
+  CreditCard,
 } from "lucide-react"
 import { useLocation } from "wouter"
+import { useQueryClient } from "@tanstack/react-query"
 import { useClerk } from "@clerk/react"
 import { useFeedback } from "@/contexts/FeedbackContext"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
@@ -18,6 +21,8 @@ import { useClubMembership, useMyClubs } from "@/hooks/use-club"
 import { roleStartFor } from "@/lib/role-start"
 import { useAdminWhoami } from "@/hooks/use-bug-reports"
 import { chaptersForRole, ROLE_LABELS } from "@/lib/chapters"
+import { ErrorBoundary } from "@/components/sparki/error-boundary"
+import { useBillingStatus } from "@/hooks/use-billing"
 
 // Hoofdmenu — één bron van waarheid met het startscherm (lib/chapters). Naast
 // de hoofdstukken huisvest het de rustige secundaire acties die uit de
@@ -42,10 +47,11 @@ export function MainMenu({
   onOpenChat?: () => void
 }) {
   const [pathname, setLocation] = useLocation()
+  const qc = useQueryClient()
   const { openFeedback } = useFeedback()
   const { profile, switchRole } = useUserProfile()
   const { signOut } = useClerk()
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
+  const basePath = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "")
   const role = profile?.activeRole as Role | undefined
   // Club-poort: alleen een GEACCEPTEERDE trainerkoppeling telt. Nooit gefingeerd.
   const { isMember } = useClubMembership()
@@ -56,6 +62,19 @@ export function MainMenu({
   // admin is (whoami) — de echte poort blijft server-side op elke admin-route.
   const { data: adminWho } = useAdminWhoami()
   const isAdmin = adminWho?.isAdmin === true
+  // Huidige abonnementslaag — alleen presentatie; de server blijft de poort.
+  // Faalt stil: geen billing-status ⇒ geen badge (nooit de rest meetrekken).
+  const { data: billing } = useBillingStatus()
+  const tierBadge =
+    billing?.status === "legacy_unrestricted"
+      ? "Volledig"
+      : billing?.tier === "GO"
+        ? "Go"
+        : billing?.tier === "COMPLETE"
+          ? "Compleet"
+          : billing
+            ? "Gratis"
+            : null
 
   useEffect(() => {
     if (!open) return
@@ -73,7 +92,19 @@ export function MainMenu({
 
   if (!open) return null
 
-  const chapters = chaptersForRole(role, isMember)
+  // Fail-closed op de hoofdstukkenlijst: een onbekende rolwaarde uit
+  // productie mag nooit een niet-array of misvormde rij (zonder icon/label)
+  // opleveren die bij het renderen op undefined.icon crasht. We filteren
+  // misvormde rijen weg en waarschuwen luid zodat het niet stil misgaat.
+  const chaptersRaw = chaptersForRole(role, isMember)
+  const chapters = (Array.isArray(chaptersRaw) ? chaptersRaw : []).filter((c) => {
+    // Een lucide-icoon is een function óf een forwardRef/memo-object — beide
+    // zijn geldig; alleen null/undefined of een ontbrekende href is misvormd.
+    const iconOk = c != null && c.icon != null
+    const ok = iconOk && typeof c.href === "string"
+    if (!ok) console.warn("[MainMenu] misvormd hoofdstuk overgeslagen:", c)
+    return ok
+  })
   const roles = (profile?.roles ?? []) as Role[]
   const active = (profile?.activeRole ?? "athlete") as Role
   const testerLabel =
@@ -88,6 +119,27 @@ export function MainMenu({
     setLocation(href)
   }
 
+  // Rolwissel end-to-end: server bevestigt de actieve rol (switchRole →
+  // PUT /api/auth/me/role → profiel bijgewerkt), daarna verversen we ALLE
+  // queries (de vorige rol z'n dashboard-data mag niet blijven hangen) en
+  // navigeren we naar het rolstartscherm. Elke globale rol rendert z'n eigen
+  // start op "/" (RoleHome is rolbewust: coach/ouder/voeding/sporter), dus
+  // "/" is het juiste, begrijpelijke startpunt na een wissel — ook wanneer je
+  // vanaf een rolvreemde pagina wisselt.
+  const switchToRole = async (r: Role) => {
+    if (r === active) return
+    onClose()
+    try {
+      await switchRole(r)
+    } catch (err) {
+      console.error("[MainMenu] rolwissel mislukt", err)
+      return
+    }
+    // Verse data voor de nieuwe rol; daarna naar het rolstartscherm.
+    void qc.invalidateQueries()
+    setLocation("/")
+  }
+
   // Besluitenpatch 2026-08-01 (hoofdstuk B): de rolwisselaar toont een lijst
   // van ALLE contexten (accountrollen + clubcontexten). Bij meer dan vijf
   // contexten verschijnt een zoekveld. De actieve context blijft daarnaast
@@ -99,17 +151,35 @@ export function MainMenu({
         label: `Rol: ${ROLE_LABEL[r] ?? r}`,
         actief: r === active,
         onSelect: () => {
-          if (r !== active) void switchRole(r)
+          void switchToRole(r)
         },
       }))
-    for (const row of myClubs ?? []) {
-      const clubRolLabel = roleStartFor(row.membership.role)?.label ?? row.membership.role
-      items.push({
-        key: `club:${row.membership.clubId}`,
-        label: `${row.club?.name ?? "Club"} — ${clubRolLabel}`,
-        actief: false,
-        onSelect: () => go("/club"),
-      })
+    // Fail-closed: de server kan bij storing (prod gaf op /api/clubs eerder
+    // 500/afwijkende vorm) iets anders dan een array teruggeven, of rijen
+    // zonder membership. Nooit blind itereren: alleen echte arrays, en per
+    // rij misvormde data overslaan (met een luide console.warn zodat het
+    // niet stil kapotgaat) i.p.v. de hele pagina meenemen.
+    if (!Array.isArray(myClubs)) {
+      if (myClubs != null) {
+        console.warn("[MainMenu] verwacht een array van clubs, kreeg:", myClubs)
+      }
+    } else {
+      for (const row of myClubs) {
+        const membership = row?.membership
+        if (!membership || membership.clubId == null) {
+          console.warn("[MainMenu] clubrij zonder geldige membership overgeslagen:", row)
+          continue
+        }
+        const clubRol = membership.role
+        const clubRolLabel =
+          (clubRol ? roleStartFor(clubRol)?.label : null) ?? clubRol ?? "Onbekende rol"
+        items.push({
+          key: `club:${membership.clubId}`,
+          label: `${row?.club?.name ?? "Club"} — ${clubRolLabel}`,
+          actief: false,
+          onSelect: () => go("/club"),
+        })
+      }
     }
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,6 +197,30 @@ export function MainMenu({
         onClick={onClose}
         className="fixed inset-0 bg-[#03050a]/80 backdrop-blur-md"
       />
+      {/* Foutisolatie: een fout binnen het menu mag NOOIT de onderliggende
+          pagina meenemen. De boundary vangt de fout op en toont een nette
+          Nederlandse melding IN het menu-overlay, met een sluitknop die
+          onClose aanroept zodat je gewoon terug bent op de pagina. */}
+      <ErrorBoundary
+        fallback={
+          <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
+            <p className="text-base font-semibold text-white/85">
+              Het menu kon niet worden geladen
+            </p>
+            <p className="max-w-xs text-sm text-white/45">
+              Er ging iets mis in het menu. De pagina zelf blijft gewoon staan —
+              sluit het menu en probeer het opnieuw.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-2 rounded-full border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            >
+              Menu sluiten
+            </button>
+          </div>
+        }
+      >
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pb-16 pt-12">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -242,6 +336,31 @@ export function MainMenu({
               Sportpaspoort
             </button>
           )}
+          {(role === "athlete" || role === undefined) && (
+            <button
+              type="button"
+              onClick={() => go("/ai-toestemming")}
+              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            >
+              <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />
+              AI-toestemming
+            </button>
+          )}
+          {(role === "athlete" || role === undefined) && (
+            <button
+              type="button"
+              onClick={() => go("/abonnement")}
+              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            >
+              <CreditCard className="h-4 w-4" strokeWidth={1.75} />
+              Abonnement
+              {tierBadge && (
+                <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-0.5 text-[10px] font-medium text-cyan-200">
+                  {tierBadge}
+                </span>
+              )}
+            </button>
+          )}
           {isAdmin && (
             <button
               type="button"
@@ -281,7 +400,7 @@ export function MainMenu({
                 title="Wissel van context"
               >
                 <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
-                Context: {ROLE_LABEL[active]}
+                Context: {ROLE_LABEL[active] ?? String(active)}
               </button>
               {wisselOpen && (
                 <div className="mt-2 space-y-1 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
@@ -335,6 +454,7 @@ export function MainMenu({
           )}
         </div>
       </div>
+      </ErrorBoundary>
     </div>,
     document.body,
   )

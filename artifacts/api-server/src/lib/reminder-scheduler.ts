@@ -21,6 +21,10 @@ import { runLibraryBackfill } from "./library-backfill";
 import { runSurfaceBackfill } from "./surface-backfill";
 import { runScheduledObservationCleanup } from "../jobs/observation-cleanup";
 import { runParentAgeTransition } from "./parent-age-transition";
+import { runHealthChecks } from "./health/engine";
+import { eq } from "drizzle-orm";
+import { db, athleteGoalsTable } from "@workspace/db";
+import { buildMonthlyProposals } from "./goals";
 
 let started = false;
 let inFlight = false;
@@ -31,7 +35,11 @@ let inFlight = false;
 // (runLibraryBackfill claimt "backfill:<dag>" atomair).
 let lastBackfillDay = "";
 
-function amsterdamParts(now = new Date()): { day: string; hour: number } {
+function amsterdamParts(now = new Date()): {
+  day: string;
+  hour: number;
+  dayOfMonth: number;
+} {
   const fmt = new Intl.DateTimeFormat("nl-NL", {
     timeZone: "Europe/Amsterdam",
     year: "numeric",
@@ -46,6 +54,7 @@ function amsterdamParts(now = new Date()): { day: string; hour: number } {
   return {
     day: `${parts.year}-${parts.month}-${parts.day}`,
     hour: Number.parseInt(parts.hour ?? "0", 10) % 24,
+    dayOfMonth: Number.parseInt(parts.day ?? "1", 10),
   };
 }
 
@@ -96,6 +105,95 @@ async function maybeRunSurfaceBackfill(): Promise<void> {
   logger.info(
     { surfaceBackfill: "scheduler", ...summary },
     "in-process surface backfill run done",
+  );
+}
+
+// Nachtelijke gezondheidscheck (job:health): max één automatische run per
+// Amsterdamse dag vanuit dit proces. Draait in het nachtvenster (04:00–05:59
+// Amsterdam) zodat de uitslag 's ochtends klaarstaat en het overdag geen
+// on-demand werk verdringt. Los in-/uitschakelbaar met HEALTH_CHECK_IN_PROCESS
+// (default: aan in productie). Elke run schrijft een health_check_batches-rij
+// met triggeredBy "scheduler" — precies de trace die /admin leest, zodat
+// "nog nooit gedraaid" meetbaar verdwijnt. Fouten worden gelogd, nooit fataal.
+let lastHealthCheckDay = "";
+
+async function maybeRunHealthCheck(): Promise<void> {
+  const flag = process.env.HEALTH_CHECK_IN_PROCESS;
+  const enabled =
+    flag === "true"
+      ? true
+      : flag === "false"
+        ? false
+        : process.env.NODE_ENV === "production";
+  if (!enabled) return;
+  const { day, hour } = amsterdamParts();
+  if (hour < 4 || hour >= 6) return;
+  if (day === lastHealthCheckDay) return;
+  lastHealthCheckDay = day;
+  const { batchId, outcomes } = await runHealthChecks({
+    mode: "daily",
+    triggeredBy: "scheduler",
+  });
+  const counts = outcomes.reduce(
+    (acc, o) => {
+      acc[o.statusColor] = (acc[o.statusColor] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+  logger.info(
+    { healthCheck: "scheduler", batchId, total: outcomes.length, ...counts },
+    "in-process health check run done",
+  );
+}
+
+// Maandelijkse doelen-review (job:goal-review): max één automatische run per
+// Amsterdamse maand vanuit dit proces. Draait op de 1e van de maand in het
+// venster 06:00–06:59 Amsterdam. Voor elke sporter met minstens één ACTIEF doel
+// bouwt het idempotente bijstuur-voorstellen (dedupeKey per doel+soort+maand);
+// er wordt niets toegepast zonder expliciete bevestiging in de app. Elke run
+// schrijft goal_proposals-rijen — de trace die /admin leest. Los in-/
+// uitschakelbaar met GOAL_REVIEW_IN_PROCESS (default: aan in productie).
+let lastGoalReviewMonth = "";
+
+async function maybeRunGoalReview(): Promise<void> {
+  const flag = process.env.GOAL_REVIEW_IN_PROCESS;
+  const enabled =
+    flag === "true"
+      ? true
+      : flag === "false"
+        ? false
+        : process.env.NODE_ENV === "production";
+  if (!enabled) return;
+  const { day, hour, dayOfMonth } = amsterdamParts();
+  if (dayOfMonth !== 1) return;
+  if (hour < 6 || hour >= 7) return;
+  // day is "YYYY-MM-DD"; de maand-sleutel "YYYY-MM" begrenst tot 1×/maand.
+  const monthKey = day.slice(0, 7);
+  if (monthKey === lastGoalReviewMonth) return;
+  lastGoalReviewMonth = monthKey;
+
+  const rows = await db
+    .selectDistinct({ clerkId: athleteGoalsTable.clerkId })
+    .from(athleteGoalsTable)
+    .where(eq(athleteGoalsTable.status, "active"));
+
+  let created = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const { clerkId } of rows) {
+    try {
+      const result = await buildMonthlyProposals(clerkId);
+      created += result.created;
+      skipped += result.skipped;
+    } catch (err) {
+      failed++;
+      logger.error({ err, clerkId }, "in-process goal-review athlete failed");
+    }
+  }
+  logger.info(
+    { goalReview: "scheduler", athletes: rows.length, created, skipped, failed },
+    "in-process goal-review run done",
   );
 }
 
@@ -182,6 +280,20 @@ export function startReminderScheduler(): void {
         await runParentAgeTransition();
       } catch (err) {
         logger.error({ err }, "parent age transition run failed");
+      }
+      // Nachtelijke gezondheidscheck (job:health): dagelijks in het nachtvenster,
+      // schrijft de scheduler-trace die /admin leest (eigen fouten-log).
+      try {
+        await maybeRunHealthCheck();
+      } catch (err) {
+        logger.error({ err }, "in-process health check failed");
+      }
+      // Maandelijkse doelen-review (job:goal-review): 1e van de maand, schrijft
+      // goal_proposals-trace die /admin leest (eigen fouten-log).
+      try {
+        await maybeRunGoalReview();
+      } catch (err) {
+        logger.error({ err }, "in-process goal-review failed");
       }
     } catch (err) {
       logger.error({ err, reminders: "scheduler" }, "in-process reminder run failed");

@@ -14,6 +14,7 @@ import {
   clubSubscriptionsTable,
   featureFlagsTable,
   userFlagOverridesTable,
+  subscriptionChoiceIntentsTable,
   COMMERCIAL_TIERS,
   BILLING_INTERVALS,
   type BillingSubscription,
@@ -514,4 +515,135 @@ export async function ensureBillingFlagSeed(): Promise<void> {
     .insert(featureFlagsTable)
     .values(flags.map((f) => ({ ...f, enabledGlobally: false })))
     .onConflictDoNothing({ target: featureFlagsTable.key });
+}
+
+// ── Keuze zonder betaalstap (productie-bevinding punt 4) ─────────────────────
+// Legt uitsluitend de KEUZE van de gebruiker vast (welke laag wil ik) zolang de
+// echte betaling nog niet beschikbaar is. Kent NOOIT zelf rechten toe: de
+// entitlement-resolver blijft de enige bron van toegang. Eén open keuze per
+// gebruiker; een nieuwe keuze vervangt de vorige.
+export interface SubscriptionChoiceView {
+  desiredTier: Exclude<CommercialTier, "FREE" | "TEAM" | "TRAINER"> | null;
+  interval: BillingInterval;
+  status: string;
+  updatedAt: string;
+}
+
+export async function recordSubscriptionChoice(
+  clerkId: string,
+  tier: "GO" | "COMPLETE",
+  interval: BillingInterval,
+): Promise<SubscriptionChoiceView> {
+  const now = new Date();
+  await db
+    .insert(subscriptionChoiceIntentsTable)
+    .values({
+      clerkId,
+      desiredTier: tier,
+      interval,
+      status: "in_afwachting",
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: subscriptionChoiceIntentsTable.clerkId,
+      set: {
+        desiredTier: tier,
+        interval,
+        status: "in_afwachting",
+        updatedAt: now,
+      },
+    });
+  logger.info({ clerkId, tier, interval }, "subscription choice recorded (no payment step)");
+  return { desiredTier: tier, interval, status: "in_afwachting", updatedAt: now.toISOString() };
+}
+
+export async function getSubscriptionChoice(
+  clerkId: string,
+): Promise<SubscriptionChoiceView | null> {
+  const [row] = await db
+    .select()
+    .from(subscriptionChoiceIntentsTable)
+    .where(eq(subscriptionChoiceIntentsTable.clerkId, clerkId));
+  if (!row || row.status !== "in_afwachting") return null;
+  const tier =
+    row.desiredTier === "GO" || row.desiredTier === "COMPLETE"
+      ? row.desiredTier
+      : null;
+  if (!tier) return null;
+  return {
+    desiredTier: tier,
+    interval: isValidInterval(row.interval) ? row.interval : "month",
+    status: row.status,
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * Directe downgrade naar Gratis — rechten OMLAAG vereist geen betaling.
+ * Owner-scoped (clerkId komt server-side uit de sessie). Zet het profiel terug
+ * naar de gratis laag en trekt lopende betaalde rechten in:
+ *   • commercial_tier → FREE, product_variant → NULL;
+ *   • actieve trial-entitlements → revoked (proefrechten vervallen direct);
+ *   • een openstaande keuze-intentie → geannuleerd.
+ * legacy_unrestricted wordt NOOIT aangeraakt (die carve-out heeft geen betaalde
+ * laag om te verlaten). Een lopend Stripe-abonnement wordt NIET stilzwijgend
+ * opgezegd — dat loopt via de portal/webhook; we melden dat eerlijk terug.
+ */
+export async function downgradeToFree(clerkId: string): Promise<
+  | { ok: true; revokedTrials: number }
+  | { ok: false; reason: "legacy" | "actief_abonnement" }
+> {
+  const [profile] = await db
+    .select({ entitlementMode: userProfilesTable.entitlementMode })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkId, clerkId));
+  if (!profile || profile.entitlementMode === "legacy_unrestricted") {
+    return { ok: false, reason: "legacy" };
+  }
+  const [sub] = await db
+    .select({ status: billingSubscriptionsTable.status })
+    .from(billingSubscriptionsTable)
+    .where(eq(billingSubscriptionsTable.clerkId, clerkId))
+    .orderBy(billingSubscriptionsTable.updatedAt);
+  if (sub && (sub.status === "active" || sub.status === "grace")) {
+    // Een echt betaald abonnement zeg je op via de betaalprovider (portal),
+    // nooit door hier de rechten weg te halen terwijl de facturatie doorloopt.
+    return { ok: false, reason: "actief_abonnement" };
+  }
+  const now = new Date();
+  await db
+    .update(userProfilesTable)
+    .set({ commercialTier: "FREE", productVariant: null, updatedAt: now })
+    .where(
+      and(
+        eq(userProfilesTable.clerkId, clerkId),
+        eq(userProfilesTable.entitlementMode, "subscription"),
+      ),
+    );
+  const revoked = await db
+    .update(userEntitlementsTable)
+    .set({ status: "revoked", updatedAt: now })
+    .where(
+      and(
+        eq(userEntitlementsTable.clerkId, clerkId),
+        eq(userEntitlementsTable.entitlementType, "trial"),
+        eq(userEntitlementsTable.status, "active"),
+      ),
+    )
+    .returning({ id: userEntitlementsTable.id });
+  await db
+    .update(subscriptionChoiceIntentsTable)
+    .set({ status: "geannuleerd", updatedAt: now })
+    .where(
+      and(
+        eq(subscriptionChoiceIntentsTable.clerkId, clerkId),
+        eq(subscriptionChoiceIntentsTable.status, "in_afwachting"),
+      ),
+    );
+  logger.info(
+    { clerkId, revokedTrials: revoked.length },
+    "downgrade to free applied (rights lowered, no payment needed)",
+  );
+  return { ok: true, revokedTrials: revoked.length };
 }

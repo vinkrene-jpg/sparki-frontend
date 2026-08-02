@@ -148,17 +148,17 @@ export function WattageLab({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-2xl border-2 border-cyan-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
+        className="w-full rounded-2xl border border-cyan-400/25 bg-[#070d16]/[0.82] p-5 text-left backdrop-blur-md transition-colors hover:border-cyan-300/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
       >
         <div className="flex items-center gap-2">
-          <FlaskConical className="h-4 w-4 text-cyan-600" />
-          <span className="text-sm font-semibold text-slate-800">Wattage-lab</span>
+          <FlaskConical className="h-4 w-4 text-cyan-300" />
+          <span className="text-sm font-semibold text-white/85">Wattage-lab</span>
           {/* WP-K5: vast label — knutselen is verkennen, geen meting of advies. */}
-          <span className="ml-auto rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-700">
+          <span className="ml-auto rounded-full border border-cyan-400/25 bg-cyan-300/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-300">
             Verkenning · simulatie
           </span>
         </div>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-white/55">
           Knutsel met je eigen doelen: wat is er nodig om je FTP, sprint of 5-minutenvermogen te
           verhogen — en wat is voor jou realistisch?
         </p>

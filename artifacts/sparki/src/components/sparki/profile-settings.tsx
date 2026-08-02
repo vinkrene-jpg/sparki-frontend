@@ -10,6 +10,7 @@ import { localISODate } from "@/lib/commercial-shell"
 // the app opens this sheet and jumps straight to the FTP editor.
 
 import { useState, useEffect, useRef, type ReactNode } from "react"
+import { Link } from "wouter"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
@@ -1239,9 +1240,14 @@ function BillingSection() {
 
   if (!data) return null
   const { available } = data
-  const anything = available.trial || available.checkout || available.portal
-  const hasPaidState = data.tier !== "FREE" || data.status === "trialing"
-  if (!anything && !hasPaidState) return null
+  const tierBadge =
+    data.status === "legacy_unrestricted"
+      ? "Volledige toegang"
+      : data.tier === "GO"
+        ? "Sparki Go"
+        : data.tier === "COMPLETE"
+          ? "Sparki Compleet"
+          : "Gratis"
 
   const statusLabel: Record<string, string> = {
     trialing: "Proefperiode actief",
@@ -1263,17 +1269,25 @@ function BillingSection() {
 
   return (
     <section id="cfg-abonnement">
-      <SectionLabel title="Abonnement (test)" />
+      <SectionLabel title="Abonnement" />
       <div className="mt-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4">
-        <p className="text-[12px] text-white/60">
-          Status:{" "}
-          <span className="text-white/85">
-            {statusLabel[data.status] ?? data.status}
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[12px] text-white/60">
+            Status:{" "}
+            <span className="text-white/85">
+              {statusLabel[data.status] ?? data.status}
+            </span>
+          </p>
+          <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-0.5 text-[10px] font-medium text-cyan-200">
+            {tierBadge}
           </span>
-          {data.tier !== "FREE" && (
-            <span className="ml-1 text-white/85">· Sparki {data.tier}</span>
-          )}
-        </p>
+        </div>
+        <Link
+          href="/abonnement"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-[12px] font-medium text-cyan-200 transition hover:bg-cyan-300/20"
+        >
+          Bekijk lagen en prijzen
+        </Link>
         {data.trialEndsAt && data.status === "trialing" && (
           <p className="mt-1 text-[11px] text-white/40">
             Proef loopt tot {new Date(data.trialEndsAt).toLocaleDateString("nl-NL")}

@@ -28,6 +28,7 @@ import {
   workoutFeedbackTable,
   coachAthleteLinksTable,
   parentAthleteLinksTable,
+  billingTestAccountsTable,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { ensureAccount, silentLogger } from "../lib/account";
@@ -47,6 +48,13 @@ type Spec = {
   activeRole?: string;
   entitlementMode?: "legacy_unrestricted" | "subscription";
   productVariant?: string | null; // alleen zinvol bij subscription
+  // Nieuw commercieel stelsel (FREE|GO|COMPLETE) — nodig zodat de billing-
+  // status en het /abonnement-scherm de juiste laag tonen. Zonder waarde blijft
+  // commercial_tier NULL (bestaand gedrag).
+  commercialTier?: string | null;
+  // Zet dit account op de billing-testallowlist (checkout/portal/trial zichtbaar
+  // wanneer de flags aanstaan). Kent nooit rechten toe.
+  billingTestAccount?: boolean;
   birthDate?: string; // ISO — authoritatief; birthYear wordt in lockstep gezet
   skipAthleteData?: boolean; // coach/ouder: geen eigen sportdata
   profile: {
@@ -145,9 +153,11 @@ const PERSONA_SPECS: Spec[] = [
     clerkId: "seed_persona_gratis",
     name: "Gratis (geen pakket)",
     email: "persona-gratis@preview.sparki",
-    expect: "subscription zonder variant — fail-closed",
+    expect: "subscription zonder variant — fail-closed (Gratis-laag)",
     entitlementMode: "subscription",
     productVariant: null,
+    commercialTier: "FREE",
+    billingTestAccount: true,
     profile: { experienceLevel: "beginner", birthYear: THIS_YEAR - 29 },
     load: "low",
     metricDays: 4,
@@ -158,9 +168,11 @@ const PERSONA_SPECS: Spec[] = [
     clerkId: "seed_persona_go",
     name: "Abonnee Go",
     email: "persona-go@preview.sparki",
-    expect: "variant sparki_go",
+    expect: "variant sparki_go (Sparki Go-laag)",
     entitlementMode: "subscription",
     productVariant: "sparki_go",
+    commercialTier: "GO",
+    billingTestAccount: true,
     profile: { experienceLevel: "beginner", birthYear: THIS_YEAR - 31 },
     load: "low",
     metricDays: 4,
@@ -197,9 +209,11 @@ const PERSONA_SPECS: Spec[] = [
     clerkId: "seed_persona_pro",
     name: "Abonnee Compleet (Sparki Compleet)",
     email: "persona-pro@preview.sparki",
-    expect: "variant sparki_pro",
+    expect: "variant sparki_pro (Sparki Compleet-laag)",
     entitlementMode: "subscription",
     productVariant: "sparki_pro",
+    commercialTier: "COMPLETE",
+    billingTestAccount: true,
     profile: { experienceLevel: "elite", competitionLevel: "national", birthYear: THIS_YEAR - 26, ftp: 340, weeklyHourTarget: 14 },
     load: "steady",
     metricDays: 14,
@@ -347,8 +361,10 @@ async function seedOne(spec: Spec): Promise<void> {
         activeRole: spec.activeRole ?? "athlete",
         entitlementMode: spec.entitlementMode ?? "legacy_unrestricted",
         productVariant: spec.productVariant ?? null,
+        commercialTier: spec.commercialTier ?? null,
       })
       .where(eq(userProfilesTable.clerkId, clerkId));
+    await applyBillingAllowlist(spec);
     return;
   }
 
@@ -454,8 +470,20 @@ async function seedOne(spec: Spec): Promise<void> {
       activeRole: spec.activeRole ?? "athlete",
       entitlementMode: spec.entitlementMode ?? "legacy_unrestricted",
       productVariant: spec.productVariant ?? null,
+      commercialTier: spec.commercialTier ?? null,
     })
     .where(eq(userProfilesTable.clerkId, clerkId));
+  await applyBillingAllowlist(spec);
+}
+
+// Idempotent: zet (of laat) dit persona op de billing-testallowlist. Kent nooit
+// rechten toe — regelt alleen of checkout/portal/trial zichtbaar mag zijn.
+async function applyBillingAllowlist(spec: Spec): Promise<void> {
+  if (!spec.billingTestAccount) return;
+  await db
+    .insert(billingTestAccountsTable)
+    .values({ clerkId: spec.clerkId, addedBy: "seed-preview", reason: "abonnement-testpersona" })
+    .onConflictDoNothing({ target: billingTestAccountsTable.clerkId });
 }
 
 // Koppelingen die de rol-persona's betekenisvol maken: zonder gekoppelde

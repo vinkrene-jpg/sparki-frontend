@@ -29,6 +29,7 @@
     "test:day-advice-seizoensdoel": "node ../../scripts/run-tsx-test.mjs src/lib/day-advice-seizoensdoel.test.ts",
     "test:commercial-shell": "node ../../scripts/run-tsx-test.mjs src/lib/commercial-shell.test.ts",
     "test:commercial-today": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/commercial-today.test.tsx",
+    "test:main-menu": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/main-menu.test.tsx",
     "test:stream-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/stream-analysis.test.ts",
     "test:scan-quality": "node ../../scripts/run-tsx-test.mjs src/lib/scan-quality.test.ts",
     "test:nav-live": "node ../../scripts/run-tsx-test.mjs src/lib/nav-live.test.ts",

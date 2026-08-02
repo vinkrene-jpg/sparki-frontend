@@ -1,6 +1,7 @@
-// Centrale Analyse-omgeving (/analyse) — lichte datawerkruimte binnen de
-// donkere app-shell. Hergebruikt uitsluitend bestaande hooks, engines en
-// berekeningen; geen nieuwe formules, geen mock- of seeddata.
+// Centrale Analyse-omgeving (/analyse) — donkere datawerkruimte binnen de
+// gedeelde cinematic app-shell (ScreenShell). Hergebruikt uitsluitend
+// bestaande hooks, engines en berekeningen; geen nieuwe formules, geen mock-
+// of seeddata.
 
 // ── Semantische kleurset (SSOT voor alle grafieken) ──────────────────────────
 // Elke kleur heeft één vaste betekenis. Nooit voor decoratie.
@@ -18,8 +19,8 @@ export const CHART = {
   tsbPos:  "#16A34A", // green-600  — positieve vorm (TSB ≥ 0)
   tsbNeg:  "#DC2626", // red-600    — sterk negatieve vorm
   tsbNegLicht: "#FCA5A5", // red-300 — licht negatieve vorm
-  grid:    "#E2E8F0", // slate-200  — gridlijnen, alleen horizontaal
-  as:      "#475569", // slate-600  — as-labels/datums (leesbaar, niet vaag)
+  grid:    "rgba(255,255,255,0.08)", // gridlijnen op donkere schil — laag-alpha wit, alleen horizontaal
+  as:      "rgba(255,255,255,0.45)", // as-labels/datums op donkere schil — leesbaar wit, niet vaag
   volume:  "#8b5cf6", // violet-500 — trainingsvolume
   ftp:     "#06b6d4", // cyan-500   — vermogen / FTP
   goal:    "#10b981", // emerald-500 — doelen

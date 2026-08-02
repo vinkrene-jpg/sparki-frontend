@@ -68,6 +68,7 @@ import ParentMeldingenPage from "@/pages/parent-meldingen";
 import NutritionSpecialistHome from "@/pages/nutrition-start";
 import RolStartPage from "@/pages/rol-start";
 import ParentToestemmingenPage from "@/pages/parent-toestemmingen";
+import AiToestemmingPage from "@/pages/ai-toestemming";
 import { apiFetch } from "@/lib/api";
 import { decideOnboardingOutcome, lsKeyFor } from "@/lib/onboarding-gate";
 import { OnboardingCheckFailed } from "@/components/sparki/onboarding-check-failed";
@@ -87,6 +88,7 @@ import { DEV_PREVIEW } from "@/lib/dev";
 import { STALE } from "@/lib/query-keys";
 import { SoundProvider } from "@/contexts/SoundContext";
 import GeluidPage from "@/pages/geluid";
+import AbonnementPage from "@/pages/abonnement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -734,6 +736,12 @@ function AppRouter() {
                 <Route path="/paspoort">
                   <ProtectedPage component={PaspoortPage} />
                 </Route>
+                {/* Dedicated toestemmingenpagina voor de sporter — apart en
+                    goed vindbaar; de AI-gateway blijft server-side
+                    fail-closed op deze toestemmingen. */}
+                <Route path="/ai-toestemming">
+                  <ProtectedPage component={AiToestemmingPage} />
+                </Route>
                 <Route path="/support">
                   <ProtectedPage component={SupportPage} />
                 </Route>
@@ -773,6 +781,11 @@ function AppRouter() {
                 </Route>
                 <Route path="/geluid">
                   <ProtectedPage component={GeluidPage} />
+                </Route>
+                {/* Abonnement — prijzen/lagen + up-/downgradepad (productie-
+                    bevinding punt 4). Maakt de commerciële laag zichtbaar. */}
+                <Route path="/abonnement">
+                  <ProtectedPage component={AbonnementPage} />
                 </Route>
                 {/* MEDIA_UITLEG_01 F1 — testpagina, alleen voor toetsing;
                     nergens gelinkt en achter de flag media_uitleg_motion. */}

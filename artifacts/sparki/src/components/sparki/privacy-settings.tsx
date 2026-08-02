@@ -1,4 +1,5 @@
-import { ShieldCheck, Brain, Users, UserCog } from "lucide-react"
+import { ShieldCheck, Brain, Users, UserCog, ChevronRight } from "lucide-react"
+import { Link } from "wouter"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   usePrivacySettings,
@@ -104,6 +105,29 @@ export function PrivacySettingsSection() {
   return (
     <section className="pt-2">
       <SectionLabel n="07" title="Privacy & toestemming" />
+      <Link
+        href="/ai-toestemming"
+        className="mt-3 flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      >
+        <span
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border"
+          style={{
+            borderColor: "rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <ShieldCheck className="h-4 w-4 text-white/55" strokeWidth={1.75} />
+        </span>
+        <span className="flex-1">
+          <span className="block text-[14px] tracking-tight text-white/85">
+            Alles over AI-toestemming
+          </span>
+          <span className="mt-0.5 block text-[12px] leading-snug text-white/40">
+            Bekijk per doeleinde wat het inhoudt en beheer je keuzes.
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-white/30" strokeWidth={1.75} />
+      </Link>
       <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
         {isLoading || !p ? (
           <div className="space-y-3 py-6">

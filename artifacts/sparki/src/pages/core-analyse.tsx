@@ -1,10 +1,13 @@
-// Centrale Analyse-omgeving (/analyse) — lichte datawerkruimte binnen de
-// donkere app-shell. Hergebruikt uitsluitend bestaande hooks, engines en
-// berekeningen; geen nieuwe formules, geen mock- of seeddata.
+// Centrale Analyse-omgeving (/analyse) — donkere datawerkruimte binnen de
+// gedeelde cinematic app-shell (ScreenShell). Hergebruikt uitsluitend
+// bestaande hooks, engines en berekeningen; geen nieuwe formules, geen mock-
+// of seeddata.
 //
 // Tabs: Overzicht · Belasting · Progressie · Doelen · Sessies
-// Visueel: witte cards op slate-50 achtergrond; recharts grafieken op witte
-// ondergrond; vaste semantische kleurset (CHART.*) voor alle data-reeksen.
+// Visueel: glass cards (bg-[#070d16]/[0.82], border-white/[0.08]) op de
+// cinematic achtergrond van ScreenShell; recharts grafieken met wit/laag-alpha
+// assen en gridlijnen; vaste semantische kleurset (CHART.*) voor alle
+// data-reeksen.
 
 import { useState, createContext, useContext, type ReactNode } from "react"
 import { useLocation } from "wouter"
@@ -23,7 +26,8 @@ import {
   ReferenceLine,
 } from "recharts"
 
-import { CommercialShell } from "@/components/sparki/commercial-shell"
+import { ScreenShell } from "@/components/sparki/screen-shell"
+import { SectionLabel } from "@/components/sparki/ui"
 import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { BioRadar } from "@/components/sparki/bio-radar"
@@ -99,7 +103,7 @@ function UitlegRegel({ k }: { k: string }) {
   const u = UITLEG[k]
   if (!aan || !u) return null
   return (
-    <p className="mb-4 rounded-lg border border-sky-100 bg-sky-50/70 px-3 py-2 text-xs leading-relaxed text-slate-600">
+    <p className="mb-4 rounded-lg border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs leading-relaxed text-white/70">
       {u.wat} {u.waarom}
     </p>
   )
@@ -148,15 +152,18 @@ function toestandVan(bron: Bron<unknown>, hasData: boolean): AnalyseToestand {
   return analyseToestand({ isLoading: bron.isLoading, isError: bron.isError, hasData })
 }
 
-// ── Lichte primitieven (white-bg variant) ────────────────────────────────────
+// ── Glass-primitieven (donkere schil-variant) ────────────────────────────────
 
-// Design-spec 29 jul + addendum 30 jul: zachte schaduw i.p.v. dunne rand,
-// radius 12px, ruime padding (default p-5/20px, door callers overschrijfbaar).
+// Glass card conform de gedeelde schil: donkere ondergrond + laag-alpha rand +
+// backdrop-blur. Radius 16px (rounded-2xl), ruime padding (default p-5/20px,
+// door callers overschrijfbaar).
 function LCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={cn("bg-white rounded-xl p-5", className)}
-      style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.05)" }}
+      className={cn(
+        "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md",
+        className,
+      )}
     >
       {children}
     </div>
@@ -164,24 +171,24 @@ function LCard({ children, className = "" }: { children: ReactNode; className?: 
 }
 
 function LCardTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <h3 className={cn("text-[15px] font-semibold text-slate-900", className)}>{children}</h3>
+  return <h3 className={cn("text-[15px] font-semibold text-white", className)}>{children}</h3>
 }
 
 function LLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-600">
+    <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-white/50">
       {children}
     </span>
   )
 }
 
 function Skel({ className = "" }: { className?: string }) {
-  return <div aria-hidden="true" className={cn("animate-pulse rounded-xl bg-slate-100", className)} />
+  return <div aria-hidden="true" className={cn("animate-pulse rounded-2xl bg-white/[0.06]", className)} />
 }
 
 function LFout({ titel, onOpnieuw }: { titel: string; onOpnieuw?: () => void }) {
   return (
-    <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+    <div className="rounded-2xl border border-red-400/20 bg-red-500/[0.08] p-4 text-sm text-red-300">
       <p className="font-medium">{titel}</p>
       {onOpnieuw && (
         <button type="button" onClick={onOpnieuw}
@@ -199,13 +206,13 @@ function LFout({ titel, onOpnieuw }: { titel: string; onOpnieuw?: () => void }) 
 function LegeGrafiek({ titel }: { titel: string }) {
   const [, navigate] = useLocation()
   return (
-    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center">
-      <p className="text-sm text-slate-500">{titel}</p>
+    <div className="rounded-xl border border-dashed border-white/[0.12] bg-white/[0.03] px-4 py-5 text-center">
+      <p className="text-sm text-white/55">{titel}</p>
       <div className="mt-3 flex justify-center gap-2">
         <button
           type="button"
           onClick={() => navigate("/connect")}
-          className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
+          className="rounded-lg bg-cyan-500/90 px-3 py-1.5 text-xs font-medium text-[#05070e] hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
         >
           Platform koppelen
         </button>
@@ -215,7 +222,7 @@ function LegeGrafiek({ titel }: { titel: string }) {
           // FIT/GPX/TCX-bestandsimport (ActivityImportPanel) op Sparki Connect,
           // via het bestaande ?focus=-patroon van de Smart Missing Input-flow.
           onClick={() => navigate("/connect?focus=import")}
-          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
+          className="rounded-lg border border-white/12 px-3 py-1.5 text-xs text-white/65 hover:border-cyan-300/40 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
         >
           Rit importeren
         </button>
@@ -243,15 +250,15 @@ function StatTegel({
         {uitlegKey && <UitlegDot uitlegKey={uitlegKey} label={label} />}
       </div>
       {value == null
-        ? <span className="text-3xl font-light text-slate-300">—</span>
+        ? <span className="text-3xl font-light text-white/25">—</span>
         : (
           <div className="flex items-baseline gap-1">
             <span className="num text-3xl font-bold tracking-tight tabular-nums" style={{ color }}>{value}</span>
-            {unit && <span className="text-sm text-slate-400">{unit}</span>}
+            {unit && <span className="text-sm text-white/40">{unit}</span>}
           </div>
         )
       }
-      {sub && <span className="text-xs text-slate-500">{sub}</span>}
+      {sub && <span className="text-xs text-white/50">{sub}</span>}
     </LCard>
   )
 }
@@ -332,7 +339,7 @@ function LoadGrafiek({
 
   if (gefilterd.length < 3) {
     return (
-      <p className="text-sm text-slate-400 py-6 text-center">
+      <p className="text-sm text-white/40 py-6 text-center">
         Nog te weinig belastingsdata voor een grafiek. Log meer trainingen.
       </p>
     )
@@ -391,7 +398,7 @@ function LoadGrafiek({
       <div>
         <div className="flex flex-wrap items-center gap-4 mb-3">
           <LCardTitle>Fitheid &amp; Vermoeidheid</LCardTitle>
-          <div className="flex items-center gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-4 text-xs text-white/55">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.ctl }} />
               CTL (fitheid)
@@ -414,7 +421,7 @@ function LoadGrafiek({
             </button>
             {heeftVorig && (
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-0.5 w-5 rounded bg-slate-300" />
+                <span className="inline-block h-0.5 w-5 rounded bg-white/30" />
                 Vorige periode (CTL)
               </span>
             )}
@@ -455,7 +462,7 @@ function LoadGrafiek({
               />
             )}
             {heeftVorig && (
-              <Line type="monotone" dataKey="vorigCtl" stroke="#cbd5e1" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
+              <Line type="monotone" dataKey="vorigCtl" stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
             )}
             {/* Area-fill onder CTL: aflopende gradient (addendum 30 jul) —
                 trend in één oogopslag. ATL krijgt bewust GEEN fill en minder
@@ -506,7 +513,7 @@ function LoadGrafiek({
           </ComposedChart>
         </ResponsiveContainer>
         {onDagKlik && (
-          <p className="mt-1 text-[11px] text-slate-400">Klik op een dag om de sessie van die dag te openen.</p>
+          <p className="mt-1 text-[11px] text-white/40">Klik op een dag om de sessie van die dag te openen.</p>
         )}
       </div>
 
@@ -514,7 +521,7 @@ function LoadGrafiek({
       <div>
         <div className="flex flex-wrap items-center gap-4 mb-3">
           <LCardTitle>Vorm (TSB)</LCardTitle>
-          <div className="flex items-center gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-4 text-xs text-white/55">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CHART.tsbPos }} />
               Positief — goed uitgerust
@@ -607,7 +614,7 @@ function OverzichtTab({
           </div>
           <UitlegRegel k="belasting" />
           <LoadGrafiek chartData={load.data.chartData} periode={42} />
-          <div className="mt-2 flex justify-between text-xs text-slate-500 tabular-nums">
+          <div className="mt-2 flex justify-between text-xs text-white/55 tabular-nums">
             <span>42 dagen geleden: fitheid {Math.round(load.data.chartData.slice(-42)[0]?.ctl ?? 0)}</span>
             <span className="font-medium" style={{ color: CHART.ctl }}>Nu: {Math.round(load.data.ctl)}</span>
           </div>
@@ -659,7 +666,7 @@ function WeekVolumeCard({
     <LCard className="p-5">
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Trainingsvolume per week</LCardTitle>
-        <span className="text-xs text-slate-400">12 weken</span>
+        <span className="text-xs text-white/40">12 weken</span>
         <UitlegDot uitlegKey="trainingsvolume" label="Trainingsvolume" />
       </div>
       <UitlegRegel k="trainingsvolume" />
@@ -707,7 +714,7 @@ function WeekVolumeCard({
               </Bar>
             </ComposedChart>
           </ResponsiveContainer>
-          <p className="mt-1 text-[11px] text-slate-400">Uren per week. Klik op een week om de laatste sessie te openen.</p>
+          <p className="mt-1 text-[11px] text-white/40">Uren per week. Klik op een week om de laatste sessie te openen.</p>
         </>
       )}
     </LCard>
@@ -731,7 +738,7 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
     <LCard className="p-5">
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Intensiteitsverdeling</LCardTitle>
-        <span className="text-xs text-slate-400">laatste sessies</span>
+        <span className="text-xs text-white/40">laatste sessies</span>
         <UitlegDot uitlegKey="intensiteitsverdeling" label="Intensiteitsverdeling" />
       </div>
       <UitlegRegel k="intensiteitsverdeling" />
@@ -745,7 +752,7 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
               <div key={b.key} style={{ width: `${b.aandeel * 100}%`, background: INTENSITEIT_KLEUR[b.key] }} />
             ))}
           </div>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/55">
             {buckets.filter((b) => b.minuten > 0).map((b) => (
               <span key={b.key} className="flex items-center gap-1.5">
                 <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: INTENSITEIT_KLEUR[b.key] }} />
@@ -753,7 +760,7 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">
+          <p className="mt-2 text-[11px] text-white/40">
             Afgeleid uit werkelijke belastingsscore en duur per sessie
             {bekendMin < totaalMin && " — sessies zonder score tellen als onbekend"}.
           </p>
@@ -777,12 +784,12 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
     <LCard className="p-5">
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Slaap</LCardTitle>
-        <span className="text-xs text-slate-400">{periodeLabel(periode)}</span>
+        <span className="text-xs text-white/40">{periodeLabel(periode)}</span>
         <UitlegDot uitlegKey="slaap" label="Slaap" />
       </div>
       <UitlegRegel k="slaap" />
       {reeks.length < 2 ? (
-        <MissingInputNotice compact showOrb={false} tone="light"
+        <MissingInputNotice compact showOrb={false} tone="dark"
           title="Nog geen slaapdata"
           description="Koppel een platform dat slaap registreert — direct (zoals Garmin) of indirect (zoals Google Health) — of vul je slaap in bij de dagelijkse check-in."
           targets={["checkin"]}
@@ -797,8 +804,8 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
       ) : (
         <>
           <div className="flex items-baseline gap-1 mb-2">
-            <span className="num text-3xl font-bold tracking-tight text-slate-900">{String(laatste.uren).replace(".", ",")}</span>
-            <span className="text-xs text-slate-400">u laatst gemeten</span>
+            <span className="num text-3xl font-bold tracking-tight text-white">{String(laatste.uren).replace(".", ",")}</span>
+            <span className="text-xs text-white/40">u laatst gemeten</span>
           </div>
           <Sparkline
             data={reeks.map((m) => m.uren)}
@@ -918,37 +925,37 @@ function BelastingTab({
   return (
     <div className="space-y-6">
       {/* Doelscenario — centraal veld boven de grafiek */}
-      <LCard className="p-5 border-2 border-purple-200">
+      <LCard className="p-5 border-2 border-purple-400/25">
         <div className="flex items-center gap-1.5 mb-1">
           <LCardTitle>Doelscenario</LCardTitle>
           <UitlegDot uitlegKey="doelscenario" label="Doelscenario" />
           {/* WP-K5: vast label — dit is een verkenning, geen meting of advies. */}
-          <span className="ml-auto rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-purple-700">
+          <span className="ml-auto rounded-full border border-purple-400/25 bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-purple-300">
             Verkenning · simulatie
           </span>
         </div>
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-white/55 mb-3">
           Kies een voorgenomen verandering van je trainingsvolume. De grafiek toont dan in het paars
           de verwachte ontwikkeling van je fitheid, als band met een boven- en onderwaarde.
         </p>
         <UitlegRegel k="doelscenario" />
         <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Doelscenario trainingsvolume">
           {/* Draaiwieltje: in stappen van 5% van −50% tot +50% */}
-          <div className="inline-flex items-center rounded-xl border border-slate-200 overflow-hidden">
+          <div className="inline-flex items-center rounded-xl border border-white/10 overflow-hidden">
             <button
               type="button"
               aria-label="5% minder volume"
               disabled={(scenarioPct ?? 0) <= -50}
               onClick={() => setScenarioPct(Math.max(-50, (scenarioPct ?? 0) - 5) || null)}
-              className="min-h-11 min-w-11 px-3 text-lg text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+              className="min-h-11 min-w-11 px-3 text-lg text-white/55 hover:bg-white/[0.04] hover:text-white/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
             >
               −
             </button>
             <span
               aria-live="polite"
               className={cn(
-                "min-w-[5.5rem] border-x border-slate-200 px-3 py-2 text-center font-mono text-sm tabular-nums",
-                scenarioPct == null ? "text-slate-400" : "font-semibold text-purple-700",
+                "min-w-[5.5rem] border-x border-white/10 px-3 py-2 text-center font-mono text-sm tabular-nums",
+                scenarioPct == null ? "text-white/40" : "font-semibold text-purple-300",
               )}
             >
               {scenarioPct == null ? "0% (uit)" : `${scenarioPct > 0 ? "+" : ""}${scenarioPct}%`}
@@ -958,7 +965,7 @@ function BelastingTab({
               aria-label="5% meer volume"
               disabled={(scenarioPct ?? 0) >= 50}
               onClick={() => setScenarioPct(Math.min(50, (scenarioPct ?? 0) + 5) || null)}
-              className="min-h-11 min-w-11 px-3 text-lg text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+              className="min-h-11 min-w-11 px-3 text-lg text-white/55 hover:bg-white/[0.04] hover:text-white/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
             >
               +
             </button>
@@ -967,14 +974,14 @@ function BelastingTab({
             <button
               type="button"
               onClick={() => setScenarioPct(null)}
-              className="min-h-9 rounded-lg border border-slate-200 px-3 text-xs text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+              className="min-h-9 rounded-lg border border-white/10 px-3 text-xs text-white/55 hover:text-white/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
             >
               Uit
             </button>
           )}
         </div>
         {scenarioPct != null && urenBasis != null && (
-          <p className="mt-2 text-sm text-slate-600 tabular-nums">
+          <p className="mt-2 text-sm text-white/60 tabular-nums">
             {scenarioPct > 0 ? "+" : ""}{scenarioPct}% volume ≈{" "}
             <strong>{urenDeltaLabel(urenBasis.uren, scenarioPct)}</strong>{" "}
             ({urenLabel(urenBasis.uren)} → {urenLabel(urenBasis.uren * (1 + scenarioPct / 100))} u/week,{" "}
@@ -982,13 +989,13 @@ function BelastingTab({
           </p>
         )}
         {scenarioPct != null && urenBasis == null && (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-white/55">
             Wat dit in uren betekent is nog niet te zeggen: er staan geen uren per week in je plan en er
             zijn geen recente sessies met een duur.
           </p>
         )}
         {scenarioPct != null && projectie && (
-          <p className="mt-3 rounded-lg bg-purple-50/70 border border-purple-100 px-3 py-2 text-sm text-slate-700">
+          <p className="mt-3 rounded-lg bg-purple-500/100/10 border border-purple-400/20 px-3 py-2 text-sm text-white/70">
             Bij <strong>{scenarioPct > 0 ? "+" : ""}{scenarioPct}% trainingsvolume</strong> komt je fitheid over{" "}
             {projectie.dagen} dagen naar verwachting uit tussen{" "}
             <strong className="tabular-nums" style={{ color: CHART.verwacht }}>
@@ -1002,7 +1009,7 @@ function BelastingTab({
           </p>
         )}
         {scenarioPct != null && !projectie && (
-          <p className="mt-3 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-500">
+          <p className="mt-3 rounded-lg bg-white/[0.04] border border-white/10 px-3 py-2 text-sm text-white/55">
             Er zijn de afgelopen vier weken geen sessies met een belastingsscore, dus een verwachting
             is nu niet te berekenen. Log trainingen met duur en intensiteit of koppel een platform.
           </p>
@@ -1027,10 +1034,10 @@ function BelastingTab({
                 onClick={() => setGrafiekPeriode(p.dagen)}
                 aria-pressed={grafiekPeriode === p.dagen}
                 className={cn(
-                  "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60",
+                  "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
                   grafiekPeriode === p.dagen
-                    ? "border-sky-500/60 bg-sky-50 text-sky-600 font-medium"
-                    : "border-slate-200 text-slate-500 hover:text-slate-800",
+                    ? "border-cyan-400/50 bg-cyan-300/10 text-cyan-300 font-medium"
+                    : "border-white/10 text-white/55 hover:text-white/85",
                 )}
               >
                 {p.label}
@@ -1041,10 +1048,10 @@ function BelastingTab({
               onClick={() => setVergelijk((v) => !v)}
               aria-pressed={vergelijk}
               className={cn(
-                "min-h-8 rounded-lg border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60",
+                "min-h-8 rounded-lg border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
                 vergelijk
-                  ? "border-slate-400 bg-slate-100 text-slate-700 font-medium"
-                  : "border-slate-200 text-slate-500 hover:text-slate-800",
+                  ? "border-white/25 bg-white/[0.08] text-white/70 font-medium"
+                  : "border-white/10 text-white/55 hover:text-white/85",
               )}
               title="Vergelijk met de vorige periode van gelijke lengte"
             >
@@ -1098,10 +1105,10 @@ function BelastingTab({
                 aria-pressed={periode === p}
                 aria-label={periodeLabel(p)}
                 className={cn(
-                  "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60",
+                  "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
                   periode === p
-                    ? "border-sky-500/60 bg-sky-50 text-sky-600 font-medium"
-                    : "border-slate-200 text-slate-500 hover:text-slate-800",
+                    ? "border-cyan-400/50 bg-cyan-300/10 text-cyan-300 font-medium"
+                    : "border-white/10 text-white/55 hover:text-white/85",
                 )}
               >
                 {p}d
@@ -1113,7 +1120,7 @@ function BelastingTab({
         {readReeks.length >= 2 ? (
           <>
             <div className="flex items-baseline justify-between mb-2">
-              <span className="text-xs text-slate-500">{periodeLabel(periode)}</span>
+              <span className="text-xs text-white/55">{periodeLabel(periode)}</span>
               <span className="font-mono text-xs tabular-nums" style={{ color: CHART.ctl }}>
                 {readReeks[readReeks.length - 1]} gereedheid
               </span>
@@ -1126,12 +1133,12 @@ function BelastingTab({
               fill="rgba(14,165,233,0.07)"
               className="w-full"
             />
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-white/40">
               Gebaseerd op dagelijkse check-in scores.
             </p>
           </>
         ) : (
-          <MissingInputNotice compact showOrb={false} tone="light"
+          <MissingInputNotice compact showOrb={false} tone="dark"
             title="Nog geen readiness-trend"
             description="Log je dagelijkse check-in om je readiness te volgen."
             targets={["checkin"]}
@@ -1144,7 +1151,7 @@ function BelastingTab({
       <LCard className="p-5">
         <div className="flex items-center gap-1.5 mb-4">
           <LCardTitle>HRV-trend</LCardTitle>
-          <span className="text-xs text-slate-400">{periodeLabel(periode)}</span>
+          <span className="text-xs text-white/40">{periodeLabel(periode)}</span>
           <UitlegDot uitlegKey="hrvTrend" label="HRV-trend" />
         </div>
         <UitlegRegel k="hrvTrend" />
@@ -1152,8 +1159,8 @@ function BelastingTab({
           <>
             <div className="flex items-end justify-between mb-2">
               <div className="flex items-baseline gap-1">
-                <span className="num text-3xl font-bold tracking-tight text-slate-900">{Math.round(hrvWaarde)}</span>
-                <span className="text-xs text-slate-400">ms</span>
+                <span className="num text-3xl font-bold tracking-tight text-white">{Math.round(hrvWaarde)}</span>
+                <span className="text-xs text-white/40">ms</span>
               </div>
               {hrvDeltaWaarde != null && (
                 <span className="font-mono text-xs tabular-nums" style={{ color: hrvDeltaWaarde > 0 ? CHART.tsbPos : CHART.tsbNeg }}>
@@ -1173,7 +1180,7 @@ function BelastingTab({
             )}
           </>
         ) : (
-          <MissingInputNotice compact showOrb={false} tone="light"
+          <MissingInputNotice compact showOrb={false} tone="dark"
             title="Nog geen HRV-data"
             description="Voer je HRV in bij de dagelijkse check-in."
             targets={["checkin"]}
@@ -1196,18 +1203,18 @@ function BelastingTab({
             <BioRadar
               size={220}
               axes={meetbaar}
-              labelColor="rgba(51,65,85,0.85)"
-              gridColor="rgba(15,23,42,0.10)"
+              labelColor="rgba(255,255,255,0.55)"
+              gridColor="rgba(255,255,255,0.10)"
               overlay={radarOverlay}
-              overlayAccent="rgba(147,51,234,0.85)"
+              overlayAccent="rgba(168,85,247,0.9)"
             />
             {radarSamenv && <p className="sr-only">{radarSamenv}</p>}
-            <p className="text-center text-xs text-slate-500 max-w-xs text-pretty">
+            <p className="text-center text-xs text-white/55 max-w-xs text-pretty">
               {meetbaar.length} van {assen.length} assen meetbaar.
               Sterkste: {meetbaar.reduce((a, b) => (b.level > a.level ? b : a)).label}.
             </p>
             {radarOverlay && scenarioPct != null && (
-              <p className="text-center text-xs text-purple-600 max-w-xs text-pretty">
+              <p className="text-center text-xs text-purple-300 max-w-xs text-pretty">
                 Paars gestippeld: verwachte stand na {projectie?.dagen ?? 42} dagen met{" "}
                 {scenarioPct > 0 ? `${scenarioPct}% meer` : `${Math.abs(scenarioPct)}% minder`} volume —
                 fitheid, vorm en herstel schuiven mee; vermogen, gevoel en regelmaat volgen niet
@@ -1216,7 +1223,7 @@ function BelastingTab({
             )}
           </div>
         ) : (
-          <p className="text-sm text-slate-400 py-4 text-center">
+          <p className="text-sm text-white/40 py-4 text-center">
             Nog te weinig gegevens voor een radar. Log sessies en check-ins.
           </p>
         )}
@@ -1249,7 +1256,7 @@ function PowerBestsTable() {
   const hasAny = data && Object.keys(data.allTime).length > 0
   if (!hasAny) {
     return (
-      <p className="text-sm text-slate-400 py-4">
+      <p className="text-sm text-white/40 py-4">
         Nog geen vermogensrecords. Log ritten met een vermogensmeter om je records op te bouwen.
       </p>
     )
@@ -1260,11 +1267,11 @@ function PowerBestsTable() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-[#F8FAFC]">
-              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-4">Duur</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-4">All-time</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-4">Laatste 42d</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700">Datum</th>
+            <tr className="border-b border-white/10 bg-white/[0.04]">
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-4">Duur</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-4">All-time</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-4">Laatste 42d</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70">Datum</th>
             </tr>
           </thead>
           <tbody>
@@ -1273,9 +1280,9 @@ function PowerBestsTable() {
               const recent = data?.recent[w.key]
               if (!allTime) return null
               return (
-                <tr key={w.key} className="border-b border-slate-100 last:border-0">
-                  <td className="py-2.5 pr-4 font-mono text-xs text-slate-500">{w.label}</td>
-                  <td className="py-2.5 pr-4 text-right font-mono tabular-nums font-medium text-slate-900">
+                <tr key={w.key} className="border-b border-white/[0.06] last:border-0">
+                  <td className="py-2.5 pr-4 font-mono text-xs text-white/55">{w.label}</td>
+                  <td className="py-2.5 pr-4 text-right font-mono tabular-nums font-medium text-white">
                     {allTime.watts}W
                   </td>
                   <td
@@ -1284,7 +1291,7 @@ function PowerBestsTable() {
                   >
                     {recent ? `${recent.watts}W` : "—"}
                   </td>
-                  <td className="py-2.5 text-right font-mono text-xs text-slate-400">
+                  <td className="py-2.5 text-right font-mono text-xs text-white/40">
                     {allTime.date.slice(0, 10)}
                   </td>
                 </tr>
@@ -1294,7 +1301,7 @@ function PowerBestsTable() {
         </table>
       </div>
       {data && data.sessionsWithBests > 0 && (
-        <p className="mt-2.5 text-[11px] text-slate-400">
+        <p className="mt-2.5 text-[11px] text-white/40">
           {data.sessionsWithBests} {data.sessionsWithBests === 1 ? "rit" : "ritten"} met vermogensmeter
         </p>
       )}
@@ -1346,9 +1353,9 @@ function GewichtWkgCard({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4">
         <LCardTitle>Gewicht &amp; W/kg</LCardTitle>
         <UitlegDot uitlegKey="gewichtWkg" label="Gewicht & W/kg" />
-        <div className="flex items-center gap-4 text-xs text-slate-500">
+        <div className="flex items-center gap-4 text-xs text-white/55">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-5 rounded bg-slate-700" /> Gewicht
+            <span className="inline-block h-0.5 w-5 rounded bg-white/60" /> Gewicht
           </span>
           {heeftWkg && (
             <span className="flex items-center gap-1.5">
@@ -1364,7 +1371,7 @@ function GewichtWkgCard({
       </div>
       <UitlegRegel k="gewichtWkg" />
       {overlays.streefGewichtKg != null && doelZin != null && (
-        <p className="mb-3 text-xs text-slate-500">{doelZin}</p>
+        <p className="mb-3 text-xs text-white/55">{doelZin}</p>
       )}
       {reeks.length < 2 ? (
         <LegeGrafiek titel="Nog geen gewichtsmetingen om een verloop te tonen." />
@@ -1437,7 +1444,7 @@ function ProgressieTab({
           <LCardTitle>FTP-ontwikkeling</LCardTitle>
           <UitlegDot uitlegKey="ftpOntwikkeling" label="FTP-ontwikkeling" />
           {overlays.streefFtp != null && (
-            <span className="flex items-center gap-1.5 text-xs text-slate-500 ml-2">
+            <span className="flex items-center gap-1.5 text-xs text-white/55 ml-2">
               <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.goal, backgroundImage: `repeating-linear-gradient(90deg,${CHART.goal} 0,${CHART.goal} 4px,transparent 4px,transparent 8px)` }} />
               Streef-FTP {overlays.streefFtp} W
             </span>
@@ -1447,7 +1454,7 @@ function ProgressieTab({
         {ftp.isLoading ? (
           <Skel className="h-24 w-full" />
         ) : weergave == null || weergave.getoond == null ? (
-          <MissingInputNotice compact showOrb={false} tone="light"
+          <MissingInputNotice compact showOrb={false} tone="dark"
             title="Nog geen FTP-tests"
             description="Stel je FTP in of log een test om je vermogensontwikkeling te volgen."
             targets={["ftp"]}
@@ -1460,7 +1467,7 @@ function ProgressieTab({
                 <span className="num text-3xl font-bold tracking-tight tabular-nums" style={{ color: CHART.ftp }}>
                   {weergave.getoond}
                 </span>
-                <span className="text-xs text-slate-400">W{weergave.bronIsProfiel ? " · Sportpaspoort" : ""}</span>
+                <span className="text-xs text-white/40">W{weergave.bronIsProfiel ? " · Sportpaspoort" : ""}</span>
               </div>
               {weergave.gesorteerd.length >= 2 && (
                 <span className="font-mono text-xs tabular-nums"
@@ -1523,9 +1530,9 @@ function ProgressieTab({
       </LCard>
       </div>
 
-      {/* Trainingsverloop — lichte variant, passend bij de rest van Analyse */}
+      {/* Trainingsverloop — donkere glass-variant, passend bij de rest van Analyse */}
       <div>
-        <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-slate-500">
+        <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-white/55">
           Trainingsverloop — 6 weken
         </p>
         <TrainingProgression
@@ -1533,7 +1540,7 @@ function ProgressieTab({
           chartData={load.data?.chartData}
           loading={(load.isLoading && !load.data) || (sessies.isLoading && !sessies.data)}
           hideLabel
-          variant="licht"
+          variant="donker"
         />
       </div>
     </div>
@@ -1543,10 +1550,10 @@ function ProgressieTab({
 // ── Doelen-tabblad ────────────────────────────────────────────────────────────
 
 const VERDICT_CONFIG = {
-  op_koers:      { label: "Op koers",       kleur: "text-emerald-700", achtergrond: "bg-emerald-50", rand: "border-emerald-200" },
-  aandacht:      { label: "Let op",          kleur: "text-amber-700",   achtergrond: "bg-amber-50",   rand: "border-amber-200"   },
-  risico:        { label: "Risico",          kleur: "text-red-700",     achtergrond: "bg-red-50",     rand: "border-red-200"     },
-  niet_meetbaar: { label: "Niet meetbaar",   kleur: "text-slate-600",   achtergrond: "bg-slate-50",   rand: "border-slate-200"   },
+  op_koers:      { label: "Op koers",       kleur: "text-emerald-300", achtergrond: "bg-emerald-500/10", rand: "border-emerald-400/25" },
+  aandacht:      { label: "Let op",          kleur: "text-amber-300",   achtergrond: "bg-amber-500/10",   rand: "border-amber-400/25"   },
+  risico:        { label: "Risico",          kleur: "text-red-300",     achtergrond: "bg-red-500/10",     rand: "border-red-400/25"     },
+  niet_meetbaar: { label: "Niet meetbaar",   kleur: "text-white/60",   achtergrond: "bg-white/[0.04]",   rand: "border-white/10"   },
 } as const
 
 function GoalCard({ goal }: { goal: Goal }) {
@@ -1557,9 +1564,9 @@ function GoalCard({ goal }: { goal: Goal }) {
     <div className={cn("border rounded-xl p-4", v.rand, v.achtergrond)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-medium text-slate-900 text-sm truncate">{goal.title}</p>
+          <p className="font-medium text-white text-sm truncate">{goal.title}</p>
           {goal.progress.reasons[0] && (
-            <p className="text-xs text-slate-500 mt-0.5">{goal.progress.reasons[0]}</p>
+            <p className="text-xs text-white/55 mt-0.5">{goal.progress.reasons[0]}</p>
           )}
         </div>
         <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0", v.kleur, v.rand, v.achtergrond)}>
@@ -1569,15 +1576,15 @@ function GoalCard({ goal }: { goal: Goal }) {
       {(goal.targetDate ?? daysLeft != null) && (
         <div className="flex items-center gap-4 mt-2">
           {goal.targetDate && (
-            <span className="text-xs text-slate-500">Doel: {goal.targetDate}</span>
+            <span className="text-xs text-white/55">Doel: {goal.targetDate}</span>
           )}
           {daysLeft != null && (
-            <span className="text-xs text-slate-400">{daysLeft} dagen resterend</span>
+            <span className="text-xs text-white/40">{daysLeft} dagen resterend</span>
           )}
         </div>
       )}
       {goal.progress.gaps.length > 0 && (
-        <p className="mt-2 text-xs text-slate-500 italic">{goal.progress.gaps[0]}</p>
+        <p className="mt-2 text-xs text-white/55 italic">{goal.progress.gaps[0]}</p>
       )}
     </div>
   )
@@ -1594,8 +1601,8 @@ function RaceCard({ race, todayISO }: { race: Race; todayISO: string }) {
     <LCard className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-medium text-slate-900 text-sm truncate">{race.name}</p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="font-medium text-white text-sm truncate">{race.name}</p>
+          <p className="text-xs text-white/55 mt-0.5">
             {race.raceDate}
             {race.discipline && ` · ${race.discipline}`}
             {race.category && ` · ${race.category}`}
@@ -1630,9 +1637,9 @@ function DoelenTab() {
       {/* Doelen */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-slate-900">Actieve doelen</h2>
+          <h2 className="text-base font-semibold text-white">Actieve doelen</h2>
           <button type="button" onClick={() => setDoelenPopup({ autoAdd: false })}
-            className="text-xs text-sky-600 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60">
+            className="text-xs text-cyan-300 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
             Beheer
           </button>
         </div>
@@ -1640,7 +1647,7 @@ function DoelenTab() {
         {goalsLoading && <div className="space-y-3"><Skel className="h-20 w-full" /><Skel className="h-20 w-full" /></div>}
         {goalsError && <LFout titel="Doelen konden niet worden geladen." onOpnieuw={() => void goalsRefetch()} />}
         {!goalsLoading && !goalsError && actieveDoelen.length === 0 && (
-          <p className="text-sm text-slate-400 py-2">
+          <p className="text-sm text-white/40 py-2">
             Nog geen actieve doelen.{" "}
             <button type="button" onClick={() => setDoelenPopup({ autoAdd: true })}
               className="underline underline-offset-2 hover:no-underline">
@@ -1659,21 +1666,21 @@ function DoelenTab() {
       {/* Wedstrijden */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-slate-900">Aankomende wedstrijden</h2>
+          <h2 className="text-base font-semibold text-white">Aankomende wedstrijden</h2>
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setRacePopup(true)}
-              className="text-xs text-sky-600 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60">
+              className="text-xs text-cyan-300 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
               + Wedstrijd
             </button>
             <button type="button" onClick={() => navigate("/races")}
-              className="text-xs text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60">
+              className="text-xs text-white/40 hover:text-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
               Alle races →
             </button>
           </div>
         </div>
 
         {komende.length === 0 ? (
-          <p className="text-sm text-slate-400 py-2">
+          <p className="text-sm text-white/40 py-2">
             Geen aankomende wedstrijden.{" "}
             <button type="button" onClick={() => setRacePopup(true)}
               className="underline underline-offset-2 hover:no-underline">
@@ -1719,7 +1726,7 @@ function SessiesTab({
   }
   if (lijst.length === 0) {
     return (
-      <MissingInputNotice compact showOrb={false} tone="light"
+      <MissingInputNotice compact showOrb={false} tone="dark"
         title="Nog geen sessies gelogd"
         description="Log een training om je sessie-overzicht op te bouwen."
         actions={[{ label: "Ga naar Trainen", onClick: () => navigate("/train") }]}
@@ -1730,7 +1737,7 @@ function SessiesTab({
   return (
     <div>
       {toestand === "verouderd" && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
           <span>{ANALYSE_COPY.verouderd}</span>
           <button type="button" onClick={() => void sessies.refetch()} className="underline underline-offset-2 hover:no-underline">
             {ANALYSE_COPY.opnieuw}
@@ -1740,11 +1747,11 @@ function SessiesTab({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-[#F8FAFC]">
-              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3">Datum</th>
-              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3">Training</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3 hidden sm:table-cell">Duur</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700">
+            <tr className="border-b border-white/10 bg-white/[0.04]">
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-3">Datum</th>
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-3">Training</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-3 hidden sm:table-cell">Duur</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70">
                 <span className="inline-flex items-center gap-1">
                   TSS
                   <UitlegDot uitlegKey="belasting" label="Belastingsscore (TSS)" />
@@ -1757,18 +1764,18 @@ function SessiesTab({
               <tr
                 key={s.id}
                 onClick={() => onOpen(s)}
-                className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer transition-colors focus-visible:bg-slate-50"
+                className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.04] cursor-pointer transition-colors focus-visible:bg-white/[0.04]"
                 tabIndex={0}
                 onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen(s)}
                 aria-label={`Sessie: ${sessieTitel(s)}`}
               >
-                <td className="py-2.5 pr-3 font-mono text-xs text-slate-400 whitespace-nowrap">
+                <td className="py-2.5 pr-3 font-mono text-xs text-white/40 whitespace-nowrap">
                   {sessieDatumLabel(s.sessionDate)}
                 </td>
-                <td className="py-2.5 pr-3 text-slate-900 max-w-[14rem] truncate">
+                <td className="py-2.5 pr-3 text-white max-w-[14rem] truncate">
                   {sessieTitel(s)}
                 </td>
-                <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-slate-500 hidden sm:table-cell">
+                <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-white/55 hidden sm:table-cell">
                   {sessieDuurLabel(s.durationMin) ?? "—"}
                 </td>
                 <td
@@ -1836,8 +1843,8 @@ function SamenvattingStrip({
   const cel = (label: string, waarde: ReactNode, sub?: string) => (
     <div className="min-w-0">
       <LLabel>{label}</LLabel>
-      <div className="mt-0.5 text-sm text-slate-900">{waarde}</div>
-      {sub && <p className="truncate text-[10px] text-slate-400">{sub}</p>}
+      <div className="mt-0.5 text-sm text-white">{waarde}</div>
+      {sub && <p className="truncate text-[10px] text-white/40">{sub}</p>}
     </div>
   )
 
@@ -1847,15 +1854,15 @@ function SamenvattingStrip({
         {cel(
           "Belasting",
           kern.ctl != null
-            ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-slate-400">CTL</span> <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /></span>
-            : <span className="text-slate-300">—</span>,
+            ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-white/40">CTL</span> <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /></span>
+            : <span className="text-white/25">—</span>,
           kern.atl != null ? `vermoeidheid ${kern.atl}` : undefined,
         )}
         {cel(
           "Vorm & herstel",
           kern.tsb != null
             ? <span className="tabular-nums" style={{ color: tsbKleur(kern.tsb) }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb} <UitlegDot uitlegKey="vorm" label="Vorm (TSB)" /></span>
-            : <span className="text-slate-300">—</span>,
+            : <span className="text-white/25">—</span>,
           kern.vormLabel ?? undefined,
         )}
         {cel(
@@ -1871,14 +1878,14 @@ function SamenvattingStrip({
                 )}
               </span>
             )
-            : <span className="text-slate-300">—</span>,
+            : <span className="text-white/25">—</span>,
           kern.wkg != null ? `${String(kern.wkg).replace(".", ",")} W/kg` : undefined,
         )}
         {cel(
           "Laatste sync",
           sync
             ? <span className="tabular-nums">{synclabel(sync.moment)}</span>
-            : <span className="text-slate-400">geen koppeling</span>,
+            : <span className="text-white/40">geen koppeling</span>,
           sync?.bron,
         )}
         {cel(
@@ -1960,54 +1967,55 @@ export default function CoreAnalysePage() {
   const context = contextRegel(profiel ? { displayName: profiel.displayName, ftp: profiel.ftp, wkg } : null)
 
   return (
-    <CommercialShell actief="/analyse">
-      {/* ── Lichte datawerkruimte ── */}
-      <div className="min-h-dvh bg-slate-50">
-
-        {/* Sticky header + tabbladen */}
-        <div className="sticky top-0 z-20 bg-white border-b border-slate-200">
-          <div className="mx-auto max-w-5xl px-4 lg:px-8">
-            <div className="flex items-center justify-between pt-5 pb-3 gap-4">
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-slate-900">{ANALYSE_COPY.paginaTitel}</h1>
-                {context && (
-                  <p className="text-xs text-slate-500 mt-0.5 truncate">{context}</p>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setUitlegAan((v) => !v)}
-                  aria-pressed={uitlegAan}
-                  className={cn(
-                    "min-h-8 rounded-lg border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60",
-                    uitlegAan
-                      ? "border-sky-500/60 bg-sky-50 font-medium text-sky-700"
-                      : "border-slate-200 text-slate-500 hover:text-slate-800",
-                  )}
-                  title="Toon bij elk onderdeel een korte uitleg in gewone taal"
-                >
-                  {uitlegAan ? "Uitleg aan" : "Uitleg"}
-                </button>
-                <ClubChip />
-              </div>
-            </div>
-
-            {/* Tabbladen — Strava-stijl hoofdstuk-tabbalk (volle breedte,
-                accentstreep onder de actieve tab), lichte variant. */}
-            <HoofdstukTabs
-              tabs={TABS}
-              actief={activeTab}
-              onKies={setActiveTab}
-              variant="licht"
-              ariaLabel="Analyse-secties"
-            />
+    <ScreenShell section="Lab" bg={null}>
+      {/* Paginakop — leunt op de gedeelde donkere schil (ScreenShell bezit de
+          chrome/achtergrond). Alleen de eigen sectielabel, titel en acties. */}
+      <section className="flex flex-col gap-3">
+        <SectionLabel title="Performance-analyse" />
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="type-display font-light tracking-tight text-white">
+              {ANALYSE_COPY.paginaTitel}
+            </h1>
+            {context && (
+              <p className="mt-0.5 truncate text-xs text-white/55">{context}</p>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setUitlegAan((v) => !v)}
+              aria-pressed={uitlegAan}
+              className={cn(
+                "min-h-8 rounded-full border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
+                uitlegAan
+                  ? "border-cyan-400/50 bg-cyan-300/10 font-medium text-cyan-300"
+                  : "border-white/12 text-white/55 hover:border-cyan-300/40 hover:text-cyan-300",
+              )}
+              title="Toon bij elk onderdeel een korte uitleg in gewone taal"
+            >
+              {uitlegAan ? "Uitleg aan" : "Uitleg"}
+            </button>
+            <ClubChip />
           </div>
         </div>
 
-        {/* Tab-inhoud */}
-        <UitlegModus.Provider value={uitlegAan}>
-        <div className="mx-auto max-w-5xl px-4 py-6 lg:px-8 space-y-6">
+        {/* Tabbladen — Strava-stijl hoofdstuk-tabbalk (volle breedte,
+            accentstreep onder de actieve tab), donkere variant. */}
+        <div className="-mx-6 px-6">
+          <HoofdstukTabs
+            tabs={TABS}
+            actief={activeTab}
+            onKies={setActiveTab}
+            variant="donker"
+            ariaLabel="Analyse-secties"
+          />
+        </div>
+      </section>
+
+      {/* Tab-inhoud */}
+      <UitlegModus.Provider value={uitlegAan}>
+        <div className="flex flex-col gap-6">
           {/* Bovenste samenvatting — zichtbaar op elk tabblad */}
           <SamenvattingStrip
             load={load}
@@ -2046,14 +2054,13 @@ export default function CoreAnalysePage() {
             <SessiesTab sessies={sessies} onOpen={setOpenSessie} />
           </div>
         </div>
-        </UitlegModus.Provider>
-      </div>
+      </UitlegModus.Provider>
 
       <SessionDetailDrawer
         session={openSessie}
         open={openSessie != null}
         onOpenChange={(open) => { if (!open) setOpenSessie(null) }}
       />
-    </CommercialShell>
+    </ScreenShell>
   )
 }

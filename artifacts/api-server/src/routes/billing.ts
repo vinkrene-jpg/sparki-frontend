@@ -15,8 +15,11 @@ import {
   isBillingFlagEnabledFor,
   isPaidTier,
   isValidInterval,
+  downgradeToFree,
+  recordSubscriptionChoice,
+  getSubscriptionChoice,
 } from "../lib/billing";
-import { getStripeGateway } from "../lib/billing/stripe-gateway";
+import { getStripeGateway, TIER_PRICING } from "../lib/billing/stripe-gateway";
 
 const router: IRouter = Router();
 
@@ -49,17 +52,40 @@ async function billingAccess(clerkId: string): Promise<{
 router.get("/status", requireAuth, async (req, res) => {
   try {
     const clerkId = getClerkUserId(req)!;
-    const [state, access] = await Promise.all([
+    const [state, access, choice] = await Promise.all([
       getBillingState(clerkId),
       billingAccess(clerkId),
+      getSubscriptionChoice(clerkId),
     ]);
+    // Downgrade naar Gratis vereist geen betaling: het mag zodra er een echte
+    // betaalde laag is om te verlaten (subscription-modus, tier boven FREE, en
+    // niet legacy). Onafhankelijk van de Stripe-configuratie.
+    const canDowngrade =
+      state.status !== "legacy_unrestricted" &&
+      state.tier != null &&
+      state.tier !== "FREE";
     res.json({
       ...state,
+      // Eerlijke prijsconfig (eurocenten → euro's) — enige echte bron, komt uit
+      // TIER_PRICING; nooit verzonnen. De keuze-intentie zonder betaalstap.
+      pricing: {
+        GO: { month: TIER_PRICING.GO.month, year: TIER_PRICING.GO.year, trialDays: TIER_PRICING.GO.trialDays },
+        COMPLETE: {
+          month: TIER_PRICING.COMPLETE.month,
+          year: TIER_PRICING.COMPLETE.year,
+          trialDays: TIER_PRICING.COMPLETE.trialDays,
+        },
+      },
+      choice,
       available: {
         // Trial loopt Sparki-zijdig en heeft geen Stripe-configuratie nodig.
         trial: access.checkout && state.status === "free",
         checkout: access.checkout && access.configured,
         portal: access.portal && access.configured && state.hasStripeSubscription,
+        // Keuze vastleggen kan altijd (testbaar pad tot aan de betaalstap),
+        // zolang er geen echte checkout is die de keuze meteen zou afhandelen.
+        record_choice: !(access.checkout && access.configured),
+        downgrade: canDowngrade,
         test_mode: true,
       },
     });
@@ -241,6 +267,57 @@ router.post("/change", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "billing.change failed");
     res.status(500).json({ error: "Kon abonnement niet wijzigen" });
+  }
+});
+
+// Keuze zonder betaalstap: legt vast WELKE laag de gebruiker wil, zolang de
+// echte betaling (Stripe-testsleutels) nog ontbreekt. Kent nooit rechten toe —
+// het pad blijft daarmee testbaar tot AAN de betaalstap. clerk_id komt
+// uitsluitend uit de sessie (owner-scoped).
+router.post("/choice", requireAuth, async (req, res) => {
+  try {
+    const clerkId = getClerkUserId(req)!;
+    const body = req.body as { tier?: unknown; interval?: unknown };
+    // Alleen betaalde persoonlijke lagen; FREE loopt via de directe downgrade.
+    if (body?.tier !== "GO" && body?.tier !== "COMPLETE") {
+      res.status(400).json({ error: "Ongeldige laag (GO of COMPLETE)" });
+      return;
+    }
+    const interval = isValidInterval(body?.interval) ? body.interval : "month";
+    const choice = await recordSubscriptionChoice(clerkId, body.tier, interval);
+    res.json({ ok: true, choice });
+  } catch (err) {
+    req.log.error({ err }, "billing.choice failed");
+    res.status(500).json({ error: "Kon keuze niet vastleggen" });
+  }
+});
+
+// Directe downgrade naar Gratis — rechten omlaag vereist geen betaling.
+// Owner-scoped: alleen de ingelogde gebruiker verlaagt de EIGEN laag.
+router.post("/downgrade-to-free", requireAuth, async (req, res) => {
+  try {
+    const clerkId = getClerkUserId(req)!;
+    const result = await downgradeToFree(clerkId);
+    if (!result.ok) {
+      if (result.reason === "actief_abonnement") {
+        res.status(409).json({
+          error:
+            "Je hebt een lopend betaald abonnement. Zeg dit eerst op via je betaalinstellingen; daarna gaat je account vanzelf terug naar Gratis.",
+          reason: result.reason,
+        });
+        return;
+      }
+      // legacy: volledige toegang zonder betaalde laag om te verlaten.
+      res.status(409).json({
+        error: "Je account heeft geen betaalde laag om terug te zetten.",
+        reason: result.reason,
+      });
+      return;
+    }
+    res.json({ ok: true, revoked_trials: result.revokedTrials });
+  } catch (err) {
+    req.log.error({ err }, "billing.downgrade failed");
+    res.status(500).json({ error: "Kon niet terugzetten naar Gratis" });
   }
 });
 
