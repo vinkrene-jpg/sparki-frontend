@@ -15,6 +15,7 @@ import {
 } from "@workspace/db";
 import { aiMessage } from "./ai/gateway";
 import { summarizeTrack } from "./gpx-parse";
+import { checkOpslag } from "./route-limits";
 import {
   getRoutingProvider,
   generateVariedLoop,
@@ -220,11 +221,17 @@ export async function generateAndSavePlanRoute(opts: {
     const distLabel = distanceKm != null ? ` · ${Math.round(distanceKm)} km` : "";
     const routeName = startName ? `${name} vanuit ${startName}${distLabel}` : `${name}${distLabel}`;
 
+    // 02c — ook automatisch gegenereerde planroutes van Gratis-gebruikers
+    // krijgen de 30-dagen-bewaartermijn mee (betaald/legacy blijft null).
+    // Plannen zelf blokkeren we bewust niet — dat is coaching, geen beheer.
+    const planBesluit = await checkOpslag(clerkId, {});
+    const planSavedUntil = planBesluit.allowed ? planBesluit.savedUntil : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const [route] = await db
       .insert(routesTable)
       .values({
         clerkId,
         name: routeName,
+        savedUntil: planSavedUntil,
         surface: profileToSurface(profile),
         visibility: "private",
         status: "ready",

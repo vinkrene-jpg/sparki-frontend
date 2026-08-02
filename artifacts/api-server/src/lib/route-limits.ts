@@ -174,6 +174,35 @@ export async function checkOpslag(
   };
 }
 
+/**
+ * Harde invariant ná een insert (laatste verdedigingslaag tegen races):
+ * parallelle opslag-verzoeken kunnen elk dezelfde 2/3-stand zien en samen
+ * boven de bewaarlimiet uitkomen. Direct na de insert hertellen we; staat de
+ * teller boven de limiet, dan wordt precies de zojuist ingevoegde rij weer
+ * verwijderd (soft-delete) en komt er alsnog een eerlijke 409. Betaald/legacy
+ * is nooit beperkt en slaat de hertelling over.
+ */
+export async function bewaarInvariantNaInsert(
+  clerkId: string,
+  routeId: number,
+): Promise<LimietBesluit> {
+  if (!(await isGratisBeperkt(clerkId))) return { allowed: true, savedUntil: null };
+  const bewaard = await bewaardAantal(clerkId);
+  if (bewaard <= BEWAAR_LIMIET) return { allowed: true, savedUntil: null };
+  await db
+    .update(routesTable)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(routesTable.id, routeId), eq(routesTable.clerkId, clerkId)));
+  return {
+    allowed: false,
+    code: "bewaarlimiet",
+    status: 409,
+    error: bewaarlimietMelding(),
+    limiet: BEWAAR_LIMIET,
+    upgrade: true,
+  };
+}
+
 type LogLike = {
   info: (obj: unknown, msg: string) => void;
   error: (obj: unknown, msg: string) => void;

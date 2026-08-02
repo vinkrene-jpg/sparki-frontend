@@ -79,6 +79,8 @@ import {
   bewaardAantal,
   MAAND_LIMIET,
   BEWAAR_LIMIET,
+  bewaarInvariantNaInsert,
+  bewaarlimietMelding,
   runRouteBewaartermijnRonde,
 } from "../lib/route-limits";
 import {
@@ -1072,6 +1074,25 @@ router.post("/:id/herstel", requireAuth, async (req, res) => {
       .update(routesTable)
       .set({ expiredAt: null, savedUntil: besluit.savedUntil })
       .where(eq(routesTable.id, id));
+    // Harde invariant (race-vangnet): boven de bewaarlimiet ⇒ herstel terugdraaien.
+    if (await isGratisBeperkt(clerkId)) {
+      const bewaard = await bewaardAantal(clerkId);
+      if (bewaard > BEWAAR_LIMIET) {
+        await db
+          .update(routesTable)
+          .set({ expiredAt: route.expiredAt, savedUntil: null })
+          .where(eq(routesTable.id, id));
+        res.status(409).json({
+          allowed: false,
+          code: "bewaarlimiet",
+          status: 409,
+          error: bewaarlimietMelding(),
+          limiet: BEWAAR_LIMIET,
+          upgrade: true,
+        });
+        return;
+      }
+    }
     await recordRouteUsageSafe(req.log, {
       clerkId,
       routeId: id,
@@ -1918,6 +1939,12 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
         savedUntil: besluit.savedUntil,
       })
       .returning({ id: routesTable.id });
+    // Harde invariant (race-vangnet): boven de bewaarlimiet ⇒ insert terugdraaien.
+    const invariant = await bewaarInvariantNaInsert(clerkId, saved!.id);
+    if (!invariant.allowed) {
+      res.status(invariant.status).json(invariant);
+      return;
+    }
     await recordRouteUsageSafe(req.log, {
       clerkId,
       routeId: saved!.id,
@@ -4970,6 +4997,12 @@ router.post("/", requireAuth, async (req, res) => {
       // race-vrij onder de kandidaat-lock: bestaande export-registratie wordt
       // gepromoveerd naar de route-id, anders telt een gewone SAVED —
       // dezelfde route telt nooit dubbel.
+      // Harde invariant (race-vangnet): boven de bewaarlimiet ⇒ insert terugdraaien.
+      const invariant = await bewaarInvariantNaInsert(clerkId, route!.id);
+      if (!invariant.allowed) {
+        res.status(invariant.status).json(invariant);
+        return;
+      }
       markCandidateSaved(candidateId, clerkId, route!.id);
       await settleCandidateOnSaveSafe(req.log, {
         clerkId,
@@ -5063,6 +5096,12 @@ router.post("/", requireAuth, async (req, res) => {
         savedUntil: besluit.savedUntil,
       })
       .returning();
+    // Harde invariant (race-vangnet): boven de bewaarlimiet ⇒ insert terugdraaien.
+    const invariant = await bewaarInvariantNaInsert(clerkId, route!.id);
+    if (!invariant.allowed) {
+      res.status(invariant.status).json(invariant);
+      return;
+    }
     await recordRouteUsageSafe(req.log, {
       clerkId,
       routeId: route!.id,
@@ -5566,6 +5605,26 @@ router.post("/:id/navigatie-start", requireAuth, async (req, res) => {
       const allowed = await canViewSharedRoute(route, clerkId);
       if (!allowed) {
         res.status(404).json({ error: "Route niet gevonden" });
+        return;
+      }
+    }
+    // 02c — een vervallen route (bewaartermijn verstreken) navigeer je niet:
+    // eerst herstellen. Geldt voor de eigenaar; een gedeelde route volgt de
+    // status van de eigenaar.
+    if (route.expiredAt) {
+      res.status(409).json({
+        error:
+          "Deze route is vervallen (bewaartermijn verstreken). Herstel de route eerst om haar weer te gebruiken.",
+        code: "ROUTE_BLOCKED",
+      });
+      return;
+    }
+    // 02b — het definitief in gebruik nemen van een NIEUWE route valt onder
+    // de maandlimiet; een al-getelde route blijft vrij navigeerbaar.
+    {
+      const besluit = await checkMaandlimiet(clerkId, { routeId: route.id });
+      if (!besluit.allowed) {
+        res.status(besluit.status).json({ ...besluit, code: "ROUTE_BLOCKED" });
         return;
       }
     }

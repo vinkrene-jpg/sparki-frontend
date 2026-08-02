@@ -25,7 +25,7 @@ import { scanRouteCandidatesForUser } from "../lib/ridden-route-candidates";
 import { recordRouteUsageSafe } from "../lib/route-usage-metering";
 // ROUTE_PAKKET_02b/02c — Gratis-limieten gelden ook voor het bewaren van een
 // route uit de eigen ritgeschiedenis.
-import { checkOpslag } from "../lib/route-limits";
+import { bewaarInvariantNaInsert, checkOpslag } from "../lib/route-limits";
 
 const router: IRouter = Router();
 
@@ -290,6 +290,13 @@ router.post("/:id/save", requireAuth, async (req, res) => {
         rationale: `Opgebouwd uit je eigen ritgeschiedenis (${cand.rideCount}× gereden). Blokkadecontrole uitgevoerd bij het bewaren.`,
       })
       .returning();
+
+    // Harde invariant (race-vangnet): boven de bewaarlimiet ⇒ insert terugdraaien.
+    const invariant = await bewaarInvariantNaInsert(clerkId, route!.id);
+    if (!invariant.allowed) {
+      res.status(invariant.status).json(invariant);
+      return;
+    }
 
     await db
       .update(routeCandidatesTable)

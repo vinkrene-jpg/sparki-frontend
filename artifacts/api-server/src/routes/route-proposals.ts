@@ -452,6 +452,8 @@ router.post("/voorstellen/:id/aanpassen", requireAuth, async (req, res) => {
           profile: summary.profile as never,
           nav: result.steps as never,
           waypoints: [] as never,
+          // 02c — gratis krijgt een bewaartermijn mee, betaald blijft null.
+          savedUntil: besluit.savedUntil,
         })
         .returning();
     } else if (wantsRegenerate && !provider.isConfigured()) {
@@ -483,6 +485,8 @@ router.post("/voorstellen/:id/aanpassen", requireAuth, async (req, res) => {
           nav: route.nav as never,
           waypoints: route.waypoints as never,
           meetpoints: route.meetpoints as never,
+          // 02c — gratis krijgt een bewaartermijn mee, betaald blijft null.
+          savedUntil: besluit.savedUntil,
         })
         .returning();
     }
