@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { and, eq, isNull, lt } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db, filesTable, type FileRecord } from "@workspace/db";
 import { ObjectStorageService } from "./objectStorage";
 
@@ -213,6 +213,16 @@ export async function getFile(fileId: number): Promise<FileRecord | null> {
   return row ?? null;
 }
 
+// Zoek een F7-bestand op zijn kanonieke object-pad. Wordt gebruikt door de
+// GENERIEKE storage-route om F7-bestanden fail-closed te herkennen: die mogen
+// nooit via de generieke (eigenaar-)route uit, maar uitsluitend via het
+// F7-serve-pad (dat intrekking + bericht-zichtbaarheid + attachment/nosniff
+// afdwingt). Een niet-F7-object heeft geen file-record en blijft ongemoeid.
+export async function findFileByObjectPath(objectPath: string): Promise<FileRecord | null> {
+  const [row] = await db.select().from(filesTable).where(eq(filesTable.objectPath, objectPath));
+  return row ?? null;
+}
+
 export type ServeResult =
   | { ok: true; stream: NodeJS.ReadableStream; contentType: string; downloadName: string }
   | { ok: false; status: number; reason: string };
@@ -237,27 +247,6 @@ export async function serveFile(file: FileRecord): Promise<ServeResult> {
     // Bytes weg in storage ⇒ behandel als niet meer beschikbaar (404).
     return { ok: false, status: 404, reason: "Bestand niet gevonden." };
   }
-}
-
-// Retentie-opruiming: trek alle nog-actieve bestanden in die vóór `before`
-// zijn aangemaakt in de gegeven categorie. Niet-destructief: de rij blijft, het
-// bestand wordt ingetrokken (revokedAt) zodat oude links direct dichtvallen.
-export async function revokeFilesForRetention(
-  retentionCategory: string,
-  before: Date,
-): Promise<number> {
-  const rows = await db
-    .update(filesTable)
-    .set({ revokedAt: new Date(), revokedByClerkId: "system:retentie" })
-    .where(
-      and(
-        eq(filesTable.retentionCategory, retentionCategory),
-        isNull(filesTable.revokedAt),
-        lt(filesTable.createdAt, before),
-      ),
-    )
-    .returning({ id: filesTable.id });
-  return rows.length;
 }
 
 // Zorg dat de weergavenaam een veilige, bij het echte type passende extensie

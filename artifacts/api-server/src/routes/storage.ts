@@ -6,6 +6,7 @@ import {
   ObjectNotFoundError,
 } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
+import { findFileByObjectPath } from "../lib/files";
 import { isAdmin } from "../lib/flags";
 import { rateLimit } from "../lib/security/rate-limit";
 import { writeAudit } from "../lib/security/audit";
@@ -106,6 +107,20 @@ router.get(
       const raw = (req.params as Record<string, unknown>).path;
       const wildcardPath = Array.isArray(raw) ? raw.join("/") : String(raw);
       const objectPath = `/objects/${wildcardPath}`;
+
+      // FAIL-CLOSED voor F7-bestanden: als dit object in de files-tabel staat, is
+      // het een door F7 beheerd bestand. Dat mag NOOIT via deze generieke
+      // (eigenaar/ACL-)route uit — die kent geen intrekking (revokedAt), geen
+      // bericht-zichtbaarheid en geen attachment/nosniff-headers. De afzender is
+      // object-eigenaar en zou anders een INGETROKKEN bijlage inline kunnen
+      // blijven ophalen. Verwijs uitsluitend naar het F7-serve-pad, dat die drie
+      // poorten wél afdwingt. Niet-F7-objecten hebben geen file-record en lopen
+      // ongewijzigd door de bestaande flow.
+      if (await findFileByObjectPath(objectPath)) {
+        res.status(404).json({ error: "Bestand niet gevonden" });
+        return;
+      }
+
       const objectFile =
         await objectStorageService.getObjectEntityFile(objectPath);
 

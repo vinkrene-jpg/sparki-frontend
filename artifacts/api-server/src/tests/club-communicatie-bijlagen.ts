@@ -29,7 +29,7 @@ import {
   coachAthleteLinksTable,
   parentAthleteLinksTable,
 } from "@workspace/db";
-import { eq, like } from "drizzle-orm";
+import { eq, like, and } from "drizzle-orm";
 import app from "../app";
 import { sniffContentType } from "../lib/files";
 import {
@@ -222,6 +222,43 @@ async function main() {
       assert.equal(dl.status, 410);
     });
 
+    await test("na intrekken is óók de rauwe object-URL dood via de generieke storage-route (als eigenaar)", async () => {
+      // Haal het kanonieke object-pad op van de zojuist ingetrokken bijlage.
+      const [att] = await db
+        .select()
+        .from(messageAttachmentsTable)
+        .where(eq(messageAttachmentsTable.id, attachmentId));
+      const [file] = await db.select().from(filesTable).where(eq(filesTable.id, att!.fileId!));
+      const objectPath = file!.objectPath; // vorm: /objects/<...>
+      assert.ok(objectPath.startsWith("/objects/"), "F7-bestand heeft kanoniek object-pad");
+      // De afzender (owner) is object-EIGENAAR. De generieke route moet F7-
+      // bestanden fail-closed weigeren (geen omzeiling van intrekking/nosniff).
+      const rawUrl = `/api/storage${objectPath}`;
+      const asOwner = await api("GET", rawUrl, ids.owner);
+      assert.equal(asOwner.status, 404, "eigenaar kan F7-bestand niet via generieke route ophalen");
+      // Ook een niet-eigenaar krijgt uiteraard niets.
+      const asOther = await api("GET", rawUrl, ids.buiten);
+      assert.equal(asOther.status, 404);
+    });
+
+    await test("generieke storage-route weigert F7-bestanden ook vóór intrekking (geen inline-omzeiling)", async () => {
+      // Nieuw, NIET-ingetrokken bericht met bijlage; owner is object-eigenaar.
+      const r = await api("POST", `/api/clubs/${clubId}/messages`, ids.owner, {
+        body: "verse bijlage",
+        attachments: [{ base64: PNG_1x1.toString("base64"), name: "vers.png" }],
+      });
+      const msg = (await r.json()) as { id: number; attachments: Array<{ fileId: number }> };
+      const [att] = await db
+        .select()
+        .from(messageAttachmentsTable)
+        .where(eq(messageAttachmentsTable.messageId, msg.id));
+      const [file] = await db.select().from(filesTable).where(eq(filesTable.id, att!.fileId!));
+      // Actieve bijlage MOET nog via het F7-pad kunnen (sanity), maar NIET via
+      // de generieke object-route — dat pad kent geen attachment/nosniff-poort.
+      const raw = await api("GET", `/api/storage${file!.objectPath}`, ids.owner);
+      assert.equal(raw.status, 404, "actieve F7-bijlage niet via generieke route");
+    });
+
     // ── Lijn 3a: clubtrainer → groep is één richting ─────────────────────────
     await test("groep-bericht staat geen reacties toe (één richting)", async () => {
       // owner (beheer) plaatst een groep-scope bericht; allowReplies verzoek true
@@ -273,24 +310,110 @@ async function main() {
       assert.equal(r.status, 403);
     });
 
-    // ── Retentie ruimt op en trekt bijlagen in ───────────────────────────────
-    await test("retentie ruimt oude berichten op (en trekt hun bijlagen in)", async () => {
-      // Plaats een bericht met bijlage en zet createdAt ver in het verleden.
-      const r = await api("POST", `/api/clubs/${clubId}/messages`, ids.owner, {
+    await test("directe file-toegang cross-link/cross-club geweigerd op alle serve-paden", async () => {
+      // Coach stuurt een bijlage naar de jeugdsporter.
+      const send = await api("POST", `/api/coach-messages/${ids.coach}/${ids.jeugd}`, ids.coach, {
+        body: "schema",
+        attachments: [{ base64: PNG_1x1.toString("base64"), name: "schema.png" }],
+      });
+      assert.equal(send.status, 201);
+      const conv = (await (await api("GET", `/api/coach-messages/${ids.coach}/${ids.jeugd}`, ids.coach)).json()) as {
+        messages: Array<{ id: number; attachments: Array<{ id: number }> }>;
+      };
+      const withAtt = conv.messages.find((m) => m.attachments.length > 0)!;
+      const coachAttId = withAtt.attachments[0]!.id;
+
+      // Tweede, ONGERELATEERDE koppeling: coach ↔ lid (volwassene).
+      await db.insert(coachAthleteLinksTable).values({ coachClerkId: ids.coach, athleteClerkId: ids.lid, status: "accepted" });
+
+      // (1) coach_link: attachment-id van coach↔jeugd opvragen onder het pad
+      //     coach↔lid ⇒ hoort niet bij dat gesprek ⇒ 404 (geen cross-link lek).
+      const crossLink = await api("GET", `/api/coach-messages/${ids.coach}/${ids.lid}/attachments/${coachAttId}`, ids.coach);
+      assert.equal(crossLink.status, 404, "cross-link attachment geweigerd");
+
+      // (2) club-pad: coach_link-attachment-id opvragen via een club-bericht-pad
+      //     ⇒ hoort niet bij dat bericht/club ⇒ 404.
+      const viaClub = await api("GET", `/api/clubs/${clubId}/messages/${withAtt.id}/attachments/${coachAttId}`, ids.owner);
+      assert.ok(viaClub.status === 404 || viaClub.status === 403, "coach_link-bijlage niet via club-pad");
+
+      // (3) cross-club: het club-attachment (uit tweede-club) niet zichtbaar in
+      //     de eerste club. Maak een tweede club met eigen bericht+bijlage.
+      const [club2] = await db
+        .insert(clubsTable)
+        .values({ name: "F7comm club2", ownerClerkId: ids.vreemde, status: "actief" })
+        .returning({ id: clubsTable.id });
+      await db.insert(clubMembersTable).values({ clubId: club2!.id, clerkId: ids.vreemde, role: "owner" });
+      const c2msg = await api("POST", `/api/clubs/${club2!.id}/messages`, ids.vreemde, {
+        body: "club2 bijlage",
+        attachments: [{ base64: PNG_1x1.toString("base64"), name: "c2.png" }],
+      });
+      const c2 = (await c2msg.json()) as { id: number };
+      const [c2att] = await db.select().from(messageAttachmentsTable).where(eq(messageAttachmentsTable.messageId, c2.id));
+      // Opvragen via de EERSTE club ⇒ bericht hoort niet bij clubId ⇒ 404.
+      const crossClub = await api("GET", `/api/clubs/${clubId}/messages/${c2.id}/attachments/${c2att!.id}`, ids.owner);
+      assert.equal(crossClub.status, 404, "cross-club bericht/bijlage geweigerd");
+      // Opruimen tweede club.
+      await db.delete(clubsTable).where(eq(clubsTable.id, club2!.id));
+      // Ongerelateerde extra link weer weg voor de rest van de test.
+      await db.delete(coachAthleteLinksTable).where(and(eq(coachAthleteLinksTable.coachClerkId, ids.coach), eq(coachAthleteLinksTable.athleteClerkId, ids.lid)));
+    });
+
+    // ── Retentie: uitsluitend bijlagen van DAADWERKELIJK verwijderde berichten ──
+    await test("retentie ruimt oude berichten op, en trekt ALLEEN hun bijlagen in (niet die van verse of ongerelateerde files)", async () => {
+      // (oud) bericht met bijlage, ver in het verleden → moet verdwijnen + intrekken.
+      const oud = (await (await api("POST", `/api/clubs/${clubId}/messages`, ids.owner, {
         body: "oud bericht",
         attachments: [{ base64: PNG_1x1.toString("base64"), name: "oud.png" }],
-      });
-      const oldMsg = (await r.json()) as { id: number };
+      })).json()) as { id: number };
       const twoYearsAgo = new Date(Date.now() - 730 * 24 * 3600 * 1000);
-      await db.update(clubMessagesTable).set({ createdAt: twoYearsAgo }).where(eq(clubMessagesTable.id, oldMsg.id));
-      const atts = await db.select().from(messageAttachmentsTable).where(eq(messageAttachmentsTable.messageId, oldMsg.id));
-      const fileId = atts[0]!.fileId!;
+      await db.update(clubMessagesTable).set({ createdAt: twoYearsAgo }).where(eq(clubMessagesTable.id, oud.id));
+      const [oudAtt] = await db.select().from(messageAttachmentsTable).where(eq(messageAttachmentsTable.messageId, oud.id));
+      const oudFileId = oudAtt!.fileId!;
+
+      // (b) VERS bericht met bijlage → moet overleven; bijlage blijft actief.
+      const vers = (await (await api("POST", `/api/clubs/${clubId}/messages`, ids.owner, {
+        body: "vers bericht",
+        attachments: [{ base64: PNG_1x1.toString("base64"), name: "vers2.png" }],
+      })).json()) as { id: number };
+      const [versAtt] = await db.select().from(messageAttachmentsTable).where(eq(messageAttachmentsTable.messageId, vers.id));
+      const versFileId = versAtt!.fileId!;
+
+      // (c) ONGERELATEERDE file met DEZELFDE categorie 'club_message', OUD, maar
+      //     zonder message_attachments-koppeling → moet onaangeroerd blijven.
+      const twoYearsAgoIso = twoYearsAgo;
+      const [wees] = await db
+        .insert(filesTable)
+        .values({
+          ownerClerkId: ids.owner,
+          objectPath: `/objects/${PREFIX}wees-${Date.now()}`,
+          originalName: "wees.jpg",
+          contentType: "image/jpeg",
+          sizeBytes: 10,
+          sha256: "x".repeat(64),
+          version: 1,
+          retentionCategory: "club_message",
+          createdAt: twoYearsAgoIso,
+        })
+        .returning();
+
       const summary = await runClubMessageRetention();
       assert.ok(summary.messagesDeleted >= 1);
-      const [gone] = await db.select().from(clubMessagesTable).where(eq(clubMessagesTable.id, oldMsg.id));
+
+      // Oud bericht weg, oude bijlage ingetrokken.
+      const [gone] = await db.select().from(clubMessagesTable).where(eq(clubMessagesTable.id, oud.id));
       assert.equal(gone, undefined, "oud bericht opgeruimd");
-      const [f] = await db.select().from(filesTable).where(eq(filesTable.id, fileId));
-      assert.ok(f?.revokedAt != null, "bijlage ingetrokken bij opruiming");
+      const [oudFile] = await db.select().from(filesTable).where(eq(filesTable.id, oudFileId));
+      assert.ok(oudFile?.revokedAt != null, "bijlage van verwijderd bericht ingetrokken");
+
+      // (b) Vers bericht en zijn bijlage ONAANGETAST.
+      const [versStill] = await db.select().from(clubMessagesTable).where(eq(clubMessagesTable.id, vers.id));
+      assert.ok(versStill, "vers bericht overleeft retentiejob");
+      const [versFile] = await db.select().from(filesTable).where(eq(filesTable.id, versFileId));
+      assert.equal(versFile?.revokedAt, null, "bijlage van vers bericht blijft actief");
+
+      // (c) Ongerelateerde wees-file met zelfde categorie ONAANGETAST.
+      const [weesStill] = await db.select().from(filesTable).where(eq(filesTable.id, wees!.id));
+      assert.equal(weesStill?.revokedAt, null, "ongerelateerde file met zelfde categorie blijft onaangeroerd");
     });
 
     console.log(`\n✅ F7 communicatie met bijlagen — ${ok} controles geslaagd`);
