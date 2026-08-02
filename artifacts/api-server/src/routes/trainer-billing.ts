@@ -23,6 +23,7 @@ import {
   trainerInvoiceLinesTable,
   trainerClientsTable,
   trainerBusinessTable,
+  creditNotesTable,
   workObjectsTable,
   SERVICE_UNITS,
   BILLING_CYCLES,
@@ -421,6 +422,237 @@ router.get("/invoices/:id", requireAuth, async (req, res) => {
     .from(trainerInvoiceLinesTable)
     .where(eq(trainerInvoiceLinesTable.invoiceId, inv.id));
   res.json({ ...inv, lines });
+});
+
+// ── F8: verzending, nummering, statussen, creditnota (BB-64/BB-68) ──────────
+// Nummer wordt UITSLUITEND hier toegekend: server-side, in één transactie,
+// uit de doorlopende reeks van de onderneming (trainer_business.nextInvoiceNumber,
+// FOR UPDATE — geen SELECT MAX()+1). Creditnota's delen dezelfde reeks.
+// Verzonden = onaantastbaar: geen wijziging, geen verwijdering, alleen
+// creditnota. Klant- en ondernemingsgegevens worden bij verzending bevroren.
+
+async function allocateNumber(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  trainerClerkId: string,
+): Promise<string> {
+  const [biz] = await tx
+    .select()
+    .from(trainerBusinessTable)
+    .where(eq(trainerBusinessTable.clerkId, trainerClerkId))
+    .for("update");
+  if (!biz) throw Object.assign(new Error("geen bedrijfsgegevens"), { code: "NO_BUSINESS" });
+  const current = biz.nextInvoiceNumber ?? 1;
+  const number = `${biz.invoicePrefix ?? ""}${current}`;
+  await tx
+    .update(trainerBusinessTable)
+    .set({ nextInvoiceNumber: current + 1 })
+    .where(eq(trainerBusinessTable.clerkId, trainerClerkId));
+  return number;
+}
+
+router.post("/invoices/:id/send", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(
+      new Date(),
+    );
+    const result = await db.transaction(async (tx) => {
+      const [inv] = await tx
+        .select()
+        .from(trainerInvoicesTable)
+        .where(
+          and(
+            eq(trainerInvoicesTable.id, Number(req.params.id)),
+            eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+          ),
+        )
+        .for("update");
+      if (!inv) return { error: 404 as const };
+      if (inv.status !== "concept") return { error: 409 as const };
+      const [client] = await tx
+        .select()
+        .from(trainerClientsTable)
+        .where(eq(trainerClientsTable.id, inv.clientId));
+      const [biz] = await tx
+        .select()
+        .from(trainerBusinessTable)
+        .where(eq(trainerBusinessTable.clerkId, trainerClerkId));
+      if (!biz) return { error: 422 as const };
+      const invoiceNumber = await allocateNumber(tx, trainerClerkId);
+      const [row] = await tx
+        .update(trainerInvoicesTable)
+        .set({
+          invoiceNumber,
+          invoiceDate: today,
+          dueDate: inv.dueDate ?? today,
+          status: "verzonden",
+          sentAt: new Date(),
+          // Bevroren snapshots: latere wijzigingen aan klant of onderneming
+          // raken deze factuur nooit meer.
+          clientSnapshot: client ? { ...client } : {},
+          businessSnapshot: { ...biz },
+          updatedAt: new Date(),
+        })
+        .where(eq(trainerInvoicesTable.id, inv.id))
+        .returning();
+      return { row };
+    });
+    if ("error" in result) {
+      const msg =
+        result.error === 404
+          ? "Factuur niet gevonden."
+          : result.error === 409
+            ? "Alleen een concept kan worden verzonden."
+            : "Vul eerst je bedrijfsgegevens in voordat je verzendt.";
+      res.status(result.error!).json({ error: msg });
+      return;
+    }
+    res.json(result.row);
+  } catch (err) {
+    req.log.error({ err }, "invoice send failed");
+    res.status(500).json({ error: "Verzenden is niet gelukt." });
+  }
+});
+
+// Intrekken kan alleen VÓÓR verzending (status ingetrokken, BB-68).
+// Verwijderen bestaat niet: er is bewust geen DELETE-route, en intrekken van
+// een verzonden factuur wordt geweigerd.
+router.post("/invoices/:id/withdraw", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const [inv] = await db
+      .select()
+      .from(trainerInvoicesTable)
+      .where(
+        and(
+          eq(trainerInvoicesTable.id, Number(req.params.id)),
+          eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+        ),
+      );
+    if (!inv) {
+      res.status(404).json({ error: "Factuur niet gevonden." });
+      return;
+    }
+    if (inv.status !== "concept") {
+      res.status(409).json({
+        error: "Een verzonden factuur is onaantastbaar — corrigeer via een creditnota.",
+      });
+      return;
+    }
+    const [row] = await db
+      .update(trainerInvoicesTable)
+      .set({ status: "ingetrokken", updatedAt: new Date() })
+      .where(eq(trainerInvoicesTable.id, inv.id))
+      .returning();
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "invoice withdraw failed");
+    res.status(500).json({ error: "Intrekken is niet gelukt." });
+  }
+});
+
+// Betaald markeren — handmatig, deelbetaling mogelijk (F9: geld loopt nooit
+// via Sparki; dit is registratie).
+router.post("/invoices/:id/mark-paid", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const amountCents = int(req.body?.amountCents);
+    if (amountCents === null || amountCents <= 0) {
+      res.status(400).json({ error: "amountCents (>0) is verplicht." });
+      return;
+    }
+    const [inv] = await db
+      .select()
+      .from(trainerInvoicesTable)
+      .where(
+        and(
+          eq(trainerInvoicesTable.id, Number(req.params.id)),
+          eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+        ),
+      );
+    if (!inv) {
+      res.status(404).json({ error: "Factuur niet gevonden." });
+      return;
+    }
+    if (!["verzonden", "te_laat", "gecrediteerd"].includes(inv.status)) {
+      res.status(409).json({ error: "Alleen een verzonden factuur kan betaald worden gemarkeerd." });
+      return;
+    }
+    const paidCents = inv.paidCents + amountCents;
+    const fullyPaid = paidCents >= inv.amountInclCents;
+    const [row] = await db
+      .update(trainerInvoicesTable)
+      .set({
+        paidCents,
+        paidAt: fullyPaid ? new Date() : inv.paidAt,
+        status: fullyPaid ? "betaald" : inv.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(trainerInvoicesTable.id, inv.id))
+      .returning();
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "invoice mark-paid failed");
+    res.status(500).json({ error: "Betaling registreren is niet gelukt." });
+  }
+});
+
+// Creditnota — geheel of gedeeltelijk, eigen nummer uit dezelfde reeks,
+// verwijzing + reden verplicht; past betaalstatus aan, factuur zelf blijft
+// byte-voor-byte staan.
+router.post("/invoices/:id/credit", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const reason = str(req.body?.reason);
+    const amountCents = int(req.body?.amountCents);
+    if (!reason) {
+      res.status(400).json({ error: "reason is verplicht." });
+      return;
+    }
+    const result = await db.transaction(async (tx) => {
+      const [inv] = await tx
+        .select()
+        .from(trainerInvoicesTable)
+        .where(
+          and(
+            eq(trainerInvoicesTable.id, Number(req.params.id)),
+            eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+          ),
+        )
+        .for("update");
+      if (!inv) return { error: 404 as const, msg: "Factuur niet gevonden." };
+      if (!inv.invoiceNumber || !["verzonden", "te_laat", "betaald"].includes(inv.status))
+        return { error: 409 as const, msg: "Alleen een verzonden factuur kan gecrediteerd worden." };
+      const credit = amountCents ?? inv.amountInclCents;
+      if (credit <= 0 || credit > inv.amountInclCents)
+        return { error: 400 as const, msg: "Creditbedrag moet tussen 1 en het factuurtotaal liggen." };
+      const creditNumber = await allocateNumber(tx, trainerClerkId);
+      const [note] = await tx
+        .insert(creditNotesTable)
+        .values({
+          trainerClerkId,
+          invoiceId: inv.id,
+          creditNumber,
+          reason,
+          partial: credit < inv.amountInclCents,
+          amountInclCents: credit,
+        })
+        .returning();
+      await tx
+        .update(trainerInvoicesTable)
+        .set({ status: "gecrediteerd", creditNoteId: note!.id, updatedAt: new Date() })
+        .where(eq(trainerInvoicesTable.id, inv.id));
+      return { note };
+    });
+    if ("error" in result) {
+      res.status(result.error!).json({ error: result.msg });
+      return;
+    }
+    res.status(201).json(result.note);
+  } catch (err) {
+    req.log.error({ err }, "credit note failed");
+    res.status(500).json({ error: "Creditnota aanmaken is niet gelukt." });
+  }
 });
 
 // ── Signalen (3c.4) — altijd voorstel, nooit actie ───────────────────────────

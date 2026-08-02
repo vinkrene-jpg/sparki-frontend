@@ -23,6 +23,7 @@ import {
   clientAthleteLinksTable,
   billingPartiesTable,
   trainerBusinessTable,
+  creditNotesTable,
   workObjectsTable,
   workObjectSectionsTable,
   workObjectHistoryTable,
@@ -93,6 +94,7 @@ async function cleanup() {
   const invIds = invs.map((i) => i.id);
   if (invIds.length)
     await db.delete(trainerInvoiceLinesTable).where(inArray(trainerInvoiceLinesTable.invoiceId, invIds));
+  await db.delete(creditNotesTable).where(inArray(creditNotesTable.trainerClerkId, ALL));
   await db.delete(trainerInvoicesTable).where(inArray(trainerInvoicesTable.trainerClerkId, ALL));
   await db.delete(recurringBillingTable).where(inArray(recurringBillingTable.trainerClerkId, ALL));
   await db.delete(trainerServicesTable).where(inArray(trainerServicesTable.trainerClerkId, ALL));
@@ -254,6 +256,78 @@ async function main() {
     });
     assert(draft.status === 201, `draft: ${draft.status}`);
     assert(draft.json.amountInclCents === 9900 && draft.json.korApplied === true, "KOR: geen btw");
+  });
+
+  await scenario("F8: nummer pas bij verzending, doorlopende reeks, snapshot bevroren", async () => {
+    // Zonder bedrijfsgegevens weigert verzenden (422).
+    const draft = await api(T1, "POST", "/api/trainer/billing/invoices/draft", {
+      clientId,
+      lines: [{ description: "Coaching juli", unitPriceCents: 10000 }],
+    });
+    const refuse = await api(T1, "POST", `/api/trainer/billing/invoices/${draft.json.id}/send`);
+    assert(refuse.status === 422, `zonder bedrijf: ${refuse.status}`);
+    // Bedrijfsgegevens + reeksstart (BB-64: aansluitend op externe reeks).
+    const biz = await api(T1, "PATCH", "/api/trainer/business", {
+      companyName: "Coach Co",
+      invoicePrefix: "CC-2026-",
+      nextInvoiceNumber: 118,
+    });
+    assert(biz.status === 200, `business: ${biz.status}: ${JSON.stringify(biz.json)}`);
+    const sent = await api(T1, "POST", `/api/trainer/billing/invoices/${draft.json.id}/send`);
+    assert(sent.status === 200 && sent.json.invoiceNumber === "CC-2026-118", `nr: ${sent.json.invoiceNumber}`);
+    assert(sent.json.status === "verzonden" && sent.json.clientSnapshot?.name === "Klant A", "snapshot bevroren");
+    // Reeks loopt door bij de volgende verzending.
+    const d2 = await api(T1, "POST", "/api/trainer/billing/invoices/draft", {
+      clientId,
+      lines: [{ description: "Coaching augustus", unitPriceCents: 10000 }],
+    });
+    const s2 = await api(T1, "POST", `/api/trainer/billing/invoices/${d2.json.id}/send`);
+    assert(s2.json.invoiceNumber === "CC-2026-119", `reeks: ${s2.json.invoiceNumber}`);
+    // Reeks terugzetten geweigerd (BB-64).
+    const back = await api(T1, "PATCH", "/api/trainer/business", { nextInvoiceNumber: 5 });
+    assert(back.status === 409, `terugzetten: ${back.status}`);
+  });
+
+  await scenario("F8: verzonden factuur onaantastbaar; intrekken alleen vóór verzending", async () => {
+    const sentList = await api(T1, "GET", "/api/trainer/billing/invoices");
+    const sent = sentList.json.find((i: any) => i.invoiceNumber === "CC-2026-118");
+    const wd = await api(T1, "POST", `/api/trainer/billing/invoices/${sent.id}/withdraw`);
+    assert(wd.status === 409, `verzonden intrekken: ${wd.status}`);
+    const d = await api(T1, "POST", "/api/trainer/billing/invoices/draft", {
+      clientId,
+      lines: [{ description: "Vergissing", unitPriceCents: 100 }],
+    });
+    const wd2 = await api(T1, "POST", `/api/trainer/billing/invoices/${d.json.id}/withdraw`);
+    assert(wd2.status === 200 && wd2.json.status === "ingetrokken", "concept intrekken kan");
+    const resend = await api(T1, "POST", `/api/trainer/billing/invoices/${d.json.id}/send`);
+    assert(resend.status === 409, "ingetrokken concept niet alsnog verzendbaar");
+  });
+
+  await scenario("F9: deelbetaling en volledig betaald", async () => {
+    const list = await api(T1, "GET", "/api/trainer/billing/invoices");
+    const inv = list.json.find((i: any) => i.invoiceNumber === "CC-2026-119");
+    const p1 = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/mark-paid`, { amountCents: 5000 });
+    assert(p1.json.status === "verzonden" && p1.json.paidCents === 5000, "deelbetaling geregistreerd");
+    const p2 = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/mark-paid`, { amountCents: 7100 });
+    assert(p2.json.status === "betaald" && p2.json.paidAt, "volledig betaald");
+  });
+
+  await scenario("F8: gedeeltelijke creditnota uit dezelfde reeks", async () => {
+    const list = await api(T1, "GET", "/api/trainer/billing/invoices");
+    const inv = list.json.find((i: any) => i.invoiceNumber === "CC-2026-118");
+    const bad = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/credit`, {});
+    assert(bad.status === 400, "reden verplicht");
+    const cn = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/credit`, {
+      reason: "Sessie geannuleerd",
+      amountCents: 6050,
+    });
+    assert(cn.status === 201 && cn.json.partial === true, `creditnota: ${cn.status}`);
+    assert(cn.json.creditNumber === "CC-2026-120", `creditreeks: ${cn.json.creditNumber}`);
+    const det = await api(T1, "GET", `/api/trainer/billing/invoices/${inv.id}`);
+    assert(det.json.status === "gecrediteerd" && det.json.invoiceNumber === "CC-2026-118", "factuur zelf intact");
+    // Betaling ná creditnota blijft registreerbaar (F9-testeis).
+    const p = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/mark-paid`, { amountCents: 12100 });
+    assert(p.status === 200, `betaling na creditnota: ${p.status}`);
   });
 
   await scenario("cross-account fail-closed", async () => {
