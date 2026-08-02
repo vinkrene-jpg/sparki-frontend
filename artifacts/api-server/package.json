@@ -9,6 +9,7 @@
     "build:deploy": "DEPLOY_BUILD=true node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
+    "test:subscription-payers": "node ./scripts/run-test.mjs subscription-payers --dev-auth",
     "test:club-documents": "node ./scripts/run-test.mjs club-documents --dev-auth",
     "test:club-race-staffing": "node ./scripts/run-test.mjs club-race-staffing --dev-auth",
     "test:club-race-documents": "node ./scripts/run-test.mjs club-race-documents --dev-auth",

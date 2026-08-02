@@ -3,11 +3,13 @@ import {
   serial,
   text,
   boolean,
+  integer,
   timestamp,
   primaryKey,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { userProfilesTable } from "./users";
 
 // ── Stripe-abonnementslaag (fase 2, TESTMODUS) ───────────────────────────────
@@ -145,3 +147,101 @@ export const billingTestAccountsTable = pgTable("billing_test_accounts", {
 });
 
 export type BillingTestAccount = typeof billingTestAccountsTable.$inferSelect;
+
+// ── HERSTEL_EN_AANVULLING_01 F7 (HA-28…HA-30): betaler ≠ gebruiker ──────────
+// Bouwt door op het bestaande drie-entiteitenmodel (klant/sporter/betaler,
+// trainer-clients.ts) — dit is de platformkant voor de vier combinaties:
+// sporter betaalt zichzelf (géén rij; de bestaande billing_subscriptions-rij
+// op eigen clerkId is die combinatie al), club betaalt voor een lid, ouder
+// betaalt voor een jeugdlid, club betaalt voor een jeugdlid mét toestemming
+// van de ouder. Rechten blijven uitsluitend via de bestaande entitlement-
+// resolver lopen; dit is administratie van WIE betaalt, geen tweede
+// rechtenlaag.
+export const PAYER_TYPES = ["club", "ouder"] as const;
+export type PayerType = (typeof PAYER_TYPES)[number];
+
+export const PAYER_ARRANGEMENT_STATUSES = [
+  // Aangeboden maar nog niet door het lid aanvaard (club) of nog zonder
+  // oudertoestemming (jeugdlid).
+  "aangeboden",
+  "actief",
+  // Lid heeft geweigerd — telt als zelf opzeggen van de aangeboden dekking
+  // (HA-30); de club ziet dit alleen als aantal, nooit als naam.
+  "geweigerd",
+  "beeindigd",
+] as const;
+export type PayerArrangementStatus = (typeof PAYER_ARRANGEMENT_STATUSES)[number];
+
+export const subscriptionPayerArrangementsTable = pgTable(
+  "subscription_payer_arrangements",
+  {
+    id: serial("id").primaryKey(),
+    athleteClerkId: text("athlete_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    payerType: text("payer_type").notNull(), // PayerType
+    // Bij payerType=club: de betalende club.
+    clubId: integer("club_id"),
+    // Bij payerType=ouder: de betalende ouder (met eigen account).
+    payerClerkId: text("payer_clerk_id"),
+    tier: text("tier").notNull(), // GO | COMPLETE
+    status: text("status").notNull().default("aangeboden"),
+    // Jeugdlid + club betaalt ⇒ oudertoestemming verplicht (fail-closed):
+    // activeren kan pas als parentConsentAt gezet is.
+    parentConsentRequired: boolean("parent_consent_required").notNull().default(false),
+    parentConsentAt: timestamp("parent_consent_at", { withTimezone: true }),
+    parentConsentByClerkId: text("parent_consent_by_clerk_id"),
+    offeredByClerkId: text("offered_by_clerk_id").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    endedReason: text("ended_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("payer_arrangements_athlete_idx").on(t.athleteClerkId),
+    index("payer_arrangements_club_idx").on(t.clubId),
+    // Hooguit één lopende (aangeboden/actieve) dekking per sporter — geen
+    // dubbele betalers voor hetzelfde abonnement.
+    uniqueIndex("payer_arrangements_open_uq")
+      .on(t.athleteClerkId)
+      .where(sql`status IN ('aangeboden', 'actief')`),
+  ],
+);
+export type SubscriptionPayerArrangement =
+  typeof subscriptionPayerArrangementsTable.$inferSelect;
+
+// HA-30: bij overname door de club wordt het resterende deel van de eigen
+// betaling terugbetaald, met bericht. De verplichting wordt hier vastgelegd;
+// de uitvoering (Stripe-refund) is een aparte, controleerbare stap — nooit
+// stilzwijgend "geregeld".
+export const payerRefundObligationsTable = pgTable(
+  "payer_refund_obligations",
+  {
+    id: serial("id").primaryKey(),
+    arrangementId: integer("arrangement_id")
+      .notNull()
+      .references(() => subscriptionPayerArrangementsTable.id, { onDelete: "cascade" }),
+    athleteClerkId: text("athlete_clerk_id").notNull(),
+    stripeSubscriptionId: text("stripe_subscription_id").notNull(),
+    status: text("status").notNull().default("open"), // open | uitgevoerd | vervallen
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("payer_refund_arrangement_uq").on(t.arrangementId)],
+);
+export type PayerRefundObligation = typeof payerRefundObligationsTable.$inferSelect;
+
+// HA-30: maandelijkse clubfacturatie met staffelkorting in VASTE TREDES.
+// De tredes zijn configuratie (instelbaar zonder schemawijziging); dit zijn
+// de standaardwaarden tot een commercieel besluit ze wijzigt.
+export const CLUB_STAFFEL_TREDES = [
+  { vanafLeden: 1, kortingPct: 0 },
+  { vanafLeden: 5, kortingPct: 10 },
+  { vanafLeden: 10, kortingPct: 15 },
+  { vanafLeden: 20, kortingPct: 20 },
+] as const;

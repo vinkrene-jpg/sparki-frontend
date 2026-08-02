@@ -89,6 +89,7 @@ import passportRouter from "./passport";
 import releaseRouter from "./release";
 import entitlementsRouter from "./entitlements";
 import billingRouter from "./billing";
+import subscriptionPayersRouter from "./subscription-payers";
 import trainerRouter from "./trainer";
 import trainerClientsRouter from "./trainer-clients";
 import trainerGroupsRouter from "./trainer-groups";
@@ -257,6 +258,8 @@ router.use("/race-guest", killSwitchGuard("club_features"), raceGuestPublicRoute
 router.use("/release", releaseRouter);
 router.use("/entitlements", entitlementsRouter);
 router.use("/billing", billingRouter);
+// HERSTEL_EN_AANVULLING_01 F7: betaler ≠ gebruiker (club/ouder betaalt).
+router.use("/billing/payers", subscriptionPayersRouter);
 // SPARKI_BUILD_04: zelfstandige trainer (registratie zonder club, profiel,
 // bedrijfsgegevens). Rechten blijven bij resolveEntitlements (tier TRAINER).
 router.use("/trainer", trainerRouter);
