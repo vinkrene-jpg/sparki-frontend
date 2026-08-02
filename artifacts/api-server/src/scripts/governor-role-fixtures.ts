@@ -143,6 +143,8 @@ async function withFixtureLock<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export async function createFixtures() {
+  // Fail-closed óók bij programmatic gebruik (niet alleen via de CLI-main).
+  assertNotProduction();
   return withFixtureLock(() => createFixturesInner());
 }
 
@@ -330,10 +332,29 @@ async function createFixturesInner() {
       });
   }
 
-  // 7. Mirror-standen D en E: providerkoppelingen + geïmporteerde activiteiten.
+  // 7. Mirror-standen A t/m C: gegarandeerd VERS bij elke run — verwijder
+  //    eventuele relaties/activiteiten die eerdere tests aan deze vaste
+  //    fixture-accounts hebben gehangen (strikt op hun eigen clerkIds).
+  await resetVerseStanden();
+
+  // 8. Mirror-standen D en E: providerkoppelingen + geïmporteerde activiteiten.
   await seedProviderStanden();
 
   return { clubId, teamIds };
+}
+
+// Standen A/B/C moeten "vers, nooit gekoppeld, geen activiteit" zijn — niet
+// alleen bij de eerste seed, maar bij ELKE create-run. Reset uitsluitend op de
+// vaste fixture-clerkIds, dus dit kan nooit echte accounts raken.
+async function resetVerseStanden() {
+  const vers = ["stand-a-gratis", "stand-b-go", "stand-c-compleet"].map(clerkIdFor);
+  await db.delete(trainingSessionsTable).where(inArray(trainingSessionsTable.clerkId, vers));
+  await db.delete(connectorActivitiesTable).where(inArray(connectorActivitiesTable.clerkId, vers));
+  await db.delete(connectorConnectionsTable).where(inArray(connectorConnectionsTable.clerkId, vers));
+  await db.delete(clubTeamMembersTable).where(inArray(clubTeamMembersTable.clerkId, vers));
+  await db.delete(clubMembersTable).where(inArray(clubMembersTable.clerkId, vers));
+  await db.delete(coachAthleteLinksTable).where(inArray(coachAthleteLinksTable.athleteClerkId, vers));
+  await db.delete(parentAthleteLinksTable).where(inArray(parentAthleteLinksTable.athleteClerkId, vers));
 }
 
 // Stand D: werkende Strava-koppeling met twee via de echte providertabellen
@@ -459,6 +480,8 @@ async function seedProviderStanden() {
 }
 
 export async function removeFixtures() {
+  // Fail-closed óók bij programmatic gebruik (niet alleen via de CLI-main).
+  assertNotProduction();
   return withFixtureLock(async () => {
     // Strikte fixture-handtekening: prefix ÉN synthetisch e-maildomein ÉN
     // releasegroep "test" — nooit alleen een LIKE op prefix, zodat een
