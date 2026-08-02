@@ -5,7 +5,12 @@ import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
 import { DashboardAnalyse, type DevCoachOverride } from "@/components/sparki/day-home"
 import { CommercialToday } from "@/components/sparki/commercial-shell"
 import { CoachHome } from "@/components/sparki/coach-home"
-import { ParentHome } from "@/components/sparki/parent-home"
+// DASHBOARD_01 Fase B (DSH-13a/DSH-24): het drie-lagen dashboard is het eerste
+// scherm van coach/ouder — óók in de dev-preview-router, zodat de toetsomgeving
+// exact dezelfde gedaante toont als productie (geen tweede gedaante onder
+// dezelfde naam). De werkomgevingen (roster, Kinderen) blijven doorklikbaar.
+import { CoachDashboard } from "@/components/sparki/role-dashboards/coach-dashboard"
+import { ParentDashboard } from "@/components/sparki/role-dashboards/parent-dashboard"
 import ParentKinderenPage from "@/pages/parent-kinderen"
 import ParentMeldingenPage from "@/pages/parent-meldingen"
 import ParentToestemmingenPage from "@/pages/parent-toestemmingen"
@@ -94,7 +99,8 @@ type DevView = {
 // Rollen zonder eigen werkomgeving (ouder, clubrollen) krijgen bewust een korte
 // lijst: hun eerlijke huidige toestand is precies wat getest moet worden.
 const COACH_VIEWS: DevView[] = [
-  { label: "Start (trainer)", path: "/" },
+  { label: "Dashboard", path: "/" },
+  { label: "Jouw sporters", path: "/coach" },
   { label: "Invites", path: "/invitations" },
   { label: "Coach Plan", path: "/coach/athletes/demo/plan" },
   { label: "Coach Cockpit", path: "/coach/athletes/demo/cockpit" },
@@ -497,12 +503,13 @@ export function DevPreview() {
     isHome = true
   } else if (location.startsWith("/dashboard") || location.startsWith("/vandaag")) {
     // DSH-01/03: /dashboard is de nieuwe naam; /vandaag blijft als alias werken
-    // (in productie een redirect). commercial_shell is globally enabled — coach
-    // en ouder houden hun rolstartpagina hier (WP-R1).
+    // (in productie een redirect). DASHBOARD_01 Fase B (DSH-13a/24): coach en
+    // ouder krijgen hier hun drie-lagen dashboard — de nieuwe vorm van hun
+    // eerste scherm; de werkomgeving is één doorklik verderop.
     if (profile?.activeRole === "coach") {
-      page = <CoachHome />
+      page = <CoachDashboard />
     } else if (profile?.activeRole === "parent") {
-      page = <ParentHome />
+      page = <ParentDashboard />
     } else if (profile?.activeRole === "nutrition_specialist") {
       // F3 (BB-14): voedingsdeskundige houdt het eigen startscherm, geen
       // stille terugval op de sporterweergave.
@@ -596,6 +603,10 @@ export function DevPreview() {
     page = <CoachCockpitPage />
   } else if (location.startsWith("/coach/athletes/")) {
     page = <CoachAthletePlanPage />
+  } else if (location === "/coach" || location.startsWith("/coach?")) {
+    // DASHBOARD_01 Fase B — de trainerswerkomgeving (roster) als doorklik vanaf
+    // het dashboard; dezelfde component als de echte /coach-route.
+    page = <CoachHome />
   } else if (location.startsWith("/meer")) {
     page = <MeerPage />
   } else if (location.startsWith("/privacy")) {
@@ -613,16 +624,17 @@ export function DevPreview() {
     page = <InviteAcceptPage />
     showNav = false
   } else if (location === "/" || location === "") {
-    // Home route: rol-bewust, net als RoleHome in de echte router. Een coach
-    // krijgt de trainerstartpagina; een sporter de CommercialToday-schil
-    // (commercial_shell is globally enabled). StartPage is the legacy fallback
-    // (flag off) — only kept as a fallback in the real router, not here.
+    // Home route: rol-bewust, net als RoleHome in de echte router. DASHBOARD_01
+    // Fase B (DSH-13a/24): coach en ouder landen op hun drie-lagen dashboard;
+    // een sporter op de CommercialToday-schil (commercial_shell globally
+    // enabled). StartPage is de legacy fallback (flag off) — alleen in de echte
+    // router, niet hier.
     if (profile?.activeRole === "coach") {
-      page = <CoachHome />
+      page = <CoachDashboard />
     } else if (profile?.activeRole === "parent") {
-      // WP-R0: spiegelt RoleHome — een ouder ziet de ouderstartpagina, geen
+      // WP-R0: spiegelt RoleHome — een ouder ziet zijn dashboard, geen
       // sporterweergave meer als stille terugval.
-      page = <ParentHome />
+      page = <ParentDashboard />
     } else if (profile?.activeRole === "nutrition_specialist") {
       // F3 (BB-14): spiegelt RoleHome — eigen startscherm, geen terugval.
       page = <NutritionSpecialistHome />

@@ -6,6 +6,7 @@
 // oplost · één vervolgstap). Een rolwaarde die server-side niet bestaat,
 // krijgt géén verzonnen scherm maar de eerlijke melding daarvan. Nooit een
 // terugval op de sporterweergave.
+import type { FC } from "react"
 import { Link, useLocation, useParams } from "wouter"
 import { ArrowRight, CircleAlert } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -13,6 +14,24 @@ import { SectionLabel } from "@/components/sparki/ui"
 import { roleStartFor } from "@/lib/role-start"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useMyClubs } from "@/hooks/use-club"
+// DASHBOARD_01 Fase B (DSH-13a) — voor clubrollen met een drie-lagen dashboard
+// is DAT hun eerste scherm; het vervangt de oude ingangenlijst. Rollen zonder
+// dashboard (mechanieker/soigneur/medical/assistent/…) houden hun bestaande
+// rolstart hieronder.
+import { HoofdtrainerDashboard } from "@/components/sparki/role-dashboards/hoofdtrainer-dashboard"
+import { ClubbeheerderDashboard } from "@/components/sparki/role-dashboards/clubbeheerder-dashboard"
+import { TeammanagerDashboard } from "@/components/sparki/role-dashboards/teammanager-dashboard"
+import { PloegleiderDashboard } from "@/components/sparki/role-dashboards/ploegleider-dashboard"
+
+// Clubrolwaarde → Fase B-dashboard. owner/admin krijgen het clubbeheerder-
+// dashboard (ontwikkeling ledenbestand); de overige rollen zoals in tabel §3.
+const ROL_DASHBOARD: Record<string, FC> = {
+  owner: ClubbeheerderDashboard,
+  admin: ClubbeheerderDashboard,
+  hoofdtrainer: HoofdtrainerDashboard,
+  teammanager: TeammanagerDashboard,
+  ploegleider: PloegleiderDashboard,
+}
 
 export default function RolStartPage() {
   const params = useParams<{ rol: string }>()
@@ -90,6 +109,12 @@ export default function RolStartPage() {
       </ScreenShell>
     )
   }
+
+  // DSH-13a: heeft deze rol een Fase B-dashboard, dan IS dat het startscherm
+  // (na de bezit-poort hierboven). De bestaande werkschermen blijven via de
+  // doorklik in het dashboard bereikbaar — niets weggelaten.
+  const DashboardVoorRol = ROL_DASHBOARD[start.role]
+  if (DashboardVoorRol) return <DashboardVoorRol />
 
   return (
     <ScreenShell section={start.label}>

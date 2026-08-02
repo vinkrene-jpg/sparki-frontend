@@ -1,0 +1,83 @@
+[
+  {
+    "identiteit": "governor-fixture-parent",
+    "rol": "parent",
+    "dashboard": "Ouder",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "identiteit governor-fixture-parent rol parent"
+      },
+      {
+        "status": "OK",
+        "detail": "startscherm-fold / (bewijs: /home/runner/workspace/docs/proof-evidence/DASHBOARD_01_ROLLEN/na/rol-parent-mobiel-01-start-fold.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "role-dashboard=1 · laag1=1 · laag2=0 · laag3=0 (verwacht: Ouder)"
+      },
+      {
+        "status": "INFO",
+        "detail": "paginahoogte=874px venster=874px schermen=1.0"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/parent/overview → 200"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-trainer-zelfstandig",
+    "rol": "coach",
+    "dashboard": "Zelfstandige trainer (coach)",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "identiteit governor-fixture-trainer-zelfstandig rol coach"
+      },
+      {
+        "status": "OK",
+        "detail": "startscherm-fold / (bewijs: /home/runner/workspace/docs/proof-evidence/DASHBOARD_01_ROLLEN/na/rol-trainer-zelfstandig-mobiel-01-start-fold.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "role-dashboard=1 · laag1=1 · laag2=1 · laag3=0 (verwacht: Zelfstandige trainer (coach))"
+      },
+      {
+        "status": "INFO",
+        "detail": "paginahoogte=874px venster=874px schermen=1.0"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/coach/dashboard → 200"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-clubbeheerder",
+    "rol": "athlete",
+    "dashboard": "Clubbeheerder",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "identiteit governor-fixture-clubbeheerder rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "startscherm-fold /rol-start/admin (bewijs: /home/runner/workspace/docs/proof-evidence/DASHBOARD_01_ROLLEN/na/rol-clubbeheerder-mobiel-01-start-fold.png)"
+      },
+      {
+        "status": "OK",
+        "detail": "role-dashboard=1 · laag1=1 · laag2=1 · laag3=0 (verwacht: Clubbeheerder)"
+      },
+      {
+        "status": "INFO",
+        "detail": "paginahoogte=874px venster=874px schermen=1.0"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/clubs → 200"
+      }
+    ]
+  }
+]

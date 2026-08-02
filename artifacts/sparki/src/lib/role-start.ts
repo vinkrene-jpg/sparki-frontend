@@ -40,7 +40,10 @@ export const GLOBAL_ROLE_STARTS: RoleStart[] = [
     role: "coach",
     label: "Trainer",
     functies: [
-      { href: "/dashboard", label: "Jouw sporters" },
+      // DASHBOARD_01 Fase B (DSH-13a): het dashboard is het eerste scherm; de
+      // trainerswerkomgeving (roster) is één doorklik verderop.
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/coach", label: "Jouw sporters" },
       { href: "/invitations", label: "Sporters koppelen" },
     ],
   },

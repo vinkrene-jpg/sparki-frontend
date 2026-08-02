@@ -16,7 +16,9 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { DayHome, DashboardAnalyse } from "@/components/sparki/day-home";
 import { CommercialToday } from "@/components/sparki/commercial-shell";
 import { CoachHome } from "@/components/sparki/coach-home";
-import { ParentHome } from "@/components/sparki/parent-home";
+// DASHBOARD_01 Fase B — rol-dashboards (drie-lagen skelet) als eerste scherm.
+import { CoachDashboard } from "@/components/sparki/role-dashboards/coach-dashboard";
+import { ParentDashboard } from "@/components/sparki/role-dashboards/parent-dashboard";
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
 import { BottomNav } from "@/components/sparki/bottom-nav";
@@ -466,8 +468,11 @@ function RoleHome() {
   const { profile } = useUserProfile();
   const { flags, isLoading: flagsLoading } = useFeatureFlags();
   const clubStart = useClubOnlyStartPath();
-  if (profile?.activeRole === "coach") return <CoachHome />;
-  if (profile?.activeRole === "parent") return <ParentHome />;
+  // DASHBOARD_01 Fase B (DSH-13a): het drie-lagen dashboard is het eerste
+  // scherm van elke niet-sporterrol; de bestaande werkomgeving (roster,
+  // Kinderen) blijft één doorklik verderop bereikbaar.
+  if (profile?.activeRole === "coach") return <CoachDashboard />;
+  if (profile?.activeRole === "parent") return <ParentDashboard />;
   // BB-14: eigen startscherm, nooit terugval op de sporterweergave.
   if (profile?.activeRole === "nutrition_specialist")
     return <NutritionSpecialistHome />;
@@ -491,8 +496,9 @@ function DashboardPage() {
   const { flags, isLoading: flagsLoading } = useFeatureFlags();
   const commercialShell = flags.commercial_shell;
   const clubStart = useClubOnlyStartPath();
-  if (profile?.activeRole === "coach") return <CoachHome />;
-  if (profile?.activeRole === "parent") return <ParentHome />;
+  // DASHBOARD_01 Fase B (DSH-13a): dashboard = eerste scherm per rol.
+  if (profile?.activeRole === "coach") return <CoachDashboard />;
+  if (profile?.activeRole === "parent") return <ParentDashboard />;
   if (profile?.activeRole === "nutrition_specialist")
     return <NutritionSpecialistHome />;
   if (clubStart === "loading") return null;
@@ -895,6 +901,12 @@ function AppRouter() {
                 </Route>
                 <Route path="/welkom-tester">
                   <ProtectedPage component={TesterWelcomePage} />
+                </Route>
+                {/* DASHBOARD_01 Fase B — de trainerswerkomgeving (roster,
+                    planning, berichten). Het dashboard op /dashboard verwijst
+                    hierheen door; niets is weggelaten (DSH-13a). */}
+                <Route path="/coach">
+                  <ProtectedPage component={CoachHome} />
                 </Route>
                 <Route path="/coach/athletes/:athleteId/plan">
                   <ProtectedPage component={CoachAthletePlanPage} />

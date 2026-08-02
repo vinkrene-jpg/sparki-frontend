@@ -183,6 +183,9 @@ export type ClubMemberRow = {
   email: string | null
   medicalSpecialty?: string | null
   isYouth?: boolean | null
+  // BB-11: afgeleide VOG-status voor clubbeheer — "geldig" | "verlopen" |
+  // "ontbreekt"; null = gast (n.v.t.); undefined = geen beheerder (niet gedeeld).
+  vogStatus?: "geldig" | "verlopen" | "ontbreekt" | null
 }
 
 export type ClubDashboard = {
