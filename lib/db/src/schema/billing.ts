@@ -17,7 +17,11 @@ import { userProfilesTable } from "./users";
 // Sparki-beheerde trial-rijen in user_entitlements). Alles hier is additief;
 // legacy-gebruikers (commercial_tier = NULL) gedragen zich byte-identiek.
 
-export const COMMERCIAL_TIERS = ["FREE", "GO", "COMPLETE", "TEAM"] as const;
+// TRAINER (SPARKI_BUILD_04 BB-60): het abonnement van de zelfstandige trainer.
+// Loopt door dezelfde resolver en tier_feature_grants; grants blijven leeg tot
+// de verkoopstart. Prijzen/staffels (besluitenpatch hoofdstuk E) zijn
+// configuratie van de checkout-laag, niet van dit schema.
+export const COMMERCIAL_TIERS = ["FREE", "GO", "COMPLETE", "TEAM", "TRAINER"] as const;
 export type CommercialTier = (typeof COMMERCIAL_TIERS)[number];
 
 export const BILLING_INTERVALS = ["month", "year"] as const;

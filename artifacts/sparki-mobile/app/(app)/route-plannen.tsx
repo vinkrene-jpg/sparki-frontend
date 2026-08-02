@@ -584,7 +584,7 @@ export default function RoutePlannenScreen() {
                     {workout.targetDurationMin
                       ? `Gepland: ${workout.targetDurationMin} minuten.`
                       : "Geplande training van vandaag."}{" "}
-                    Sparki zoekt één route die hierbij past.
+                    Er wordt één route gezocht die hierbij past.
                   </Text>
                   {workout.routeId ? (
                     <Pressable

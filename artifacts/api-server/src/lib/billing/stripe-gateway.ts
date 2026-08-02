@@ -26,6 +26,17 @@ export const TIER_PRICING: Record<
     trialDays: 14,
     productName: "sparki_team_tier",
   },
+  // SPARKI_BUILD_04 / besluitenpatch 01-08-2026 hoofdstuk E: Sparki Trainer
+  // basistier €99 p/mnd · €990 p/jr tot 25 sporters. De tweede staffel
+  // (€179/€1.790 tot 50) en €9,90 per sporter vanaf nr. 51 zijn afhankelijk
+  // van het aantal actieve koppelingen en horen bij de facturatie-/
+  // koppelingslaag (F3/F9), niet bij deze vaste prijsconfiguratie.
+  TRAINER: {
+    month: 9900,
+    year: 99000,
+    trialDays: 14,
+    productName: "sparki_trainer_tier",
+  },
 };
 
 export interface SubscriptionState {

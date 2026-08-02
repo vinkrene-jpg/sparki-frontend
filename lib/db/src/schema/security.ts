@@ -19,6 +19,9 @@ export const securityEventKinds = [
   "login_failed",
   "consent_change",
   "role_change",
+  // SPARKI_BUILD_04: zelfstandige trainer registreert / wijzigt bedrijfsgegevens.
+  "trainer_register",
+  "trainer_business_update",
   "link_change",
   "data_export",
   "delete_requested",
