@@ -5,6 +5,7 @@ import React from "react";
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,6 +40,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = React.useState("");
   const [code, setCode] = React.useState("");
   const [generalError, setGeneralError] = React.useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
   const busy = fetchStatus === "fetching";
 
   const handleSubmit = async () => {
@@ -141,14 +143,32 @@ export default function SignUpScreen() {
               onChangeText={setEmailAddress}
             />
             <Text style={[styles.label, { color: c.mutedForeground }]}>Wachtwoord</Text>
-            <TextInput
-              style={[styles.input, { color: c.foreground, borderColor: c.input, backgroundColor: c.card }]}
-              secureTextEntry
-              value={password}
-              placeholder="Kies een wachtwoord"
-              placeholderTextColor={c.mutedForeground}
-              onChangeText={setPassword}
-            />
+            <View style={styles.passwordWrap}>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.passwordInput,
+                  { color: c.foreground, borderColor: c.input, backgroundColor: c.card },
+                ]}
+                secureTextEntry={!showPassword}
+                value={password}
+                placeholder="Kies een wachtwoord"
+                placeholderTextColor={c.mutedForeground}
+                onChangeText={setPassword}
+              />
+              <Pressable
+                style={styles.eyeButton}
+                onPress={() => setShowPassword((v) => !v)}
+                accessibilityLabel={showPassword ? "Wachtwoord verbergen" : "Wachtwoord tonen"}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={c.mutedForeground}
+                />
+              </Pressable>
+            </View>
             {generalError && (
               <Text style={[styles.error, { color: c.destructive }]}>{generalError}</Text>
             )}
@@ -182,6 +202,14 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 24 },
+  passwordWrap: { position: "relative", justifyContent: "center" },
+  passwordInput: { paddingRight: 46 },
+  eyeButton: {
+    position: "absolute",
+    right: 14,
+    height: "100%",
+    justifyContent: "center",
+  },
   logo: {
     width: 60,
     height: 60,

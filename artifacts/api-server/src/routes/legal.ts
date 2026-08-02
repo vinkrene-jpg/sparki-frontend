@@ -5,7 +5,12 @@
 
 import { Router } from "express";
 import { and, desc, eq, isNull } from "drizzle-orm";
-import { db, legalAcceptancesTable, privacySettingsTable } from "@workspace/db";
+import {
+  db,
+  legalAcceptancesTable,
+  privacySettingsTable,
+  userProfilesTable,
+} from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { getActiveLegalDocument, isRequiredLegalKind } from "../lib/legal-texts";
 import { getConsentStatus, consentSourceFromRequest } from "../lib/consent";
@@ -89,7 +94,16 @@ router.post("/:kind/accept", requireAuth, async (req, res) => {
         where: isNull(legalAcceptancesTable.revokedAt),
       });
 
-    if (kind === "privacy" || kind === "terms") {
+    // Compat-schrijfactie naar privacy_settings kan alleen als er al een
+    // profielrij bestaat (FK). Een gloednieuw account accepteert de documenten
+    // vóór onboarding en heeft die rij nog niet — dan slaan we de compat-copy
+    // over; de gate leest toch uitsluitend legal_acceptances.
+    const [bestaandProfiel] = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId))
+      .limit(1);
+    if (bestaandProfiel && (kind === "privacy" || kind === "terms")) {
       const set =
         kind === "privacy"
           ? { acceptedPrivacyAt: now, acceptedPrivacyVersion: doc.version }
