@@ -26,6 +26,15 @@ Laatst bijgewerkt: 2026-08-01.
 - De taakvoorstellen #549/#550 zijn door René geannuleerd; richting blijft
   vastgelegd hier, bouw start pas op expliciete opdracht.
 
+## Beslist 02-08-2026 — GEEN losse taken meer (René)
+
+- Replit stelt GEEN taken/concepten meer voor (ook geen vervolgvoorstellen na
+  afgerond werk). Alle bestaande concepten mogen weg (archiveren doet René
+  zelf in het takenpaneel; Replit kan ze niet verwijderen).
+- Er is ÉÉN bouwplan: de Claude-bouwdocumenten op GitHub
+  (docs/build-packages/ e.d.). Daar houden we ons aan — geen los werk
+  tussendoor buiten expliciete opdrachten van René.
+
 ## Beslist 01-08-2026 — BREDE VRIJGAVE (René)
 
 - De al gegeven opdrachten voor de VIER bouwpakketten (DATA_TRUST_01, ABONNEMENT_01,
