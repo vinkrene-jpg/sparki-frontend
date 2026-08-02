@@ -31,6 +31,7 @@ import {
 import { buildRaceContext } from "../engines/race";
 import { computeAge } from "../lib/age";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { registerFromObjectPath, revokeFile } from "../lib/files";
 import { removeWorldRefsForSource } from "./world-social";
 
 // Journey — één persoonlijke tijdlijn + wedstrijddossier, samengesteld uit
@@ -465,17 +466,45 @@ router.post("/media", requireAuth, async (req: Request, res: Response) => {
     return;
   }
   try {
-    try {
-      await objectStorage.trySetObjectEntityAclPolicy(objectPath, {
-        owner: clerkId,
-        visibility: "private",
+    // F11: FINALISATIE via de centrale laag. De presign→PUT-flow blijft; bij het
+    // registreren draaien AFBEELDINGEN door de centrale veiligheidspoort
+    // (registerFromObjectPath: grootte, magic-byte-sniff, her-encoding). Dat
+    // levert een centrale files-rij (bron van waarheid, intrekbaar via revokedAt)
+    // en het veilige opgeslagen object; we bewaren dat als objectPath én fileId.
+    // VIDEO valt buiten de centrale beeld/PDF-poort (die kan video niet
+    // her-encoderen): video's behouden de presign→ACL-flow met fileId null en de
+    // bestaande MEDIA_TYPES-whitelist blijft de type-poort voor video.
+    let finalObjectPath = objectPath;
+    let finalMediaType = mediaType;
+    let fileId: number | null = null;
+    const isImage = mediaType.startsWith("image/");
+    if (isImage) {
+      const reg = await registerFromObjectPath({
+        ownerClerkId: clerkId,
+        objectPath,
+        originalName: str(body.caption) ?? "journey-media",
+        retentionCategory: "media",
       });
-    } catch (err) {
-      req.log.error({ err }, "journey.media acl failed");
-      res.status(400).json({
-        error: "Het bestand is nog niet geüpload. Probeer het opnieuw.",
-      });
-      return;
+      if (!reg.ok) {
+        res.status(reg.status).json({ error: reg.reason });
+        return;
+      }
+      finalObjectPath = reg.file.objectPath;
+      finalMediaType = reg.file.contentType;
+      fileId = reg.file.id;
+    } else {
+      try {
+        await objectStorage.trySetObjectEntityAclPolicy(objectPath, {
+          owner: clerkId,
+          visibility: "private",
+        });
+      } catch (err) {
+        req.log.error({ err }, "journey.media acl failed");
+        res.status(400).json({
+          error: "Het bestand is nog niet geüpload. Probeer het opnieuw.",
+        });
+        return;
+      }
     }
     const existing = await db
       .select({ sortIndex: journeyMediaTable.sortIndex })
@@ -497,8 +526,9 @@ router.post("/media", requireAuth, async (req: Request, res: Response) => {
         clerkId,
         subjectType,
         subjectId,
-        objectPath,
-        mediaType,
+        objectPath: finalObjectPath,
+        fileId,
+        mediaType: finalMediaType,
         caption: str(body.caption),
         sortIndex: nextIndex,
         visibility: "prive",
@@ -600,10 +630,16 @@ router.delete(
             eq(journeyMediaTable.clerkId, clerkId),
           ),
         )
-        .returning({ id: journeyMediaTable.id });
+        .returning({ id: journeyMediaTable.id, fileId: journeyMediaTable.fileId });
       if (deleted.length === 0) {
         res.status(404).json({ error: "Media niet gevonden" });
         return;
+      }
+      // F11: de centrale files-rij intrekken (fail-closed): een oude serve-link
+      // valt daarna dicht met 410. Legacy-media zonder fileId: niets in te trekken.
+      const revokedFileId = deleted[0]?.fileId;
+      if (revokedFileId != null) {
+        await revokeFile(revokedFileId, clerkId);
       }
       // Sparki World: gedeelde referenties naar deze media opruimen.
       await removeWorldRefsForSource(clerkId, "journey_media", id);

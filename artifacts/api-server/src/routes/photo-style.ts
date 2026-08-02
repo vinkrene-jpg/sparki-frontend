@@ -2,12 +2,16 @@ import { Router } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, photoLabUploadsTable, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import {
-  claimOwnership,
-  stylizePhoto,
-  PhotoOwnershipError,
-} from "../lib/photo-style";
-import { ObjectNotFoundError } from "../lib/objectStorage";
+import { stylizePhoto } from "../lib/photo-style";
+import { registerFromObjectPath } from "../lib/files";
+
+// F11: de door de renner geüploade ORIGINELE foto loopt door de centrale
+// veiligheidspoort (registerFromObjectPath: verplichte eigendomsclaim zónder
+// takeover, grootte, magic-byte-sniff, her-encoding, en quarantaine van de rauwe
+// bron). Het veilige gate-object wordt de nieuwe originalPath en we bewaren de
+// centrale fileId (bron van waarheid, intrekbaar). De Sparki-styled variant is
+// een server-side render (geen renner-upload) en blijft buiten de upload-poort.
+// retentionCategory "media".
 
 // Sparki Photo Lab routes — isolated, testable photo upload + "Sparki-style"
 // edit flow. The original is uploaded by the client via the existing presigned
@@ -33,37 +37,40 @@ router.post("/stylize", requireAuth, async (req, res) => {
     return;
   }
 
-  // Lock ownership of the original now that its bytes exist in storage.
-  try {
-    await claimOwnership(clerkId, originalPath);
-  } catch (err) {
-    if (err instanceof PhotoOwnershipError) {
-      res.status(403).json({ error: err.message });
-      return;
-    }
-    if (err instanceof ObjectNotFoundError) {
-      res.status(404).json({ error: "Foto niet gevonden" });
-      return;
-    }
-    req.log.error({ err }, "photo-style.claimOwnership failed");
-    res.status(500).json({ error: "Foto kon niet worden vastgelegd" });
+  // F11: het origineel door de centrale veiligheidspoort. registerFromObjectPath
+  // doet nu ZELF de verplichte eigendomsclaim (nooit takeover: andermans object
+  // ⇒ 403), draait de bytes door de poort (verkleed/verkeerd type ⇒ 415, te groot
+  // ⇒ 400) en QUARANTAINEERT daarna de rauwe presign-bron. De aparte
+  // claimOwnership-stap is daarmee overbodig geworden.
+  const reg = await registerFromObjectPath({
+    ownerClerkId: clerkId,
+    objectPath: originalPath,
+    originalName: "foto",
+    retentionCategory: "media",
+  });
+  if (!reg.ok) {
+    res.status(reg.status).json({ error: reg.reason });
     return;
   }
+  const safeOriginalPath = reg.file.objectPath;
+  const originalFileId = reg.file.id;
 
   try {
-    const styled = await stylizePhoto(clerkId, originalPath);
+    const styled = await stylizePhoto(clerkId, safeOriginalPath);
     const [row] = await db
       .insert(photoLabUploadsTable)
       .values({
         clerkId,
-        originalPath,
+        originalPath: safeOriginalPath,
+        originalFileId,
         styledPath: styled.styledPath,
         styleStatus: "styled",
       })
       .returning();
     res.json({
       id: row!.id,
-      originalPath,
+      originalPath: safeOriginalPath,
+      originalFileId,
       styledPath: styled.styledPath,
       styledDataUrl: styled.styledDataUrl,
       styleStatus: "styled" as const,
@@ -77,7 +84,8 @@ router.post("/stylize", requireAuth, async (req, res) => {
       .insert(photoLabUploadsTable)
       .values({
         clerkId,
-        originalPath,
+        originalPath: safeOriginalPath,
+        originalFileId,
         styledPath: null,
         styleStatus: "failed",
         failureReason: reason,
@@ -85,7 +93,8 @@ router.post("/stylize", requireAuth, async (req, res) => {
       .returning();
     res.json({
       id: row!.id,
-      originalPath,
+      originalPath: safeOriginalPath,
+      originalFileId,
       styledPath: null,
       styledDataUrl: null,
       styleStatus: "failed" as const,

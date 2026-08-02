@@ -155,6 +155,9 @@ export default function PhotoLabPage() {
           accept="image/*"
           onChange={handleFile}
           className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+          aria-label="Kies een foto om te bewerken"
         />
 
         {/* INTRO — nothing uploaded yet. */}

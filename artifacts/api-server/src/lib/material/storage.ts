@@ -1,10 +1,17 @@
 import { ObjectStorageService } from "../objectStorage";
 import { ObjectPermission } from "../objectAcl";
+import { registerFile } from "../files";
 
-// Server-side photo storage for the Materiaalcoach. Photos are real uploads:
-// the client sends the bytes (base64), we persist them in object storage under
-// the private dir with the owner's clerkId on the ACL, and store the normalized
-// object path on the analysis row. We never keep raw image bytes in the DB.
+// Server-side photo storage for the Materiaalcoach (en de mede-gebruikers
+// Voeding, Garage en Fietsscan). Photos are real uploads: the client sends the
+// bytes (base64) and we persist them. We never keep raw image bytes in the DB.
+//
+// F11 (reviewpunt 4a): de bytes lopen nu VERPLICHT door de centrale
+// veiligheidspoort (registerFile: grootte, magic-byte-sniff, her-encoding). Zo
+// is er geen ongescande upload-route meer. Her-encoding maakt van het gros een
+// jpeg; een PNG MET transparantie blijft PNG (nodig voor de fietsscan-cutout —
+// zie scanFile). Dedupe/retentie/intrekbaarheid komen automatisch mee via de
+// centrale files-rij.
 
 export type StoredPhotoInput = {
   // Raw base64 (no data-URL prefix).
@@ -14,28 +21,50 @@ export type StoredPhotoInput = {
 
 const svc = new ObjectStorageService();
 
-// Upload one photo and return its normalized object path ("/objects/...").
+// Fout die de httpStatus van de poort meedraagt (415 verkeerd type, 400 te
+// groot), zodat routes een eerlijke statuscode kunnen teruggeven.
+export class MaterialPhotoRejected extends Error {
+  httpStatus: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "MaterialPhotoRejected";
+    this.httpStatus = status;
+  }
+}
+
+// Upload één foto via de centrale poort en geef de centrale files-rij terug
+// (objectPath + fileId). fileId is de bron van waarheid (intrekbaar via files).
+export async function storeMaterialPhotoViaGate(
+  clerkId: string,
+  photo: StoredPhotoInput,
+  retentionCategory: string = "media",
+): Promise<{ objectPath: string; fileId: number; contentType: string }> {
+  const reg = await registerFile({
+    ownerClerkId: clerkId,
+    base64: photo.base64,
+    originalName: "foto",
+    retentionCategory,
+  });
+  if (!reg.ok) {
+    throw new MaterialPhotoRejected(reg.status, reg.reason);
+  }
+  return {
+    objectPath: reg.file.objectPath,
+    fileId: reg.file.id,
+    contentType: reg.file.contentType,
+  };
+}
+
+// Backward-compatibele wrapper: geeft alleen het genormaliseerde objectPath
+// ("/objects/...") terug, maar loopt nu WEL door de centrale poort. Bestaande
+// aanroepers (Voeding, Garage, Fietsscan) hoeven hun opslagvorm niet te wijzigen;
+// de foto is voortaan gescand en her-encodeerd.
 export async function uploadMaterialPhoto(
   clerkId: string,
   photo: StoredPhotoInput,
 ): Promise<string> {
-  const uploadUrl = await svc.getObjectEntityUploadURL();
-  const buffer = Buffer.from(photo.base64, "base64");
-
-  const put = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": photo.mediaType },
-    body: buffer,
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!put.ok) {
-    throw new Error(`Foto-upload mislukt (status ${put.status})`);
-  }
-
-  return svc.trySetObjectEntityAclPolicy(uploadUrl, {
-    owner: clerkId,
-    visibility: "private",
-  });
+  const stored = await storeMaterialPhotoViaGate(clerkId, photo, "media");
+  return stored.objectPath;
 }
 
 // Read a stored photo back as base64 (used when re-running analysis with an

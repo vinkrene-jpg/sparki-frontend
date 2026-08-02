@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -29,6 +29,11 @@ export const photoLabUploadsTable = pgTable("photo_lab_uploads", {
     }),
   // Normalized object path (e.g. "/objects/uploads/<uuid>") of the real upload.
   originalPath: text("original_path").notNull(),
+  // F11: centrale files-rij van de originele upload (bron van waarheid voor de
+  // veiligheidspoort, intrekbaarheid en retentie). Nullable: legacy-rijen die
+  // vóór de omlegging zijn aangemaakt hebben geen fileId en blijven werken via
+  // originalPath (lazy koppeling — geen destructieve backfill).
+  originalFileId: integer("original_file_id"),
   // Normalized object path of the Sparki-styled variant, or null when styling
   // failed (in which case styleStatus is "failed" and the original stays usable).
   styledPath: text("styled_path"),

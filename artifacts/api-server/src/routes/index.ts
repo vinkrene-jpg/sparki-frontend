@@ -47,6 +47,7 @@ import insightsRouter from "./insights";
 import mentalRouter from "./mental";
 import adminRouter from "./admin";
 import storageRouter from "./storage";
+import filesRouter from "./files";
 import inputCenterRouter from "./input-center";
 import materialRouter from "./material";
 import garageRouter from "./garage";
@@ -197,6 +198,10 @@ router.use(insightsRouter);
 router.use(mentalRouter);
 router.use("/admin", adminRouter);
 router.use(storageRouter);
+// F11 — centrale bestands-router (generiek versiebeheer/vervangen/serve/revoke
+// op basis van eigenaarschap). Modules met eigen zichtbaarheidslogica (F7/F8)
+// houden hun eigen serve-pad; die roepen intern dezelfde bestandslaag aan.
+router.use("/files", filesRouter);
 router.use(inputCenterRouter);
 router.use("/material", materialRouter);
 router.use("/garage", garageRouter);

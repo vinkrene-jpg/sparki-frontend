@@ -42,6 +42,11 @@ export type InputAttachment = {
   contentType: string;
   size: number | null;
   kind: InputAttachmentKind;
+  // F11: centrale files-rij die bij deze bijlage hoort. Wordt bij het finaliseren
+  // van een bericht gezet (registratie via de veiligheidspoort). Nullable: legacy-
+  // bijlagen van vóór de omlegging hebben geen fileId en blijven werken via
+  // objectPath (lazy koppeling — geen destructieve backfill).
+  fileId?: number | null;
 };
 
 // A cited source returned alongside a Sparki reply (mirrors the knowledge-base

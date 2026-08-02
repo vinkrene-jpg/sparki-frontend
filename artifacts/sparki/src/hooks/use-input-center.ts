@@ -16,6 +16,11 @@ export type InputAttachment = {
   contentType: string
   size: number | null
   kind: InputAttachmentKind
+  // F11: centrale files-rij (bron van waarheid). Aanwezig zodra de bijlage door
+  // de centrale veiligheidspoort is gefinaliseerd; dan wordt hij via de centrale
+  // (intrekbare, owner-gecontroleerde) route geserveerd. Legacy-bijlagen hebben
+  // dit niet en worden via het generieke object-pad geserveerd.
+  fileId?: number | null
 }
 
 export type InputMessageSource = {
@@ -38,8 +43,21 @@ export type ConversationTurn = {
 
 // Builds the owner-gated serving URL for a stored attachment. The image/file is
 // served by the API (cookies sent automatically same-origin / via Vite proxy).
-export function attachmentUrl(objectPath: string): string {
-  return `${API_BASE}/api/storage${objectPath}`
+// F11: bijlagen met een centrale files-rij (fileId) worden via de centrale
+// route geserveerd — die dwingt intrekbaarheid (410) en owner-controle af.
+// Overige (legacy) bijlagen én losse objectPaden lopen via /api/storage; ook dáár
+// dwingt de server voor centraal-beheerde objecten inmiddels serveFile (met
+// intrekbaarheid) af. Aanroepbaar met een string (los pad) of een attachment.
+export function attachmentUrl(
+  att: string | Pick<InputAttachment, "objectPath" | "fileId">,
+): string {
+  if (typeof att === "string") {
+    return `${API_BASE}/api/storage${att}`
+  }
+  if (att.fileId != null) {
+    return `${API_BASE}/api/files/${att.fileId}/download`
+  }
+  return `${API_BASE}/api/storage${att.objectPath}`
 }
 
 // Coarse kind from a file's MIME type — drives thumbnail vs file-chip rendering.

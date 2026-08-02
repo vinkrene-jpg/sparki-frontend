@@ -6,7 +6,7 @@ import {
   ObjectNotFoundError,
 } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
-import { findFileByObjectPath } from "../lib/files";
+import { findFilesByObjectPath, serveFile } from "../lib/files";
 import { isAdmin } from "../lib/flags";
 import { rateLimit } from "../lib/security/rate-limit";
 import { writeAudit } from "../lib/security/audit";
@@ -108,16 +108,52 @@ router.get(
       const wildcardPath = Array.isArray(raw) ? raw.join("/") : String(raw);
       const objectPath = `/objects/${wildcardPath}`;
 
-      // FAIL-CLOSED voor F7-bestanden: als dit object in de files-tabel staat, is
-      // het een door F7 beheerd bestand. Dat mag NOOIT via deze generieke
-      // (eigenaar/ACL-)route uit — die kent geen intrekking (revokedAt), geen
-      // bericht-zichtbaarheid en geen attachment/nosniff-headers. De afzender is
-      // object-eigenaar en zou anders een INGETROKKEN bijlage inline kunnen
-      // blijven ophalen. Verwijs uitsluitend naar het F7-serve-pad, dat die drie
-      // poorten wél afdwingt. Niet-F7-objecten hebben geen file-record en lopen
-      // ongewijzigd door de bestaande flow.
-      if (await findFileByObjectPath(objectPath)) {
-        res.status(404).json({ error: "Bestand niet gevonden" });
+      // F11: als dit object in de files-tabel staat, is het door de CENTRALE
+      // laag beheerd. Zo'n bestand gaat NOOIT via de rauwe object-flow uit
+      // (die kent geen intrekking/nosniff), maar via de centrale serveFile-poort:
+      // die dwingt intrekking (revokedAt ⇒ 410, ook via een oude link) en
+      // nosniff/no-store af. De rechten hier: uitsluitend de EIGENAAR of een
+      // admin (fail-closed 404 voor de rest — nooit lekken dat het bestaat).
+      // Modules met een eigen zichtbaarheidsmodel (F7-berichten, F8-clubdocumenten)
+      // hebben bovendien hun eigen serve-pad met de bredere rechtencheck; die
+      // blijven leidend voor niet-eigenaren (bv. ontvangers/clubleden). Zo blijven
+      // media-previews van eigen bestanden (Photo Lab, Journey, Input Center,
+      // sfeerbeeld) transparant werken via /api/storage, mét intrekbaarheid.
+      const managed = await findFilesByObjectPath(objectPath);
+      if (managed.length > 0) {
+        // Één opgeslagen object kan meerdere files-rijen delen (dedupe op
+        // checksum maakt per eigenaar — en zelfs per eigenaar meermaals — een
+        // eigen rij). Beperk tot de rijen van de rechthebbende (admin mag elke
+        // rij). Bezit de caller geen enkele rij ⇒ 404 (nooit lekken dat het
+        // bestaat).
+        const owned = managed.filter(
+          (f) => f.ownerClerkId === clerkId || isAdmin(clerkId),
+        );
+        if (owned.length === 0) {
+          res.status(404).json({ error: "Bestand niet gevonden" });
+          return;
+        }
+        // KORREKTE dedupe-revoke-semantiek: serveer zolang er ≥1 LEVENDE rij van
+        // de rechthebbende is (ingetrokken rijen tellen niet mee). Intrekken van
+        // rij A mag de nog levende rij B NIET doden — anders zou een gedeeld
+        // object onterecht dichtvallen. Pas als ALLE rijen van die eigenaar
+        // ingetrokken zijn, is de link dood (410, fail-closed).
+        const live = owned.filter((f) => !f.revokedAt);
+        if (live.length === 0) {
+          res
+            .status(410)
+            .json({ error: "Dit bestand is ingetrokken en niet meer beschikbaar." });
+          return;
+        }
+        const served = await serveFile(live[0]!);
+        if (!served.ok) {
+          res.status(served.status).json({ error: served.reason });
+          return;
+        }
+        res.setHeader("Content-Type", served.contentType);
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Cache-Control", "private, max-age=0, no-store");
+        served.stream.pipe(res);
         return;
       }
 

@@ -8,6 +8,28 @@ import {
 } from "drizzle-orm/pg-core";
 import { userProfilesTable } from "./users";
 
+// Retentiecategorieën (F11 §3). Bepaalt straks de opruimtermijn; in DEEL 1 leggen
+// we de categorie alleen vast (nog géén opruimjob buiten de bestaande F7-retentie).
+// Bewust een kleine, betekenisvolle lijst; "algemeen" = default fallback.
+// - "communicatie": bijlagen uit berichten (F7 club_message / coach_link).
+// - "document":     documenten (bv. F8 clubdocumenten, trainerdocumenten).
+// - "media":        beeld/afbeeldingen die bij content horen.
+// - "tijdelijk":    kortstondige uploads zonder blijvende koppeling.
+// De bestaande F7-waarden ("club_message", "club_document", "algemeen") blijven
+// geldig zodat bestaande rijen niet breken; nieuwe bronnen kiezen bij voorkeur
+// uit de generieke set hierboven.
+export const fileRetentionCategories = [
+  "algemeen",
+  "communicatie",
+  "document",
+  "media",
+  "tijdelijk",
+  // Legacy/bronspecifiek (behouden voor bestaande rijen):
+  "club_message",
+  "club_document",
+] as const;
+export type FileRetentionCategory = (typeof fileRetentionCategories)[number];
+
 // ── Generiek bestandsmodel (F7-voorschot op F11) ─────────────────────────────
 // Eén centraal `files`-record per geüpload bestand. F7 (clubcommunicatie met
 // bijlagen) gebruikt dit model direct, zodat F11 later niet hoeft te migreren:
@@ -41,8 +63,18 @@ export const filesTable = pgTable(
     sizeBytes: integer("size_bytes").notNull().default(0),
     // SHA-256 van de OPGESLAGEN (eventueel her-encodeerde) bytes.
     sha256: text("sha256"),
-    // Doorlopende versie per eigenaar+objectPad-lijn (F11-voorschot). F7 zet 1.
+    // Doorlopende versie per logische file-lijn (F11). Eerste versie = 1; een
+    // "vervangen" upload verhoogt dit binnen dezelfde logicalId-keten.
     version: integer("version").notNull().default(1),
+    // Logische file-id (F11 versiebeheer, generiek). Alle versies van hetzelfde
+    // logische bestand delen deze waarde. Bij de eerste versie zetten we deze
+    // gelijk aan de eigen id (na insert). Zo kan ELK bestand "vervangen zonder
+    // historieverlies": oude versies blijven bewaard en downloadbaar voor
+    // bevoegden zolang ze niet zijn ingetrokken. Onafhankelijk van F8.
+    logicalId: integer("logical_id"),
+    // Wijst naar de NIEUWERE file-rij die deze versie heeft vervangen (null =
+    // dit is de actuele/laatste versie in de keten). Historie blijft bewaard.
+    supersededById: integer("superseded_by_id"),
     // Ingetrokken: gezet ⇒ 410/404 op elk serve-pad, ook met oude link.
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     revokedByClerkId: text("revoked_by_clerk_id"),
@@ -55,6 +87,10 @@ export const filesTable = pgTable(
   (t) => [
     index("files_owner_idx").on(t.ownerClerkId),
     index("files_object_path_idx").on(t.objectPath),
+    // Snel de versiehistorie van één logisch bestand ophalen.
+    index("files_logical_idx").on(t.logicalId),
+    // Dedupe-zoekactie: bestaand object van DEZELFDE eigenaar op sha256+grootte.
+    index("files_owner_sha_idx").on(t.ownerClerkId, t.sha256, t.sizeBytes),
   ],
 );
 

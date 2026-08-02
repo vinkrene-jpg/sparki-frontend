@@ -34,6 +34,9 @@ export type JourneyMedia = {
   subjectType: "race" | "session" | "item";
   subjectId: number;
   objectPath: string;
+  // F11: centrale files-rij (afbeeldingen die door de veiligheidspoort zijn
+  // gefinaliseerd). Aanwezig ⇒ serveren via de centrale (intrekbare) route.
+  fileId?: number | null;
   mediaType: string;
   caption: string | null;
   sortIndex: number;
@@ -111,8 +114,16 @@ export type RaceDossier = {
   shareFields: string[];
 };
 
-export function journeyMediaUrl(objectPath: string): string {
-  return `${API_BASE}/api/storage${objectPath}`;
+// F11: media met een centrale files-rij (fileId) worden via de centrale route
+// geserveerd — die dwingt intrekbaarheid (410) en owner-controle af. Legacy-
+// media (geen fileId) en video's lopen via het generieke object-pad.
+export function journeyMediaUrl(
+  media: { objectPath: string; fileId?: number | null },
+): string {
+  if (media.fileId != null) {
+    return `${API_BASE}/api/files/${media.fileId}/download`;
+  }
+  return `${API_BASE}/api/storage${media.objectPath}`;
 }
 
 export function useJourney(kinds?: JourneyEventKind[]) {

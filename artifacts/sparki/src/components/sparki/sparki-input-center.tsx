@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
+import { MediaPreview } from "@/components/sparki/media-preview"
 import {
   useConversation,
   useSendMessage,
@@ -43,56 +44,18 @@ function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
 }
 
-function bytesLabel(size: number | null): string {
-  if (size == null) return ""
-  if (size < 1024) return `${size} B`
-  if (size < 1024 * 1024) return `${Math.round(size / 1024)} kB`
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`
-}
-
 // A single stored attachment rendered inside a conversation turn: images show as
 // a real thumbnail (served owner-gated from storage), everything else as a chip
 // with a download link.
+// F11: één herbruikbare MediaPreview i.p.v. een eigen weergave hier.
 function AttachmentView({ att }: { att: InputAttachment }) {
-  const url = attachmentUrl(att.objectPath)
-  if (att.kind === "image" || att.kind === "photo") {
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block overflow-hidden rounded-xl border border-white/[0.1]"
-      >
-        <img
-          src={url}
-          alt={att.name}
-          loading="lazy"
-          className="max-h-64 w-full object-cover"
-        />
-      </a>
-    )
-  }
-  const Icon = att.kind === "pdf" ? FileText : FileIcon
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 transition-colors hover:border-cyan-300/30"
-    >
-      <Icon className="h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[12px] text-white/80">
-          {att.name}
-        </span>
-        {att.size != null && (
-          <span className="block font-mono text-[10px] text-white/35">
-            {bytesLabel(att.size)}
-          </span>
-        )}
-      </span>
-      <ExternalLink className="h-3 w-3 shrink-0 text-white/25 transition-colors group-hover:text-cyan-300/70" />
-    </a>
+    <MediaPreview
+      url={attachmentUrl(att)}
+      name={att.name}
+      kind={att.kind}
+      size={att.size}
+    />
   )
 }
 
@@ -382,7 +345,7 @@ export function SparkiInputCenter({
                   <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: ACCENT }} />
                 ) : p.kind === "image" || p.kind === "photo" ? (
                   <img
-                    src={attachmentUrl(p.objectPath)}
+                    src={attachmentUrl(p)}
                     alt={p.name}
                     className="h-5 w-5 rounded object-cover"
                   />

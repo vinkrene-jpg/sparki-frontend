@@ -81,6 +81,11 @@ export const materialAnalysesTable = pgTable("material_analyses", {
   status: text("status").notNull().default("analyzed"),
   // Normalized object paths (e.g. "/objects/uploads/<uuid>") of the uploaded photos.
   photoPaths: jsonb("photo_paths").$type<string[]>().notNull().default([]),
+  // F11: centrale files-rijen (id's) per foto, parallel aan photoPaths (zelfde
+  // index/volgorde). Bron van waarheid voor de veiligheidspoort, intrekbaarheid
+  // en retentie. Legacy-rijen van vóór de omlegging hebben een lege lijst en
+  // blijven werken via photoPaths (lazy koppeling — geen destructieve backfill).
+  photoFileIds: jsonb("photo_file_ids").$type<number[]>().notNull().default([]),
   detectedItem: text("detected_item"),
   confidence: text("confidence").notNull().default("unknown"),
   followUpQuestion: text("follow_up_question"),

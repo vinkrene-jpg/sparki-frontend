@@ -561,6 +561,13 @@ router.post("/", requireAuth, async (req, res) => {
       trainingContext,
     });
   } catch (err) {
+    // F11: de centrale foto-poort kan verkeerd type (415)/te groot (400)
+    // teruggeven; die status eerlijk doorgeven i.p.v. een generieke 500.
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "nutrition.create failed");
     res.status(500).json({ error: "Kon log niet opslaan" });
   }

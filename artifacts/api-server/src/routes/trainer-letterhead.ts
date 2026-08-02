@@ -18,7 +18,15 @@ import { Router } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import { db, trainerLetterheadsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { uploadMaterialPhoto, streamMaterialPhoto } from "../lib/material/storage";
+import { registerFile, getFile, serveFile } from "../lib/files";
+import { streamMaterialPhoto } from "../lib/material/storage";
+
+// F11: briefpapier loopt door de CENTRALE veiligheidspoort (registerFile). De
+// domein-eigen leesbaarheid-/margecontrole (checkImage) blijft en draait op de
+// ORIGINELE bytes vóór her-encoding. De poort weigert verkeerde/verkleed types
+// en te grote bestanden. We bewaren zowel filePath (bestaande owner-checked
+// preview) als de centrale fileId (bron van waarheid, intrekbaar).
+// retentionCategory "document".
 
 const router = Router();
 
@@ -108,7 +116,18 @@ router.post("/", requireAuth, async (req, res) => {
       readabilityOk = true;
     }
 
-    const filePath = await uploadMaterialPhoto(trainerClerkId, { base64, mediaType });
+    const reg = await registerFile({
+      ownerClerkId: trainerClerkId,
+      base64,
+      originalName: "briefpapier",
+      retentionCategory: "document",
+    });
+    if (!reg.ok) {
+      res.status(reg.status).json({ error: reg.reason });
+      return;
+    }
+    const filePath = reg.file.objectPath;
+    const fileId = reg.file.id;
     const row = await db.transaction(async (tx) => {
       const [latest] = await tx
         .select({ v: trainerLetterheadsTable.templateVersion })
@@ -125,7 +144,8 @@ router.post("/", requireAuth, async (req, res) => {
         .values({
           trainerClerkId,
           filePath,
-          fileFormat: mediaType,
+          fileId,
+          fileFormat: reg.file.contentType,
           templateVersion: (latest?.v ?? 0) + 1,
           marginsOk,
           readabilityOk,
@@ -175,6 +195,26 @@ router.get("/:id/preview", requireAuth, async (req, res) => {
       );
     if (!row) {
       res.status(404).json({ error: "Briefpapier niet gevonden." });
+      return;
+    }
+    // F11: gemigreerd briefpapier (met fileId) via de centrale poort — intrekken
+    // (revokedAt) valt fail-closed dicht met 410, ook via een oude link. Legacy-
+    // rijen (geen fileId) blijven werken via de bestaande owner-checked stream.
+    if (row.fileId != null) {
+      const file = await getFile(row.fileId);
+      if (!file) {
+        res.status(404).json({ error: "Briefpapier niet gevonden." });
+        return;
+      }
+      const served = await serveFile(file);
+      if (!served.ok) {
+        res.status(served.status).json({ error: served.reason });
+        return;
+      }
+      res.setHeader("Content-Type", served.contentType);
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Cache-Control", "private, max-age=0, no-store");
+      served.stream.pipe(res);
       return;
     }
     const stream = await streamMaterialPhoto(row.filePath, res);

@@ -12,12 +12,42 @@ import {
   getCategory,
   normalizeMediaType,
   analyzeMaterial,
-  uploadMaterialPhoto,
   readMaterialPhotoBase64,
   streamMaterialPhoto,
   ensureMaterialNudgeNotification,
   type MaterialPhotoInput,
 } from "../engines/material";
+import {
+  registerFile,
+  getFile,
+  serveFile,
+  findFilesByObjectPath,
+} from "../lib/files";
+
+// F11: materiaalfoto's lopen door de CENTRALE veiligheidspoort (registerFile:
+// grootte, magic-byte-sniff, her-encoding). Een verkeerd/verkleed type wordt
+// geweigerd (415) voordat er iets wordt opgeslagen. We bewaren zowel de door de
+// poort teruggegeven objectPath (voor de bestaande owner-checked serve) als de
+// centrale fileId (bron van waarheid, intrekbaar). retentionCategory "media".
+// Owner-check en provenance van het materiaal-domein blijven ongewijzigd: de
+// serve gaat via de material-rij (clerkId-eigenaarschap).
+async function storeMaterialPhoto(
+  clerkId: string,
+  photo: MaterialPhotoInput,
+): Promise<{ objectPath: string; fileId: number }> {
+  const reg = await registerFile({
+    ownerClerkId: clerkId,
+    base64: photo.base64,
+    originalName: "materiaalfoto",
+    retentionCategory: "media",
+  });
+  if (!reg.ok) {
+    const err = new Error(reg.reason) as Error & { httpStatus?: number };
+    err.httpStatus = reg.status;
+    throw err;
+  }
+  return { objectPath: reg.file.objectPath, fileId: reg.file.id };
+}
 
 const router = Router();
 
@@ -149,10 +179,13 @@ router.post("/analyze", requireAuth, async (req, res) => {
       clerkId,
     });
 
-    // Persist photos only after a successful analysis.
+    // Persist photos only after a successful analysis — via de centrale poort.
     const photoPaths: string[] = [];
+    const photoFileIds: number[] = [];
     for (const p of photos) {
-      photoPaths.push(await uploadMaterialPhoto(clerkId, p));
+      const stored = await storeMaterialPhoto(clerkId, p);
+      photoPaths.push(stored.objectPath);
+      photoFileIds.push(stored.fileId);
     }
 
     const [row] = await db
@@ -163,6 +196,7 @@ router.post("/analyze", requireAuth, async (req, res) => {
         userNote,
         status: result.needsMorePhoto ? "needs_more" : "analyzed",
         photoPaths,
+        photoFileIds,
         detectedItem: result.detectedItem,
         confidence: result.confidence,
         followUpQuestion: result.followUpQuestion,
@@ -177,6 +211,12 @@ router.post("/analyze", requireAuth, async (req, res) => {
 
     res.json({ analysis: row });
   } catch (err) {
+    // Poort-weigering (verkeerd/verkleed type, te groot) eerlijk doorgeven.
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "material.analyze failed");
     res
       .status(502)
@@ -244,13 +284,14 @@ router.post("/:id/photo", requireAuth, async (req, res) => {
       clerkId,
     });
 
-    const newPath = await uploadMaterialPhoto(clerkId, newPhotos[0]!);
+    const stored = await storeMaterialPhoto(clerkId, newPhotos[0]!);
 
     const [row] = await db
       .update(materialAnalysesTable)
       .set({
         status: result.needsMorePhoto ? "needs_more" : "analyzed",
-        photoPaths: [...existing.photoPaths, newPath],
+        photoPaths: [...existing.photoPaths, stored.objectPath],
+        photoFileIds: [...(existing.photoFileIds ?? []), stored.fileId],
         detectedItem: result.detectedItem,
         confidence: result.confidence,
         followUpQuestion: result.followUpQuestion,
@@ -268,6 +309,11 @@ router.post("/:id/photo", requireAuth, async (req, res) => {
 
     res.json({ analysis: row });
   } catch (err) {
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "material.addPhoto failed");
     res
       .status(502)
@@ -287,7 +333,10 @@ router.get("/photo/:id/:idx", requireAuth, async (req, res) => {
 
   try {
     const [row] = await db
-      .select({ photoPaths: materialAnalysesTable.photoPaths })
+      .select({
+        photoPaths: materialAnalysesTable.photoPaths,
+        photoFileIds: materialAnalysesTable.photoFileIds,
+      })
       .from(materialAnalysesTable)
       .where(
         and(
@@ -300,6 +349,47 @@ router.get("/photo/:id/:idx", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Foto niet gevonden" });
       return;
     }
+
+    // F11: intrekbaarheid afdwingen. Een centraal-beheerde foto (photoFileIds op
+    // dezelfde index) MOET via serveFile — die geeft 410 op een ingetrokken
+    // bestand, ook via deze module-serve-route. Legacy-foto's zonder fileId:
+    // toch fail-closed controleren of het object inmiddels centraal beheerd én
+    // ingetrokken is (findFilesByObjectPath) vóór we rauw streamen.
+    const fileId = (row?.photoFileIds ?? [])[idx] ?? null;
+    if (fileId != null) {
+      const file = await getFile(fileId);
+      // Eigenaarscontrole is al gedaan via clerkId-match op de analyse-rij.
+      if (!file || file.ownerClerkId !== clerkId) {
+        res.status(404).json({ error: "Foto niet gevonden" });
+        return;
+      }
+      const served = await serveFile(file);
+      if (!served.ok) {
+        res.status(served.status).json({ error: served.reason });
+        return;
+      }
+      res.setHeader("Content-Type", served.contentType);
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Cache-Control", "private, max-age=0, no-store");
+      served.stream.on("error", (err) => {
+        req.log.error({ err }, "material.photo serveFile stream failed");
+        if (!res.headersSent) res.status(500).end();
+      });
+      served.stream.pipe(res);
+      return;
+    }
+
+    // Legacy: geen fileId. Als het object tóch centraal beheerd is en ingetrokken,
+    // fail-closed dicht (410) — nooit een ingetrokken bestand alsnog uit.
+    const managed = await findFilesByObjectPath(path);
+    const ownedManaged = managed.filter((f) => f.ownerClerkId === clerkId);
+    if (ownedManaged.length > 0 && ownedManaged.every((f) => f.revokedAt)) {
+      res
+        .status(410)
+        .json({ error: "Dit bestand is ingetrokken en niet meer beschikbaar." });
+      return;
+    }
+
     const stream = await streamMaterialPhoto(path, res);
     stream.on("error", (err) => {
       req.log.error({ err }, "material.photo stream failed");

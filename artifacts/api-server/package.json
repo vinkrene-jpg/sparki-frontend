@@ -16,6 +16,8 @@
     "test:trainer-invoice-pdf": "node ./scripts/run-test.mjs trainer-invoice-pdf --dev-auth",
     "test:subscription-payers": "node ./scripts/run-test.mjs subscription-payers --dev-auth",
     "test:club-documents": "node ./scripts/run-test.mjs club-documents --dev-auth",
+    "test:f11-files": "node ./scripts/run-test.mjs f11-files --dev-auth",
+    "test:f11-omlegging": "node ./scripts/run-test.mjs f11-omlegging --dev-auth",
     "test:club-race-staffing": "node ./scripts/run-test.mjs club-race-staffing --dev-auth",
     "test:club-race-documents": "node ./scripts/run-test.mjs club-race-documents --dev-auth",
     "test:ui-preferences": "node ./scripts/run-test.mjs ui-preferences",

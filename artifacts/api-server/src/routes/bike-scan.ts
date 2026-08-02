@@ -201,6 +201,11 @@ router.post("/:scanId/frame", requireAuth, async (req, res) => {
       .returning();
     res.json({ frame });
   } catch (err) {
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "bikeScan.frame failed");
     res.status(502).json({ error: "Kon de opname nu niet opslaan. Probeer opnieuw." });
   }
@@ -238,6 +243,11 @@ router.post("/frame/:frameId/cutout", requireAuth, async (req, res) => {
       .returning();
     res.json({ frame: row });
   } catch (err) {
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "bikeScan.cutout failed");
     res.status(502).json({ error: "Kon het vrijstaande beeld niet opslaan" });
   }
@@ -517,6 +527,11 @@ router.post("/assets", requireAuth, async (req, res) => {
       .returning();
     res.json({ asset });
   } catch (err) {
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "assets.create failed");
     res.status(502).json({ error: "Kon het productbeeld niet opslaan" });
   }

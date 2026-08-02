@@ -28,6 +28,7 @@ import {
 import { aiMessage, UPLOAD_DATA_RULE } from "../../lib/ai/gateway";
 import { ObjectStorageService } from "../../lib/objectStorage";
 import { ObjectPermission } from "../../lib/objectAcl";
+import { registerFromObjectPath } from "../../lib/files";
 import {
   buildAthleteContext,
   systemPrompt,
@@ -276,7 +277,48 @@ export async function postMessage(
   const { clerkId } = input;
   const text = input.text?.trim() ? input.text.trim() : null;
   const link = input.link?.trim() ? input.link.trim() : null;
-  const attachments = input.attachments;
+
+  // F11: FINALISATIE via de centrale laag. De presign→PUT-flow blijft behouden
+  // (de bytes staan al in storage). Bij het finaliseren registreren we
+  // afbeeldingen en PDF's ALSNOG via de centrale veiligheidspoort
+  // (registerFromObjectPath: grootte, magic-byte-sniff, her-encoding). Dat levert
+  // een centrale files-rij (bron van waarheid, intrekbaar) en het door de poort
+  // opgeslagen veilige object; we vervangen objectPath door dat object en zetten
+  // fileId. Een verkleed/verkeerd type valt hier fail-closed weg (wordt niet als
+  // bijlage bewaard). Andere kinds (bv. tekstbestanden) kan de poort niet
+  // toelaten — die houden hun bestaande objectPath en fileId null (lazy) en
+  // krijgen alleen de owner-ACL, precies zoals voorheen.
+  const attachments: InputAttachment[] = [];
+  for (const a of input.attachments) {
+    if (a.kind === "image" || a.kind === "photo" || a.kind === "pdf") {
+      const reg = await registerFromObjectPath({
+        ownerClerkId: clerkId,
+        objectPath: a.objectPath,
+        originalName: a.name,
+        retentionCategory: "communicatie",
+      });
+      if (reg.ok) {
+        attachments.push({
+          ...a,
+          objectPath: reg.file.objectPath,
+          contentType: reg.file.contentType,
+          size: reg.file.sizeBytes,
+          fileId: reg.file.id,
+        });
+        continue;
+      }
+      // Poort weigert dit bestand — niet als bijlage bewaren (fail-closed).
+      continue;
+    }
+    // Niet-poort-type: bestaande owner-ACL zetten (ongewijzigd gedrag).
+    await objectStorageService
+      .trySetObjectEntityAclPolicy(a.objectPath, {
+        owner: clerkId,
+        visibility: "private",
+      })
+      .catch(() => undefined);
+    attachments.push({ ...a, fileId: null });
+  }
 
   const [athleteTurn] = await db
     .insert(sparkiInputMessagesTable)
@@ -289,20 +331,6 @@ export async function postMessage(
       sources: null,
     })
     .returning();
-
-  // The objects were just uploaded via presigned PUT, so they exist now. Register
-  // ownership (private, owner = this athlete) before reading any bytes, so the
-  // owner-gated serve route and byte loader can authorise the real owner only.
-  await Promise.all(
-    attachments.map((a) =>
-      objectStorageService
-        .trySetObjectEntityAclPolicy(a.objectPath, {
-          owner: clerkId,
-          visibility: "private",
-        })
-        .catch(() => undefined),
-    ),
-  );
 
   const keywordSeed = [text ?? "", link ?? "", ...attachments.map((a) => a.name)]
     .join(" ")

@@ -242,6 +242,11 @@ export const trainerLetterheadsTable = pgTable(
         onUpdate: "cascade",
       }),
     filePath: text("file_path").notNull(),
+    // F11: centrale files-rij van het geüploade briefpapier. Bron van waarheid
+    // voor de veiligheidspoort, intrekbaarheid en retentie. Nullable: legacy-
+    // rijen van vóór de omlegging hebben geen fileId en blijven werken via
+    // filePath (lazy koppeling — geen destructieve backfill).
+    fileId: integer("file_id"),
     fileFormat: text("file_format").notNull(),
     templateVersion: integer("template_version").notNull(),
     marginsOk: boolean("margins_ok").notNull().default(false),

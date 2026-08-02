@@ -339,6 +339,13 @@ router.post("/bikes/:id/photo", requireAuth, async (req, res) => {
       .returning();
     res.json({ bike: row });
   } catch (err) {
+    // F11: de centrale poort kan een verkeerd type (415) of te grote foto (400)
+    // eerlijk weigeren; die status doorgeven i.p.v. een generieke 502.
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "garage.addPhoto failed");
     res.status(502).json({ error: "Kon de foto nu niet opslaan. Probeer opnieuw." });
   }
@@ -1065,6 +1072,11 @@ router.post("/components/:id/events", requireAuth, async (req, res) => {
       .returning();
     res.json({ event, component: withAssessment(updated!) });
   } catch (err) {
+    const status = (err as { httpStatus?: number }).httpStatus;
+    if (typeof status === "number") {
+      res.status(status).json({ error: (err as Error).message });
+      return;
+    }
     req.log.error({ err }, "garage.events.create failed");
     res.status(502).json({ error: "Kon het logboek-item niet opslaan" });
   }

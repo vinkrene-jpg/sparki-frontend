@@ -1177,6 +1177,7 @@ function OnboardingSection({ clubId }: { clubId: number }) {
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/svg+xml"
+            aria-label={isTeam ? "Kies een teamlogo (JPG, PNG, WebP of SVG, max 5 MB)" : "Kies een clublogo (JPG, PNG, WebP of SVG, max 5 MB)"}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void onLogoFile(f) }}
             className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-cyan-300/40 file:bg-cyan-300/10 file:px-3 file:py-1.5 file:text-[12px] file:text-cyan-200"
           />
@@ -1249,6 +1250,7 @@ function OnboardingSection({ clubId }: { clubId: number }) {
           <input
             type="file"
             accept=".csv,text/csv,text/plain"
+            aria-label="Kies een CSV-bestand voor de ledenimport"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void onImportFile(f) }}
             className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-white/20 file:bg-white/5 file:px-3 file:py-1.5 file:text-[12px] file:text-white/70"
           />
@@ -1436,6 +1438,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
         <input
           type="file"
           accept="application/pdf,image/*"
+          aria-label="Kies een clubdocument (PDF of afbeelding)"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="text-[12px] text-white/60"
         />
@@ -1567,6 +1570,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
                     <input
                       type="file"
                       accept="application/pdf,image/*"
+                      aria-label="Kies een nieuwe versie van dit clubdocument (PDF of afbeelding)"
                       onChange={(e) => setVersionFile(e.target.files?.[0] ?? null)}
                       className="text-[11px] text-white/60"
                     />

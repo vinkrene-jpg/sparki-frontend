@@ -286,11 +286,15 @@ function TeamIdentitySection() {
                 accept="image/png,image/jpeg,image/webp"
                 onChange={onLogoFile}
                 className="hidden"
+                aria-hidden="true"
+                tabIndex={-1}
+                aria-label="Kies een clublogo (PNG, JPEG of WEBP)"
               />
               <button
                 type="button"
                 onClick={() => logoInputRef.current?.click()}
                 disabled={logoBusy}
+                aria-label={form.logoUrl ? "Vervang het clublogo" : "Upload een clublogo"}
                 className="rounded-xl border border-white/[0.1] px-3.5 py-2 font-sans text-[13px] text-white/70 disabled:opacity-40"
               >
                 {logoBusy ? "Uploaden…" : form.logoUrl ? "Ander logo" : "Upload logo"}
@@ -299,6 +303,7 @@ function TeamIdentitySection() {
                 <button
                   type="button"
                   onClick={() => setForm((p) => ({ ...p, logoUrl: null }))}
+                  aria-label="Verwijder het clublogo"
                   className="rounded-xl border border-white/[0.1] px-3.5 py-2 font-sans text-[13px] text-white/45"
                 >
                   Verwijder

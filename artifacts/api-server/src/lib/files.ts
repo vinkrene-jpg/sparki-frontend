@@ -1,7 +1,13 @@
 import { createHash } from "crypto";
-import { and, eq, isNull } from "drizzle-orm";
-import { db, filesTable, type FileRecord } from "@workspace/db";
-import { ObjectStorageService } from "./objectStorage";
+import { and, asc, eq, isNull } from "drizzle-orm";
+import {
+  db,
+  filesTable,
+  fileRetentionCategories,
+  type FileRecord,
+} from "@workspace/db";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { getObjectAclPolicy } from "./objectAcl";
 
 // ── F7: generieke bestandslaag (voorschot op F11) ────────────────────────────
 // Eén plek waar bestanden binnenkomen, gescand worden en geserveerd worden.
@@ -25,6 +31,11 @@ import { ObjectStorageService } from "./objectStorage";
 // X-Content-Type-Options: nosniff — nooit inline in de app-context. Een
 // ingetrokken bestand (revokedAt) is nergens meer downloadbaar (410), ook niet
 // via een oudere link.
+//
+// F11 (centrale laag): deze module IS de ene centrale poort. Het volledige,
+// eerlijke veiligheidsbeleid (geen echte virusscanner, wél magic-byte-controle,
+// her-encoding, PDF-%PDF-controle, whitelist per doel, groottelimiet, geen
+// uitvoerbare types) staat in docs/F11_VEILIGHEIDSBELEID.md.
 
 const svc = new ObjectStorageService();
 
@@ -105,11 +116,24 @@ export async function scanFile(input: Buffer): Promise<ScanResult> {
       const sharp = (await import("sharp")).default;
       const img = sharp(input, { failOn: "error" });
       const meta = await img.metadata();
-      // Her-encodeer: jpeg voor het gros; webp blijft webp. Zo verdwijnt
-      // meegesmokkelde inhoud en houden we een klein, veilig bestand over.
+      // Her-encodeer: zo verdwijnt meegesmokkelde inhoud (EXIF-payloads,
+      // polyglots) en houden we een klein, veilig bestand over.
+      // - webp blijft webp;
+      // - PNG MET transparantie blijft PNG (her-encode PNG→PNG). Zo verwijderen
+      //   we alsnog payloads, maar behouden we het alfakanaal — noodzakelijk voor
+      //   afgeleiden zoals de fietsscan-cutout (vrijstaand beeld). Zonder deze
+      //   regel zou her-encoding naar jpeg de transparantie platslaan.
+      // - al het overige (jpeg, alpha-loze png, heic, …) wordt jpeg.
       if (meta.format === "webp") {
         const bytes = await sharp(input).rotate().webp({ quality: 85 }).toBuffer();
         return { ok: true, bytes, contentType: "image/webp", ext: "webp" };
+      }
+      if (meta.format === "png" && meta.hasAlpha) {
+        const bytes = await sharp(input)
+          .rotate()
+          .png({ compressionLevel: 9 })
+          .toBuffer();
+        return { ok: true, bytes, contentType: "image/png", ext: "png" };
       }
       const bytes = await sharp(input)
         .rotate()
@@ -138,12 +162,53 @@ export type RegisterFileInput = {
 };
 
 export type RegisterFileResult =
-  | { ok: true; file: FileRecord }
+  | { ok: true; file: FileRecord; deduped?: boolean }
   | { ok: false; status: number; reason: string };
+
+// Valideer/normaliseer de retentiecategorie (F11 §3). Onbekende waarden vallen
+// fail-closed terug op "algemeen"; nooit een vrije tekst in de kolom.
+function normalizeRetentionCategory(raw: string | undefined): string {
+  if (raw && (fileRetentionCategories as readonly string[]).includes(raw)) {
+    return raw;
+  }
+  return "algemeen";
+}
+
+// DEDUPE (F11 §2): zoek een bestaand, NIET-ingetrokken bestand van DEZELFDE
+// eigenaar met identieke sha256 én grootte. Cross-eigenaar wordt NOOIT
+// hergebruikt (privacy: één eigenaar mag nooit merken dat iemand anders exact
+// hetzelfde bestand heeft). Retourneert het gedeelde objectPath of null.
+async function findDedupeObjectPath(
+  ownerClerkId: string,
+  sha256: string,
+  sizeBytes: number,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ objectPath: filesTable.objectPath })
+    .from(filesTable)
+    .where(
+      and(
+        eq(filesTable.ownerClerkId, ownerClerkId),
+        eq(filesTable.sha256, sha256),
+        eq(filesTable.sizeBytes, sizeBytes),
+        isNull(filesTable.revokedAt),
+      ),
+    )
+    .limit(1);
+  return row?.objectPath ?? null;
+}
 
 // registerFile: neemt rauwe base64, draait de VOLLEDIGE scanketen, PUT de
 // (eventueel her-encodeerde) bytes naar storage, zet de ACL NA de PUT (memory-
 // les: presign→PUT→ACL-on-persist), en legt het metadata-record vast.
+//
+// DEDUPE-KEUZE (bewust, F11 §2): bij een bestaand sha256+grootte van dezelfde
+// eigenaar SLAAN we de bytes niet opnieuw op — we hergebruiken het bestaande
+// objectPath. Er wordt WEL een nieuwe files-rij aangemaakt (eigen metadata,
+// eigen versie/koppeling). Intrekken (revokedAt) werkt PER files-rij en zet
+// nooit de gedeelde object-bytes zelf weg; zolang minstens één niet-ingetrokken
+// rij naar het object verwijst blijft het bruikbaar. Zo raakt het intrekken van
+// de één de ander niet. Object-bytes worden in DEEL 1 nooit fysiek verwijderd.
 export async function registerFile(
   input: RegisterFileInput,
 ): Promise<RegisterFileResult> {
@@ -158,25 +223,35 @@ export async function registerFile(
     return { ok: false, status: scan.status, reason: scan.reason };
   }
 
-  // 1. PUT de veilige bytes naar object storage (aparte oorsprong).
-  const uploadUrl = await svc.getObjectEntityUploadURL();
-  const put = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": scan.contentType },
-    body: scan.bytes,
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!put.ok) {
-    return { ok: false, status: 502, reason: "Bestand opslaan is niet gelukt." };
-  }
-  // 2. ACL pas NA de PUT: eigenaar privé (serve-pad doet de echte rechtencheck).
-  const objectPath = await svc.trySetObjectEntityAclPolicy(uploadUrl, {
-    owner: input.ownerClerkId,
-    visibility: "private",
-  });
-
   const sha256 = createHash("sha256").update(scan.bytes).digest("hex");
+  const sizeBytes = scan.bytes.length;
+  const retentionCategory = normalizeRetentionCategory(input.retentionCategory);
   const safeName = sanitizeName(input.originalName, scan.ext);
+
+  // DEDUPE: bestaand object van dezelfde eigenaar hergebruiken?
+  let deduped = false;
+  let objectPath = await findDedupeObjectPath(input.ownerClerkId, sha256, sizeBytes);
+  if (objectPath) {
+    deduped = true;
+  } else {
+    // 1. PUT de veilige bytes naar object storage (aparte oorsprong).
+    const uploadUrl = await svc.getObjectEntityUploadURL();
+    const put = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": scan.contentType },
+      body: scan.bytes,
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!put.ok) {
+      return { ok: false, status: 502, reason: "Bestand opslaan is niet gelukt." };
+    }
+    // 2. ACL pas NA de PUT: eigenaar privé (serve-pad doet de echte rechtencheck).
+    objectPath = await svc.trySetObjectEntityAclPolicy(uploadUrl, {
+      owner: input.ownerClerkId,
+      visibility: "private",
+    });
+  }
+
   const [file] = await db
     .insert(filesTable)
     .values({
@@ -184,13 +259,196 @@ export async function registerFile(
       objectPath,
       originalName: safeName,
       contentType: scan.contentType,
-      sizeBytes: scan.bytes.length,
+      sizeBytes,
       sha256,
       version: 1,
-      retentionCategory: input.retentionCategory ?? "algemeen",
+      retentionCategory,
     })
     .returning();
-  return { ok: true, file: file! };
+  // Eerste versie: logicalId gelijk aan de eigen id (start van de keten).
+  const [linked] = await db
+    .update(filesTable)
+    .set({ logicalId: file!.id })
+    .where(eq(filesTable.id, file!.id))
+    .returning();
+  return { ok: true, file: linked!, deduped };
+}
+
+// claimPresignObject (F11 §5, verplichte eigendomsclaim): een via presign→PUT
+// geüpload object heeft nog GEEN ACL (de bytes bestonden nog niet toen de URL
+// werd getekend). Deze functie maakt de caller de private eigenaar — maar NOOIT
+// via takeover: is het object al van een ANDER, dan weigeren we (403). Zo kan
+// niemand met een geraden/bekend objectPath andermans bytes als "eigen" bestand
+// laten finaliseren (IDOR-gat). Alleen een ongeclaimd object of een object dat
+// de caller al bezit mag door. Faalt het object niet te bestaan ⇒ 400.
+async function claimPresignObject(
+  ownerClerkId: string,
+  objectPath: string,
+): Promise<{ ok: true } | { ok: false; status: number; reason: string }> {
+  let file;
+  try {
+    file = await svc.getObjectEntityFile(objectPath);
+  } catch (err) {
+    if (err instanceof ObjectNotFoundError) {
+      return {
+        ok: false,
+        status: 400,
+        reason: "Het bestand is nog niet geüpload. Probeer het opnieuw.",
+      };
+    }
+    return { ok: false, status: 400, reason: "Het bestand kon niet worden vastgelegd." };
+  }
+  const existing = await getObjectAclPolicy(file);
+  if (existing?.owner && existing.owner !== ownerClerkId) {
+    // Takeover geblokkeerd: dit object hoort bij iemand anders.
+    return {
+      ok: false,
+      status: 403,
+      reason: "Dit bestand hoort bij een andere gebruiker.",
+    };
+  }
+  await svc.trySetObjectEntityAclPolicy(objectPath, {
+    owner: ownerClerkId,
+    visibility: "private",
+  });
+  return { ok: true };
+}
+
+// quarantinePresignObject (F11 §5, poort-hygiëne): na een geslaagde registratie
+// is de her-encodeerde, veilige kopie leidend (nieuw object via registerFile).
+// De RAUWE presign-bron (ongescand, kan EXIF-payloads/polyglots bevatten) mag
+// niet blijven bestaan: die is via /api/storage voor de eigenaar bereikbaar en
+// omzeilt de poort. We proberen hem te verwijderen; lukt dat niet, dan zetten we
+// zijn ACL fail-closed op een niet-bestaande eigenaar (quarantaine) zodat niemand
+// hem meer kan ophalen. Best-effort: registratie is al geslaagd, dit is opruimen.
+async function quarantinePresignObject(objectPath: string): Promise<void> {
+  try {
+    const file = await svc.getObjectEntityFile(objectPath);
+    try {
+      await file.delete();
+      return;
+    } catch {
+      // Verwijderen kan mislukken (permissies); val terug op quarantaine-ACL.
+    }
+    await svc
+      .trySetObjectEntityAclPolicy(objectPath, {
+        owner: "__quarantine__",
+        visibility: "private",
+      })
+      .catch(() => undefined);
+  } catch {
+    // Bron bestaat al niet meer / niet bereikbaar: niets te doen.
+  }
+}
+
+// registerFromObjectPath (F11 §5, presign-flow): modules die een presign→PUT→
+// ACL-op-persist-flow gebruiken (Input Center, Journey-media, Photo Lab) hebben
+// de bytes al in object storage staan wanneer ze finaliseren. Deze functie:
+//   1. CLAIMT het bronobject verplicht op naam van de caller (nooit takeover) —
+//      de claim zit IN deze functie zodat geen enkele aanroeper hem kan vergeten
+//      (voorkomt IDOR: finaliseren van andermans objectPath);
+//   2. haalt de bytes op en draait ze door de VOLLEDIGE centrale veiligheidspoort
+//      (scanFile: grootte, magic-byte-sniff, her-encoding). De veilige bytes
+//      komen onder een NIEUW object (via registerFile);
+//   3. QUARANTAINEERT de rauwe presign-bron (verwijderen, anders ACL dichtzetten)
+//      zodat de ongescande bytes niet via /api/storage bereikbaar blijven.
+export async function registerFromObjectPath(input: {
+  // Verplicht: op wiens naam het bronobject geclaimd moet worden. Zonder
+  // geldige claim registreren we niets (fail-closed tegen IDOR).
+  ownerClerkId: string;
+  objectPath: string;
+  originalName: string;
+  retentionCategory?: string;
+}): Promise<RegisterFileResult> {
+  // 1. Verplichte, niet-overslaanbare eigendomsclaim (nooit takeover).
+  const claim = await claimPresignObject(input.ownerClerkId, input.objectPath);
+  if (!claim.ok) {
+    return { ok: false, status: claim.status, reason: claim.reason };
+  }
+
+  // 2. Bytes ophalen en door de poort halen.
+  let base64: string;
+  try {
+    const got = await svc.getObjectBytes(input.objectPath);
+    base64 = got.base64;
+  } catch {
+    return {
+      ok: false,
+      status: 400,
+      reason: "Het bestand is nog niet geüpload. Probeer het opnieuw.",
+    };
+  }
+  const result = await registerFile({
+    ownerClerkId: input.ownerClerkId,
+    base64,
+    originalName: input.originalName,
+    retentionCategory: input.retentionCategory,
+  });
+
+  // 3. Bij succes: de rauwe bron opruimen/quarantaineren (alleen als het geen
+  //    dedupe-hergebruik van exact dit bronobject is — dat kan bij presign niet,
+  //    want de veilige kopie krijgt altijd een eigen nieuw pad).
+  if (result.ok && result.file.objectPath !== input.objectPath) {
+    await quarantinePresignObject(input.objectPath);
+  }
+  return result;
+}
+
+export type ReplaceFileResult =
+  | { ok: true; file: FileRecord; deduped?: boolean }
+  | { ok: false; status: number; reason: string };
+
+// replaceFile (F11 §1, generiek): vervang een bestaand bestand door een nieuwe
+// versie ZONDER historieverlies. De nieuwe versie deelt de logicalId van de
+// keten, krijgt versie = hoogste+1, en de VORIGE (actuele) versie wordt via
+// supersededById naar de nieuwe gewezen. De oude versie blijft bewaard en
+// downloadbaar voor bevoegden zolang die niet is ingetrokken. Onafhankelijk van
+// F8 (dat een eigen versietabel heeft die óók naar files.id wijst — dat mag
+// blijven; deze centrale keten werkt ook zonder F8).
+export async function replaceFile(
+  currentFileId: number,
+  input: RegisterFileInput,
+): Promise<ReplaceFileResult> {
+  const current = await getFile(currentFileId);
+  if (!current) {
+    return { ok: false, status: 404, reason: "Bestand niet gevonden." };
+  }
+  const logicalId = current.logicalId ?? current.id;
+  // Bepaal de hoogste versie binnen de logische keten.
+  const chain = await db
+    .select({ version: filesTable.version })
+    .from(filesTable)
+    .where(eq(filesTable.logicalId, logicalId));
+  const nextVersion = chain.reduce((mx, r) => Math.max(mx, r.version), current.version) + 1;
+
+  const reg = await registerFile(input);
+  if (!reg.ok) return reg;
+
+  // De nieuwe rij in de keten hangen + versie zetten.
+  const [linked] = await db
+    .update(filesTable)
+    .set({ logicalId, version: nextVersion })
+    .where(eq(filesTable.id, reg.file.id))
+    .returning();
+  // De vorige actuele versie naar de nieuwe wijzen (historie blijft bewaard).
+  await db
+    .update(filesTable)
+    .set({ supersededById: reg.file.id })
+    .where(eq(filesTable.id, currentFileId));
+  return { ok: true, file: linked!, deduped: reg.deduped };
+}
+
+// Alle versies van de logische keten waar dit bestand toe behoort, oplopend op
+// versienummer. Handig voor "historie tonen aan bevoegden".
+export async function listFileVersions(fileId: number): Promise<FileRecord[]> {
+  const file = await getFile(fileId);
+  if (!file) return [];
+  const logicalId = file.logicalId ?? file.id;
+  return db
+    .select()
+    .from(filesTable)
+    .where(eq(filesTable.logicalId, logicalId))
+    .orderBy(asc(filesTable.version));
 }
 
 // Trek een bestand in (fail-closed). Idempotent; retourneert het record.
@@ -223,6 +481,14 @@ export async function findFileByObjectPath(objectPath: string): Promise<FileReco
   return row ?? null;
 }
 
+// Alle files-rijen die naar hetzelfde opgeslagen object wijzen. Dedupe op
+// checksum kan per eigenaar een eigen rij aanmaken die dezelfde bytes (en dus
+// hetzelfde object) deelt; de generieke serve-route moet daarom per caller de
+// juiste rij kiezen (levend vs. ingetrokken) i.p.v. een willekeurige.
+export async function findFilesByObjectPath(objectPath: string): Promise<FileRecord[]> {
+  return db.select().from(filesTable).where(eq(filesTable.objectPath, objectPath));
+}
+
 export type ServeResult =
   | { ok: true; stream: NodeJS.ReadableStream; contentType: string; downloadName: string }
   | { ok: false; status: number; reason: string };
@@ -249,12 +515,24 @@ export async function serveFile(file: FileRecord): Promise<ServeResult> {
   }
 }
 
-// Zorg dat de weergavenaam een veilige, bij het echte type passende extensie
-// heeft (nooit een misleidende .exe/.docx-naam op een her-encodeerde afbeelding).
-function sanitizeName(name: string, ext: string): string {
+// VEILIGE BESTANDSNAAM (F11 §5): de originele naam is UITSLUITEND metadata voor
+// de weergave; het opslagpad blijft een uuid. We saneren hard:
+// - pad-tekens (/ \) en control chars (incl. \0, newlines, tabs) verwijderd;
+// - geen pad-traversal ("..", losse punten) meer mogelijk;
+// - lengtegrens (120 tekens voor de basisnaam);
+// - de extensie wordt ALTIJD forcefully afgeleid van het ECHTE (gesnifte) type,
+//   nooit van de door de client geclaimde naam (geen misleidende .exe/.docx).
+export function sanitizeName(name: string, ext: string): string {
   const base = (name || "bestand")
+    // Control chars (0x00–0x1F, 0x7F) weg — voorkomt \0, CR/LF, tab-injectie.
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    // Pad-scheidingstekens weg.
     .replace(/[/\\]/g, "_")
+    // Bestaande extensie strippen (we forceren de veilige extensie hieronder).
     .replace(/\.[a-z0-9]+$/i, "")
+    // Losse punten (pad-traversal ".." / "." ) neutraliseren.
+    .replace(/\.+/g, "_")
     .slice(0, 120)
     .trim();
   return `${base || "bestand"}.${ext}`;

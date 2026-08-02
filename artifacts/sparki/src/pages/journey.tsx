@@ -687,12 +687,13 @@ function MediaSection({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
+          aria-label="Foto of video toevoegen aan dit wedstrijddossier"
           className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 hover:text-cyan-300 disabled:opacity-40"
         >
           {uploading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
           ) : (
-            <ImagePlus className="h-3.5 w-3.5" strokeWidth={2} />
+            <ImagePlus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
           )}
           Toevoegen
         </button>
@@ -701,6 +702,8 @@ function MediaSection({
           type="file"
           accept="image/*,video/*"
           className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
           onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
         />
       </div>
@@ -770,13 +773,13 @@ function MediaRow({
     <div className="flex gap-3 rounded-xl border border-white/10 p-2">
       {isVideo ? (
         <video
-          src={journeyMediaUrl(media.objectPath)}
+          src={journeyMediaUrl(media)}
           className="h-16 w-16 shrink-0 rounded-lg object-cover"
           muted
         />
       ) : (
         <img
-          src={journeyMediaUrl(media.objectPath)}
+          src={journeyMediaUrl(media)}
           alt={media.caption ?? "Media"}
           className="h-16 w-16 shrink-0 rounded-lg object-cover"
         />
@@ -1008,12 +1011,14 @@ function ShareCardSection({
                       return next
                     })
                   }
+                  aria-pressed={mediaIds.has(m.id)}
+                  aria-label={`${mediaIds.has(m.id) ? "Verwijder van" : "Voeg toe aan"} de deelkaart: ${m.caption ?? "foto"}`}
                   className={`overflow-hidden rounded-lg border-2 ${
                     mediaIds.has(m.id) ? "border-cyan-300" : "border-transparent"
                   }`}
                 >
                   <img
-                    src={journeyMediaUrl(m.objectPath)}
+                    src={journeyMediaUrl(m)}
                     alt={m.caption ?? "Media"}
                     className="h-14 w-14 object-cover"
                   />

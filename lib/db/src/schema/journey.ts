@@ -91,6 +91,12 @@ export const journeyMediaTable = pgTable(
     // echte upload via de presign-flow. ACL wordt pas gezet als de bytes er
     // echt staan (persist), nooit ervoor.
     objectPath: text("object_path").notNull(),
+    // F11: centrale files-rij als bron van waarheid voor deze media (veiligheids-
+    // poort, intrekbaarheid via revokedAt, retentie). Nullable: legacy-media van
+    // vóór de omlegging heeft geen fileId en blijft werken via objectPath (lazy
+    // koppeling — geen destructieve backfill). Video's blijven buiten de centrale
+    // her-encoding-poort (die dekt alleen beeld/PDF) en houden fileId null.
+    fileId: integer("file_id"),
     mediaType: text("media_type").notNull(), // bijv. "image/jpeg", "video/mp4"
     caption: text("caption"),
     sortIndex: integer("sort_index").notNull().default(0),
