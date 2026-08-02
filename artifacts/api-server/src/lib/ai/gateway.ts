@@ -124,6 +124,22 @@ export const AI_PURPOSES = {
     timeoutMs: 60_000,
     maxRetries: 1,
   },
+  // SPARKI_BUILD_04 F13 — AI-concepten voor de zelfstandige trainer.
+  // Alleen tekstconcepten (intake, doelen, plan, feedback, rapport,
+  // communicatie, factuuromschrijving, evaluatie). De AI bepaalt NOOIT een
+  // bedrag of btw-status en verstuurt NOOIT iets; dat dwingt de routelaag af.
+  trainer_draft: {
+    label: "Trainer-concepttekst",
+    provider: "anthropic",
+    model: MODEL,
+    promptVersion: "trainer-draft-v1",
+    inputCategories: ["klantcontext", "trainingscontext"],
+    consent: "ai_coaching",
+    sensitive: false,
+    minorBlocked: false,
+    timeoutMs: 60_000,
+    maxRetries: 1,
+  },
   goal_translate: {
     label: "Doelvertaling (vrije invoer naar meetbaar doel)",
     provider: "anthropic",
