@@ -34,8 +34,8 @@ waar van toepassing aangevuld met web/api, omdat GAZ-02 app en browser gelijkste
 - **GAZ-01 vormgevingslaag:** alleen in web (`lib/motion.ts`, `lib/zweefkaart.ts`); leunt op `document.*` → verplaatsen naar gedeelde code met platform-poort, niet nabouwen. **Open.**
 - **GAZ-02 gelijkheid app/browser:** grootste gaten: D, G, O, R (zie tabel). **Open.**
 - **GAZ-05 knop-vangnet:** sign-in én sign-up vandaag gedekt; regel is bindend vastgelegd. **Klaar.**
-- **GAZ-06 zichtbare versie web:** `meer.tsx` toont APP_VERSION/BUILD_SHA, maar `version.json` ontbreekt. **Open (F1).**
-- **GAZ-07 omgeving zichtbaar:** web toont productie/ontwikkel in `meer.tsx`; app toont niets. **Half (F1).**
+- **GAZ-06 zichtbare versie web:** al gedekt — `meer.tsx` toont APP_VERSION/BUILD_SHA én de vite-build schrijft `version.json` (plugin `sparki-version-truth`); de meting in de opdracht was verouderd. **Klaar.**
+- **GAZ-07 omgeving zichtbaar:** web toont productie/ontwikkel in `meer.tsx`; app toont nu versie + omgeving + update-ID in Instellingen (F1-rest, 02-08). **Klaar.**
 - **GAZ-08/09 installeerbare APK + herinstallatieregels:** vandaag geleverd (EAS-profiel `praktijktest`, OTA via kanaal, regels gemeld). **Klaar.**
 - **GAZ-03/04 (scrollen, vensters):** te toetsen per scherm zodra F3–F6 gebouwd worden.
 

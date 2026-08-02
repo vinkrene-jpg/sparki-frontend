@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 import * as Location from "expo-location";
 import { useRouter, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -781,6 +782,13 @@ export default function InstellingenScreen() {
         <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
           Sparki versie {appVersion}
           {buildNr ? ` (build ${buildNr})` : ""}
+          {"\n"}
+          {/* GAZ-06/07: versie én omgeving altijd afleesbaar — geen gok welke
+              build je voor je hebt. Update-ID komt van de automatische
+              bijwerking; "ingebouwd" = de versie zoals geïnstalleerd. */}
+          Omgeving: {__DEV__ ? "ontwikkelomgeving" : Updates.channel || "productie"}
+          {" · update: "}
+          {Updates.updateId ? Updates.updateId.slice(0, 8) : "ingebouwd"}
         </Text>
       </View>
     </ScrollView>
