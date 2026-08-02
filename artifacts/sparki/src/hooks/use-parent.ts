@@ -103,6 +103,31 @@ export function useParentOverview(enabled = true) {
   });
 }
 
+// F8 — gepubliceerde clubdocumenten (leden_en_ouders) van de clubs waar het
+// gekoppelde kind lid is. Alleen-lezen; downloaden via het beveiligde serve-pad.
+export type ParentClubDocument = {
+  id: number;
+  title: string;
+  category: string;
+  versionNumber: number;
+  mediaType: string;
+  publishedAt: string | null;
+};
+export type ParentClubDocuments = {
+  clubs: { clubId: number; clubName: string; documents: ParentClubDocument[] }[];
+};
+
+export function useParentChildClubDocuments(athleteClerkId: string | null) {
+  return useQuery<ParentClubDocuments>({
+    queryKey: ["parent", "club-documents", athleteClerkId],
+    queryFn: () =>
+      apiFetch<ParentClubDocuments>(
+        `/api/parent/athletes/${athleteClerkId}/club-documents`,
+      ),
+    enabled: !!athleteClerkId,
+  });
+}
+
 export function useUpdateParentPermissions() {
   const qc = useQueryClient();
   return useMutation({

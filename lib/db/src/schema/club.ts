@@ -938,6 +938,35 @@ export const selectClubSchema = createSelectSchema(clubsTable);
 // ouderafspraken, reglement. Alleen opslaan en tonen; documenten hangen aan de
 // club, niet aan een persoon. Bestanden staan in de bestaande object-storage-
 // laag (objectPath), nooit bytes in de DB. Alleen clubbeheer plaatst.
+// F8 — Clubdocumenten (uitbreiding van HA-26/HA-27).
+// Uitbreidbare categorielijst; de eerste vier bestonden al (reglement/overig
+// blijven behouden voor bestaande rijen), de rest komt uit de F8-specificatie.
+export const clubDocumentCategories = [
+  "gedragscode",
+  "huisregels",
+  "ouderafspraken",
+  "privacyinformatie",
+  "vertrouwenscontactpersoon",
+  "noodprocedures",
+  "clubinstructies",
+  // Bestaande waarden — behouden voor reeds geplaatste documenten.
+  "reglement",
+  "overig",
+] as const;
+export type ClubDocumentCategory = (typeof clubDocumentCategories)[number];
+
+// F8 — rol-afhankelijke zichtbaarheid per document. Server-side afgedwongen op
+// lijst ÉN download ÉN directe file/API-toegang.
+//   leden_en_ouders = default: alle actieve leden + gekoppelde ouders van een
+//     clublid mogen de gepubliceerde versie lezen.
+//   trainers_bestuur = alleen beheer (owner/admin/hoofdtrainer) + trainerachtige
+//     rollen; leden/ouders zien het document nergens.
+export const clubDocumentVisibilities = ["leden_en_ouders", "trainers_bestuur"] as const;
+export type ClubDocumentVisibility = (typeof clubDocumentVisibilities)[number];
+
+export const clubDocumentVersionStatuses = ["concept", "gepubliceerd"] as const;
+export type ClubDocumentVersionStatus = (typeof clubDocumentVersionStatuses)[number];
+
 export const clubDocumentsTable = pgTable(
   "club_documents",
   {
@@ -946,16 +975,57 @@ export const clubDocumentsTable = pgTable(
       .notNull()
       .references(() => clubsTable.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    category: text("category").notNull().default("overig"), // gedragscode | ouderafspraken | reglement | overig
-    objectPath: text("object_path").notNull(),
-    mediaType: text("media_type").notNull(),
+    category: text("category").notNull().default("overig"),
+    // F8: rol-afhankelijke zichtbaarheid (default: leden + ouders).
+    visibility: text("visibility").notNull().default("leden_en_ouders"),
+    // F8: wijst naar de actieve gepubliceerde versie (club_document_versions).
+    // NULL = document heeft nog geen gepubliceerde versie (alleen concept).
+    currentVersionId: integer("current_version_id"),
+    // Legacy (HA-26/HA-27): de bytes van de EERSTE versie. Blijven staan voor
+    // bestaande rijen; nieuwe uploads lopen uitsluitend via de versietabel +
+    // de F7-bestandenlaag. Nooit meer geschreven, alleen migratie leest ze.
+    objectPath: text("object_path"),
+    mediaType: text("media_type"),
     sizeBytes: integer("size_bytes"),
     uploadedByClerkId: text("uploaded_by_clerk_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("club_documents_club_idx").on(t.clubId)],
 );
 export type ClubDocument = typeof clubDocumentsTable.$inferSelect;
+
+// F8 — versies per document. Bij een nieuwe versie blijft de oude ALTIJD
+// bewaard (geen stil overschrijven); publicatie is expliciet (concept →
+// gepubliceerd). Eén actieve gepubliceerde versie per document (aangewezen via
+// club_documents.current_version_id). Bytes leven in de F7-bestandenlaag
+// (fileId → files); objectPath/mediaType/sizeBytes zijn de gekopieerde metadata
+// zodat het serve-pad de F7-poorten (intrekking, attachment/nosniff) hergebruikt.
+export const clubDocumentVersionsTable = pgTable(
+  "club_document_versions",
+  {
+    id: serial("id").primaryKey(),
+    documentId: integer("document_id")
+      .notNull()
+      .references(() => clubDocumentsTable.id, { onDelete: "cascade" }),
+    versionNumber: integer("version_number").notNull(),
+    status: text("status").notNull().default("concept"), // concept | gepubliceerd
+    // F7-bestand (kan NULL zijn voor gemigreerde legacy-rijen zonder file-record).
+    fileId: integer("file_id"),
+    objectPath: text("object_path").notNull(),
+    mediaType: text("media_type").notNull(),
+    sizeBytes: integer("size_bytes"),
+    uploadedByClerkId: text("uploaded_by_clerk_id").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    publishedByClerkId: text("published_by_clerk_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("club_document_versions_doc_idx").on(t.documentId),
+    uniqueIndex("club_document_versions_number_unique").on(t.documentId, t.versionNumber),
+  ],
+);
+export type ClubDocumentVersion = typeof clubDocumentVersionsTable.$inferSelect;
 
 // HERSTEL_EN_AANVULLING_01 F4: uitgifteregister van documentuitdraaien per
 // evenement — het versienummer op een PDF is het aantal eerdere uitgiftes van

@@ -4,16 +4,20 @@
 // /api/parent/overview). Het gekozen kind stuurt Vandaag en Toestemmingen.
 // Trainer-contact verschijnt alleen wanneer de bestaande toestemmingslaag
 // (categorie "communicatie") dat toelaat.
+import { useState } from "react"
 import { Link } from "wouter"
-import { Users, UserPlus, ChevronRight, Contact, Eye } from "lucide-react"
+import { Users, UserPlus, ChevronRight, Contact, Eye, FileText, Download } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useUserProfile } from "@/contexts/UserContext"
 import {
   useParentOverview,
   useParentTrainers,
+  useParentChildClubDocuments,
   type ParentOverviewChild,
 } from "@/hooks/use-parent"
+import { downloadClubDocument } from "@/hooks/use-club"
+import { CLUB_DOC_CATEGORY_LABELS } from "@/components/sparki/club-documents"
 import {
   useSelectedChild,
   effectiveChildId,
@@ -189,6 +193,7 @@ function KindCard({
         isMinor={child.access.tier === "u16" || child.access.tier === "unknown"}
       />
       {selected && <DoelenBlock athleteClerkId={child.athleteClerkId} />}
+      {selected && <ClubDocsBlock athleteClerkId={child.athleteClerkId} />}
       {selected && (
         <Link
           href="/vandaag"
@@ -199,6 +204,69 @@ function KindCard({
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       )}
+    </div>
+  )
+}
+
+// F8 — clubdocumenten die voor ouders relevant zijn (gepubliceerd,
+// zichtbaarheid leden_en_ouders) van de clubs waar dit kind lid is. Alleen
+// lezen/openen; de server dwingt zichtbaarheid + ouderkoppeling af.
+function ClubDocsBlock({ athleteClerkId }: { athleteClerkId: string }) {
+  const { data, isLoading } = useParentChildClubDocuments(athleteClerkId)
+  const [busy, setBusy] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  if (isLoading || !data) return null
+  const clubs = data.clubs.filter((c) => c.documents.length > 0)
+  if (clubs.length === 0) return null
+
+  const open = async (clubId: number, docId: number, title: string, mediaType: string) => {
+    setBusy(docId)
+    setError(null)
+    try {
+      const ext = mediaType.includes("pdf") ? "pdf" : "bestand"
+      await downloadClubDocument(clubId, docId, `${title}.${ext}`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Openen is niet gelukt.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className="mt-3" data-testid="ouder-clubdocumenten">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+        Clubdocumenten
+      </p>
+      {clubs.map((club) => (
+        <div key={club.clubId} className="mt-1.5">
+          <p className="text-[11px] text-white/50">{club.clubName}</p>
+          <ul className="mt-1 space-y-1">
+            {club.documents.map((d) => (
+              <li key={d.id} className="flex items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-white/70">
+                  <FileText className="h-3 w-3 shrink-0 text-cyan-200/60" />
+                  <span className="truncate">
+                    {d.title}
+                    <span className="ml-1 text-white/35">
+                      ({CLUB_DOC_CATEGORY_LABELS[d.category] ?? d.category})
+                    </span>
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  disabled={busy === d.id}
+                  onClick={() => void open(club.clubId, d.id, d.title, d.mediaType)}
+                  className="flex shrink-0 items-center gap-1 text-[11px] disabled:opacity-40"
+                  style={{ color: ACCENT }}
+                >
+                  <Download className="h-3 w-3" /> {busy === d.id ? "Bezig…" : "Openen"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {error && <p className="mt-1 text-[11px] text-rose-300/80">{error}</p>}
     </div>
   )
 }

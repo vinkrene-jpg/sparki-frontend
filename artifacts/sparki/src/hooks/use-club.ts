@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, apiFetchBlob } from "@/lib/api"
 import { useMyLinks } from "@/hooks/use-links"
 import { useTeamIdentity } from "@/hooks/use-social"
 import { useUserProfile } from "@/contexts/UserContext"
@@ -839,4 +839,151 @@ export function useCreateClubInvite() {
       apiFetch("/api/invitations", { method: "POST", body: JSON.stringify(body) }) as Promise<{ token: string }>,
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["invitations"] }),
   })
+}
+
+// ── F8: Clubdocumenten (versies + publicatie + zichtbaarheid) ────────────────
+export type ClubDocumentVisibility = "leden_en_ouders" | "trainers_bestuur"
+export type ClubDocumentVersionRow = {
+  id: number
+  versionNumber: number
+  status: "concept" | "gepubliceerd"
+  mediaType: string
+  sizeBytes: number | null
+  publishedAt: string | null
+  createdAt: string
+  isCurrent: boolean
+}
+export type ClubDocumentRow = {
+  id: number
+  title: string
+  category: string
+  visibility: ClubDocumentVisibility
+  createdAt: string
+  updatedAt: string
+  current: {
+    id: number
+    versionNumber: number
+    mediaType: string
+    sizeBytes: number | null
+    publishedAt: string | null
+  } | null
+  versions?: ClubDocumentVersionRow[]
+}
+export type ClubDocumentsResponse = {
+  documents: ClubDocumentRow[]
+  magBeheren: boolean
+  categorieen: string[]
+  zichtbaarheden: ClubDocumentVisibility[]
+}
+
+const CLUB_DOCS_KEY = (clubId: number | null) => ["clubs", clubId, "documents"]
+
+export function useClubDocuments(clubId: number | null) {
+  return useQuery<ClubDocumentsResponse>({
+    queryKey: CLUB_DOCS_KEY(clubId),
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/documents`),
+    enabled: clubId != null,
+  })
+}
+
+export function useCreateClubDocument(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      title: string
+      category: string
+      visibility: ClubDocumentVisibility
+      base64: string
+      originalName: string
+      publish: boolean
+    }) =>
+      apiFetch(`/api/clubs/${clubId}/documents`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }) as Promise<{ id: number; versionId: number }>,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: CLUB_DOCS_KEY(clubId) }),
+  })
+}
+
+export function useAddClubDocumentVersion(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      documentId,
+      base64,
+      originalName,
+      publish,
+    }: {
+      documentId: number
+      base64: string
+      originalName: string
+      publish: boolean
+    }) =>
+      apiFetch(`/api/clubs/${clubId}/documents/${documentId}/versions`, {
+        method: "POST",
+        body: JSON.stringify({ base64, originalName, publish }),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: CLUB_DOCS_KEY(clubId) }),
+  })
+}
+
+export function usePublishClubDocumentVersion(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ documentId, versionId }: { documentId: number; versionId: number }) =>
+      apiFetch(`/api/clubs/${clubId}/documents/${documentId}/versions/${versionId}/publish`, {
+        method: "POST",
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: CLUB_DOCS_KEY(clubId) }),
+  })
+}
+
+export function useUpdateClubDocument(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      documentId,
+      ...body
+    }: {
+      documentId: number
+      title?: string
+      category?: string
+      visibility?: ClubDocumentVisibility
+    }) =>
+      apiFetch(`/api/clubs/${clubId}/documents/${documentId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: CLUB_DOCS_KEY(clubId) }),
+  })
+}
+
+export function useDeleteClubDocument(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (documentId: number) =>
+      apiFetch(`/api/clubs/${clubId}/documents/${documentId}`, { method: "DELETE" }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: CLUB_DOCS_KEY(clubId) }),
+  })
+}
+
+// Beveiligde download: het serve-endpoint is de enige poort (rechten +
+// zichtbaarheid + intrekking). We halen als blob op (cookies/dev-header gaan
+// mee) en bieden hem lokaal aan als download.
+export async function downloadClubDocument(
+  clubId: number,
+  documentId: number,
+  fileName: string,
+  versionId?: number,
+): Promise<void> {
+  const q = versionId != null ? `?versionId=${versionId}` : ""
+  const blob = await apiFetchBlob(`/api/clubs/${clubId}/documents/${documentId}/download${q}`)
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }

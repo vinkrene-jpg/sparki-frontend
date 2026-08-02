@@ -75,6 +75,21 @@ export function canManageClub(ctx: ClubContext): boolean {
   return hasClubRole(ctx, ["owner", "admin"]);
 }
 
+// F8 — Clubdocumenten beheren (aanmaken/nieuwe versie/publiceren/zichtbaarheid
+// wijzigen/verwijderen). Beheer + hoofdtrainer, in lijn met het bestaande
+// canManageTrainerAssignments-patroon (hoofdtrainer is de operationele
+// beheerlaag boven trainer). Geen tweede rechtenlaag.
+export function canManageClubDocuments(ctx: ClubContext): boolean {
+  return canManageClub(ctx) || hasClubRole(ctx, ["hoofdtrainer"]);
+}
+
+// F8 — mag deze rol een document met zichtbaarheid 'trainers_bestuur' zien?
+// Beheer (owner/admin/hoofdtrainer) + trainerachtige rollen (trainer/assistent).
+// Leden, ouders en overige rollen NIET.
+export function canViewTrainersBestuurDocs(ctx: ClubContext): boolean {
+  return canManageClubDocuments(ctx) || hasClubRole(ctx, ["trainer", "assistent"]);
+}
+
 // Trainingen/wedstrijden aanmaken en aanwezigheid registreren.
 export function canManageTrainings(ctx: ClubContext): boolean {
   // HERSTEL TEAM_ABONNEMENT_01: ploegleider is een aparte rol met dezelfde

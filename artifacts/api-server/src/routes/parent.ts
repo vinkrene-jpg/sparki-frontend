@@ -15,6 +15,10 @@ import {
   parentMessagesTable,
   parentReportKinds,
   healthComplaintsTable,
+  clubMembersTable,
+  clubsTable,
+  clubDocumentsTable,
+  clubDocumentVersionsTable,
   type ParentAthleteLink,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
@@ -454,6 +458,76 @@ router.get("/athletes/:athleteId/permissions", requireAuth, async (req, res) => 
   } catch (err) {
     req.log.error({ err }, "parent.permissions.get failed");
     res.status(500).json({ error: "Kon rechten niet laden" });
+  }
+});
+
+// GET /api/parent/athletes/:athleteId/club-documents — F8: gepubliceerde
+// clubdocumenten die voor ouders relevant zijn (zichtbaarheid leden_en_ouders)
+// van de clubs waar het gekoppelde kind ACTIEF lid is. Fail-closed: zonder
+// geldige ouderkoppeling geen toegang; concepten en trainers_bestuur-documenten
+// komen hier nooit langs. Downloaden loopt via het clubdocument-serve-pad, dat
+// de ouderkoppeling zelf opnieuw controleert.
+router.get("/athletes/:athleteId/club-documents", requireAuth, async (req, res) => {
+  const parentId = getClerkUserId(req)!;
+  const athleteId = String(req.params.athleteId);
+  try {
+    const ctx = await requireParentAccess(parentId, athleteId);
+    if (!ctx) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
+      return;
+    }
+    // Clubs waar het kind actief lid is.
+    const memberships = await db
+      .select({ clubId: clubMembersTable.clubId, clubName: clubsTable.name })
+      .from(clubMembersTable)
+      .innerJoin(clubsTable, eq(clubsTable.id, clubMembersTable.clubId))
+      .where(and(eq(clubMembersTable.clerkId, athleteId), isNull(clubMembersTable.endedAt)));
+
+    const clubs: {
+      clubId: number;
+      clubName: string;
+      documents: {
+        id: number;
+        title: string;
+        category: string;
+        versionNumber: number;
+        mediaType: string;
+        publishedAt: Date | null;
+      }[];
+    }[] = [];
+
+    for (const m of memberships) {
+      const docs = await db
+        .select({
+          id: clubDocumentsTable.id,
+          title: clubDocumentsTable.title,
+          category: clubDocumentsTable.category,
+          versionNumber: clubDocumentVersionsTable.versionNumber,
+          mediaType: clubDocumentVersionsTable.mediaType,
+          publishedAt: clubDocumentVersionsTable.publishedAt,
+        })
+        .from(clubDocumentsTable)
+        .innerJoin(
+          clubDocumentVersionsTable,
+          eq(clubDocumentVersionsTable.id, clubDocumentsTable.currentVersionId),
+        )
+        .where(
+          and(
+            eq(clubDocumentsTable.clubId, m.clubId),
+            // Alleen voor ouders relevante zichtbaarheid.
+            eq(clubDocumentsTable.visibility, "leden_en_ouders"),
+            // currentVersionId != null impliceert een gepubliceerde versie.
+            eq(clubDocumentVersionsTable.status, "gepubliceerd"),
+          ),
+        )
+        .orderBy(desc(clubDocumentsTable.createdAt));
+      clubs.push({ clubId: m.clubId, clubName: m.clubName, documents: docs });
+    }
+
+    res.json({ clubs });
+  } catch (err) {
+    req.log.error({ err }, "parent.club-documents.get failed");
+    res.status(500).json({ error: "Kon clubdocumenten niet laden" });
   }
 });
 

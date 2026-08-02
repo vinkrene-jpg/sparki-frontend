@@ -13,8 +13,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  FileText,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { ClubDocumentsList } from "@/components/sparki/club-documents"
 import { MessageBubble, MessageComposer } from "@/components/sparki/message-thread"
 import {
   useClubMembership,
@@ -436,6 +438,11 @@ function RealClubView({ clubId }: { clubId: number }) {
             }}
           />
         )}
+      </section>
+
+      <section aria-label="Clubdocumenten" id="club-documenten">
+        <h2 className={H2}><FileText className="h-3 w-3" /> Documenten</h2>
+        <ClubDocumentsList clubId={clubId} />
       </section>
 
       <section aria-label="Toestemming">

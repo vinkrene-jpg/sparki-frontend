@@ -41,9 +41,23 @@ import {
   useRegenerateJoinCode,
   useClubLocations,
   useCreateClubLocation,
+  useClubDocuments,
+  useCreateClubDocument,
+  useAddClubDocumentVersion,
+  usePublishClubDocumentVersion,
+  useUpdateClubDocument,
+  useDeleteClubDocument,
+  downloadClubDocument,
+  type ClubDocumentVisibility,
   type ClubRole,
   type Club,
 } from "@/hooks/use-club"
+import { fileToBase64 } from "@/hooks/use-document-analyses"
+import {
+  CLUB_DOC_CATEGORY_LABELS,
+  CLUB_DOC_VISIBILITY_LABELS,
+} from "@/components/sparki/club-documents"
+import { FileText } from "lucide-react"
 
 // Clubbeheer — alleen zichtbaar voor owner/admin. Leden & rollen,
 // uitnodigingen, trainingen/wedstrijden plannen en het pakket.
@@ -1311,6 +1325,287 @@ function OnboardingSection({ clubId }: { clubId: number }) {
   )
 }
 
+// F8 — Clubdocumenten beheren: uploaden (nieuw document of nieuwe versie),
+// concept opslaan, expliciet publiceren, zichtbaarheid kiezen, versiehistorie
+// inzien. Server dwingt rechten + zichtbaarheid af; de UI is een schil.
+function DocumentsBeheerSection({ clubId }: { clubId: number }) {
+  const { data, isLoading } = useClubDocuments(clubId)
+  const create = useCreateClubDocument(clubId)
+  const addVersion = useAddClubDocumentVersion(clubId)
+  const publish = usePublishClubDocumentVersion(clubId)
+  const update = useUpdateClubDocument(clubId)
+  const del = useDeleteClubDocument(clubId)
+
+  const [title, setTitle] = useState("")
+  const [category, setCategory] = useState("gedragscode")
+  const [visibility, setVisibility] = useState<ClubDocumentVisibility>("leden_en_ouders")
+  const [file, setFile] = useState<File | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [openHistory, setOpenHistory] = useState<number | null>(null)
+  const [versionFor, setVersionFor] = useState<number | null>(null)
+  const [versionFile, setVersionFile] = useState<File | null>(null)
+
+  const categories = data?.categorieen ?? Object.keys(CLUB_DOC_CATEGORY_LABELS)
+  const visibilities = data?.zichtbaarheden ?? (["leden_en_ouders", "trainers_bestuur"] as ClubDocumentVisibility[])
+
+  const submitNew = async (doPublish: boolean) => {
+    setError(null)
+    if (!title.trim() || !file) {
+      setError("Geef een titel op en kies een bestand.")
+      return
+    }
+    try {
+      const base64 = await fileToBase64(file)
+      await create.mutateAsync({
+        title: title.trim(),
+        category,
+        visibility,
+        base64,
+        originalName: file.name,
+        publish: doPublish,
+      })
+      setTitle("")
+      setFile(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Opslaan is niet gelukt.")
+    }
+  }
+
+  const submitVersion = async (documentId: number, doPublish: boolean) => {
+    setError(null)
+    if (!versionFile) {
+      setError("Kies een bestand voor de nieuwe versie.")
+      return
+    }
+    try {
+      const base64 = await fileToBase64(versionFile)
+      await addVersion.mutateAsync({
+        documentId,
+        base64,
+        originalName: versionFile.name,
+        publish: doPublish,
+      })
+      setVersionFile(null)
+      setVersionFor(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Nieuwe versie opslaan is niet gelukt.")
+    }
+  }
+
+  return (
+    <section aria-label="Clubdocumenten">
+      <h2 className={H2}><FileText className="h-3 w-3" /> Documenten</h2>
+
+      {/* Nieuw document */}
+      <div className={`${CARD} space-y-2`}>
+        <p className="text-[12px] text-white/70">Nieuw document uploaden</p>
+        <input
+          className={INPUT}
+          placeholder="Titel, bv. Gedragscode"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <div className="flex flex-wrap gap-2">
+          <select
+            className={`${INPUT} max-w-[48%]`}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            aria-label="Categorie"
+          >
+            {categories.map((c) => (
+              <option key={c} value={c} className="bg-[#070d16]">
+                {CLUB_DOC_CATEGORY_LABELS[c] ?? c}
+              </option>
+            ))}
+          </select>
+          <select
+            className={`${INPUT} max-w-[48%]`}
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as ClubDocumentVisibility)}
+            aria-label="Zichtbaarheid"
+          >
+            {visibilities.map((v) => (
+              <option key={v} value={v} className="bg-[#070d16]">
+                {CLUB_DOC_VISIBILITY_LABELS[v] ?? v}
+              </option>
+            ))}
+          </select>
+        </div>
+        <input
+          type="file"
+          accept="application/pdf,image/*"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="text-[12px] text-white/60"
+        />
+        <p className="text-[11px] text-white/40">
+          Toegestaan: PDF en afbeeldingen. Afbeeldingen worden veilig herverwerkt.
+        </p>
+        <div className="flex gap-2">
+          <button
+            className={BTN}
+            disabled={create.isPending}
+            onClick={() => void submitNew(false)}
+          >
+            Concept opslaan
+          </button>
+          <button
+            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-emerald-200 disabled:opacity-40"
+            disabled={create.isPending}
+            onClick={() => void submitNew(true)}
+          >
+            Opslaan en publiceren
+          </button>
+        </div>
+        {error && <p className="text-[11px] text-rose-300/80">{error}</p>}
+      </div>
+
+      {/* Bestaande documenten */}
+      <div className="mt-2 space-y-1.5">
+        {isLoading ? (
+          <div className="h-14 animate-pulse rounded-xl bg-white/[0.05]" />
+        ) : (data?.documents.length ?? 0) === 0 ? (
+          <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
+            Nog geen documenten. Upload de gedragscode, huisregels of andere
+            afspraken om te beginnen.
+          </p>
+        ) : (
+          data!.documents.map((doc) => {
+            const isConcept = doc.current == null
+            return (
+              <div key={doc.id} className={`${CARD} space-y-1.5`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] text-white/85">{doc.title}</p>
+                    <p className="text-[11px] text-white/45">
+                      {CLUB_DOC_CATEGORY_LABELS[doc.category] ?? doc.category}
+                      {" · "}
+                      {CLUB_DOC_VISIBILITY_LABELS[doc.visibility] ?? doc.visibility}
+                      {isConcept ? " · alleen concept" : ` · actieve versie ${doc.current!.versionNumber}`}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-1.5">
+                    <select
+                      className="rounded-lg border border-white/15 bg-transparent px-1.5 py-1 text-[11px] text-white/70"
+                      value={doc.visibility}
+                      onChange={(e) =>
+                        update.mutate({
+                          documentId: doc.id,
+                          visibility: e.target.value as ClubDocumentVisibility,
+                        })
+                      }
+                      aria-label="Zichtbaarheid wijzigen"
+                    >
+                      {visibilities.map((v) => (
+                        <option key={v} value={v} className="bg-[#070d16]">
+                          {CLUB_DOC_VISIBILITY_LABELS[v] ?? v}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="rounded-lg border border-rose-300/30 px-2 py-1 text-[11px] text-rose-200/80"
+                      onClick={() => {
+                        if (confirm(`"${doc.title}" en alle versies verwijderen?`)) del.mutate(doc.id)
+                      }}
+                    >
+                      Verwijderen
+                    </button>
+                  </div>
+                </div>
+
+                {/* Versiehistorie */}
+                {(doc.versions?.length ?? 0) > 0 && (
+                  <>
+                    <button
+                      className="text-[11px] text-cyan-200/80 underline underline-offset-2"
+                      onClick={() => setOpenHistory(openHistory === doc.id ? null : doc.id)}
+                    >
+                      {openHistory === doc.id ? "Versiehistorie verbergen" : `Versiehistorie (${doc.versions!.length})`}
+                    </button>
+                    {openHistory === doc.id && (
+                      <ul className="space-y-1 border-l border-white/10 pl-2">
+                        {doc.versions!.map((v) => (
+                          <li key={v.id} className="flex items-center justify-between gap-2 text-[11px]">
+                            <span className="text-white/60">
+                              v{v.versionNumber} · {v.status}
+                              {v.isCurrent && <span className="ml-1 text-cyan-200/80">actief</span>}
+                            </span>
+                            <span className="flex gap-1.5">
+                              <button
+                                className="text-cyan-200/80 underline"
+                                onClick={() =>
+                                  void downloadClubDocument(
+                                    clubId,
+                                    doc.id,
+                                    `${doc.title}-v${v.versionNumber}.${v.mediaType.includes("pdf") ? "pdf" : "bestand"}`,
+                                    v.id,
+                                  )
+                                }
+                              >
+                                openen
+                              </button>
+                              {!v.isCurrent && (
+                                <button
+                                  className="text-emerald-200/80 underline"
+                                  onClick={() => publish.mutate({ documentId: doc.id, versionId: v.id })}
+                                >
+                                  publiceren
+                                </button>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+
+                {/* Nieuwe versie */}
+                {versionFor === doc.id ? (
+                  <div className="space-y-1.5 rounded-lg border border-white/10 p-2">
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={(e) => setVersionFile(e.target.files?.[0] ?? null)}
+                      className="text-[11px] text-white/60"
+                    />
+                    <div className="flex gap-2">
+                      <button className={BTN} onClick={() => void submitVersion(doc.id, false)}>
+                        Concept
+                      </button>
+                      <button
+                        className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-emerald-200"
+                        onClick={() => void submitVersion(doc.id, true)}
+                      >
+                        Publiceren
+                      </button>
+                      <button
+                        className="px-2 text-[11px] text-white/50"
+                        onClick={() => {
+                          setVersionFor(null)
+                          setVersionFile(null)
+                        }}
+                      >
+                        Annuleren
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="text-[11px] text-white/55 underline underline-offset-2"
+                    onClick={() => setVersionFor(doc.id)}
+                  >
+                    Nieuwe versie uploaden
+                  </button>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
+    </section>
+  )
+}
+
 export default function ClubBeheerPage() {
   const { data: myClubs, isLoading } = useMyClubs()
   const [, navigate] = useLocation()
@@ -1382,6 +1677,7 @@ export default function ClubBeheerPage() {
         <SeasonsTeamsSection clubId={clubId} />
         <PlanTrainingSection clubId={clubId} />
         <PlanRaceSection clubId={clubId} />
+        <DocumentsBeheerSection clubId={clubId} />
         <TeamSubscriptionSection clubId={clubId} isOwner={myRole === "owner"} />
         <PackageSection clubId={clubId} isOwner={myRole === "owner"} />
 
