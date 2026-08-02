@@ -25,9 +25,16 @@ import {
   coachAthleteLinksTable,
   parentAthleteLinksTable,
   trainerClientsTable,
+  clientAthleteLinksTable,
   billingPartiesTable,
   emergencyContactsTable,
   invitationsTable,
+  trainerGroupsTable,
+  trainerGroupMembersTable,
+  clubTeamsTable,
+  clubTeamMembersTable,
+  clubGroupsTable,
+  clubGroupMembersTable,
   contactsTable,
   contactRelationsTable,
   contactMergeReviewTable,
@@ -71,6 +78,30 @@ function bucket(report: Report, key: string) {
 // Map van clerkId → contact-id, opgebouwd tijdens de user_profiles-fase zodat
 // de link-tabellen (die op clerkId werken) direct kunnen verwijzen.
 const contactByClerk = new Map<string, number>();
+
+// Per club één organisatie-contact (type "bedrijf"). Gedeeld tussen de
+// club_members-, club_teams- en club_groups-bronnen zodat lidmaatschappen naar
+// hetzelfde organisatie-anker verwijzen (geen dubbele org-contacten per club).
+const clubOrgContact = new Map<number, number>();
+
+type MigTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+async function getOrCreateClubOrg(tx: MigTx, clubId: number): Promise<number> {
+  const cached = clubOrgContact.get(clubId);
+  if (cached != null) return cached;
+  const org = await findOrCreateContact(
+    {
+      displayName: `Club #${clubId}`,
+      kindTags: ["bedrijf"],
+      sourceNote: `organisatie-anker club ${clubId}`,
+      source: "clubs",
+      sourceId: String(clubId),
+    },
+    tx,
+  );
+  const orgId = "contact" in org ? org.contact.id : org.existing.id;
+  clubOrgContact.set(clubId, orgId);
+  return orgId;
+}
 
 // Club-clubrol → contacttag/relatie afleiding.
 const CLUB_ROLE_TO_KIND: Record<string, ContactKind | null> = {
@@ -205,7 +236,6 @@ async function main(): Promise<void> {
       })
       .from(clubMembersTable);
     cm.identities = new Set(members.map((m) => m.clerkId)).size;
-    const clubOrgContact = new Map<number, number>();
     for (const m of members) {
       const cid = contactByClerk.get(m.clerkId);
       if (cid == null) {
@@ -216,22 +246,8 @@ async function main(): Promise<void> {
       if (kind) await addKinds(tx, cid, [kind]);
       cm.contactsCreatedOrLinked++;
 
-      // Organisatie-contact per club (type bedrijf).
-      let orgId = clubOrgContact.get(m.clubId);
-      if (orgId == null) {
-        const org = await findOrCreateContact(
-          {
-            displayName: `Club #${m.clubId}`,
-            kindTags: ["bedrijf"],
-            sourceNote: `organisatie-anker club ${m.clubId}`,
-            source: "clubs",
-            sourceId: String(m.clubId),
-          },
-          tx,
-        );
-        orgId = "contact" in org ? org.contact.id : org.existing.id;
-        clubOrgContact.set(m.clubId, orgId);
-      }
+      // Organisatie-contact per club (type bedrijf), gedeeld tussen bronnen.
+      const orgId = await getOrCreateClubOrg(tx, m.clubId);
       // lid_van (met start uit joinedAt, einde uit endedAt).
       const rel = await startRelation(
         {
@@ -341,6 +357,8 @@ async function main(): Promise<void> {
       })
       .from(trainerClientsTable);
     tc.identities = clients.length;
+    // trainer_clients.id → contact-id van de klant, nodig voor client_athlete_links.
+    const clientContactById = new Map<number, number>();
     for (const cl of clients) {
       const r = await findOrCreateContact(
         {
@@ -367,6 +385,7 @@ async function main(): Promise<void> {
       }
       // Verwijs de bron naar het contact (geen duplicatie).
       await tx.update(trainerClientsTable).set({ contactId: clientContactId }).where(eq(trainerClientsTable.id, cl.id));
+      clientContactById.set(cl.id, clientContactId);
       // Relatie klant_voor naar het trainer-contact.
       const trainerContact = contactByClerk.get(cl.trainerClerkId);
       if (trainerContact != null) {
@@ -376,6 +395,53 @@ async function main(): Promise<void> {
         );
         tc.relations++;
       }
+    }
+
+    // ── Bron 7b: client_athlete_links ⇒ relatie klant_voor (klant → sporter) ─
+    // DIT is de kern: welke sporter hoort bij welke klant. Zonder deze relatie
+    // is "klant+sporter = één contact, twee relaties" niet aantoonbaar. De
+    // klant kan een ander zijn dan de sporter (ouder betaalt kind), of dezelfde
+    // persoon (sporter is zelf klant) — in dat laatste geval draagt één contact
+    // twee relaties (klant_voor naar de trainer + de sporter-kant), nooit een
+    // samengevoegde entiteit.
+    const cathl = bucket(report, "client_athlete_links");
+    const clientLinks = await tx
+      .select({
+        id: clientAthleteLinksTable.id,
+        clientId: clientAthleteLinksTable.clientId,
+        athleteClerkId: clientAthleteLinksTable.athleteClerkId,
+        relationType: clientAthleteLinksTable.relationType,
+        startedAt: clientAthleteLinksTable.startedAt,
+        endedAt: clientAthleteLinksTable.endedAt,
+      })
+      .from(clientAthleteLinksTable);
+    cathl.identities = clientLinks.length;
+    for (const l of clientLinks) {
+      const klantContact = clientContactById.get(l.clientId);
+      const sporterContact = contactByClerk.get(l.athleteClerkId);
+      if (klantContact == null || sporterContact == null) {
+        cathl.notes.push(
+          `client_athlete_link ${l.id} (client ${l.clientId} → sporter ${l.athleteClerkId}) mist contact`,
+        );
+        continue;
+      }
+      // De sporter is een sporter (tag), de klant blijft klant (al getagd).
+      await addKinds(tx, sporterContact, ["sporter"]);
+      const rel = await startRelation(
+        {
+          fromContactId: klantContact,
+          toContactId: sporterContact,
+          relationType: "klant_voor",
+          startedAt: l.startedAt ?? undefined,
+          sourceNote: `client_athlete_links (relatie ${l.relationType})`,
+        },
+        tx,
+      );
+      if (l.endedAt) {
+        await tx.update(contactRelationsTable).set({ endedAt: l.endedAt }).where(eq(contactRelationsTable.id, rel.id));
+      }
+      cathl.relations++;
+      cathl.contactsCreatedOrLinked++;
     }
 
     // ── Bron 8: billing_parties ⇒ contact (betaler) + relatie betaler_voor ───
@@ -502,6 +568,147 @@ async function main(): Promise<void> {
       } else {
         inv.notes.push(`invitation ${i.id} (${em}) nog geen identiteit — bewust geen contact aangemaakt`);
       }
+    }
+
+    // ── Bron 11: trainer_groups / trainer_group_members ─────────────────────
+    // Sportergroepen van de zelfstandige trainer zijn ORGANISATIE/presentatie,
+    // géén rechtenbron. We modelleren de groep als een organisatie-contact
+    // (type "bedrijf") en het lidmaatschap als lid_van (start uit added_at).
+    // Geen nieuwe relatietypen; groepen leiden nooit rechten af.
+    const tg = bucket(report, "trainer_groups");
+    const groups = await tx
+      .select({ id: trainerGroupsTable.id, name: trainerGroupsTable.name, trainerClerkId: trainerGroupsTable.trainerClerkId })
+      .from(trainerGroupsTable);
+    tg.identities = groups.length;
+    const trainerGroupOrg = new Map<number, number>();
+    for (const g of groups) {
+      const org = await findOrCreateContact(
+        {
+          displayName: `Trainersgroep #${g.id} (${g.name})`,
+          kindTags: ["bedrijf"],
+          sourceNote: `organisatie-anker trainer_groups ${g.id}`,
+          source: "trainer_groups",
+          sourceId: String(g.id),
+        },
+        tx,
+      );
+      const orgId = "contact" in org ? org.contact.id : org.existing.id;
+      trainerGroupOrg.set(g.id, orgId);
+      tg.contactsCreatedOrLinked++;
+    }
+    const tgm = bucket(report, "trainer_group_members");
+    const groupMembers = await tx
+      .select({
+        id: trainerGroupMembersTable.id,
+        groupId: trainerGroupMembersTable.groupId,
+        athleteClerkId: trainerGroupMembersTable.athleteClerkId,
+        addedAt: trainerGroupMembersTable.addedAt,
+      })
+      .from(trainerGroupMembersTable);
+    tgm.identities = groupMembers.length;
+    for (const gm of groupMembers) {
+      const orgId = trainerGroupOrg.get(gm.groupId);
+      const sporter = contactByClerk.get(gm.athleteClerkId);
+      if (orgId == null || sporter == null) {
+        tgm.notes.push(`trainer_group_member ${gm.id} mist contact (groep ${gm.groupId} / sporter ${gm.athleteClerkId})`);
+        continue;
+      }
+      await addKinds(tx, sporter, ["sporter"]);
+      await startRelation(
+        { fromContactId: sporter, toContactId: orgId, relationType: "lid_van", startedAt: gm.addedAt ?? undefined, sourceNote: "trainer_group_members" },
+        tx,
+      );
+      tgm.relations++;
+      tgm.contactsCreatedOrLinked++;
+    }
+
+    // ── Bron 12: club_teams / club_team_members ──────────────────────────────
+    // Teams horen bij een club (organisatie-anker via getOrCreateClubOrg). Het
+    // teamlidmaatschap is lid_van naar het club-organisatie-contact. We maken
+    // GEEN apart contact per team (dat zou een tweede organisatielijst worden);
+    // de club is het organisatie-anker. endedAt uit de bron blijft historisch.
+    const ct = bucket(report, "club_teams");
+    const teams = await tx
+      .select({ id: clubTeamsTable.id, clubId: clubTeamsTable.clubId })
+      .from(clubTeamsTable);
+    ct.identities = teams.length;
+    const teamClub = new Map<number, number>();
+    for (const t of teams) {
+      teamClub.set(t.id, t.clubId);
+      // Zorg dat het club-organisatie-contact bestaat (ook als er geen leden zijn).
+      await getOrCreateClubOrg(tx, t.clubId);
+      ct.contactsCreatedOrLinked++;
+    }
+    const ctm = bucket(report, "club_team_members");
+    const teamMembers = await tx
+      .select({
+        id: clubTeamMembersTable.id,
+        teamId: clubTeamMembersTable.teamId,
+        clerkId: clubTeamMembersTable.clerkId,
+        endedAt: clubTeamMembersTable.endedAt,
+        createdAt: clubTeamMembersTable.createdAt,
+      })
+      .from(clubTeamMembersTable);
+    ctm.identities = teamMembers.length;
+    for (const tm of teamMembers) {
+      const clubId = teamClub.get(tm.teamId);
+      const person = contactByClerk.get(tm.clerkId);
+      if (clubId == null || person == null) {
+        ctm.notes.push(`club_team_member ${tm.id} mist contact (team ${tm.teamId} / ${tm.clerkId})`);
+        continue;
+      }
+      const orgId = await getOrCreateClubOrg(tx, clubId);
+      const rel = await startRelation(
+        { fromContactId: person, toContactId: orgId, relationType: "lid_van", startedAt: tm.createdAt ?? undefined, sourceNote: `club_team_members (team ${tm.teamId})` },
+        tx,
+      );
+      if (tm.endedAt) {
+        await tx.update(contactRelationsTable).set({ endedAt: tm.endedAt }).where(eq(contactRelationsTable.id, rel.id));
+      }
+      ctm.relations++;
+      ctm.contactsCreatedOrLinked++;
+    }
+
+    // ── Bron 13: club_groups / club_group_members ────────────────────────────
+    const cg = bucket(report, "club_groups");
+    const clubGroups = await tx
+      .select({ id: clubGroupsTable.id, clubId: clubGroupsTable.clubId })
+      .from(clubGroupsTable);
+    cg.identities = clubGroups.length;
+    const groupClub = new Map<number, number>();
+    for (const g of clubGroups) {
+      groupClub.set(g.id, g.clubId);
+      await getOrCreateClubOrg(tx, g.clubId);
+      cg.contactsCreatedOrLinked++;
+    }
+    const cgm = bucket(report, "club_group_members");
+    const clubGroupMembers = await tx
+      .select({
+        id: clubGroupMembersTable.id,
+        groupId: clubGroupMembersTable.groupId,
+        clerkId: clubGroupMembersTable.clerkId,
+        endedAt: clubGroupMembersTable.endedAt,
+        createdAt: clubGroupMembersTable.createdAt,
+      })
+      .from(clubGroupMembersTable);
+    cgm.identities = clubGroupMembers.length;
+    for (const gm of clubGroupMembers) {
+      const clubId = groupClub.get(gm.groupId);
+      const person = contactByClerk.get(gm.clerkId);
+      if (clubId == null || person == null) {
+        cgm.notes.push(`club_group_member ${gm.id} mist contact (groep ${gm.groupId} / ${gm.clerkId})`);
+        continue;
+      }
+      const orgId = await getOrCreateClubOrg(tx, clubId);
+      const rel = await startRelation(
+        { fromContactId: person, toContactId: orgId, relationType: "lid_van", startedAt: gm.createdAt ?? undefined, sourceNote: `club_group_members (groep ${gm.groupId})` },
+        tx,
+      );
+      if (gm.endedAt) {
+        await tx.update(contactRelationsTable).set({ endedAt: gm.endedAt }).where(eq(contactRelationsTable.id, rel.id));
+      }
+      cgm.relations++;
+      cgm.contactsCreatedOrLinked++;
     }
 
     if (DRY) {

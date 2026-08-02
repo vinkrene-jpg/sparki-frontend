@@ -13,7 +13,7 @@
 //   POST   /review/:id/decide  besluit vastleggen (samenvoegen | apart houden)
 
 import { Router } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import {
   db,
   contactsTable,
@@ -60,6 +60,29 @@ function parseId(v: unknown): number | null {
 function parseKinds(v: unknown): ContactKind[] {
   if (!Array.isArray(v)) return [];
   return v.filter(isContactKind);
+}
+
+// Markeer een review als samengevoegd (besloten). Gedeeld door de merge-paden.
+type MergeTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+async function markMerged(
+  tx: MergeTx,
+  reviewId: number,
+  targetContactId: number,
+  clerkId: string,
+  note: string | null,
+) {
+  await tx
+    .update(contactMergeReviewTable)
+    .set({
+      status: "besloten",
+      decision: "samengevoegd",
+      decidedTargetContactId: targetContactId,
+      decidedByClerkId: clerkId,
+      decidedAt: new Date(),
+      decisionNote: note,
+      updatedAt: new Date(),
+    })
+    .where(eq(contactMergeReviewTable.id, reviewId));
 }
 
 // ── Contact aanmaken (met dedupe) ─────────────────────────────────────────────
@@ -248,38 +271,121 @@ router.post("/review/:id/decide", requireAuth, requireAdmin, async (req, res) =>
         // Samenvoegen is een EXPLICIETE actie: er MOET een doelcontact zijn dat
         // behouden blijft. We voegen niet automatisch samen — dit gebeurt pas
         // hier, op menselijk besluit. Het samengevoegde (bron)contact wordt
-        // NIET verwijderd; we verplaatsen zijn actieve relaties naar het
-        // doelcontact en markeren de review. Dataverlies wordt vermeden.
+        // NIET verwijderd; we brengen zijn actieve relaties over naar het
+        // doelcontact. Dataverlies wordt vermeden.
         if (!targetContactId) {
           return { needTarget: true as const };
         }
         const candidates = review.candidateContactIds ?? [];
         const mergeSourceId = review.contactId;
-        // Verplaats relaties van het broncontact naar het doelcontact (alleen
-        // als er een apart broncontact is en het niet het doel zelf is).
-        if (mergeSourceId && mergeSourceId !== targetContactId) {
-          await tx
-            .update(contactRelationsTable)
-            .set({ fromContactId: targetContactId, updatedAt: new Date() })
-            .where(eq(contactRelationsTable.fromContactId, mergeSourceId));
-          await tx
-            .update(contactRelationsTable)
-            .set({ toContactId: targetContactId, updatedAt: new Date() })
-            .where(eq(contactRelationsTable.toContactId, mergeSourceId));
+        if (!mergeSourceId || mergeSourceId === targetContactId) {
+          // Niets over te brengen (geen apart broncontact); alleen markeren.
+          await markMerged(tx, id, targetContactId, clerkId, note);
+          return { merged: true as const, targetContactId, candidates, moved: 0, ended: 0 };
         }
-        await tx
-          .update(contactMergeReviewTable)
-          .set({
-            status: "besloten",
-            decision: "samengevoegd",
-            decidedTargetContactId: targetContactId,
-            decidedByClerkId: clerkId,
-            decidedAt: new Date(),
-            decisionNote: note,
-            updatedAt: new Date(),
-          })
-          .where(eq(contactMergeReviewTable.id, id));
-        return { merged: true as const, targetContactId, candidates };
+
+        // Verliesvrij én conflictvrij samenvoegen. De partial unique index
+        // (from,to,type) WHERE ended_at IS NULL verbiedt dubbele ACTIEVE
+        // relaties. Blind ombuigen zou botsen (rollback) of een zelfrelatie
+        // maken. We doen daarom, ALLEMAAL in deze ene transactie:
+        //
+        //   1. Beëindig bron↔doel-relaties (zouden na ombuigen een zelfrelatie
+        //      worden — nooit toegestaan).
+        //   2. Dedupliceer: als broncontact én doelcontact allebei een ACTIEVE
+        //      relatie van hetzelfde type met dezelfde tegenpartij hebben, dan
+        //      beëindig de BRONrelatie (het doel houdt de zijne) i.p.v. te
+        //      verplaatsen — anders botst het op de unique index.
+        //   3. Verplaats de resterende relaties (fromContactId, dan
+        //      toContactId) naar het doelcontact.
+        //
+        // Alle beëindigingen en verplaatsingen worden traceerbaar gemaakt in
+        // source_note (welke relatie, vanaf welk broncontact, naar welk doel).
+        const now = new Date();
+        const auditTag = (kind: string) =>
+          `F10-merge ${kind}: broncontact #${mergeSourceId} → doelcontact #${targetContactId} (review #${id}, door ${clerkId})`;
+
+        // Alle relaties waarin het broncontact voorkomt.
+        const sourceRels = await tx
+          .select()
+          .from(contactRelationsTable)
+          .where(
+            or(
+              eq(contactRelationsTable.fromContactId, mergeSourceId),
+              eq(contactRelationsTable.toContactId, mergeSourceId),
+            ),
+          );
+
+        // Actieve relaties van het DOELcontact — sleutel: type + tegenpartij +
+        // richting — om deduplicatie te bepalen.
+        const targetActive = await tx
+          .select()
+          .from(contactRelationsTable)
+          .where(
+            and(
+              or(
+                eq(contactRelationsTable.fromContactId, targetContactId),
+                eq(contactRelationsTable.toContactId, targetContactId),
+              ),
+              isNull(contactRelationsTable.endedAt),
+            ),
+          );
+        // Sleutel van een DOEL-relatie zoals die eruit ZOU zien vanuit het doel.
+        const targetKey = new Set(
+          targetActive.map((r) => {
+            const from = r.fromContactId === targetContactId ? targetContactId : r.fromContactId;
+            const to = r.toContactId === targetContactId ? targetContactId : r.toContactId;
+            return `${from}|${to}|${r.relationType}`;
+          }),
+        );
+
+        let moved = 0;
+        let ended = 0;
+        for (const rel of sourceRels) {
+          const otherFrom = rel.fromContactId === mergeSourceId ? targetContactId : rel.fromContactId;
+          const otherTo = rel.toContactId === mergeSourceId ? targetContactId : rel.toContactId;
+
+          // 1. Bron↔doel-relatie ⇒ zou zelfrelatie worden ⇒ beëindig i.p.v. buigen.
+          if (otherFrom === otherTo) {
+            if (rel.endedAt == null) {
+              await tx
+                .update(contactRelationsTable)
+                .set({ endedAt: now, sourceNote: auditTag("zelfrelatie-vermeden, beëindigd"), updatedAt: now })
+                .where(eq(contactRelationsTable.id, rel.id));
+              ended++;
+            }
+            continue;
+          }
+
+          // 2. Deduplicatie: doel heeft al eenzelfde ACTIEVE relatie ⇒ beëindig
+          //    de bronrelatie (alleen als die zelf nog actief is).
+          const wouldKey = `${otherFrom}|${otherTo}|${rel.relationType}`;
+          if (rel.endedAt == null && targetKey.has(wouldKey)) {
+            await tx
+              .update(contactRelationsTable)
+              .set({ endedAt: now, sourceNote: auditTag("dubbel, bronrelatie beëindigd"), updatedAt: now })
+              .where(eq(contactRelationsTable.id, rel.id));
+            ended++;
+            continue;
+          }
+
+          // 3. Verplaats: buig de bron-kant om naar het doelcontact.
+          await tx
+            .update(contactRelationsTable)
+            .set({
+              fromContactId: otherFrom,
+              toContactId: otherTo,
+              sourceNote: auditTag("verplaatst"),
+              updatedAt: now,
+            })
+            .where(eq(contactRelationsTable.id, rel.id));
+          moved++;
+          // Een verplaatste ACTIEVE relatie telt vanaf nu mee als "doel-actief"
+          // zodat een volgende identieke bronrelatie óók wordt gededupliceerd.
+          if (rel.endedAt == null) targetKey.add(wouldKey);
+        }
+
+        await markMerged(tx, id, targetContactId, clerkId, note);
+        return { merged: true as const, targetContactId, candidates, moved, ended };
       }
 
       // apart_gehouden: twee verschillende mensen. Niets samenvoegen.

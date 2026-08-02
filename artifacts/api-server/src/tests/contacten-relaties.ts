@@ -11,7 +11,9 @@
 
 import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
-import { db, pool, contactsTable, contactRelationsTable, contactMergeReviewTable, userProfilesTable } from "@workspace/db";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { db, pool, contactsTable, contactRelationsTable, contactMergeReviewTable, userProfilesTable, trainerClientsTable, clientAthleteLinksTable } from "@workspace/db";
 import { like, inArray, eq } from "drizzle-orm";
 
 // De contacten-router is beheer-only (isAdmin + SPARKI_ADMIN_IDS). Zet de
@@ -46,6 +48,16 @@ async function cleanup() {
     await db.delete(contactRelationsTable).where(inArray(contactRelationsTable.toContactId, ids));
     await db.delete(contactMergeReviewTable).where(inArray(contactMergeReviewTable.contactId, ids));
     await db.delete(contactsTable).where(inArray(contactsTable.id, ids));
+  }
+  // Migratie-testdata (trainer_clients + client_athlete_links) opruimen.
+  const tcs = await db
+    .select({ id: trainerClientsTable.id })
+    .from(trainerClientsTable)
+    .where(like(trainerClientsTable.name, `${PREFIX}%`));
+  const tcIds = tcs.map((t) => t.id);
+  if (tcIds.length) {
+    await db.delete(clientAthleteLinksTable).where(inArray(clientAthleteLinksTable.clientId, tcIds));
+    await db.delete(trainerClientsTable).where(inArray(trainerClientsTable.id, tcIds));
   }
   await db.delete(userProfilesTable).where(like(userProfilesTable.clerkId, `${PREFIX}%`));
   await db.delete(userProfilesTable).where(inArray(userProfilesTable.clerkId, [ADMIN, NIET_ADMIN]));
@@ -203,6 +215,122 @@ async function main() {
 
     const lijst = await json(await api("GET", "/review"));
     assert.ok(lijst.some((r: { contactId: number }) => r.contactId === bBody.contact.id), "staat op de beoordelingslijst");
+  });
+
+  // 8. Merge met CONFLICTERENDE actieve relaties: geen rollback, geen
+  //    zelfrelatie, audit klopt. We bouwen een broncontact en een doelcontact
+  //    die allebei een actieve relatie van hetzelfde type naar dezelfde
+  //    tegenpartij hebben, plus een directe bron↔doel-relatie.
+  await test("merge met conflicterende relaties: geen rollback, geen zelfrelatie, audit klopt", async () => {
+    const doel = await api("POST", "/", { clerkId: `${PREFIX}m-doel`, displayName: `${PREFIX}Merge Doel` });
+    const bron = await api("POST", "/", { clerkId: `${PREFIX}m-bron`, displayName: `${PREFIX}Merge Bron` });
+    const tegenpartij = await api("POST", "/", { clerkId: `${PREFIX}m-tp`, displayName: `${PREFIX}Merge TP` });
+    const doelId = (await json(doel)).contact.id;
+    const bronId = (await json(bron)).contact.id;
+    const tpId = (await json(tegenpartij)).contact.id;
+
+    // Beide (doel én bron) trainer_van dezelfde tegenpartij ⇒ zou botsen op de
+    // unique index bij blind ombuigen.
+    await api("POST", "/relations", { fromContactId: doelId, toContactId: tpId, relationType: "trainer_van" });
+    await api("POST", "/relations", { fromContactId: bronId, toContactId: tpId, relationType: "trainer_van" });
+    // Directe bron↔doel-relatie ⇒ zou zelfrelatie worden bij ombuigen.
+    await api("POST", "/relations", { fromContactId: bronId, toContactId: doelId, relationType: "klant_voor" });
+    // Unieke bronrelatie die WEL verplaatst moet worden.
+    await api("POST", "/relations", { fromContactId: bronId, toContactId: tpId, relationType: "ouder_van" });
+
+    // Zet een review-geval dat naar het broncontact wijst.
+    const [review] = await db
+      .insert(contactMergeReviewTable)
+      .values({ source: "test", contactId: bronId, candidateContactIds: [doelId], reason: `${PREFIX}merge-conflict`, status: "open" })
+      .returning();
+
+    const dec = await api("POST", `/review/${review!.id}/decide`, { decision: "samengevoegd", decidedTargetContactId: doelId });
+    assert.equal(dec.status, 200, "merge slaagt (geen rollback door unique-conflict)");
+    const body = await json(dec);
+    assert.ok(body.moved >= 1, "minstens één relatie verplaatst");
+    assert.ok(body.ended >= 2, "conflict + zelfrelatie beëindigd");
+
+    // Geen zelfrelatie op het doelcontact.
+    const doelRels = await json(await api("GET", `/${doelId}/relations`));
+    const zelf = doelRels.filter((r: { fromContactId: number; toContactId: number }) => r.fromContactId === doelId && r.toContactId === doelId);
+    assert.equal(zelf.length, 0, "geen zelfrelatie ontstaan");
+
+    // De verplaatste ouder_van-relatie hangt nu actief aan het doelcontact.
+    const actief = await json(await api("GET", `/${doelId}/relations?activeOnly=true`));
+    assert.ok(
+      actief.some((r: { relationType: string; fromContactId: number; toContactId: number }) => r.relationType === "ouder_van" && r.fromContactId === doelId && r.toContactId === tpId),
+      "unieke relatie verplaatst naar doel",
+    );
+    // Er is precies één ACTIEVE trainer_van doel→tp (geen dubbele).
+    const trAct = actief.filter((r: { relationType: string; toContactId: number }) => r.relationType === "trainer_van" && r.toContactId === tpId);
+    assert.equal(trAct.length, 1, "geen dubbele actieve trainer_van na dedup");
+
+    // Audit-herkomst: beëindigde relaties dragen een F10-merge-notitie met het
+    // broncontact (traceerbaar welke relatie beëindigd/verplaatst is en vanaf welk contact).
+    const alleTp = await json(await api("GET", `/${tpId}/relations`));
+    const alleDoel = await json(await api("GET", `/${doelId}/relations`));
+    const alleRel = [...alleTp, ...alleDoel];
+    const gemergeAudit = alleRel.filter(
+      (r: { sourceNote: string | null }) =>
+        (r.sourceNote ?? "").includes("F10-merge") && (r.sourceNote ?? "").includes(`broncontact #${bronId}`),
+    );
+    assert.ok(gemergeAudit.length >= 1, "audit-herkomst traceerbaar (F10-merge + broncontact-id)");
+  });
+
+  // 9. E-mailrace: twee gelijktijdige creates met hetzelfde genormaliseerde
+  //    e-mailadres ⇒ hooguit één slaagt, de ander wordt nette 409 (unique index).
+  await test("concurrency e-mail: gelijktijdige creates ⇒ 409 (geen tweede identiteit)", async () => {
+    const email = `${PREFIX}RACE@F10.invalid`; // hoofdletters: normalisatie moet matchen
+    const [r1, r2] = await Promise.all([
+      api("POST", "/", { displayName: `${PREFIX}Race A`, email }),
+      api("POST", "/", { displayName: `${PREFIX}Race B`, email }),
+    ]);
+    const statuses = [r1.status, r2.status].sort();
+    assert.deepEqual(statuses, [201, 409], "exact één 201 en één 409");
+    // Slechts één contact met dit genormaliseerde e-mailadres.
+    const rows = await db.select().from(contactsTable).where(eq(contactsTable.primaryEmail, email.trim().toLowerCase()));
+    assert.equal(rows.length, 1, "precies één contact met dit e-mailadres");
+    // Sequentiële herhaling levert óók 409 met uitleg.
+    const again = await api("POST", "/", { displayName: `${PREFIX}Race C`, email });
+    assert.equal(again.status, 409);
+    assert.ok(/e-mailadres/i.test((await json(again)).error), "409 met uitleg");
+  });
+
+  // 10. client_athlete_links-migratie levert een klant_voor-relatie (klant → sporter).
+  //     We seeden een trainer, een sporter én een klant (aparte persoon), koppelen
+  //     ze via client_athlete_links en draaien de migratie in DRY-RUN als subprocess
+  //     (die rolt terug). We bewijzen zo dat de kernrelatie klant_voor uit
+  //     client_athlete_links komt — de basis voor "klant+sporter = twee relaties".
+  await test("client_athlete_links-migratie levert klant_voor-relatie", async () => {
+    const trainerId = `${PREFIX}cal-trainer`;
+    const sporterId = `${PREFIX}cal-sporter`;
+    // user_profiles voor trainer en sporter (migratie bouwt contactByClerk hieruit).
+    for (const [id, email] of [[trainerId, `${trainerId}@f10.invalid`], [sporterId, `${sporterId}@f10.invalid`]] as const) {
+      await db.insert(userProfilesTable).values({ clerkId: id, email, displayName: id, releaseGroup: "test" }).onConflictDoNothing();
+    }
+    // Klant is een APARTE persoon (geen account) — trainer_clients-rij.
+    const [client] = await db
+      .insert(trainerClientsTable)
+      .values({ trainerClerkId: trainerId, clientNumber: 999001, name: `${PREFIX}Klant Persoon`, email: `${PREFIX}klant@f10.invalid` })
+      .returning();
+    await db.insert(clientAthleteLinksTable).values({ clientId: client!.id, athleteClerkId: sporterId, relationType: "ouder" });
+
+    // Draai de gecompileerde migratie in dry-run (rollback) en lees het rapport.
+    const migJs = path.resolve(process.cwd(), "dist/scripts/f10-migrate-contacts.mjs");
+    let out = "";
+    try {
+      out = execFileSync("node", ["--enable-source-maps", migJs, "--dry-run"], { encoding: "utf8" });
+    } catch (e) {
+      out = String((e as { stdout?: string }).stdout ?? "") + String((e as { stderr?: string }).stderr ?? "");
+    }
+    const block = out.split("Bron: client_athlete_links")[1] ?? "";
+    const relLine = /relaties:\s*(\d+)/.exec(block);
+    assert.ok(relLine, "client_athlete_links-blok staat in het rapport");
+    assert.ok(Number(relLine![1]) >= 1, `client_athlete_links levert ≥1 klant_voor-relatie (kreeg ${relLine![1]})`);
+
+    // Dry-run rolt terug: er blijft geen testcontact achter in de DB.
+    const rest = await db.select({ id: contactsTable.id }).from(contactsTable).where(like(contactsTable.displayName, `${PREFIX}Klant Persoon`));
+    assert.equal(rest.length, 0, "dry-run heeft niets bewaard");
   });
 
   server.close();

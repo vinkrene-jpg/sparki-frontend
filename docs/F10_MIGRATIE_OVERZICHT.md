@@ -34,6 +34,24 @@ leeg (0 rijen).
 
 E-mail wordt genormaliseerd (getrimd, lowercase) vóór vergelijken.
 
+**Racebestendig (0040).** Naast het clerkId-anker (uniek waar niet-null) is er
+nu óók een partial unique index op het genormaliseerde, niet-lege e-mailadres
+(`lower(trim(primary_email))`). Twee gelijktijdige creates met hetzelfde adres
+kunnen daardoor niet meer beide slagen: de tweede raakt de unique index en
+`findOrCreateContact` vertaalt die violation naar dezelfde nette 409-uitleg
+(bestaand contact benoemd). Gecontroleerd in dev: geen bestaande dubbelen, index
+aangemaakt.
+
+**Samenvoegen is verliesvrij én conflictvrij.** Samenvoegen gebeurt alleen op
+expliciet menselijk besluit met een doelcontact; het broncontact wordt nooit
+verwijderd. Omdat de unique index op relaties dubbele ACTIEVE relaties verbiedt,
+gebeurt het overbrengen in één transactie in deze volgorde: (1) bron↔doel-
+relaties worden beëindigd (worden nooit een zelfrelatie), (2) relaties die het
+doel al actief heeft van hetzelfde type met dezelfde tegenpartij worden aan de
+bronkant beëindigd (geen botsing op de index), (3) de resterende relaties worden
+verplaatst. Elke beëindiging/verplaatsing is traceerbaar via een `F10-merge`-
+notitie met het bron- en doelcontact.
+
 ---
 
 ## Dry-run cijfers (dev-database)
@@ -47,10 +65,21 @@ E-mail wordt genormaliseerd (getrimd, lowercase) vóór vergelijken.
 | coach_athlete_links | 4 | 4 | 0 | 0 | 4 |
 | parent_athlete_links | 5 | 5 | 0 | 0 | 5 |
 | trainer_clients | 0 | 0 | 0 | 0 | 0 |
+| client_athlete_links | 0 | 0 | 0 | 0 | 0 |
 | billing_parties | 0 | 0 | 0 | 0 | 0 |
 | emergency_contacts | 0 | 0 | 0 | 0 | 0 |
 | invitations | 16 | 1 (gedekt) | 0 | 0 | 0 |
-| **Totaal** | **434** | **422** | **0** | **0** | **30** |
+| trainer_groups | 0 | 0 | 0 | 0 | 0 |
+| trainer_group_members | 0 | 0 | 0 | 0 | 0 |
+| club_teams | 2 | 2 | 0 | 0 | 0 |
+| club_team_members | 2 | 2 | 0 | 0 | 2 |
+| club_groups | 0 | 0 | 0 | 0 | 0 |
+| club_group_members | 0 | 0 | 0 | 0 | 0 |
+| **Totaal** | **438** | **426** | **0** | **0** | **32** |
+
+> Alle **17** bronadministraties (13 logische bronnen incl. hun ledentabellen)
+> zijn nu expliciet gedekt en verschijnen in het rapport, óók de bronnen met
+> 0 rijen in dev.
 
 Toelichting op de aantallen:
 
@@ -71,6 +100,21 @@ Toelichting op de aantallen:
   niets te migreren, maar de bron is wél in het script gedekt (relaties
   `klant_voor`, `betaler_voor`, `noodcontact_van` en verwijzingen via
   `contact_id` staan klaar zodra er data komt).
+- **client_athlete_links → `klant_voor`-relatie (klant → sporter).** Dit is de
+  kern van "klant + sporter = één contact, twee relaties": de relatie legt vast
+  wélke sporter bij welke klant hoort. De klant kan een ander zijn dan de
+  sporter (ouder betaalt kind) of dezelfde persoon (sporter is zelf klant); in
+  dat laatste geval draagt één contact twee relaties, nooit een samengevoegde
+  entiteit. In dev 0 rijen; de logica is bewezen via de acceptatietest
+  (seed-data levert aantoonbaar een `klant_voor`-relatie).
+- **trainer_groups / trainer_group_members → `lid_van`.** Sportergroepen van de
+  zelfstandige trainer zijn organisatie/presentatie, géén rechtenbron. De groep
+  is een organisatie-contact (`bedrijf`); het lidmaatschap is `lid_van`. Een
+  groepslidmaatschap leidt nooit rechten af.
+- **club_teams / club_team_members / club_groups / club_group_members →
+  `lid_van`** naar het **club-organisatie-anker** (hetzelfde `bedrijf`-contact
+  dat ook `club_members` gebruikt — geen tweede organisatielijst per team/groep).
+  In dev: 2 teams met 2 leden → 2 `lid_van`-relaties; groepen 0 rijen.
 - **invitations: 16, waarvan 1 gedekt.** Uitnodigingen zijn nog **geen**
   identiteiten (er is nog geen persoon/account). 15 uitnodigingen hebben geen
   e-mail (rol-only). Eén (invitation 85) heeft een e-mail die al bij een

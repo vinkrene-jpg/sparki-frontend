@@ -177,36 +177,82 @@ export async function findOrCreateContact(
     }
   }
 
-  const [created] = await exec
-    .insert(contactsTable)
-    .values({
-      clerkId: clerkId ?? null,
-      primaryEmail: email,
-      displayName,
-      phone,
-      kindTags: mergeKindTags([], wantedKinds),
-      sourceNote: clean(input.sourceNote),
-    })
-    .returning();
+  let created: Contact;
+  try {
+    const [row] = await exec
+      .insert(contactsTable)
+      .values({
+        clerkId: clerkId ?? null,
+        primaryEmail: email,
+        displayName,
+        phone,
+        kindTags: mergeKindTags([], wantedKinds),
+        sourceNote: clean(input.sourceNote),
+      })
+      .returning();
+    created = row!;
+  } catch (err: unknown) {
+    // Racebestendigheid: een gelijktijdige create met hetzelfde clerkId of
+    // hetzelfde genormaliseerde e-mailadres kan de unique index raken (23505).
+    // Vertaal dat naar hetzelfde nette resultaat als de vóór-checks hierboven.
+    const cause = (err as { cause?: { code?: string } })?.cause ?? err;
+    const code = (cause as { code?: string } | undefined)?.code;
+    if (code === "23505") {
+      // clerkId-race ⇒ dezelfde identiteit: her-lees en verrijk.
+      if (clerkId) {
+        const [existing] = await exec
+          .select()
+          .from(contactsTable)
+          .where(eq(contactsTable.clerkId, clerkId))
+          .limit(1);
+        if (existing) {
+          const updated = await enrichContact(
+            existing,
+            { email, phone, kinds: wantedKinds },
+            exec,
+          );
+          return { status: "found", contact: updated, matchedBy: "clerkId" };
+        }
+      }
+      // e-mail-race ⇒ duidelijk duplicaat: her-lees het bestaande contact.
+      if (email) {
+        const [byEmail] = await exec
+          .select()
+          .from(contactsTable)
+          .where(eq(contactsTable.primaryEmail, email))
+          .limit(1);
+        if (byEmail) {
+          return {
+            status: "duplicate_rejected",
+            existing: byEmail,
+            reason:
+              `Er bestaat al een contact met dit e-mailadres (${email}): "${byEmail.displayName}" (contact #${byEmail.id}). ` +
+              `Dit is dezelfde identiteit — er wordt geen tweede contact aangemaakt.`,
+          };
+        }
+      }
+    }
+    throw err;
+  }
 
   if (reviewReason) {
     await exec.insert(contactMergeReviewTable).values({
       source: input.source ?? "api",
       sourceId: clean(input.sourceId),
-      contactId: created!.id,
+      contactId: created.id,
       candidateContactIds: reviewCandidates,
       reason: reviewReason,
       status: "open",
     });
     return {
       status: "created_needs_review",
-      contact: created!,
+      contact: created,
       candidateContactIds: reviewCandidates,
       reason: reviewReason,
     };
   }
 
-  return { status: "created", contact: created! };
+  return { status: "created", contact: created };
 }
 
 /** Vul een bestaand contact aan met ontbrekende gegevens en extra kindTags. */
