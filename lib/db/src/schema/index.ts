@@ -55,6 +55,7 @@ export * from "./coach-cockpit";
 export * from "./support";
 export * from "./club";
 export * from "./trainer";
+export * from "./trainer-clients";
 export * from "./work-objects";
 export * from "./release";
 export * from "./route-shares";

@@ -87,6 +87,7 @@ import releaseRouter from "./release";
 import entitlementsRouter from "./entitlements";
 import billingRouter from "./billing";
 import trainerRouter from "./trainer";
+import trainerClientsRouter from "./trainer-clients";
 import dataOriginRouter from "./data-origin";
 import aiFoundationRouter from "./ai-foundation";
 import searchRouter from "./search";
@@ -238,6 +239,8 @@ router.use("/billing", billingRouter);
 // SPARKI_BUILD_04: zelfstandige trainer (registratie zonder club, profiel,
 // bedrijfsgegevens). Rechten blijven bij resolveEntitlements (tier TRAINER).
 router.use("/trainer", trainerRouter);
+// SPARKI_BUILD_04 F2: klant ≠ sporter ≠ betaler (BB-62); geen geldstromen.
+router.use("/trainer/clients", trainerClientsRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.
