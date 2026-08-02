@@ -1,0 +1,50 @@
+# Poort 5b sanity-check — GRATIS_A_TOT_Z_01 F6 (Navigatie en rit), F7 (Wandelen)
+# en F8 (Instellingen en account verwijderen). Toets-SHA 1c4b1d34 (HEAD main).
+# Verificatie-oplevering: geen codewijzigingen op deze SHA — de bewijsbundel
+# (docs/proof-evidence/GRATIS_F6_F7_F8/) legt de verse testuitvoer vast.
+
+delivery: "F6/F7/F8 op SHA 1c4b1d34: navigatie start over dezelfde kaart met afslag-voor-afslag + spraak; ritafronding met eerlijke basisanalyse (afstand/gem./max snelheid, max spike-bestendig, nooit een GPS-piek als max); wandelen deelt één routepotje met fietsen (route-limits filtert niet op sport, geverifieerd op fixture A), onderweg wandelgegevens zonder fietsgegevens; verwijdertermijn 30 dagen als configuratiewaarde (was hardcoded 14), direct-definitief pad per accounttype (club nooit direct definitief), export vóór/tijdens verwijderen, uitloggen op dit apparaat naast de web-noodknop, minder-beweging voorkeur. Taal-schakelaar bewust NIET gebouwd (app volledig Nederlands, i18n is een eigen fase)."
+date: "2026-08-02"
+checked_by: "replit"
+surfaces:
+  - "API: account-privacy verwijderflow (test:privacy-security, 22/22) — 30d termijn, direct definitief per accounttype, export, sessies beëindigen, club-beleid"
+  - "API: route-usage teller (test:route-usage, 28/28) — één gedeeld potje voor fietsen+wandelen, geen sport-WHERE"
+  - "API: accountketen (test:account, 8/8) — provisioning intact"
+  - "Web Sparki: ritsamenvatting/navigatielaag (test:nav-live, 41/41) — afstand/gem./max snelheid, max spike-bestendig"
+  - "Mobiel Sparki: ritherstel/afronding (test:ride-tracker, 11/11) en HUD onderweg (test:nav-hud, 9/9); instellingen.tsx uitlogknop op dit apparaat"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Instellingen (mobiel, instellingen.tsx r.670): 'Uitloggen op dit apparaat' is een echte, aparte handeling naast 'Overal uitloggen' (web-noodknop) — server-side sessie-scheiding bewezen door test:privacy-security 'sessies beëindigen: eerlijk antwoord + audit'"
+        result: "pass"
+      - case: "Verwijderflow: 'direct definitief' en de 30-dagen keuze zijn beide werkende paden — test:privacy-security dekt 'verwijderverzoek plant hersteltermijn; annuleren draait terug', 'delete-route dwingt directDefinitief-beleid af per accounttype' en 'niet-verstreken verzoek wordt NIET uitgevoerd' + 'verstreken verzoek: cascade-verwijdering'"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Taal-schakelaar bewust NIET getoond: de app is volledig Nederlands; een taalkeuze die niets zou schakelen is precies de dode/contextloze bediening die Poort 5b weigert. Er staat dus geen nep-schakelaar in de instellingen — i18n is een eigen fase (eerlijk gemeld als open punt in de bewijsbundel)"
+        result: "pass"
+      - case: "Wandelen toont onderweg geen fietsgegevens: watt/doelwatts verschijnen alleen bij bekende FTP + echte live watts (workout-hud.tsx); wandelen deelt aantoonbaar hetzelfde routepotje (route-limits.ts filtert niet op sport, count zonder sport-WHERE) i.p.v. een verboden aparte wandellimiet — server-telling groen in test:route-usage (28/28)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Ritanalyse verzint geen waarden: geen hoogte ⇒ hoogtemeters eerlijk null, geen sensor ⇒ watt/cadans null (test:nav-live 'Ritoverzicht'); een GPS-piek (95/110 km/u) wordt nooit als maximale snelheid getoond bij 1s/3s/5s-interval — echte meting, geen placeholder-max"
+        result: "pass"
+      - case: "Verwijdertermijn is een echte configuratiewaarde, geen achtergebleven hardcoded getal: DEFAULT_DELETE_RECOVERY_DAYS=30 met env-override, recoveryDaysFor('club')=30; test:privacy-security 'overview geeft server-side termijn + directDefinitiefMogelijk' bevestigt dat de termijn uit de server komt, niet uit vaste UI-tekst"
+        result: "pass"
+
+# Bewijs (alle op 2026-08-02 vers gedraaid op SHA 1c4b1d34, logs in
+# docs/proof-evidence/GRATIS_F6_F7_F8/logs/):
+#   sparki:        test:nav-live 41/41
+#   sparki-mobile: test:ride-tracker 11/11, test:nav-hud 9/9
+#   api-server:    build OK, dan test:privacy-security 22/22, test:account 8/8,
+#                  test:route-usage 28/28 (sequentieel)
+# Eerlijk beperkt (uit de bewijsbundel):
+#   (1) Taal-instelling bestaat niet — geen nep-schakelaar; i18n is een eigen fase.
+#   (2) Schermbewijzen telefoon+browser volgen na de gemelde web-rebuild
+#       (Mirror-testronde loopt) — onderliggende logica nu al testbewezen.
+#   (3) GPX-upload zet zelf geen sport op een route; de fixture-verificatie deed dat
+#       als testopstelling.
+#   (4) Fixture-A-potjesverificatie (fiets 781 + wandel 782 ⇒ used:2, daarna used:0)
+#       is uitgevoerd op identieke, ongewijzigde route-limits-code van deze SHA.
+verdict: "deliverable"
