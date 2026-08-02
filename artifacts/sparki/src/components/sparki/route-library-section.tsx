@@ -201,7 +201,7 @@ function LibraryMap({
   return (
     <div
       ref={containerRef}
-      className="h-[340px] w-full overflow-hidden rounded-2xl border border-white/[0.08]"
+      className="h-[340px] w-full overflow-hidden rounded-2xl border border-border"
     />
   )
 }
@@ -245,13 +245,13 @@ function CommentaarForm({ routeId }: { routeId: number }) {
   })
   if (klaar)
     return (
-      <p className="mt-2 text-[12px] text-white/50">
+      <p className="mt-2 text-[12px] text-muted-foreground">
         Bedankt — jouw ervaring telt mee in de waardering van deze route.
       </p>
     )
   return (
-    <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-      <p className="text-[12px] text-white/55">Gereden? Geef je mening:</p>
+    <div className="mt-2 rounded-xl border border-border bg-muted p-3">
+      <p className="text-[12px] text-muted-foreground">Gereden? Geef je mening:</p>
       <div className="mt-1.5 flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -281,7 +281,7 @@ function CommentaarForm({ routeId }: { routeId: number }) {
         rows={2}
         maxLength={1000}
         placeholder="Bijv. mooi stuk langs de rivier, druk kruispunt bij km 12…"
-        className="mt-2 w-full rounded-lg border border-white/[0.1] bg-transparent p-2 text-[13px] text-white/85 placeholder:text-white/25 focus:outline-none"
+        className="mt-2 w-full rounded-lg border border-border bg-transparent p-2 text-[13px] text-foreground/80 placeholder:text-muted-foreground focus:outline-none"
       />
       <div className="mt-2 flex items-center gap-3">
         <button
@@ -294,7 +294,7 @@ function CommentaarForm({ routeId }: { routeId: number }) {
           {save.isPending ? "Opslaan…" : "Verstuur"}
         </button>
         {save.isError && (
-          <span className="text-[12px] text-rose-300/80">
+          <span className="text-[12px] text-[color:var(--color-negative)]">
             Opslaan lukte niet — probeer opnieuw.
           </span>
         )}
@@ -439,19 +439,19 @@ export function RouteLibrarySection() {
     <section>
       <div className="flex items-center gap-2">
         <MapPinned className="h-4 w-4" style={{ color: ACCENT }} />
-        <h2 className="text-[15px] font-semibold text-white/90">
+        <h2 className="text-[15px] font-semibold text-foreground/90">
           Kant-en-klare routes
         </h2>
       </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
         Per gebied worden uitgewerkte routes gemaakt voor racefiets, gravel, MTB
         en gewone fiets. Zoom of schuif de kaart naar een gebied en druk op de
         knop — alleen dat gebied wordt geladen.
       </p>
 
       <div className="mt-3 flex items-center gap-2">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3 py-2">
-          <Search className="h-4 w-4 shrink-0 text-white/35" />
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             value={zoekQ}
             onChange={(e) => setZoekQ(e.target.value)}
@@ -459,24 +459,24 @@ export function RouteLibrarySection() {
               if (e.key === "Enter") zoekPlaats()
             }}
             placeholder="Zoek een plaats, bijv. Apeldoorn of Valkenburg…"
-            className="w-full bg-transparent text-[13px] text-white/85 placeholder:text-white/25 focus:outline-none"
+            className="w-full bg-transparent text-[13px] text-foreground/80 placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
         <button
           type="button"
           onClick={zoekPlaats}
           disabled={zoekQ.trim().length < 2 || geocode.isPending}
-          className="rounded-xl border border-white/[0.14] px-4 py-2 text-[13px] text-white/70 disabled:opacity-40"
+          className="rounded-xl border border-border px-4 py-2 text-[13px] text-muted-foreground disabled:opacity-40"
         >
           {geocode.isPending ? "Zoeken…" : "Zoek"}
         </button>
       </div>
       {zoekFout && (
-        <p className="mt-1.5 text-[12px] text-rose-300/80">{zoekFout}</p>
+        <p className="mt-1.5 text-[12px] text-[color:var(--color-negative)]">{zoekFout}</p>
       )}
       {plaatsKeuzes && (
-        <div className="mt-2 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3">
-          <p className="text-[12px] text-white/60">
+        <div className="mt-2 rounded-xl border border-border bg-muted p-3">
+          <p className="text-[12px] text-muted-foreground">
             Er zijn meerdere plaatsen met deze naam — welke bedoel je?
           </p>
           <div className="mt-2 flex flex-col gap-1.5">
@@ -485,7 +485,7 @@ export function RouteLibrarySection() {
                 key={h.label}
                 type="button"
                 onClick={() => kiesPlaats(h)}
-                className="rounded-lg border border-white/[0.12] px-3 py-1.5 text-left text-[13px] text-white/80 transition-colors hover:border-cyan-300/40"
+                className="rounded-lg border border-border px-3 py-1.5 text-left text-[13px] text-foreground/80 transition-colors hover:border-cyan-300/40"
               >
                 {h.label}
               </button>
@@ -494,9 +494,9 @@ export function RouteLibrarySection() {
         </div>
       )}
       {gebied?.mode === "straal" && (
-        <p className="mt-2 text-[12px] text-white/55">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           Routes die starten binnen{" "}
-          <span className="font-semibold text-white/80">
+          <span className="font-semibold text-foreground/80">
             {gebied.radiusKm} km
           </span>{" "}
           van {gebied.label}. Deze straal geldt alleen voor deze zoekopdracht.
@@ -519,7 +519,7 @@ export function RouteLibrarySection() {
           staat op elk routekaartje — zo is de koppeling kaart↔lijst zonder
           alleen op kleur te leunen). */}
       {routes.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/50">
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
           {(Object.keys(BIKE_LABEL) as string[])
             .filter((b) => routes.some((r) => r.bikeType === b))
             .map((b) => (
@@ -528,7 +528,7 @@ export function RouteLibrarySection() {
                 {BIKE_LABEL[b]} ({BIKE_DASH_LABEL[b] ?? "eigen lijnstijl"})
               </span>
             ))}
-          <span className="text-white/35">
+          <span className="text-muted-foreground">
             Elke route heeft daarnaast een eigen kleur.
           </span>
         </div>
@@ -548,7 +548,7 @@ export function RouteLibrarySection() {
             type="button"
             onClick={() => vulGebied.mutate()}
             disabled={vulGebied.isPending}
-            className="rounded-xl border border-white/[0.14] px-4 py-2 text-[13px] text-white/70 disabled:opacity-50"
+            className="rounded-xl border border-border px-4 py-2 text-[13px] text-muted-foreground disabled:opacity-50"
           >
             {vulGebied.isPending ? "Starten…" : "Vul dit gebied met routes"}
           </button>
@@ -560,8 +560,8 @@ export function RouteLibrarySection() {
             onClick={() => setBikeFilter(bikeFilter === b ? null : b)}
             className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
               bikeFilter === b
-                ? "border-cyan-300/50 text-cyan-200"
-                : "border-white/[0.12] text-white/50"
+                ? "border-cyan-300/50 text-accent-cyan"
+                : "border-border text-muted-foreground"
             }`}
           >
             {BIKE_LABEL[b]}
@@ -570,17 +570,17 @@ export function RouteLibrarySection() {
       </div>
 
       {isLoading && (
-        <p className="mt-3 flex items-center gap-2 text-[13px] text-white/50">
+        <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Routes laden…
         </p>
       )}
       {isError && (
-        <p className="mt-3 text-[13px] text-rose-300/80">
+        <p className="mt-3 text-[13px] text-[color:var(--color-negative)]">
           Kon de bibliotheek niet laden — probeer opnieuw.
         </p>
       )}
       {gebied == null && (
-        <p className="mt-3 text-[13px] text-white/40">
+        <p className="mt-3 text-[13px] text-muted-foreground">
           Nog geen gebied gekozen — schuif de kaart en druk op de knop.
         </p>
       )}
@@ -593,7 +593,7 @@ export function RouteLibrarySection() {
         !isError &&
         routes.length === 0 &&
         alleIds.length > 0 && (
-          <p className="mt-3 text-[13px] text-white/40">
+          <p className="mt-3 text-[13px] text-muted-foreground">
             {gebied.mode === "straal"
               ? `Wel routes binnen ${gebied.radiusKm} km, maar geen van het gekozen fietstype — kies een ander type of haal het filter weg.`
               : "Wel routes in dit gebied, maar geen van het gekozen fietstype — kies een ander type of haal het filter weg."}
@@ -601,7 +601,7 @@ export function RouteLibrarySection() {
         )}
       {gebied != null && !isLoading && !isError && alleIds.length === 0 && (
         <div className="mt-3">
-          <p className="text-[13px] text-white/40">
+          <p className="text-[13px] text-muted-foreground">
             {gebied.mode === "straal"
               ? `Geen Sparki-routes die binnen ${gebied.radiusKm} km van ${gebied.label} starten.`
               : "In dit gebied staan nog geen Sparki-routes."}
@@ -620,12 +620,12 @@ export function RouteLibrarySection() {
                         r,
                       )
                     }
-                    className="rounded-full border border-white/[0.14] px-3 py-1.5 text-[12px] text-white/70 transition-colors hover:border-cyan-300/40"
+                    className="rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-cyan-300/40"
                   >
                     Zoek tot {r} km
                   </button>
                 ))}
-              <span className="text-[12px] text-white/35">
+              <span className="text-[12px] text-muted-foreground">
                 of kies een ander startpunt, of vul dit gebied met routes.
               </span>
             </div>
@@ -655,8 +655,8 @@ export function RouteLibrarySection() {
               key={r.id}
               className={`rounded-2xl border p-3.5 transition-colors ${
                 r.id === selectedId
-                  ? "border-cyan-300/40 bg-white/[0.05]"
-                  : "border-white/[0.08] bg-white/[0.02]"
+                  ? "border-cyan-300/40 bg-muted"
+                  : "border-border bg-muted"
               }`}
             >
               <button
@@ -665,7 +665,7 @@ export function RouteLibrarySection() {
                 className="flex w-full items-start justify-between gap-2 text-left"
               >
                 <span>
-                  <span className="flex items-center gap-2 text-[14px] font-medium text-white/90">
+                  <span className="flex items-center gap-2 text-[14px] font-medium text-foreground/90">
                     {/* Zelfde kleur + lijnstijl als op de kaart: zo koppel je
                         kaartlijn en kaartje in één oogopslag. */}
                     <LijnVoorbeeld
@@ -675,7 +675,7 @@ export function RouteLibrarySection() {
                     />
                     {r.name}
                   </span>
-                  <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-white/45">
+                  <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <Bike className="h-3.5 w-3.5" />
                       {BIKE_LABEL[r.bikeType] ?? r.bikeType}
@@ -687,18 +687,18 @@ export function RouteLibrarySection() {
                       <span>{Math.round(r.elevationGainM)} hm</span>
                     )}
                     {r.startAfstandKm != null && (
-                      <span className="text-cyan-200/70">
+                      <span className="text-accent-cyan">
                         start op {String(r.startAfstandKm).replace(".", ",")} km
                       </span>
                     )}
                   </span>
                   {r.improveNote && (
-                    <span className="mt-0.5 block text-[11px] text-cyan-200/60">
+                    <span className="mt-0.5 block text-[11px] text-accent-cyan">
                       {r.improveNote}
                     </span>
                   )}
                   {nietGeverifieerd && (
-                    <span className="mt-1 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+                    <span className="mt-1 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-warning)]">
                       Niet volledig geverifieerd ·{" "}
                       {verification!.onbekendPct != null
                         ? `${String(verification!.onbekendPct).replace(".", ",")}% wegdek onbekend`
@@ -709,12 +709,12 @@ export function RouteLibrarySection() {
                 {r.avgRating != null ? (
                   <span className="shrink-0 text-right">
                     <Sterren value={r.avgRating} />
-                    <span className="block text-[11px] text-white/35">
+                    <span className="block text-[11px] text-muted-foreground">
                       {r.ratingCount}×
                     </span>
                   </span>
                 ) : (
-                  <span className="shrink-0 text-[11px] text-white/30">
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
                     nog geen mening
                   </span>
                 )}
@@ -723,7 +723,7 @@ export function RouteLibrarySection() {
                 <div className="mt-2">
                   {nietGeverifieerd && (
                     <div className="mb-2 rounded-xl border border-amber-300/35 bg-amber-300/[0.05] px-3 py-2.5">
-                      <p className="text-[12px] leading-relaxed text-white/60">
+                      <p className="text-[12px] leading-relaxed text-muted-foreground">
                         {verification!.onbekendPct != null
                           ? `${String(verification!.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
                           : "Een deel van het wegdek is onbekend"}{" "}
@@ -731,7 +731,7 @@ export function RouteLibrarySection() {
                         daarom niet aanbevolen als racefietsroute — overnemen kan
                         alleen als jij daar expliciet voor kiest.
                       </p>
-                      <label className="mt-2 flex cursor-pointer items-center gap-2 text-[12px] text-white/75">
+                      <label className="mt-2 flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground">
                         <input
                           type="checkbox"
                           checked={onbekendGekozen === r.id}
@@ -752,7 +752,7 @@ export function RouteLibrarySection() {
                       gebruik.isPending ||
                       (nietGeverifieerd && onbekendGekozen !== r.id)
                     }
-                    className="rounded-lg border border-cyan-300/40 px-3 py-1.5 text-[12px] font-semibold text-cyan-200 disabled:opacity-50"
+                    className="rounded-lg border border-cyan-300/40 px-3 py-1.5 text-[12px] font-semibold text-accent-cyan disabled:opacity-50"
                   >
                     {gebruik.isPending
                       ? "Overnemen…"
@@ -761,7 +761,7 @@ export function RouteLibrarySection() {
                         : "Zet in mijn routes"}
                   </button>
                   {gebruik.isError && (
-                    <span className="ml-2 text-[12px] text-rose-300/80">
+                    <span className="ml-2 text-[12px] text-[color:var(--color-negative)]">
                       Overnemen lukte niet.
                     </span>
                   )}
@@ -774,7 +774,7 @@ export function RouteLibrarySection() {
         </ul>
       )}
       {vulMelding && (
-        <p className="mt-2 text-[12px] text-white/50">{vulMelding}</p>
+        <p className="mt-2 text-[12px] text-muted-foreground">{vulMelding}</p>
       )}
       {selected == null && null}
     </section>

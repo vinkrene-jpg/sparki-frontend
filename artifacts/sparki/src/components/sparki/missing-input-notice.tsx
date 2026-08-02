@@ -61,8 +61,8 @@ function SecondaryButton({
       disabled={disabled || loading}
       className={
         tone === "light"
-          ? "flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-sans text-[13px] font-medium text-slate-700 transition-colors hover:border-cyan-500/40 hover:text-cyan-700 disabled:opacity-40"
-          : "flex items-center justify-between gap-2 rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 font-sans text-[13px] font-medium text-white/80 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/90 disabled:opacity-40"
+          ? "flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-card px-4 py-2.5 font-sans text-[13px] font-medium text-slate-700 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-40"
+          : "flex items-center justify-between gap-2 rounded-xl border border-border bg-muted px-4 py-2.5 font-sans text-[13px] font-medium text-foreground/80 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan disabled:opacity-40"
       }
     >
       <span>{label}</span>
@@ -70,7 +70,7 @@ function SecondaryButton({
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
         <ChevronRight
-          className={tone === "light" ? "h-3.5 w-3.5 text-slate-400" : "h-3.5 w-3.5 text-white/30"}
+          className={tone === "light" ? "h-3.5 w-3.5 text-slate-400" : "h-3.5 w-3.5 text-muted-foreground"}
           strokeWidth={2}
         />
       )}
@@ -85,7 +85,7 @@ function PrimaryButton({ label, onClick, loading, disabled }: ManualAction) {
       onClick={onClick}
       disabled={disabled || loading}
       className="flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-sans text-[13px] font-semibold disabled:opacity-50"
-      style={{ background: ACCENT, color: "#040506" }}
+      style={{ background: ACCENT, color: "var(--color-on-accent)" }}
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
       {label}
@@ -122,11 +122,11 @@ export function MissingInputNotice({
         className={
           tone === "light"
             ? "rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5"
-            : "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] px-4 py-3.5 backdrop-blur-md"
+            : "rounded-xl border border-border bg-card px-4 py-3.5 backdrop-blur-md"
         }
       >
-        <p className={tone === "light" ? "font-sans text-[13px] font-medium text-slate-800" : "font-sans text-[13px] font-light text-white/80"}>{title}</p>
-        <p className={tone === "light" ? "mt-1 text-[12px] leading-relaxed text-slate-500" : "mt-1 text-[12px] leading-relaxed text-white/45"}>
+        <p className={tone === "light" ? "font-sans text-[13px] font-medium text-slate-800" : "font-sans text-[13px] font-light text-foreground/80"}>{title}</p>
+        <p className={tone === "light" ? "mt-1 text-[12px] leading-relaxed text-slate-500" : "mt-1 text-[12px] leading-relaxed text-muted-foreground"}>
           {description}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -144,15 +144,15 @@ export function MissingInputNotice({
       className={
         tone === "light"
           ? "flex flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-10 text-center"
-          : "flex flex-col items-center gap-5 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-6 py-10 text-center backdrop-blur-md"
+          : "flex flex-col items-center gap-5 rounded-2xl border border-border bg-card px-6 py-10 text-center backdrop-blur-md"
       }
     >
       {icon ?? (showOrb && (
         <SparkiCore size={40} accent={ACCENT} readiness={0.85} variant="orb" />
       ))}
       <div>
-        <p className={tone === "light" ? "font-sans text-[15px] font-medium text-slate-800" : "font-sans text-[15px] font-light text-white/85"}>{title}</p>
-        <p className={tone === "light" ? "mt-1.5 max-w-[28rem] text-[13px] leading-relaxed text-slate-500" : "mt-1.5 max-w-[28rem] text-[13px] leading-relaxed text-white/45"}>
+        <p className={tone === "light" ? "font-sans text-[15px] font-medium text-slate-800" : "font-sans text-[15px] font-light text-foreground/85"}>{title}</p>
+        <p className={tone === "light" ? "mt-1.5 max-w-[28rem] text-[13px] leading-relaxed text-slate-500" : "mt-1.5 max-w-[28rem] text-[13px] leading-relaxed text-muted-foreground"}>
           {description}
         </p>
       </div>

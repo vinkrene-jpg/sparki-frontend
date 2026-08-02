@@ -108,7 +108,7 @@ export function FilePicker({
         aria-label={ariaLabel}
         className={
           className ??
-          "flex h-9 items-center gap-2 rounded-lg border border-white/[0.1] px-3 text-white/55 transition-colors hover:border-cyan-300/30 hover:text-cyan-200 disabled:opacity-40"
+          "flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-muted-foreground transition-colors hover:border-cyan-300/30 hover:text-accent-cyan disabled:opacity-40"
         }
       >
         {children ?? (

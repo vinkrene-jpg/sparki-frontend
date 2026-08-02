@@ -73,7 +73,7 @@ export function EmergencyDayHome({ briefing }: DayHomeComponentProps) {
           ) : metricsHistory && metricsHistory.length > 0 ? (
             <VitalsGrid metrics={metricsHistory} />
           ) : (
-            <p className="text-[12px] text-white/35">
+            <p className="text-[12px] text-muted-foreground">
               Log een check-in om je hersteldata te zien
             </p>
           )}
@@ -87,16 +87,15 @@ export function EmergencyDayHome({ briefing }: DayHomeComponentProps) {
           {RECOVERY_GUIDANCE.map((tip) => (
             <li
               key={tip}
-              className="flex gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+              className="flex gap-3 rounded-xl border border-border bg-card p-4 backdrop-blur-md"
             >
               <span
                 className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
                 style={{
                   background: "rgba(255,140,120,0.9)",
-                  boxShadow: "0 0 8px rgba(255,140,120,0.9)",
                 }}
               />
-              <span className="text-[13px] leading-relaxed text-white/70">
+              <span className="text-[13px] leading-relaxed text-muted-foreground">
                 {tip}
               </span>
             </li>
@@ -109,13 +108,13 @@ export function EmergencyDayHome({ briefing }: DayHomeComponentProps) {
         type="button"
         disabled={setStatus.isPending}
         onClick={() => setStatus.mutate("ok")}
-        className="w-full rounded-full border border-cyan-300/30 bg-cyan-300/[0.06] px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.12] disabled:opacity-50"
+        className="w-full rounded-full border border-accent-cyan/30 bg-accent-cyan/[0.06] px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-accent-cyan transition-colors hover:bg-accent-cyan/[0.12] disabled:opacity-50"
       >
         {setStatus.isPending ? "Bijwerken…" : "Ik ben weer hersteld"}
       </button>
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>

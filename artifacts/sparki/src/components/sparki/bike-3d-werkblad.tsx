@@ -27,11 +27,11 @@ function PartDetails({ bike, part }: { bike: GarageBike; part: BikePart }) {
 
   if (matches.length === 0) {
     return (
-      <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3.5 backdrop-blur-md">
-        <p className="text-[13px] font-medium text-white/85">
+      <div className="rounded-xl border border-border bg-card px-4 py-3.5 backdrop-blur-md">
+        <p className="text-[13px] font-medium text-foreground/85">
           {BIKE_PART_LABEL[part]}
         </p>
-        <p className="mt-1 text-[12px] leading-snug text-white/50">
+        <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
           Hiervoor staat nog niets geregistreerd in je garage. Leg het onderdeel
           hieronder vast bij je fiets, dan kan er ook onderhoudsadvies over
           gegeven worden.
@@ -45,17 +45,17 @@ function PartDetails({ bike, part }: { bike: GarageBike; part: BikePart }) {
       {matches.map((c) => (
         <div
           key={c.id}
-          className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md"
+          className="rounded-xl border border-border bg-card px-4 py-3 backdrop-blur-md"
         >
-          <p className="text-[13px] font-medium text-white/85">
+          <p className="text-[13px] font-medium text-foreground/85">
             {[c.brand, c.model].filter(Boolean).join(" ") || BIKE_PART_LABEL[part]}
           </p>
-          <p className="text-[11px] text-white/40">{BIKE_PART_LABEL[part]}</p>
+          <p className="text-[11px] text-muted-foreground">{BIKE_PART_LABEL[part]}</p>
           {c.notes && (
-            <p className="mt-1 text-[12px] leading-snug text-white/55">{c.notes}</p>
+            <p className="mt-1 text-[12px] leading-snug text-muted-foreground">{c.notes}</p>
           )}
           {c.assessment.known && (
-            <p className="mt-1.5 text-[12px] leading-snug text-cyan-200/80">
+            <p className="mt-1.5 text-[12px] leading-snug text-accent-cyan">
               {c.assessment.entry.klasseLabel}
               {c.assessment.entry.note ? ` — ${c.assessment.entry.note}` : ""}
             </p>
@@ -109,7 +109,7 @@ export function Bike3DWerkblad() {
   return (
     <section id="bike-scan-capture" aria-label="Jouw fiets in 3D">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
+        <h2 className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
           <Wrench className="h-3 w-3" /> Jouw fiets
         </h2>
         {bikes.length > 1 && (
@@ -125,8 +125,8 @@ export function Bike3DWerkblad() {
                 className="rounded-full border px-2.5 py-1 text-[11px] transition-colors"
                 style={{
                   borderColor:
-                    b.id === bike.id ? "rgba(120,210,230,0.45)" : "rgba(255,255,255,0.12)",
-                  color: b.id === bike.id ? "var(--accent-cyan)" : "rgba(255,255,255,0.6)",
+                    b.id === bike.id ? "var(--color-accent-cyan)" : "var(--color-border)",
+                  color: b.id === bike.id ? "var(--accent-cyan)" : "var(--color-muted-foreground)",
                 }}
               >
                 {b.name}
@@ -137,17 +137,17 @@ export function Bike3DWerkblad() {
       </div>
 
       {hasScan && (
-        <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/[0.82] backdrop-blur-md">
+        <div className="mb-3 overflow-hidden rounded-2xl border border-border bg-card backdrop-blur-md">
           {/* Eerlijke benaming: dit zijn je eigen foto's die je rondom kunt
               bekijken — geen 3D-model. */}
-          <p className="px-4 pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+          <p className="px-4 pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Interactieve fotoweergave
           </p>
           <BikeScanViewer bikeId={bike.id} height={240} />
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/[0.82] backdrop-blur-md">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card backdrop-blur-md">
         <Bike3D
           bike={bike}
           height={260}
@@ -155,7 +155,7 @@ export function Bike3DWerkblad() {
           selectedPart={part}
           onSelectPart={(p) => setPart((prev) => (prev === p ? null : p))}
         />
-        <p className="px-4 pb-3 text-center text-[11px] text-white/35">
+        <p className="px-4 pb-3 text-center text-[11px] text-muted-foreground">
           Draai met je vinger of muis · tik een onderdeel aan voor details
         </p>
       </div>
@@ -164,13 +164,13 @@ export function Bike3DWerkblad() {
         <button
           type="button"
           onClick={() => setScanning(true)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/35 px-3.5 py-1.5 text-[12px] text-cyan-200 hover:border-cyan-300/60"
+          className="inline-flex items-center gap-1.5 rounded-full border border-accent-cyan/35 px-3.5 py-1.5 text-[12px] text-accent-cyan hover:border-accent-cyan/60"
         >
           <ScanLine className="h-3.5 w-3.5" />
           {hasScan ? "Opnieuw scannen" : "Scan je fiets"}
         </button>
         {!hasScan && (
-          <p className="text-right text-[10.5px] leading-tight text-white/35">
+          <p className="text-right text-[10.5px] leading-tight text-muted-foreground">
             Leg je echte fiets vast met de camera — stap voor stap, met
             kwaliteitscontrole per opname.
           </p>
@@ -186,12 +186,12 @@ export function Bike3DWerkblad() {
         </div>
       )}
       {!part && (
-        <p className="mt-2 text-[11px] text-white/35">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           Onderdelen met registratie in je garage lichten op zodra je ze aantikt
           — details komen altijd uit je echte garagegegevens.
         </p>
       )}
-      <p className="mt-1 text-[11px] text-white/30">
+      <p className="mt-1 text-[11px] text-muted-foreground">
         Alles aanpassen doe je in de garage hieronder.
       </p>
     </section>

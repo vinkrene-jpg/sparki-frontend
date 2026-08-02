@@ -21,7 +21,7 @@ import { Loader2, Search } from "lucide-react"
 import type { ReactNode } from "react"
 
 const cardClass =
-  "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
 
 // The deeper explanation revealed under "Uitgebreid": the advice, any other
 // same-metric observations, then the alternative explanations. Returns
@@ -60,14 +60,14 @@ function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
       )}
       {signals.length > 0 && (
         <div className="space-y-2">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Waarop dit is gebaseerd
           </p>
           {signals.map((s, i) => (
             <div key={`${s.kind}-${i}`} className="flex items-start gap-2.5">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
-              <p className="text-[12px] leading-relaxed text-white/60">
-                <span className="text-white/80">{s.label}:</span> {s.value}
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted" />
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                <span className="text-foreground/80">{s.label}:</span> {s.value}
               </p>
             </div>
           ))}
@@ -75,13 +75,13 @@ function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
       )}
       {others.length > 0 && (
         <div className="space-y-2">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Ook hierover opgevallen
           </p>
           {others.map((o) => (
             <p
               key={o.id}
-              className="text-pretty text-[12px] leading-relaxed text-white/55"
+              className="text-pretty text-[12px] leading-relaxed text-muted-foreground"
             >
               {o.observationText}
             </p>
@@ -90,14 +90,14 @@ function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
       )}
       {alts.length > 0 && (
         <div>
-          <p className="text-[11px] leading-relaxed text-white/40">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
             Andere mogelijke verklaringen:
           </p>
           <ul className="mt-1 flex flex-col gap-1">
             {alts.map((a, i) => (
               <li
                 key={i}
-                className="text-pretty text-[12px] leading-relaxed text-white/45"
+                className="text-pretty text-[12px] leading-relaxed text-muted-foreground"
               >
                 • {a}
               </li>
@@ -168,7 +168,7 @@ export function PatternsLayer() {
         <div className={cardClass}>
           {hasSessions ? (
             <>
-              <p className="text-pretty text-[13px] leading-relaxed text-white/60">
+              <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd.
                 Je gegevens worden doorzocht op verbanden tussen belasting,
                 herstel en vorm.

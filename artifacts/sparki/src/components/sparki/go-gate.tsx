@@ -83,7 +83,7 @@ export function GoGateSwitch({
             className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-300/60 border-t-transparent"
             aria-hidden
           />
-          <p className="text-[13px] text-white/60">
+          <p className="text-[13px] text-muted-foreground">
             Je toegang wordt gecontroleerd…
           </p>
         </div>

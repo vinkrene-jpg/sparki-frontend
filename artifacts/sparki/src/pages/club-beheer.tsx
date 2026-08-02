@@ -64,10 +64,10 @@ import { FileText } from "lucide-react"
 // Clubbeheer — alleen zichtbaar voor owner/admin. Leden & rollen,
 // uitnodigingen, trainingen/wedstrijden plannen en het pakket.
 
-const CARD = "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3.5 py-3 backdrop-blur-md"
-const H2 = "mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-white/40"
-const INPUT = "w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
-const BTN = "rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-[12px] text-cyan-200 disabled:opacity-40"
+const CARD = "rounded-xl border border-border bg-card px-3.5 py-3 backdrop-blur-md"
+const H2 = "mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground"
+const INPUT = "w-full rounded-lg border border-border bg-transparent px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
+const BTN = "rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
 
 const ROLE_LABELS: Record<ClubRole, string> = {
   owner: "Eigenaar",
@@ -139,17 +139,17 @@ function ClubSettingsSection({ club, isOwner }: { club: Club; isOwner: boolean }
           />
         </div>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-[11px] text-white/55">
+          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             Clubkleur
-            <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-7 w-9 cursor-pointer rounded border border-white/15 bg-transparent" />
+            <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-7 w-9 cursor-pointer rounded border border-border bg-transparent" />
           </label>
-          <label className="flex items-center gap-1.5 text-[11px] text-white/55">
+          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             Tweede kleur
-            <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-7 w-9 cursor-pointer rounded border border-white/15 bg-transparent" />
+            <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-7 w-9 cursor-pointer rounded border border-border bg-transparent" />
           </label>
         </div>
         <div>
-          <p className="mb-1 text-[11px] text-white/45">Onderdelen (uitzetten verbergt het onderdeel voor leden):</p>
+          <p className="mb-1 text-[11px] text-muted-foreground">Onderdelen (uitzetten verbergt het onderdeel voor leden):</p>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(MODULE_LABELS).map(([key, label]) => {
               const on = modules.includes(key)
@@ -163,7 +163,7 @@ function ClubSettingsSection({ club, isOwner }: { club: Club; isOwner: boolean }
                   }}
                   disabled={update.isPending}
                   className={`rounded-lg border px-2.5 py-1 text-[11px] ${
-                    on ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60 hover:border-white/30"
+                    on ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan" : "border-border text-muted-foreground hover:border-border"
                   }`}
                 >
                   {on && <IconCheck className="mr-1 inline h-3 w-3" aria-hidden />}
@@ -175,7 +175,7 @@ function ClubSettingsSection({ club, isOwner }: { club: Club; isOwner: boolean }
         </div>
         {isOwner && (
           <div>
-            <p className="mb-1 text-[11px] text-white/45">Clubstatus (alleen eigenaar): {STATUS_LABELS[club.status] ?? club.status}</p>
+            <p className="mb-1 text-[11px] text-muted-foreground">Clubstatus (alleen eigenaar): {STATUS_LABELS[club.status] ?? club.status}</p>
             <div className="flex flex-wrap gap-1.5">
               {Object.entries(STATUS_LABELS).map(([key, label]) => (
                 <button
@@ -186,14 +186,14 @@ function ClubSettingsSection({ club, isOwner }: { club: Club; isOwner: boolean }
                   }}
                   disabled={update.isPending}
                   className={`rounded-lg border px-2.5 py-1 text-[11px] ${
-                    club.status === key ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60 hover:border-white/30"
+                    club.status === key ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan" : "border-border text-muted-foreground hover:border-border"
                   }`}
                 >
                   {label}
                 </button>
               ))}
             </div>
-            <p className="mt-1 text-[10px] text-white/35">
+            <p className="mt-1 text-[10px] text-muted-foreground">
               Bij een andere status dan "Actief" zijn aanmelden, plannen en berichten geblokkeerd; bekijken blijft mogelijk.
             </p>
           </div>
@@ -214,7 +214,7 @@ function ClubSettingsSection({ club, isOwner }: { club: Club; isOwner: boolean }
         >
           Opslaan
         </button>
-        {msg && <p className="text-[11px] text-white/60">{msg}</p>}
+        {msg && <p className="text-[11px] text-muted-foreground">{msg}</p>}
       </div>
     </section>
   )
@@ -232,22 +232,22 @@ function JoinCodeSection({ club }: { club: Club }) {
       <div className={CARD}>
         {code ? (
           <div className="flex items-start gap-4">
-            <div className="rounded-lg bg-white p-2">
+            <div className="rounded-lg bg-card p-2">
               <QRCodeCanvas value={joinUrl ?? code} size={104} />
             </div>
             <div className="min-w-0">
-              <p className="text-[12px] text-white/55">Leden kunnen met deze code (of QR) direct lid worden:</p>
-              <p className="mt-1 font-mono text-lg tracking-[0.2em] text-cyan-200">{code}</p>
+              <p className="text-[12px] text-muted-foreground">Leden kunnen met deze code (of QR) direct lid worden:</p>
+              <p className="mt-1 font-mono text-lg tracking-[0.2em] text-accent-cyan">{code}</p>
               <button
                 onClick={() => void navigator.clipboard.writeText(code)}
-                className="mt-1 text-[11px] text-cyan-300/80 hover:text-cyan-300"
+                className="mt-1 text-[11px] text-accent-cyan hover:text-accent-cyan"
               >
                 Kopieer code
               </button>
             </div>
           </div>
         ) : (
-          <p className="text-[12px] text-white/55">Er is nog geen clubcode. Maak er één aan.</p>
+          <p className="text-[12px] text-muted-foreground">Er is nog geen clubcode. Maak er één aan.</p>
         )}
         <button
           onClick={() => {
@@ -259,7 +259,7 @@ function JoinCodeSection({ club }: { club: Club }) {
         >
           {code ? "Nieuwe code (oude vervalt)" : "Maak clubcode"}
         </button>
-        {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+        {error && <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
       </div>
     </section>
   )
@@ -278,13 +278,13 @@ function LocationsSection({ clubId }: { clubId: number }) {
       <div className="space-y-1.5">
         {(locations ?? []).map((l) => (
           <div key={l.id} className={CARD}>
-            <p className="text-[13px] text-white/85">{l.name}</p>
-            {l.address && <p className="text-[11px] text-white/40">{l.address}</p>}
-            {l.notes && <p className="mt-0.5 text-[11px] text-white/45">{l.notes}</p>}
+            <p className="text-[13px] text-foreground/85">{l.name}</p>
+            {l.address && <p className="text-[11px] text-muted-foreground">{l.address}</p>}
+            {l.notes && <p className="mt-0.5 text-[11px] text-muted-foreground">{l.notes}</p>}
           </div>
         ))}
         {(locations ?? []).length === 0 && (
-          <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
+          <p className="rounded-xl border border-border bg-card px-3.5 py-3 text-[12px] text-muted-foreground">
             Nog geen vaste locaties. Handig voor terugkerende trainingslocaties.
           </p>
         )}
@@ -308,7 +308,7 @@ function LocationsSection({ clubId }: { clubId: number }) {
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Naam (bijv. Clubhuis)" className={INPUT} />
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adres (optioneel)" className={INPUT} />
         </div>
-        {msg && <p className="text-[11px] text-white/60">{msg}</p>}
+        {msg && <p className="text-[11px] text-muted-foreground">{msg}</p>}
         <button type="submit" disabled={create.isPending} className={BTN}>Voeg locatie toe</button>
       </form>
     </section>
@@ -345,8 +345,8 @@ function InviteSection({ clubId }: { clubId: number }) {
               onClick={() => setRelationship(o.relationship)}
               className={`rounded-lg border px-2.5 py-1 text-[11px] ${
                 relationship === o.relationship
-                  ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-                  : "border-white/15 text-white/60 hover:border-white/30"
+                  ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                  : "border-border text-muted-foreground hover:border-border"
               }`}
             >
               {o.label}
@@ -378,34 +378,34 @@ function InviteSection({ clubId }: { clubId: number }) {
             Maak link
           </button>
         </div>
-        {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+        {error && <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
         {inviteUrl && (
-          <div className="mt-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
-            <p className="break-all text-[11px] text-white/70">{inviteUrl}</p>
+          <div className="mt-2 rounded-lg border border-border bg-muted px-3 py-2">
+            <p className="break-all text-[11px] text-muted-foreground">{inviteUrl}</p>
             <button
               onClick={() => void navigator.clipboard.writeText(inviteUrl)}
-              className="mt-1 text-[11px] text-cyan-300/80 hover:text-cyan-300"
+              className="mt-1 text-[11px] text-accent-cyan hover:text-accent-cyan"
             >
               Kopieer link
             </button>
           </div>
         )}
         {(invitations ?? []).length > 0 && (
-          <div className="mt-3 border-t border-white/10 pt-2">
-            <p className="mb-1 text-[11px] uppercase tracking-wide text-white/35">Verstuurde uitnodigingen</p>
+          <div className="mt-3 border-t border-border pt-2">
+            <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Verstuurde uitnodigingen</p>
             <div className="space-y-1">
               {(invitations ?? []).slice(0, 12).map((inv) => (
                 <div key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <span className="min-w-0 truncate text-white/60">
+                  <span className="min-w-0 truncate text-muted-foreground">
                     {inv.email ?? "linkuitnodiging"} · {inv.relationship === "club_trainer" ? "trainer" : inv.relationship === "club_parent" ? "ouder" : "lid"}
                   </span>
-                  <span className={inv.status === "pending" ? "text-amber-300/80" : "text-white/40"}>
+                  <span className={inv.status === "pending" ? "text-[color:var(--color-warning)]" : "text-muted-foreground"}>
                     {INVITE_STATUS_LABELS[inv.status] ?? inv.status}
                   </span>
                   {inv.status === "pending" && (
                     <button
                       onClick={() => revoke.mutate(inv.id)}
-                      className="shrink-0 rounded-lg border border-white/15 px-2 py-0.5 text-[10px] text-white/50 hover:border-rose-300/40 hover:text-rose-200"
+                      className="shrink-0 rounded-lg border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:border-rose-300/40 hover:text-[color:var(--color-negative)]"
                     >Intrekken</button>
                   )}
                 </div>
@@ -460,7 +460,7 @@ function PlanTrainingSection({ clubId }: { clubId: number }) {
           <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Locatie" className={INPUT} />
           <input type="number" min="1" value={max} onChange={(e) => setMax(e.target.value)} placeholder="Max deelnemers" className={INPUT} />
         </div>
-        {msg && <p className="text-[11px] text-white/60">{msg}</p>}
+        {msg && <p className="text-[11px] text-muted-foreground">{msg}</p>}
         <button type="submit" disabled={create.isPending} className={BTN}>Plan training</button>
       </form>
     </section>
@@ -509,7 +509,7 @@ function PlanRaceSection({ clubId }: { clubId: number }) {
           <input value={meetPoint} onChange={(e) => setMeetPoint(e.target.value)} placeholder="Verzamelpunt" className={INPUT} />
           <input type="time" value={meetTime} onChange={(e) => setMeetTime(e.target.value)} className={INPUT} />
         </div>
-        {msg && <p className="text-[11px] text-white/60">{msg}</p>}
+        {msg && <p className="text-[11px] text-muted-foreground">{msg}</p>}
         <button type="submit" disabled={create.isPending} className={BTN}>Maak wedstrijd</button>
       </form>
     </section>
@@ -544,12 +544,12 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Zoek op naam…"
-          className="w-40 rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75 placeholder:text-white/30"
+          className="w-40 rounded-lg border border-border bg-card px-2 py-1 text-[11px] text-foreground/75 placeholder:text-muted-foreground"
         />
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value as ClubRole | "alle")}
-          className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+          className="rounded-lg border border-border bg-card px-2 py-1 text-[11px] text-foreground/75"
         >
           <option value="alle">Alle rollen</option>
           {(Object.keys(ROLE_LABELS) as ClubRole[]).map((r) => (
@@ -558,26 +558,26 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
         </select>
         <button
           onClick={() => setShowHistory((v) => !v)}
-          className={`rounded-lg border px-2 py-1 text-[11px] ${showHistory ? "border-white/35 text-white/85" : "border-white/15 text-white/50 hover:border-white/30"}`}
+          className={`rounded-lg border px-2 py-1 text-[11px] ${showHistory ? "border-border text-foreground/85" : "border-border text-muted-foreground hover:border-border"}`}
         >
           {showHistory ? "Historie verbergen" : "Ook oud-leden tonen"}
         </button>
       </div>
-      {error && <p className="mb-1.5 text-[11px] text-rose-300/85">{error}</p>}
-      {all.length === 0 && <p className="text-[12px] text-white/40">Geen leden gevonden met dit filter.</p>}
+      {error && <p className="mb-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
+      {all.length === 0 && <p className="text-[12px] text-muted-foreground">Geen leden gevonden met dit filter.</p>}
       <div className="space-y-1.5">
         {active.map((m) => (
           <div key={m.id} className={`${CARD} flex items-center justify-between gap-3`}>
             <div className="min-w-0">
-              <p className="truncate text-[13px] text-white/85">
+              <p className="truncate text-[13px] text-foreground/85">
                 {m.displayName ?? m.email ?? m.clerkId}
-                {m.isYouth === true && <span className="ml-1.5 text-[10px] text-amber-300/80">jeugd</span>}
-                {m.isYouth === null && <span className="ml-1.5 text-[10px] text-white/35">leeftijd onbekend</span>}
+                {m.isYouth === true && <span className="ml-1.5 text-[10px] text-[color:var(--color-warning)]">jeugd</span>}
+                {m.isYouth === null && <span className="ml-1.5 text-[10px] text-muted-foreground">leeftijd onbekend</span>}
               </p>
-              <p className="text-[11px] text-white/40">
+              <p className="text-[11px] text-muted-foreground">
                 {ROLE_LABELS[m.role]}
                 {m.role === "medical_staff" && m.medicalSpecialty && (
-                  <span className="text-white/30"> · {MEDICAL_SPECIALTY_LABELS[m.medicalSpecialty] ?? m.medicalSpecialty}</span>
+                  <span className="text-muted-foreground"> · {MEDICAL_SPECIALTY_LABELS[m.medicalSpecialty] ?? m.medicalSpecialty}</span>
                 )}
               </p>
             </div>
@@ -592,7 +592,7 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
                       { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
                     )
                   }}
-                  className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+                  className="rounded-lg border border-border bg-card px-2 py-1 text-[11px] text-foreground/75"
                 >
                   {(Object.keys(ROLE_LABELS) as ClubRole[])
                     .filter((r) => r !== "owner" && (isOwner || r !== "admin"))
@@ -611,7 +611,7 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
                       { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
                     )
                   }}
-                  className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+                  className="rounded-lg border border-border bg-card px-2 py-1 text-[11px] text-foreground/75"
                   title="Functietype (beschrijvend, geeft geen rechten)"
                 >
                   <option value="">Functietype…</option>
@@ -630,7 +630,7 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
                       { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") },
                     )
                   }}
-                  className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-rose-300/40 hover:text-rose-200"
+                  className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-rose-300/40 hover:text-[color:var(--color-negative)]"
                 >
                   Uitschrijven
                 </button>
@@ -663,16 +663,16 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
   return (
     <section aria-label="Seizoenen en teams">
       <h2 className={H2}><CalendarDays className="h-3 w-3" /> Seizoenen & teams</h2>
-      {error && <p className="mb-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      {error && <p className="mb-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
       <div className="space-y-1.5">
         {(seasons ?? []).length === 0 && (
-          <p className="text-[12px] text-white/40">Nog geen seizoenen. Maak er één aan (bv. "2026") om teams en toewijzingen een duidelijke periode te geven.</p>
+          <p className="text-[12px] text-muted-foreground">Nog geen seizoenen. Maak er één aan (bv. "2026") om teams en toewijzingen een duidelijke periode te geven.</p>
         )}
         {(seasons ?? []).map((s) => (
           <div key={s.id} className={`${CARD} flex items-center justify-between gap-3`}>
             <div>
-              <p className="text-[13px] text-white/85">{s.name}</p>
-              <p className="text-[11px] text-white/40">
+              <p className="text-[13px] text-foreground/85">{s.name}</p>
+              <p className="text-[11px] text-muted-foreground">
                 {s.status === "actief" ? "actief seizoen" : s.status === "gepland" ? "gepland" : "afgesloten (alleen-lezen)"}
               </p>
             </div>
@@ -680,7 +680,7 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
               {s.status === "gepland" && !activeSeason && (
                 <button
                   onClick={() => { setError(null); seasonAction.mutate({ seasonId: s.id, action: "activate" }, { onError: onErr }) }}
-                  className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-white/35"
+                  className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-border"
                 >Activeren</button>
               )}
               {s.status !== "afgesloten" && (
@@ -690,7 +690,7 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
                     if (!window.confirm("Seizoen afsluiten? Het blijft zichtbaar, maar wordt alleen-lezen.")) return
                     seasonAction.mutate({ seasonId: s.id, action: "close" }, { onError: onErr })
                   }}
-                  className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-rose-300/40 hover:text-rose-200"
+                  className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-rose-300/40 hover:text-[color:var(--color-negative)]"
                 >Afsluiten</button>
               )}
             </div>
@@ -701,7 +701,7 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
             value={seasonName}
             onChange={(e) => setSeasonName(e.target.value)}
             placeholder="Nieuw seizoen, bv. 2026"
-            className="flex-1 rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75 placeholder:text-white/30"
+            className="flex-1 rounded-lg border border-border bg-card px-2 py-1 text-[11px] text-foreground/75 placeholder:text-muted-foreground"
           />
           <button
             disabled={!seasonName.trim() || createSeason.isPending}
@@ -712,18 +712,18 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
                 { onSuccess: () => setSeasonName(""), onError: onErr },
               )
             }}
-            className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-white/35 disabled:opacity-40"
+            className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-border disabled:opacity-40"
           >Aanmaken</button>
         </div>
 
         <div className="pt-2">
-          <p className="mb-1 text-[11px] uppercase tracking-wide text-white/35">Teams & selecties</p>
-          {teams.length === 0 && <p className="text-[12px] text-white/40">Nog geen teams.</p>}
+          <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Teams & selecties</p>
+          {teams.length === 0 && <p className="text-[12px] text-muted-foreground">Nog geen teams.</p>}
           {rootTeams.map((t) => (
             <div key={t.id} className="mb-1">
-              <div className={`${CARD} text-[13px] text-white/85`}>{t.name}</div>
+              <div className={`${CARD} text-[13px] text-foreground/85`}>{t.name}</div>
               {teams.filter((s) => s.parentTeamId === t.id).map((s) => (
-                <div key={s.id} className={`${CARD} ml-4 mt-1 text-[12px] text-white/65`}>↳ {s.name} <span className="text-white/35">(selectie)</span></div>
+                <div key={s.id} className={`${CARD} ml-4 mt-1 text-[12px] text-muted-foreground`}>↳ {s.name} <span className="text-muted-foreground">(selectie)</span></div>
               ))}
             </div>
           ))}
@@ -732,12 +732,12 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
               placeholder="Nieuw team of selectie"
-              className="flex-1 rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75 placeholder:text-white/30"
+              className="flex-1 rounded-lg border border-border bg-card px-2 py-1 text-[11px] text-foreground/75 placeholder:text-muted-foreground"
             />
             <select
               value={parentId}
               onChange={(e) => setParentId(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+              className="rounded-lg border border-border bg-card px-2 py-1 text-[11px] text-foreground/75"
             >
               <option value="">Los team</option>
               {rootTeams.map((t) => (
@@ -757,10 +757,10 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
                   { onSuccess: () => { setTeamName(""); setParentId("") }, onError: onErr },
                 )
               }}
-              className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-white/35 disabled:opacity-40"
+              className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-border disabled:opacity-40"
             >Toevoegen</button>
           </div>
-          {activeSeason && <p className="mt-1 text-[11px] text-white/35">Nieuwe teams worden gekoppeld aan seizoen {activeSeason.name}.</p>}
+          {activeSeason && <p className="mt-1 text-[11px] text-muted-foreground">Nieuwe teams worden gekoppeld aan seizoen {activeSeason.name}.</p>}
         </div>
       </div>
     </section>
@@ -795,7 +795,7 @@ function BeheerSignalen({ clubId }: { clubId: number }) {
   return (
     <section aria-label="Inrichting" className="space-y-1.5">
       {warnings.map((w, i) => (
-        <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
+        <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-[color:var(--color-warning)]">
           {w}
         </p>
       ))}
@@ -825,50 +825,50 @@ function TeamSubscriptionSection({ clubId, isOwner }: { clubId: number; isOwner:
       <div className={CARD}>
         {data.isTeam ? (
           <>
-            <p className="text-[13px] text-white/85">
+            <p className="text-[13px] text-foreground/85">
               Team-abonnement {data.billing?.status === "active" || data.subscription?.status === "active" ? "actief" : `status: ${data.subscription?.status ?? "onbekend"}`}
             </p>
-            <p className="mt-0.5 text-[11px] text-white/45">
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
               {data.counts.members} van {data.subscription?.maxMembers ?? "—"} actieve leden
               {data.billing?.currentPeriodEnd
                 ? ` · loopt t/m ${new Date(data.billing.currentPeriodEnd).toLocaleDateString("nl-NL")}`
                 : ""}
             </p>
             {data.subscription?.status === "blocked" && (
-              <p className="mt-1 text-[11px] text-amber-200/85">
+              <p className="mt-1 text-[11px] text-[color:var(--color-warning)]">
                 De betaling is niet actueel. Nieuwe leden toevoegen is geblokkeerd; bestaande gegevens blijven volledig bewaard.
               </p>
             )}
           </>
         ) : (
           <>
-            <p className="text-[13px] text-white/85">
+            <p className="text-[13px] text-foreground/85">
               Eén abonnement voor de hele ploeg: tot 50 actieve leden, teams, rollen en centrale facturatie.
             </p>
-            <p className="mt-0.5 text-[11px] text-white/45">
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
               {eur(data.pricing.monthCents)} per maand of {eur(data.pricing.yearCents)} per jaar.
             </p>
             {isOwner && data.checkoutAvailable ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <button onClick={() => start("month")} disabled={checkout.isPending}
-                  className="rounded-lg border border-cyan-300/50 bg-cyan-300/10 px-2.5 py-1 text-[11px] text-cyan-200">
+                  className="rounded-lg border border-accent-cyan/50 bg-accent-cyan/10 px-2.5 py-1 text-[11px] text-accent-cyan">
                   Start — {eur(data.pricing.monthCents)}/maand
                 </button>
                 <button onClick={() => start("year")} disabled={checkout.isPending}
-                  className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] text-white/60 hover:border-white/30">
+                  className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:border-border">
                   Start — {eur(data.pricing.yearCents)}/jaar
                 </button>
               </div>
             ) : isOwner ? (
-              <p className="mt-1.5 text-[11px] text-white/40">
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
                 Afsluiten kan zodra de betaalomgeving voor dit account is opengesteld.
               </p>
             ) : (
-              <p className="mt-1.5 text-[11px] text-white/40">Alleen de eigenaar kan dit abonnement afsluiten.</p>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">Alleen de eigenaar kan dit abonnement afsluiten.</p>
             )}
           </>
         )}
-        {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+        {error && <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
       </div>
     </section>
   )
@@ -885,16 +885,16 @@ function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean 
     <section aria-label="Pakket">
       <h2 className={H2}><Package className="h-3 w-3" /> Pakket & limieten</h2>
       <div className={CARD}>
-        <p className="text-[13px] text-white/85">
+        <p className="text-[13px] text-foreground/85">
           {sub ? data.packages[sub.packageKey]?.label ?? sub.packageKey : "Geen pakket"}
         </p>
-        <p className="mt-0.5 text-[11px] text-white/45">
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
           {data.counts.members} van {sub?.maxMembers ?? "—"} leden · {data.counts.trainers} van {sub?.maxTrainers ?? "—"} trainers
           {sub?.status === "trial" && sub.trialEndsAt
             ? ` · proef t/m ${new Date(sub.trialEndsAt).toLocaleDateString("nl-NL")}`
             : ""}
         </p>
-        <p className="mt-1 text-[11px] text-white/40">
+        <p className="mt-1 text-[11px] text-muted-foreground">
           Bij het bereiken van een limiet blokkeert alleen het toevoegen van nieuwe leden — er verdwijnt nooit data.
         </p>
         {isOwner && (
@@ -909,8 +909,8 @@ function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean 
                 disabled={setPkg.isPending}
                 className={`rounded-lg border px-2.5 py-1 text-[11px] ${
                   sub?.packageKey === key
-                    ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-                    : "border-white/15 text-white/60 hover:border-white/30"
+                    ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                    : "border-border text-muted-foreground hover:border-border"
                 }`}
               >
                 {p.label} · {p.maxMembers} leden{p.pricePerMonthEur != null ? ` · €${p.pricePerMonthEur}/mnd` : " · gratis"}
@@ -918,7 +918,7 @@ function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean 
             ))}
           </div>
         )}
-        {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+        {error && <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
       </div>
     </section>
   )
@@ -943,10 +943,10 @@ function TeamStructuurBlock({ clubId, organogramGekozen }: { clubId: number; org
   const bezetting = slotsData?.bezetting ?? {}
 
   return (
-    <div className="space-y-3 border-t border-white/10 pt-3">
+    <div className="space-y-3 border-t border-border pt-3">
       <div>
-        <p className="text-[12px] text-white/70">Structuur kiezen (organogram-kaarten)</p>
-        <p className="mt-0.5 text-[11px] text-white/45">
+        <p className="text-[12px] text-muted-foreground">Structuur kiezen (organogram-kaarten)</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
           Een kaart zet selecties en stafplekken voor je klaar als startpunt. Dit is een
           hulpmiddel: het bepaalt geen rechten en verwijdert nooit iets dat er al staat.
           Namen verschijnen pas zodra iemand echt is toegewezen of een uitnodiging accepteert.
@@ -970,15 +970,15 @@ function TeamStructuurBlock({ clubId, organogramGekozen }: { clubId: number; org
                 )
               }}
               disabled={apply.isPending}
-              className="rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-left hover:border-cyan-300/40 disabled:opacity-40"
+              className="rounded-xl border border-border bg-muted px-3 py-2.5 text-left hover:border-accent-cyan/40 disabled:opacity-40"
             >
-              <p className="text-[13px] text-white/85">{t.naam}</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-white/45">{t.beschrijving}</p>
-              <p className="mt-1 text-[11px] text-white/55">
+              <p className="text-[13px] text-foreground/85">{t.naam}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{t.beschrijving}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
                 {t.selecties.length > 0 ? `Selecties: ${t.selecties.join(", ")}` : "Geen voorgestelde selecties"}
               </p>
               {t.staf.length > 0 && (
-                <p className="text-[11px] text-white/55">
+                <p className="text-[11px] text-muted-foreground">
                   Rolplekken: {t.staf.map((s) => `${s.aantal}× ${ROLE_LABELS[s.role as ClubRole] ?? s.role}`).join(" · ")}
                 </p>
               )}
@@ -986,32 +986,32 @@ function TeamStructuurBlock({ clubId, organogramGekozen }: { clubId: number; org
           ))}
         </div>
         {organogramGekozen && (
-          <p className="mt-1 text-[11px] text-emerald-300/80">Er is al een structuur gekozen — opnieuw kiezen voegt alleen ontbrekende onderdelen toe.</p>
+          <p className="mt-1 text-[11px] text-[color:var(--color-positive)]">Er is al een structuur gekozen — opnieuw kiezen voegt alleen ontbrekende onderdelen toe.</p>
         )}
-        {msg && <p className="mt-1 text-[11px] text-white/60">{msg}</p>}
+        {msg && <p className="mt-1 text-[11px] text-muted-foreground">{msg}</p>}
       </div>
 
       <div>
-        <p className="text-[12px] text-white/70">Stafplekken</p>
+        <p className="text-[12px] text-muted-foreground">Stafplekken</p>
         {slots.length === 0 ? (
-          <p className="mt-0.5 text-[11px] text-white/45">
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
             Nog geen stafplekken. Kies hierboven een kaart of voeg er hieronder zelf één toe.
           </p>
         ) : (
           <ul className="mt-1 space-y-1">
             {slots.map((s) => (
               <li key={s.id} className="flex items-center gap-2 text-[12px]">
-                <span className="text-white/75">{ROLE_LABELS[s.role as ClubRole] ?? s.role}</span>
+                <span className="text-foreground/75">{ROLE_LABELS[s.role as ClubRole] ?? s.role}</span>
                 {s.medicalSpecialty && (
-                  <span className="text-white/45">({MEDICAL_SPECIALTY_LABELS[s.medicalSpecialty] ?? s.medicalSpecialty})</span>
+                  <span className="text-muted-foreground">({MEDICAL_SPECIALTY_LABELS[s.medicalSpecialty] ?? s.medicalSpecialty})</span>
                 )}
-                <span className="text-[11px] text-white/40">
+                <span className="text-[11px] text-muted-foreground">
                   {(bezetting[s.role] ?? 0) > 0 ? "rol al vervuld in de staf" : "nog open"}
                 </span>
                 <button
                   type="button"
                   onClick={() => deleteSlot.mutate(s.id)}
-                  className="ml-auto rounded border border-white/15 px-2 py-0.5 text-[11px] text-white/50 hover:text-white/80"
+                  className="ml-auto rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground/80"
                 >
                   Plek verwijderen
                 </button>
@@ -1149,7 +1149,7 @@ function OnboardingSection({ clubId }: { clubId: number }) {
     <section aria-label={isTeam ? "Team in oprichting" : "Club in oprichting"}>
       <h2 className={H2}><Settings2 className="h-3 w-3" /> {isTeam ? "Team in oprichting" : "Club in oprichting"}</h2>
       <div className={`${CARD} space-y-4`}>
-        <p className="text-[12px] text-white/60">
+        <p className="text-[12px] text-muted-foreground">
           Doorloop de stappen in je eigen tempo — alles wordt direct bewaard, dus je kunt
           altijd weggaan en later verdergaan. Zolang de {isTeam ? "teamorganisatie" : "club"} in
           oprichting is, zijn leden voor niemand anders zichtbaar en vertrekt er geen uitnodiging.
@@ -1159,11 +1159,11 @@ function OnboardingSection({ clubId }: { clubId: number }) {
         <ul className="space-y-1.5">
           {steps.map((s) => (
             <li key={s.label} className="flex items-center gap-2 text-[13px]">
-              <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${s.done ? "border-emerald-300/50 bg-emerald-300/15 text-emerald-200" : "border-white/20 text-white/25"}`}>
+              <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${s.done ? "border-emerald-300/50 bg-emerald-300/15 text-[color:var(--color-positive)]" : "border-border text-muted-foreground"}`}>
                 {s.done ? <IconCheck className="h-2.5 w-2.5" /> : null}
               </span>
-              <span className={s.done ? "text-white/80" : "text-white/50"}>{s.label}</span>
-              {!s.done && s.hint && <span className="text-[11px] text-white/35">— {s.hint}</span>}
+              <span className={s.done ? "text-foreground/80" : "text-muted-foreground"}>{s.label}</span>
+              {!s.done && s.hint && <span className="text-[11px] text-muted-foreground">— {s.hint}</span>}
             </li>
           ))}
         </ul>
@@ -1173,21 +1173,21 @@ function OnboardingSection({ clubId }: { clubId: number }) {
 
         {/* Logo */}
         <div>
-          <p className="mb-1 text-[12px] text-white/60">{isTeam ? "Teamlogo" : "Clublogo"} (JPG, PNG, WebP of SVG, max 5 MB)</p>
+          <p className="mb-1 text-[12px] text-muted-foreground">{isTeam ? "Teamlogo" : "Clublogo"} (JPG, PNG, WebP of SVG, max 5 MB)</p>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/svg+xml"
             aria-label={isTeam ? "Kies een teamlogo (JPG, PNG, WebP of SVG, max 5 MB)" : "Kies een clublogo (JPG, PNG, WebP of SVG, max 5 MB)"}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void onLogoFile(f) }}
-            className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-cyan-300/40 file:bg-cyan-300/10 file:px-3 file:py-1.5 file:text-[12px] file:text-cyan-200"
+            className="block w-full text-[12px] text-muted-foreground file:mr-3 file:rounded-lg file:border file:border-accent-cyan/40 file:bg-accent-cyan/10 file:px-3 file:py-1.5 file:text-[12px] file:text-accent-cyan"
           />
-          {setLogo.isPending && <p className="mt-1 text-[11px] text-white/45">Logo wordt opgeslagen…</p>}
-          {logoError && <p className="mt-1 text-[11px] text-rose-300/85">{logoError}</p>}
+          {setLogo.isPending && <p className="mt-1 text-[11px] text-muted-foreground">Logo wordt opgeslagen…</p>}
+          {logoError && <p className="mt-1 text-[11px] text-[color:var(--color-negative)]">{logoError}</p>}
         </div>
 
         {/* Eerste beheerders en trainers */}
         <div>
-          <p className="mb-1 text-[12px] text-white/60">
+          <p className="mb-1 text-[12px] text-muted-foreground">
             {isTeam
               ? "Vaste seizoensstaf — direct toewijzen aan een bestaand account (uitnodigen van nieuwe accounts kan na activatie)."
               : "Eerste beheerders en trainers — direct toewijzen aan een bestaand account (uitnodigen van nieuwe accounts kan na activatie)."}
@@ -1234,16 +1234,16 @@ function OnboardingSection({ clubId }: { clubId: number }) {
                 ))}
               </select>
             )}
-            <button type="submit" disabled={addManager.isPending} className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40">
+            <button type="submit" disabled={addManager.isPending} className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-2 text-[12px] text-accent-cyan disabled:opacity-40">
               Toewijzen
             </button>
           </form>
-          {mgrMsg && <p className="mt-1 text-[11px] text-white/60">{mgrMsg}</p>}
+          {mgrMsg && <p className="mt-1 text-[11px] text-muted-foreground">{mgrMsg}</p>}
         </div>
 
         {/* Ledenimport */}
         <div>
-          <p className="mb-1 text-[12px] text-white/60">
+          <p className="mb-1 text-[12px] text-muted-foreground">
             Ledenimport (CSV: e-mailadres, optioneel naam). Er wordt pas iets toegevoegd
             na jouw bevestiging.
           </p>
@@ -1252,21 +1252,21 @@ function OnboardingSection({ clubId }: { clubId: number }) {
             accept=".csv,text/csv,text/plain"
             aria-label="Kies een CSV-bestand voor de ledenimport"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void onImportFile(f) }}
-            className="block w-full text-[12px] text-white/60 file:mr-3 file:rounded-lg file:border file:border-white/20 file:bg-white/5 file:px-3 file:py-1.5 file:text-[12px] file:text-white/70"
+            className="block w-full text-[12px] text-muted-foreground file:mr-3 file:rounded-lg file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-[12px] file:text-muted-foreground"
           />
-          {importMsg && <p className="mt-1 text-[11px] text-rose-300/85">{importMsg}</p>}
+          {importMsg && <p className="mt-1 text-[11px] text-[color:var(--color-negative)]">{importMsg}</p>}
           {batch && (
             <div className="mt-2 space-y-2">
-              <p className="text-[12px] text-white/70">
+              <p className="text-[12px] text-muted-foreground">
                 {batch.rows.length} rijen gelezen — {batch.klaar} klaar om toe te voegen,{" "}
                 {batch.rows.length - batch.klaar} niet (per rij hieronder). Nog niets toegevoegd.
               </p>
               <ul className="max-h-44 space-y-1 overflow-y-auto">
                 {batch.rows.map((r) => (
                   <li key={r.id} className="flex items-baseline gap-2 text-[11px]">
-                    <span className="text-white/35">#{r.rowNumber}</span>
-                    <span className="text-white/70">{r.email ?? "—"}</span>
-                    <span className={r.status === "klaar" || r.status === "toegevoegd" ? "text-emerald-300/80" : "text-amber-300/80"}>
+                    <span className="text-muted-foreground">#{r.rowNumber}</span>
+                    <span className="text-muted-foreground">{r.email ?? "—"}</span>
+                    <span className={r.status === "klaar" || r.status === "toegevoegd" ? "text-[color:var(--color-positive)]" : "text-[color:var(--color-warning)]"}>
                       {r.status === "klaar" ? "klaar" : r.message ?? r.status}
                     </span>
                   </li>
@@ -1281,13 +1281,13 @@ function OnboardingSection({ clubId }: { clubId: number }) {
                     })
                   }
                   disabled={confirmImport.isPending || batch.klaar === 0}
-                  className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-emerald-200 disabled:opacity-40"
+                  className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-[color:var(--color-positive)] disabled:opacity-40"
                 >
                   Bevestig import ({batch.klaar})
                 </button>
                 <button
                   onClick={() => cancelImport.mutate(batch.id, { onSettled: () => setBatch(null) })}
-                  className="rounded-lg border border-white/20 px-3 py-1.5 text-[12px] text-white/70"
+                  className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground"
                 >
                   Annuleren
                 </button>
@@ -1297,9 +1297,9 @@ function OnboardingSection({ clubId }: { clubId: number }) {
         </div>
 
         {/* Activatie */}
-        <div className="border-t border-white/10 pt-3">
+        <div className="border-t border-border pt-3">
           {ob && !ob.klaarVoorActivatie && (
-            <p className="mb-2 text-[12px] text-amber-200/85">
+            <p className="mb-2 text-[12px] text-[color:var(--color-warning)]">
               Nog nodig voor activatie: {ob.missing.join(" · ")}
             </p>
           )}
@@ -1314,12 +1314,12 @@ function OnboardingSection({ clubId }: { clubId: number }) {
               })
             }}
             disabled={activate.isPending}
-            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-[13px] font-medium text-emerald-200 disabled:opacity-40"
+            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-[13px] font-medium text-[color:var(--color-positive)] disabled:opacity-40"
           >
             {isTeam ? "Team activeren" : "Club activeren"}
           </button>
           {activateMsg && (
-            <ul className="mt-2 space-y-0.5 text-[12px] text-rose-300/85">
+            <ul className="mt-2 space-y-0.5 text-[12px] text-[color:var(--color-negative)]">
               {activateMsg.map((m) => <li key={m}>{m}</li>)}
             </ul>
           )}
@@ -1402,7 +1402,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
 
       {/* Nieuw document */}
       <div className={`${CARD} space-y-2`}>
-        <p className="text-[12px] text-white/70">Nieuw document uploaden</p>
+        <p className="text-[12px] text-muted-foreground">Nieuw document uploaden</p>
         <input
           className={INPUT}
           placeholder="Titel, bv. Gedragscode"
@@ -1417,7 +1417,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
             aria-label="Categorie"
           >
             {categories.map((c) => (
-              <option key={c} value={c} className="bg-[#070d16]">
+              <option key={c} value={c} className="bg-card">
                 {CLUB_DOC_CATEGORY_LABELS[c] ?? c}
               </option>
             ))}
@@ -1429,7 +1429,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
             aria-label="Zichtbaarheid"
           >
             {visibilities.map((v) => (
-              <option key={v} value={v} className="bg-[#070d16]">
+              <option key={v} value={v} className="bg-card">
                 {CLUB_DOC_VISIBILITY_LABELS[v] ?? v}
               </option>
             ))}
@@ -1440,9 +1440,9 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
           accept="application/pdf,image/*"
           aria-label="Kies een clubdocument (PDF of afbeelding)"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="text-[12px] text-white/60"
+          className="text-[12px] text-muted-foreground"
         />
-        <p className="text-[11px] text-white/40">
+        <p className="text-[11px] text-muted-foreground">
           Toegestaan: PDF en afbeeldingen. Afbeeldingen worden veilig herverwerkt.
         </p>
         <div className="flex gap-2">
@@ -1454,22 +1454,22 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
             Concept opslaan
           </button>
           <button
-            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-emerald-200 disabled:opacity-40"
+            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-[color:var(--color-positive)] disabled:opacity-40"
             disabled={create.isPending}
             onClick={() => void submitNew(true)}
           >
             Opslaan en publiceren
           </button>
         </div>
-        {error && <p className="text-[11px] text-rose-300/80">{error}</p>}
+        {error && <p className="text-[11px] text-[color:var(--color-negative)]">{error}</p>}
       </div>
 
       {/* Bestaande documenten */}
       <div className="mt-2 space-y-1.5">
         {isLoading ? (
-          <div className="h-14 animate-pulse rounded-xl bg-white/[0.05]" />
+          <div className="h-14 animate-pulse rounded-xl bg-muted" />
         ) : (data?.documents.length ?? 0) === 0 ? (
-          <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
+          <p className="rounded-xl border border-border bg-card px-3.5 py-3 text-[12px] text-muted-foreground">
             Nog geen documenten. Upload de gedragscode, huisregels of andere
             afspraken om te beginnen.
           </p>
@@ -1480,8 +1480,8 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
               <div key={doc.id} className={`${CARD} space-y-1.5`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-[13px] text-white/85">{doc.title}</p>
-                    <p className="text-[11px] text-white/45">
+                    <p className="truncate text-[13px] text-foreground/85">{doc.title}</p>
+                    <p className="text-[11px] text-muted-foreground">
                       {CLUB_DOC_CATEGORY_LABELS[doc.category] ?? doc.category}
                       {" · "}
                       {CLUB_DOC_VISIBILITY_LABELS[doc.visibility] ?? doc.visibility}
@@ -1490,7 +1490,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
                   </div>
                   <div className="flex shrink-0 gap-1.5">
                     <select
-                      className="rounded-lg border border-white/15 bg-transparent px-1.5 py-1 text-[11px] text-white/70"
+                      className="rounded-lg border border-border bg-transparent px-1.5 py-1 text-[11px] text-muted-foreground"
                       value={doc.visibility}
                       onChange={(e) =>
                         update.mutate({
@@ -1501,13 +1501,13 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
                       aria-label="Zichtbaarheid wijzigen"
                     >
                       {visibilities.map((v) => (
-                        <option key={v} value={v} className="bg-[#070d16]">
+                        <option key={v} value={v} className="bg-card">
                           {CLUB_DOC_VISIBILITY_LABELS[v] ?? v}
                         </option>
                       ))}
                     </select>
                     <button
-                      className="rounded-lg border border-rose-300/30 px-2 py-1 text-[11px] text-rose-200/80"
+                      className="rounded-lg border border-rose-300/30 px-2 py-1 text-[11px] text-[color:var(--color-negative)]"
                       onClick={() => {
                         if (confirm(`"${doc.title}" en alle versies verwijderen?`)) del.mutate(doc.id)
                       }}
@@ -1521,22 +1521,22 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
                 {(doc.versions?.length ?? 0) > 0 && (
                   <>
                     <button
-                      className="text-[11px] text-cyan-200/80 underline underline-offset-2"
+                      className="text-[11px] text-accent-cyan underline underline-offset-2"
                       onClick={() => setOpenHistory(openHistory === doc.id ? null : doc.id)}
                     >
                       {openHistory === doc.id ? "Versiehistorie verbergen" : `Versiehistorie (${doc.versions!.length})`}
                     </button>
                     {openHistory === doc.id && (
-                      <ul className="space-y-1 border-l border-white/10 pl-2">
+                      <ul className="space-y-1 border-l border-border pl-2">
                         {doc.versions!.map((v) => (
                           <li key={v.id} className="flex items-center justify-between gap-2 text-[11px]">
-                            <span className="text-white/60">
+                            <span className="text-muted-foreground">
                               v{v.versionNumber} · {v.status}
-                              {v.isCurrent && <span className="ml-1 text-cyan-200/80">actief</span>}
+                              {v.isCurrent && <span className="ml-1 text-accent-cyan">actief</span>}
                             </span>
                             <span className="flex gap-1.5">
                               <button
-                                className="text-cyan-200/80 underline"
+                                className="text-accent-cyan underline"
                                 onClick={() =>
                                   void downloadClubDocument(
                                     clubId,
@@ -1550,7 +1550,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
                               </button>
                               {!v.isCurrent && (
                                 <button
-                                  className="text-emerald-200/80 underline"
+                                  className="text-[color:var(--color-positive)] underline"
                                   onClick={() => publish.mutate({ documentId: doc.id, versionId: v.id })}
                                 >
                                   publiceren
@@ -1566,26 +1566,26 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
 
                 {/* Nieuwe versie */}
                 {versionFor === doc.id ? (
-                  <div className="space-y-1.5 rounded-lg border border-white/10 p-2">
+                  <div className="space-y-1.5 rounded-lg border border-border p-2">
                     <input
                       type="file"
                       accept="application/pdf,image/*"
                       aria-label="Kies een nieuwe versie van dit clubdocument (PDF of afbeelding)"
                       onChange={(e) => setVersionFile(e.target.files?.[0] ?? null)}
-                      className="text-[11px] text-white/60"
+                      className="text-[11px] text-muted-foreground"
                     />
                     <div className="flex gap-2">
                       <button className={BTN} onClick={() => void submitVersion(doc.id, false)}>
                         Concept
                       </button>
                       <button
-                        className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-emerald-200"
+                        className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[12px] text-[color:var(--color-positive)]"
                         onClick={() => void submitVersion(doc.id, true)}
                       >
                         Publiceren
                       </button>
                       <button
-                        className="px-2 text-[11px] text-white/50"
+                        className="px-2 text-[11px] text-muted-foreground"
                         onClick={() => {
                           setVersionFor(null)
                           setVersionFile(null)
@@ -1597,7 +1597,7 @@ function DocumentsBeheerSection({ clubId }: { clubId: number }) {
                   </div>
                 ) : (
                   <button
-                    className="text-[11px] text-white/55 underline underline-offset-2"
+                    className="text-[11px] text-muted-foreground underline underline-offset-2"
                     onClick={() => setVersionFor(doc.id)}
                   >
                     Nieuwe versie uploaden
@@ -1641,7 +1641,7 @@ export default function ClubBeheerPage() {
   if (isLoading) {
     return (
       <ScreenShell bg={null} section="club" bare>
-        <p className="text-sm text-white/50">Beheer wordt geladen…</p>
+        <p className="text-sm text-muted-foreground">Beheer wordt geladen…</p>
       </ScreenShell>
     )
   }
@@ -1668,29 +1668,29 @@ export default function ClubBeheerPage() {
         <header className="flex items-center gap-3">
           <button
             onClick={() => navigate("/club")}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[12px] text-white/75 hover:border-white/30"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] text-foreground/75 hover:border-border"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Terug
           </button>
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold tracking-tight text-white">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
               Beheer — {mine.club?.name ?? "club"}
             </h1>
-            <p className="text-[11px] text-white/50">Je rol: {ROLE_LABELS[myRole]}</p>
+            <p className="text-[11px] text-muted-foreground">Je rol: {ROLE_LABELS[myRole]}</p>
           </div>
         </header>
 
         {isConcept ? (
           <button
             onClick={() => setTab("structuur")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-300/40 bg-emerald-300/10 px-4 py-3 text-[14px] font-medium text-emerald-200"
+            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-300/40 bg-emerald-300/10 px-4 py-3 text-[14px] font-medium text-[color:var(--color-positive)]"
           >
             Club in oprichting afronden
           </button>
         ) : (
           <button
             onClick={() => setSheet("uitnodigen")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100"
+            className="flex items-center justify-center gap-2 rounded-xl border border-accent-cyan/45 bg-accent-cyan/10 px-4 py-3 text-[14px] font-medium text-accent-cyan"
           >
             <Plus className="h-4 w-4" /> Nieuw lid uitnodigen
           </button>
@@ -1712,7 +1712,7 @@ export default function ClubBeheerPage() {
             {(dash?.signals?.length ?? 0) > 0 && (
               <section aria-label="Signalen" className="space-y-1.5">
                 {dash!.signals!.map((s, i) => (
-                  <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
+                  <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-[color:var(--color-warning)]">
                     {s}
                   </p>
                 ))}
@@ -1729,7 +1729,7 @@ export default function ClubBeheerPage() {
                   </button>
                   <button
                     onClick={() => setSheet("wedstrijd")}
-                    className="rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/70 hover:border-white/30"
+                    className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:border-border"
                   >
                     Wedstrijd aanmaken
                   </button>
@@ -1739,7 +1739,7 @@ export default function ClubBeheerPage() {
 
             <section aria-label="Logboek">
               <h2 className={H2}><ClipboardList className="h-3 w-3" /> Verantwoording</h2>
-              <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
+              <p className="rounded-xl border border-border bg-card px-3.5 py-3 text-[12px] text-muted-foreground">
                 Elke beheeractie (rollen, uitnodigingen, trainingen, selecties, export) wordt vastgelegd
                 in het clublogboek. Uitschrijven bewaart altijd de historie — er wordt nooit data verwijderd.
               </p>
@@ -1753,14 +1753,14 @@ export default function ClubBeheerPage() {
             {isConcept ? (
               <section aria-label="Uitnodigingen">
                 <h2 className={H2}><Link2 className="h-3 w-3" /> Uitnodigingen</h2>
-                <p className={`${CARD} text-[12px] text-white/50`}>
+                <p className={`${CARD} text-[12px] text-muted-foreground`}>
                   Zolang de club in oprichting is, vertrekt er geen enkele uitnodiging.
                   Activeer de club eerst; daarna kun je leden uitnodigen.
                 </p>
               </section>
             ) : (
               <div className={`${CARD}`}>
-                <p className="text-[12px] text-white/60">
+                <p className="text-[12px] text-muted-foreground">
                   Nodig een nieuw lid uit via een link of e-mail — de stappen openen als venster.
                 </p>
                 <button onClick={() => setSheet("uitnodigen")} className={`${BTN} mt-2`}>
@@ -1778,13 +1778,13 @@ export default function ClubBeheerPage() {
             {isConcept && <OnboardingSection clubId={clubId} />}
             <SeasonsTeamsSection clubId={clubId} />
             <div className={`${CARD}`}>
-              <p className="text-[12px] text-white/60">Vaste locaties beheren opent als venster.</p>
+              <p className="text-[12px] text-muted-foreground">Vaste locaties beheren opent als venster.</p>
               <button onClick={() => setSheet("locatie")} className={`${BTN} mt-2`}>
                 <MapPin className="mr-1 inline h-3 w-3" /> Locaties beheren
               </button>
             </div>
             <div className={`${CARD}`}>
-              <p className="text-[12px] text-white/60">Clubdocumenten uploaden en publiceren opent als venster.</p>
+              <p className="text-[12px] text-muted-foreground">Clubdocumenten uploaden en publiceren opent als venster.</p>
               <button onClick={() => setSheet("document")} className={`${BTN} mt-2`}>
                 <FileText className="mr-1 inline h-3 w-3" /> Documenten beheren
               </button>

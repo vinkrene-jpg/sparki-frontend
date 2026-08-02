@@ -32,13 +32,13 @@ export function ZoneDistribution({
     <div className="flex flex-col gap-1.5">
       {zones.map((z) => (
         <div key={z.zone} className="flex items-center gap-2">
-          <span className="w-7 shrink-0 font-mono text-[10px] text-white/45">
+          <span className="w-7 shrink-0 font-mono text-[10px] text-muted-foreground">
             {z.zone}
           </span>
-          <span className="w-24 shrink-0 text-[11px] text-white/55">
+          <span className="w-24 shrink-0 text-[11px] text-muted-foreground">
             {z.label}
           </span>
-          <div className="relative h-4 flex-1 overflow-hidden rounded bg-white/[0.04]">
+          <div className="relative h-4 flex-1 overflow-hidden rounded bg-muted">
             <div
               className="h-full rounded"
               style={{
@@ -48,10 +48,10 @@ export function ZoneDistribution({
               }}
             />
           </div>
-          <span className="w-24 shrink-0 text-right font-mono text-[10px] tabular-nums text-white/55">
+          <span className="w-24 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
             {z.pct}% · {fmtDur(z.seconds)}
           </span>
-          <span className="hidden w-24 shrink-0 text-right font-mono text-[10px] tabular-nums text-white/30 sm:block">
+          <span className="hidden w-24 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground sm:block">
             {z.fromW}–{z.toW ?? "…"} {unit}
           </span>
         </div>

@@ -35,7 +35,7 @@ function StatusLine() {
   return (
     <Link
       href="/dashboard"
-      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#070d16]/[0.82] px-4 py-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
     >
       <span className="flex min-w-0 items-center gap-3">
         <span
@@ -43,16 +43,16 @@ function StatusLine() {
           style={{ background: color, boxShadow: `0 0 8px ${color}` }}
         />
         <span className="min-w-0">
-          <span className="block text-[14px] font-medium text-white/90">
+          <span className="block text-[14px] font-medium text-foreground/90">
             {buildHerstelPresentatie(state.band, state.confidence, state.why.length).label}
-            <span className="ml-2 text-[12px] font-normal text-white/45">
+            <span className="ml-2 text-[12px] font-normal text-muted-foreground">
               {state.movement.label}
             </span>
           </span>
-          <span className="mt-0.5 block truncate text-[12px] text-white/50">{state.status}</span>
+          <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">{state.status}</span>
         </span>
       </span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-white/35" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
     </Link>
   )
 }
@@ -69,10 +69,10 @@ function Aandachtspunten() {
         <Link
           key={i}
           href="/dashboard"
-          className="flex items-start gap-2.5 rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-2.5 backdrop-blur-sm transition-colors hover:border-cyan-300/25"
+          className="flex items-start gap-2.5 rounded-xl border border-border bg-card px-3.5 py-2.5 backdrop-blur-sm transition-colors hover:border-accent-cyan/25"
         >
-          <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-cyan-300/70" />
-          <span className="text-[12.5px] leading-snug text-white/70">{s.label}</span>
+          <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cyan/70" />
+          <span className="text-[12.5px] leading-snug text-muted-foreground">{s.label}</span>
         </Link>
       ))}
     </div>
@@ -86,14 +86,14 @@ function RecenteActiviteit() {
   return (
     <section aria-label="Recente activiteit">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
           Recente activiteit
         </h2>
         <span className="flex items-center gap-3">
-          <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
+          <Link href="/journey" className="text-[11px] text-accent-cyan hover:text-accent-cyan">
             Jouw verhaal
           </Link>
-          <Link href="/activiteiten" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
+          <Link href="/activiteiten" className="text-[11px] text-accent-cyan hover:text-accent-cyan">
             Alles
           </Link>
         </span>
@@ -103,19 +103,19 @@ function RecenteActiviteit() {
           <Link
             key={s.id}
             href="/activiteiten"
-            className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-2.5 backdrop-blur-sm transition-colors hover:border-cyan-300/25"
+            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3.5 py-2.5 backdrop-blur-sm transition-colors hover:border-accent-cyan/25"
           >
             <span className="min-w-0">
-              <span className="block truncate text-[13px] text-white/85">
+              <span className="block truncate text-[13px] text-foreground/85">
                 {s.title || s.type}
               </span>
-              <span className="text-[11px] text-white/40">
+              <span className="text-[11px] text-muted-foreground">
                 {formatSessionDate(s.sessionDate)}
                 {s.durationMin ? ` · ${s.durationMin} min` : ""}
                 {s.distanceKm ? ` · ${Math.round(Number(s.distanceKm))} km` : ""}
               </span>
             </span>
-            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-white/30" />
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </Link>
         ))}
       </div>
@@ -132,25 +132,25 @@ function FeedSociaalToegang() {
     <div className="grid grid-cols-2 gap-2">
       <Link
         href="/samen"
-        className="flex flex-col gap-1.5 rounded-2xl border border-white/10 bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        className="flex flex-col gap-1.5 rounded-2xl border border-border bg-card p-3.5 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
       >
-        <span className="flex items-center gap-2 text-[12px] font-medium text-white/85">
-          <Users className="h-3.5 w-3.5 text-cyan-300/80" strokeWidth={1.75} />
+        <span className="flex items-center gap-2 text-[12px] font-medium text-foreground/85">
+          <Users className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={1.75} />
           Samen
         </span>
-        <span className="line-clamp-2 text-[11px] leading-snug text-white/45">
+        <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
           {latest ? latest.title : "Team, vrienden en gedeelde ritten"}
         </span>
       </Link>
       <Link
         href="/feed"
-        className="flex flex-col gap-1.5 rounded-2xl border border-white/10 bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        className="flex flex-col gap-1.5 rounded-2xl border border-border bg-card p-3.5 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
       >
-        <span className="flex items-center gap-2 text-[12px] font-medium text-white/85">
-          <Compass className="h-3.5 w-3.5 text-cyan-300/80" strokeWidth={1.75} />
+        <span className="flex items-center gap-2 text-[12px] font-medium text-foreground/85">
+          <Compass className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={1.75} />
           Ontdekken
         </span>
-        <span className="line-clamp-2 text-[11px] leading-snug text-white/45">
+        <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
           Nieuws, renners en verhalen voor jou
         </span>
       </Link>
@@ -172,16 +172,16 @@ function ClubToegang() {
   return (
     <Link
       href="/club"
-      className="flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/40"
+      className="flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 backdrop-blur-md transition-colors hover:border-accent-cyan/40"
       style={{ borderColor: `${color}44`, background: `${color}12` }}
     >
       <span className="min-w-0">
-        <span className="block text-[13px] font-medium text-white/90">{name}</span>
-        <span className="text-[11px] text-white/45">
+        <span className="block text-[13px] font-medium text-foreground/90">{name}</span>
+        <span className="text-[11px] text-muted-foreground">
           {clubRow ? "Clubtrainingen, wedstrijden en berichten" : "Trainer, team en clubtrainingen"}
         </span>
       </span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-white/35" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
     </Link>
   )
 }
@@ -229,10 +229,10 @@ function EigenFiets() {
     return (
       <Link
         href="/mechanieker"
-        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#070d16]/60 px-4 py-3.5 backdrop-blur-sm transition-colors hover:border-cyan-300/30"
+        className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 backdrop-blur-sm transition-colors hover:border-accent-cyan/30"
       >
-        <Wrench className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />
-        <span className="text-[12.5px] text-white/60">
+        <Wrench className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
+        <span className="text-[12.5px] text-muted-foreground">
           Nog geen fiets in je garage — zet &rsquo;m erin bij Mechanieker.
         </span>
       </Link>
@@ -240,18 +240,18 @@ function EigenFiets() {
   }
   return (
     <Link href="/mechanieker" className="block" aria-label={`${bike.name} — open Mechanieker`}>
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/[0.7] backdrop-blur-md">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card backdrop-blur-md">
         {hasScan ? (
           <EigenFietsScanBeeld bikeId={bike.id} />
         ) : (
           <Bike3D bike={bike} height={190} />
         )}
         <div className="pointer-events-none absolute bottom-2.5 left-4 right-4 flex items-center justify-between">
-          <span className="text-[12px] font-medium text-white/80">
+          <span className="text-[12px] font-medium text-foreground/80">
             {bike.name}
-            {bike.brand ? <span className="ml-1.5 text-white/40">{bike.brand}</span> : null}
+            {bike.brand ? <span className="ml-1.5 text-muted-foreground">{bike.brand}</span> : null}
           </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
             Mechanieker
           </span>
         </div>
@@ -274,7 +274,7 @@ export default function StartPage() {
         <Aandachtspunten />
 
         <section aria-label="Hoofdstukken">
-          <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
+          <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
             Hoofdstukken
           </h2>
           <ChapterGrid compact />

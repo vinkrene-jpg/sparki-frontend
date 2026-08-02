@@ -43,12 +43,12 @@ export function IntelCard({
           onOpen()
         }
       }}
-      className="group w-full cursor-pointer rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      className="group w-full cursor-pointer rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/30"
     >
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           <span style={{ color: ACCENT }}>{KIND_SHORT[card.kind]}</span>
-          <span className="text-white/25">·</span>
+          <span className="text-muted-foreground">·</span>
           {TOPIC_LABEL[card.topic]}
         </span>
         <button
@@ -60,31 +60,31 @@ export function IntelCard({
           <Bookmark
             className={`h-4 w-4 transition-colors ${
               item.interaction.saved
-                ? "fill-current text-cyan-300"
-                : "text-white/25 group-hover:text-white/50"
+                ? "fill-current text-accent-cyan"
+                : "text-muted-foreground group-hover:text-foreground/50"
             }`}
           />
         </button>
       </div>
 
-      <h3 className="mt-2 text-pretty font-sans text-[15px] font-light leading-snug text-white/90">
+      <h3 className="mt-2 text-pretty font-sans text-[15px] font-light leading-snug text-foreground/90">
         {card.title}
       </h3>
-      <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/50">
+      <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-foreground/50">
         {card.summary}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
         {item.personalised ? (
-          <span className="flex items-center gap-1.5 text-[11px] text-cyan-300/70">
+          <span className="flex items-center gap-1.5 text-[11px] text-accent-cyan">
             <Sparkles className="h-3 w-3" />
             {item.reason}
           </span>
         ) : (
-          <span className="text-[11px] text-white/35">{item.reason}</span>
+          <span className="text-[11px] text-muted-foreground">{item.reason}</span>
         )}
         {answered && (
-          <span className="ml-auto flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">
+          <span className="ml-auto flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
             <CheckCircle2 className="h-3 w-3" />
             beantwoord
           </span>

@@ -78,7 +78,7 @@ export function MainMenu({
         type="button"
         aria-label="Menu sluiten"
         onClick={onClose}
-        className="fixed inset-0 bg-[#03050a]/80 backdrop-blur-md"
+        className="fixed inset-0 bg-card backdrop-blur-md"
       />
       {/* Foutisolatie: een fout binnen het menu mag NOOIT de onderliggende
           pagina meenemen. De boundary vangt de fout op en toont een nette
@@ -87,17 +87,17 @@ export function MainMenu({
       <ErrorBoundary
         fallback={
           <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
-            <p className="text-base font-semibold text-white/85">
+            <p className="text-base font-semibold text-foreground/85">
               Het menu kon niet worden geladen
             </p>
-            <p className="max-w-xs text-sm text-white/45">
+            <p className="max-w-xs text-sm text-muted-foreground">
               Er ging iets mis in het menu. De pagina zelf blijft gewoon staan —
               sluit het menu en probeer het opnieuw.
             </p>
             <button
               type="button"
               onClick={onClose}
-              className="mt-2 rounded-full border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+              className="mt-2 rounded-full border border-border px-4 py-2 text-sm text-foreground/70 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               Menu sluiten
             </button>
@@ -253,9 +253,9 @@ function MainMenuContent({
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-cyan" />
             </span>
-            <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">
+            <span className="font-mono text-[11px] tracking-[0.35em] text-foreground/70">
               HOOFDMENU
             </span>
             {testerLabel && (
@@ -276,7 +276,7 @@ function MainMenuContent({
             type="button"
             onClick={onClose}
             aria-label="Sluiten"
-            className="rounded-full border border-white/15 p-2 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="rounded-full border border-border p-2 text-foreground/60 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>
@@ -290,12 +290,12 @@ function MainMenuContent({
               onClose()
               onOpenChat()
             }}
-            className="mt-6 flex items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-300/[0.08] px-4 py-3.5 text-left backdrop-blur-md transition-colors hover:bg-cyan-300/[0.14]"
+            className="mt-6 flex items-center gap-3 rounded-2xl border border-accent-cyan/30 bg-accent-cyan/10 px-4 py-3.5 text-left backdrop-blur-md transition-colors hover:bg-accent-cyan/10"
           >
-            <MessageCircle className="h-5 w-5 text-cyan-300" strokeWidth={1.75} />
+            <MessageCircle className="h-5 w-5 text-accent-cyan" strokeWidth={1.75} />
             <span>
-              <span className="block text-[15px] font-medium text-white/92">Analyse openen</span>
-              <span className="block text-[11px] text-white/45">Bespreek je training, belasting en voortgang</span>
+              <span className="block text-[15px] font-medium text-foreground/92">Analyse openen</span>
+              <span className="block text-[11px] text-muted-foreground">Bespreek je training, belasting en voortgang</span>
             </span>
           </button>
         )}
@@ -314,14 +314,14 @@ function MainMenuContent({
                 style={{
                   borderColor: chapterActive
                     ? "rgba(120,210,230,0.45)"
-                    : "rgba(255,255,255,0.10)",
+                    : "var(--color-border)",
                   background: chapterActive
                     ? "rgba(120,210,230,0.10)"
-                    : "rgba(7,13,22,0.82)",
+                    : "var(--color-card)",
                 }}
               >
                 <span
-                  className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.08]"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl border border-border"
                   style={{ background: "rgba(120,210,230,0.08)" }}
                 >
                   <Icon
@@ -330,7 +330,7 @@ function MainMenuContent({
                     style={{
                       color: chapterActive
                         ? "var(--accent-cyan)"
-                        : "rgba(255,255,255,0.75)",
+                        : "var(--color-foreground)",
                     }}
                   />
                 </span>
@@ -338,12 +338,12 @@ function MainMenuContent({
                   <span
                     className="block text-[15px] font-medium"
                     style={{
-                      color: chapterActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.92)",
+                      color: chapterActive ? "var(--accent-cyan)" : "var(--color-foreground)",
                     }}
                   >
                     {c.label}
                   </span>
-                  <span className="mt-0.5 block text-[11px] leading-snug text-white/40">
+                  <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
                     {c.hint}
                   </span>
                 </span>
@@ -358,7 +358,7 @@ function MainMenuContent({
             <button
               type="button"
               onClick={() => go("/paspoort")}
-              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+              className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               <IdCard className="h-4 w-4" strokeWidth={1.75} />
               Sportpaspoort
@@ -368,7 +368,7 @@ function MainMenuContent({
             <button
               type="button"
               onClick={() => go("/ai-toestemming")}
-              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+              className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />
               AI-toestemming
@@ -378,12 +378,12 @@ function MainMenuContent({
             <button
               type="button"
               onClick={() => go("/abonnement")}
-              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+              className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               <CreditCard className="h-4 w-4" strokeWidth={1.75} />
               Abonnement
               {tierBadge && (
-                <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-0.5 text-[10px] font-medium text-cyan-200">
+                <span className="rounded-full border border-accent-cyan/30 bg-accent-cyan/10 px-2 py-0.5 text-[10px] font-medium text-accent-cyan">
                   {tierBadge}
                 </span>
               )}
@@ -393,7 +393,7 @@ function MainMenuContent({
             <button
               type="button"
               onClick={() => go("/admin")}
-              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+              className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               <Shield className="h-4 w-4" strokeWidth={1.75} />
               Admin
@@ -402,7 +402,7 @@ function MainMenuContent({
           <button
             type="button"
             onClick={() => go("/support")}
-            className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <LifeBuoy className="h-4 w-4" strokeWidth={1.75} />
             Hulp &amp; ondersteuning
@@ -413,7 +413,7 @@ function MainMenuContent({
               onClose()
               openFeedback()
             }}
-            className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <MessageSquarePlus className="h-4 w-4" strokeWidth={1.75} />
             Feedback of bug melden
@@ -424,14 +424,14 @@ function MainMenuContent({
                 type="button"
                 onClick={() => setWisselOpen((v) => !v)}
                 aria-expanded={wisselOpen}
-                className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+                className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
                 title="Wissel van context"
               >
                 <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
                 Context: {ROLE_LABEL[active] ?? String(active)}
               </button>
               {wisselOpen && (
-                <div className="mt-2 space-y-1 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
+                <div className="mt-2 space-y-1 rounded-2xl border border-border bg-muted p-2">
                   {toonZoekveld && (
                     <input
                       type="search"
@@ -439,7 +439,7 @@ function MainMenuContent({
                       onChange={(e) => setContextFilter(e.target.value)}
                       placeholder="Zoek een context…"
                       aria-label="Zoek een context"
-                      className="mb-1 w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-cyan-300/50"
+                      className="mb-1 w-full rounded-lg border border-border bg-transparent px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                   )}
                   {zichtbareContexts.map((c) => (
@@ -452,17 +452,17 @@ function MainMenuContent({
                       }}
                       className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${
                         c.actief
-                          ? "text-cyan-300"
-                          : "text-white/75 hover:bg-white/[0.06] hover:text-white"
+                          ? "text-accent-cyan"
+                          : "text-foreground/75 hover:bg-muted hover:text-foreground"
                       }`}
                       aria-current={c.actief ? "true" : undefined}
                     >
                       {c.label}
-                      {c.actief && <span className="ml-2 text-[11px] text-white/45">actief</span>}
+                      {c.actief && <span className="ml-2 text-[11px] text-muted-foreground">actief</span>}
                     </button>
                   ))}
                   {zichtbareContexts.length === 0 && (
-                    <p className="px-3 py-2 text-[13px] text-white/45">
+                    <p className="px-3 py-2 text-[13px] text-muted-foreground">
                       Geen context gevonden voor deze zoekterm.
                     </p>
                   )}
@@ -474,7 +474,7 @@ function MainMenuContent({
             <button
               type="button"
               onClick={() => signOut({ redirectUrl: basePath || "/" })}
-              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-red-300/40 hover:text-red-300"
+              className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/75 transition-colors hover:border-red-300/40 hover:text-[color:var(--color-negative)]"
             >
               <LogOut className="h-4 w-4" strokeWidth={1.75} />
               Uitloggen

@@ -20,27 +20,27 @@ export default function DevMotionPage() {
 
   if (!enabled) {
     return (
-      <div className="p-8 text-sm text-white/60">
+      <div className="p-8 text-sm text-muted-foreground">
         Deze testpagina is niet beschikbaar.
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 p-8 text-white">
-      <h1 className="font-mono text-xs uppercase tracking-[0.28em] text-cyan-300/70">
+    <div className="mx-auto max-w-xl space-y-6 p-8 text-foreground">
+      <h1 className="font-mono text-xs uppercase tracking-[0.28em] text-accent-cyan">
         Motion-testpagina (F1)
       </h1>
 
-      <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-sm">
+      <div className="rounded-2xl border border-border bg-card p-4 text-sm">
         <p data-testid="motion-status">
           Effectief: <strong>{motionOff ? "beweging UIT" : "beweging AAN"}</strong>
         </p>
-        <p className="text-white/60">
+        <p className="text-muted-foreground">
           Systeem (prefers-reduced-motion): {systemReduced ? "aan" : "uit"} ·
           Sparki-instelling: {sparkiReducedLoaded ? (sparkiReduced ? "aan" : "uit") : "laden…"}
         </p>
-        <p className="text-white/60">
+        <p className="text-muted-foreground">
           Duurklassen: kort {MOTION.duur.kort}ms · normaal {MOTION.duur.normaal}ms ·
           traag {MOTION.duur.traag}ms
         </p>
@@ -49,7 +49,7 @@ export default function DevMotionPage() {
           data-testid="motion-toggle"
           disabled={saving || !sparkiReducedLoaded}
           onClick={() => setSparkiReduced(!sparkiReduced)}
-          className="mt-3 rounded-full border border-white/15 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+          className="mt-3 rounded-full border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground/80 transition-colors hover:bg-muted disabled:opacity-50"
         >
           Verminder beweging {sparkiReduced ? "uitzetten" : "aanzetten"}
         </button>
@@ -57,18 +57,18 @@ export default function DevMotionPage() {
 
       {/* Proefelement: één verschijn-overgang (categorie "openen"). Bij
           beweging-uit verschijnt direct de eindtoestand — zelfde layout. */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4">
+      <div className="rounded-2xl border border-border bg-card p-4">
         <button
           type="button"
           data-testid="motion-demo-open"
           onClick={() => setOpen((v) => !v)}
-          className="rounded-full border border-white/15 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/80"
+          className="rounded-full border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground/80"
         >
           Proefkaart {open ? "sluiten" : "openen"}
         </button>
         <div
           data-testid="motion-demo-target"
-          className="mt-3 overflow-hidden rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06]"
+          className="mt-3 overflow-hidden rounded-xl border border-accent-cyan/20 bg-accent-cyan/[0.06]"
           style={{
             maxHeight: open ? 96 : 0,
             opacity: open ? 1 : 0,
@@ -79,7 +79,7 @@ export default function DevMotionPage() {
               : "var(--motion-easing-uit)",
           }}
         >
-          <p className="p-4 text-sm text-white/80">
+          <p className="p-4 text-sm text-foreground/80">
             Eindtoestand — inhoud en bediening zijn identiek met en zonder
             animatie.
           </p>

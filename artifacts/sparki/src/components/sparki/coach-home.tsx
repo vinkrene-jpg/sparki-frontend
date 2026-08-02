@@ -37,22 +37,22 @@ function OpenInvitations() {
   )
   if (open.length === 0) return null
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         Open uitnodigingen
       </span>
       <div className="mt-2 space-y-1.5">
         {open.slice(0, 4).map((i) => (
-          <div key={i.id} className="flex items-center gap-2 text-[13px] text-white/65">
+          <div key={i.id} className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300/70" />
             <span className="truncate">{i.email ?? "Uitnodigingslink"}</span>
-            <span className="ml-auto shrink-0 text-[11px] text-white/35">
+            <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
               verloopt {fmtDate(i.expiresAt)}
             </span>
           </div>
         ))}
         {open.length > 4 && (
-          <div className="text-[12px] text-white/35">+{open.length - 4} meer</div>
+          <div className="text-[12px] text-muted-foreground">+{open.length - 4} meer</div>
         )}
       </div>
       <Link
@@ -71,13 +71,13 @@ const readinessLabel: Record<string, { nl: string; color: string }> = {
   fresh: { nl: "Fris", color: "oklch(0.82 0.16 150)" },
   ok: { nl: "Oké", color: ACCENT },
   tired: { nl: "Vermoeid", color: "oklch(0.75 0.17 40)" },
-  unknown: { nl: "Geen data", color: "rgba(255,255,255,0.35)" },
+  unknown: { nl: "Geen data", color: "var(--color-muted-foreground)" },
 }
 
 const PRIORITY_DOT: Record<number, string> = {
   1: "oklch(0.72 0.19 25)",
   2: "oklch(0.78 0.16 60)",
-  3: "oklch(0.82 0.16 200)",
+  3: "var(--color-accent-cyan)",
 }
 
 function fmtDate(iso: string) {
@@ -115,8 +115,8 @@ function AthleteCard({
     <>
       <div className="flex items-center gap-3">
         <span
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[13px] font-medium text-white/80"
-          style={{ background: "rgba(255,255,255,0.06)" }}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[13px] font-medium text-foreground/80"
+          style={{ background: "var(--color-muted)" }}
         >
           {(a.displayName ?? "?").slice(0, 1).toUpperCase()}
         </span>
@@ -128,17 +128,17 @@ function AthleteCard({
                 style={{ background: PRIORITY_DOT[a.priority] ?? PRIORITY_DOT[3] }}
               />
             )}
-            <span className="truncate text-[15px] tracking-tight text-white/90">
+            <span className="truncate text-[15px] tracking-tight text-foreground/90">
               {a.displayName ?? "Atleet"}
             </span>
             {(a.unreadMessages ?? 0) > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-cyan-300/[0.12] px-2 py-0.5 text-[10px] text-cyan-100/90">
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-cyan/[0.12] px-2 py-0.5 text-[10px] text-accent-cyan">
                 <MessageCircle className="h-3 w-3" strokeWidth={1.75} />
                 {a.unreadMessages}
               </span>
             )}
           </div>
-          <div className="truncate text-[12px] text-white/40">
+          <div className="truncate text-[12px] text-muted-foreground">
             {a.discipline ?? "—"}
             {a.healthStatus && a.healthStatus !== "ok"
               ? ` · ${a.healthStatus === "sick" ? "ziek" : a.healthStatus === "injured" ? "geblesseerd" : a.healthStatus}`
@@ -146,11 +146,11 @@ function AthleteCard({
           </div>
         </div>
         {a.sharing === "none" ? (
-          <span className="text-[11px] text-white/30">Deelt niet</span>
+          <span className="text-[11px] text-muted-foreground">Deelt niet</span>
         ) : (
           <span
             className="rounded-full px-2.5 py-1 text-[11px] font-medium"
-            style={{ color: rl.color, background: "rgba(255,255,255,0.05)" }}
+            style={{ color: rl.color, background: "var(--color-muted)" }}
           >
             {rl.nl}
             {a.readiness?.score != null ? ` ${a.readiness.score}` : ""}
@@ -159,16 +159,16 @@ function AthleteCard({
       </div>
 
       {a.sharing !== "none" && a.topSignal && (
-        <p className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] leading-relaxed text-white/65">
+        <p className="mt-3 rounded-xl border border-border bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
           {a.topSignal.title}
           {a.openSignals > 1 && (
-            <span className="ml-1.5 text-white/35">+{a.openSignals - 1} meer</span>
+            <span className="ml-1.5 text-muted-foreground">+{a.openSignals - 1} meer</span>
           )}
         </p>
       )}
 
       {a.sharing !== "none" && (
-        <div className="mt-3 flex items-center gap-4 text-[12px] text-white/50">
+        <div className="mt-3 flex items-center gap-4 text-[12px] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.75} />
             {a.todayWorkout
@@ -187,7 +187,7 @@ function AthleteCard({
         </div>
       )}
       {a.sharing !== "none" && a.lastReviewedAt && (
-        <div className="mt-2 font-mono text-[10px] text-white/25">
+        <div className="mt-2 font-mono text-[10px] text-muted-foreground">
           Laatst beoordeeld: {fmtDate(a.lastReviewedAt)}
         </div>
       )}
@@ -195,7 +195,7 @@ function AthleteCard({
   )
 
   const cardClass =
-    "block rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+    "block rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
 
   // Zonder directe link is er geen koppeling om te beëindigen — knop verbergen
   // (anders biedt de UI een besturingselement aan dat server-side niets doet).
@@ -206,7 +206,7 @@ function AthleteCard({
       disabled={ending}
       aria-label="Koppeling met sporter beëindigen"
       title="Koppeling beëindigen"
-      className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/70 disabled:opacity-40"
+      className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-muted-foreground disabled:opacity-40"
     >
       <X className="h-4 w-4" strokeWidth={1.75} />
     </button>
@@ -224,7 +224,7 @@ function AthleteCard({
     <div className="relative">
       <Link
         href={`/coach/athletes/${a.athleteClerkId}/cockpit`}
-        className={`${cardClass} pr-10 transition-colors hover:border-cyan-300/25`}
+        className={`${cardClass} pr-10 transition-colors hover:border-accent-cyan/25`}
       >
         {inner}
       </Link>
@@ -257,7 +257,7 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3 text-[13px] text-white/55 transition-colors hover:border-white/15 hover:text-white/75"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-border hover:text-muted-foreground"
       >
         <Plus className="h-4 w-4" strokeWidth={1.75} />
         Zelfde training voor meerdere sporters inplannen
@@ -266,9 +266,9 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Groepstraining inplannen
         </span>
         <button
@@ -277,7 +277,7 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
             setOpen(false)
             setResult(null)
           }}
-          className="text-[12px] text-white/40"
+          className="text-[12px] text-muted-foreground"
         >
           Sluiten
         </button>
@@ -290,8 +290,8 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
             onClick={() => toggle(a.athleteClerkId)}
             className={`rounded-full px-3 py-1.5 text-[12px] transition-colors ${
               selected.includes(a.athleteClerkId)
-                ? "border border-cyan-300/40 bg-cyan-300/[0.12] text-cyan-100"
-                : "border border-white/[0.1] text-white/55"
+                ? "border border-accent-cyan/40 bg-accent-cyan/[0.12] text-accent-cyan"
+                : "border border-border text-muted-foreground"
             }`}
           >
             {a.displayName ?? "Atleet"}
@@ -303,20 +303,20 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-white/[0.1] bg-white/[0.04] px-2 py-1.5 text-[13px] text-white/85"
+          className="rounded-lg border border-border bg-muted px-2 py-1.5 text-[13px] text-foreground/85"
         />
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Titel van de training"
-          className="min-w-0 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
         />
         <input
           value={dur}
           onChange={(e) => setDur(e.target.value.replace(/\D/g, ""))}
           placeholder="Min"
           inputMode="numeric"
-          className="w-20 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+          className="w-20 rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
         />
       </div>
       <textarea
@@ -324,7 +324,7 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
         onChange={(e) => setDesc(e.target.value)}
         placeholder="Instructie (optioneel)"
         rows={2}
-        className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+        className="w-full rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
       />
       <button
         type="button"
@@ -354,7 +354,7 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
             },
           )
         }
-        className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
       >
         {bulk.isPending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -363,7 +363,7 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
         )}
         Inplannen voor {selected.length} sporter{selected.length === 1 ? "" : "s"}
       </button>
-      {result && <p className="text-[12px] text-white/55">{result}</p>}
+      {result && <p className="text-[12px] text-muted-foreground">{result}</p>}
     </div>
   )
 }
@@ -426,7 +426,7 @@ export function CoachHome() {
         <RoleTodaySection rol={roleView} />
         <div>
           <SectionLabel n="01" title="Jouw sporters" />
-          <p className="mt-2 text-[13px] text-white/45">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Gesorteerd op wat nu aandacht vraagt. Wat je ziet hangt af van de
             privacy-instelling van elke sporter.
           </p>
@@ -437,17 +437,17 @@ export function CoachHome() {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-24 animate-pulse rounded-2xl bg-white/[0.05]"
+                className="h-24 animate-pulse rounded-2xl bg-muted"
               />
             ))}
           </div>
         ) : athletes.length === 0 ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
             <Users
-              className="mx-auto mb-3 h-7 w-7 text-white/30"
+              className="mx-auto mb-3 h-7 w-7 text-muted-foreground"
               strokeWidth={1.5}
             />
-            <p className="text-[14px] text-white/60">Nog geen sporters gekoppeld</p>
+            <p className="text-[14px] text-muted-foreground">Nog geen sporters gekoppeld</p>
             <Link
               href="/invitations"
               className="mt-3 inline-flex items-center gap-1.5 text-[13px]"
@@ -476,7 +476,7 @@ export function CoachHome() {
 
         <Link
           href="/invitations"
-          className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3 text-[13px] text-white/55 transition-colors hover:border-white/15 hover:text-white/75"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-border hover:text-muted-foreground"
         >
           <Activity className="h-4 w-4" strokeWidth={1.75} />
           Uitnodigingen beheren

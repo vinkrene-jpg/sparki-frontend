@@ -23,7 +23,7 @@ import {
 import type { PlannedWorkout } from "@/lib/athlete-types"
 
 const inputClass =
-  "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+  "w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-cyan-300/40 focus:outline-none"
 
 function todayStr(): string {
   const d = new Date()
@@ -143,7 +143,7 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           WANNEER?
         </label>
         <input
@@ -159,18 +159,18 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
       {proposal && advice && (
         <div className="rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.06] p-3.5">
           <div className="mb-1.5 flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-cyan-300" strokeWidth={1.75} />
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/80">
+            <Sparkles className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={1.75} />
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan">
               Aanbeveling
             </span>
           </div>
-          <p className="text-[14px] font-medium text-white/90">
+          <p className="text-[14px] font-medium text-foreground/90">
             {proposal.title}
-            <span className="ml-2 font-mono text-[11px] text-white/45">
+            <span className="ml-2 font-mono text-[11px] text-muted-foreground">
               {proposal.totalMin} min
             </span>
           </p>
-          <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">
+          <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
             {advice.headline}
           </p>
           <div className="mt-2">
@@ -188,7 +188,7 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
         </div>
       )}
       {hasGoal && advice?.kind === "rest" && (
-        <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-[12px] leading-relaxed text-white/55">
+        <p className="rounded-xl border border-border bg-muted px-3.5 py-2.5 text-[12px] leading-relaxed text-muted-foreground">
           Op basis van je signalen is rust vandaag het advies. Zelf toch
           iets plannen kan hieronder.
         </p>
@@ -223,7 +223,7 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+              <label className="mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 ZONE
               </label>
               <select
@@ -237,7 +237,7 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+              <label className="mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 DUUR (MIN)
               </label>
               <input
@@ -251,11 +251,11 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
             </div>
           </div>
           {enduranceTemplate ? (
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3.5">
-              <p className="text-[13px] font-medium text-white/85">
+            <div className="rounded-2xl border border-border bg-muted p-3.5">
+              <p className="text-[13px] font-medium text-foreground/80">
                 {enduranceTemplate.title}
               </p>
-              <p className="mt-0.5 text-[12px] text-white/50">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {enduranceTemplate.subtitle}
               </p>
               <div className="mt-2">
@@ -272,7 +272,7 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
               </button>
             </div>
           ) : (
-            <p className="text-[12px] text-white/45">
+            <p className="text-[12px] text-muted-foreground">
               Kies een duur tussen 30 en 360 minuten.
             </p>
           )}
@@ -300,14 +300,14 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
                   className="w-full text-left"
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-[13px] font-medium text-white/85">
+                    <p className="text-[13px] font-medium text-foreground/80">
                       {t.title}
                     </p>
-                    <span className="shrink-0 font-mono text-[11px] tabular-nums text-white/45">
+                    <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
                       {t.totalMin} min
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[12px] leading-relaxed text-white/50">
+                  <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
                     {t.subtitle} — incl. inrijden en cooling-down
                   </p>
                   <div className="mt-2">
@@ -332,12 +332,12 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
       )}
 
       {error && (
-        <p className="text-[12px] text-red-300/80" role="alert">
+        <p className="text-[12px] text-[color:var(--color-negative)]" role="alert">
           {error}
         </p>
       )}
 
-      <p className="text-[11px] leading-relaxed text-white/35">
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
         Let op: een GPX-bestand (bijv. uit TrainingPeaks) bevat alleen de route,
         geen intervalstructuur. Plan de blokken hier — dan toont de navigatie ze
         live tijdens de rit.

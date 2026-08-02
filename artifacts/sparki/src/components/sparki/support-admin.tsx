@@ -82,9 +82,9 @@ function fmtWhen(iso: string): string {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/25 focus:border-cyan-300/50 focus:outline-none";
+  "w-full rounded-lg border border-border bg-transparent px-3 py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan focus:outline-none";
 const btnCls =
-  "rounded-full border border-white/15 px-3 py-1.5 text-[12px] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-40";
+  "rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan hover:text-accent-cyan disabled:opacity-40";
 
 function TicketDetail({ id, onBack }: { id: number; onBack: () => void }) {
   const qc = useQueryClient();
@@ -161,27 +161,27 @@ function TicketDetail({ id, onBack }: { id: number; onBack: () => void }) {
     onSuccess: invalidate,
   });
 
-  if (!data) return <p className="text-[12px] text-white/30">Laden…</p>;
+  if (!data) return <p className="text-[12px] text-muted-foreground">Laden…</p>;
   const { ticket, messages, humanSendRequired } = data;
   return (
-    <div className="rounded-2xl border border-white/[0.1] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-[12px] text-white/50 hover:text-cyan-300">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-accent-cyan">
         <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug naar wachtrij
       </button>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="text-[13px] font-medium text-white/90">
+        <span className="text-[13px] font-medium text-foreground/90">
           #{ticket.id} · {ticket.summary}
         </span>
-        <span className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-white/50">
+        <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
           {STATUS_LABEL[ticket.status] ?? ticket.status}
         </span>
         {ticket.humanRequiredReason && (
-          <span className="rounded-full border border-orange-300/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-orange-300/90">
+          <span className="rounded-full border border-orange-300/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-warning)]">
             Mens verplicht: {HUMAN_REASON_LABEL[ticket.humanRequiredReason] ?? ticket.humanRequiredReason}
           </span>
         )}
       </div>
-      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
         {ticket.displayName ?? "Onbekend"} · {ticket.category} · prioriteit {ticket.priority}
         {ticket.appVersion ? ` · versie ${ticket.appVersion}` : ""}
       </p>
@@ -224,24 +224,24 @@ function TicketDetail({ id, onBack }: { id: number; onBack: () => void }) {
               m.internal
                 ? "border-yellow-300/20 bg-yellow-300/[0.03]"
                 : m.isDraft
-                  ? "border-white/20 border-dashed bg-white/[0.02]"
+                  ? "border-border border-dashed bg-muted"
                   : m.authorRole === "beheerder"
-                    ? "border-cyan-300/20 bg-cyan-300/[0.04]"
-                    : "border-white/[0.07] bg-white/[0.02]"
+                    ? "border-accent-cyan bg-accent-cyan"
+                    : "border-border bg-muted"
             }`}
           >
-            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
               {m.authorRole}
               {m.internal ? " · interne notitie" : ""}
               {m.isDraft ? " · concept (niet verzonden)" : ""} · {fmtWhen(m.sentAt ?? m.createdAt)}
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-white/80">{m.body}</p>
+            <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/80">{m.body}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-4">
-        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
           Antwoord aan gebruiker {humanSendRequired && (
             <span style={{ color: "#fdba74" }}>— menselijke afhandeling verplicht</span>
           )}
@@ -276,13 +276,13 @@ function TicketDetail({ id, onBack }: { id: number; onBack: () => void }) {
           </button>
         </div>
         {concept.isError && (
-          <p className="mt-2 text-[12px] text-orange-300/80">Concept opstellen lukte niet.</p>
+          <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">Concept opstellen lukte niet.</p>
         )}
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">Interne notitie</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Interne notitie</p>
           <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} rows={2} className={`mt-2 ${inputCls}`} />
           <button
             type="button"
@@ -297,7 +297,7 @@ function TicketDetail({ id, onBack }: { id: number; onBack: () => void }) {
           </button>
         </div>
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">Samenvoegen met ticket-nr</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Samenvoegen met ticket-nr</p>
           <input value={mergeInto} onChange={(e) => setMergeInto(e.target.value)} placeholder="bijv. 12" className={`mt-2 ${inputCls}`} />
           <button
             type="button"
@@ -344,24 +344,24 @@ function KnownIssuesPanel() {
   return (
     <div className="mt-3 space-y-2">
       {(data?.issues ?? []).map((i) => (
-        <div key={i.id} className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.6] p-3 backdrop-blur-md">
+        <div key={i.id} className="rounded-xl border border-border bg-card p-3 backdrop-blur-md">
           <div className="flex items-center justify-between gap-3">
-            <span className="truncate text-[13px] text-white/85">{i.title}</span>
+            <span className="truncate text-[13px] text-foreground/90">{i.title}</span>
             {i.status === "opgelost" ? (
-              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-emerald-300/70">Opgelost</span>
+              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-positive)]">Opgelost</span>
             ) : (
               <button type="button" onClick={() => resolve.mutate(i.id)} disabled={resolve.isPending} className={btnCls}>
                 Markeer opgelost
               </button>
             )}
           </div>
-          <p className="mt-1 text-[12px] leading-snug text-white/50">{i.description}</p>
+          <p className="mt-1 text-[12px] leading-snug text-muted-foreground">{i.description}</p>
         </div>
       ))}
       {(data?.issues ?? []).length === 0 && (
-        <p className="text-[12px] text-white/30">Geen bekende storingen geregistreerd.</p>
+        <p className="text-[12px] text-muted-foreground">Geen bekende storingen geregistreerd.</p>
       )}
-      <div className="rounded-xl border border-white/[0.08] p-3">
+      <div className="rounded-xl border border-border p-3">
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titel van de storing" className={inputCls} />
         <textarea
           value={description}
@@ -410,10 +410,10 @@ function ArticlesPanel() {
   return (
     <div className="mt-3 space-y-2">
       {(data?.articles ?? []).map((a) => (
-        <div key={a.id} className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.6] p-3 backdrop-blur-md">
+        <div key={a.id} className="rounded-xl border border-border bg-card p-3 backdrop-blur-md">
           <div className="flex items-center justify-between gap-3">
-            <span className="truncate text-[13px] text-white/85">{a.title}</span>
-            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/40">
+            <span className="truncate text-[13px] text-foreground/90">{a.title}</span>
+            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
               {a.status} · v{a.version}
             </span>
           </div>
@@ -449,7 +449,7 @@ function ArticlesPanel() {
         </div>
       ))}
       {(data?.articles ?? []).length === 0 && (
-        <p className="text-[12px] text-white/30">
+        <p className="text-[12px] text-muted-foreground">
           Nog geen kennisartikelen. Maak er een vanuit een opgelost ticket.
         </p>
       )}
@@ -485,10 +485,10 @@ export function SupportAdminSection() {
 
   return (
     <section className="mt-8">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         Support &amp; helpdesk
       </p>
-      <p className="mt-1 text-[12px] leading-snug text-white/40">
+      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
         Supportvragen van gebruikers. AI stelt hoogstens een concept op — een
         mens controleert en verzendt ieder antwoord.
       </p>
@@ -514,24 +514,24 @@ export function SupportAdminSection() {
           </div>
           <div className="mt-3 space-y-2">
             {(data?.tickets ?? []).length === 0 ? (
-              <p className="text-[12px] text-white/30">Geen tickets in deze weergave.</p>
+              <p className="text-[12px] text-muted-foreground">Geen tickets in deze weergave.</p>
             ) : (
               (data?.tickets ?? []).slice(0, 25).map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => setOpenId(t.id)}
-                  className="block w-full rounded-xl border border-white/[0.08] bg-[#070d16]/[0.6] p-3 text-left backdrop-blur-md transition hover:border-white/20"
+                  className="block w-full rounded-xl border border-border bg-card p-3 text-left backdrop-blur-md transition hover:border-border"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="truncate text-[13px] text-white/85">
+                    <span className="truncate text-[13px] text-foreground/90">
                       #{t.id} · {t.summary}
                     </span>
-                    <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-white/50">
+                    <span className="shrink-0 rounded-full border border-border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                       {STATUS_LABEL[t.status] ?? t.status}
                     </span>
                   </div>
-                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                     {t.displayName ?? "Onbekend"} · {t.category} · {t.priority}
                     {t.humanRequiredReason ? " · MENS VERPLICHT" : ""} · {fmtWhen(t.updatedAt)}
                   </p>
@@ -542,22 +542,22 @@ export function SupportAdminSection() {
 
           {(groups?.groups ?? []).length > 0 && (
             <div className="mt-5">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
                 Terugkerende problemen
               </p>
               <div className="mt-2 space-y-2">
                 {(groups?.groups ?? []).slice(0, 8).map((g, idx) => (
-                  <div key={idx} className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.5] p-3 backdrop-blur-md">
+                  <div key={idx} className="rounded-xl border border-border bg-card p-3 backdrop-blur-md">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-[12px] text-white/70">
+                      <span className="truncate text-[12px] text-muted-foreground">
                         {g.error?.message ?? `Categorie ${g.category}`}
                       </span>
-                      <span className="shrink-0 font-mono text-[10px] tabular-nums text-white/45">
+                      <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
                         {g.ticketCount} tickets · {g.userCount} gebruikers
                       </span>
                     </div>
                     {g.appVersions && g.appVersions.length > 0 && (
-                      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-white/25">
+                      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                         Versies: {g.appVersions.join(", ")}
                       </p>
                     )}
@@ -568,11 +568,11 @@ export function SupportAdminSection() {
           )}
 
           <div className="mt-5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">Bekende storingen</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Bekende storingen</p>
             <KnownIssuesPanel />
           </div>
           <div className="mt-5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">Kennisartikelen</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Kennisartikelen</p>
             <ArticlesPanel />
           </div>
         </>

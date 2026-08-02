@@ -104,7 +104,7 @@ export function ThreeWeekPlan({
 
       {isLoading ? (
         <div className="mt-5 space-y-1.5">
-          <div className="flex items-center gap-2 text-[13px] text-white/40">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Plan laden…
           </div>
@@ -112,7 +112,7 @@ export function ThreeWeekPlan({
         </div>
       ) : !hasPlan ? (
         hideEmptyCta ? (
-          <p className="mt-5 text-pretty text-[12px] leading-relaxed text-white/40">
+          <p className="mt-5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
             Je plan verschijnt hier zodra het is opgebouwd — bouw het in
             de sectie hierboven.
           </p>
@@ -147,7 +147,7 @@ export function ThreeWeekPlan({
             }}
           />
           {generate.isError && (
-            <p className="mt-3 text-center text-[12px] text-red-300/70">
+            <p className="mt-3 text-center text-[12px] text-[color:var(--color-negative)]">
               {generate.error instanceof Error &&
               generate.error.message.includes("profile_incomplete")
                 ? "Je FTP of wekelijkse uren ontbreken nog. Vul ze hierboven in."
@@ -163,7 +163,7 @@ export function ThreeWeekPlan({
             {DOW.map((d) => (
               <span
                 key={d}
-                className="text-center font-mono text-[9px] tracking-[0.15em] text-white/30"
+                className="text-center font-mono text-[9px] tracking-[0.15em] text-muted-foreground"
               >
                 {d}
               </span>
@@ -216,11 +216,11 @@ export function ThreeWeekPlan({
                       <span className="h-1.5 w-1.5" />
                     )}
                     {w && w.targetTSS ? (
-                      <span className="font-mono text-[8px] tabular-nums text-white/35">
+                      <span className="font-mono text-[8px] tabular-nums text-muted-foreground">
                         {w.targetTSS}
                       </span>
                     ) : (
-                      <span className="font-mono text-[8px] text-white/20">
+                      <span className="font-mono text-[8px] text-muted-foreground">
                         {isRest ? "rust" : ""}
                       </span>
                     )}
@@ -237,8 +237,8 @@ export function ThreeWeekPlan({
             className="mt-2"
           />
           {/* Legenda — anders zijn de gekleurde stippen betekenisloos. */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/35">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-border bg-muted px-3 py-2.5">
+            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
               Kleur = intensiteit
             </span>
             {[
@@ -252,14 +252,14 @@ export function ThreeWeekPlan({
                   className="h-1.5 w-1.5 rounded-full"
                   style={{ background: zoneDot(it.z) }}
                 />
-                <span className="text-[10px] text-white/55">{it.label}</span>
+                <span className="text-[10px] text-muted-foreground">{it.label}</span>
               </span>
             ))}
             <span className="flex items-center gap-1.5">
-              <span className="font-mono text-[9px] text-white/35">rust</span>
-              <span className="text-[10px] text-white/55">rustdag</span>
+              <span className="font-mono text-[9px] text-muted-foreground">rust</span>
+              <span className="text-[10px] text-muted-foreground">rustdag</span>
             </span>
-            <span className="text-[10px] text-white/40">
+            <span className="text-[10px] text-muted-foreground">
               Getal = belasting (TSS)
             </span>
           </div>
@@ -268,7 +268,7 @@ export function ThreeWeekPlan({
               type="button"
               onClick={() => generate.mutate(undefined)}
               disabled={generate.isPending}
-              className="mt-1.5 flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.12] py-2.5 font-sans text-[12px] font-medium text-white/45 transition-colors hover:border-cyan-300/25 hover:text-cyan-300/60 disabled:opacity-50"
+              className="mt-1.5 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-2.5 font-sans text-[12px] font-medium text-muted-foreground transition-colors hover:border-cyan-300/25 hover:text-accent-cyan disabled:opacity-50"
             >
               {generate.isPending ? (
                 <>

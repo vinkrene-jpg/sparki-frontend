@@ -41,7 +41,7 @@ const SESSION_START = Date.now()
 type PendingAttachment = InputAttachment & { uploading?: boolean }
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 // A single stored attachment rendered inside a conversation turn: images show as
@@ -68,7 +68,7 @@ function TurnView({ turn }: { turn: ConversationTurn }) {
           <SparkiCore size={30} accent={ACCENT} readiness={0.9} variant="orb" />
         ) : (
           <span
-            className="flex h-[30px] w-[30px] items-center justify-center rounded-full border text-[11px] font-medium text-white/60"
+            className="flex h-[30px] w-[30px] items-center justify-center rounded-full border text-[11px] font-medium text-muted-foreground"
             style={{
               borderColor: "rgba(255,255,255,0.1)",
               background: "rgba(255,255,255,0.03)",
@@ -99,7 +99,7 @@ function TurnView({ turn }: { turn: ConversationTurn }) {
             href={turn.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group mt-2 flex items-center gap-1.5 break-all text-[12px] text-cyan-200/80 transition-colors hover:text-cyan-100"
+            className="group mt-2 flex items-center gap-1.5 break-all text-[12px] text-accent-cyan transition-colors hover:text-accent-cyan"
           >
             <Link2 className="h-3 w-3 shrink-0" />
             {turn.link}
@@ -109,7 +109,7 @@ function TurnView({ turn }: { turn: ConversationTurn }) {
         {turn.text && (
           <p
             className={`mt-1.5 whitespace-pre-wrap text-pretty text-[13px] leading-relaxed ${
-              isSparki ? "text-white/80" : "text-white/90"
+              isSparki ? "text-foreground/80" : "text-foreground/90"
             }`}
           >
             {turn.text}
@@ -117,8 +117,8 @@ function TurnView({ turn }: { turn: ConversationTurn }) {
         )}
 
         {turn.sources && turn.sources.length > 0 && (
-          <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-            <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+          <div className="mt-3 rounded-xl border border-border bg-muted p-3">
+            <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
               <BookOpen className="h-3 w-3" style={{ color: ACCENT }} />
               Bronnen
             </p>
@@ -129,13 +129,13 @@ function TurnView({ turn }: { turn: ConversationTurn }) {
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-start gap-1.5 text-[11px] leading-snug text-white/55 transition-colors hover:text-cyan-200/90"
+                    className="group flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground transition-colors hover:text-accent-cyan"
                   >
-                    <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-white/25 transition-colors group-hover:text-cyan-300/70" />
+                    <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground transition-colors group-hover:text-accent-cyan" />
                     <span className="text-pretty">
                       {s.title}
                       {s.source ? (
-                        <span className="text-white/30"> — {s.source}</span>
+                        <span className="text-muted-foreground"> — {s.source}</span>
                       ) : null}
                     </span>
                   </a>
@@ -279,14 +279,14 @@ export function SparkiInputCenter({
         )}
 
         {!isLoading && turns.length === 0 && (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+          <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
             <div className="mb-2 flex items-center gap-2">
               <SparkiCore size={26} accent={ACCENT} readiness={0.9} variant="orb" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Begin hier
               </span>
             </div>
-            <p className="text-[13px] leading-relaxed text-white/60">
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
               Deel een foto, afbeelding, PDF, bestand of link, of stel je
               vraag. Je begint elke keer met een schoon gesprek — alles uit
               eerdere gesprekken wordt wel onthouden om je beter te leren kennen.
@@ -303,7 +303,7 @@ export function SparkiInputCenter({
           <div className="flex gap-3">
             <SparkiCore size={30} accent={ACCENT} readiness={0.9} variant="orb" />
             <div className="flex-1 space-y-2 pt-1">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Bezig…
               </span>
               <Skeleton className="h-3.5 w-full" />
@@ -317,17 +317,17 @@ export function SparkiInputCenter({
       </div>
 
       {/* COMPOSER */}
-      <div className="sticky bottom-0 rounded-2xl border border-white/[0.1] bg-[#070d16]/[0.92] p-3 backdrop-blur-md">
+      <div className="sticky bottom-0 rounded-2xl border border-border bg-card p-3 backdrop-blur-md">
         {/* Visible ride context — the athlete sees exactly what Sparki krijgt */}
         {context && (
-          <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-2.5 py-2">
+          <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-accent-cyan bg-accent-cyan px-2.5 py-2">
             <span
               className="font-mono text-[9px] uppercase tracking-[0.16em]"
               style={{ color: ACCENT }}
             >
               Gaat over
             </span>
-            <span className="min-w-0 flex-1 truncate text-[12px] text-white/80">
+            <span className="min-w-0 flex-1 truncate text-[12px] text-foreground/80">
               {context.label}
             </span>
           </div>
@@ -339,7 +339,7 @@ export function SparkiInputCenter({
             {pending.map((p) => (
               <span
                 key={p.objectPath}
-                className="flex items-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.04] py-1.5 pl-2.5 pr-1.5 text-[11px] text-white/70"
+                className="flex items-center gap-2 rounded-lg border border-border bg-muted py-1.5 pl-2.5 pr-1.5 text-[11px] text-muted-foreground"
               >
                 {p.uploading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: ACCENT }} />
@@ -358,7 +358,7 @@ export function SparkiInputCenter({
                 <button
                   type="button"
                   onClick={() => removePending(p.objectPath)}
-                  className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white/80"
+                  className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground/80"
                   aria-label={`Verwijder ${p.name}`}
                 >
                   <X className="h-3.5 w-3.5" />
@@ -370,10 +370,10 @@ export function SparkiInputCenter({
 
         {/* Optional link input */}
         {showLink && (
-          <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5">
-            <Link2 className="h-3.5 w-3.5 shrink-0 text-white/40" />
+          <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-border bg-muted px-2.5">
+            <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <input
-              className="flex-1 bg-transparent py-2 text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+              className="flex-1 bg-transparent py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
               placeholder="Plak een link (externe links worden niet automatisch geopend)"
               value={link}
               onChange={(e) => setLink(e.target.value)}
@@ -385,7 +385,7 @@ export function SparkiInputCenter({
                 setShowLink(false)
                 setLink("")
               }}
-              className="flex h-6 w-6 items-center justify-center rounded text-white/40 hover:text-white/80"
+              className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground/80"
               aria-label="Link verwijderen"
             >
               <X className="h-3.5 w-3.5" />
@@ -394,7 +394,7 @@ export function SparkiInputCenter({
         )}
 
         {error && (
-          <p className="mb-2 text-[11px] text-rose-300/80">{error}</p>
+          <p className="mb-2 text-[11px] text-[color:var(--color-negative)]">{error}</p>
         )}
 
         <div className="flex flex-col gap-2">
@@ -425,7 +425,7 @@ export function SparkiInputCenter({
           {/* Eerste regel — het venster (tekst) + versturen */}
           <div className="flex items-end gap-2">
             <textarea
-              className="max-h-40 min-h-[56px] flex-1 resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+              className="max-h-40 min-h-[56px] flex-1 resize-none rounded-lg border border-border bg-muted px-3 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan focus:outline-none"
               placeholder="Stel een vraag of beschrijf wat je deelt…"
               rows={2}
               value={text}
@@ -465,7 +465,7 @@ export function SparkiInputCenter({
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={busy}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.1] text-white/55 transition-colors hover:border-cyan-300/30 hover:text-cyan-200 disabled:opacity-40"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-accent-cyan hover:text-accent-cyan disabled:opacity-40"
               aria-label="Bestand toevoegen"
               title="Foto, afbeelding, PDF of bestand"
             >
@@ -475,7 +475,7 @@ export function SparkiInputCenter({
               type="button"
               onClick={() => cameraRef.current?.click()}
               disabled={busy}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.1] text-white/55 transition-colors hover:border-cyan-300/30 hover:text-cyan-200 disabled:opacity-40"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-accent-cyan hover:text-accent-cyan disabled:opacity-40"
               aria-label="Foto maken"
               title="Foto maken met camera"
             >
@@ -485,7 +485,7 @@ export function SparkiInputCenter({
               type="button"
               onClick={() => setShowLink((v) => !v)}
               disabled={busy}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border text-white/55 transition-colors hover:border-cyan-300/30 hover:text-cyan-200 disabled:opacity-40"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:border-accent-cyan hover:text-accent-cyan disabled:opacity-40"
               style={{
                 borderColor: showLink
                   ? "rgba(120,210,230,0.5)"

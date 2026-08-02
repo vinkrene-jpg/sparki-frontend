@@ -24,8 +24,8 @@ const LEVEL_STYLE: Record<
 > = {
   controleadvies: {
     label: "Controleadvies",
-    color: "rgba(255,255,255,0.6)",
-    bg: "rgba(255,255,255,0.06)",
+    color: "var(--color-muted-foreground)",
+    bg: "var(--color-muted)",
     Icon: Info,
   },
   vermoedelijke_slijtage: {
@@ -87,12 +87,12 @@ export function MaintenanceSignalsPanel({
   useReportAttentionSeen(seenKeys.length > 0 ? seenKeys : null)
 
   if (isLoading && !compact) {
-    return <p className="text-[12px] text-white/40">Bezig…</p>
+    return <p className="text-[12px] text-muted-foreground">Bezig…</p>
   }
   if (signals.length === 0) {
     if (compact) return null
     return (
-      <p className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 text-[12px] leading-relaxed text-white/50 backdrop-blur-md">
+      <p className="rounded-xl border border-border bg-card p-3.5 text-[12px] leading-relaxed text-foreground/50 backdrop-blur-md">
         Geen onderhoudssignalen op dit moment. Signalen verschijnen op basis van
         je gekoppelde ritten en je eigen registraties in de garage.
       </p>
@@ -106,7 +106,7 @@ export function MaintenanceSignalsPanel({
         return (
           <div
             key={`${s.level}-${s.componentId ?? s.bikeId ?? i}`}
-            className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3 backdrop-blur-md"
+            className="rounded-xl border border-border bg-card p-3 backdrop-blur-md"
           >
             <div className="flex items-center gap-2">
               <style.Icon
@@ -121,18 +121,18 @@ export function MaintenanceSignalsPanel({
                 {style.label}
               </span>
               {s.bikeName && (
-                <span className="truncate font-mono text-[10px] uppercase tracking-[0.12em] text-white/35">
+                <span className="truncate font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                   {s.bikeName}
                 </span>
               )}
             </div>
-            <p className="mt-1.5 text-[13px] font-medium text-white/85">
+            <p className="mt-1.5 text-[13px] font-medium text-foreground/85">
               {s.label.charAt(0).toUpperCase() + s.label.slice(1)}
             </p>
-            <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">
+            <p className="mt-0.5 text-[12px] leading-relaxed text-foreground/55">
               {s.message}
             </p>
-            <p className="mt-1 text-[10.5px] leading-relaxed text-white/30">
+            <p className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">
               {s.advice}
             </p>
           </div>

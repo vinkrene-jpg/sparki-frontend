@@ -74,7 +74,7 @@ export function ChapterGrid({
               {c.label}
             </span>
             {!compact && (
-              <span className="hidden w-full truncate text-[10px] leading-tight text-white/35 min-[380px]:block">
+              <span className="hidden w-full truncate text-[10px] leading-tight text-muted-foreground min-[380px]:block">
                 {c.hint}
               </span>
             )}

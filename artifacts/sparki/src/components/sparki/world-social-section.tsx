@@ -33,7 +33,7 @@ import {
 
 function Glass({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md ${className}`}>
+    <div className={`rounded-2xl border border-border bg-card p-4 backdrop-blur-md ${className}`}>
       {children}
     </div>
   )
@@ -73,8 +73,8 @@ function VisibilityPicker({
           onClick={() => onChange(v)}
           className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
             value === v
-              ? "border-cyan-300/50 text-white"
-              : "border-white/10 text-white/45 hover:border-white/25"
+              ? "border-accent-cyan/50 text-foreground"
+              : "border-border text-muted-foreground hover:border-border"
           }`}
           style={value === v ? { background: "rgba(120,210,230,0.10)" } : undefined}
         >
@@ -120,36 +120,36 @@ function Composer() {
 
   return (
     <Glass>
-      <p className="mb-2 text-[13px] font-medium text-white/85">Deel iets met je kring</p>
+      <p className="mb-2 text-[13px] font-medium text-foreground/85">Deel iets met je kring</p>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={2}
         placeholder="Schrijf een bericht…"
-        className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[13px] text-white/85 placeholder-white/30 outline-none focus:border-cyan-300/40"
+        className="w-full resize-none rounded-xl border border-border bg-muted p-3 text-[13px] text-foreground/85 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
       />
       <div className="mt-2 flex flex-col gap-2">
         <VisibilityPicker value={visibility} onChange={(v) => { setVisibility(v); setNeedsConfirm(false); }} />
         {visibility === "openbaar" && (
-          <label className="flex items-center gap-2 text-[12px] text-white/60">
+          <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
             <input
               type="checkbox"
               checked={confirmPublic}
               onChange={(e) => setConfirmPublic(e.target.checked)}
-              className="h-3.5 w-3.5 accent-cyan-300"
+              className="h-3.5 w-3.5 accent-[var(--accent-cyan)]"
             />
             Ik begrijp dat iedereen dit kan zien en wil dit openbaar delen.
           </label>
         )}
-        {error && <p className="text-[12px] text-red-300/85">{error}</p>}
+        {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
         {needsConfirm && !confirmPublic && (
-          <p className="text-[12px] text-white/45">Vink de bevestiging aan om openbaar te delen.</p>
+          <p className="text-[12px] text-muted-foreground">Vink de bevestiging aan om openbaar te delen.</p>
         )}
         <button
           type="button"
           onClick={submit}
           disabled={share.isPending || !text.trim()}
-          className="self-end rounded-full border border-cyan-300/40 px-4 py-1.5 text-[12px] text-white/90 transition-colors hover:border-cyan-300/70 disabled:opacity-40"
+          className="self-end rounded-full border border-accent-cyan/40 px-4 py-1.5 text-[12px] text-foreground/90 transition-colors hover:border-accent-cyan/70 disabled:opacity-40"
           style={{ background: "rgba(120,210,230,0.10)" }}
         >
           {share.isPending ? "Delen…" : "Delen"}
@@ -188,21 +188,21 @@ function FeedCard({ item }: { item: WorldFeedItem }) {
     <Glass>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-white/85">
+          <p className="text-[13px] font-medium text-foreground/85">
             {item.eigenaar.isZelf ? "Jij" : item.eigenaar.naam}
-            <span className="ml-2 font-mono text-[10px] tracking-wide text-white/35">
+            <span className="ml-2 font-mono text-[10px] tracking-wide text-muted-foreground">
               {VISIBILITY_LABEL[item.visibility] ?? item.visibility}
             </span>
           </p>
-          {item.message && <p className="mt-1 text-[13px] text-white/75">{item.message}</p>}
-          {line && <p className="mt-1 text-[12px] text-white/55">{line}</p>}
-          {item.caption && <p className="mt-1 text-[12px] italic text-white/50">{item.caption}</p>}
+          {item.message && <p className="mt-1 text-[13px] text-foreground/75">{item.message}</p>}
+          {line && <p className="mt-1 text-[12px] text-muted-foreground">{line}</p>}
+          {item.caption && <p className="mt-1 text-[12px] italic text-muted-foreground">{item.caption}</p>}
         </div>
         {!item.eigenaar.isZelf && (
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="shrink-0 text-white/30 hover:text-white/60"
+            className="shrink-0 text-muted-foreground hover:text-muted-foreground"
             aria-label="Meer opties"
           >
             {menuOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -221,7 +221,7 @@ function FeedCard({ item }: { item: WorldFeedItem }) {
                 { onSuccess: () => setReported(true) },
               )
             }
-            className="flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/55 hover:border-orange-300/40 disabled:opacity-40"
+            className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:border-orange-300/40 disabled:opacity-40"
           >
             <ShieldAlert className="h-3 w-3" /> {reported ? "Gemeld" : "Melden"}
           </button>
@@ -229,7 +229,7 @@ function FeedCard({ item }: { item: WorldFeedItem }) {
             type="button"
             disabled={block.isPending}
             onClick={() => block.mutate(item.eigenaar.clerkId)}
-            className="flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/55 hover:border-red-300/40"
+            className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:border-red-300/40"
           >
             <Ban className="h-3 w-3" /> Blokkeren
           </button>
@@ -240,14 +240,14 @@ function FeedCard({ item }: { item: WorldFeedItem }) {
         <button
           type="button"
           onClick={() => react.mutate({ itemId: item.id, kind: "waardering" })}
-          className="flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white/85"
+          className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground/85"
         >
           <Heart className="h-3.5 w-3.5" style={{ color: ACCENT }} /> {item.waarderingen}
         </button>
         <button
           type="button"
           onClick={() => setReplyOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white/85"
+          className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground/85"
         >
           <MessageCircle className="h-3.5 w-3.5" /> {item.reacties}
         </button>
@@ -255,7 +255,7 @@ function FeedCard({ item }: { item: WorldFeedItem }) {
           <button
             type="button"
             onClick={() => withdraw.mutate(item.id)}
-            className="ml-auto flex items-center gap-1 text-[11px] text-white/35 hover:text-red-300/80"
+            className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground hover:text-[color:var(--color-negative)]"
           >
             <Trash2 className="h-3 w-3" /> Intrekken
           </button>
@@ -268,7 +268,7 @@ function FeedCard({ item }: { item: WorldFeedItem }) {
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             placeholder="Reageer…"
-            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[12px] text-white/85 placeholder-white/30 outline-none focus:border-cyan-300/40"
+            className="min-w-0 flex-1 rounded-xl border border-border bg-muted px-3 py-1.5 text-[12px] text-foreground/85 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
           />
           <button
             type="button"
@@ -279,7 +279,7 @@ function FeedCard({ item }: { item: WorldFeedItem }) {
                 { onSuccess: () => { setReply(""); setReplyOpen(false); } },
               )
             }
-            className="rounded-full border border-cyan-300/40 px-3 py-1 text-[12px] text-white/85 disabled:opacity-40"
+            className="rounded-full border border-accent-cyan/40 px-3 py-1 text-[12px] text-foreground/85 disabled:opacity-40"
           >
             Plaats
           </button>
@@ -302,18 +302,18 @@ function PrefsPanel() {
   ]
   return (
     <Glass>
-      <p className="mb-2 flex items-center gap-2 text-[13px] font-medium text-white/85">
+      <p className="mb-2 flex items-center gap-2 text-[13px] font-medium text-foreground/85">
         <Bell className="h-3.5 w-3.5" style={{ color: ACCENT }} /> Meldingen
       </p>
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
-          <label key={r.key} className="flex items-center justify-between text-[12px] text-white/60">
+          <label key={r.key} className="flex items-center justify-between text-[12px] text-muted-foreground">
             {r.label}
             <input
               type="checkbox"
               checked={Boolean(prefs[r.key])}
               onChange={(e) => save.mutate({ ...prefs, [r.key]: e.target.checked })}
-              className="h-3.5 w-3.5 accent-cyan-300"
+              className="h-3.5 w-3.5 accent-[var(--accent-cyan)]"
             />
           </label>
         ))}
@@ -328,15 +328,15 @@ function BlocksPanel() {
   if (!blocks || blocks.length === 0) return null
   return (
     <Glass>
-      <p className="mb-2 text-[13px] font-medium text-white/85">Geblokkeerd</p>
+      <p className="mb-2 text-[13px] font-medium text-foreground/85">Geblokkeerd</p>
       <div className="flex flex-col gap-2">
         {blocks.map((b) => (
-          <div key={b.id} className="flex items-center justify-between text-[12px] text-white/60">
+          <div key={b.id} className="flex items-center justify-between text-[12px] text-muted-foreground">
             {b.naam}
             <button
               type="button"
               onClick={() => unblock.mutate(b.clerkId)}
-              className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/50 hover:border-white/30"
+              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:border-border"
             >
               Deblokkeren
             </button>
@@ -360,7 +360,7 @@ export function WorldSocialSection() {
         <button
           type="button"
           onClick={() => setShowSettings((v) => !v)}
-          className="text-[11px] text-white/40 hover:text-white/70"
+          className="text-[11px] text-muted-foreground hover:text-muted-foreground"
         >
           {showSettings ? "Verberg instellingen" : "Instellingen"}
         </button>
@@ -370,7 +370,7 @@ export function WorldSocialSection() {
 
       {hidden.length > 0 && (
         <Glass className="border-orange-300/20">
-          <p className="text-[12px] text-orange-200/85">
+          <p className="text-[12px] text-[color:var(--color-warning)]">
             {hidden.length === 1
               ? "Eén van je gedeelde items is verborgen na een melding."
               : `${hidden.length} van je gedeelde items zijn verborgen na een melding.`}
@@ -386,14 +386,14 @@ export function WorldSocialSection() {
         </>
       )}
 
-      {isLoading && <p className="text-[12px] text-white/40">Feed laden…</p>}
+      {isLoading && <p className="text-[12px] text-muted-foreground">Feed laden…</p>}
       {isError && (
-        <p className="text-[12px] text-white/45">De gedeelde items konden niet geladen worden. Probeer het later opnieuw.</p>
+        <p className="text-[12px] text-muted-foreground">De gedeelde items konden niet geladen worden. Probeer het later opnieuw.</p>
       )}
       {data && data.items.length === 0 && (
         <Glass>
-          <p className="text-[13px] text-white/60">Er is nog niets met je gedeeld.</p>
-          <p className="mt-1 text-[12px] text-white/40">
+          <p className="text-[13px] text-muted-foreground">Er is nog niets met je gedeeld.</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">
             Zodra vrienden, club- of teamgenoten iets delen, zie je het hier. Deel zelf iets hierboven om te beginnen.
           </p>
         </Glass>

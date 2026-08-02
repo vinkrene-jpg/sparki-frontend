@@ -40,46 +40,46 @@ export function BronVermelding({ bronnen }: { bronnen?: Bron[] | null }) {
   if (!bronnen || bronnen.length === 0) return null;
 
   return (
-    <div className="mt-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
-      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+    <div className="mt-3 rounded-xl border border-border bg-muted p-3">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         Gebaseerd op
       </p>
       <div className="mt-1.5 space-y-2">
         {bronnen.map((b) => (
           <div key={`${b.itemId}-${b.version}`}>
-            <p className="text-[12px] leading-relaxed text-white/60">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
               {b.sourceUrl ? (
                 <a
                   href={b.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline decoration-white/25 underline-offset-2 hover:text-white/85"
+                  className="underline decoration-white/25 underline-offset-2 hover:text-foreground/85"
                 >
                   {b.sourceName}
                 </a>
               ) : (
                 b.sourceName
               )}
-              <span className="text-white/35">
+              <span className="text-muted-foreground">
                 {" "}
                 — {b.topic}, versie {b.version}, betrouwbaarheid {b.reliability}
                 {b.reviewedAt ? `, gecontroleerd ${b.reviewedAt}` : ""}
               </span>
             </p>
             {b.limitations && (
-              <p className="text-[11px] text-white/40">Let op: {b.limitations}</p>
+              <p className="text-[11px] text-muted-foreground">Let op: {b.limitations}</p>
             )}
             {b.professionalCheck && (
-              <p className="text-[11px] text-amber-200/60">{b.professionalCheck}</p>
+              <p className="text-[11px] text-[color:var(--color-warning)]">{b.professionalCheck}</p>
             )}
             {sent.includes(b.itemId) ? (
-              <p className="text-[11px] text-emerald-300/70">
+              <p className="text-[11px] text-[color:var(--color-positive)]">
                 Bedankt — je melding is doorgegeven aan de beheerder.
               </p>
             ) : meldOpen === b.itemId ? (
               <div className="mt-1 flex gap-2">
                 <input
-                  className="flex-1 rounded-lg border border-white/10 bg-black/30 px-2.5 py-1.5 text-[12px] text-white/85 placeholder:text-white/25"
+                  className="flex-1 rounded-lg border border-border bg-foreground/30 px-2.5 py-1.5 text-[12px] text-foreground/85 placeholder:text-muted-foreground"
                   placeholder="Wat klopt er niet?"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -88,7 +88,7 @@ export function BronVermelding({ bronnen }: { bronnen?: Bron[] | null }) {
                   type="button"
                   disabled={melden.isPending || message.trim().length < 3}
                   onClick={() => melden.mutate({ itemId: b.itemId, message: message.trim() })}
-                  className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 disabled:opacity-40"
+                  className="rounded-full border border-border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground disabled:opacity-40"
                 >
                   Verstuur
                 </button>
@@ -97,7 +97,7 @@ export function BronVermelding({ bronnen }: { bronnen?: Bron[] | null }) {
               <button
                 type="button"
                 onClick={() => setMeldOpen(b.itemId)}
-                className="text-[11px] text-white/30 underline decoration-white/20 underline-offset-2 hover:text-white/60"
+                className="text-[11px] text-muted-foreground underline decoration-white/20 underline-offset-2 hover:text-muted-foreground"
               >
                 Klopt dit niet? Meld het
               </button>

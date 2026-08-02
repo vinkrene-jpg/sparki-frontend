@@ -25,7 +25,7 @@ export function todayLabel() {
 
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
-    <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+    <div className={`animate-pulse rounded bg-muted ${className}`} />
   )
 }
 
@@ -46,10 +46,10 @@ export function ReactorReadiness({ metrics }: { metrics: Metrics }) {
   if (!metrics) {
     return (
       <div className="flex flex-col items-center gap-3 py-2">
-        <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
-          <span className="text-3xl font-extralight text-white/25">—</span>
+        <div className="flex h-24 w-24 items-center justify-center rounded-full border border-border bg-muted">
+          <span className="text-3xl font-extralight text-muted-foreground">—</span>
         </div>
-        <p className="text-center text-[12px] leading-relaxed text-white/35">
+        <p className="text-center text-[12px] leading-relaxed text-muted-foreground">
           Nog geen check-in vandaag
         </p>
         <QuickActionButton action="checkin" />
@@ -61,7 +61,7 @@ export function ReactorReadiness({ metrics }: { metrics: Metrics }) {
 
   if (!result) {
     return (
-      <p className="text-center text-[12px] text-white/35">
+      <p className="text-center text-[12px] text-muted-foreground">
         Check-in gelogd · Voeg voel, slaap &amp; vermoeidheid toe
       </p>
     )
@@ -79,7 +79,7 @@ export function ReactorReadiness({ metrics }: { metrics: Metrics }) {
           variant="reactor"
         />
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/80">
+          <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
             READINESS
           </span>
           <span
@@ -88,7 +88,7 @@ export function ReactorReadiness({ metrics }: { metrics: Metrics }) {
           >
             {score}
           </span>
-          <span className="mt-1 font-mono text-[11px] tracking-[0.25em] text-white/50">
+          <span className="mt-1 font-mono text-[11px] tracking-[0.25em] text-muted-foreground">
             {state}
           </span>
         </div>
@@ -98,11 +98,11 @@ export function ReactorReadiness({ metrics }: { metrics: Metrics }) {
           className="h-1.5 w-1.5 shrink-0 rounded-full"
           style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
         />
-        <span className="text-sm font-medium leading-tight tracking-tight text-white/90">
+        <span className="text-sm font-medium leading-tight tracking-tight text-foreground/90">
           Advies: {advice}
         </span>
       </div>
-      <p className="mt-2 max-w-[16rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
+      <p className="mt-2 max-w-[16rem] text-pretty text-center text-[12px] leading-relaxed text-muted-foreground">
         {detail}
       </p>
     </div>
@@ -194,7 +194,7 @@ export function VitalsGrid({ metrics }: { metrics: AthleteDailyMetric[] }) {
   if (!hasAnyData) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <p className="text-[12px] text-white/35">
+        <p className="text-[12px] text-muted-foreground">
           Nog geen hersteldata — vul je check-in in om dit te zien
         </p>
         <QuickActionButton action="checkin" />
@@ -207,7 +207,7 @@ export function VitalsGrid({ metrics }: { metrics: AthleteDailyMetric[] }) {
       {entries.map((vital) => (
         <div key={vital.label} className="flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+            <span className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               {vital.label.toUpperCase()}
             </span>
             {vital.delta !== null && (
@@ -218,7 +218,7 @@ export function VitalsGrid({ metrics }: { metrics: AthleteDailyMetric[] }) {
             <span className="font-sans text-2xl font-light tabular-nums">
               {vital.value ?? "—"}
             </span>
-            <span className="font-mono text-[10px] text-white/35">{vital.unit}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">{vital.unit}</span>
           </div>
           {vital.trend.length >= 2 ? (
             <Sparkline
@@ -227,10 +227,10 @@ export function VitalsGrid({ metrics }: { metrics: AthleteDailyMetric[] }) {
               height={26}
               stroke={ACCENT}
               fill="rgba(120,210,230,0.08)"
-              className="text-cyan-300"
+              className="text-accent-cyan"
             />
           ) : (
-            <div className="h-[26px] rounded bg-white/[0.04]" />
+            <div className="h-[26px] rounded bg-muted" />
           )}
         </div>
       ))}
@@ -286,7 +286,7 @@ export function HomeIntro({
         }}
       />
       <div className="relative">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/45">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
           {todayLabel().toUpperCase()} · {kicker}
         </p>
         <h1
@@ -298,14 +298,14 @@ export function HomeIntro({
         {isLoading ? (
           <Skeleton className="mt-1.5 h-4 w-40" />
         ) : profile?.ftp ? (
-          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/50">
+          <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
             {profile.discipline ?? "Wielrenner"} · FTP {profile.ftp}W
             {ftpHerkomstSuffix(profile)}
             {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
           </p>
         ) : (
           <div className="mt-2 flex items-center gap-2">
-            <span className="font-mono text-[11px] tracking-wide text-white/45">
+            <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
               Nog geen FTP ingesteld
             </span>
             <QuickActionButton action="ftp" variant="link" />

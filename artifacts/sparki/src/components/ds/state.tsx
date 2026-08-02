@@ -55,11 +55,11 @@ export function DsState({
     >
       <div className="flex items-start gap-3">
         <Icon
-          className="mt-0.5 h-4 w-4 shrink-0 text-white/45"
+          className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <div className="min-w-0 flex-1">
-          <p className="type-body font-medium text-white/85">{titel}</p>
+          <p className="type-body font-medium text-foreground/80">{titel}</p>
           {/* Actie eerst, dan maximaal één korte zin, details achter een link. */}
           {actie && (
             <DsButton
@@ -71,7 +71,7 @@ export function DsState({
             </DsButton>
           )}
           {beschrijving && (
-            <p className="mt-2 type-body-sm text-white/50">{beschrijving}</p>
+            <p className="mt-2 type-body-sm text-muted-foreground">{beschrijving}</p>
           )}
           {uitleg && (
             <>
@@ -79,12 +79,12 @@ export function DsState({
                 type="button"
                 onClick={() => setUitlegOpen((v) => !v)}
                 aria-expanded={uitlegOpen}
-                className="mt-2 type-body-sm text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+                className="mt-2 type-body-sm text-muted-foreground underline underline-offset-2 transition-colors hover:text-muted-foreground"
               >
                 {uitleg.label ?? "Meer uitleg"}
               </button>
               {uitlegOpen && (
-                <p className="mt-1.5 type-body-sm text-white/50">
+                <p className="mt-1.5 type-body-sm text-muted-foreground">
                   {uitleg.tekst}
                 </p>
               )}

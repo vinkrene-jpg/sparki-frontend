@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   uploaded: "rgba(245,200,110,0.9)",
-  parsed: "rgba(120,210,230,0.9)",
+  parsed: "var(--color-accent-cyan)",
   failed: "rgba(255,120,110,0.95)",
   linked: "rgba(140,230,170,0.9)",
 }
@@ -78,11 +78,11 @@ function StopsRow({ stops }: { stops: RoadStop[] }) {
     (s) => s.candidates[0]?.kind === "traffic_signal",
   ).length
   return (
-    <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+    <div className="mt-2.5 border-t border-border pt-2.5">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="font-mono text-[11px] text-white/45 transition hover:text-white/70"
+        className="font-mono text-[11px] text-muted-foreground transition hover:text-muted-foreground"
       >
         {stops.length} {stops.length === 1 ? "stop" : "stops"} onderweg
         {signalCount > 0 &&
@@ -96,7 +96,7 @@ function StopsRow({ stops }: { stops: RoadStop[] }) {
             return (
               <li
                 key={i}
-                className="font-mono text-[11px] tabular-nums text-white/55"
+                className="font-mono text-[11px] tabular-nums text-muted-foreground"
               >
                 Na {fmtAt(s.atSec)} · {s.stopSec} s stil
                 {top && (
@@ -210,15 +210,15 @@ function FitMetricGrid({ summary }: { summary: FitSummary }) {
     <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
       {metrics.map((m) => (
         <div key={m.label} className="flex items-baseline justify-between gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/35">
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
             {m.label}
           </span>
           {m.value != null ? (
-            <span className="font-mono text-[12px] tabular-nums text-cyan-300/80">
+            <span className="font-mono text-[12px] tabular-nums text-accent-cyan">
               {m.value}
             </span>
           ) : (
-            <span className="font-mono text-[10px] italic text-white/25">
+            <span className="font-mono text-[10px] italic text-muted-foreground">
               ontbreekt
             </span>
           )}
@@ -246,8 +246,8 @@ function LinkRow({
 
   if (imp.linkedTrainingSessionId != null) {
     return (
-      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-white/[0.06] pt-2.5">
-        <span className="min-w-0 truncate text-[12px] text-white/55">
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border pt-2.5">
+        <span className="min-w-0 truncate text-[12px] text-muted-foreground">
           <span className="text-[rgba(140,230,170,0.9)]">Gekoppeld</span>
           {linkedSession ? ` · ${sessionLabel(linkedSession)}` : ""}
         </span>
@@ -255,7 +255,7 @@ function LinkRow({
           type="button"
           onClick={() => link.mutate({ id: imp.id, sessionId: null })}
           disabled={link.isPending}
-          className="shrink-0 font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
+          className="shrink-0 font-mono text-[10px] text-muted-foreground transition hover:text-muted-foreground disabled:opacity-40"
         >
           ontkoppel
         </button>
@@ -264,7 +264,7 @@ function LinkRow({
   }
 
   return (
-    <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+    <div className="mt-2.5 border-t border-border pt-2.5">
       {!picking ? (
         <button
           type="button"
@@ -275,17 +275,17 @@ function LinkRow({
           + koppel aan training
         </button>
       ) : sessions.length === 0 ? (
-        <p className="text-[12px] text-white/35">
+        <p className="text-[12px] text-muted-foreground">
           Nog geen trainingen om aan te koppelen — log eerst een training.
         </p>
       ) : (
         <div className="space-y-1.5">
-          <p className="text-[11px] text-white/35">
+          <p className="text-[11px] text-muted-foreground">
             Kies de bijbehorende training
             <button
               type="button"
               onClick={() => setPicking(false)}
-              className="ml-2 font-mono text-[10px] text-white/30 transition hover:text-white/60"
+              className="ml-2 font-mono text-[10px] text-muted-foreground transition hover:text-muted-foreground"
             >
               annuleer
             </button>
@@ -301,7 +301,7 @@ function LinkRow({
                 )
               }}
               disabled={link.isPending}
-              className="block w-full truncate rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-left text-[12px] text-white/70 transition hover:border-white/20 hover:text-white/90 disabled:opacity-40"
+              className="block w-full truncate rounded-lg border border-border bg-muted px-2.5 py-1.5 text-left text-[12px] text-muted-foreground transition hover:border-border hover:text-foreground/90 disabled:opacity-40"
             >
               {sessionLabel(s)}
             </button>
@@ -337,7 +337,7 @@ function ImportCard({
   const canSaveAsRoute = (gpx?.route?.geometry?.length ?? 0) > 1
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-3.5 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -347,15 +347,15 @@ function ImportCard({
             >
               {STATUS_LABEL[imp.status] ?? imp.status}
             </span>
-            <span className="font-mono text-[9px] uppercase text-white/25">
+            <span className="font-mono text-[9px] uppercase text-muted-foreground">
               · {imp.fileType}
             </span>
           </div>
-          <p className="mt-1 truncate text-[13px] font-medium text-white/85">
+          <p className="mt-1 truncate text-[13px] font-medium text-foreground/85">
             {gpx?.trackName || imp.fileName}
           </p>
           {gpxStats.length > 0 && (
-            <p className="mt-1 font-mono text-[12px] tabular-nums text-cyan-300/80">
+            <p className="mt-1 font-mono text-[12px] tabular-nums text-accent-cyan">
               {gpxStats.join(" · ")}
             </p>
           )}
@@ -368,7 +368,7 @@ function ImportCard({
           {imp.status === "uploaded" &&
             imp.fileType !== "gpx" &&
             imp.fileType !== "fit" && (
-              <p className="mt-1 text-[12px] text-white/35">
+              <p className="mt-1 text-[12px] text-muted-foreground">
                 Bestand bewaard · verwerking voor {imp.fileType.toUpperCase()}{" "}
                 volgt
               </p>
@@ -378,13 +378,13 @@ function ImportCard({
           type="button"
           onClick={() => del.mutate(imp.id)}
           disabled={del.isPending}
-          className="shrink-0 font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
+          className="shrink-0 font-mono text-[10px] text-muted-foreground transition hover:text-muted-foreground disabled:opacity-40"
         >
           wis
         </button>
       </div>
       {canSaveAsRoute && (
-        <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+        <div className="mt-2.5 border-t border-border pt-2.5">
           {savedRoute ? (
             <p className="flex items-center gap-1.5 text-[12px] text-[rgba(140,230,170,0.9)]">
               <RouteIcon className="h-3.5 w-3.5" />
@@ -402,7 +402,7 @@ function ImportCard({
                   )
                 }
                 disabled={saveRoute.isPending}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/25 bg-cyan-400/[0.06] px-3 py-1.5 text-[12px] font-medium text-cyan-200/90 transition hover:bg-cyan-400/[0.12] disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] font-medium text-accent-cyan transition hover:bg-accent-cyan/[0.12] disabled:opacity-40"
               >
                 <RouteIcon className="h-3.5 w-3.5" />
                 {saveRoute.isPending ? "Bezig…" : "Bewaar als route"}
@@ -507,7 +507,7 @@ export function ActivityImportPanel() {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={upload.isPending}
-          className="flex items-center gap-2 rounded-full bg-cyan-400/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#05070e] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:bg-cyan-300 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-accent-cyan/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] shadow-card transition hover:bg-accent-cyan disabled:opacity-50"
         >
           {upload.isPending ? "Uploaden…" : "Bestand uploaden"}
         </button>
@@ -525,7 +525,7 @@ export function ActivityImportPanel() {
         }}
       />
 
-      <p className="mt-2 text-[12px] leading-relaxed text-white/35">
+      <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
         FIT, GPX en TCX worden direct geanalyseerd — FIT en TCX bevatten ook je
         echte vermogen, hartslag en cadans. Hetzelfde bestand twee keer uploaden
         kan geen kwaad: duplicaten worden automatisch overgeslagen.
@@ -540,21 +540,21 @@ export function ActivityImportPanel() {
 
       <div className="mt-4 space-y-3">
         {isLoading ? (
-          <div className="h-16 w-full animate-pulse rounded-xl bg-white/[0.06]" />
+          <div className="h-16 w-full animate-pulse rounded-xl bg-muted" />
         ) : imports.length > 0 ? (
           imports.map((imp) => (
             <ImportCard key={imp.id} imp={imp} sessions={sessionList} />
           ))
         ) : (
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center">
-            <p className="text-[12px] text-white/40">
+          <div className="rounded-xl border border-border bg-muted p-4 text-center">
+            <p className="text-[12px] text-muted-foreground">
               Nog geen activiteiten geïmporteerd
             </p>
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={upload.isPending}
-              className="mt-2.5 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300 transition hover:bg-cyan-300/20 disabled:opacity-50"
+              className="mt-2.5 rounded-lg border border-accent-cyan/30 bg-accent-cyan/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition hover:bg-accent-cyan/20 disabled:opacity-50"
             >
               {upload.isPending ? "Uploaden…" : "Importeer je eerste bestand"}
             </button>

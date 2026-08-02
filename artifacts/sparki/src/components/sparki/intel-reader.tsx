@@ -59,9 +59,9 @@ function ActionPill({
       aria-pressed={active}
       className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors"
       style={{
-        borderColor: active ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.12)",
+        borderColor: active ? "rgba(120,210,230,0.5)" : "var(--color-border)",
         background: active ? "rgba(120,210,230,0.1)" : "transparent",
-        color: active ? ACCENT : "rgba(255,255,255,0.5)",
+        color: active ? ACCENT : "var(--color-muted-foreground)",
       }}
     >
       <Icon className={`h-3.5 w-3.5 ${active && fill ? "fill-current" : ""}`} />
@@ -73,10 +73,10 @@ function ActionPill({
 function FieldBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mt-5">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </p>
-      <div className="mt-1.5 text-pretty text-[14px] font-light leading-relaxed text-white/80">
+      <div className="mt-1.5 text-pretty text-[14px] font-light leading-relaxed text-foreground/80">
         {children}
       </div>
     </div>
@@ -93,11 +93,11 @@ function ProsConsList({
   return (
     <ul className="mt-2 space-y-1.5">
       {items.map((it, i) => (
-        <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-white/75">
+        <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-foreground/75">
           {tone === "pro" ? (
             <ThumbsUp className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />
           ) : (
-            <ThumbsDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/35" />
+            <ThumbsDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           )}
           <span>{it}</span>
         </li>
@@ -129,7 +129,7 @@ function MythBody({ item }: { item: IntelFeedItem }) {
   return (
     <>
       <FieldBlock label="De stelling">
-        <p className="text-[16px] font-light text-white/90">{c.statement}</p>
+        <p className="text-[16px] font-light text-foreground/90">{c.statement}</p>
       </FieldBlock>
 
       {/* Quiz */}
@@ -148,12 +148,12 @@ function MythBody({ item }: { item: IntelFeedItem }) {
                 borderColor: isVerdict
                   ? "rgba(120,210,230,0.5)"
                   : isPicked
-                    ? "rgba(255,255,255,0.25)"
-                    : "rgba(255,255,255,0.1)",
+                    ? "var(--color-border)"
+                    : "var(--color-border)",
                 background: isVerdict
                   ? "rgba(120,210,230,0.12)"
-                  : "rgba(255,255,255,0.03)",
-                color: isVerdict ? ACCENT : "rgba(255,255,255,0.8)",
+                  : "var(--color-muted)",
+                color: isVerdict ? ACCENT : "var(--color-foreground)",
               }}
             >
               {MYTH_ANSWER_LABEL[a]}
@@ -164,25 +164,25 @@ function MythBody({ item }: { item: IntelFeedItem }) {
       </div>
 
       {!answered && (
-        <p className="mt-3 font-mono text-[10px] tracking-wide text-white/30">
+        <p className="mt-3 font-mono text-[10px] tracking-wide text-muted-foreground">
           Kies een antwoord om te zien wat hierover bekend is.
         </p>
       )}
 
       {answered && (
         <>
-          <div className="mt-5 rounded-xl border border-white/[0.1] bg-white/[0.03] p-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+          <div className="mt-5 rounded-xl border border-border bg-muted p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               {correct ? "Goed gezien" : "Verrassend genoeg"}
             </p>
-            <p className="mt-1.5 text-[15px] font-light text-white/90">
+            <p className="mt-1.5 text-[15px] font-light text-foreground/90">
               Het antwoord is{" "}
               <span style={{ color: ACCENT }}>
                 {MYTH_ANSWER_LABEL[c.answer].toLowerCase()}
               </span>
               .
             </p>
-            <p className="mt-2 text-pretty text-[14px] font-light leading-relaxed text-white/75">
+            <p className="mt-2 text-pretty text-[14px] font-light leading-relaxed text-foreground/75">
               {c.explanation}
             </p>
           </div>
@@ -207,13 +207,13 @@ function TrendBody({ item }: { item: IntelFeedItem }) {
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Voordelen
           </p>
           <ProsConsList items={c.pros} tone="pro" />
         </div>
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Kanttekeningen
           </p>
           <ProsConsList items={c.cons} tone="con" />
@@ -221,11 +221,11 @@ function TrendBody({ item }: { item: IntelFeedItem }) {
       </div>
 
       {/* Honest confidence — never fake precision. */}
-      <div className="mt-6 rounded-xl border border-white/[0.1] bg-white/[0.03] p-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <div className="mt-6 rounded-xl border border-border bg-muted p-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           Hoe zeker is Sparki?
         </p>
-        <p className="mt-1.5 text-[14px] font-light text-white/85">
+        <p className="mt-1.5 text-[14px] font-light text-foreground/85">
           <span style={{ color: ACCENT }}>
             {CONFIDENCE_LABEL[c.confidence]}
           </span>{" "}
@@ -243,33 +243,33 @@ function GearBody({ item }: { item: IntelFeedItem }) {
   return (
     <>
       <div className="mt-5 grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-center">
-          <p className="text-[13px] font-light text-white/90">{c.productA}</p>
+        <div className="rounded-xl border border-border bg-muted p-3 text-center">
+          <p className="text-[13px] font-light text-foreground/90">{c.productA}</p>
         </div>
-        <div className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-center">
-          <p className="text-[13px] font-light text-white/90">{c.productB}</p>
+        <div className="rounded-xl border border-border bg-muted p-3 text-center">
+          <p className="text-[13px] font-light text-foreground/90">{c.productB}</p>
         </div>
       </div>
 
       {/* Comparison table — null specs render as "—", never guessed. */}
-      <div className="mt-4 overflow-hidden rounded-xl border border-white/[0.08]">
+      <div className="mt-4 overflow-hidden rounded-xl border border-border">
         {c.attributes.map((attr, i) => (
           <div
             key={i}
-            className="grid grid-cols-[1fr_1fr] border-b border-white/[0.06] last:border-b-0"
+            className="grid grid-cols-[1fr_1fr] border-b border-border last:border-b-0"
           >
-            <div className="col-span-2 bg-white/[0.02] px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+            <div className="col-span-2 bg-muted px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
               {attr.label}
               {attr.unit ? ` (${attr.unit})` : ""}
             </div>
-            <div className="border-r border-white/[0.06] px-3 py-2 text-[13px] font-light text-white/80">
+            <div className="border-r border-border px-3 py-2 text-[13px] font-light text-foreground/80">
               {attr.a ?? "—"}
             </div>
-            <div className="px-3 py-2 text-[13px] font-light text-white/80">
+            <div className="px-3 py-2 text-[13px] font-light text-foreground/80">
               {attr.b ?? "—"}
             </div>
             {attr.note && (
-              <p className="col-span-2 px-3 pb-2 text-[11px] leading-relaxed text-white/40">
+              <p className="col-span-2 px-3 pb-2 text-[11px] leading-relaxed text-muted-foreground">
                 {attr.note}
               </p>
             )}
@@ -279,14 +279,14 @@ function GearBody({ item }: { item: IntelFeedItem }) {
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Sterk aan {c.productA}
           </p>
           <ProsConsList items={c.strengthsA} tone="pro" />
           {c.weaknessesA.length > 0 && <ProsConsList items={c.weaknessesA} tone="con" />}
         </div>
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Sterk aan {c.productB}
           </p>
           <ProsConsList items={c.strengthsB} tone="pro" />
@@ -294,11 +294,11 @@ function GearBody({ item }: { item: IntelFeedItem }) {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-white/[0.1] bg-white/[0.03] p-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <div className="mt-6 rounded-xl border border-border bg-muted p-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           Geen winnaar — wat past bij jou?
         </p>
-        <p className="mt-1.5 text-pretty text-[14px] font-light leading-relaxed text-white/85">
+        <p className="mt-1.5 text-pretty text-[14px] font-light leading-relaxed text-foreground/85">
           {c.verdict}
         </p>
       </div>
@@ -312,7 +312,7 @@ function AcademyBody({ item }: { item: IntelFeedItem }) {
   const c = card.content
   return (
     <>
-      <div className="mt-5 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/35">
+      <div className="mt-5 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-muted-foreground">
         <Clock className="h-3 w-3" />
         {c.readMinutes} min lezen
       </div>
@@ -320,9 +320,9 @@ function AcademyBody({ item }: { item: IntelFeedItem }) {
       {/* Tiered: short version always visible, depth on demand. */}
       <div className="mt-4">
         <TieredExplanation
-          short={<p className="text-[15px] font-light leading-relaxed text-white/85">{c.simple}</p>}
+          short={<p className="text-[15px] font-light leading-relaxed text-foreground/85">{c.simple}</p>}
           extended={
-            <p className="text-[14px] font-light leading-relaxed text-white/75">{c.deep}</p>
+            <p className="text-[14px] font-light leading-relaxed text-foreground/75">{c.deep}</p>
           }
           moreLabel="Verdieping"
           lessLabel="Inklappen"
@@ -342,23 +342,23 @@ function DebateBody({ item }: { item: IntelFeedItem }) {
   return (
     <>
       <FieldBlock label="De stelling">
-        <p className="text-[16px] font-light text-white/90">{c.proposition}</p>
+        <p className="text-[16px] font-light text-foreground/90">{c.proposition}</p>
       </FieldBlock>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-4">
+        <div className="rounded-xl border border-border bg-muted p-4">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: ACCENT }}>
             Vóór
           </p>
-          <p className="mt-2 text-[13px] font-light leading-relaxed text-white/80">
+          <p className="mt-2 text-[13px] font-light leading-relaxed text-foreground/80">
             {c.argumentFor}
           </p>
         </div>
-        <div className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-4">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Tegen
           </p>
-          <p className="mt-2 text-[13px] font-light leading-relaxed text-white/80">
+          <p className="mt-2 text-[13px] font-light leading-relaxed text-foreground/80">
             {c.argumentAgainst}
           </p>
         </div>
@@ -367,11 +367,11 @@ function DebateBody({ item }: { item: IntelFeedItem }) {
       <FieldBlock label="Wat de wetenschap zegt">{c.science}</FieldBlock>
       <FieldBlock label="In het profpeloton">{c.proTeams}</FieldBlock>
 
-      <div className="mt-6 rounded-xl border border-white/[0.1] bg-white/[0.03] p-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <div className="mt-6 rounded-xl border border-border bg-muted p-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           {c.hasConsensus ? "Er is een duidelijke richting" : "Nog geen consensus"}
         </p>
-        <p className="mt-1.5 text-pretty text-[14px] font-light leading-relaxed text-white/85">
+        <p className="mt-1.5 text-pretty text-[14px] font-light leading-relaxed text-foreground/85">
           {c.conclusion}
         </p>
       </div>
@@ -457,22 +457,22 @@ export function IntelReader({
       className="fixed inset-0 z-[9998] flex flex-col overflow-y-auto"
       style={{
         background:
-          "radial-gradient(120% 80% at 50% 0%, #0a1622 0%, #05070e 60%, #03040a 100%)",
+          "var(--color-background)",
       }}
       role="dialog"
       aria-modal="true"
       aria-label={card.title}
     >
       {/* Top-anchored bar — always reachable, never scroll-to-exit. */}
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/[0.08] bg-[#05070e]/85 px-5 py-4 backdrop-blur-md">
-        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-5 py-4 backdrop-blur-md">
+        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-accent-cyan">
           {KIND_LABEL[card.kind]}
         </span>
         <button
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.06]"
+          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground/60 transition-colors hover:bg-muted"
         >
           <X className="h-3.5 w-3.5" />
           Sluiten
@@ -522,13 +522,13 @@ export function IntelReader({
           </div>
         </div>
 
-        <h1 className="mt-5 text-balance font-sans text-2xl font-light leading-tight tracking-tight text-white/95">
+        <h1 className="mt-5 text-balance font-sans text-2xl font-light leading-tight tracking-tight text-foreground/95">
           {card.title}
         </h1>
 
         {/* Honest "voor jou" reason. */}
         {item.personalised && (
-          <p className="mt-3 flex items-start gap-1.5 text-[12px] leading-relaxed text-cyan-300/70">
+          <p className="mt-3 flex items-start gap-1.5 text-[12px] leading-relaxed text-accent-cyan">
             <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
             {item.reason}
           </p>
@@ -541,9 +541,9 @@ export function IntelReader({
         {card.kind === "debate" && <DebateBody item={item} />}
 
         {/* Provenance — every factual card states where its content comes from. */}
-        <div className="mt-8 flex items-start gap-2 border-t border-white/[0.07] pt-4">
-          <Minus className="mt-0.5 h-3 w-3 shrink-0 text-white/20" />
-          <p className="font-mono text-[10px] leading-relaxed tracking-wide text-white/30">
+        <div className="mt-8 flex items-start gap-2 border-t border-border pt-4">
+          <Minus className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+          <p className="font-mono text-[10px] leading-relaxed tracking-wide text-muted-foreground">
             Bron: {card.sourceLabel}
             {card.sourceUrl ? (
               <>
@@ -552,7 +552,7 @@ export function IntelReader({
                   href={card.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline transition-colors hover:text-cyan-300/70"
+                  className="underline transition-colors hover:text-accent-cyan"
                 >
                   lees meer
                 </a>

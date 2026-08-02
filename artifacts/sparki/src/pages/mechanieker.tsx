@@ -39,10 +39,10 @@ export default function MechaniekerPage() {
             actie: een materiaalfoto laten beoordelen. Alle andere acties zijn
             secundair (tabs/sheets). */}
         <header className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-white">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Mechanieker
           </h1>
-          <p className="text-sm text-white/55">
+          <p className="text-sm text-muted-foreground">
             Je fiets en materiaal in topconditie — onderhoud, garage en advies op
             onderdeel-niveau.
           </p>
@@ -51,7 +51,7 @@ export default function MechaniekerPage() {
         <button
           type="button"
           onClick={() => setTab("advies")}
-          className="flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-[14px] font-medium text-black"
+          className="flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-[14px] font-medium text-[color:var(--color-on-accent)]"
           style={{ background: ACCENT }}
         >
           <Camera className="h-4 w-4" strokeWidth={2} /> Materiaalfoto beoordelen
@@ -94,8 +94,8 @@ export default function MechaniekerPage() {
         {tab === "testen" && (
           <div className="flex flex-col gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Vergelijkingstest</h2>
-              <p className="mt-1 text-sm text-white/55">
+              <h2 className="text-lg font-semibold text-foreground">Vergelijkingstest</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Test een upgrade: twee ritten op dezelfde route — één met je
                 huidige opstelling, één met de nieuwe. Of vraag vooraf een
                 modelschatting op klasse-niveau.
@@ -104,12 +104,12 @@ export default function MechaniekerPage() {
             <button
               type="button"
               onClick={() => setSheet("modelschatting")}
-              className="flex items-center gap-2 rounded-xl border border-white/[0.12] bg-[#070d16]/[0.82] px-4 py-3 text-left text-[13px] text-white/80 backdrop-blur-md transition-colors hover:border-cyan-300/35"
+              className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-left text-[13px] text-foreground/80 backdrop-blur-md transition-colors hover:border-accent-cyan/35"
             >
               <Scale className="h-4 w-4 shrink-0" style={{ color: ACCENT }} />
               <span>
-                <span className="block font-medium text-white/90">Modelschatting vooraf</span>
-                <span className="text-[12px] text-white/50">
+                <span className="block font-medium text-foreground/90">Modelschatting vooraf</span>
+                <span className="text-[12px] text-muted-foreground">
                   Van plan iets te kopen? Vergelijk de klasse — geen meting.
                 </span>
               </span>
@@ -117,12 +117,12 @@ export default function MechaniekerPage() {
             <button
               type="button"
               onClick={() => setSheet("ritvergelijking")}
-              className="flex items-center gap-2 rounded-xl border border-white/[0.12] bg-[#070d16]/[0.82] px-4 py-3 text-left text-[13px] text-white/80 backdrop-blur-md transition-colors hover:border-cyan-300/35"
+              className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-left text-[13px] text-foreground/80 backdrop-blur-md transition-colors hover:border-accent-cyan/35"
             >
               <BarChart3 className="h-4 w-4 shrink-0" style={{ color: ACCENT }} />
               <span>
-                <span className="block font-medium text-white/90">Twee ritten vergelijken</span>
-                <span className="text-[12px] text-white/50">
+                <span className="block font-medium text-foreground/90">Twee ritten vergelijken</span>
+                <span className="text-[12px] text-muted-foreground">
                   Zet de metingen van rit A en B naast elkaar.
                 </span>
               </span>

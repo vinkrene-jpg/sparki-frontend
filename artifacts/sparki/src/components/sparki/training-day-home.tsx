@@ -144,7 +144,7 @@ export function TrainingDayHome({
                     <h2 className="mt-2 font-sans text-2xl font-light tracking-tight">
                       {data.todayWorkout.title}
                     </h2>
-                    <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
+                    <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
                       {data.todayWorkout.type}
                       {data.todayWorkout.targetDurationMin
                         ? ` · ${data.todayWorkout.targetDurationMin}m`
@@ -154,11 +154,11 @@ export function TrainingDayHome({
                         : ""}
                     </p>
                     {data.todayWorkout.description ? (
-                      <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/75">
+                      <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                         {data.todayWorkout.description}
                       </p>
                     ) : (
-                      <p className="mt-3 text-pretty text-[12px] italic leading-relaxed text-white/45">
+                      <p className="mt-3 text-pretty text-[12px] italic leading-relaxed text-muted-foreground">
                         Geen notities van je coach — het doel wordt hieronder
                         geïnterpreteerd.
                       </p>
@@ -168,7 +168,7 @@ export function TrainingDayHome({
                   {/* SPARKI LEGT UIT — ondersteunt de coach, vervangt nooit
                       (grondregel 4: coach first). Alleen afgeleide/echte data;
                       externe bronnen zijn expliciet gelabeld, nooit verzonnen. */}
-                  <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+                  <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
                     <div className="flex items-center gap-2">
                       <SparkiCore
                         size={20}
@@ -183,7 +183,7 @@ export function TrainingDayHome({
                         SPARKI LEGT UIT
                       </span>
                     </div>
-                    <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-white/70">
+                    <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-muted-foreground">
                       <li>
                         Verwachte belasting:{" "}
                         {data.todayWorkout.targetTSS
@@ -204,7 +204,7 @@ export function TrainingDayHome({
                           .
                         </li>
                       )}
-                      <li className="text-white/45">
+                      <li className="text-muted-foreground">
                         Weer, route &amp; beste vertrektijd — externe koppeling
                         volgt (nog geen live data).
                       </li>
@@ -217,7 +217,7 @@ export function TrainingDayHome({
                     <h2 className="font-sans text-2xl font-light tracking-tight">
                       {data.todayWorkout.title}
                     </h2>
-                    <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
+                    <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
                       {data.todayWorkout.type}
                       {data.todayWorkout.targetDurationMin
                         ? ` · ${data.todayWorkout.targetDurationMin}m`
@@ -294,11 +294,11 @@ export function TrainingDayHome({
               )}
 
               {/* workout stats row */}
-              <div className="mt-5 flex items-center gap-4 border-t border-white/[0.07] pt-4">
+              <div className="mt-5 flex items-center gap-4 border-t border-border pt-4">
                 <WorkoutStat label="Type" value={data.todayWorkout.type} />
                 {data.todayWorkout.targetDurationMin && (
                   <>
-                    <span className="h-7 w-px bg-white/[0.08]" />
+                    <span className="h-7 w-px bg-muted" />
                     <WorkoutStat
                       label="Duur"
                       value={`${data.todayWorkout.targetDurationMin}m`}
@@ -307,7 +307,7 @@ export function TrainingDayHome({
                 )}
                 {data.todayWorkout.targetTSS && (
                   <>
-                    <span className="h-7 w-px bg-white/[0.08]" />
+                    <span className="h-7 w-px bg-muted" />
                     <WorkoutStat
                       label="Belasting"
                       value={`${data.todayWorkout.targetTSS} TSS`}
@@ -320,29 +320,29 @@ export function TrainingDayHome({
               <button
                 type="button"
                 onClick={() => setDetailOpen(true)}
-                className="group mt-4 flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-left transition-colors hover:border-cyan-300/25"
+                className="group mt-4 flex w-full items-center justify-between rounded-2xl border border-border bg-muted px-4 py-3 text-left transition-colors hover:border-accent-cyan"
               >
-                <span className="font-mono text-[10px] tracking-[0.18em] text-white/55 transition-colors group-hover:text-cyan-300/70">
+                <span className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground transition-colors group-hover:text-accent-cyan">
                   BEKIJK VOLLEDIGE TRAINING
                 </span>
                 <ChevronRight
-                  className="h-4 w-4 text-white/30 transition-colors group-hover:text-cyan-300/60"
+                  className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-accent-cyan"
                   strokeWidth={1.75}
                 />
               </button>
 
             </>
           ) : (
-            <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+            <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] tracking-[0.2em] text-white/30">
+                <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                   GEEN PLAN VANDAAG
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.18em] text-white/20">
+                <span className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">
                   Rustdag
                 </span>
               </div>
-              <p className="mt-2 text-[13px] leading-relaxed text-white/35">
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                 Geen training gepland — voeg een wedstrijd toe, dan wordt je
                 opbouw ingepland.
               </p>
@@ -387,7 +387,7 @@ export function TrainingDayHome({
             <VitalsGrid metrics={metricsHistory} />
           ) : (
             <div className="flex flex-col items-start gap-3">
-              <p className="text-[12px] text-white/35">
+              <p className="text-[12px] text-muted-foreground">
                 Nog geen hersteldata — vul je check-in in om dit te zien
               </p>
               <QuickActionButton action="checkin" />
@@ -400,7 +400,7 @@ export function TrainingDayHome({
       <section className="flex flex-col items-center">
         <div className="flex w-full items-center justify-between">
           <SectionLabel title="Systeembalans" />
-          <span className="font-mono text-[10px] tracking-[0.2em] text-white/30">
+          <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
             6 SIGNALEN
           </span>
         </div>
@@ -415,7 +415,7 @@ export function TrainingDayHome({
       {aiEnabled && (
         <section>
           <SectionLabel n="04" title="Wat moet ik vandaag extra weten" large />
-          <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+          <div className="relative mt-4 overflow-hidden rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
             <div
               className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
               style={{
@@ -425,7 +425,7 @@ export function TrainingDayHome({
             />
             <div className="flex items-center gap-2">
               <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
-              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
+              <span className="font-mono text-[10px] tracking-[0.25em] text-accent-cyan">
                 SPARKI
               </span>
             </div>
@@ -439,12 +439,12 @@ export function TrainingDayHome({
                 <Skeleton className="h-4 w-4/5" />
               </div>
             ) : brief ? (
-              <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/75">
+              <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 {brief.brief}
               </p>
             ) : (
               <div className="mt-3 flex flex-col items-start gap-3">
-                <p className="text-[13px] leading-relaxed text-white/35">
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
                   Vul je check-in in voor je dagelijkse briefing.
                 </p>
                 <QuickActionButton action="checkin" />
@@ -461,12 +461,12 @@ export function TrainingDayHome({
         {/* laatste training */}
         {lastSession && (
           <div className="mt-4">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
               LAATSTE TRAINING
             </span>
             <div className="mt-2 flex items-center gap-5">
               <div className="flex flex-col gap-0.5">
-                <span className="font-mono text-[9px] tracking-[0.16em] text-white/35">
+                <span className="font-mono text-[9px] tracking-[0.16em] text-muted-foreground">
                   {lastSession.title ?? lastSession.type}
                 </span>
               </div>
@@ -481,7 +481,7 @@ export function TrainingDayHome({
                     />
                     <UitlegDot uitlegKey="genormaliseerd_vermogen" label="Genormaliseerd vermogen (NP)" />
                   </div>
-                  <span className="h-7 w-px bg-white/[0.08]" />
+                  <span className="h-7 w-px bg-muted" />
                 </>
               )}
               {lastSession.intensityFactor && (
@@ -490,7 +490,7 @@ export function TrainingDayHome({
                     <AnalysisStat label="IF" value={lastSession.intensityFactor} />
                     <UitlegDot uitlegKey="intensiteitsfactor" label="Intensiteitsfactor (IF)" />
                   </div>
-                  <span className="h-7 w-px bg-white/[0.08]" />
+                  <span className="h-7 w-px bg-muted" />
                 </>
               )}
               {lastSession.tss != null && (
@@ -508,14 +508,14 @@ export function TrainingDayHome({
         )}
 
         {/* ontwikkeling sparkline */}
-        <div className={lastSession ? "mt-7 border-t border-white/[0.07] pt-5" : "mt-4"}>
+        <div className={lastSession ? "mt-7 border-t border-border pt-5" : "mt-4"}>
           <div className="flex items-baseline justify-between">
-            <span className="flex items-center gap-1 font-mono text-[10px] tracking-[0.2em] text-white/35">
+            <span className="flex items-center gap-1 font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
               ONTWIKKELING · FITHEID (CTL)
               <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" />
             </span>
             {data?.load?.ctl != null && (
-              <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">
+              <span className="font-mono text-[11px] tabular-nums text-accent-cyan">
                 {data.load.ctl} CTL
               </span>
             )}
@@ -530,16 +530,16 @@ export function TrainingDayHome({
                 height={50}
                 stroke={ACCENT}
                 fill="rgba(120,210,230,0.07)"
-                className="w-full text-cyan-300"
+                className="w-full text-accent-cyan"
               />
             </div>
           ) : (
-            <p className="mt-3 text-[12px] text-white/35">
+            <p className="mt-3 text-[12px] text-muted-foreground">
               Log sessies om je fitheidsontwikkeling te zien
             </p>
           )}
           {data?.load != null && (
-            <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+            <p className="mt-3 text-pretty text-[12px] leading-relaxed text-muted-foreground">
               Fitness (CTL) {data.load.ctl}
               <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /> · Vermoeidheid
               (ATL) {data.load.atl}
@@ -555,7 +555,7 @@ export function TrainingDayHome({
       <HealthStatusControl />
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
@@ -580,7 +580,7 @@ function WorkoutStat({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-mono text-[9px] tracking-[0.18em] text-white/35">
+      <span className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">
         {label.toUpperCase()}
       </span>
       <span
@@ -604,7 +604,7 @@ function AnalysisStat({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-mono text-[9px] tracking-[0.16em] text-white/35">
+      <span className="font-mono text-[9px] tracking-[0.16em] text-muted-foreground">
         {label.toUpperCase()}
       </span>
       {value ? (

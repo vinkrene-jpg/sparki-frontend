@@ -17,17 +17,17 @@ export function HomeWeatherRow({
   advisory: WeatherAdvisory | null
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <div className="flex items-center gap-1.5 text-white/45">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <MapPin className="h-3 w-3" strokeWidth={1.75} />
         <span className="font-mono text-[10px] uppercase tracking-[0.15em]">
           Weer vandaag{locationLabel ? ` — ${locationLabel}` : ""}
         </span>
       </div>
-      <p className="mt-2 text-[14px] font-medium tracking-tight text-white/90">
+      <p className="mt-2 text-[14px] font-medium tracking-tight text-foreground/90">
         {summary.label}
       </p>
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[12px] tabular-nums text-white/65">
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[12px] tabular-nums text-foreground/65">
         {(summary.tempMinC != null || summary.tempMaxC != null) && (
           <span className="flex items-center gap-1.5">
             <Thermometer className="h-3 w-3" strokeWidth={1.75} />
@@ -64,7 +64,7 @@ export function HomeWeatherRow({
         )}
       </div>
       {advisory && advisory.severity !== "ok" && (
-        <p className="mt-2.5 text-pretty text-[12px] leading-relaxed text-amber-200/75">
+        <p className="mt-2.5 text-pretty text-[12px] leading-relaxed text-[color:var(--color-warning)]">
           {advisory.headline} — {advisory.detail}
         </p>
       )}

@@ -67,7 +67,7 @@ import {
 type EditorProps = { autoOpen?: boolean; onSaved?: () => void }
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 /** Scrolls to + briefly highlights the section matching the active focus token. */
@@ -96,7 +96,7 @@ function FocusTarget({
       ref={ref}
       className={
         hl
-          ? "rounded-2xl ring-2 ring-cyan-300/50 transition-all duration-500"
+          ? "rounded-2xl ring-2 ring-ring/50 transition-all duration-500"
           : "rounded-2xl transition-all duration-500"
       }
     >
@@ -182,17 +182,17 @@ function TeamIdentitySection() {
   }
 
   const fieldClass =
-    "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+    "w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan focus:outline-none"
 
   return (
     <section>
       <SectionLabel title="Club & team" />
       {isLoading ? (
-        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-muted" />
       ) : editing ? (
         <div className="mt-3 flex flex-col gap-3">
           <div>
-            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+            <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               CLUB
             </label>
             <input
@@ -204,7 +204,7 @@ function TeamIdentitySection() {
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 TEAM
               </label>
               <input
@@ -215,7 +215,7 @@ function TeamIdentitySection() {
               />
             </div>
             <div className="w-32">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 CATEGORIE
               </label>
               <input
@@ -228,7 +228,7 @@ function TeamIdentitySection() {
           </div>
           <div className="flex gap-3">
             <div className="w-28">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 BADGE
               </label>
               <input
@@ -241,31 +241,31 @@ function TeamIdentitySection() {
             </div>
             <div className="flex flex-1 gap-3">
               <div className="flex-1">
-                <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+                <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                   KLEUR 1
                 </label>
                 <input
                   type="color"
                   value={form.primaryColor}
                   onChange={set("primaryColor")}
-                  className="mt-1.5 h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04]"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-border bg-muted"
                 />
               </div>
               <div className="flex-1">
-                <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+                <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                   KLEUR 2
                 </label>
                 <input
                   type="color"
                   value={form.secondaryColor}
                   onChange={set("secondaryColor")}
-                  className="mt-1.5 h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04]"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-border bg-muted"
                 />
               </div>
             </div>
           </div>
           <div>
-            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+            <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               CLUBLOGO
             </label>
             <div className="mt-1.5 flex items-center gap-3">
@@ -273,10 +273,10 @@ function TeamIdentitySection() {
                 <img
                   src={clubLogoSrc(form.logoUrl)}
                   alt="Clublogo"
-                  className="h-11 w-11 shrink-0 rounded-full border border-white/[0.1] bg-white/[0.04] object-contain p-1"
+                  className="h-11 w-11 shrink-0 rounded-full border border-border bg-muted object-contain p-1"
                 />
               ) : (
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-white/15 font-mono text-[9px] text-white/30">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-border font-mono text-[9px] text-muted-foreground">
                   GEEN
                 </span>
               )}
@@ -295,7 +295,7 @@ function TeamIdentitySection() {
                 onClick={() => logoInputRef.current?.click()}
                 disabled={logoBusy}
                 aria-label={form.logoUrl ? "Vervang het clublogo" : "Upload een clublogo"}
-                className="rounded-xl border border-white/[0.1] px-3.5 py-2 font-sans text-[13px] text-white/70 disabled:opacity-40"
+                className="rounded-xl border border-border px-3.5 py-2 font-sans text-[13px] text-muted-foreground disabled:opacity-40"
               >
                 {logoBusy ? "Uploaden…" : form.logoUrl ? "Ander logo" : "Upload logo"}
               </button>
@@ -304,18 +304,18 @@ function TeamIdentitySection() {
                   type="button"
                   onClick={() => setForm((p) => ({ ...p, logoUrl: null }))}
                   aria-label="Verwijder het clublogo"
-                  className="rounded-xl border border-white/[0.1] px-3.5 py-2 font-sans text-[13px] text-white/45"
+                  className="rounded-xl border border-border px-3.5 py-2 font-sans text-[13px] text-muted-foreground"
                 >
                   Verwijder
                 </button>
               )}
             </div>
-            <p className="mt-1.5 font-sans text-[12px] text-white/35">
+            <p className="mt-1.5 font-sans text-[12px] text-muted-foreground">
               Alleen met een geüpload logo verschijnt het club-embleem op je Home-scherm; zonder
               logo tonen we niets.
             </p>
             {logoError && (
-              <p className="mt-1 font-sans text-[12px] text-red-300/80">{logoError}</p>
+              <p className="mt-1 font-sans text-[12px] text-[color:var(--color-negative)]">{logoError}</p>
             )}
           </div>
           <div className="flex gap-2">
@@ -331,14 +331,14 @@ function TeamIdentitySection() {
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
+              className="rounded-xl border border-border px-4 py-2 font-sans text-[13px] text-muted-foreground"
             >
               Annuleer
             </button>
           </div>
         </div>
       ) : team && team.clubName ? (
-        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
           <span
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border"
             style={{
@@ -363,10 +363,10 @@ function TeamIdentitySection() {
             )}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-medium text-white/90">
+            <p className="truncate text-[14px] font-medium text-foreground/90">
               {team.clubName}
             </p>
-            <p className="truncate font-mono text-[10px] tracking-wide text-white/40">
+            <p className="truncate font-mono text-[10px] tracking-wide text-muted-foreground">
               {[team.teamName, team.category].filter(Boolean).join(" · ") ||
                 "Wielrennen"}
             </p>
@@ -374,9 +374,9 @@ function TeamIdentitySection() {
           <button
             type="button"
             onClick={start}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border"
           >
-            <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
           </button>
         </div>
       ) : (
@@ -384,7 +384,7 @@ function TeamIdentitySection() {
           <button
             type="button"
             onClick={start}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 px-4 py-3.5 font-sans text-[13px] text-white/45 transition-colors hover:border-cyan-300/35 hover:text-white/65"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-3.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-accent-cyan hover:text-muted-foreground"
           >
             <Shield className="h-4 w-4" strokeWidth={1.75} />
             Voeg je club & team toe
@@ -424,14 +424,14 @@ function SparkiStyleSection({ autoOpen, onSaved }: EditorProps = {}) {
   return (
     <section ref={ref}>
       <SectionLabel n="03b" title="Sparki-stijl" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
         Hoeveel droge humor mag er zijn? Dit geldt overal in de app.
         Bij medische signalen, veiligheid, privacy en andere serieuze momenten
         blijft de toon altijd zakelijk — ongeacht deze instelling.
       </p>
       <div className="mt-3 space-y-2">
         <div className="flex items-center gap-3">
-          <span className="w-16 shrink-0 text-[11px] uppercase tracking-wider text-white/40">
+          <span className="w-16 shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">
             Humor
           </span>
           <div className="flex flex-1 flex-wrap gap-1.5">
@@ -443,8 +443,8 @@ function SparkiStyleSection({ autoOpen, onSaved }: EditorProps = {}) {
                 onClick={() => choose(level)}
                 className={`rounded-full border px-3 py-1.5 text-[12px] tracking-tight transition-colors ${
                   current === level
-                    ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-white/25"
+                    ? "border-cyan-400/60 bg-cyan-400/15 text-accent-cyan"
+                    : "border-border bg-muted text-muted-foreground hover:border-border"
                 }`}
               >
                 {HUMOR_LEVEL_LABELS[level]}
@@ -452,11 +452,11 @@ function SparkiStyleSection({ autoOpen, onSaved }: EditorProps = {}) {
             ))}
           </div>
         </div>
-        <p className="pl-[76px] text-[11px] leading-relaxed text-white/35">
+        <p className="pl-[76px] text-[11px] leading-relaxed text-muted-foreground">
           {HUMOR_LEVEL_BLURBS[current]}
         </p>
         {update.isError ? (
-          <p className="pl-[76px] text-[11px] text-red-300/80">
+          <p className="pl-[76px] text-[11px] text-[color:var(--color-negative)]">
             Opslaan is niet gelukt. Probeer het opnieuw.
           </p>
         ) : update.isSuccess && current !== "uit" ? (
@@ -505,7 +505,7 @@ function FtpInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           placeholder={String(profile?.ftp ?? "280")}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-24 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          className="w-24 rounded-lg border border-accent-cyan bg-muted px-2.5 py-1.5 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave()
             if (e.key === "Escape") {
@@ -516,7 +516,7 @@ function FtpInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           min={50}
           max={600}
         />
-        <span className="font-mono text-[11px] text-white/40">W</span>
+        <span className="font-mono text-[11px] text-muted-foreground">W</span>
         <button
           type="button"
           onClick={handleSave}
@@ -536,10 +536,10 @@ function FtpInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
       onClick={() => setEditing(true)}
       className="flex items-center gap-2"
     >
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
+      <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
         {profile?.ftp ? `${profile.ftp}W` : "Niet ingesteld"}
       </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+      <Pencil className="h-3 w-3 text-muted-foreground" strokeWidth={1.75} />
     </button>
   )
 }
@@ -583,7 +583,7 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
 
   if (saved) {
     return (
-      <div className="flex items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] px-4 py-3">
+      <div className="flex items-center gap-2 rounded-2xl border border-accent-cyan bg-accent-cyan px-4 py-3">
         <Check className="h-4 w-4 shrink-0" style={{ color: ACCENT }} strokeWidth={2.5} />
         <span className="text-[13px] font-medium" style={{ color: ACCENT }}>
           Check-in gelogd voor vandaag
@@ -622,7 +622,7 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
           </button>
         ))}
       </div>
-      <div className="mt-1 flex justify-between px-0.5 font-mono text-[9px] tracking-[0.15em] text-white/20">
+      <div className="mt-1 flex justify-between px-0.5 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
         <span>{lowLabel}</span>
         <span>{highLabel}</span>
       </div>
@@ -632,30 +632,30 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+        <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           HOE VOEL JE JE? (1–5)
         </label>
         {ratingButtons("feelScore", 5, "slecht", "top")}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+        <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           SLAAPKWALITEIT (1–5)
         </label>
         {ratingButtons("sleepQuality", 5, "slecht", "uitstekend")}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+        <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           VERMOEIDHEID (1–10)
         </label>
         {ratingButtons("fatigueScore", 10, "fris", "uitgeput")}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+        <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           HRV (ms, optioneel)
         </label>
         {hrvSupplier && !hrvManual ? (
-          <div className="flex flex-col gap-1.5 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3.5 py-2.5">
-            <span className="text-[13px] text-white/70">
+          <div className="flex flex-col gap-1.5 rounded-xl border border-accent-cyan bg-accent-cyan px-3.5 py-2.5">
+            <span className="text-[13px] text-muted-foreground">
               Je HRV wordt automatisch opgehaald uit {hrvSupplier.displayName}
               {formatLastSync(hrvSupplier.lastSyncAt)
                 ? ` — laatste sync ${formatLastSync(hrvSupplier.lastSyncAt)}`
@@ -665,7 +665,7 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
             <button
               type="button"
               onClick={() => setHrvManual(true)}
-              className="self-start font-sans text-[11px] font-medium text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+              className="self-start font-sans text-[11px] font-medium text-muted-foreground underline underline-offset-2 transition-colors hover:text-muted-foreground"
             >
               Toch handmatig invullen
             </button>
@@ -678,7 +678,7 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
             placeholder="bijv. 82"
             min={20}
             max={250}
-            className="rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+            className="rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan focus:outline-none"
           />
         )}
       </div>
@@ -735,7 +735,7 @@ function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
     <div className="flex flex-col gap-5">
       {/* Structured long-term ambition — the reference point for all coaching. */}
       <div>
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+        <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           JE LANGETERMIJNDOEL
         </label>
         <div className="mt-2 flex flex-col gap-2">
@@ -773,7 +773,7 @@ function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
                   >
                     {g.label}
                   </span>
-                  <span className="mt-0.5 block text-[12px] leading-relaxed text-white/45">
+                  <span className="mt-0.5 block text-[12px] leading-relaxed text-muted-foreground">
                     {g.blurb}
                   </span>
                 </span>
@@ -785,7 +785,7 @@ function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
 
       {/* Free-text personal goal / season notes (used for "persoonlijk"). */}
       <div>
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+        <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           EIGEN TOELICHTING (OPTIONEEL)
         </label>
         {editing ? (
@@ -796,7 +796,7 @@ function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder="bijv. Piek voor Gran Fondo juni, opbouwen naar 4 W/kg"
-              className="w-full resize-none rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
+              className="w-full resize-none rounded-xl border border-accent-cyan bg-muted px-3.5 py-3 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
             />
             <div className="flex gap-2">
               <button
@@ -811,7 +811,7 @@ function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
+                className="rounded-xl border border-border px-4 py-2 font-sans text-[13px] text-muted-foreground"
               >
                 Annuleer
               </button>
@@ -819,17 +819,17 @@ function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
           </div>
         ) : (
           <div className="mt-2 flex items-start gap-3">
-            <p className="flex-1 text-pretty text-[14px] leading-relaxed text-white/60">
+            <p className="flex-1 text-pretty text-[14px] leading-relaxed text-muted-foreground">
               {profile?.goals ?? (
-                <span className="text-white/25">Nog geen toelichting</span>
+                <span className="text-muted-foreground">Nog geen toelichting</span>
               )}
             </p>
             <button
               type="button"
               onClick={start}
-              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 transition-colors"
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-border transition-colors"
             >
-              <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
             </button>
           </div>
         )}
@@ -875,7 +875,7 @@ function WeeklyHoursInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           placeholder={String(profile?.weeklyHourTarget ?? "8")}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          className="w-20 rounded-lg border border-accent-cyan bg-muted px-2.5 py-1.5 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave()
             if (e.key === "Escape") {
@@ -886,7 +886,7 @@ function WeeklyHoursInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           min={1}
           max={40}
         />
-        <span className="font-mono text-[11px] text-white/40">u/wk</span>
+        <span className="font-mono text-[11px] text-muted-foreground">u/wk</span>
         <button
           type="button"
           onClick={handleSave}
@@ -902,12 +902,12 @@ function WeeklyHoursInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
 
   return (
     <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
+      <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
         {profile?.weeklyHourTarget
           ? `${profile.weeklyHourTarget} u/wk${profile.weeklyHourTargetEstimated ? " (schatting)" : ""}`
           : "Niet ingesteld"}
       </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+      <Pencil className="h-3 w-3 text-muted-foreground" strokeWidth={1.75} />
     </button>
   )
 }
@@ -946,10 +946,10 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
     const lastSync = formatLastSync(weightSupplier.lastSyncAt)
     return (
       <div className="flex flex-col items-start gap-0.5">
-        <span className="font-mono text-[11px] tracking-wide text-white/40">
+        <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
           {profile?.weightKg ? `${profile.weightKg} kg` : "Nog niet gesynct"}
         </span>
-        <span className="text-[10px] text-white/30">
+        <span className="text-[10px] text-muted-foreground">
           Dit wordt opgehaald uit {weightSupplier.displayName}
           {lastSync ? ` · ${lastSync}` : ""}
         </span>
@@ -959,7 +959,7 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
             setValue(profile?.weightKg ?? "")
             setEditing(true)
           }}
-          className="mt-0.5 font-sans text-[10px] font-medium text-white/40 underline underline-offset-2 transition-colors hover:text-white/70"
+          className="mt-0.5 font-sans text-[10px] font-medium text-muted-foreground underline underline-offset-2 transition-colors hover:text-muted-foreground"
         >
           Handmatig corrigeren
         </button>
@@ -977,7 +977,7 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           placeholder={profile?.weightKg ?? "70"}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          className="w-20 rounded-lg border border-accent-cyan bg-muted px-2.5 py-1.5 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave()
             if (e.key === "Escape") {
@@ -988,7 +988,7 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           min={30}
           max={150}
         />
-        <span className="font-mono text-[11px] text-white/40">kg</span>
+        <span className="font-mono text-[11px] text-muted-foreground">kg</span>
         <button
           type="button"
           onClick={handleSave}
@@ -1004,10 +1004,10 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
 
   return (
     <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
+      <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
         {profile?.weightKg ? `${profile.weightKg} kg` : "Niet ingesteld"}
       </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+      <Pencil className="h-3 w-3 text-muted-foreground" strokeWidth={1.75} />
     </button>
   )
 }
@@ -1050,7 +1050,7 @@ function HeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           placeholder={profile?.heightCm != null ? String(profile.heightCm) : "175"}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          className="w-20 rounded-lg border border-accent-cyan bg-muted px-2.5 py-1.5 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave()
             if (e.key === "Escape") {
@@ -1061,7 +1061,7 @@ function HeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           min={100}
           max={250}
         />
-        <span className="font-mono text-[11px] text-white/40">cm</span>
+        <span className="font-mono text-[11px] text-muted-foreground">cm</span>
         <button
           type="button"
           onClick={handleSave}
@@ -1077,10 +1077,10 @@ function HeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
 
   return (
     <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
+      <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
         {profile?.heightCm != null ? `${profile.heightCm} cm` : "Niet ingesteld"}
       </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+      <Pencil className="h-3 w-3 text-muted-foreground" strokeWidth={1.75} />
     </button>
   )
 }
@@ -1145,7 +1145,7 @@ function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           type="date"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none [color-scheme:dark]"
+          className="rounded-lg border border-accent-cyan bg-muted px-2.5 py-1.5 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none [color-scheme:light]"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave()
             if (e.key === "Escape") {
@@ -1171,10 +1171,10 @@ function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
 
   return (
     <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
+      <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
         {formatBirth(profile?.birthDate ?? null, profile?.birthYear ?? null)}
       </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+      <Pencil className="h-3 w-3 text-muted-foreground" strokeWidth={1.75} />
     </button>
   )
 }
@@ -1229,10 +1229,10 @@ function DisciplineInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
 
   return (
     <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
+      <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
         {profile?.discipline ?? "Niet ingesteld"}
       </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+      <Pencil className="h-3 w-3 text-muted-foreground" strokeWidth={1.75} />
     </button>
   )
 }
@@ -1270,40 +1270,40 @@ function BillingSection() {
   }
 
   const btn =
-    "rounded-xl border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-[12px] text-white/80 transition hover:bg-white/[0.1] disabled:opacity-40"
+    "rounded-xl border border-border bg-muted px-3 py-2 text-[12px] text-foreground/80 transition hover:bg-muted disabled:opacity-40"
 
   return (
     <section id="cfg-abonnement">
       <SectionLabel title="Abonnement" />
-      <div className="mt-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4">
+      <div className="mt-2 rounded-2xl border border-border bg-card p-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[12px] text-white/60">
+          <p className="text-[12px] text-muted-foreground">
             Status:{" "}
-            <span className="text-white/85">
+            <span className="text-foreground/90">
               {statusLabel[data.status] ?? data.status}
             </span>
           </p>
-          <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-0.5 text-[10px] font-medium text-cyan-200">
+          <span className="rounded-full border border-accent-cyan bg-accent-cyan px-2.5 py-0.5 text-[10px] font-medium text-accent-cyan">
             {tierBadge}
           </span>
         </div>
         <Link
           href="/abonnement"
-          className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-[12px] font-medium text-cyan-200 transition hover:bg-cyan-300/20"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-accent-cyan bg-accent-cyan px-3 py-2 text-[12px] font-medium text-accent-cyan transition hover:bg-accent-cyan"
         >
           Bekijk lagen en prijzen
         </Link>
         {data.trialEndsAt && data.status === "trialing" && (
-          <p className="mt-1 text-[11px] text-white/40">
+          <p className="mt-1 text-[11px] text-muted-foreground">
             Proef loopt tot {new Date(data.trialEndsAt).toLocaleDateString("nl-NL")}
           </p>
         )}
         {data.plannedDowngradeTier && (
-          <p className="mt-1 text-[11px] text-white/40">
+          <p className="mt-1 text-[11px] text-muted-foreground">
             Wordt Sparki {data.plannedDowngradeTier} bij de volgende periode
           </p>
         )}
-        <p className="mt-1 text-[11px] text-amber-200/60">
+        <p className="mt-1 text-[11px] text-[color:var(--color-warning)]">
           Testomgeving — er wordt niets echt afgeschreven.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -1356,7 +1356,7 @@ function BillingSection() {
           )}
         </div>
         {(startTrial.isError || startCheckout.isError || openPortal.isError) && (
-          <p className="mt-2 text-[11px] text-red-300/70">
+          <p className="mt-2 text-[11px] text-[color:var(--color-negative)]">
             {(startTrial.error ?? startCheckout.error ?? openPortal.error)?.message ??
               "Er ging iets mis"}
           </p>
@@ -1537,7 +1537,7 @@ export function ProfileSettings({
       <FocusTarget token="checkin" focus={focus}>
         <section>
           <SectionLabel n="02" title="Uitgebreide check-in" />
-          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
             Wil je meer kwijt dan je dag-gevoel? Log hier slaap, vermoeidheid en HRV.
           </p>
           <div className="mt-4">
@@ -1557,8 +1557,8 @@ export function ProfileSettings({
               <div
                 key={row.label}
                 id={row.focusToken ? `cfg-${row.focusToken}` : undefined}
-                className={`flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0 ${
-                  highlighted ? "rounded-xl ring-2 ring-cyan-300/50" : ""
+                className={`flex items-center gap-4 border-b border-border py-3.5 last:border-0 ${
+                  highlighted ? "rounded-xl ring-2 ring-ring/50" : ""
                 }`}
               >
                 <span
@@ -1568,19 +1568,19 @@ export function ProfileSettings({
                     background: "rgba(255,255,255,0.03)",
                   }}
                 >
-                  <Icon className="h-4 w-4 text-white/55" strokeWidth={1.75} />
+                  <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                 </span>
-                <span className="flex-1 text-[14px] tracking-tight text-white/85">
+                <span className="flex-1 text-[14px] tracking-tight text-foreground/90">
                   {row.label}
                 </span>
                 {row.custom ? (
                   row.custom
                 ) : (
-                  <span className="font-mono text-[11px] tracking-wide text-white/40">
+                  <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
                     {row.value}
                   </span>
                 )}
-                <ChevronRight className="h-4 w-4 text-white/25" strokeWidth={1.75} />
+                <ChevronRight className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
               </div>
             )
           })}
@@ -1595,7 +1595,7 @@ export function ProfileSettings({
       {/* HOE SPARKI KLINKT */}
       <section>
         <SectionLabel n="04" title="Hoe de app klinkt" />
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           Sparki's toon groeit mee naarmate jullie elkaar beter leren kennen
         </p>
         <SparkiVoiceSection />
@@ -1630,7 +1630,7 @@ export function ProfileSettings({
         <button
           type="button"
           onClick={() => signOut({ redirectUrl: basePath || "/" })}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] px-4 py-3.5 font-sans text-[13px] text-white/35 transition-colors hover:border-white/15 hover:text-white/50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-border hover:text-muted-foreground"
         >
           <LogOut className="h-4 w-4" strokeWidth={1.75} />
           Uitloggen
@@ -1638,7 +1638,7 @@ export function ProfileSettings({
       </section>
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER · v1.0
         </span>
       </footer>

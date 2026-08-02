@@ -24,7 +24,7 @@ import { computePerformanceRadar } from "@/lib/performance-radar"
 import { UitlegDot } from "@/components/viz/uitleg"
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 function Delta({ value }: { value: number }) {
@@ -78,8 +78,8 @@ function FtpBars({
           <span className="font-sans text-4xl font-extralight tabular-nums">
             {shown}
           </span>
-          <span className="font-mono text-[11px] text-white/35">W</span>
-          <span className="font-mono text-[10px] text-white/30">
+          <span className="font-mono text-[11px] text-muted-foreground">W</span>
+          <span className="font-mono text-[10px] text-muted-foreground">
             · uit je Sportpaspoort
           </span>
         </div>
@@ -116,7 +116,7 @@ function FtpBars({
                   }}
                 />
               </div>
-              <span className="font-mono text-[8px] tracking-wider text-white/30">{month}</span>
+              <span className="font-mono text-[8px] tracking-wider text-muted-foreground">{month}</span>
             </div>
           )
         })}
@@ -202,7 +202,7 @@ export default function LabPage() {
       {/* INTRO */}
       <div className="-mt-2">
         <div className="flex items-center justify-between gap-3">
-          <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+          <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
             PERFORMANCE LAB
           </p>
           <ClubChip />
@@ -211,7 +211,7 @@ export default function LabPage() {
           Begrijp je vorm
         </h1>
         {profile && (
-          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+          <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
             {profile.displayName ?? "Atleet"}
             {profile.ftp ? ` · FTP ${profile.ftp}W${profile.ftpEstimated ? " (geschat)" : ""}` : ""}
             {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
@@ -239,7 +239,7 @@ export default function LabPage() {
         ) : measurableAxes.length >= 3 ? (
           <>
             <BioRadar size={260} accent="var(--accent-cyan)" axes={measurableAxes} />
-            <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
+            <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-muted-foreground">
               {measurableAxes.length === radarAxes.length
                 ? "Alle zes signalen berekend uit je eigen data."
                 : `${measurableAxes.length} van ${radarAxes.length} signalen meetbaar — alleen die worden getekend.`}{" "}
@@ -247,20 +247,20 @@ export default function LabPage() {
             </p>
           </>
         ) : (
-          <p className="mt-4 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/35">
+          <p className="mt-4 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-muted-foreground">
             Nog te weinig gegevens voor je radar · Log sessies en check-ins zodat
             je capaciteitsprofiel kan worden opgebouwd.
           </p>
         )}
         {!radarLoading && missingAxes.length > 0 && (
-          <div className="mt-3 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-            <p className="font-mono text-[9px] tracking-[0.2em] text-white/35">
+          <div className="mt-3 w-full rounded-lg border border-border bg-muted px-3 py-2.5">
+            <p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
               NOG NIET MEETBAAR
             </p>
             <ul className="mt-1.5 space-y-1">
               {missingAxes.map((a) => (
-                <li key={a.key} className="text-[11px] leading-relaxed text-white/45">
-                  <span className="text-white/70">{a.label}</span> — {a.missingReason}
+                <li key={a.key} className="text-[11px] leading-relaxed text-muted-foreground">
+                  <span className="text-muted-foreground">{a.label}</span> — {a.missingReason}
                 </li>
               ))}
             </ul>
@@ -284,7 +284,7 @@ export default function LabPage() {
                 className={`rounded-full border px-2.5 py-1 font-mono text-[10px] tabular-nums transition-colors ${
                   periodDays === p
                     ? "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan"
-                    : "border-white/[0.08] text-white/40 hover:text-white/60"
+                    : "border-border text-muted-foreground hover:text-muted-foreground"
                 }`}
               >
                 {p}d
@@ -293,7 +293,7 @@ export default function LabPage() {
           </div>
         </div>
         <div className="mt-4 flex items-baseline justify-between">
-          <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+          <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
             {periodDays} DAGEN
           </span>
           {readinessHistory.length > 1 && (
@@ -316,7 +316,7 @@ export default function LabPage() {
                 className="w-full text-accent-cyan"
               />
             </div>
-            <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+            <p className="mt-3 text-pretty text-[12px] leading-relaxed text-muted-foreground">
               Gebaseerd op dagelijkse check-in scores. Gestage opbouw is het doel.
             </p>
           </>
@@ -341,7 +341,7 @@ export default function LabPage() {
             <SectionLabel n="03" title="HRV trend" />
             <UitlegDot uitlegKey="hrvTrend" label="HRV-trend" />
           </div>
-          <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+          <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
             {periodDays} DAGEN
           </span>
         </div>
@@ -354,11 +354,11 @@ export default function LabPage() {
                 <span className="font-sans text-4xl font-extralight tabular-nums">
                   {Math.round(todayHrv)}
                 </span>
-                <span className="font-mono text-[11px] text-white/35">ms</span>
+                <span className="font-mono text-[11px] text-muted-foreground">ms</span>
               </div>
               {hrvDelta !== null && (
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] tracking-wide text-white/35">
+                  <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
                     vs gisteren
                   </span>
                   <Delta value={hrvDelta} />
@@ -437,20 +437,20 @@ export default function LabPage() {
                   type="button"
                   key={s.id}
                   onClick={() => setOpenSession(s)}
-                  className="flex w-full items-center gap-4 border-b border-white/[0.05] py-3 text-left transition-colors last:border-0 hover:bg-white/[0.02]"
+                  className="flex w-full items-center gap-4 border-b border-border py-3 text-left transition-colors last:border-0 hover:bg-muted"
                 >
                   <div className="w-14 shrink-0">
-                    <span className="font-mono text-[10px] text-white/35">{date}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{date}</span>
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="truncate text-[13px] font-medium text-white/80">
+                    <p className="truncate text-[13px] font-medium text-foreground/80">
                       {s.title ??
                         s.type.charAt(0).toUpperCase() + s.type.slice(1)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     {s.durationMin != null && (
-                      <span className="font-mono text-[10px] text-white/35">
+                      <span className="font-mono text-[10px] text-muted-foreground">
                         {s.durationMin}m
                       </span>
                     )}

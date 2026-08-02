@@ -32,7 +32,7 @@ export function HoofdstukTabs<Id extends string>({
       aria-label={ariaLabel}
       className={cn(
         "flex -mb-px overflow-x-auto scrollbar-none border-b",
-        donker ? "border-white/10" : "border-slate-200",
+        donker ? "border-border" : "border-slate-200",
       )}
     >
       {tabs.map((tab) => {
@@ -53,10 +53,10 @@ export function HoofdstukTabs<Id extends string>({
                 : "focus-visible:ring-sky-500/60",
               isActief
                 ? donker
-                  ? "font-medium text-cyan-300"
+                  ? "font-medium text-accent-cyan"
                   : "font-medium text-sky-600"
                 : donker
-                  ? "text-white/50 hover:text-white/75"
+                  ? "text-muted-foreground hover:text-muted-foreground"
                   : "text-slate-500 hover:text-slate-800",
             )}
           >

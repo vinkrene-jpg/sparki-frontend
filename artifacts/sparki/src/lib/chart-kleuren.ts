@@ -1,7 +1,12 @@
-// Centrale Analyse-omgeving (/analyse) — donkere datawerkruimte binnen de
-// gedeelde cinematic app-shell (ScreenShell). Hergebruikt uitsluitend
-// bestaande hooks, engines en berekeningen; geen nieuwe formules, geen mock-
-// of seeddata.
+// Centrale Analyse-omgeving (/analyse) — datawerkruimte binnen de gedeelde
+// app-shell (ScreenShell). Hergebruikt uitsluitend bestaande hooks, engines en
+// berekeningen; geen nieuwe formules, geen mock- of seeddata.
+//
+// LICHT_THEMA_01 LT-03: de grafieken staan nu op een LICHTE ondergrond. As-
+// labels en rasterlijnen zijn daarom doorschijnend DONKER (waren doorschijnend
+// wit voor donker) en de reekskleuren zijn geverifieerd op wit — voldoende
+// contrast en kleurenblind-veilig (verschillende tint én helderheid per reeks,
+// nooit alleen kleur als betekenisdrager).
 
 // ── Semantische kleurset (SSOT voor alle grafieken) ──────────────────────────
 // Elke kleur heeft één vaste betekenis. Nooit voor decoratie.
@@ -16,17 +21,17 @@ export const CHART = {
   ctlFillTopOpacity: 0.28,
   ctlFillBottomOpacity: 0,
   atl:     "#EA580C", // orange-600 — vermoeidheid (ATL), minder gewicht dan CTL
-  tsbPos:  "#16A34A", // green-600  — positieve vorm (TSB ≥ 0)
+  tsbPos:  "#15803D", // green-700  — positieve vorm (TSB ≥ 0), donkerder voor wit
   tsbNeg:  "#DC2626", // red-600    — sterk negatieve vorm
-  tsbNegLicht: "#FCA5A5", // red-300 — licht negatieve vorm
-  grid:    "rgba(255,255,255,0.08)", // gridlijnen op donkere schil — laag-alpha wit, alleen horizontaal
-  as:      "rgba(255,255,255,0.45)", // as-labels/datums op donkere schil — leesbaar wit, niet vaag
-  volume:  "#8b5cf6", // violet-500 — trainingsvolume
-  ftp:     "#06b6d4", // cyan-500   — vermogen / FTP
-  goal:    "#10b981", // emerald-500 — doelen
-  race:    "#ec4899", // pink-500   — wedstrijden
-  warn:    "#f59e0b", // amber-500  — waarschuwing
-  missing: "#94a3b8", // slate-400  — ontbrekend / onzeker
+  tsbNegLicht: "#EF7B7B", // red-400-getint — licht negatieve vorm, leesbaar op wit
+  grid:    "rgba(20,24,31,0.28)", // gridlijnen op LICHTE schil — LT-13: alpha 0.10→0.28 (≈1.85:1 op card). Bewust ONDER 3:1: het raster is decoratief; de leesbare laag zijn de as-labels (`as`, ≥4.5:1). Zie contrast-meting.md.
+  as:      "rgba(20,24,31,0.62)", // as-labels/datums op LICHTE schil — leesbaar donker, niet vaag
+  volume:  "#7C3AED", // violet-600 — trainingsvolume, donkerder voor wit
+  ftp:     "#0891B2", // cyan-600   — vermogen / FTP, donkerder voor wit
+  goal:    "#059669", // emerald-600 — doelen, donkerder voor wit
+  race:    "#DB2777", // pink-600   — wedstrijden, donkerder voor wit
+  warn:    "#D97706", // amber-600  — waarschuwing, donkerder voor wit
+  missing: "#64748B", // slate-500  — ontbrekend / onzeker, leesbaar op wit
   verwacht: "#9333ea", // purple-600 — doelscenario / verwachting (vaste kleur)
 } as const
 
@@ -50,15 +55,18 @@ export function tsbBalkKleur(tsb: number | null | undefined): string {
 // Categoriale reeks voor wegtype-analyse (route-surfaces.tsx). Elke kleur heeft
 // een vaste betekenis — nooit hergebruiken voor andere series. Bron:
 // OpenStreetMap surface/highway tags, BGT-verificatie.
+// LICHT_THEMA_01 LT-03: geverifieerd op LICHTE ondergrond — de lichtste tinten
+// zijn iets verdiept zodat elke categorie leesbaar contrasteert op wit terwijl
+// de onderlinge herkenbaarheid (tint per wegtype) behouden blijft.
 export const SURFACE_KLEUREN: Record<string, string> = {
-  asfalt: "#5aa7e8",            // Asfalt — glad wegdek
-  verhard_fietspad: "#4ecbc4",  // Verhard fietspad — gescheiden infra
-  klinkers: "#c9a35a",          // Klinkers — hobbelig verhard
-  kasseien: "#b0742f",          // Kasseien — ruw historisch wegdek
-  compact_gravel: "#9aa86b",    // Compact gravel — aangestampt grind
-  los_gravel: "#c2b280",        // Los gravel — losse steenslag
-  onverhard: "#a5713f",         // Onverhard — zand/aarde
-  bospad: "#4f9e5a",            // Bospad — natuurlijk pad
-  singletrack: "#8a5fc9",       // Singletrack — smal MTB-spoor
-  onbekend: "#8b93a5",          // Onbekend — geen OSM surface-tag
+  asfalt: "#2f7fd0",            // Asfalt — glad wegdek
+  verhard_fietspad: "#159e96",  // Verhard fietspad — gescheiden infra
+  klinkers: "#a97f2f",          // Klinkers — hobbelig verhard
+  kasseien: "#9c5f1f",          // Kasseien — ruw historisch wegdek
+  compact_gravel: "#78894a",    // Compact gravel — aangestampt grind
+  los_gravel: "#9c8a4e",        // Los gravel — losse steenslag
+  onverhard: "#8a5a2c",         // Onverhard — zand/aarde
+  bospad: "#3d8449",            // Bospad — natuurlijk pad
+  singletrack: "#7343b8",       // Singletrack — smal MTB-spoor
+  onbekend: "#6b7385",          // Onbekend — geen OSM surface-tag
 } as const

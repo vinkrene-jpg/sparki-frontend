@@ -105,7 +105,7 @@ function Avatar({ athlete, size = 44 }: { athlete: { avatarUrl: string | null; n
   }
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full bg-cyan-300/10 font-mono text-[11px] uppercase tracking-wider text-cyan-200/80"
+      className="flex shrink-0 items-center justify-center rounded-full bg-accent-cyan/10 font-mono text-[11px] uppercase tracking-wider text-accent-cyan"
       style={{ width: size, height: size }}
     >
       {initials(athlete.name)}
@@ -133,7 +133,7 @@ function HighlightClip({ src }: { src: string }) {
 
 function VirtualTag() {
   return (
-    <span className="rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-cyan-200/70">
+    <span className="rounded-full border border-accent-cyan/20 bg-accent-cyan/[0.06] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-accent-cyan">
       Virtual Athlete
     </span>
   )
@@ -142,7 +142,7 @@ function VirtualTag() {
 function FollowerCount({ score }: { score: number }) {
   if (!score || score <= 0) return null
   return (
-    <span className="flex items-center gap-1 text-[11px] text-white/40">
+    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
       <Users className="h-3 w-3" strokeWidth={1.75} />
       {formatFollowers(score)} volgers
     </span>
@@ -177,13 +177,13 @@ function FollowButton({
           disabled={setFollow.isPending}
           aria-label={isFavorite ? "Favoriet verwijderen" : "Markeer als favoriet"}
           title={isFavorite ? "Favoriet verwijderen" : "Markeer als favoriet"}
-          className="rounded-full border border-white/12 p-1.5 transition-colors hover:border-cyan-300/40"
+          className="rounded-full border border-border p-1.5 transition-colors hover:border-accent-cyan/40"
         >
           <Star
             className="h-3.5 w-3.5"
             strokeWidth={1.75}
             style={{
-              color: isFavorite ? "var(--accent-cyan)" : "rgba(255,255,255,0.45)",
+              color: isFavorite ? "var(--accent-cyan)" : "var(--color-muted-foreground)",
               fill: isFavorite ? "var(--accent-cyan)" : "transparent",
             }}
           />
@@ -196,7 +196,7 @@ function FollowButton({
         className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
         style={
           isFollowing
-            ? { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+            ? { borderColor: "var(--color-border)", color: "var(--color-border)" }
             : { borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }
         }
       >
@@ -229,25 +229,25 @@ function Comments({ postId }: { postId: number }) {
   }
 
   return (
-    <div className="mt-3 border-t border-white/[0.07] pt-3">
+    <div className="mt-3 border-t border-border pt-3">
       {isLoading ? (
-        <p className="text-[12px] text-white/40">Reacties laden…</p>
+        <p className="text-[12px] text-muted-foreground">Reacties laden…</p>
       ) : data && data.comments.length > 0 ? (
         <ul className="flex flex-col gap-2.5">
           {data.comments.map((c) => (
             <li key={c.id} className="text-[13px] leading-relaxed">
               <span
                 className="font-medium"
-                style={{ color: c.byMe ? "var(--accent-cyan)" : "rgba(255,255,255,0.85)" }}
+                style={{ color: c.byMe ? "var(--accent-cyan)" : "var(--color-foreground)" }}
               >
                 {c.authorName}
               </span>{" "}
-              <span className="text-white/70">{c.body}</span>
+              <span className="text-muted-foreground">{c.body}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-[12px] text-white/40">Nog geen reacties. Wees de eerste.</p>
+        <p className="text-[12px] text-muted-foreground">Nog geen reacties. Wees de eerste.</p>
       )}
 
       <div className="mt-3 flex items-center gap-2">
@@ -259,14 +259,14 @@ function Comments({ postId }: { postId: number }) {
           }}
           maxLength={500}
           placeholder="Schrijf een reactie…"
-          className="min-w-0 flex-1 rounded-full border border-white/12 bg-white/[0.04] px-3.5 py-2 text-[13px] text-white placeholder-white/30 outline-none focus:border-cyan-300/40"
+          className="min-w-0 flex-1 rounded-full border border-border bg-muted px-3.5 py-2 text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
         />
         <button
           type="button"
           onClick={submit}
           disabled={addComment.isPending || draft.trim().length < 1}
           aria-label="Reactie plaatsen"
-          className="rounded-full border border-cyan-300/30 p-2 text-cyan-300 transition-colors hover:bg-cyan-300/10 disabled:opacity-40"
+          className="rounded-full border border-accent-cyan/30 p-2 text-accent-cyan transition-colors hover:bg-accent-cyan/10 disabled:opacity-40"
         >
           <Send className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -316,7 +316,7 @@ function PostCard({
   return (
     <article
       ref={ref}
-      className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+      className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
     >
       <div className="flex items-center justify-between gap-3">
         <button
@@ -327,12 +327,12 @@ function PostCard({
           <Avatar athlete={post.athlete} />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="truncate text-[14px] font-semibold text-white">
+              <span className="truncate text-[14px] font-semibold text-foreground">
                 {post.athlete.name}
               </span>
               <VirtualTag />
             </div>
-            <p className="truncate text-[11px] text-white/45">
+            <p className="truncate text-[11px] text-muted-foreground">
               {[post.athlete.archetype, post.athlete.discipline]
                 .filter(Boolean)
                 .join(" · ") || "Virtual Athlete"}
@@ -348,21 +348,21 @@ function PostCard({
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-white/50">
+        <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-muted-foreground">
           {KIND_LABEL[post.kind] ?? post.kind}
         </span>
-        <span className="text-[11px] text-white/35">{relativeDay(post.publishedAt)}</span>
+        <span className="text-[11px] text-muted-foreground">{relativeDay(post.publishedAt)}</span>
       </div>
 
       {post.mediaUrl && (
         <img
           src={post.mediaUrl}
           alt=""
-          className="mt-3 w-full rounded-xl border border-white/[0.06] object-cover"
+          className="mt-3 w-full rounded-xl border border-border object-cover"
         />
       )}
 
-      <p className="mt-3 text-[14px] leading-relaxed text-white/85">{post.caption}</p>
+      <p className="mt-3 text-[14px] leading-relaxed text-foreground/85">{post.caption}</p>
 
       <div className="mt-3 flex items-center gap-4">
         <button
@@ -370,7 +370,7 @@ function PostCard({
           onClick={() => toggleLike.mutate(post.id)}
           disabled={toggleLike.isPending}
           className="flex items-center gap-1.5 text-[13px] transition-colors"
-          style={{ color: post.likedByMe ? "var(--accent-cyan)" : "rgba(255,255,255,0.55)" }}
+          style={{ color: post.likedByMe ? "var(--accent-cyan)" : "var(--color-muted-foreground)" }}
           aria-label={post.likedByMe ? "Like verwijderen" : "Like"}
         >
           <Heart
@@ -383,7 +383,7 @@ function PostCard({
         <button
           type="button"
           onClick={() => setShowComments((s) => !s)}
-          className="flex items-center gap-1.5 text-[13px] text-white/55 transition-colors hover:text-white/80"
+          className="flex items-center gap-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground/80"
           aria-label="Reacties"
         >
           <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
@@ -398,7 +398,7 @@ function PostCard({
           }
           disabled={toggleSave.isPending}
           className="flex items-center gap-1.5 text-[13px] transition-colors"
-          style={{ color: saved ? "var(--accent-cyan)" : "rgba(255,255,255,0.55)" }}
+          style={{ color: saved ? "var(--accent-cyan)" : "var(--color-muted-foreground)" }}
           aria-label={saved ? "Uit bewaard halen" : "Bewaren"}
         >
           <Bookmark
@@ -417,7 +417,7 @@ function PostCard({
           }
           disabled={recordShare.isPending}
           className="flex items-center gap-1.5 text-[13px] transition-colors"
-          style={{ color: shared ? "var(--accent-cyan)" : "rgba(255,255,255,0.55)" }}
+          style={{ color: shared ? "var(--accent-cyan)" : "var(--color-muted-foreground)" }}
           aria-label="Delen"
         >
           <Share2 className="h-4 w-4" strokeWidth={1.75} />
@@ -440,13 +440,13 @@ function SuggestionCard({
 }) {
   const setFollow = useSetFollow()
   return (
-    <div className="flex w-[164px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-center backdrop-blur-md">
+    <div className="flex w-[164px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 text-center backdrop-blur-md">
       {athlete.highlightUrl ? (
         <button
           type="button"
           onClick={() => onOpen(athlete.slug)}
           aria-label={athlete.name}
-          className="w-full overflow-hidden rounded-xl border border-white/[0.08]"
+          className="w-full overflow-hidden rounded-xl border border-border"
         >
           <div className="aspect-video w-full">
             <HighlightClip src={athlete.highlightUrl} />
@@ -461,14 +461,14 @@ function SuggestionCard({
         <button
           type="button"
           onClick={() => onOpen(athlete.slug)}
-          className="block w-full truncate text-[13px] font-semibold text-white"
+          className="block w-full truncate text-[13px] font-semibold text-foreground"
         >
           {athlete.name}
         </button>
-        <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-cyan-200/70">
+        <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-accent-cyan">
           {athlete.reason}
         </p>
-        <p className="mt-1 text-[10px] text-white/35">
+        <p className="mt-1 text-[10px] text-muted-foreground">
           {formatFollowers(athlete.followerScore)} volgers
         </p>
       </div>
@@ -501,7 +501,7 @@ function Rail({
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         {icon}
-        <h2 className="text-[15px] font-semibold text-white">{title}</h2>
+        <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
       </div>
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
         {items.map((a) => (
@@ -524,7 +524,7 @@ const CAREER_DOT: Record<string, string> = {
   milestone: "var(--accent-cyan)",
   highlight: "rgba(120,210,230,0.7)",
   lowlight: "rgba(245,180,120,0.7)",
-  normal: "rgba(255,255,255,0.3)",
+  normal: "var(--color-muted-foreground)",
 }
 
 function CareerTimeline({ entries }: { entries: WorldCareerEntry[] }) {
@@ -532,11 +532,11 @@ function CareerTimeline({ entries }: { entries: WorldCareerEntry[] }) {
   // Newest season first reads best as a "how did they get here" story.
   const ordered = [...entries].sort((a, b) => b.seasonYear - a.seasonYear)
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-      <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+    <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+      <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         Loopbaan
       </p>
-      <ol className="relative flex flex-col gap-4 border-l border-white/[0.1] pl-4">
+      <ol className="relative flex flex-col gap-4 border-l border-border pl-4">
         {ordered.map((e) => (
           <li key={e.seasonYear} className="relative">
             <span
@@ -544,24 +544,24 @@ function CareerTimeline({ entries }: { entries: WorldCareerEntry[] }) {
               style={{ backgroundColor: CAREER_DOT[e.kind] ?? CAREER_DOT.normal }}
             />
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold text-white">{e.seasonYear}</span>
-              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/55">
+              <span className="text-[13px] font-semibold text-foreground">{e.seasonYear}</span>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                 {PHASE_LABEL[e.phase] ?? e.phase}
               </span>
-              <span className="text-[11px] text-white/35">{e.ageThatYear} jaar</span>
+              <span className="text-[11px] text-muted-foreground">{e.ageThatYear} jaar</span>
             </div>
-            <p className="mt-1 text-[13px] leading-relaxed text-white/85">{e.title}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-foreground/85">{e.title}</p>
             {e.summary && (
-              <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">{e.summary}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{e.summary}</p>
             )}
             <div className="mt-1 flex flex-wrap gap-1.5">
               {e.team && (
-                <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] text-white/50">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                   {e.team}
                 </span>
               )}
               {e.ftp != null && (
-                <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] text-white/50">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                   FTP {e.ftp} W
                 </span>
               )}
@@ -589,31 +589,31 @@ function AthleteProfile({
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-1.5 self-start rounded-full border border-white/15 px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+        className="flex items-center gap-1.5 self-start rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
       >
         <ChevronLeft className="h-4 w-4" /> Terug naar de wereld
       </button>
 
       {isLoading ? (
-        <p className="text-[13px] text-white/45">Profiel laden…</p>
+        <p className="text-[13px] text-muted-foreground">Profiel laden…</p>
       ) : error || !data ? (
-        <p className="text-[13px] text-amber-200/70">
+        <p className="text-[13px] text-[color:var(--color-warning)]">
           Dit profiel kon niet worden geladen.
         </p>
       ) : (
         <>
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+          <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-4">
                 <Avatar athlete={data.athlete} size={64} />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h1 className="truncate text-[18px] font-semibold text-white">
+                    <h1 className="truncate text-[18px] font-semibold text-foreground">
                       {data.athlete.name}
                     </h1>
                     <VirtualTag />
                   </div>
-                  <p className="mt-0.5 text-[12px] text-white/50">
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
                     {[
                       data.athlete.archetype,
                       data.athlete.discipline,
@@ -622,7 +622,7 @@ function AthleteProfile({
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
-                  <p className="mt-0.5 text-[12px] text-white/40">
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
                     {[
                       data.athlete.city,
                       data.athlete.nationality,
@@ -644,17 +644,17 @@ function AthleteProfile({
             </div>
 
             {data.athlete.bio && (
-              <p className="mt-4 text-[14px] leading-relaxed text-white/80">
+              <p className="mt-4 text-[14px] leading-relaxed text-foreground/80">
                 {data.athlete.bio}
               </p>
             )}
 
             {data.athlete.highlightUrl && (
-              <figure className="mt-4 overflow-hidden rounded-xl border border-white/[0.08]">
+              <figure className="mt-4 overflow-hidden rounded-xl border border-border">
                 <div className="aspect-video w-full">
                   <HighlightClip src={data.athlete.highlightUrl} />
                 </div>
-                <figcaption className="px-3 py-2 text-[11px] text-white/40">
+                <figcaption className="px-3 py-2 text-[11px] text-muted-foreground">
                   Hoogtepunten — gesimuleerde beelden
                 </figcaption>
               </figure>
@@ -662,20 +662,20 @@ function AthleteProfile({
 
             <div className="mt-4 flex flex-wrap gap-2">
               {data.athlete.team && (
-                <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] text-white/60">
+                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
                   {data.athlete.team}
                 </span>
               )}
               {data.athlete.ftp != null && (
-                <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] text-white/60">
+                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
                   FTP {data.athlete.ftp} W
                 </span>
               )}
             </div>
 
             {data.relationships.length > 0 && (
-              <div className="mt-4 border-t border-white/[0.07] pt-3">
-                <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+              <div className="mt-4 border-t border-border pt-3">
+                <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
                   Connecties
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -684,9 +684,9 @@ function AthleteProfile({
                       key={`${r.kind}-${r.slug}`}
                       type="button"
                       onClick={() => onOpenAthlete(r.slug)}
-                      className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/65 transition-colors hover:border-cyan-300/40 hover:text-cyan-200"
+                      className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
                     >
-                      <span className="text-white/40">{REL_LABEL[r.kind] ?? r.kind}: </span>
+                      <span className="text-muted-foreground">{REL_LABEL[r.kind] ?? r.kind}: </span>
                       {r.name}
                     </button>
                   ))}
@@ -699,7 +699,7 @@ function AthleteProfile({
 
           <div className="flex flex-col gap-4">
             {data.posts.length === 0 ? (
-              <p className="text-[13px] text-white/45">
+              <p className="text-[13px] text-muted-foreground">
                 Nog geen berichten van deze sporter.
               </p>
             ) : (
@@ -744,10 +744,10 @@ export default function WereldPage() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Globe className="h-5 w-5 text-cyan-300/80" strokeWidth={1.75} />
-              <h1 className="text-[20px] font-semibold text-white">Sparki World</h1>
+              <Globe className="h-5 w-5 text-accent-cyan" strokeWidth={1.75} />
+              <h1 className="text-[20px] font-semibold text-foreground">Sparki World</h1>
             </div>
-            <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
+            <Link href="/journey" className="text-[11px] text-accent-cyan hover:text-accent-cyan">
               Jouw verhaal
             </Link>
           </div>
@@ -776,7 +776,7 @@ export default function WereldPage() {
                 style={
                   tab === t.key
                     ? { borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }
-                    : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+                    : { borderColor: "var(--color-border)", color: "var(--color-border)" }
                 }
               >
                 {t.icon}
@@ -789,28 +789,28 @@ export default function WereldPage() {
             <>
               <Rail
                 title="Voorgesteld voor jou"
-                icon={<Users className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
+                icon={<Users className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />}
                 items={recommended.data?.items ?? []}
                 onOpen={openAthlete}
               />
               <Rail
                 title="Toonaangevend"
-                icon={<Trophy className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
+                icon={<Trophy className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />}
                 items={heroes.data?.items ?? []}
                 onOpen={openAthlete}
               />
               {(recommended.data?.items?.length ?? 0) === 0 &&
                 (heroes.data?.items?.length ?? 0) === 0 && (
-                  <p className="text-[13px] text-white/45">
+                  <p className="text-[13px] text-muted-foreground">
                     Er zijn nog geen sporters om te ontdekken.
                   </p>
                 )}
             </>
           ) : tab === "saved" ? (
             saved.isLoading ? (
-              <p className="text-[13px] text-white/45">Bewaarde berichten laden…</p>
+              <p className="text-[13px] text-muted-foreground">Bewaarde berichten laden…</p>
             ) : !saved.data || saved.data.items.length === 0 ? (
-              <p className="text-[13px] text-white/45">
+              <p className="text-[13px] text-muted-foreground">
                 Je hebt nog niets bewaard. Tik op "Bewaar" bij een bericht om het hier
                 terug te vinden.
               </p>
@@ -822,13 +822,13 @@ export default function WereldPage() {
               />
             )
           ) : isLoading ? (
-            <p className="text-[13px] text-white/45">De wereld wordt geladen…</p>
+            <p className="text-[13px] text-muted-foreground">De wereld wordt geladen…</p>
           ) : error ? (
-            <p className="text-[13px] text-amber-200/70">
+            <p className="text-[13px] text-[color:var(--color-warning)]">
               De wereld kon niet worden geladen. Probeer het later opnieuw.
             </p>
           ) : !data || data.items.length === 0 ? (
-            <p className="text-[13px] text-white/45">
+            <p className="text-[13px] text-muted-foreground">
               Er zijn nog geen berichten in Sparki World.
             </p>
           ) : (

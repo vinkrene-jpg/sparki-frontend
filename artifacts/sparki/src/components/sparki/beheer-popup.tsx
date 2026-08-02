@@ -32,10 +32,10 @@ export function BeheerSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className={`w-full overflow-y-auto border-white/10 bg-[#05070e] text-white ${breed ? "sm:max-w-2xl" : "sm:max-w-md"}`}
+        className={`w-full overflow-y-auto border-border bg-card text-foreground ${breed ? "sm:max-w-2xl" : "sm:max-w-md"}`}
       >
         <SheetHeader className="text-left">
-          <SheetTitle className="font-sans text-xl font-extralight tracking-tight text-white">
+          <SheetTitle className="font-sans text-xl font-extralight tracking-tight text-foreground">
             {titel}
           </SheetTitle>
         </SheetHeader>

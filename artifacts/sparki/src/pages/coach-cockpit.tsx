@@ -52,7 +52,7 @@ import {
 } from "@/hooks/use-goals"
 
 const CARD =
-  "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
 
 const PRIORITY_STYLE: Record<number, { label: string; color: string }> = {
   1: { label: "Nu", color: "oklch(0.72 0.19 25)" },
@@ -108,38 +108,38 @@ function SignalCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: p.color }} />
-            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
               {p.label} · zekerheid {signal.confidence}
             </span>
           </div>
-          <h4 className="mt-1 text-[14px] tracking-tight text-white/90">{signal.title}</h4>
+          <h4 className="mt-1 text-[14px] tracking-tight text-foreground/90">{signal.title}</h4>
         </div>
         {signal.action && (
-          <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/50">
+          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
             {ACTION_LABEL[signal.action.action] ?? signal.action.action}
           </span>
         )}
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-white/65">{signal.changed}</p>
-      <p className="mt-2 text-[12px] leading-relaxed text-white/45">
-        <span className="text-white/60">Voorstel:</span> {signal.proposedAction}
+      <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">{signal.changed}</p>
+      <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+        <span className="text-muted-foreground">Voorstel:</span> {signal.proposedAction}
       </p>
-      <p className="mt-1 text-[11px] leading-relaxed text-white/35">
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
         Waarom jij: {signal.whyHuman}
       </p>
-      <p className="mt-1 font-mono text-[10px] text-white/30">
+      <p className="mt-1 font-mono text-[10px] text-muted-foreground">
         Bronnen: {signal.sources.join(" · ")}
       </p>
 
       {!decided && (
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
           {(["accepteren", "aanpassen"] as const).map((a) => (
             <button
               key={a}
               type="button"
               disabled={act.isPending}
               onClick={() => decide(a)}
-              className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 hover:bg-cyan-300/[0.12] disabled:opacity-50"
+              className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan hover:bg-accent-cyan/[0.12] disabled:opacity-50"
             >
               {a === "accepteren" ? "Overnemen" : "Zelf aanpassen"}
             </button>
@@ -150,7 +150,7 @@ function SignalCard({
               type="button"
               disabled={act.isPending}
               onClick={() => setNoteFor(a)}
-              className="rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05] disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted disabled:opacity-50"
             >
               {a === "afwijzen" ? "Afwijzen" : "Parkeren"}
             </button>
@@ -163,21 +163,21 @@ function SignalCard({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={`Korte notitie bij ${noteFor} (verplicht)`}
-            className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30"
+            className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
           />
           <div className="flex gap-2">
             <button
               type="button"
               disabled={!note.trim() || act.isPending}
               onClick={() => decide(noteFor, note.trim())}
-              className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+              className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
             >
               Bevestigen
             </button>
             <button
               type="button"
               onClick={() => setNoteFor(null)}
-              className="rounded-lg px-3 py-1.5 text-[12px] text-white/45"
+              className="rounded-lg px-3 py-1.5 text-[12px] text-muted-foreground"
             >
               Annuleren
             </button>
@@ -185,7 +185,7 @@ function SignalCard({
         </div>
       )}
       {signal.action?.note && (
-        <p className="mt-2 text-[11px] italic text-white/40">Notitie: {signal.action.note}</p>
+        <p className="mt-2 text-[11px] italic text-muted-foreground">Notitie: {signal.action.note}</p>
       )}
     </div>
   )
@@ -216,19 +216,19 @@ function WorkoutForm({
   const [dur, setDur] = useState(initial?.targetDurationMin?.toString() ?? "")
   const [tss, setTss] = useState(initial?.targetTSS?.toString() ?? "")
   return (
-    <div className="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="space-y-2 rounded-xl border border-border bg-muted p-3">
       <div className="flex gap-2">
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-white/[0.1] bg-white/[0.04] px-2 py-1.5 text-[13px] text-white/85"
+          className="rounded-lg border border-border bg-muted px-2 py-1.5 text-[13px] text-foreground/85"
         />
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Titel van de training"
-          className="min-w-0 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
         />
       </div>
       <textarea
@@ -236,7 +236,7 @@ function WorkoutForm({
         onChange={(e) => setDesc(e.target.value)}
         placeholder="Omschrijving / instructie (optioneel)"
         rows={2}
-        className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+        className="w-full rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
       />
       <div className="flex gap-2">
         <input
@@ -244,14 +244,14 @@ function WorkoutForm({
           onChange={(e) => setDur(e.target.value.replace(/\D/g, ""))}
           placeholder="Duur (min)"
           inputMode="numeric"
-          className="w-28 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+          className="w-28 rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
         />
         <input
           value={tss}
           onChange={(e) => setTss(e.target.value.replace(/\D/g, ""))}
           placeholder="Doelbelasting"
           inputMode="numeric"
-          className="w-32 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+          className="w-32 rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
         />
         <div className="ml-auto flex gap-2">
           <button
@@ -266,11 +266,11 @@ function WorkoutForm({
                 targetTSS: tss ? Number(tss) : null,
               })
             }
-            className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+            className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
           >
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Opslaan"}
           </button>
-          <button type="button" onClick={onCancel} className="px-2 text-[12px] text-white/45">
+          <button type="button" onClick={onCancel} className="px-2 text-[12px] text-muted-foreground">
             Annuleren
           </button>
         </div>
@@ -300,9 +300,9 @@ function PlanningSection({
   return (
     <div className="space-y-3">
       {isLoading ? (
-        <div className="h-20 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="h-20 animate-pulse rounded-2xl bg-muted" />
       ) : workouts.length === 0 ? (
-        <p className="text-[13px] text-white/45">
+        <p className="text-[13px] text-muted-foreground">
           Nog geen geplande trainingen in de komende vier weken.
         </p>
       ) : (
@@ -310,18 +310,18 @@ function PlanningSection({
           <div key={w.id} className={CARD}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
                   {fmtDay(w.scheduledDate)} ·{" "}
                   {w.source === "coach" ? "Jouw training" : w.source === "sparki" || w.source === "ai" ? "Sparki" : w.source}
                   {w.status === "cancelled" ? " · geannuleerd" : ""}
                 </span>
-                <h4 className={`mt-0.5 text-[15px] tracking-tight ${w.status === "cancelled" ? "text-white/35 line-through" : "text-white/90"}`}>
+                <h4 className={`mt-0.5 text-[15px] tracking-tight ${w.status === "cancelled" ? "text-muted-foreground line-through" : "text-foreground/90"}`}>
                   {w.title}
                 </h4>
                 {w.description && (
-                  <p className="mt-1 text-[12px] leading-relaxed text-white/50">{w.description}</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{w.description}</p>
                 )}
-                <div className="mt-1.5 flex gap-3 font-mono text-[11px] text-white/40">
+                <div className="mt-1.5 flex gap-3 font-mono text-[11px] text-muted-foreground">
                   {w.targetDurationMin != null && (
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-3 w-3" /> {w.targetDurationMin}m
@@ -332,18 +332,18 @@ function PlanningSection({
               </div>
             </div>
             {w.source === "coach" && w.status !== "cancelled" && (
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
                 <button
                   type="button"
                   onClick={() => setEditingWorkout(w)}
-                  className="rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05]"
+                  className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted"
                 >
                   Wijzigen
                 </button>
                 <button
                   type="button"
                   onClick={() => setRepeatId(repeatId === w.id ? null : w.id)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05]"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted"
                 >
                   <Repeat className="h-3 w-3" /> Herhalen
                 </button>
@@ -351,7 +351,7 @@ function PlanningSection({
                   type="button"
                   disabled={update.isPending}
                   onClick={() => update.mutate({ id: w.id, status: "cancelled" })}
-                  className="rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/40 hover:bg-white/[0.05] disabled:opacity-40"
+                  className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted disabled:opacity-40"
                 >
                   Annuleren
                 </button>
@@ -363,7 +363,7 @@ function PlanningSection({
                   type="date"
                   value={repeatDate}
                   onChange={(e) => setRepeatDate(e.target.value)}
-                  className="rounded-lg border border-white/[0.1] bg-white/[0.04] px-2 py-1.5 text-[13px] text-white/85"
+                  className="rounded-lg border border-border bg-muted px-2 py-1.5 text-[13px] text-foreground/85"
                 />
                 <button
                   type="button"
@@ -374,7 +374,7 @@ function PlanningSection({
                       { onSuccess: () => setRepeatId(null) },
                     )
                   }
-                  className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+                  className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
                 >
                   Zet op deze datum
                 </button>
@@ -450,29 +450,29 @@ function ProposalCard({
   return (
     <div className={CARD}>
       <div className="flex items-start justify-between gap-3">
-        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
           Voorstel · {proposal.status}
         </span>
-        <span className="font-mono text-[10px] text-white/30">
+        <span className="font-mono text-[10px] text-muted-foreground">
           {new Date(proposal.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
         </span>
       </div>
-      <p className="mt-2 text-[13px] leading-relaxed text-white/80">{proposal.reason}</p>
+      <p className="mt-2 text-[13px] leading-relaxed text-foreground/80">{proposal.reason}</p>
       {changeText.length > 0 && (
-        <p className="mt-2 text-[12px] text-white/55">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           Voorgestelde wijziging: {changeText.join(", ")}
         </p>
       )}
       {proposal.coachNote && (
-        <p className="mt-2 text-[11px] italic text-white/40">Notitie: {proposal.coachNote}</p>
+        <p className="mt-2 text-[11px] italic text-muted-foreground">Notitie: {proposal.coachNote}</p>
       )}
       {open && (
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
           <button
             type="button"
             disabled={decide.isPending}
             onClick={() => decide.mutate({ proposalId: proposal.id, action: "accepteren" })}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
           >
             <Check className="h-3.5 w-3.5" /> Overnemen
           </button>
@@ -480,7 +480,7 @@ function ProposalCard({
             type="button"
             disabled={decide.isPending}
             onClick={() => setRejecting(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground disabled:opacity-40"
           >
             <X className="h-3.5 w-3.5" /> Afwijzen
           </button>
@@ -491,7 +491,7 @@ function ProposalCard({
               onClick={() =>
                 decide.mutate({ proposalId: proposal.id, action: "parkeren", note: "Later beoordelen" })
               }
-              className="rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/40 disabled:opacity-40"
+              className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground disabled:opacity-40"
             >
               Parkeren
             </button>
@@ -504,7 +504,7 @@ function ProposalCard({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Reden van afwijzen (verplicht)"
-            className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30"
+            className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
           />
           <button
             type="button"
@@ -515,7 +515,7 @@ function ProposalCard({
                 { onSuccess: () => setRejecting(false) },
               )
             }
-            className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+            className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
           >
             Bevestig afwijzen
           </button>
@@ -535,9 +535,9 @@ function MessagesSection({ athleteId, name }: { athleteId: string; name: string 
   return (
     <div className="space-y-3">
       {isLoading ? (
-        <div className="h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="h-16 animate-pulse rounded-2xl bg-muted" />
       ) : messages.length === 0 ? (
-        <p className="text-[13px] text-white/45">Nog geen berichten met {name}.</p>
+        <p className="text-[13px] text-muted-foreground">Nog geen berichten met {name}.</p>
       ) : (
         <div className="space-y-2">
           {messages.slice(-30).map((m) => {
@@ -547,12 +547,12 @@ function MessagesSection({ athleteId, name }: { athleteId: string; name: string 
                 <div
                   className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed ${
                     mine
-                      ? "border border-cyan-300/20 bg-cyan-300/[0.08] text-white/85"
-                      : "border border-white/[0.08] bg-white/[0.04] text-white/75"
+                      ? "border border-accent-cyan/20 bg-accent-cyan/[0.08] text-foreground/85"
+                      : "border border-border bg-muted text-foreground/75"
                   }`}
                 >
                   {m.body}
-                  <div className="mt-1 font-mono text-[9px] text-white/30">
+                  <div className="mt-1 font-mono text-[9px] text-muted-foreground">
                     {new Date(m.createdAt).toLocaleString("nl-NL", {
                       day: "numeric",
                       month: "short",
@@ -571,7 +571,7 @@ function MessagesSection({ athleteId, name }: { athleteId: string; name: string 
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={`Bericht aan ${name}…`}
-          className="min-w-0 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
           onKeyDown={(e) => {
             if (e.key === "Enter" && text.trim() && !send.isPending) {
               send.mutate({ body: text.trim() }, { onSuccess: () => setText("") })
@@ -582,7 +582,7 @@ function MessagesSection({ athleteId, name }: { athleteId: string; name: string 
           type="button"
           disabled={!text.trim() || send.isPending}
           onClick={() => send.mutate({ body: text.trim() }, { onSuccess: () => setText("") })}
-          className="grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] text-cyan-100/90 disabled:opacity-40"
+          className="grid h-9 w-9 place-items-center rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] text-accent-cyan disabled:opacity-40"
           aria-label="Versturen"
         >
           {send.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -603,7 +603,7 @@ function CoachLinkMessagesLink({ athleteId, name }: { athleteId: string; name: s
   return (
     <Link
       href={`/coach-messages/${coachClerkId}/${athleteId}`}
-      className="flex items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] py-3 text-[13px] text-cyan-100/90 hover:border-cyan-300/40"
+      className="flex items-center justify-center gap-2 rounded-2xl border border-accent-cyan/20 bg-accent-cyan/[0.05] py-3 text-[13px] text-accent-cyan hover:border-accent-cyan/40"
     >
       <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
       Berichten met bijlagen naar {name}
@@ -633,28 +633,28 @@ function ContextSection({ athleteId }: { athleteId: string }) {
   return (
     <div className="space-y-3">
       {isLoading ? (
-        <div className="h-14 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="h-14 animate-pulse rounded-2xl bg-muted" />
       ) : items.length === 0 ? (
-        <p className="text-[13px] text-white/45">
+        <p className="text-[13px] text-muted-foreground">
           Nog geen afspraken of context vastgelegd. De sporter kan alles wat je hier
           vastlegt zelf ook zien.
         </p>
       ) : (
         items.map((it) => (
           <div key={it.id} className={`${CARD} flex items-start gap-3`}>
-            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-white/35" strokeWidth={1.75} />
+            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
             <div className="min-w-0 flex-1">
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                 {KIND_LABEL[it.kind] ?? it.kind}
                 {it.endDate ? ` · tot ${fmtDay(it.endDate)}` : ""}
               </span>
-              <p className="mt-1 text-[13px] leading-relaxed text-white/80">{it.body}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-foreground/80">{it.body}</p>
             </div>
             <button
               type="button"
               disabled={del.isPending}
               onClick={() => del.mutate(it.id)}
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-white/30 hover:bg-white/[0.06] hover:text-white/60 disabled:opacity-40"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:opacity-40"
               aria-label="Verwijderen"
             >
               <X className="h-3.5 w-3.5" />
@@ -663,12 +663,12 @@ function ContextSection({ athleteId }: { athleteId: string }) {
         ))
       )}
       {adding ? (
-        <div className="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+        <div className="space-y-2 rounded-xl border border-border bg-muted p-3">
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value)}
-              className="rounded-lg border border-white/[0.1] bg-[#0a1220] px-2 py-1.5 text-[13px] text-white/85"
+              className="rounded-lg border border-border bg-card px-2 py-1.5 text-[13px] text-foreground/85"
             >
               {Object.entries(KIND_LABEL).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -680,7 +680,7 @@ function ContextSection({ athleteId }: { athleteId: string }) {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="rounded-lg border border-white/[0.1] bg-white/[0.04] px-2 py-1.5 text-[13px] text-white/60"
+              className="rounded-lg border border-border bg-muted px-2 py-1.5 text-[13px] text-muted-foreground"
               title="Geldig tot (optioneel)"
             />
           </div>
@@ -689,7 +689,7 @@ function ContextSection({ athleteId }: { athleteId: string }) {
             onChange={(e) => setBody(e.target.value)}
             placeholder="Bijv. max 2 intensieve trainingen per week tot de knie rustig is"
             rows={2}
-            className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+            className="w-full rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
           />
           <div className="flex gap-2">
             <button
@@ -707,11 +707,11 @@ function ContextSection({ athleteId }: { athleteId: string }) {
                   },
                 )
               }
-              className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+              className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
             >
               Vastleggen
             </button>
-            <button type="button" onClick={() => setAdding(false)} className="px-2 text-[12px] text-white/45">
+            <button type="button" onClick={() => setAdding(false)} className="px-2 text-[12px] text-muted-foreground">
               Annuleren
             </button>
           </div>
@@ -720,7 +720,7 @@ function ContextSection({ athleteId }: { athleteId: string }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05]"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted"
         >
           <Plus className="h-3.5 w-3.5" /> Afspraak of context vastleggen
         </button>
@@ -742,7 +742,7 @@ function PrivateNotesSection({ athleteId }: { athleteId: string }) {
   const notes = data?.notes ?? []
   if (isError) {
     return (
-      <p className="text-[13px] text-white/45">
+      <p className="text-[13px] text-muted-foreground">
         Privénotities zijn hier niet beschikbaar — daarvoor is een directe
         koppeling met deze sporter nodig.
       </p>
@@ -750,29 +750,29 @@ function PrivateNotesSection({ athleteId }: { athleteId: string }) {
   }
   return (
     <div className="space-y-3">
-      <p className="-mt-2 text-[12px] text-white/40">
+      <p className="-mt-2 text-[12px] text-muted-foreground">
         Privénotitie — alleen zichtbaar voor jou. Niet voor de sporter, andere
         trainers of Sparki's advies.
       </p>
       {isLoading ? (
-        <div className="h-14 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="h-14 animate-pulse rounded-2xl bg-muted" />
       ) : notes.length === 0 ? (
-        <p className="text-[13px] text-white/45">Nog geen privénotities.</p>
+        <p className="text-[13px] text-muted-foreground">Nog geen privénotities.</p>
       ) : (
         notes.map((n) => (
           <div key={n.id} className={`${CARD} flex items-start gap-3`}>
-            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-white/35" strokeWidth={1.75} />
+            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
             <div className="min-w-0 flex-1">
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                 Alleen zichtbaar voor jou{n.context ? ` · ${n.context}` : ""}
               </span>
-              <p className="mt-1 text-[13px] leading-relaxed text-white/80">{n.body}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-foreground/80">{n.body}</p>
             </div>
             <button
               type="button"
               disabled={del.isPending}
               onClick={() => del.mutate(n.id)}
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-white/30 hover:bg-white/[0.06] hover:text-white/60 disabled:opacity-40"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:opacity-40"
               aria-label="Verwijderen"
             >
               <X className="h-3.5 w-3.5" />
@@ -781,13 +781,13 @@ function PrivateNotesSection({ athleteId }: { athleteId: string }) {
         ))
       )}
       {adding ? (
-        <div className="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+        <div className="space-y-2 rounded-xl border border-border bg-muted p-3">
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Eigen observatie of geheugensteuntje — blijft privé"
             rows={2}
-            className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+            className="w-full rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
           />
           <div className="flex gap-2">
             <button
@@ -804,11 +804,11 @@ function PrivateNotesSection({ athleteId }: { athleteId: string }) {
                   },
                 )
               }
-              className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+              className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
             >
               Opslaan
             </button>
-            <button type="button" onClick={() => setAdding(false)} className="px-2 text-[12px] text-white/45">
+            <button type="button" onClick={() => setAdding(false)} className="px-2 text-[12px] text-muted-foreground">
               Annuleren
             </button>
           </div>
@@ -817,7 +817,7 @@ function PrivateNotesSection({ athleteId }: { athleteId: string }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05]"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted"
         >
           <Plus className="h-3.5 w-3.5" /> Privénotitie toevoegen
         </button>
@@ -912,7 +912,7 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
 
   return (
     <div className="space-y-3">
-      <p className="-mt-3 text-[13px] text-white/45">
+      <p className="-mt-3 text-[13px] text-muted-foreground">
         Jij stelt voor, {name} beslist. Je ziet de doelen zolang een door jou
         voorgesteld doel bestaat.
       </p>
@@ -920,21 +920,21 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
       {view.isSuccess ? (
         view.data.goals.length === 0 ? (
           <div className={CARD}>
-            <p className="text-[13px] text-white/55">Nog geen doelen vastgelegd.</p>
+            <p className="text-[13px] text-muted-foreground">Nog geen doelen vastgelegd.</p>
           </div>
         ) : (
           <div className="space-y-2">
             {view.data.goals.map((g) => (
               <div key={g.id} className={CARD}>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[14px] tracking-tight text-white/90">{g.title}</p>
+                  <p className="text-[14px] tracking-tight text-foreground/90">{g.title}</p>
                   {g.priority === 1 && (
-                    <span className="shrink-0 rounded-full bg-cyan-300/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-cyan-300/80">
+                    <span className="shrink-0 rounded-full bg-accent-cyan/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-accent-cyan">
                       Hoofddoel
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-[12px] text-white/45">
+                <p className="mt-1 text-[12px] text-muted-foreground">
                   {[g.measure, g.targetValue, g.targetDate ? fmtDay(g.targetDate) : null]
                     .filter(Boolean)
                     .join(" · ") || "Zonder meetlat"}
@@ -945,35 +945,35 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
         )
       ) : view.isError ? (
         <div className={CARD}>
-          <p className="text-[13px] leading-relaxed text-white/55">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Je hebt nu geen doelinzage bij {name}. Die ontstaat zodra {name} een
             doelvoorstel van jou accepteert — en verdwijnt weer als dat doel weg is.
           </p>
         </div>
       ) : (
-        <div className="h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="h-16 animate-pulse rounded-2xl bg-muted" />
       )}
 
       {!openForm ? (
         <button
           type="button"
           onClick={() => setOpenForm(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] px-3 py-2 text-[12px] text-white/60 hover:bg-white/[0.05]"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[12px] text-muted-foreground hover:bg-muted"
         >
           <Plus className="h-3.5 w-3.5" /> Doel voorstellen
         </button>
       ) : (
         <div className={CARD}>
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
               Doelvoorstel voor {name}
             </span>
-            <button type="button" onClick={() => setOpenForm(false)} aria-label="Sluiten" className="text-white/40 hover:text-white/70">
+            <button type="button" onClick={() => setOpenForm(false)} aria-label="Sluiten" className="text-muted-foreground hover:text-muted-foreground">
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
           {policy && (
-            <p className="mt-2 text-[12px] text-white/45">{policy.description}</p>
+            <p className="mt-2 text-[12px] text-muted-foreground">{policy.description}</p>
           )}
           {sliderOnly ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -984,8 +984,8 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
                   onClick={() => setTheme(t.key)}
                   className={`rounded-full px-3 py-1.5 text-[12px] ring-1 transition-colors ${
                     theme === t.key
-                      ? "bg-cyan-300/15 text-cyan-300 ring-cyan-300/40"
-                      : "text-white/55 ring-white/15 hover:text-white/80"
+                      ? "bg-accent-cyan/15 text-accent-cyan ring-ring/40"
+                      : "text-muted-foreground ring-ring hover:text-foreground/80"
                   }`}
                 >
                   {t.label}
@@ -1003,8 +1003,8 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
                     title={k.uitleg}
                     className={`rounded-full px-3 py-1.5 text-[12px] ring-1 transition-colors ${
                       kind === k.key
-                        ? "bg-cyan-300/15 text-cyan-300 ring-cyan-300/40"
-                        : "text-white/55 ring-white/15 hover:text-white/80"
+                        ? "bg-accent-cyan/15 text-accent-cyan ring-ring/40"
+                        : "text-muted-foreground ring-ring hover:text-foreground/80"
                     }`}
                   >
                     {k.label}
@@ -1015,20 +1015,20 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Welk doel stel je voor?"
-                className="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+                className="mt-3 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
               />
               <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <input
                   value={measure}
                   onChange={(e) => setMeasure(e.target.value)}
                   placeholder="Waaraan merk je dat het gelukt is?"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
                 />
                 <input
                   type="date"
                   value={targetDate}
                   onChange={(e) => setTargetDate(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white focus:border-cyan-300/40 focus:outline-none [color-scheme:dark]"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground focus:border-accent-cyan/40 focus:outline-none [color-scheme:light]"
                 />
               </div>
             </>
@@ -1038,10 +1038,10 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
             onChange={(e) => setReasoning(e.target.value)}
             rows={2}
             placeholder="Waarom stel je dit voor? (ziet de sporter)"
-            className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
           {propose.isError && (
-            <p className="mt-2 text-[12px] text-rose-300">
+            <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
               {(propose.error as Error)?.message?.includes("409") || (propose.error as Error)?.message?.toLowerCase().includes("al voorgesteld")
                 ? "Je hebt dit doel al voorgesteld."
                 : "Voorstel opslaan lukte niet — mogelijk past het niet bij de leeftijd van de sporter."}
@@ -1051,7 +1051,7 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
             type="button"
             onClick={submit}
             disabled={(sliderOnly ? !theme : !kind || !title.trim()) || propose.isPending}
-            className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+            className="mt-3 rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring/40 hover:bg-accent-cyan/25 disabled:opacity-40"
           >
             {propose.isPending ? "Bezig…" : "Voorstel versturen"}
           </button>
@@ -1100,7 +1100,7 @@ function CockpitBody({
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-[12px] text-white/45 hover:text-white/70"
+            className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-muted-foreground"
           >
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Terug naar je sporters
@@ -1108,8 +1108,8 @@ function CockpitBody({
         </div>
 
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold tracking-tight text-white">{name}</h1>
-          <p className="text-[11px] text-white/50">Coach-werkblad</p>
+          <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">{name}</h1>
+          <p className="text-[11px] text-muted-foreground">Coach-werkblad</p>
         </div>
 
         {/* Eén primaire actie in beeld bij openen (TUX-24/26). Per tab wisselt
@@ -1119,7 +1119,7 @@ function CockpitBody({
             type="button"
             disabled={reviewed.isPending}
             onClick={() => reviewed.mutate()}
-            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100 disabled:opacity-40"
+            className="flex items-center justify-center gap-2 rounded-xl border border-accent-cyan/45 bg-accent-cyan/10 px-4 py-3 text-[14px] font-medium text-accent-cyan disabled:opacity-40"
           >
             <Check className="h-4 w-4" /> Markeer als beoordeeld
           </button>
@@ -1128,7 +1128,7 @@ function CockpitBody({
           <button
             type="button"
             onClick={() => setAddingWorkout(true)}
-            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100"
+            className="flex items-center justify-center gap-2 rounded-xl border border-accent-cyan/45 bg-accent-cyan/10 px-4 py-3 text-[14px] font-medium text-accent-cyan"
           >
             <Plus className="h-4 w-4" strokeWidth={2.25} /> Training toevoegen
           </button>
@@ -1149,7 +1149,7 @@ function CockpitBody({
           <div className="flex flex-col gap-5">
             <div>
               <SectionLabel n="01" title={`Wat vraagt aandacht bij ${name}`} />
-              <p className="mt-2 text-[13px] text-white/45">
+              <p className="mt-2 text-[13px] text-muted-foreground">
                 Alleen signalen met echte onderbouwing. Bij elk signaal beslis jij:
                 overnemen, aanpassen, afwijzen of parkeren.
               </p>
@@ -1157,17 +1157,17 @@ function CockpitBody({
             {signalsLoading ? (
               <div className="space-y-3">
                 {[0, 1].map((i) => (
-                  <div key={i} className="h-24 animate-pulse rounded-2xl bg-white/[0.05]" />
+                  <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />
                 ))}
               </div>
             ) : signalsError ? (
-              <p className="text-[13px] text-white/50">
+              <p className="text-[13px] text-muted-foreground">
                 Kon de signalen niet ophalen — mogelijk deelt {name} geen data met jou.
               </p>
             ) : signals.length === 0 ? (
               <div className={`${CARD} text-center`}>
-                <Check className="mx-auto mb-2 h-6 w-6 text-white/30" strokeWidth={1.5} />
-                <p className="text-[14px] text-white/60">Niets dat nu aandacht vraagt.</p>
+                <Check className="mx-auto mb-2 h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                <p className="text-[14px] text-muted-foreground">Niets dat nu aandacht vraagt.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -1180,7 +1180,7 @@ function CockpitBody({
             {(proposals.length > 0 || decidedProposals.length > 0) && (
               <div className="flex flex-col gap-3">
                 <SectionLabel n="02" title="Voorstellen van Sparki" />
-                <p className="-mt-3 text-[13px] text-white/45">
+                <p className="-mt-3 text-[13px] text-muted-foreground">
                   Jouw trainingen worden nooit automatisch aangepast — jij beslist.
                 </p>
                 {proposals.map((p) => (
@@ -1197,7 +1197,7 @@ function CockpitBody({
         {/* ── Plannen: coachtrainingen; toevoegen/wijzigen als stappenvenster. */}
         {tab === "plannen" && (
           <div className="flex flex-col gap-3">
-            <p className="text-[13px] text-white/45">
+            <p className="text-[13px] text-muted-foreground">
               Jouw trainingen voor {name}, komende vier weken. Sparki-onderdelen zijn
               zichtbaar maar alleen jouw eigen trainingen zijn aanpasbaar.
             </p>
@@ -1239,7 +1239,7 @@ function CockpitBody({
 
             <Link
               href={`/coach/athletes/${athleteId}/plan`}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3 text-[13px] text-white/55 hover:border-white/15 hover:text-white/75"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-border py-3 text-[13px] text-muted-foreground hover:border-border hover:text-foreground/75"
             >
               <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
               Bekijk het adviesschema

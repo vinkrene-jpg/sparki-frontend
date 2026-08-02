@@ -16,6 +16,8 @@ import {
   View,
 } from "react-native";
 
+import colors from "@/constants/colors";
+
 type LegalKind = "terms" | "privacy" | "gezondheid";
 
 type ConsentDocumentStatus = {
@@ -31,7 +33,10 @@ type ConsentStatus = {
   documents: ConsentDocumentStatus[];
 };
 
-const ACCENT = "#4fd7f0";
+// LICHT_THEMA_01: één licht thema, dezelfde tokens als de web-app. Dit scherm
+// gebruikt het centrale palet uit constants/colors.ts (geen eigen kleuren meer).
+const c = colors.light;
+const ACCENT = c.tint; // merkaccent (donkerder cyaan, leesbaar op licht)
 
 function DocumentBody({ kind }: { kind: LegalKind }) {
   const [body, setBody] = useState<string | null>(null);
@@ -176,27 +181,27 @@ export default function ConsentGate({ children }: { children: React.ReactNode })
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#040506" },
+  screen: { flex: 1, backgroundColor: c.background },
   screenCenter: {
     flex: 1,
-    backgroundColor: "#040506",
+    backgroundColor: c.background,
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
     padding: 24,
   },
   content: { padding: 20, paddingTop: 64, paddingBottom: 48, gap: 12 },
-  title: { color: "#fff", fontSize: 22, fontWeight: "700" },
+  title: { color: c.foreground, fontSize: 22, fontWeight: "700" },
   subtle: {
-    color: "rgba(255,255,255,0.6)",
+    color: c.mutedForeground,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "left",
   },
   card: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    borderColor: c.border,
+    backgroundColor: c.card,
     borderRadius: 16,
     padding: 14,
     gap: 8,
@@ -207,25 +212,25 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.35)",
+    borderColor: c.input,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
   },
   checkboxOn: { backgroundColor: ACCENT, borderColor: ACCENT },
-  checkmark: { color: "#000", fontWeight: "800", fontSize: 14 },
-  cardLabel: { color: "rgba(255,255,255,0.9)", fontSize: 14, flex: 1, lineHeight: 20 },
+  checkmark: { color: c.card, fontWeight: "800", fontSize: 14 },
+  cardLabel: { color: c.foreground, fontSize: 14, flex: 1, lineHeight: 20 },
   link: { color: ACCENT, fontSize: 13, fontWeight: "600" },
   docBody: {
     maxHeight: 260,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "rgba(0,0,0,0.3)",
+    borderColor: c.border,
+    backgroundColor: c.muted,
     padding: 12,
   },
-  docText: { color: "rgba(255,255,255,0.7)", fontSize: 13, lineHeight: 19 },
-  docError: { color: "#f2a3a3", fontSize: 13 },
+  docText: { color: c.mutedForeground, fontSize: 13, lineHeight: 19 },
+  docError: { color: c.destructive, fontSize: 13 },
   primaryBtn: {
     backgroundColor: ACCENT,
     borderRadius: 999,
@@ -234,9 +239,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   btnDisabled: { opacity: 0.4 },
-  primaryBtnText: { color: "#000", fontWeight: "700", fontSize: 15 },
+  // Tekst óp het accent-vlak = licht (on-accent), gelijk aan web.
+  primaryBtnText: { color: c.background, fontWeight: "700", fontSize: 15 },
   footnote: {
-    color: "rgba(255,255,255,0.4)",
+    color: c.mutedForeground,
     fontSize: 12,
     textAlign: "center",
     marginTop: 4,

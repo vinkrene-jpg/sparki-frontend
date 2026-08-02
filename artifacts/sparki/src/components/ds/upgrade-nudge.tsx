@@ -85,7 +85,7 @@ function ActieKnop({ compact }: { compact?: boolean }) {
       href={UPGRADE_ACTION_PATH}
       data-testid="upgrade-nudge-actie"
       className={cn(
-        "inline-flex items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 font-medium text-cyan-200 transition hover:bg-cyan-300/20",
+        "inline-flex items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 font-medium text-accent-cyan transition hover:bg-cyan-300/20",
         compact ? "mt-2 px-3 py-1.5 text-[12px]" : "mt-1 px-4 py-2 text-[13px]",
       )}
     >
@@ -105,16 +105,16 @@ export function UpgradeNudge({ feature, compact, metActie, className }: UpgradeN
     return (
       <div
         className={cn(
-          "rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 backdrop-blur",
+          "rounded-xl border border-border bg-muted px-4 py-3 backdrop-blur",
           className,
         )}
         data-testid="upgrade-nudge"
       >
-        <p className="flex items-center gap-2 text-[12px] font-medium text-white/80">
-          <Lock className="h-3.5 w-3.5 text-cyan-300/80" aria-hidden />
+        <p className="flex items-center gap-2 text-[12px] font-medium text-foreground/80">
+          <Lock className="h-3.5 w-3.5 text-accent-cyan" aria-hidden />
           {copy.titel} hoort bij {copy.pakket}
         </p>
-        <p className="mt-1 text-[12px] leading-snug text-white/45">{copy.uitleg}</p>
+        <p className="mt-1 text-[12px] leading-snug text-muted-foreground">{copy.uitleg}</p>
         {metActie && <ActieKnop compact />}
       </div>
     );
@@ -123,19 +123,19 @@ export function UpgradeNudge({ feature, compact, metActie, className }: UpgradeN
   return (
     <div
       className={cn(
-        "mx-auto flex max-w-md flex-col items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-6 py-10 text-center backdrop-blur",
+        "mx-auto flex max-w-md flex-col items-center gap-3 rounded-2xl border border-border bg-muted px-6 py-10 text-center backdrop-blur",
         className,
       )}
       data-testid="upgrade-nudge"
     >
       <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/10">
-        <Lock className="h-4.5 w-4.5 text-cyan-300" aria-hidden />
+        <Lock className="h-4.5 w-4.5 text-accent-cyan" aria-hidden />
       </span>
-      <p className="text-[15px] font-semibold text-white/90">
+      <p className="text-[15px] font-semibold text-foreground/90">
         {copy.titel} hoort bij {copy.pakket}
       </p>
-      <p className="text-[13px] leading-relaxed text-white/50">{copy.uitleg}</p>
-      <p className="text-[12px] text-white/35">
+      <p className="text-[13px] leading-relaxed text-muted-foreground">{copy.uitleg}</p>
+      <p className="text-[12px] text-muted-foreground">
         Met {copy.pakket} krijg je dit onderdeel erbij. Al je huidige gegevens en
         gratis onderdelen blijven gewoon werken.
       </p>

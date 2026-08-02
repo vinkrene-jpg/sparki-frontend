@@ -55,7 +55,7 @@ export function BuildRatingBlock({
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span className="text-[12px] text-white/55">{question}</span>
+        <span className="text-[12px] text-muted-foreground">{question}</span>
         <DsStarRating
           value={rating}
           onChange={(n) => save(n)}
@@ -63,7 +63,7 @@ export function BuildRatingBlock({
           label={question}
         />
         {upsert.isError && (
-          <span className="text-[11px] text-red-300/80">
+          <span className="text-[11px] text-[color:var(--color-negative)]">
             Opslaan mislukt — probeer het nog eens.
           </span>
         )}
@@ -75,7 +75,7 @@ export function BuildRatingBlock({
               setComment(existing?.comment ?? "")
               setCommentSaved(false)
             }}
-            className="text-[11px] text-white/35 underline-offset-2 transition hover:text-white/60 hover:underline"
+            className="text-[11px] text-muted-foreground underline-offset-2 transition hover:text-muted-foreground hover:underline"
           >
             {existing?.comment ? "Toelichting wijzigen" : "Toelichting (niet verplicht)"}
           </button>
@@ -89,7 +89,7 @@ export function BuildRatingBlock({
             maxLength={280}
             rows={2}
             placeholder="Korte toelichting — wat werkt goed of juist niet?"
-            className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-white/[0.04] p-2.5 text-[12px] text-white/80 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+            className="min-w-0 flex-1 rounded-xl border border-border bg-muted p-2.5 text-[12px] text-foreground/80 placeholder:text-muted-foreground focus:border-cyan-300/40 focus:outline-none"
           />
           <button
             type="button"
@@ -98,14 +98,14 @@ export function BuildRatingBlock({
               save(rating, comment.trim() || null)
               setShowComment(false)
             }}
-            className="rounded-full border border-white/[0.14] px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90 disabled:opacity-50"
+            className="rounded-full border border-border px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border hover:text-foreground/90 disabled:opacity-50"
           >
             Bewaren
           </button>
         </div>
       )}
       {commentSaved && (
-        <p className="mt-1.5 text-[11px] text-white/35">
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
           Bedankt — je beoordeling is opgeslagen.
         </p>
       )}

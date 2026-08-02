@@ -15,7 +15,7 @@ import type { LoadData } from "@/hooks/use-load"
 function Skeleton({ className = "", licht = false }: { className?: string; licht?: boolean }) {
   return (
     <div
-      className={`animate-pulse rounded ${licht ? "bg-slate-100" : "bg-white/[0.06]"} ${className}`}
+      className={`animate-pulse rounded ${licht ? "bg-slate-100" : "bg-muted"} ${className}`}
     />
   )
 }
@@ -73,14 +73,14 @@ export function TrainingProgression({
   const licht = variant === "licht"
   // Stijl-tokens per variant, zodat de JSX hieronder één pad blijft.
   const kaart = licht
-    ? "mt-4 rounded-xl bg-white p-5"
-    : "mt-4 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+    ? "mt-4 rounded-xl bg-card p-5"
+    : "mt-4 rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
   const kaartStyle = licht
     ? { boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.05)" }
     : undefined
-  const labelKlein = licht ? "text-slate-500" : "text-white/35"
-  const tekstZacht = licht ? "text-slate-600" : "text-white/45"
-  const tekstLeeg = licht ? "text-slate-500" : "text-white/40"
+  const labelKlein = licht ? "text-slate-500" : "text-muted-foreground"
+  const tekstZacht = licht ? "text-slate-600" : "text-muted-foreground"
+  const tekstLeeg = licht ? "text-slate-500" : "text-muted-foreground"
   // Addendum 30 jul: alleen de LICHTE variant (Analyse) krijgt vette
   // hero-cijfers; de donkere variant (Ride/Vandaag) blijft extralight.
   const getalGroot = licht
@@ -169,7 +169,7 @@ export function TrainingProgression({
                     height={48}
                     stroke={lijnKleur}
                     fill={lijnFill}
-                    className={`w-full ${licht ? "text-blue-600" : "text-cyan-300"}`}
+                    className={`w-full ${licht ? "text-blue-600" : "text-accent-cyan"}`}
                   />
                 </div>
                 <p className={`mt-3 text-pretty text-[12px] leading-relaxed ${tekstZacht}`}>

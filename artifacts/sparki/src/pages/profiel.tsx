@@ -34,7 +34,7 @@ const SPORT_LABEL: Record<string, string> = {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       {children}
     </div>
   )
@@ -61,20 +61,20 @@ export default function ProfielPage() {
       <button
         type="button"
         onClick={() => navigate("/samen")}
-        className="flex items-center gap-2 font-mono text-[11px] tracking-wide text-white/50"
+        className="flex items-center gap-2 font-mono text-[11px] tracking-wide text-muted-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
         Terug naar Samen
       </button>
 
       {isLoading ? (
-        <div className="mt-4 h-32 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="mt-4 h-32 animate-pulse rounded-2xl bg-muted" />
       ) : isError || !profile ? (
         <Card>
-          <p className="text-[14px] leading-relaxed text-white/70">
+          <p className="text-[14px] leading-relaxed text-muted-foreground">
             Dit profiel is niet beschikbaar.
           </p>
-          <p className="mt-1 text-[12px] leading-relaxed text-white/40">
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
             Het bestaat niet, is afgeschermd of is niet voor jou zichtbaar.
           </p>
         </Card>
@@ -82,7 +82,7 @@ export default function ProfielPage() {
         <>
           <section className="flex items-center gap-4">
             <span
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 font-sans text-[18px] font-medium text-white/85"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-border font-sans text-[18px] font-medium text-foreground/85"
               style={{ background: "rgba(120,210,230,0.08)" }}
             >
               {(profile.displayName ?? "S")
@@ -93,10 +93,10 @@ export default function ProfielPage() {
                 .slice(0, 2)}
             </span>
             <div className="min-w-0">
-              <h1 className="truncate font-sans text-xl font-light tracking-tight text-white">
+              <h1 className="truncate font-sans text-xl font-light tracking-tight text-foreground">
                 {profile.displayName ?? "Naam niet gedeeld"}
               </h1>
-              <p className="truncate font-mono text-[10px] tracking-wide text-white/40">
+              <p className="truncate font-mono text-[10px] tracking-wide text-muted-foreground">
                 {[
                   profile.sport
                     ? (SPORT_LABEL[profile.sport.toLowerCase()] ?? profile.sport)
@@ -113,11 +113,11 @@ export default function ProfielPage() {
           {profile.counts ? (
             <Card>
               <div className="flex items-center gap-6">
-                <span className="flex items-center gap-2 text-[13px] text-white/70">
-                  <Users className="h-4 w-4 text-white/35" strokeWidth={1.75} />
+                <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                  <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                   {profile.counts.vrienden} vrienden
                 </span>
-                <span className="text-[13px] text-white/70">
+                <span className="text-[13px] text-muted-foreground">
                   {profile.counts.volgers} volgers
                 </span>
               </div>
@@ -131,7 +131,7 @@ export default function ProfielPage() {
                   type="button"
                   disabled={unfollow.isPending}
                   onClick={() => unfollow.mutate(profile.clerkId)}
-                  className="rounded-full border border-white/15 px-4 py-2 font-sans text-[12px] text-white/70 disabled:opacity-40"
+                  className="rounded-full border border-border px-4 py-2 font-sans text-[12px] text-muted-foreground disabled:opacity-40"
                 >
                   Ontvolgen
                 </button>
@@ -145,7 +145,7 @@ export default function ProfielPage() {
                         setFeedback("Deze actie is nu niet mogelijk."),
                     })
                   }
-                  className="flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-4 py-2 font-sans text-[12px] font-medium"
+                  className="flex items-center gap-1.5 rounded-full border border-accent-cyan/30 bg-accent-cyan/[0.08] px-4 py-2 font-sans text-[12px] font-medium"
                   style={{ color: ACCENT }}
                 >
                   <Eye className="h-3.5 w-3.5" strokeWidth={2} />
@@ -153,7 +153,7 @@ export default function ProfielPage() {
                 </button>
               )}
               {profile.isVriend ? (
-                <span className="rounded-full border border-white/12 px-4 py-2 font-mono text-[11px] text-white/45">
+                <span className="rounded-full border border-border px-4 py-2 font-mono text-[11px] text-muted-foreground">
                   Jullie zijn vrienden
                 </span>
               ) : profile.verzoekMogelijk ? (
@@ -177,7 +177,7 @@ export default function ProfielPage() {
               <button
                 type="button"
                 onClick={() => setReporting(true)}
-                className="flex items-center gap-1.5 rounded-full border border-white/12 px-4 py-2 font-sans text-[12px] text-white/50"
+                className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 font-sans text-[12px] text-muted-foreground"
               >
                 <Flag className="h-3.5 w-3.5" strokeWidth={1.75} />
                 Rapporteren
@@ -190,7 +190,7 @@ export default function ProfielPage() {
                     onSuccess: () => navigate("/samen"),
                   })
                 }
-                className="flex items-center gap-1.5 rounded-full border border-white/12 px-4 py-2 font-sans text-[12px] text-white/50 hover:text-[rgba(255,140,120,0.85)] disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 font-sans text-[12px] text-muted-foreground hover:text-[rgba(255,140,120,0.85)] disabled:opacity-40"
               >
                 <ShieldOff className="h-3.5 w-3.5" strokeWidth={1.75} />
                 Blokkeren
@@ -199,14 +199,14 @@ export default function ProfielPage() {
           )}
 
           {feedback && (
-            <p className="font-mono text-[11px] tracking-wide text-white/50">
+            <p className="font-mono text-[11px] tracking-wide text-muted-foreground">
               {feedback}
             </p>
           )}
 
           {reporting && (
             <Card>
-              <p className="text-[13px] text-white/80">
+              <p className="text-[13px] text-foreground/80">
                 Waarom rapporteer je dit profiel?
               </p>
               <textarea
@@ -214,7 +214,7 @@ export default function ProfielPage() {
                 onChange={(e) => setReportReason(e.target.value)}
                 rows={2}
                 placeholder="Korte toelichting (optioneel)…"
-                className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white/90 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+                className="mt-2 w-full resize-none rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
               />
               <div className="mt-2 flex gap-2">
                 <button
@@ -245,7 +245,7 @@ export default function ProfielPage() {
                 <button
                   type="button"
                   onClick={() => setReporting(false)}
-                  className="rounded-full border border-white/12 px-3.5 py-1.5 font-sans text-[12px] text-white/55"
+                  className="rounded-full border border-border px-3.5 py-1.5 font-sans text-[12px] text-muted-foreground"
                 >
                   Annuleren
                 </button>
@@ -255,30 +255,30 @@ export default function ProfielPage() {
 
           {profile.zichtbaar.trainingen && profile.trainingSummary ? (
             <Card>
-              <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+              <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 <Activity className="h-3.5 w-3.5" strokeWidth={1.75} />
                 Trainingen (laatste 4 weken)
               </p>
               <div className="mt-2 flex gap-6">
                 <div>
-                  <p className="text-[20px] font-light text-white">
+                  <p className="text-[20px] font-light text-foreground">
                     {profile.trainingSummary.last28dCount}
                   </p>
-                  <p className="font-mono text-[10px] text-white/40">
+                  <p className="font-mono text-[10px] text-muted-foreground">
                     trainingen
                   </p>
                 </div>
                 <div>
-                  <p className="text-[20px] font-light text-white">
+                  <p className="text-[20px] font-light text-foreground">
                     {profile.trainingSummary.last28dHours}
                   </p>
-                  <p className="font-mono text-[10px] text-white/40">uur</p>
+                  <p className="font-mono text-[10px] text-muted-foreground">uur</p>
                 </div>
               </div>
             </Card>
           ) : (
             <Card>
-              <p className="flex items-center gap-2 text-[12px] text-white/40">
+              <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 <EyeOff className="h-3.5 w-3.5" strokeWidth={1.75} />
                 Trainingen zijn niet gedeeld.
               </p>
@@ -288,13 +288,13 @@ export default function ProfielPage() {
           {profile.zichtbaar.wedstrijden ? (
             profile.nextRace ? (
               <Card>
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                   Eerstvolgende wedstrijd
                 </p>
-                <p className="mt-1 text-[14px] text-white/85">
+                <p className="mt-1 text-[14px] text-foreground/85">
                   {profile.nextRace.name}
                 </p>
-                <p className="font-mono text-[11px] text-white/40">
+                <p className="font-mono text-[11px] text-muted-foreground">
                   {new Date(profile.nextRace.date).toLocaleDateString("nl-NL", {
                     weekday: "long",
                     day: "numeric",
@@ -304,14 +304,14 @@ export default function ProfielPage() {
               </Card>
             ) : (
               <Card>
-                <p className="text-[12px] text-white/40">
+                <p className="text-[12px] text-muted-foreground">
                   Geen aankomende wedstrijd bekend.
                 </p>
               </Card>
             )
           ) : (
             <Card>
-              <p className="flex items-center gap-2 text-[12px] text-white/40">
+              <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 <EyeOff className="h-3.5 w-3.5" strokeWidth={1.75} />
                 Wedstrijden zijn niet gedeeld.
               </p>

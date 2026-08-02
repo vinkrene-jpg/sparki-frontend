@@ -178,7 +178,7 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
               >
                 START RACE MODE
               </span>
-              <span className="mt-1 block font-mono text-[10px] tracking-[0.28em] text-cyan-300/70">
+              <span className="mt-1 block font-mono text-[10px] tracking-[0.28em] text-accent-cyan">
                 FOCUS · COUNTDOWN · GO
               </span>
             </span>
@@ -187,7 +187,7 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
       )}
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>

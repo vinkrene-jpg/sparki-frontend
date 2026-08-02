@@ -41,8 +41,8 @@ export function ReleaseNoteCard() {
   return (
     <section className="mt-4 space-y-3">
       {needsConsent && (
-        <div className="rounded-2xl border border-cyan-300/25 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-          <p className="text-[13px] leading-relaxed text-white/80">
+        <div className="rounded-2xl border border-accent-cyan bg-card p-4 backdrop-blur-md">
+          <p className="text-[13px] leading-relaxed text-foreground/80">
             Je doet mee aan de proefperiode van Sparki. Nieuwe onderdelen kunnen
             nog veranderen en soms haperen; jouw meldingen helpen om ze goed te
             krijgen.
@@ -51,7 +51,7 @@ export function ReleaseNoteCard() {
             type="button"
             onClick={() => acceptConsent.mutate()}
             disabled={acceptConsent.isPending}
-            className="mt-3 rounded-lg border border-cyan-300/40 px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300 transition hover:bg-cyan-300/10 disabled:opacity-50"
+            className="mt-3 rounded-lg border border-accent-cyan px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition hover:bg-accent-cyan disabled:opacity-50"
           >
             {acceptConsent.isPending ? "Bezig…" : "Begrepen, ik doe mee"}
           </button>
@@ -59,18 +59,18 @@ export function ReleaseNoteCard() {
       )}
 
       {note && (
-        <div className="rounded-2xl border border-white/[0.1] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+        <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2.5">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300/80" strokeWidth={1.75} />
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent-cyan" strokeWidth={1.75} />
               <div>
-                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-cyan-300/60">
+                <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-accent-cyan">
                   Nieuw in Sparki
                 </span>
-                <h3 className="mt-0.5 text-[14px] font-medium text-white/90">
+                <h3 className="mt-0.5 text-[14px] font-medium text-foreground/90">
                   {note.title}
                 </h3>
-                <p className="mt-1.5 whitespace-pre-line text-[12px] leading-relaxed text-white/60">
+                <p className="mt-1.5 whitespace-pre-line text-[12px] leading-relaxed text-muted-foreground">
                   {note.body}
                 </p>
               </div>
@@ -79,7 +79,7 @@ export function ReleaseNoteCard() {
               type="button"
               aria-label="Gelezen"
               onClick={() => markRead.mutate(note.id)}
-              className="rounded-full border border-white/15 p-1 text-white/50 transition hover:border-cyan-300/40 hover:text-cyan-300"
+              className="rounded-full border border-border p-1 text-muted-foreground transition hover:border-accent-cyan hover:text-accent-cyan"
             >
               <X className="h-3.5 w-3.5" />
             </button>

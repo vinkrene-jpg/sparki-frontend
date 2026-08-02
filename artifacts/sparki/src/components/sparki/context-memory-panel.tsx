@@ -36,7 +36,7 @@ const STATUS_LABEL: Record<ContextMemory["status"], string> = {
 const STATUS_COLOR: Record<ContextMemory["status"], string> = {
   scheduled: "rgba(245,200,110,0.9)",
   followed_up: ACCENT,
-  dismissed: "rgba(255,255,255,0.3)",
+  dismissed: "var(--color-muted-foreground)",
 }
 
 const IMPORTANCE_LABEL: Record<ContextImportance, string> = {
@@ -46,7 +46,7 @@ const IMPORTANCE_LABEL: Record<ContextImportance, string> = {
 }
 
 const IMPORTANCE_COLOR: Record<ContextImportance, string> = {
-  low: "rgba(255,255,255,0.3)",
+  low: "var(--color-muted-foreground)",
   medium: "rgba(245,200,110,0.85)",
   high: "rgba(244,130,130,0.9)",
 }
@@ -66,13 +66,13 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
     setEnabled.isPending || setVisibility.isPending || remove.isPending
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-3.5 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span
               className="rounded px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider"
-              style={{ background: "rgba(255,255,255,0.06)", color: ACCENT }}
+              style={{ background: "var(--color-muted)", color: ACCENT }}
             >
               {KIND_LABEL[memory.kind] ?? memory.kind}
             </span>
@@ -84,17 +84,17 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
               {IMPORTANCE_LABEL[memory.importance]}
             </span>
             {memory.emotionalTone && memory.emotionalTone !== "neutraal" && (
-              <span className="font-mono text-[8px] uppercase tracking-wider text-white/40">
+              <span className="font-mono text-[8px] uppercase tracking-wider text-muted-foreground">
                 {memory.emotionalTone}
               </span>
             )}
             {!memory.enabled && (
-              <span className="font-mono text-[8px] uppercase tracking-wider text-white/30">
+              <span className="font-mono text-[8px] uppercase tracking-wider text-muted-foreground">
                 Gepauzeerd
               </span>
             )}
           </div>
-          <p className="mt-1.5 text-[13px] font-medium leading-snug text-white/85">
+          <p className="mt-1.5 text-[13px] font-medium leading-snug text-foreground/85">
             {memory.title}
           </p>
         </div>
@@ -102,7 +102,7 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
           type="button"
           disabled={busy}
           onClick={() => remove.mutate(memory.id)}
-          className="shrink-0 text-white/30 transition hover:text-rose-300 disabled:opacity-40"
+          className="shrink-0 text-muted-foreground transition hover:text-[color:var(--color-negative)] disabled:opacity-40"
           title="Verwijderen"
           aria-label="Verwijderen"
         >
@@ -111,20 +111,20 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
       </div>
 
       {memory.detail && (
-        <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/50">
+        <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           {memory.detail}
         </p>
       )}
 
       {memory.signals && memory.signals.length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-[9px] uppercase tracking-wider text-white/30">
+          <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
             Waarom
           </span>
           {memory.signals.map((s, i) => (
             <span
               key={i}
-              className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[10px] text-white/45"
+              className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
             >
               {s.value}
             </span>
@@ -137,7 +137,7 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
           className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
           style={{ background: STATUS_COLOR[memory.status] }}
         />
-        <span className="font-mono text-[10px] tracking-wide text-white/45">
+        <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
           {STATUS_LABEL[memory.status]}
           {memory.status === "scheduled" && memory.followUpAt
             ? ` · ${formatDate(memory.followUpAt)}`
@@ -146,8 +146,8 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
       </div>
 
       {memory.status === "followed_up" && memory.response && (
-        <p className="mt-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-[12px] leading-relaxed text-white/60">
-          <span className="text-white/35">Jouw antwoord: </span>
+        <p className="mt-2 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[12px] leading-relaxed text-muted-foreground">
+          <span className="text-muted-foreground">Jouw antwoord: </span>
           {memory.response}
         </p>
       )}
@@ -162,7 +162,7 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
               visibility: memory.visibility === "shared" ? "private" : "shared",
             })
           }
-          className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-cyan-300 disabled:opacity-40"
+          className="font-mono text-[10px] tracking-wide text-muted-foreground transition hover:text-accent-cyan disabled:opacity-40"
           title="Bepaal of je begeleiding dit mag zien"
         >
           {memory.visibility === "shared"
@@ -175,7 +175,7 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
           onClick={() =>
             setEnabled.mutate({ id: memory.id, enabled: !memory.enabled })
           }
-          className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-cyan-300 disabled:opacity-40"
+          className="font-mono text-[10px] tracking-wide text-muted-foreground transition hover:text-accent-cyan disabled:opacity-40"
         >
           {memory.enabled ? "Niet meer gebruiken" : "Weer aanzetten"}
         </button>
@@ -218,7 +218,7 @@ export function ContextMemoryPanel() {
   return (
     <section>
       <SectionLabel n="09" title="Wat er speelt" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
         Vertel wat er speelt — school, werk, familie, een wedstrijd, een
         blessure of een slechte nacht. Het wordt onthouden en komt op het
         juiste moment rustig terug. Jij houdt de regie: delen, pauzeren of
@@ -234,19 +234,19 @@ export function ContextMemoryPanel() {
           }}
           rows={2}
           placeholder="Bijv. ik heb niet getraind want ik heb morgen examen"
-          className="w-full resize-none rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] leading-relaxed text-white/85 placeholder:text-white/25 focus:border-cyan-400/40 focus:outline-none"
+          className="w-full resize-none rounded-lg border border-border bg-muted px-3 py-2 text-[13px] leading-relaxed text-foreground/85 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
         />
         <div className="mt-2 flex items-center gap-3">
           <button
             type="button"
             disabled={capture.isPending || !text.trim()}
             onClick={submit}
-            className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/70 transition hover:border-cyan-400/40 hover:text-cyan-300 disabled:opacity-40"
+            className="rounded-lg border border-border bg-muted px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-40"
           >
             {capture.isPending ? "Bezig\u2026" : "Vertel het"}
           </button>
           {feedback && (
-            <span className="text-[11px] leading-snug text-white/45">
+            <span className="text-[11px] leading-snug text-muted-foreground">
               {feedback}
             </span>
           )}
@@ -258,12 +258,12 @@ export function ContextMemoryPanel() {
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="h-20 w-full animate-pulse rounded-xl bg-white/[0.06]"
+              className="h-20 w-full animate-pulse rounded-xl bg-muted"
             />
           ))}
         </div>
       ) : memories.length === 0 ? (
-        <p className="mt-4 text-[13px] text-white/35">
+        <p className="mt-4 text-[13px] text-muted-foreground">
           Nog niets onthouden · Vertel hierboven wat er speelt
         </p>
       ) : (

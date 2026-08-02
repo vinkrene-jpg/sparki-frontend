@@ -53,10 +53,10 @@ const ACTION_ROUTE: Record<CoachActionKind, string> = {
 function ConfidencePill({ confidence }: { confidence: Confidence }) {
   const tone =
     confidence.level === "high"
-      ? "border-cyan-300/40 text-cyan-200"
+      ? "border-accent-cyan/40 text-accent-cyan"
       : confidence.level === "medium"
-        ? "border-amber-300/40 text-amber-200"
-        : "border-white/20 text-white/60"
+        ? "border-amber-300/40 text-[color:var(--color-warning)]"
+        : "border-border text-muted-foreground"
   return (
     <span
       className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] ${tone}`}
@@ -73,18 +73,18 @@ function ConfidencePill({ confidence }: { confidence: Confidence }) {
 function SignalsTable({ signals }: { signals: IntakeSignal[] }) {
   if (signals.length === 0) return null
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+    <div className="overflow-hidden rounded-xl border border-border bg-muted">
       <table className="w-full border-collapse">
         <tbody>
           {signals.map((s) => (
             <tr
               key={s.kind}
-              className="border-b border-white/[0.06] last:border-0"
+              className="border-b border-border last:border-0"
             >
-              <td className="px-3 py-2 align-top text-[13px] text-white/55">
+              <td className="px-3 py-2 align-top text-[13px] text-muted-foreground">
                 {labelSignalCapitalized(s.kind)}
               </td>
-              <td className="px-3 py-2 text-right align-top font-mono text-[13px] tabular-nums text-white/90">
+              <td className="px-3 py-2 text-right align-top font-mono text-[13px] tabular-nums text-foreground/90">
                 {s.value ?? "—"}
               </td>
             </tr>
@@ -99,14 +99,14 @@ function MissingList({ kinds }: { kinds: string[] }) {
   if (kinds.length === 0) return null
   return (
     <div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-200/70">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-warning)]">
         Wat nog ontbreekt
       </p>
       <ul className="mt-1.5 flex flex-wrap gap-1.5">
         {kinds.map((k) => (
           <li
             key={k}
-            className="rounded-full border border-amber-300/25 px-2 py-0.5 text-[11px] text-amber-100/70"
+            className="rounded-full border border-amber-300/25 px-2 py-0.5 text-[11px] text-[color:var(--color-warning)]"
           >
             {labelSignalCapitalized(k)}
           </li>
@@ -121,10 +121,10 @@ function ReasonBlock({ confidence }: { confidence: Confidence }) {
     <div className="space-y-2">
       {confidence.reasons.length > 0 && (
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Waarop dit is gebaseerd
           </p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-white/65">
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
             {confidence.reasons.map((r, i) => (
               <li key={i}>{r}</li>
             ))}
@@ -133,10 +133,10 @@ function ReasonBlock({ confidence }: { confidence: Confidence }) {
       )}
       {confidence.uncertainties.length > 0 && (
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Wat de zekerheid afremt
           </p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-white/50">
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
             {confidence.uncertainties.map((u, i) => (
               <li key={i}>{u}</li>
             ))}
@@ -163,7 +163,7 @@ function WhyContent({
       {/* Wat ik zie — eerst de cijfers, als klein tabelletje. Bij te weinig
           meetwaarden valt het honest terug op de tekstuele lezing. */}
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           Wat ik zie
         </p>
         {usedSignals.length > 0 ? (
@@ -171,14 +171,14 @@ function WhyContent({
             <SignalsTable signals={usedSignals} />
           </div>
         ) : (
-          <p className="mt-1 text-sm leading-relaxed text-white/80">
+          <p className="mt-1 text-sm leading-relaxed text-foreground/80">
             {data.advice.explainers.watIkZie}
           </p>
         )}
       </div>
 
       {/* Uitleg eronder — wat de cijfers betekenen, zonder getallen in de tekst. */}
-      <div className="space-y-1.5 text-sm leading-relaxed text-white/75">
+      <div className="space-y-1.5 text-sm leading-relaxed text-muted-foreground">
         <p>{data.advice.explainers.watIkDenk}</p>
         <p>{data.advice.explainers.waaromDitAdvies}</p>
         <p>{data.advice.explainers.watAlsHetAndersIs}</p>
@@ -191,7 +191,7 @@ function WhyContent({
       {/* Verantwoording: waar deze analyse vandaan komt en wanneer die is
           berekend — elke conclusie blijft herleidbaar. */}
       {(data.engine || data.engineVersion) && (
-        <p className="border-t border-white/[0.06] pt-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/25">
+        <p className="border-t border-border pt-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
           Bron: {data.engine ?? "onbekend"}
           {data.engineVersion ? ` · versie ${data.engineVersion}` : ""}
           {data.generatedAt
@@ -221,9 +221,9 @@ function WhyContent({
 function FollowUp({ q }: { q: FollowUpQuestion }) {
   const answer = useAnswerFollowUp()
   return (
-    <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] p-3">
-      <p className="text-sm font-medium text-white/85">{q.question}</p>
-      <p className="mt-1 text-xs leading-relaxed text-white/45">{q.because}</p>
+    <div className="rounded-xl border border-accent-cyan/15 bg-accent-cyan/[0.04] p-3">
+      <p className="text-sm font-medium text-foreground/85">{q.question}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{q.because}</p>
       <div className="mt-2.5 flex flex-wrap gap-2">
         {q.options.map((o) => (
           <button
@@ -231,14 +231,14 @@ function FollowUp({ q }: { q: FollowUpQuestion }) {
             type="button"
             disabled={answer.isPending}
             onClick={() => answer.mutate({ questionId: q.id, answer: o.value })}
-            className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-cyan-300/50 hover:text-cyan-200 disabled:opacity-40"
+            className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:border-accent-cyan/50 hover:text-accent-cyan disabled:opacity-40"
           >
             {o.label}
           </button>
         ))}
       </div>
       {answer.isError && (
-        <p className="mt-2 text-xs text-rose-300/80">
+        <p className="mt-2 text-xs text-[color:var(--color-negative)]">
           Je antwoord kon niet worden verwerkt. Probeer het zo nog eens.
         </p>
       )}
@@ -252,17 +252,17 @@ function ActionButton({ action }: { action: CoachAction }) {
     <button
       type="button"
       onClick={() => setLocation(ACTION_ROUTE[action.kind])}
-      className="group flex w-full items-center justify-between gap-3 rounded-xl border border-white/12 bg-white/[0.03] px-3.5 py-2.5 text-left transition-colors hover:border-cyan-300/40 hover:bg-cyan-300/[0.05]"
+      className="group flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-muted px-3.5 py-2.5 text-left transition-colors hover:border-accent-cyan/40 hover:bg-accent-cyan/[0.05]"
     >
       <span>
-        <span className="block text-sm font-medium text-white/85 group-hover:text-cyan-100">
+        <span className="block text-sm font-medium text-foreground/85 group-hover:text-accent-cyan">
           {action.label}
         </span>
-        <span className="mt-0.5 block text-xs text-white/45">
+        <span className="mt-0.5 block text-xs text-muted-foreground">
           {action.reason}
         </span>
       </span>
-      <ChevronDown className="h-4 w-4 -rotate-90 text-white/30 group-hover:text-cyan-300/70" />
+      <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground group-hover:text-accent-cyan" />
     </button>
   )
 }
@@ -270,15 +270,15 @@ function ActionButton({ action }: { action: CoachAction }) {
 function FeedbackRow() {
   const feedback = useCoachFeedback()
   return (
-    <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/[0.06] pt-3">
-      <span className="mr-auto text-[11px] text-white/35">
+    <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
+      <span className="mr-auto text-[11px] text-muted-foreground">
         Klopt dit advies voor jou?
       </span>
       <button
         type="button"
         disabled={feedback.isPending}
         onClick={() => feedback.mutate("advice_followed")}
-        className="flex items-center gap-1 rounded-full border border-white/12 px-2.5 py-1 text-xs text-white/65 transition-colors hover:border-cyan-300/40 hover:text-cyan-200 disabled:opacity-40"
+        className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-40"
       >
         <ThumbsUp className="h-3 w-3" /> Ja
       </button>
@@ -286,7 +286,7 @@ function FeedbackRow() {
         type="button"
         disabled={feedback.isPending}
         onClick={() => feedback.mutate("advice_ignored")}
-        className="flex items-center gap-1 rounded-full border border-white/12 px-2.5 py-1 text-xs text-white/65 transition-colors hover:border-rose-300/40 hover:text-rose-200 disabled:opacity-40"
+        className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-rose-300/40 hover:text-[color:var(--color-negative)] disabled:opacity-40"
       >
         <ThumbsDown className="h-3 w-3" /> Nee
       </button>
@@ -302,10 +302,10 @@ function PersonalityLine({ personality }: { personality: Personality }) {
     ? personality.basis.charAt(0).toUpperCase() + personality.basis.slice(1)
     : ""
   return (
-    <p className="mt-3 text-sm text-white/70">
+    <p className="mt-3 text-sm text-muted-foreground">
       Je wordt gecoacht als{" "}
-      <span className="text-cyan-200/90">{personality.label}</span>.
-      {basis && <span className="text-white/45"> {basis}.</span>}
+      <span className="text-accent-cyan">{personality.label}</span>.
+      {basis && <span className="text-muted-foreground"> {basis}.</span>}
     </p>
   )
 }
@@ -324,23 +324,23 @@ function WhyOverlay({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col bg-[#05070e]/96 backdrop-blur-xl">
-      <div className="sticky top-0 flex items-center justify-between border-b border-white/10 bg-[#05070e]/80 px-5 py-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-[10000] flex flex-col bg-card backdrop-blur-xl">
+      <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card px-5 py-4 backdrop-blur-md">
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center gap-1.5 text-sm text-white/70 transition-colors hover:text-cyan-200"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-accent-cyan"
         >
           <ChevronLeft className="h-4 w-4" /> Terug
         </button>
-        <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/50">
+        <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
           Waarom dit advies
         </span>
         <button
           type="button"
           onClick={onClose}
           aria-label="Sluiten"
-          className="text-white/45 transition-colors hover:text-white/80"
+          className="text-muted-foreground transition-colors hover:text-foreground/80"
         >
           <X className="h-5 w-5" />
         </button>
@@ -384,22 +384,22 @@ export function CoachAnalysisCard({
 
   if (isLoading) {
     return (
-      <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-        <p className="text-sm text-white/40">Dag wordt geanalyseerd…</p>
+      <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+        <p className="text-sm text-muted-foreground">Dag wordt geanalyseerd…</p>
       </section>
     )
   }
 
   if (isError || !data) {
     return (
-      <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-        <p className="text-sm text-white/55">
+      <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+        <p className="text-sm text-muted-foreground">
           Je analyse kon nu niet worden samengesteld. Probeer het later opnieuw.
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="mt-3 flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-200"
+          className="mt-3 flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <RefreshCw className="h-3 w-3" /> Opnieuw proberen
         </button>
@@ -437,11 +437,11 @@ export function CoachAnalysisCard({
     const otherFollowUps = data.followUps.filter((q) => q.id !== "missing_checkin")
     return (
       <>
-        <section className="rounded-2xl border border-cyan-300/15 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+        <section className="rounded-2xl border border-accent-cyan/15 bg-card p-5 backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-cyan-300" strokeWidth={2} />
-              <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/60">
+              <Sparkles className="h-4 w-4 text-accent-cyan" strokeWidth={2} />
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                 Vandaag
               </h2>
             </div>
@@ -449,7 +449,7 @@ export function CoachAnalysisCard({
               type="button"
               onClick={() => void refetch()}
               disabled={isFetching}
-              className="flex items-center gap-1.5 rounded-full border border-white/12 px-2.5 py-1 text-[11px] text-white/55 transition-colors hover:border-cyan-300/40 hover:text-cyan-200 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-40"
               title="Opnieuw bekijken"
             >
               <RefreshCw
@@ -462,14 +462,14 @@ export function CoachAnalysisCard({
           <PersonalityLine personality={data.personality} />
 
           {/* Advice headline + intensity + confidence */}
-          <div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4">
+          <div className="mt-3 rounded-xl border border-accent-cyan/15 bg-accent-cyan/[0.05] p-4">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-200">
+              <span className="rounded-full bg-accent-cyan/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-cyan">
                 {INTENSITY_LABEL[data.advice.intensity] ?? data.advice.intensity}
               </span>
               <ConfidencePill confidence={data.advice.confidence} />
             </div>
-            <p className="mt-2.5 text-lg font-semibold leading-snug text-white">
+            <p className="mt-2.5 text-lg font-semibold leading-snug text-foreground">
               {data.advice.headline}
             </p>
           </div>
@@ -477,7 +477,7 @@ export function CoachAnalysisCard({
           {/* Open vragen — alleen als Sparki echt iets wil weten */}
           {otherFollowUps.length > 0 && (
             <div className="mt-4 space-y-2.5">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Wat ik nog wil weten
               </p>
               {otherFollowUps.map((q) => (
@@ -490,19 +490,19 @@ export function CoachAnalysisCard({
           <button
             type="button"
             onClick={() => setShowWhy(true)}
-            className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/12 px-3.5 py-2.5 text-left transition-colors hover:border-cyan-300/40"
+            className="mt-4 flex w-full items-center justify-between rounded-xl border border-border px-3.5 py-2.5 text-left transition-colors hover:border-accent-cyan/40"
           >
-            <span className="flex items-center gap-2 text-sm text-white/75">
-              <HelpCircle className="h-4 w-4 text-cyan-300/80" />
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <HelpCircle className="h-4 w-4 text-accent-cyan" />
               Waarom dit advies?
             </span>
-            <ChevronDown className="h-4 w-4 -rotate-90 text-white/40" />
+            <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground" />
           </button>
 
           {/* Concrete next steps — no dead-end insights */}
           {data.actions.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+              <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 <Activity className="h-3 w-3" />
                 Wat je nu kunt doen
               </p>
@@ -529,23 +529,23 @@ export function CoachAnalysisCard({
 
   // ── Card (Train / Inzicht / Races) ───────────────────────────────────────────
   return (
-    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-cyan-300" strokeWidth={2} />
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/60">
+        <Sparkles className="h-4 w-4 text-accent-cyan" strokeWidth={2} />
+        <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
           Vandaag
         </h2>
       </div>
 
       {/* Advice headline + intensity + confidence */}
-      <div className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4">
+      <div className="mt-4 rounded-xl border border-accent-cyan/15 bg-accent-cyan/[0.05] p-4">
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-200">
+          <span className="rounded-full bg-accent-cyan/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-cyan">
             {INTENSITY_LABEL[data.advice.intensity] ?? data.advice.intensity}
           </span>
           <ConfidencePill confidence={data.advice.confidence} />
         </div>
-        <p className="mt-2.5 text-base font-medium leading-snug text-white/90">
+        <p className="mt-2.5 text-base font-medium leading-snug text-foreground/90">
           {data.advice.headline}
         </p>
       </div>
@@ -554,19 +554,19 @@ export function CoachAnalysisCard({
       <button
         type="button"
         onClick={() => setShowWhy((v) => !v)}
-        className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/12 px-3.5 py-2.5 text-left transition-colors hover:border-cyan-300/40"
+        className="mt-4 flex w-full items-center justify-between rounded-xl border border-border px-3.5 py-2.5 text-left transition-colors hover:border-accent-cyan/40"
       >
-        <span className="flex items-center gap-2 text-sm text-white/75">
-          <HelpCircle className="h-4 w-4 text-cyan-300/80" />
+        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+          <HelpCircle className="h-4 w-4 text-accent-cyan" />
           Waarom dit advies?
         </span>
         <ChevronDown
-          className={`h-4 w-4 text-white/40 transition-transform ${showWhy ? "rotate-180" : ""}`}
+          className={`h-4 w-4 text-muted-foreground transition-transform ${showWhy ? "rotate-180" : ""}`}
         />
       </button>
 
       {showWhy && (
-        <div className="mt-3 space-y-4 rounded-xl border border-white/[0.08] bg-black/20 p-4">
+        <div className="mt-3 space-y-4 rounded-xl border border-border bg-foreground/20 p-4">
           <WhyContent
             data={data}
             usedSignals={usedSignals}
@@ -578,7 +578,7 @@ export function CoachAnalysisCard({
       {/* Follow-up questions — only when Sparki is in doubt / missing data */}
       {data.followUps.length > 0 && (
         <div className="mt-4 space-y-2.5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Dit is nog nodig van jou
           </p>
           {data.followUps.map((q) => (
@@ -590,7 +590,7 @@ export function CoachAnalysisCard({
       {/* Concrete next steps — no dead-end insights */}
       {data.actions.length > 0 && (
         <div className="mt-4 space-y-2">
-          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             <Activity className="h-3 w-3" />
             Wat je nu kunt doen
           </p>

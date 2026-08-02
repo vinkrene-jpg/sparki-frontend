@@ -75,18 +75,18 @@ export default function TesterWelcomePage() {
             {label}
           </span>
         ) : (
-          <span className="mt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
+          <span className="mt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
             Je hoofdtester-nummer wordt toegekend…
           </span>
         )}
 
-        <h1 className="mt-5 font-sans text-3xl font-light leading-tight tracking-tight text-white/95">
+        <h1 className="mt-5 font-sans text-3xl font-light leading-tight tracking-tight text-foreground/95">
           {first ? `Welkom, ${first}.` : "Welkom."}
           <br />
           <span style={{ color: ACCENT }}>Je bent onze hoofdtester.</span>
         </h1>
 
-        <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-white/60">
+        <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-muted-foreground">
           Jij bent de eerste die Sparki echt op de proef stelt. Alles wat je ziet,
           voelt en tegenkomt helpt ons om Sparki scherper te maken.
         </p>
@@ -96,7 +96,7 @@ export default function TesterWelcomePage() {
         {PERKS.map(({ icon: Icon, title, body }) => (
           <div
             key={title}
-            className="flex items-start gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+            className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
           >
             <span
               className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
@@ -105,8 +105,8 @@ export default function TesterWelcomePage() {
               <Icon className="h-4.5 w-4.5" strokeWidth={1.6} />
             </span>
             <div>
-              <h3 className="text-[14px] font-medium text-white/90">{title}</h3>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-white/55">{body}</p>
+              <h3 className="text-[14px] font-medium text-foreground/90">{title}</h3>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{body}</p>
             </div>
           </div>
         ))}
@@ -116,7 +116,7 @@ export default function TesterWelcomePage() {
         <button
           type="button"
           onClick={() => setLocation("/")}
-          className="w-full rounded-xl px-4 py-3.5 font-mono text-[12px] uppercase tracking-[0.2em] text-black transition active:scale-[0.99]"
+          className="w-full rounded-xl px-4 py-3.5 font-mono text-[12px] uppercase tracking-[0.2em] text-[color:var(--color-on-accent)] transition active:scale-[0.99]"
           style={{ background: ACCENT, boxShadow: "0 0 30px rgba(120,210,230,0.25)" }}
         >
           Begin met testen
@@ -124,7 +124,7 @@ export default function TesterWelcomePage() {
       </div>
 
       <footer className="pt-6 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>

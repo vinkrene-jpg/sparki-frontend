@@ -243,7 +243,7 @@ export function CommercialShell({
     // which would shift the fixed bottom nav rightward on narrow screens.
     // clip (not hidden) avoids creating a scroll container so fixed children
     // keep their viewport-relative positioning.
-    <div className="relative min-h-dvh bg-app font-sans text-white [overflow-x:clip]">
+    <div className="relative min-h-dvh bg-app font-sans text-foreground [overflow-x:clip]">
       {achtergrond}
       {sfeer && (
         // Sfeerfoto duidelijk zichtbaar, zonder uitvergroot te ogen: op mobiel
@@ -286,7 +286,7 @@ export function CommercialShell({
                   FOCUS_RING,
                   active
                     ? "bg-surface-strong font-semibold text-accent-cyan"
-                    : "text-white/60 hover:bg-surface hover:text-white/85",
+                    : "text-muted-foreground hover:bg-surface hover:text-foreground/80",
                 )}
                 aria-current={active ? "page" : undefined}
               >
@@ -299,7 +299,7 @@ export function CommercialShell({
           <Link
             href={COMMERCIAL_ACCOUNT_NAV.href}
             className={cn(
-              "flex min-h-11 items-center rounded-lg px-3 type-action text-white/60 transition-colors hover:bg-surface hover:text-white/85",
+              "flex min-h-11 items-center rounded-lg px-3 type-action text-muted-foreground transition-colors hover:bg-surface hover:text-foreground/80",
               FOCUS_RING,
             )}
           >
@@ -461,7 +461,7 @@ function CoachBoodschap({ presentation }: { presentation: PresentationState }) {
         ATMOSFEER_TINT[presentation],
       )}
     >
-      <p className="type-title-insight text-white/95">{headline}</p>
+      <p className="type-title-insight text-foreground/90">{headline}</p>
       {subline && (
         <p className="type-body mt-2 text-content-secondary">{subline}</p>
       )}
@@ -491,7 +491,7 @@ function WeekSection() {
       aria-label={COMMERCIAL_COPY.weekTitle}
       data-testid="laag3-weekstrook"
     >
-      <h2 className="type-title-card text-white/90">
+      <h2 className="type-title-card text-foreground/90">
         {COMMERCIAL_COPY.weekTitle}
       </h2>
       {isLoading || !data ? (
@@ -550,7 +550,7 @@ function BlockBalk({
 
   if (bars.length === 0) {
     return (
-      <p className="mt-4 text-[11px] leading-relaxed text-white/35">
+      <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
         Geen gedetailleerde trainingsopbouw beschikbaar
       </p>
     )
@@ -564,10 +564,10 @@ function BlockBalk({
     <div className="mt-4">
       {/* Koptekst — altijd zichtbaar, geen interactie vereist */}
       <div className="mb-2 flex items-center gap-2.5">
-        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/45">
+        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
           Opbouw training
         </span>
-        <span className="font-mono text-[9px] tabular-nums text-white/30">
+        <span className="font-mono text-[9px] tabular-nums text-muted-foreground">
           {displayMin} min
         </span>
       </div>
@@ -590,10 +590,10 @@ function BlockBalk({
               onClick={() => setActiveIdx(isActive ? null : i)}
               className={cn(
                 "relative flex min-w-[16px] items-center justify-center overflow-hidden rounded-md",
-                "text-[9px] font-bold tabular-nums text-white/75",
+                "text-[9px] font-bold tabular-nums text-muted-foreground",
                 "transition-opacity focus-visible:outline-none focus-visible:ring-2",
-                "focus-visible:ring-white/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
-                isActive && "ring-2 ring-white/70",
+                "focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
+                isActive && "ring-2 ring-ring",
               )}
               style={{
                 flexGrow: b.flex,
@@ -612,7 +612,7 @@ function BlockBalk({
       </div>
 
       {/* Compacte blokbenamingen — altijd zichtbaar, geen interactie vereist */}
-      <p className="mt-2 truncate text-[10px] leading-relaxed text-white/35">
+      <p className="mt-2 truncate text-[10px] leading-relaxed text-muted-foreground">
         {bars.map((b) => b.label).join(" · ")}
       </p>
 
@@ -622,13 +622,13 @@ function BlockBalk({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          className="mt-2.5 flex items-start justify-between gap-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5"
+          className="mt-2.5 flex items-start justify-between gap-3 rounded-lg border border-border bg-muted px-3.5 py-2.5"
         >
           <div>
-            <p className="text-[13px] font-medium leading-snug text-white/90">
+            <p className="text-[13px] font-medium leading-snug text-foreground/90">
               {activeBar.label}
             </p>
-            <div className="mt-0.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] text-white/45">
+            <div className="mt-0.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground">
               <span>Zone {activeBar.zone}</span>
               {activeBar.reps > 1 && (
                 <span>×{activeBar.reps} herhalingen</span>
@@ -638,7 +638,7 @@ function BlockBalk({
               )}
             </div>
           </div>
-          <span className="shrink-0 font-mono text-[12px] tabular-nums text-white/55">
+          <span className="shrink-0 font-mono text-[12px] tabular-nums text-muted-foreground">
             {activeBar.totalMin} min
           </span>
         </div>
@@ -655,7 +655,7 @@ function TrainingSection() {
   if (isLoading) {
     return (
       <section className="mt-8" aria-label={COMMERCIAL_COPY.trainingTitle}>
-        <h2 className="type-title-card text-white/90">
+        <h2 className="type-title-card text-foreground/90">
           {COMMERCIAL_COPY.trainingTitle}
         </h2>
         <SkeletonCard label={COMMERCIAL_COPY.trainingLoading} />
@@ -665,7 +665,7 @@ function TrainingSection() {
   if (isError || !data) {
     return (
       <section className="mt-8" aria-label={COMMERCIAL_COPY.trainingTitle}>
-        <h2 className="type-title-card text-white/90">
+        <h2 className="type-title-card text-foreground/90">
           {COMMERCIAL_COPY.trainingTitle}
         </h2>
         <DsState
@@ -685,7 +685,7 @@ function TrainingSection() {
   if (!w) {
     return (
       <section className="mt-8" aria-label={COMMERCIAL_COPY.trainingTitle}>
-        <h2 className="type-title-card text-white/90">
+        <h2 className="type-title-card text-foreground/90">
           {COMMERCIAL_COPY.trainingTitle}
         </h2>
         <DsState
@@ -708,7 +708,7 @@ function TrainingSection() {
 
   return (
     <section className="mt-8" aria-label={COMMERCIAL_COPY.trainingTitle}>
-      <h2 className="type-title-card text-white/90">
+      <h2 className="type-title-card text-foreground/90">
         {COMMERCIAL_COPY.trainingTitle}
       </h2>
       <DsCard className="mt-3">
@@ -721,7 +721,7 @@ function TrainingSection() {
           )}
         </div>
         {goal && (
-          <p className="type-body mt-2 font-medium text-white/90">
+          <p className="type-body mt-2 font-medium text-foreground/90">
             Doel: {goal}
           </p>
         )}
@@ -774,7 +774,7 @@ function HerstelSection() {
   if (isLoading) {
     return (
       <section className="mt-8" aria-label={COMMERCIAL_COPY.herstelTitle}>
-        <h2 className="type-title-card text-white/90">
+        <h2 className="type-title-card text-foreground/90">
           {COMMERCIAL_COPY.herstelTitle}
         </h2>
         <SkeletonCard label={COMMERCIAL_COPY.stateLoading} />
@@ -796,7 +796,7 @@ function HerstelSection() {
 
   return (
     <section className="mt-8" aria-label={COMMERCIAL_COPY.herstelTitle}>
-      <h2 className="type-title-card text-white/90">
+      <h2 className="type-title-card text-foreground/90">
         {COMMERCIAL_COPY.herstelTitle}
       </h2>
       <DsCard className="mt-3">
@@ -837,7 +837,7 @@ function HerstelSection() {
           <ul className="mt-1 space-y-1.5">
             {data.why.map((w) => (
               <li key={w.kind} className="type-body">
-                <span className="font-medium text-white/90">{w.label}:</span>{" "}
+                <span className="font-medium text-foreground/90">{w.label}:</span>{" "}
                 <span className="text-content-secondary">{w.reading}</span>
               </li>
             ))}
@@ -896,7 +896,7 @@ function SeasonBand() {
         aria-label={COMMERCIAL_COPY.seasonTitle}
         data-testid="laag3-seizoensband"
       >
-        <h2 className="type-title-card text-white/90">
+        <h2 className="type-title-card text-foreground/90">
           {COMMERCIAL_COPY.seasonTitle}
         </h2>
         <DsState
@@ -918,7 +918,7 @@ function SeasonBand() {
       aria-label={COMMERCIAL_COPY.seasonTitle}
       data-testid="laag3-seizoensband"
     >
-      <h2 className="type-title-card text-white/90">
+      <h2 className="type-title-card text-foreground/90">
         {COMMERCIAL_COPY.seasonTitle}
       </h2>
       <DsCard className="mt-3">
@@ -932,8 +932,8 @@ function SeasonBand() {
                   className={cn(
                     "type-body pb-1",
                     active
-                      ? "border-b-2 border-accent-cyan font-semibold text-white"
-                      : "text-white/50",
+                      ? "border-b-2 border-accent-cyan font-semibold text-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {p}
@@ -1126,12 +1126,12 @@ export function CommercialToday() {
     return (
       <CommercialShell actief="/dashboard">
         <div className="mx-auto w-full max-w-screen-md px-5 py-16 lg:px-10">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8">
-            <h1 className="type-title text-white">{roleEmpty.title}</h1>
-            <p className="mt-3 text-white/75">{roleEmpty.body}</p>
+          <div className="rounded-2xl border border-border bg-muted p-8">
+            <h1 className="type-title text-foreground">{roleEmpty.title}</h1>
+            <p className="mt-3 text-muted-foreground">{roleEmpty.body}</p>
             <a
               href={roleEmpty.action.href}
-              className="mt-6 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black"
+              className="mt-6 inline-flex rounded-full bg-accent-cyan px-5 py-2.5 text-sm font-medium text-[color:var(--color-on-accent)]"
             >
               {roleEmpty.action.label}
             </a>

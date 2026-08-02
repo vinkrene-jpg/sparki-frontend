@@ -148,13 +148,13 @@ function EmptyTab({ active }: { active: FilterKey }) {
   const c = config[active] ?? { text: "Geen berichten in deze categorie" }
   return (
     <div className="py-10 text-center">
-      <p className="mx-auto max-w-xs text-pretty text-[12px] leading-relaxed text-white/40">
+      <p className="mx-auto max-w-xs text-pretty text-[12px] leading-relaxed text-muted-foreground">
         {c.text}
       </p>
       {c.href && c.cta && (
         <Link
           href={c.href}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200 transition-colors hover:bg-cyan-300/15"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-accent-cyan/30 bg-accent-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-accent-cyan transition-colors hover:bg-accent-cyan/15"
         >
           {c.cta}
           <ArrowRight className="h-3 w-3" />
@@ -165,7 +165,7 @@ function EmptyTab({ active }: { active: FilterKey }) {
 }
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 // Flag-gated preview of the latest sport-science research from the knowledge
@@ -185,23 +185,23 @@ function KnowledgeFeedSection() {
       <SectionLabel title="Kennisbank" />
       <Link
         href="/kennis"
-        className="mt-3 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        className="mt-3 flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
       >
-        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           <BookOpen className="h-3.5 w-3.5" style={{ color: ACCENT }} />
           Wetenschap & onderzoek
         </span>
-        <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
       </Link>
       <Link
         href="/kennis?topic=mentaal"
-        className="mt-2 flex items-center justify-between rounded-2xl border border-cyan-300/[0.16] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/35"
+        className="mt-2 flex items-center justify-between rounded-2xl border border-accent-cyan/[0.16] bg-card px-4 py-3 backdrop-blur-md transition-colors hover:border-accent-cyan/35"
       >
-        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           <Brain className="h-3.5 w-3.5" style={{ color: ACCENT }} />
           Sterker in je hoofd
         </span>
-        <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
       </Link>
 
       {isLoading && (
@@ -219,16 +219,16 @@ function KnowledgeFeedSection() {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:border-cyan-300/25"
+            className="group rounded-xl border border-border bg-muted p-3 transition-colors hover:border-accent-cyan/25"
           >
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                 ONDERZOEK
                 {item.source ? ` · ${item.source}` : ""}
               </span>
-              <ExternalLink className="h-3 w-3 text-white/25 transition-colors group-hover:text-cyan-300/70" />
+              <ExternalLink className="h-3 w-3 text-muted-foreground transition-colors group-hover:text-accent-cyan" />
             </div>
-            <p className="mt-1 text-pretty text-[12px] font-light leading-snug text-white/80">
+            <p className="mt-1 text-pretty text-[12px] font-light leading-snug text-foreground/80">
               {item.title}
             </p>
           </a>
@@ -247,13 +247,13 @@ function ClimbsFeedSection() {
       <SectionLabel title="Klimmen" />
       <Link
         href="/klimmen"
-        className="mt-3 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        className="mt-3 flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
       >
-        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           <Mountain className="h-3.5 w-3.5" style={{ color: ACCENT }} />
           Klimmenverkenner
         </span>
-        <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
       </Link>
     </section>
   )
@@ -397,7 +397,7 @@ export default function FeedPage() {
       {/* INTRO */}
       <div className="-mt-2">
         <div className="flex items-center justify-between gap-3">
-          <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+          <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
             RONDOM JOU
           </p>
           <ClubChip />
@@ -405,7 +405,7 @@ export default function FeedPage() {
         <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
           Wat er speelt
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+        <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
           Nieuws · Coach · Team · Wedstrijden · Sparki
         </p>
       </div>
@@ -423,9 +423,9 @@ export default function FeedPage() {
               style={{
                 borderColor: on
                   ? "rgba(120,210,230,0.5)"
-                  : "rgba(255,255,255,0.1)",
+                  : "var(--color-border)",
                 background: on ? "rgba(120,210,230,0.1)" : "transparent",
-                color: on ? ACCENT : "rgba(255,255,255,0.45)",
+                color: on ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {f.label}
@@ -439,7 +439,7 @@ export default function FeedPage() {
         <SectionLabel title="Stream" />
 
         {showPersonalNote && (
-          <div className="mt-2 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/35">
+          <div className="mt-2 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-muted-foreground">
             <SparkiCore size={14} accent={ACCENT} readiness={0.9} variant="orb" />
             Afgestemd op jouw sport en doelen
           </div>
@@ -452,7 +452,7 @@ export default function FeedPage() {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="relative flex gap-4 border-b border-white/[0.06] py-5 last:border-0"
+                  className="relative flex gap-4 border-b border-border py-5 last:border-0"
                 >
                   <Skeleton className="ml-4 h-9 w-9 shrink-0 rounded-full" />
                   <div className="flex-1 space-y-2">
@@ -475,7 +475,7 @@ export default function FeedPage() {
             return (
               <article
                 key={item.id}
-                className={`group/news relative flex gap-4 border-b border-white/[0.06] py-5 last:border-0${
+                className={`group/news relative flex gap-4 border-b border-border py-5 last:border-0${
                   item.news ? " cursor-pointer" : ""
                 }`}
               >
@@ -486,7 +486,7 @@ export default function FeedPage() {
                   <button
                     type="button"
                     onClick={() => setReaderItem(item.news!)}
-                    className="absolute inset-0 z-[1] rounded-lg focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300/50"
+                    className="absolute inset-0 z-[1] rounded-lg focus:outline-none focus-visible:ring-1 focus-visible:ring-ring/50"
                     aria-label={`Open nieuwsbericht: ${item.title}`}
                   />
                 )}
@@ -509,8 +509,8 @@ export default function FeedPage() {
                     <span
                       className="flex h-9 w-9 items-center justify-center rounded-full border"
                       style={{
-                        borderColor: "rgba(255,255,255,0.1)",
-                        background: "rgba(255,255,255,0.03)",
+                        borderColor: "var(--color-border)",
+                        background: "var(--color-muted)",
                       }}
                     >
                       <meta.icon
@@ -531,7 +531,7 @@ export default function FeedPage() {
                       {item.source ? ` · ${item.source}` : ""}
                     </span>
                     {item.time && (
-                      <span className="shrink-0 font-mono text-[10px] tracking-wide text-white/30">
+                      <span className="shrink-0 font-mono text-[10px] tracking-wide text-muted-foreground">
                         {item.time}
                       </span>
                     )}
@@ -541,7 +541,7 @@ export default function FeedPage() {
                     // Compacte thumbnail rechts (keuze: lijst blijft rustig,
                     // maar artikelfoto's zijn terug — geen grote beeldkaarten).
                     <div className="mt-1.5 flex items-start gap-3">
-                      <h3 className="min-w-0 flex-1 text-pretty font-sans text-[15px] font-light leading-snug text-white/90 transition-colors group-hover/news:text-cyan-100">
+                      <h3 className="min-w-0 flex-1 text-pretty font-sans text-[15px] font-light leading-snug text-foreground/90 transition-colors group-hover/news:text-accent-cyan">
                         {item.title}
                       </h3>
                       {item.news.imageUrl && (
@@ -550,7 +550,7 @@ export default function FeedPage() {
                           alt=""
                           loading="lazy"
                           decoding="async"
-                          className="h-14 w-20 shrink-0 rounded-lg border border-white/[0.08] object-cover"
+                          className="h-14 w-20 shrink-0 rounded-lg border border-border object-cover"
                           onError={(e) => {
                             // Kapotte externe foto: thumbnail stil weglaten.
                             e.currentTarget.style.display = "none"
@@ -565,13 +565,13 @@ export default function FeedPage() {
                       rel="noopener noreferrer"
                       className="group/title mt-1.5 block"
                     >
-                      <h3 className="text-pretty font-sans text-[15px] font-light leading-snug text-white/90 transition-colors group-hover/title:text-cyan-100">
+                      <h3 className="text-pretty font-sans text-[15px] font-light leading-snug text-foreground/90 transition-colors group-hover/title:text-accent-cyan">
                         {item.title}
-                        <ExternalLink className="ml-1.5 inline h-3 w-3 align-baseline text-white/25 transition-colors group-hover/title:text-cyan-300/70" />
+                        <ExternalLink className="ml-1.5 inline h-3 w-3 align-baseline text-muted-foreground transition-colors group-hover/title:text-accent-cyan" />
                       </h3>
                     </a>
                   ) : (
-                    <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-light leading-snug text-white/90">
+                    <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-light leading-snug text-foreground/90">
                       {item.title}
                     </h3>
                   )}
@@ -580,10 +580,10 @@ export default function FeedPage() {
                     <p
                       className={`mt-1.5 text-pretty leading-relaxed ${
                         isAi
-                          ? "whitespace-pre-line text-[13px] text-white/70"
+                          ? "whitespace-pre-line text-[13px] text-muted-foreground"
                           : item.type === "coach"
-                            ? "whitespace-pre-line text-[12px] text-white/55"
-                            : "text-[12px] text-white/45"
+                            ? "whitespace-pre-line text-[12px] text-muted-foreground"
+                            : "text-[12px] text-muted-foreground"
                       }`}
                     >
                       {item.body}
@@ -591,8 +591,8 @@ export default function FeedPage() {
                   )}
 
                   {item.sources && item.sources.length > 0 && (
-                    <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-                      <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+                    <div className="mt-3 rounded-xl border border-border bg-muted p-3">
+                      <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                         <BookOpen className="h-3 w-3" style={{ color: ACCENT }} />
                         Bronnen
                       </p>
@@ -603,13 +603,13 @@ export default function FeedPage() {
                               href={s.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group flex items-start gap-1.5 text-[11px] leading-snug text-white/55 transition-colors hover:text-cyan-200/90"
+                              className="group flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground transition-colors hover:text-accent-cyan"
                             >
-                              <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-white/25 transition-colors group-hover:text-cyan-300/70" />
+                              <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground transition-colors group-hover:text-accent-cyan" />
                               <span className="text-pretty">
                                 {s.title}
                                 {s.source ? (
-                                  <span className="text-white/30"> — {s.source}</span>
+                                  <span className="text-muted-foreground"> — {s.source}</span>
                                 ) : null}
                               </span>
                             </a>
@@ -621,7 +621,7 @@ export default function FeedPage() {
 
                   {item.author && (
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="font-mono text-[10px] tracking-wide text-white/40">
+                      <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
                         {item.author}
                       </span>
                     </div>
@@ -640,13 +640,13 @@ export default function FeedPage() {
         <SectionLabel title="Inzicht" />
         <Link
           href="/lab"
-          className="mt-3 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+          className="mt-3 flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
         >
-          <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+          <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             <LineChart className="h-3.5 w-3.5" style={{ color: ACCENT }} />
             Je trends & patronen in cijfers
           </span>
-          <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
         </Link>
       </section>
 

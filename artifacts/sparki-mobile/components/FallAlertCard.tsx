@@ -23,7 +23,9 @@ export function FallAlertCard({
   onClose: () => void;
 }) {
   return (
-    <View style={[styles.wrap, { backgroundColor: "rgba(4,7,14,0.88)" }]}>
+    // LICHT_THEMA_01: scrim dimt met de donkere voorgrond i.p.v. zwart
+    // (gelijk aan de web-aanpak bg-foreground/NN).
+    <View style={[styles.wrap, { backgroundColor: "rgba(22,24,29,0.6)" }]}>
       <View style={[styles.card, { backgroundColor: c.card, borderColor: c.destructive }]}>
         {alert.phase === "asking" ? (
           <>
@@ -83,8 +85,8 @@ export function FallAlertCard({
               onPress={() => void Linking.openURL("tel:112")}
               style={[styles.okBtn, { backgroundColor: c.destructive }]}
             >
-              <Ionicons name="call" size={18} color="#ffffff" />
-              <Text style={[styles.okText, { color: "#ffffff" }]}>Bel 112</Text>
+              <Ionicons name="call" size={18} color={c.destructiveForeground} />
+              <Text style={[styles.okText, { color: c.destructiveForeground }]}>Bel 112</Text>
             </Pressable>
             <Pressable onPress={onClose} style={[styles.smallBtn, { borderColor: c.border }]}>
               <Text style={[styles.smallText, { color: c.mutedForeground }]}>Sluiten</Text>

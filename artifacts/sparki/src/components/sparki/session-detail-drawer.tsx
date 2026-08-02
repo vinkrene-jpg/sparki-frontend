@@ -75,7 +75,7 @@ function fmtSegTime(sec: number): string {
 function SegmentReport({ segments }: { segments: RideSegment[] }) {
   return (
     <div className="mt-6">
-      <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
         ZO REED JE DE SEGMENTEN
       </span>
       <div className="mt-2 flex flex-col gap-2">
@@ -94,7 +94,7 @@ function SegmentReport({ segments }: { segments: RideSegment[] }) {
           return (
             <div
               key={i}
-              className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5"
+              className="rounded-xl border border-border bg-muted px-4 py-3.5"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -106,15 +106,15 @@ function SegmentReport({ segments }: { segments: RideSegment[] }) {
                     />
                   ) : (
                     <TrendingDown
-                      className="h-4 w-4 shrink-0 text-white/50"
+                      className="h-4 w-4 shrink-0 text-muted-foreground"
                       strokeWidth={1.75}
                     />
                   )}
-                  <span className="text-[14px] font-medium text-white/90">
+                  <span className="text-[14px] font-medium text-foreground/90">
                     {seg.name}
                   </span>
                 </div>
-                <span className="font-mono text-[11px] tabular-nums text-white/45">
+                <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                   {seg.lengthKm} km · {isKlim ? "+" : "−"}
                   {seg.elevationDeltaM} m · {Math.abs(seg.avgGradePct)}%
                 </span>
@@ -124,15 +124,15 @@ function SegmentReport({ segments }: { segments: RideSegment[] }) {
                   {facts.map(([label, value]) => (
                     <span
                       key={label}
-                      className="text-[12px] tabular-nums text-white/65"
+                      className="text-[12px] tabular-nums text-muted-foreground"
                     >
-                      <span className="text-white/35">{label} </span>
+                      <span className="text-muted-foreground">{label} </span>
                       {value}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-[12px] leading-snug text-white/40">
+                <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
                   Het bestand van deze rit bevat geen tijden op dit stuk, dus
                   over je tempo valt hier niets te zeggen.
                 </p>
@@ -178,31 +178,31 @@ function DataInventaris({
   const ontbrekend = items.filter((i) => !i.aanwezig)
   return (
     <div className="mt-6">
-      <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
         GEGENEREERDE DATA
       </span>
-      <div className="mt-2 grid grid-cols-1 gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+      <div className="mt-2 grid grid-cols-1 gap-1 rounded-xl border border-border bg-muted px-4 py-3">
         {items.map((i) => (
           <div key={i.label} className="flex items-start gap-2 py-0.5">
             <span
-              className={`mt-0.5 font-mono text-[11px] ${i.aanwezig ? "text-cyan-300" : "text-white/25"}`}
+              className={`mt-0.5 font-mono text-[11px] ${i.aanwezig ? "text-accent-cyan" : "text-muted-foreground"}`}
               aria-hidden
             >
               {i.aanwezig ? "✓" : "—"}
             </span>
             <div className="min-w-0">
-              <span className={`text-[12.5px] ${i.aanwezig ? "text-white/80" : "text-white/40"}`}>
+              <span className={`text-[12.5px] ${i.aanwezig ? "text-foreground/80" : "text-muted-foreground"}`}>
                 {i.label}
               </span>
               {!i.aanwezig && i.hint && (
-                <span className="ml-1.5 text-[11px] text-white/30">({i.hint})</span>
+                <span className="ml-1.5 text-[11px] text-muted-foreground">({i.hint})</span>
               )}
             </div>
           </div>
         ))}
       </div>
       {ontbrekend.length > 0 && (
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           Grafieken en analyses tonen wat tijdens deze rit gemeten is.
         </p>
       )}
@@ -258,16 +258,16 @@ function WedstrijdVerloopVragen({ session }: { session: TrainingSession }) {
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5">
-      <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/70">
+    <div className="mt-6 rounded-2xl border border-border bg-card p-5">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-accent-cyan">
         HOE VERLIEP JE WEDSTRIJD?
       </span>
-      <p className="mt-1.5 text-pretty text-[12.5px] leading-relaxed text-white/55">
+      <p className="mt-1.5 text-pretty text-[12.5px] leading-relaxed text-muted-foreground">
         De meetdata vertelt maar de helft. Met een paar antwoorden kan deze
         wedstrijd op waarde worden geschat.
       </p>
 
-      <p className="mt-4 text-[12px] text-white/60">Hoe zwaar voelde het?</p>
+      <p className="mt-4 text-[12px] text-muted-foreground">Hoe zwaar voelde het?</p>
       <div className="mt-1.5 flex gap-1.5" role="group" aria-label="Zwaarte van de wedstrijd">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -277,8 +277,8 @@ function WedstrijdVerloopVragen({ session }: { session: TrainingSession }) {
             aria-pressed={zwaarte === n}
             className={`min-h-9 flex-1 rounded-lg border px-1 text-[11px] transition-colors ${
               zwaarte === n
-                ? "border-cyan-300/60 bg-cyan-300/10 text-cyan-200"
-                : "border-white/[0.1] text-white/45 hover:text-white/75"
+                ? "border-accent-cyan bg-accent-cyan text-accent-cyan"
+                : "border-border text-muted-foreground hover:text-muted-foreground"
             }`}
           >
             {FEEL_LABELS[n]}
@@ -286,25 +286,25 @@ function WedstrijdVerloopVragen({ session }: { session: TrainingSession }) {
         ))}
       </div>
 
-      <label className="mt-4 block text-[12px] text-white/60">
+      <label className="mt-4 block text-[12px] text-muted-foreground">
         Hoe verliep de wedstrijd? (start, verloop, finale)
         <textarea
           value={verloop}
           onChange={(e) => setVerloop(e.target.value)}
           rows={3}
           placeholder="Bijv. goed weggekomen, in de finale kramp — moest lossen op de laatste klim…"
-          className="mt-1.5 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
+          className="mt-1.5 w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
         />
       </label>
 
-      <label className="mt-3 block text-[12px] text-white/60">
+      <label className="mt-3 block text-[12px] text-muted-foreground">
         Wat neem je mee naar de volgende keer?
         <textarea
           value={les}
           onChange={(e) => setLes(e.target.value)}
           rows={2}
           placeholder="Bijv. eerder en meer eten in het tweede uur."
-          className="mt-1.5 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
+          className="mt-1.5 w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
         />
       </label>
 
@@ -312,12 +312,12 @@ function WedstrijdVerloopVragen({ session }: { session: TrainingSession }) {
         type="button"
         disabled={!kanOpslaan || update.isPending}
         onClick={opslaan}
-        className="mt-4 min-h-10 rounded-lg border border-cyan-300/50 px-4 text-[13px] text-cyan-200 transition-colors hover:bg-cyan-300/10 disabled:opacity-35"
+        className="mt-4 min-h-10 rounded-lg border border-accent-cyan px-4 text-[13px] text-accent-cyan transition-colors hover:bg-accent-cyan disabled:opacity-35"
       >
         {update.isPending ? "Opslaan…" : "Antwoorden opslaan"}
       </button>
       {update.isError && (
-        <p className="mt-2 text-[12px] text-red-300/80">
+        <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
           Opslaan is niet gelukt. Probeer het opnieuw.
         </p>
       )}
@@ -409,19 +409,19 @@ function Metric({
   bron?: string | null
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-3">
+    <div className="rounded-xl border border-border bg-muted px-3 py-3">
       <div className="flex items-center gap-1.5">
-        <Icon className="h-3.5 w-3.5 text-white/40" strokeWidth={1.75} />
-        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
           {label}
         </span>
         {uitlegKey && <UitlegDot uitlegKey={uitlegKey} label={label} />}
       </div>
-      <p className="mt-1.5 font-sans text-lg font-light tabular-nums text-white/90">
+      <p className="mt-1.5 font-sans text-lg font-light tabular-nums text-foreground/90">
         {value}
       </p>
       {bron != null && (
-        <p className="mt-1 font-mono text-[9px] tracking-[0.08em] text-white/30">
+        <p className="mt-1 font-mono text-[9px] tracking-[0.08em] text-muted-foreground">
           Bron: {bron}
         </p>
       )}
@@ -602,15 +602,15 @@ export function SessionDetailDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full overflow-y-auto border-white/10 bg-[#05070e] text-white sm:max-w-md"
+        className="w-full overflow-y-auto border-border bg-card text-foreground sm:max-w-md"
       >
         {session && (
           <>
             <SheetHeader className="space-y-2 text-left">
-              <span className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/70">
+              <span className="font-mono text-[10px] tracking-[0.22em] text-accent-cyan">
                 {fullDate}
               </span>
-              <SheetTitle className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight text-white">
+              <SheetTitle className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight text-foreground">
                 {session.title ?? typeLabel(session.type)}
               </SheetTitle>
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -623,7 +623,7 @@ export function SessionDetailDrawer({
                 >
                   {typeLabel(session.type)}
                 </span>
-                <span className="rounded-full border border-white/[0.12] px-2.5 py-1 font-mono text-[10px] tracking-wide text-white/50">
+                <span className="rounded-full border border-border px-2.5 py-1 font-mono text-[10px] tracking-wide text-muted-foreground">
                   Bron: {sourceLabel(session.source)}
                 </span>
                 <HerkomstKnop
@@ -640,8 +640,8 @@ export function SessionDetailDrawer({
             ) : (
               <>
             {analysis && analysis.insights.length > 0 ? (
-              <div className="mt-5 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-                <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/70">
+              <div className="mt-5 rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+                <span className="font-mono text-[10px] tracking-[0.2em] text-accent-cyan">
                   HOE DEZE RIT GING
                 </span>
                 <div className="mt-3 flex flex-col gap-3">
@@ -653,20 +653,20 @@ export function SessionDetailDrawer({
                       >
                         {ins.label}
                       </span>
-                      <p className="mt-0.5 text-pretty text-[13px] leading-relaxed text-white/70">
+                      <p className="mt-0.5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                         {ins.text}
                       </p>
                     </div>
                   ))}
                 </div>
                 {analysis.missing && (
-                  <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+                  <p className="mt-3 text-pretty text-[12px] leading-relaxed text-muted-foreground">
                     {analysis.missing}
                   </p>
                 )}
               </div>
             ) : analysis && analysis.missing ? (
-              <p className="mt-5 text-pretty text-[13px] leading-relaxed text-white/45">
+              <p className="mt-5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 {analysis.missing}
               </p>
             ) : null}
@@ -685,7 +685,7 @@ export function SessionDetailDrawer({
                 ))}
               </div>
             ) : (
-              <p className="mt-5 text-pretty text-[13px] leading-relaxed text-white/45">
+              <p className="mt-5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 Voor deze sessie is alleen de basis vastgelegd. Log meer details
                 (duur, vermogen, hartslag) om je trainingen rijker terug te
                 lezen.
@@ -726,11 +726,11 @@ export function SessionDetailDrawer({
             )}
 
             {session.feelScore != null && (
-              <div className="mt-5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5">
-                <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+              <div className="mt-5 rounded-xl border border-border bg-muted px-4 py-3.5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                   Hoe het voelde
                 </span>
-                <p className="mt-1 text-[14px] font-medium text-white/85">
+                <p className="mt-1 text-[14px] font-medium text-foreground/90">
                   {FEEL_LABELS[session.feelScore] ?? `${session.feelScore}/5`}
                 </p>
               </div>
@@ -738,10 +738,10 @@ export function SessionDetailDrawer({
 
             {session.notes != null && session.notes.trim() !== "" && (
               <div className="mt-5">
-                <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+                <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                   NOTITIES
                 </span>
-                <p className="mt-2 whitespace-pre-line text-pretty text-[13px] leading-relaxed text-white/70">
+                <p className="mt-2 whitespace-pre-line text-pretty text-[13px] leading-relaxed text-muted-foreground">
                   {session.notes}
                 </p>
               </div>
@@ -764,34 +764,34 @@ function conflictSourceLabel(s: string): string {
 function BronConflicten({ conflicts }: { conflicts: SourceConflict[] }) {
   return (
     <details className="group mt-4">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
         <ChevronDown
-          className="h-3 w-3 text-white/30 transition-transform group-open:rotate-180"
+          className="h-3 w-3 text-muted-foreground transition-transform group-open:rotate-180"
           strokeWidth={1.75}
         />
-        <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
           BRONNEN VERSCHILDEN HIER
         </span>
       </summary>
-      <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+      <div className="mt-2 rounded-xl border border-border bg-muted px-4 py-3">
         <div className="flex flex-col gap-2">
           {conflicts.map((c) => {
             const meta = CONFLICT_FIELD_LABELS[c.field] ?? { label: c.field }
             return (
               <div key={c.field} className="text-[12px] leading-relaxed">
-                <span className="text-white/70">{meta.label}: </span>
-                <span className="tabular-nums text-white/80">
+                <span className="text-muted-foreground">{meta.label}: </span>
+                <span className="tabular-nums text-foreground/80">
                   {conflictValue(c.chosen, meta.unit)}
                 </span>
-                <span className="text-white/40">
+                <span className="text-muted-foreground">
                   {" "}
                   ({conflictSourceLabel(c.chosenSource)}, gekozen)
                 </span>
-                <span className="text-white/40"> · </span>
-                <span className="tabular-nums text-white/55">
+                <span className="text-muted-foreground"> · </span>
+                <span className="tabular-nums text-muted-foreground">
                   {conflictValue(c.offered, meta.unit)}
                 </span>
-                <span className="text-white/40">
+                <span className="text-muted-foreground">
                   {" "}
                   ({conflictSourceLabel(c.offeredSource)})
                 </span>
@@ -799,7 +799,7 @@ function BronConflicten({ conflicts }: { conflicts: SourceConflict[] }) {
             )
           })}
         </div>
-        <p className="mt-2 text-pretty text-[11px] leading-relaxed text-white/35">
+        <p className="mt-2 text-pretty text-[11px] leading-relaxed text-muted-foreground">
           Meerdere bronnen leverden deze rit aan met net andere getallen. Sparki
           koos per veld één waarde; de andere blijft hier terug te vinden.
         </p>

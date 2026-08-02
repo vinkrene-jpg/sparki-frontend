@@ -50,18 +50,18 @@ export function BugReportThread({
       : "Iets toevoegen of een vraag beantwoorden…"
 
   return (
-    <div className="mt-3 border-t border-white/[0.06] pt-3">
+    <div className="mt-3 border-t border-border pt-3">
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-2 text-[11px] text-white/40">
+        <div className="flex items-center justify-center gap-2 py-2 text-[11px] text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
           Gesprek laden…
         </div>
       ) : isError ? (
-        <p className="py-1 text-[11px] text-red-300/80">
+        <p className="py-1 text-[11px] text-[color:var(--color-negative)]">
           Het gesprek kon niet geladen worden. Probeer het zo opnieuw.
         </p>
       ) : comments.length === 0 ? (
-        <p className="text-[11px] leading-relaxed text-white/35">
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
           {viewerRole === "admin"
             ? "Nog geen reacties. Stel hier een vraag of vraag om meer details."
             : "Nog geen reacties. Mis je iets in je melding, of heb je een vraag? Voeg het hier toe."}
@@ -94,11 +94,11 @@ export function BugReportThread({
                     >
                       {labelFor(c.authorRole, viewerRole)}
                     </span>
-                    <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/25">
+                    <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                       {formatWhen(c.createdAt)}
                     </span>
                   </div>
-                  <p className="mt-1 whitespace-pre-wrap text-[12px] leading-snug text-white/80">
+                  <p className="mt-1 whitespace-pre-wrap text-[12px] leading-snug text-foreground/80">
                     {c.body}
                   </p>
                 </div>
@@ -114,13 +114,13 @@ export function BugReportThread({
           onChange={(e) => setText(e.target.value)}
           placeholder={placeholder}
           rows={2}
-          className="min-h-[44px] flex-1 resize-none rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[12px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="min-h-[44px] flex-1 resize-none rounded-lg border border-border bg-muted px-3 py-2 text-[12px] text-foreground/80 placeholder-white/25 outline-none focus:border-cyan-300/40"
         />
         <button
           type="button"
           onClick={send}
           disabled={text.trim().length < 1 || add.isPending}
-          className="flex h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-black transition disabled:opacity-40"
+          className="flex h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] transition disabled:opacity-40"
           style={{ background: ACCENT }}
           aria-label="Versturen"
         >
@@ -132,7 +132,7 @@ export function BugReportThread({
         </button>
       </div>
       {add.isError && (
-        <p className="mt-1.5 text-[11px] text-red-300/85">
+        <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">
           Je bericht kon niet verstuurd worden. Probeer het opnieuw.
         </p>
       )}

@@ -32,45 +32,45 @@ const CATEGORY_OPTIONS: { value: GarageComponentCategory; label: string }[] = [
 ]
 
 const inputCls =
-  "w-full rounded-lg border border-white/10 bg-[#070d16]/80 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-cyan-400/40 focus:outline-none"
+  "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
 
 function EstimateCard({ estimate }: { estimate: UpgradeEstimate }) {
   if (!estimate.known) {
     return (
-      <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4 text-sm text-amber-100/90">
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4 text-sm text-[color:var(--color-warning)]">
         {estimate.reason}
       </div>
     )
   }
   return (
-    <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <div className="mb-2 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-cyan-200">
+    <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+      <div className="mb-2 inline-flex rounded-full border border-accent-cyan/30 bg-accent-cyan/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-accent-cyan">
         Modelschatting — geen meting
       </div>
-      <div className="text-sm text-white">
+      <div className="text-sm text-foreground">
         {estimate.planned.brand} {estimate.planned.model}{" "}
-        <span className="text-white/50">· klasse {estimate.planned.klasseLabel}</span>
+        <span className="text-foreground/50">· klasse {estimate.planned.klasseLabel}</span>
       </div>
       {estimate.current && (
-        <div className="mt-1 text-xs text-white/55">
+        <div className="mt-1 text-xs text-foreground/55">
           Nu: {estimate.current.brand ?? "?"} {estimate.current.model ?? ""}
           {estimate.current.klasseLabel
             ? ` · klasse ${estimate.current.klasseLabel}`
             : " · niet in de kennisbank"}
         </div>
       )}
-      <p className="mt-2 text-sm text-white/75">{estimate.verwachting}</p>
+      <p className="mt-2 text-sm text-foreground/75">{estimate.verwachting}</p>
       {estimate.planned.note && (
-        <p className="mt-1 text-xs text-white/50">{estimate.planned.note}</p>
+        <p className="mt-1 text-xs text-foreground/50">{estimate.planned.note}</p>
       )}
-      <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-        <div className="text-xs font-medium uppercase tracking-wide text-cyan-200/80">
+      <div className="mt-3 rounded-lg border border-border bg-muted p-3">
+        <div className="text-xs font-medium uppercase tracking-wide text-accent-cyan">
           Voorgestelde test: {estimate.testMode.title}
         </div>
-        <p className="mt-1 text-sm text-white/75">{estimate.testMode.protocol}</p>
-        <p className="mt-1 text-xs text-white/55">{estimate.testMode.meting}</p>
+        <p className="mt-1 text-sm text-foreground/75">{estimate.testMode.protocol}</p>
+        <p className="mt-1 text-xs text-foreground/55">{estimate.testMode.meting}</p>
       </div>
-      <p className="mt-3 text-xs text-white/50">{estimate.sameDayRule}</p>
+      <p className="mt-3 text-xs text-foreground/50">{estimate.sameDayRule}</p>
     </div>
   )
 }
@@ -92,11 +92,11 @@ export function ModelSchattingPanel() {
   }, [garage, category])
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <h3 className="text-sm font-semibold text-white">
+    <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+      <h3 className="text-sm font-semibold text-foreground">
         Van plan iets te kopen? Vraag eerst een modelschatting
       </h3>
-      <p className="mt-1 text-xs text-white/55">
+      <p className="mt-1 text-xs text-foreground/55">
         Vul merk en type van de geplande upgrade in. De klasse wordt vergeleken
         met je huidige uitrusting en de best passende test voorgesteld — een
         schatting op klasse-niveau, geen meting.
@@ -157,12 +157,12 @@ export function ModelSchattingPanel() {
             ...(currentComponentId != null ? { currentComponentId } : {}),
           })
         }
-        className="mt-3 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20 disabled:opacity-40"
+        className="mt-3 rounded-lg border border-accent-cyan/30 bg-accent-cyan/10 px-4 py-2 text-sm font-medium text-accent-cyan transition hover:bg-accent-cyan/20 disabled:opacity-40"
       >
         {estimateMutation.isPending ? "Bezig…" : "Geef modelschatting"}
       </button>
       {estimateMutation.isError && (
-        <p className="mt-2 text-sm text-amber-200/90">
+        <p className="mt-2 text-sm text-[color:var(--color-warning)]">
           {estimateMutation.error instanceof Error
             ? estimateMutation.error.message
             : "Kon de modelschatting niet opstellen"}
@@ -188,29 +188,29 @@ export function RitVergelijkingPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-white/60">
+      <p className="rounded-lg border border-border bg-muted p-3 text-xs text-foreground/60">
         Let op: een vergelijkingstest is alleen zinvol op dezelfde dag, op
         dezelfde route en bij gelijke omstandigheden (wind, temperatuur, vorm
         van de dag). Anders vergelijk je het weer en je benen — niet je
         materiaal.
       </p>
-      <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-        <h3 className="text-sm font-semibold text-white">Vergelijk twee ritten</h3>
-        <p className="mt-1 text-xs text-white/55">
+      <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+        <h3 className="text-sm font-semibold text-foreground">Vergelijk twee ritten</h3>
+        <p className="mt-1 text-xs text-foreground/55">
           Kies rit A (huidige opstelling) en rit B (nieuwe opstelling). Sparki
           zet de metingen naast elkaar en benoemt wat de vergelijking
           vertroebelt.
         </p>
         {rides.length < 2 ? (
           <div className="mt-3 flex flex-col items-start gap-2">
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-foreground/60">
               Hiervoor zijn minstens twee opgeslagen ritten nodig. Rij of
               importeer eerst je beide testritten — daarna kun je ze hier
               vergelijken.
             </p>
             <Link
               href="/activiteiten"
-              className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20"
+              className="rounded-lg border border-accent-cyan/30 bg-accent-cyan/10 px-4 py-2 text-sm font-medium text-accent-cyan transition hover:bg-accent-cyan/20"
             >
               Naar mijn activiteiten
             </Link>
@@ -222,7 +222,7 @@ export function RitVergelijkingPanel() {
                 ["A — huidige opstelling", rideA, setRideA],
                 ["B — nieuwe opstelling", rideB, setRideB],
               ] as const).map(([label, value, setValue]) => (
-                <label key={label} className="flex flex-col gap-1 text-xs text-white/55">
+                <label key={label} className="flex flex-col gap-1 text-xs text-foreground/55">
                   Rit {label}
                   <select
                     className={inputCls}
@@ -243,15 +243,15 @@ export function RitVergelijkingPanel() {
               ))}
             </div>
             {rideA != null && rideA === rideB && (
-              <p className="mt-2 text-sm text-amber-200/90">
+              <p className="mt-2 text-sm text-[color:var(--color-warning)]">
                 Kies twee verschillende ritten.
               </p>
             )}
             {compare.isLoading && (
-              <p className="mt-3 text-sm text-white/60">Vergelijking wordt opgesteld…</p>
+              <p className="mt-3 text-sm text-foreground/60">Vergelijking wordt opgesteld…</p>
             )}
             {compare.isError && (
-              <p className="mt-3 text-sm text-amber-200/90">
+              <p className="mt-3 text-sm text-[color:var(--color-warning)]">
                 Kon de ritten niet vergelijken.
               </p>
             )}
@@ -262,17 +262,17 @@ export function RitVergelijkingPanel() {
                     {compare.data.comparison.warnings.map((w) => (
                       <li
                         key={w}
-                        className="rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-100/90"
+                        className="rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2 text-xs text-[color:var(--color-warning)]"
                       >
                         {w}
                       </li>
                     ))}
                   </ul>
                 )}
-                <div className="overflow-hidden rounded-lg border border-white/10">
+                <div className="overflow-hidden rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/10 bg-white/[0.03] text-left text-xs text-white/55">
+                      <tr className="border-b border-border bg-muted text-left text-xs text-foreground/55">
                         <th className="px-3 py-2 font-medium">Meting</th>
                         <th className="px-3 py-2 font-medium">A</th>
                         <th className="px-3 py-2 font-medium">B</th>
@@ -281,26 +281,26 @@ export function RitVergelijkingPanel() {
                     </thead>
                     <tbody>
                       {compare.data.comparison.metrics.map((m) => (
-                        <tr key={m.key} className="border-b border-white/5 last:border-0">
-                          <td className="px-3 py-2 text-white/70">{m.label}</td>
-                          <td className="px-3 py-2 text-white">
+                        <tr key={m.key} className="border-b border-border last:border-0">
+                          <td className="px-3 py-2 text-foreground/70">{m.label}</td>
+                          <td className="px-3 py-2 text-foreground">
                             {m.a != null ? `${m.a} ${m.unit}` : "—"}
                           </td>
-                          <td className="px-3 py-2 text-white">
+                          <td className="px-3 py-2 text-foreground">
                             {m.b != null ? `${m.b} ${m.unit}` : "—"}
                           </td>
                           <td className="px-3 py-2">
                             {m.delta != null ? (
                               <span
                                 className={
-                                  m.delta === 0 ? "text-white/60" : "text-cyan-200"
+                                  m.delta === 0 ? "text-foreground/60" : "text-accent-cyan"
                                 }
                               >
                                 {m.delta > 0 ? "+" : ""}
                                 {m.delta} {m.unit}
                               </span>
                             ) : (
-                              <span className="text-white/40">niet gemeten</span>
+                              <span className="text-muted-foreground">niet gemeten</span>
                             )}
                           </td>
                         </tr>
@@ -309,11 +309,11 @@ export function RitVergelijkingPanel() {
                   </table>
                 </div>
                 {compare.data.comparison.verdict ? (
-                  <p className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] p-3 text-sm text-white/85">
+                  <p className="mt-3 rounded-lg border border-accent-cyan/20 bg-accent-cyan/10 p-3 text-sm text-foreground/85">
                     {compare.data.comparison.verdict}
                   </p>
                 ) : (
-                  <p className="mt-3 text-xs text-white/55">
+                  <p className="mt-3 text-xs text-foreground/55">
                     Deze twee ritten zijn niet schoon genoeg om een conclusie over
                     materiaal te trekken — zie de kanttekeningen hierboven.
                   </p>

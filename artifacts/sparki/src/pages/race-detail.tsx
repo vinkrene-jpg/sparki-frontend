@@ -17,7 +17,7 @@ import { RaceWerkbladPanel } from "@/pages/races"
 import type { Race, RacePriority } from "@/lib/race-types"
 
 const cardClass =
-  "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
 
 const PRIORITY_LABEL: Record<RacePriority, string> = {
   A: "A-doel",
@@ -47,10 +47,10 @@ function Fact({ label, value }: { label: string; value: string | null }) {
   const known = value != null && value.trim() !== ""
   return (
     <div className="flex items-baseline justify-between gap-3 py-1">
-      <span className="shrink-0 text-[12px] text-white/45">{label}</span>
+      <span className="shrink-0 text-[12px] text-muted-foreground">{label}</span>
       <span
         className={`min-w-0 truncate text-right text-[13px] ${
-          known ? "text-white/85" : "italic text-white/35"
+          known ? "text-foreground/85" : "italic text-muted-foreground"
         }`}
       >
         {known ? value : "nog niet bekend"}
@@ -76,7 +76,7 @@ export default function RaceDetailPage() {
         <InvalidRace />
       )}
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
@@ -89,7 +89,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+      className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
     >
       <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
       Terug
@@ -103,7 +103,7 @@ function InvalidRace() {
     <>
       <BackButton onClick={() => setLocation("/races")} />
       <div className={`${cardClass} mt-3`}>
-        <p className="text-sm text-white/70">
+        <p className="text-sm text-muted-foreground">
           Deze wedstrijd kon niet worden gevonden.
         </p>
       </div>
@@ -135,7 +135,7 @@ function RaceDetailView({ raceId }: { raceId: number }) {
       <>
         <BackButton onClick={() => setLocation("/races")} />
         <div className={`${cardClass} mt-3`}>
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-muted-foreground">
             {isError
               ? "De wedstrijden konden niet worden geladen. Probeer het later opnieuw."
               : "Deze wedstrijd kon niet worden gevonden. Mogelijk is hij verwijderd."}
@@ -161,10 +161,10 @@ function RaceDetailView({ raceId }: { raceId: number }) {
       <header className="flex items-center gap-3">
         <BackButton onClick={() => setLocation("/races")} />
         <div className="min-w-0">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+          <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
             WEDSTRIJD
           </span>
-          <h1 className="truncate text-lg font-semibold text-white">
+          <h1 className="truncate text-lg font-semibold text-foreground">
             {race.name}
           </h1>
         </div>
@@ -182,7 +182,7 @@ function RaceDetailView({ raceId }: { raceId: number }) {
 
       {cancelled && (
         <div className="rounded-2xl border border-amber-300/25 bg-amber-300/[0.06] p-3">
-          <p className="text-[12px] text-amber-200/90">
+          <p className="text-[12px] text-[color:var(--color-warning)]">
             Deze wedstrijd is geannuleerd — hij telt nergens meer in je planning
             mee.
           </p>
@@ -191,7 +191,7 @@ function RaceDetailView({ raceId }: { raceId: number }) {
 
       {/* ── Basis: alleen echte gegevens; ontbrekend eerlijk gemarkeerd ── */}
       <section className={cardClass}>
-        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Basis
         </h2>
         <div className="divide-y divide-white/[0.05]">
@@ -208,7 +208,7 @@ function RaceDetailView({ raceId }: { raceId: number }) {
       {/* ── Parcours: velden op de wedstrijd zelf (het diepe parcoursadvies
           staat in het werkblad hieronder) ── */}
       <section className={cardClass}>
-        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Parcours
         </h2>
         <div className="divide-y divide-white/[0.05]">
@@ -226,18 +226,18 @@ function RaceDetailView({ raceId }: { raceId: number }) {
         race.coachInstructions ||
         race.notes) && (
         <section className={cardClass}>
-          <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+          <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Doel & opdracht
           </h2>
           {race.goal && (
-            <p className="pt-1 text-[13px] leading-relaxed text-white/75">
-              <span className="text-white/40">Doel: </span>
+            <p className="pt-1 text-[13px] leading-relaxed text-foreground/75">
+              <span className="text-muted-foreground">Doel: </span>
               {race.goal}
             </p>
           )}
           {race.assignment && (
-            <p className="pt-1 text-[13px] leading-relaxed text-white/75">
-              <span className="text-white/40">Opdracht: </span>
+            <p className="pt-1 text-[13px] leading-relaxed text-foreground/75">
+              <span className="text-muted-foreground">Opdracht: </span>
               {race.assignment}
             </p>
           )}
@@ -249,16 +249,16 @@ function RaceDetailView({ raceId }: { raceId: number }) {
                 background: "rgba(120,210,230,0.05)",
               }}
             >
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-accent-cyan">
                 Coachinstructie
               </span>
-              <p className="mt-1 text-[13px] leading-relaxed text-white/80">
+              <p className="mt-1 text-[13px] leading-relaxed text-foreground/80">
                 {race.coachInstructions}
               </p>
             </div>
           )}
           {race.notes && (
-            <p className="pt-2 text-[12px] leading-relaxed text-white/55">
+            <p className="pt-2 text-[12px] leading-relaxed text-muted-foreground">
               {race.notes}
             </p>
           )}
@@ -275,7 +275,7 @@ function RaceDetailView({ raceId }: { raceId: number }) {
         <button
           type="button"
           onClick={() => setLocation("/wedstrijd-room")}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-[13px] font-medium text-cyan-100 transition-colors hover:bg-cyan-300/20"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-accent-cyan/30 bg-accent-cyan/10 px-4 py-3 text-[13px] font-medium text-accent-cyan transition-colors hover:bg-accent-cyan/20"
         >
           <Film className="h-4 w-4" strokeWidth={1.75} />
           Wedstrijdkamer openen
@@ -283,7 +283,7 @@ function RaceDetailView({ raceId }: { raceId: number }) {
         <button
           type="button"
           onClick={() => setLocation(`/journey/wedstrijd/${raceId}`)}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 px-4 py-3 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <BookOpen className="h-4 w-4" strokeWidth={1.75} />
           Volledig dossier
@@ -291,7 +291,7 @@ function RaceDetailView({ raceId }: { raceId: number }) {
         <button
           type="button"
           onClick={() => setLocation(`/races?edit=${raceId}`)}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 px-4 py-3 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <Pencil className="h-4 w-4" strokeWidth={1.75} />
           Bewerken

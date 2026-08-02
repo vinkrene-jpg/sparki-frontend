@@ -35,7 +35,7 @@ const CONFIDENCE_META: Record<
   high: { label: "Zeker", color: "rgba(120,210,230,0.95)", bg: "rgba(120,210,230,0.12)" },
   medium: { label: "Vrij zeker", color: "rgba(150,200,150,0.95)", bg: "rgba(150,200,150,0.1)" },
   low: { label: "Onzeker", color: "rgba(235,180,110,0.95)", bg: "rgba(235,180,110,0.1)" },
-  unknown: { label: "Niet te beoordelen", color: "rgba(255,255,255,0.5)", bg: "rgba(255,255,255,0.05)" },
+  unknown: { label: "Niet te beoordelen", color: "var(--color-muted-foreground)", bg: "var(--color-muted)" },
 }
 
 function ConfidenceBadge({ level }: { level: MaterialConfidence }) {
@@ -75,7 +75,7 @@ function PointList({
       </p>
       <ul className="mt-1.5 space-y-1">
         {items.map((it, i) => (
-          <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-white/70">
+          <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-foreground/70">
             <span style={{ color }}>·</span>
             <span>{it}</span>
           </li>
@@ -87,9 +87,9 @@ function PointList({
 
 function CostEstimate({ cost }: { cost: NonNullable<MaterialAnalysis["costEstimate"]> }) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5">
+    <div className="rounded-xl border border-border bg-muted p-3.5">
       <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">
+        <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground/55">
           <Euro className="h-3.5 w-3.5" strokeWidth={1.75} />
           Kosteninschatting
         </p>
@@ -97,65 +97,65 @@ function CostEstimate({ cost }: { cost: NonNullable<MaterialAnalysis["costEstima
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-white/[0.06] p-3">
-          <p className="flex items-center gap-1.5 text-[12px] font-medium text-white/80">
+        <div className="rounded-lg border border-border p-3">
+          <p className="flex items-center gap-1.5 text-[12px] font-medium text-foreground/80">
             <Wrench className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: ACCENT }} />
             Zelf doen
           </p>
           {cost.diy ? (
-            <div className="mt-2 space-y-1 text-[12px] text-white/55">
+            <div className="mt-2 space-y-1 text-[12px] text-foreground/55">
               {cost.diy.costRange && (
                 <p>
-                  <span className="text-white/40">Kosten:</span> {cost.diy.costRange}
+                  <span className="text-muted-foreground">Kosten:</span> {cost.diy.costRange}
                 </p>
               )}
               {cost.diy.difficulty && (
                 <p>
-                  <span className="text-white/40">Moeilijkheid:</span> {cost.diy.difficulty}
+                  <span className="text-muted-foreground">Moeilijkheid:</span> {cost.diy.difficulty}
                 </p>
               )}
               {cost.diy.timeEstimate && (
                 <p>
-                  <span className="text-white/40">Tijd:</span> {cost.diy.timeEstimate}
+                  <span className="text-muted-foreground">Tijd:</span> {cost.diy.timeEstimate}
                 </p>
               )}
               {cost.diy.materials.length > 0 && (
                 <p>
-                  <span className="text-white/40">Nodig:</span>{" "}
+                  <span className="text-muted-foreground">Nodig:</span>{" "}
                   {cost.diy.materials.join(", ")}
                 </p>
               )}
             </div>
           ) : (
-            <p className="mt-2 text-[12px] text-white/35">Niet in te schatten</p>
+            <p className="mt-2 text-[12px] text-muted-foreground">Niet in te schatten</p>
           )}
         </div>
 
-        <div className="rounded-lg border border-white/[0.06] p-3">
-          <p className="text-[12px] font-medium text-white/80">Laten doen</p>
+        <div className="rounded-lg border border-border p-3">
+          <p className="text-[12px] font-medium text-foreground/80">Laten doen</p>
           {cost.professional ? (
-            <div className="mt-2 space-y-1 text-[12px] text-white/55">
+            <div className="mt-2 space-y-1 text-[12px] text-foreground/55">
               {cost.professional.laborCost && (
                 <p>
-                  <span className="text-white/40">Arbeid:</span>{" "}
+                  <span className="text-muted-foreground">Arbeid:</span>{" "}
                   {cost.professional.laborCost}
                 </p>
               )}
               {cost.professional.totalCost && (
                 <p>
-                  <span className="text-white/40">Totaal:</span>{" "}
+                  <span className="text-muted-foreground">Totaal:</span>{" "}
                   {cost.professional.totalCost}
                 </p>
               )}
             </div>
           ) : (
-            <p className="mt-2 text-[12px] text-white/35">Niet in te schatten</p>
+            <p className="mt-2 text-[12px] text-muted-foreground">Niet in te schatten</p>
           )}
         </div>
       </div>
 
       {cost.note && (
-        <p className="mt-3 text-[12px] leading-relaxed text-white/45">{cost.note}</p>
+        <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">{cost.note}</p>
       )}
     </div>
   )
@@ -178,14 +178,14 @@ export function AnalysisResult({
   const adviesZichtbaar = magAdviesTonen(analysis.confidence)
 
   return (
-    <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[15px] font-medium text-white/90">
+          <p className="text-[15px] font-medium text-foreground/90">
             {analysis.detectedItem ?? "Onbekend"}
           </p>
           {analysis.photoPaths.length > 0 && (
-            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/30">
+            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
               {analysis.photoPaths.length} foto
               {analysis.photoPaths.length > 1 ? "'s" : ""}
             </p>
@@ -201,29 +201,29 @@ export function AnalysisResult({
               key={i}
               src={`/api/material/photo/${analysis.id}/${i}`}
               alt={`Foto ${i + 1}`}
-              className="h-20 w-20 shrink-0 rounded-lg border border-white/[0.08] object-cover"
+              className="h-20 w-20 shrink-0 rounded-lg border border-border object-cover"
             />
           ))}
         </div>
       )}
 
       {adviesZichtbaar && advice?.summary && (
-        <p className="text-[14px] leading-relaxed text-white/75">{advice.summary}</p>
+        <p className="text-[14px] leading-relaxed text-foreground/75">{advice.summary}</p>
       )}
 
       {!adviesZichtbaar && (
-        <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3.5 text-[13px] leading-relaxed text-white/60">
+        <p className="rounded-xl border border-border bg-muted p-3.5 text-[13px] leading-relaxed text-foreground/60">
           {ADVIES_ONBEKEND_TEKST}
         </p>
       )}
 
       {needsMore && analysis.followUpQuestion && (
         <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-3.5">
-          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-amber-200/80">
+          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-warning)]">
             <HelpCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
             Een extra foto is nodig
           </p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/70">
             {analysis.followUpQuestion}
           </p>
           <input
@@ -242,7 +242,7 @@ export function AnalysisResult({
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={adding}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] disabled:opacity-50"
             style={{ background: ACCENT }}
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -308,18 +308,18 @@ export function UploadPanel({
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <p className="text-[14px] font-medium text-white/85">{category.label}</p>
+        <p className="text-[14px] font-medium text-foreground/85">{category.label}</p>
         <button
           type="button"
           onClick={onCancel}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/40"
+          className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground"
         >
           <X className="h-3.5 w-3.5" strokeWidth={1.75} />
         </button>
       </div>
-      <p className="text-[13px] leading-relaxed text-white/50">{category.prompt}</p>
+      <p className="text-[13px] leading-relaxed text-foreground/50">{category.prompt}</p>
 
       <input
         ref={fileRef}
@@ -338,10 +338,12 @@ export function UploadPanel({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="relative block w-full overflow-hidden rounded-xl border border-white/[0.1]"
+          className="relative block w-full overflow-hidden rounded-xl border border-border"
         >
           <img src={preview} alt="Voorbeeld" className="max-h-56 w-full object-cover" />
-          <span className="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-white/80">
+          {/* Foto-overlay-label: bewust donkere scrim + lichte tekst voor
+              leesbaarheid óp de afbeelding (LT-uitzondering 1, vertaalgids). */}
+          <span className="absolute bottom-2 right-2 rounded-md bg-foreground/60 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-[color:var(--color-on-accent)]">
             Andere foto
           </span>
         </button>
@@ -349,7 +351,7 @@ export function UploadPanel({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 py-8 text-white/45 transition-colors hover:border-cyan-300/35 hover:text-white/65"
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border py-8 text-muted-foreground transition-colors hover:border-accent-cyan/35 hover:text-foreground/65"
         >
           <Camera className="h-6 w-6" strokeWidth={1.5} />
           <span className="text-[13px]">Maak of kies een foto</span>
@@ -360,17 +362,17 @@ export function UploadPanel({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Iets erbij vertellen? (optioneel)"
-        className="min-h-[64px] w-full resize-none rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+        className="min-h-[64px] w-full resize-none rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
       />
 
-      {error && <p className="text-[12px] text-red-300/80">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
 
       <div className="ds-actiebalk">
         <button
           type="button"
           onClick={submit}
           disabled={!photo || analyze.isPending}
-          className="w-full rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
+          className="w-full rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-on-accent)] transition disabled:opacity-50"
           style={{ background: ACCENT }}
         >
           {analyze.isPending ? "Bezig…" : "Materiaal beoordelen"}
@@ -392,23 +394,23 @@ function NudgeCard({
   dismissing: boolean
 }) {
   return (
-    <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] p-4 backdrop-blur-md">
+    <div className="mt-4 rounded-2xl border border-accent-cyan/20 bg-accent-cyan/10 p-4 backdrop-blur-md">
       <div className="flex items-start gap-2.5">
         <span className="mt-0.5 shrink-0">
           <Sparkles className="h-4 w-4" strokeWidth={1.75} style={{ color: ACCENT }} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Opgemerkt
           </p>
-          <p className="mt-1.5 text-pretty text-[14px] leading-relaxed text-white/80">
+          <p className="mt-1.5 text-pretty text-[14px] leading-relaxed text-foreground/80">
             {message}
           </p>
           <div className="mt-3 flex items-center gap-3">
             <button
               type="button"
               onClick={onShow}
-              className="rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition disabled:opacity-50"
+              className="rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] transition disabled:opacity-50"
               style={{ background: ACCENT }}
             >
               Laat zien
@@ -417,7 +419,7 @@ function NudgeCard({
               type="button"
               onClick={onDismiss}
               disabled={dismissing}
-              className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70 disabled:opacity-40"
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-foreground/70 disabled:opacity-40"
             >
               Niet nodig
             </button>
@@ -485,7 +487,7 @@ export function MaterialCoach({
   return (
     <section>
       <SectionLabel n={n} title="Materiaalcoach" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
         Kies een onderwerp en upload een foto. Je krijgt een analyse van de staat
         en aandachtspunten — bij materiaal ook een kosteninschatting.
       </p>
@@ -512,7 +514,7 @@ export function MaterialCoach({
               key={c.key}
               type="button"
               onClick={() => setSelected(c)}
-              className="rounded-full border border-white/[0.12] bg-white/[0.03] px-3.5 py-2 text-[13px] text-white/70 transition-colors hover:border-cyan-300/35 hover:text-white/90"
+              className="rounded-full border border-border bg-muted px-3.5 py-2 text-[13px] text-foreground/70 transition-colors hover:border-accent-cyan/35 hover:text-foreground/90"
             >
               {c.label}
             </button>
@@ -553,7 +555,7 @@ export function MaterialCoach({
 
       {!selected && !active && history.length > 0 && (
         <div className="mt-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/30">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Eerder bekeken
           </p>
           <div className="mt-2 flex flex-col">
@@ -562,36 +564,36 @@ export function MaterialCoach({
                 key={a.id}
                 type="button"
                 onClick={() => setActive(a)}
-                className="flex items-center gap-3 border-b border-white/[0.05] py-3 text-left last:border-0"
+                className="flex items-center gap-3 border-b border-border py-3 text-left last:border-0"
               >
                 {a.photoPaths.length > 0 ? (
                   <img
                     src={`/api/material/photo/${a.id}/0`}
                     alt=""
-                    className="h-10 w-10 shrink-0 rounded-lg border border-white/[0.08] object-cover"
+                    className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover"
                   />
                 ) : (
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] text-white/30">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground">
                     <Camera className="h-4 w-4" strokeWidth={1.5} />
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] text-white/80">
+                  <p className="truncate text-[13px] text-foreground/80">
                     {a.detectedItem ?? "Onbekend"}
                   </p>
-                  <p className="font-mono text-[10px] tracking-wide text-white/30">
+                  <p className="font-mono text-[10px] tracking-wide text-muted-foreground">
                     {a.status === "needs_more" ? "Extra foto gevraagd" : "Beoordeeld"}
                   </p>
                 </div>
                 {a.status === "needs_more" ? (
                   <AlertTriangle
-                    className="h-4 w-4 shrink-0 text-amber-300/70"
+                    className="h-4 w-4 shrink-0 text-[color:var(--color-warning)]"
                     strokeWidth={1.75}
                   />
                 ) : (
                   <Check className="h-4 w-4 shrink-0" style={{ color: ACCENT }} strokeWidth={2} />
                 )}
-                <ChevronRight className="h-4 w-4 shrink-0 text-white/20" strokeWidth={1.75} />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
               </button>
             ))}
           </div>
@@ -599,7 +601,7 @@ export function MaterialCoach({
       )}
 
       {isLoading && (
-        <div className="mt-4 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="mt-4 h-16 animate-pulse rounded-2xl bg-muted" />
       )}
     </section>
   )

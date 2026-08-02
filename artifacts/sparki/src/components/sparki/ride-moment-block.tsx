@@ -37,21 +37,21 @@ function RaceDayCard({ raceDay }: { raceDay: RaceDayPayload }) {
   if (r.raceType || r.discipline) facts.push(r.raceType ?? r.discipline!)
 
   return (
-    <div className="mt-3 rounded-2xl border border-cyan-300/[0.18] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="mt-3 rounded-2xl border border-accent-cyan bg-card p-4 backdrop-blur-md">
       <div className="flex items-start gap-2.5">
         <Flag className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />
         <div className="min-w-0 flex-1">
           <span className="block font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: ACCENT }}>
             Vandaag wedstrijd
           </span>
-          <p className="mt-1 text-[15px] font-medium text-white/90">{r.name}</p>
+          <p className="mt-1 text-[15px] font-medium text-foreground/90">{r.name}</p>
           {facts.length > 0 && (
-            <p className="mt-1 text-[13px] leading-relaxed text-white/60">
+            <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
               {facts.join(" · ")}
             </p>
           )}
           {r.notes && (
-            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/50">
+            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
               {r.notes}
             </p>
           )}
@@ -60,17 +60,17 @@ function RaceDayCard({ raceDay }: { raceDay: RaceDayPayload }) {
 
       {/* Wedstrijdplan — only when real plan data exists on the race row */}
       {(r.coachInstructions || r.course) && (
-        <div className="mt-3.5 rounded-xl border border-white/[0.09] bg-white/[0.03] p-3.5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">
+        <div className="mt-3.5 rounded-xl border border-border bg-muted p-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Je wedstrijdplan
           </p>
           {r.coachInstructions && (
-            <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-white/70">
+            <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
               {r.coachInstructions}
             </p>
           )}
           {r.course && (
-            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/55">
+            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
               Parcours: {r.course}
             </p>
           )}
@@ -79,11 +79,11 @@ function RaceDayCard({ raceDay }: { raceDay: RaceDayPayload }) {
 
       {/* Weer — only shown when the forecast really resolved for the location */}
       {w?.available && w.weather && (
-        <div className="mt-3 rounded-xl border border-white/[0.09] bg-white/[0.03] p-3.5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">
+        <div className="mt-3 rounded-xl border border-border bg-muted p-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Weer bij de start{w.locationLabel ? ` — ${w.locationLabel}` : ""}
           </p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
             {w.weather.label}
             {w.weather.tempMaxC != null &&
               ` · ${w.weather.tempMinC != null ? `${Math.round(w.weather.tempMinC)}–` : ""}${Math.round(w.weather.tempMaxC)} °C`}
@@ -91,7 +91,7 @@ function RaceDayCard({ raceDay }: { raceDay: RaceDayPayload }) {
             {w.weather.precipProbMaxPct != null && ` · ${w.weather.precipProbMaxPct}% kans op neerslag`}
           </p>
           {w.advisory && w.advisory.severity !== "ok" && (
-            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-amber-200/75">
+            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-[color:var(--color-warning)]">
               {w.advisory.headline} — {w.advisory.detail}
             </p>
           )}
@@ -118,7 +118,7 @@ export function RideMomentBlock() {
         <SectionLabel title="Wedstrijddag" />
         <RaceDayCard raceDay={data.raceDay} />
         <div className="mt-3 flex flex-col gap-1.5">
-          <p className="text-[12px] leading-relaxed text-white/55">
+          <p className="text-[12px] leading-relaxed text-muted-foreground">
             Nog geen wedstrijdactiviteit ontvangen.
           </p>
           {syncHasContent && <SyncStatusLine sync={data.sync} />}
@@ -134,7 +134,7 @@ export function RideMomentBlock() {
         <SectionLabel title="Wedstrijddag" />
         <RaceDayCard raceDay={data.raceDay} />
         <div className="mt-3 flex flex-col gap-1.5">
-          <p className="flex items-center gap-2 text-[12px] leading-relaxed text-white/70">
+          <p className="flex items-center gap-2 text-[12px] leading-relaxed text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: ACCENT }} />
             Je rit is binnen — de analyse wordt klaargezet.
           </p>
@@ -171,7 +171,7 @@ export function RideMomentBlock() {
         <SyncStatusLine sync={data.sync} />
       </div>
 
-      <div className="mt-3 rounded-2xl border border-cyan-300/[0.18] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <div className="mt-3 rounded-2xl border border-accent-cyan bg-card p-4 backdrop-blur-md">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -181,15 +181,15 @@ export function RideMomentBlock() {
             <span className="block font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: ACCENT }}>
               {story.race ? "Na je wedstrijd" : "Na je rit"}
             </span>
-            <span className="mt-1 block text-[15px] font-medium text-white/90">
+            <span className="mt-1 block text-[15px] font-medium text-foreground/90">
               {s.title ?? "Je rit"}
-              <span className="text-white/45"> · {dateLabel}</span>
+              <span className="text-muted-foreground"> · {dateLabel}</span>
             </span>
           </span>
           {open ? (
-            <ChevronUp className="h-4 w-4 shrink-0 text-white/35" />
+            <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (
-            <ChevronDown className="h-4 w-4 shrink-0 text-white/35" />
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
         </button>
 

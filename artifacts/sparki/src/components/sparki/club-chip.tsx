@@ -25,7 +25,7 @@ export function ClubChip({ className = "" }: { className?: string }) {
       ) : (
         <Shield className="h-3 w-3" style={{ color }} strokeWidth={2} />
       )}
-      <span className="max-w-[9rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-white/70">
+      <span className="max-w-[9rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
         {team.shirtBadge || team.clubName}
       </span>
     </span>

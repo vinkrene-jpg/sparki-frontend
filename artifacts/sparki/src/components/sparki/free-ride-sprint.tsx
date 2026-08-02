@@ -173,11 +173,11 @@ export function FreeRideSprint() {
   }, [onPosition])
 
   return (
-    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-      <h2 className="mb-1 font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+    <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+      <h2 className="mb-1 font-mono text-[10px] uppercase tracking-[0.28em] text-accent-cyan">
         Vrije sprintrit
       </h2>
-      <p className="mb-4 text-sm text-white/60">
+      <p className="mb-4 text-sm text-foreground/60">
         Geen route nodig — elk plaatsnaambord dat je passeert wordt herkend en
         telt mee in je score.
       </p>
@@ -185,22 +185,22 @@ export function FreeRideSprint() {
       {!active ? (
         <button
           onClick={start}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400/90 px-4 py-3 font-semibold text-[#04121a] transition hover:bg-cyan-300"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-cyan/90 px-4 py-3 font-semibold text-[color:var(--color-on-accent)] transition hover:bg-accent-cyan"
         >
           <Play className="h-4 w-4" /> Start vrije sprintrit
         </button>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm text-white/80">
-              <MapPin className="h-4 w-4 text-cyan-300" />
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-foreground/80">
+              <MapPin className="h-4 w-4 text-accent-cyan" />
               {currentPlace ? (
                 <span>Nu in {currentPlace}</span>
               ) : (
-                <span className="text-white/50">Plaats bepalen…</span>
+                <span className="text-foreground/50">Plaats bepalen…</span>
               )}
             </div>
-            <span className="font-mono text-sm text-cyan-300">
+            <span className="font-mono text-sm text-accent-cyan">
               {count} bordje{count === 1 ? "" : "s"}
             </span>
           </div>
@@ -209,27 +209,27 @@ export function FreeRideSprint() {
             {power.supported && !power.connected && (
               <button
                 onClick={power.connect}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs text-white/70 transition hover:bg-white/[0.08]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-xs text-foreground/70 transition hover:bg-muted"
               >
                 <Bluetooth className="h-3.5 w-3.5" /> Koppel vermogensmeter
               </button>
             )}
             {power.connected && (
-              <span className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-200">
+              <span className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-accent-cyan/30 bg-accent-cyan/10 px-3 py-2 text-xs text-accent-cyan">
                 <Zap className="h-3.5 w-3.5" />
                 {liveWatts != null ? `${liveWatts} W` : "verbonden"}
               </span>
             )}
             <button
               onClick={stop}
-              className="flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-2 text-xs text-white/70 transition hover:bg-white/[0.08]"
+              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-muted px-4 py-2 text-xs text-foreground/70 transition hover:bg-muted"
             >
               <Square className="h-3.5 w-3.5" /> Stop
             </button>
           </div>
 
           {!power.supported && (
-            <p className="text-[11px] text-white/40">
+            <p className="text-[11px] text-muted-foreground">
               Deze browser ondersteunt geen Bluetooth-vermogensmeter — je sprint
               telt op snelheid (dat werkt gewoon).
             </p>
@@ -237,17 +237,17 @@ export function FreeRideSprint() {
         </div>
       )}
 
-      {geoError && <p className="mt-3 text-sm text-amber-300/90">{geoError}</p>}
+      {geoError && <p className="mt-3 text-sm text-[color:var(--color-warning)]">{geoError}</p>}
 
       {popup && (
-        <div className="mt-4 rounded-xl border border-cyan-400/30 bg-cyan-400/10 p-4 text-center">
-          <div className="text-xs uppercase tracking-widest text-cyan-300/80">
+        <div className="mt-4 rounded-xl border border-accent-cyan/30 bg-accent-cyan/10 p-4 text-center">
+          <div className="text-xs uppercase tracking-widest text-accent-cyan">
             Bordje {popup.placeName}
           </div>
-          <div className="my-1 text-3xl font-bold text-white">
+          <div className="my-1 text-3xl font-bold text-foreground">
             +{popup.totalPoints}
           </div>
-          <div className="text-xs text-white/60">
+          <div className="text-xs text-foreground/60">
             {popup.basePoints} basis + {popup.bonusPoints} bonus
             {popup.speedKmhPeak != null &&
               ` · piek ${Math.round(popup.speedKmhPeak)} km/u`}

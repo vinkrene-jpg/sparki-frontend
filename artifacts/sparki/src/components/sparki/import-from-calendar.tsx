@@ -19,7 +19,7 @@ import type {
 } from "@/lib/calendar-types"
 
 const inputCls =
-  "w-full rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-3 py-2.5 text-[14px] text-white placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
+  "w-full rounded-xl border border-border bg-muted pl-10 pr-3 py-2.5 text-[14px] text-foreground placeholder-white/25 outline-none transition-colors focus:border-accent-cyan/40"
 
 function formatEventDate(ev: CalendarEvent): string {
   if (ev.date) {
@@ -93,7 +93,7 @@ export function ImportFromCalendar({
 
   return (
     <div className="space-y-5">
-      <p className="text-[12.5px] leading-relaxed text-white/45">
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
         Kies een kalender, zoek je wedstrijd en tik erop. Het
         formulier wordt automatisch ingevuld — je controleert daarna alles zelf.
       </p>
@@ -114,9 +114,9 @@ export function ImportFromCalendar({
                 style={{
                   borderColor: active
                     ? "rgba(120,210,230,0.4)"
-                    : "rgba(255,255,255,0.1)",
+                    : "var(--color-border)",
                   background: active ? "rgba(120,210,230,0.1)" : "transparent",
-                  color: active ? ACCENT : "rgba(255,255,255,0.55)",
+                  color: active ? ACCENT : "var(--color-muted-foreground)",
                 }}
               >
                 {s.label}
@@ -125,13 +125,13 @@ export function ImportFromCalendar({
           })}
         </div>
       ) : (
-        <p className="text-[12px] text-red-300/80">
+        <p className="text-[12px] text-[color:var(--color-negative)]">
           Kon de kalenders niet laden. Probeer het later opnieuw.
         </p>
       )}
 
       {activeSource && (
-        <p className="text-[12px] leading-relaxed text-white/40">
+        <p className="text-[12px] leading-relaxed text-muted-foreground">
           {activeSource.description}
         </p>
       )}
@@ -139,8 +139,8 @@ export function ImportFromCalendar({
       {/* Honest note for a limited source (KNWU) */}
       {(activeSource?.note || result?.note) && (
         <div className="flex items-start gap-2.5 rounded-xl border border-amber-300/20 bg-amber-300/[0.05] p-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-300/80" strokeWidth={2} />
-          <p className="text-[12px] leading-relaxed text-amber-100/70">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-warning)]" strokeWidth={2} />
+          <p className="text-[12px] leading-relaxed text-[color:var(--color-warning)]">
             {activeSource?.note ?? result?.note}
           </p>
         </div>
@@ -148,7 +148,7 @@ export function ImportFromCalendar({
 
       {/* Search */}
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" strokeWidth={2} />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={2} />
         <input
           value={rawQuery}
           onChange={(e) => setRawQuery(e.target.value)}
@@ -157,7 +157,7 @@ export function ImportFromCalendar({
         />
       </div>
 
-      {pickError && <p className="text-[12px] text-amber-200/80">{pickError}</p>}
+      {pickError && <p className="text-[12px] text-[color:var(--color-warning)]">{pickError}</p>}
 
       {/* Results */}
       {source == null ? null : searchQ.isLoading ? (
@@ -167,15 +167,15 @@ export function ImportFromCalendar({
           ))}
         </div>
       ) : searchQ.isError || result?.error ? (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 text-center backdrop-blur-md">
-          <p className="text-[13px] text-white/70">
+        <div className="rounded-2xl border border-border bg-card p-5 text-center backdrop-blur-md">
+          <p className="text-[13px] text-foreground/70">
             {result?.error ??
               "Kon de kalender nu niet ophalen. Probeer het later opnieuw."}
           </p>
           <button
             type="button"
             onClick={() => void searchQ.refetch()}
-            className="mt-3 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
+            className="mt-3 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
             style={{ borderColor: ACCENT, color: ACCENT }}
           >
             Opnieuw proberen
@@ -189,14 +189,14 @@ export function ImportFromCalendar({
               type="button"
               disabled={resolvingId != null}
               onClick={() => void handlePick(ev)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 text-left backdrop-blur-md transition-colors hover:border-cyan-300/25 disabled:opacity-50"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/25 disabled:opacity-50"
             >
               <div className="min-w-0 flex-1">
-                <h3 className="truncate font-sans text-[14.5px] font-light tracking-tight text-white/90">
+                <h3 className="truncate font-sans text-[14.5px] font-light tracking-tight text-foreground/90">
                   {ev.name}
                 </h3>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-white/45">
-                  <span className="text-cyan-300/70">{formatEventDate(ev)}</span>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted-foreground">
+                  <span className="text-accent-cyan">{formatEventDate(ev)}</span>
                   {ev.location && (
                     <span className="inline-flex items-center gap-1">
                       <MapPin className="h-3 w-3" strokeWidth={2} />
@@ -208,23 +208,23 @@ export function ImportFromCalendar({
                 </p>
               </div>
               {resolvingId === ev.externalId ? (
-                <span className="shrink-0 font-mono text-[10px] tracking-[0.14em] text-cyan-300/70">
+                <span className="shrink-0 font-mono text-[10px] tracking-[0.14em] text-accent-cyan">
                   …
                 </span>
               ) : (
-                <ChevronRight className="h-4 w-4 shrink-0 text-white/30" strokeWidth={2} />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
               )}
             </button>
           ))}
         </section>
       ) : (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-          <p className="text-[13px] text-white/70">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+          <p className="text-[13px] text-foreground/70">
             {query
               ? `Geen wedstrijden gevonden voor "${query}".`
               : "Geen wedstrijden gevonden in deze kalender."}
           </p>
-          <p className="mt-1.5 text-[12px] text-white/40">
+          <p className="mt-1.5 text-[12px] text-muted-foreground">
             Pas je zoekopdracht aan of voeg de wedstrijd handmatig toe.
           </p>
         </div>

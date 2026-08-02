@@ -66,9 +66,9 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-50">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-[#040506] to-transparent"
+        className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-background to-transparent"
       />
-      <div className="mx-auto flex max-w-md items-center border-t border-white/[0.06] bg-[#040506]/85 px-2 pb-7 pt-3.5 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-md items-center border-t border-border bg-background/85 px-2 pb-7 pt-3.5 backdrop-blur-xl">
         {items.map((item) => {
           const Icon = item.icon
           const isActive =
@@ -83,17 +83,21 @@ export function BottomNav() {
               <Icon
                 className="h-5 w-5 transition-colors"
                 style={{
-                  color: isActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.4)",
-                  filter: isActive
-                    ? "drop-shadow(0 0 6px var(--accent-cyan))"
-                    : "none",
+                  // LICHT_THEMA_01: inactief = gedempte donkere voorgrond
+                  // (leesbaar op licht), actief = merkaccent. Geen gloed op
+                  // licht — de accentkleur zelf draagt de actieve staat.
+                  color: isActive
+                    ? "var(--accent-cyan)"
+                    : "var(--color-muted-foreground)",
                 }}
                 strokeWidth={1.75}
               />
               <span
                 className="font-mono text-[10px] uppercase tracking-[0.03em] whitespace-nowrap"
                 style={{
-                  color: isActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.5)",
+                  color: isActive
+                    ? "var(--accent-cyan)"
+                    : "var(--color-muted-foreground)",
                 }}
               >
                 {item.label}

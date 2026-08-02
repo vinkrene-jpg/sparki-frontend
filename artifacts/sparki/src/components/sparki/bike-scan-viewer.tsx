@@ -89,7 +89,7 @@ export function BikeScanViewer({
             type="button"
             aria-label="Vorige opname"
             onClick={() => step(-1)}
-            className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 p-1.5 text-white/70"
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full border border-border bg-foreground/40 p-1.5 text-muted-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -97,13 +97,13 @@ export function BikeScanViewer({
             type="button"
             aria-label="Volgende opname"
             onClick={() => step(1)}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 p-1.5 text-white/70"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full border border-border bg-foreground/40 p-1.5 text-muted-foreground"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </>
       )}
-      <p className="pointer-events-none absolute bottom-1.5 left-0 right-0 text-center text-[10px] text-white/40">
+      <p className="pointer-events-none absolute bottom-1.5 left-0 right-0 text-center text-[10px] text-muted-foreground">
         {is360
           ? "Echte opnames — sleep om rond je fiets te draaien"
           : `Echte opnames · ${idx + 1} van ${frames.length}`}

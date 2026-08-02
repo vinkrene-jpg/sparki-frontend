@@ -21,7 +21,7 @@ export function SectionLabel({
           {n}
         </span>
       ) : null}
-      <span className="label-sm text-white/50">{title.toUpperCase()}</span>
+      <span className="label-sm text-muted-foreground">{title.toUpperCase()}</span>
       <span className="h-px flex-1 bg-gradient-to-r from-white/12 to-transparent" />
     </div>
   )
@@ -45,7 +45,7 @@ export function Delta({ value, invert = false }: { value: number; invert?: boole
 }
 
 export function Divider() {
-  return <span className="h-7 w-px bg-white/[0.08]" />
+  return <span className="h-7 w-px bg-muted" />
 }
 
 export function Stat({
@@ -61,7 +61,7 @@ export function Stat({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="label-xs text-white/35">{label.toUpperCase()}</span>
+      <span className="label-xs text-muted-foreground">{label.toUpperCase()}</span>
       <span
         className={`font-sans font-light tabular-nums leading-none ${big ? "text-2xl" : "text-[15px]"}`}
         style={{

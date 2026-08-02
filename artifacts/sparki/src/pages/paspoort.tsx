@@ -44,17 +44,17 @@ function fmtDate(iso: string): string {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-white/[0.06] py-2 print:border-neutral-200">
-      <span className="text-[12px] text-white/45 print:text-neutral-500">{label}</span>
-      <span className="text-right text-[13px] text-white/90 print:text-neutral-900">{value}</span>
+    <div className="flex items-baseline justify-between gap-4 border-b border-border py-2 print:border-neutral-200">
+      <span className="text-[12px] text-muted-foreground print:text-neutral-500">{label}</span>
+      <span className="text-right text-[13px] text-foreground/90 print:text-neutral-900">{value}</span>
     </div>
   )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#070d16]/[0.82] p-4 backdrop-blur-md print:break-inside-avoid print:rounded-none print:border-0 print:border-t print:border-neutral-300 print:bg-transparent print:p-0 print:pt-3">
-      <h2 className="mb-1 font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-300/80 print:text-neutral-600">
+    <section className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md print:break-inside-avoid print:rounded-none print:border-0 print:border-t print:border-neutral-300 print:bg-transparent print:p-0 print:pt-3">
+      <h2 className="mb-1 font-mono text-[10px] uppercase tracking-[0.24em] text-accent-cyan print:text-neutral-600">
         {title}
       </h2>
       {children}
@@ -103,14 +103,14 @@ export default function PaspoortPage() {
         <div className="no-print flex items-center justify-between">
           <Link
             href="/you"
-            className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <ChevronLeft className="h-4 w-4" /> Terug
           </Link>
           <button
             type="button"
             onClick={() => window.print()}
-            className="flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-1.5 text-[13px] text-cyan-300 transition-colors hover:bg-cyan-300/20"
+            className="flex items-center gap-2 rounded-full border border-accent-cyan/40 bg-accent-cyan/10 px-4 py-1.5 text-[13px] text-accent-cyan transition-colors hover:bg-accent-cyan/20"
           >
             <Printer className="h-4 w-4" strokeWidth={1.75} />
             Afdrukken / PDF
@@ -118,13 +118,13 @@ export default function PaspoortPage() {
         </div>
 
         <header className="print:pt-2">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/40 print:text-neutral-500">
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground print:text-neutral-500">
             Sportpaspoort
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white print:text-neutral-900">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground print:text-neutral-900">
             {profile?.displayName ?? "Sporter"}
           </h1>
-          <p className="text-[12px] text-white/45 print:text-neutral-500">
+          <p className="text-[12px] text-muted-foreground print:text-neutral-500">
             Opgemaakt op {fmtDate(today)}
           </p>
         </header>
@@ -143,7 +143,7 @@ export default function PaspoortPage() {
             />
           )}
           {!athlete?.discipline && !athlete?.birthDate && athlete?.weightKg == null && (
-            <p className="py-1 text-[12px] text-white/45 print:text-neutral-500">
+            <p className="py-1 text-[12px] text-muted-foreground print:text-neutral-500">
               Nog geen profielgegevens ingevuld.
             </p>
           )}
@@ -151,7 +151,7 @@ export default function PaspoortPage() {
 
         <Section title="Doelen">
           {goals.length === 0 ? (
-            <p className="py-1 text-[12px] text-white/45 print:text-neutral-500">Nog geen doelen vastgelegd.</p>
+            <p className="py-1 text-[12px] text-muted-foreground print:text-neutral-500">Nog geen doelen vastgelegd.</p>
           ) : (
             goals.slice(0, 5).map((g) => <Row key={g.id} label={g.horizon ?? "Doel"} value={g.title} />)
           )}
@@ -171,7 +171,7 @@ export default function PaspoortPage() {
               ) : null,
             )}
           {athlete?.ftp == null && !load && (
-            <p className="py-1 text-[12px] text-white/45 print:text-neutral-500">
+            <p className="py-1 text-[12px] text-muted-foreground print:text-neutral-500">
               Nog geen metingen beschikbaar.
             </p>
           )}
@@ -184,16 +184,16 @@ export default function PaspoortPage() {
                 <LineChart data={chart} margin={{ top: 8, right: 4, bottom: 0, left: -22 }}>
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }}
+                    tick={{ fontSize: 9, fill: "rgba(20,24,31,0.55)" }}
                     tickFormatter={(d: string) => d.slice(5)}
                     interval="preserveStartEnd"
-                    stroke="rgba(255,255,255,0.15)"
+                    stroke="rgba(20,24,31,0.12)"
                   />
-                  <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }} stroke="rgba(255,255,255,0.15)" />
+                  <YAxis tick={{ fontSize: 9, fill: "rgba(20,24,31,0.55)" }} stroke="rgba(20,24,31,0.12)" />
                   <Tooltip
                     contentStyle={{
                       background: "#0a1017",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      border: "1px solid rgba(20,24,31,0.12)",
                       fontSize: 11,
                     }}
                   />
@@ -207,7 +207,7 @@ export default function PaspoortPage() {
 
         <Section title="Wedstrijdhistorie">
           {pastRaces.length === 0 ? (
-            <p className="py-1 text-[12px] text-white/45 print:text-neutral-500">
+            <p className="py-1 text-[12px] text-muted-foreground print:text-neutral-500">
               Nog geen gereden wedstrijden in de kalender.
             </p>
           ) : (
@@ -219,7 +219,7 @@ export default function PaspoortPage() {
 
         <Section title="Materiaal">
           {bikes.length === 0 ? (
-            <p className="py-1 text-[12px] text-white/45 print:text-neutral-500">Nog geen fiets in de garage.</p>
+            <p className="py-1 text-[12px] text-muted-foreground print:text-neutral-500">Nog geen fiets in de garage.</p>
           ) : (
             bikes.map((b) => (
               <Row
@@ -233,7 +233,7 @@ export default function PaspoortPage() {
 
         <Section title="Trainer & club">
           {!isMember ? (
-            <p className="py-1 text-[12px] text-white/45 print:text-neutral-500">
+            <p className="py-1 text-[12px] text-muted-foreground print:text-neutral-500">
               Geen trainer of club gekoppeld.
             </p>
           ) : (

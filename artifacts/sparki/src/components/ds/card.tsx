@@ -9,11 +9,13 @@ import {
 
 // Sparki-designsysteem — kaartcontainer.
 //
-// De standaard "glaskaart" van het donkere ontwerp: subtiele rand, licht
-// oppervlak, kaartradius uit de tokenlaag. Twee varianten:
+// LICHT_THEMA_01 LT-04: de kaart is nu een LICHT vlak dat diepte krijgt van
+// ZACHTE, GELAAGDE SCHADUW (shadow-card) i.p.v. gloed. Subtiele donkergetinte
+// rand, dekkend wit oppervlak, kaartradius uit de tokenlaag. Twee varianten:
 //   • standaard — normale kaart-padding (p-card)
 //   • compact   — dichte lijst-/detailkaart (p-card-compact)
-// Alle waarden komen uit tokens (bg-surface, border-border, rounded-card).
+// Alle waarden komen uit tokens (bg-surface, border-border, rounded-card,
+// shadow-card).
 //
 // MEDIA_UITLEG_01 F2 (CMP-40): optionele diepte via `diepte`. Geen nieuwe
 // kaart — dezelfde DsCard, met subtiele kanteling UITSLUITEND tijdens directe
@@ -23,7 +25,7 @@ import {
 // shouldEnableDiepte uit @/lib/zweefkaart.
 
 const dsCardVariants = cva(
-  "rounded-card border border-border bg-surface backdrop-blur",
+  "rounded-card border border-border bg-surface shadow-card",
   {
     variants: {
       variant: {
@@ -108,6 +110,6 @@ export function DsCardTitel({
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={cn("type-title-card text-white/90", className)} {...props} />
+    <h3 className={cn("type-title-card text-foreground", className)} {...props} />
   );
 }

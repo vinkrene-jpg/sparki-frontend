@@ -23,6 +23,14 @@ import { useColors } from "@/hooks/useColors";
 import { bleSupport } from "@/lib/ble-sensors";
 import { batterijHint, openAppInstellingen } from "@/lib/permissions";
 
+// LICHT_THEMA_01: semantische statuskleuren, donkerder gemaakt zodat ze
+// leesbaar contrasteren op het lichte thema (gelijk aan de web-tokens
+// --color-warning/--color-positive/--color-destructive). Lichte varianten
+// (amber-400/green-400/red-500) verdwijnen op wit; deze niet.
+const STATUS_WARN = "#a96b00";     // waarschuwing / fout-melding (was #fb923c)
+const STATUS_POSITIVE = "#008140"; // toegekend / gelukt (was #4ade80)
+const STATUS_NEGATIVE = "#cc272e"; // destructief / verwijderen (was #ef4444)
+
 /**
  * Golf 28 — Instellingen: machtigingen (echte status + systeeminstellingen),
  * meldingen (bestaande voorkeuren-API), privacy & delen, databronnen,
@@ -443,7 +451,7 @@ export default function InstellingenScreen() {
       <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
         {prefs === null ? (
           prefsError ? (
-            <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{prefsError}</Text>
+            <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{prefsError}</Text>
           ) : (
             <ActivityIndicator size="small" color={c.primary} />
           )
@@ -466,7 +474,7 @@ export default function InstellingenScreen() {
                 />
               ))}
             {prefsError && (
-              <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{prefsError}</Text>
+              <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{prefsError}</Text>
             )}
           </>
         )}
@@ -479,7 +487,7 @@ export default function InstellingenScreen() {
       <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
         {privacy === null ? (
           privacyError ? (
-            <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{privacyError}</Text>
+            <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{privacyError}</Text>
           ) : (
             <ActivityIndicator size="small" color={c.primary} />
           )
@@ -502,7 +510,7 @@ export default function InstellingenScreen() {
               (Jij → Privacy). Daar staan ook alle deelniveaus uitgelegd.
             </Text>
             {privacyError && (
-              <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{privacyError}</Text>
+              <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{privacyError}</Text>
             )}
           </>
         )}
@@ -515,7 +523,7 @@ export default function InstellingenScreen() {
       <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
         {billing === null ? (
           billingError ? (
-            <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{billingError}</Text>
+            <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{billingError}</Text>
           ) : (
             <ActivityIndicator size="small" color={c.primary} />
           )
@@ -567,7 +575,7 @@ export default function InstellingenScreen() {
       <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
         {connectors === null ? (
           connError ? (
-            <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{connError}</Text>
+            <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{connError}</Text>
           ) : (
             <ActivityIndicator size="small" color={c.primary} />
           )
@@ -590,10 +598,10 @@ export default function InstellingenScreen() {
                         {
                           color:
                             warning != null
-                              ? "#fb923c"
+                              ? STATUS_WARN
                               : conn.connect.status === "connected" ||
                                   conn.connect.status === "sync_in_progress"
-                                ? "#4ade80"
+                                ? STATUS_POSITIVE
                                 : c.mutedForeground,
                         },
                       ]}
@@ -604,7 +612,7 @@ export default function InstellingenScreen() {
                   </View>
                   {warning && (
                     <>
-                      <Text style={[styles.cardMeta, { color: "#fb923c" }]}>
+                      <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>
                         {warning}
                       </Text>
                       {!needsReconnect && (
@@ -641,7 +649,7 @@ export default function InstellingenScreen() {
               </Text>
             )}
             {connError && (
-              <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{connError}</Text>
+              <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{connError}</Text>
             )}
             <Text style={[styles.cardBody, { color: c.foreground }]}>
               Koppelingen met Strava en andere platforms beheer je in de
@@ -672,7 +680,7 @@ export default function InstellingenScreen() {
         </Pressable>
         {privacy?.deleteRequestedAt ? (
           <>
-            <Text style={[styles.cardMeta, { color: "#fb923c" }]}>
+            <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>
               Er staat een verwijderverzoek open. Je account wordt na de
               hersteltermijn definitief verwijderd.
             </Text>
@@ -714,13 +722,13 @@ export default function InstellingenScreen() {
               style={styles.permRow}
               onPress={() => setDirectDefinitief((v) => !v)}
             >
-              <Text style={[styles.rowLabel, { color: "#ef4444" }]}>
+              <Text style={[styles.rowLabel, { color: STATUS_NEGATIVE }]}>
                 Direct definitief verwijderen (onomkeerbaar)
               </Text>
               <Switch value={directDefinitief} onValueChange={setDirectDefinitief} />
             </Pressable>
             {directDefinitief && (
-              <Text style={[styles.cardMeta, { color: "#ef4444" }]}>
+              <Text style={[styles.cardMeta, { color: STATUS_NEGATIVE }]}>
                 Je account en alle gegevens worden meteen verwijderd, zonder
                 hersteltermijn. Dit is niet terug te draaien en inloggen is hierna
                 niet meer mogelijk.
@@ -728,14 +736,14 @@ export default function InstellingenScreen() {
             )}
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Pressable
-                style={[styles.btn, { borderColor: "#ef4444", flex: 1 }]}
+                style={[styles.btn, { borderColor: STATUS_NEGATIVE, flex: 1 }]}
                 disabled={deleteInput.trim() !== DELETE_PHRASE || deleteBusy}
                 onPress={() => void requestDelete()}
               >
                 {deleteBusy ? (
-                  <ActivityIndicator size="small" color="#ef4444" />
+                  <ActivityIndicator size="small" color={STATUS_NEGATIVE} />
                 ) : (
-                  <Text style={[styles.btnText, { color: "#ef4444" }]}>
+                  <Text style={[styles.btnText, { color: STATUS_NEGATIVE }]}>
                     {directDefinitief
                       ? "Nu definitief verwijderen"
                       : "Definitief aanvragen"}
@@ -759,8 +767,8 @@ export default function InstellingenScreen() {
             style={[styles.btn, { borderColor: c.border }]}
             onPress={() => setShowDelete(true)}
           >
-            <Ionicons name="trash-outline" size={16} color="#ef4444" />
-            <Text style={[styles.btnText, { color: "#ef4444" }]}>
+            <Ionicons name="trash-outline" size={16} color={STATUS_NEGATIVE} />
+            <Text style={[styles.btnText, { color: STATUS_NEGATIVE }]}>
               Account verwijderen
             </Text>
           </Pressable>
@@ -799,7 +807,7 @@ export default function InstellingenScreen() {
                 </Text>
               </>
             ) : docError ? (
-              <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{docError}</Text>
+              <Text style={[styles.cardMeta, { color: STATUS_WARN }]}>{docError}</Text>
             ) : (
               <ActivityIndicator size="small" color={c.primary} />
             )}
@@ -856,7 +864,7 @@ function PermRow({
   status: PermStatus;
 }) {
   const color =
-    status === "granted" ? "#4ade80" : status === "denied" ? "#fb923c" : c.mutedForeground;
+    status === "granted" ? STATUS_POSITIVE : status === "denied" ? STATUS_WARN : c.mutedForeground;
   return (
     <View style={styles.permRow}>
       <Text style={[styles.rowLabel, { color: c.foreground }]}>{label}</Text>

@@ -92,28 +92,28 @@ export function ZoekOverlay({ open, onClose }: { open: boolean; onClose: () => v
         type="button"
         aria-label="Zoeken sluiten"
         onClick={onClose}
-        className="fixed inset-0 bg-[#03050a]/85 backdrop-blur-md"
+        className="fixed inset-0 bg-card backdrop-blur-md"
       />
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pb-16 pt-12">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-cyan" />
             </span>
-            <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">ZOEKEN</span>
+            <span className="font-mono text-[11px] tracking-[0.35em] text-muted-foreground">ZOEKEN</span>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Sluiten"
-            className="text-white/60 transition-colors hover:text-cyan-300"
+            className="text-muted-foreground transition-colors hover:text-accent-cyan"
           >
             <X className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </button>
         </header>
 
-        <div className="mt-8 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 focus-within:border-cyan-300/40">
-          <Search className="h-4 w-4 shrink-0 text-white/40" strokeWidth={1.75} />
+        <div className="mt-8 flex items-center gap-3 rounded-2xl border border-border bg-muted px-4 py-3 focus-within:border-accent-cyan/40">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
           <input
             ref={inputRef}
             type="search"
@@ -121,12 +121,12 @@ export function ZoekOverlay({ open, onClose }: { open: boolean; onClose: () => v
             onChange={(e) => setQ(e.target.value)}
             placeholder="Zoek in Sparki — pagina's, ritten, routes, wedstrijden…"
             aria-label="Zoeken in Sparki"
-            className="w-full bg-transparent text-[15px] text-white placeholder:text-white/35 focus:outline-none"
+            className="w-full bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
 
         {q.trim().length < 2 && (
-          <p className="mt-6 text-[13px] leading-relaxed text-white/45">
+          <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
             Typ minstens twee letters. Je zoekt in pagina's en in je eigen
             gegevens: ritten, routes, wedstrijden en de kennisbank.
           </p>
@@ -134,7 +134,7 @@ export function ZoekOverlay({ open, onClose }: { open: boolean; onClose: () => v
 
         {paginas.length > 0 && (
           <section className="mt-8">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.28em] text-white/40">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
               Pagina's
             </h2>
             <ul className="mt-3 space-y-1.5">
@@ -143,13 +143,13 @@ export function ZoekOverlay({ open, onClose }: { open: boolean; onClose: () => v
                   <button
                     type="button"
                     onClick={() => go(p.href)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:border-cyan-300/35"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-left transition-colors hover:border-accent-cyan/35"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-[14px] text-white/90">{p.label}</span>
-                      <span className="block truncate text-[12px] text-white/45">{p.hint}</span>
+                      <span className="block truncate text-[14px] text-foreground/90">{p.label}</span>
+                      <span className="block truncate text-[12px] text-muted-foreground">{p.hint}</span>
                     </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
                 </li>
               ))}
@@ -162,7 +162,7 @@ export function ZoekOverlay({ open, onClose }: { open: boolean; onClose: () => v
           if (!href) return null
           return (
             <section key={g.key} className="mt-8">
-              <h2 className="font-mono text-[10px] uppercase tracking-[0.28em] text-white/40">
+              <h2 className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
                 {g.label}
               </h2>
               <ul className="mt-3 space-y-1.5">
@@ -171,15 +171,15 @@ export function ZoekOverlay({ open, onClose }: { open: boolean; onClose: () => v
                     <button
                       type="button"
                       onClick={() => go(href)}
-                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:border-cyan-300/35"
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-left transition-colors hover:border-accent-cyan/35"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate text-[14px] text-white/90">{item.titel}</span>
+                        <span className="block truncate text-[14px] text-foreground/90">{item.titel}</span>
                         {item.sub && (
-                          <span className="block truncate text-[12px] text-white/45">{item.sub}</span>
+                          <span className="block truncate text-[12px] text-muted-foreground">{item.sub}</span>
                         )}
                       </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </button>
                   </li>
                 ))}
@@ -189,13 +189,13 @@ export function ZoekOverlay({ open, onClose }: { open: boolean; onClose: () => v
         })}
 
         {zoektNog && (
-          <p className="mt-8 text-[13px] text-white/45">Bezig met zoeken…</p>
+          <p className="mt-8 text-[13px] text-muted-foreground">Bezig met zoeken…</p>
         )}
 
         {toonLeeg && (
-          <div className="mt-8 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
-            <Compass className="mt-0.5 h-4 w-4 shrink-0 text-white/35" strokeWidth={1.75} />
-            <p className="text-[13px] leading-relaxed text-white/55">
+          <div className="mt-8 flex items-start gap-3 rounded-xl border border-border bg-muted px-4 py-3.5">
+            <Compass className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
               Geen resultaten voor "{q.trim()}". Probeer een ander woord — of
               kijk via Meer welke onderdelen er zijn.
             </p>

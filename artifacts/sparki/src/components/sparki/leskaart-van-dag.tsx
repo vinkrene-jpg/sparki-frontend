@@ -46,26 +46,26 @@ export function LeskaartVandaag() {
     <button
       type="button"
       onClick={() => navigate("/kennis")}
-      className="mt-7 flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      className="mt-7 flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/30"
     >
       <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border"
         style={{ background: "rgba(120,210,230,0.08)" }}
       >
         <GraduationCap className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-mono text-[10px] uppercase tracking-[0.22em] text-white/35">
+        <span className="block font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
           Leskaart van vandaag
         </span>
-        <span className="mt-1 block text-[14px] font-medium leading-snug text-white/90">
+        <span className="mt-1 block text-[14px] font-medium leading-snug text-foreground/90">
           {card.title}
         </span>
-        <span className="mt-0.5 line-clamp-2 block text-[12px] leading-relaxed text-white/45">
+        <span className="mt-0.5 line-clamp-2 block text-[12px] leading-relaxed text-muted-foreground">
           {KIND_LABEL[card.kind]} · {card.summary}
         </span>
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
     </button>
   )
 }

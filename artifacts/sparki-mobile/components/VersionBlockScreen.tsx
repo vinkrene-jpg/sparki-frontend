@@ -5,7 +5,11 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import colors from "@/constants/colors";
 import { APP_VERSION } from "@/lib/release";
+
+// LICHT_THEMA_01: één licht thema, centraal palet (geen eigen kleuren meer).
+const c = colors.light;
 
 export function VersionBlockScreen({ message }: { message: string }) {
   return (
@@ -22,7 +26,7 @@ export function VersionBlockScreen({ message }: { message: string }) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#05070e",
+    backgroundColor: c.background,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
@@ -33,24 +37,24 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(7,13,22,0.95)",
+    borderColor: c.border,
+    backgroundColor: c.card,
     padding: 24,
     gap: 12,
   },
   title: {
-    color: "#7fe3f7",
+    color: c.tint,
     fontSize: 20,
     fontFamily: "Inter_700Bold",
   },
   body: {
-    color: "rgba(255,255,255,0.85)",
+    color: c.foreground,
     fontSize: 15,
     lineHeight: 22,
     fontFamily: "Inter_400Regular",
   },
   meta: {
-    color: "rgba(255,255,255,0.45)",
+    color: c.mutedForeground,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
   },

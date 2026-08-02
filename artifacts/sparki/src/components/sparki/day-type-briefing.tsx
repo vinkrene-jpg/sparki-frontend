@@ -7,11 +7,11 @@ import type { DayTypeBriefingConfig, DayTypeTone } from "@/lib/day-type"
 const toneColor: Record<DayTypeTone, string> = {
   train: ACCENT,
   coach: "rgba(170,235,248,1)",
-  recovery: "rgba(120,210,230,0.85)",
-  rest: "rgba(255,255,255,0.62)",
+  recovery: "var(--color-accent-cyan)",
+  rest: "var(--color-muted-foreground)",
   race: "rgba(255,200,120,0.95)",
   alert: "rgba(255,140,120,0.95)",
-  neutral: "rgba(255,255,255,0.72)",
+  neutral: "var(--color-muted-foreground)",
 }
 
 // The day-type briefing — the homepage's "wat is vandaag & waarom" header with a
@@ -21,7 +21,7 @@ export function DayTypeBriefing({ config }: { config: DayTypeBriefingConfig }) {
   const c = toneColor[config.tone]
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 animate-breathe rounded-full"
@@ -34,7 +34,7 @@ export function DayTypeBriefing({ config }: { config: DayTypeBriefingConfig }) {
         <div className="flex items-center gap-2">
           <span
             className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ background: c, boxShadow: `0 0 8px ${c}` }}
+            style={{ background: c }}
           />
           <span
             className="font-mono text-[10px] tracking-[0.28em]"
@@ -46,15 +46,15 @@ export function DayTypeBriefing({ config }: { config: DayTypeBriefingConfig }) {
         <h2 className="mt-3 text-balance font-sans text-2xl font-light leading-tight tracking-tight">
           {config.title}
         </h2>
-        <p className="mt-2 max-w-[30rem] text-pretty text-[13px] leading-relaxed text-white/55">
+        <p className="mt-2 max-w-[30rem] text-pretty text-[13px] leading-relaxed text-muted-foreground">
           {config.why}
         </p>
         {config.primary && (
           <button
             type="button"
             onClick={() => navigate(config.primary!.href)}
-            className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
-            style={{ borderColor: c, background: "rgba(255,255,255,0.04)", color: c }}
+            className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
+            style={{ borderColor: c, background: "var(--color-muted)", color: c }}
           >
             {config.primary.label}
           </button>

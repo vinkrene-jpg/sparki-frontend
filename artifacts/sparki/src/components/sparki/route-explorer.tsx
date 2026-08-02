@@ -293,20 +293,20 @@ export function RouteExplorer({
 
   const chipBase =
     "shrink-0 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition"
-  const chipOn = `${chipBase} border-cyan-300/50 bg-cyan-300/10 text-cyan-300`
-  const chipOff = `${chipBase} border-white/[0.14] text-white/65 hover:border-white/30`
+  const chipOn = `${chipBase} border-accent-cyan bg-accent-cyan text-accent-cyan`
+  const chipOff = `${chipBase} border-border text-muted-foreground hover:border-border`
 
   const notOnMap = routes.length - mappable.length
 
   return createPortal(
-    <div className="fixed inset-0 z-[90] flex flex-col bg-[#05070e] pt-[env(safe-area-inset-top)]">
+    <div className="fixed inset-0 z-[90] flex flex-col bg-card pt-[env(safe-area-inset-top)]">
       {/* Vaste bovenbalk: titel + sluiten */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-white/[0.08] px-3 py-2.5">
+      <div className="flex shrink-0 items-center gap-3 border-b border-border px-3 py-2.5">
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[15px] font-medium tracking-tight text-white/95">
+          <h2 className="truncate text-[15px] font-medium tracking-tight text-foreground/95">
             Bewaarde routes op kaart
           </h2>
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             Alleen jouw opgeslagen routes
           </p>
         </div>
@@ -314,7 +314,7 @@ export function RouteExplorer({
           type="button"
           onClick={onClose}
           aria-label="Kaart sluiten"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.14] text-white/80 transition hover:border-white/30"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground/80 transition hover:border-border"
         >
           <X className="h-4.5 w-4.5" strokeWidth={2} />
         </button>
@@ -322,7 +322,7 @@ export function RouteExplorer({
 
       {/* Compacte filters boven de kaart (eigen rij — bedekken de kaart niet) */}
       {(surfaces.length > 1 || mappable.length > 0) && (
-        <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-white/[0.06] px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-border px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {surfaces.length > 1 && (
             <>
               <button
@@ -342,7 +342,7 @@ export function RouteExplorer({
                   {surfaceLabel(s)}
                 </button>
               ))}
-              <span className="mx-0.5 my-auto h-4 w-px shrink-0 bg-white/[0.1]" />
+              <span className="mx-0.5 my-auto h-4 w-px shrink-0 bg-muted" />
             </>
           )}
           {LENGTH_CHIPS.map((c) => (
@@ -365,7 +365,7 @@ export function RouteExplorer({
 
       {/* Uitschuifbaar resultatenpaneel onderaan: ingeklapt / half / volledig */}
       <div
-        className="flex shrink-0 flex-col overflow-hidden border-t border-white/[0.1] bg-[#070d16] pb-[env(safe-area-inset-bottom)] transition-[height] duration-200"
+        className="flex shrink-0 flex-col overflow-hidden border-t border-border bg-card pb-[env(safe-area-inset-bottom)] transition-[height] duration-200"
         style={{ height: SHEET_HEIGHT[sheet] }}
       >
         {/* Paneelkop: aantal gevonden routes + open/dicht */}
@@ -375,7 +375,7 @@ export function RouteExplorer({
             onClick={() => setSheet(sheet === "ingeklapt" ? "half" : "ingeklapt")}
             className="min-w-0 flex-1 text-left"
           >
-            <span className="text-[13px] font-medium tabular-nums text-white/85">
+            <span className="text-[13px] font-medium tabular-nums text-foreground/90">
               {filtered.length === 0
                 ? mappable.length === 0
                   ? "Nog geen routes met een kaartlijn"
@@ -383,7 +383,7 @@ export function RouteExplorer({
                 : `${filtered.length} route${filtered.length === 1 ? "" : "s"} gevonden`}
             </span>
             {selected && sheet === "ingeklapt" && (
-              <span className="ml-2 truncate text-[12px] text-white/45">
+              <span className="ml-2 truncate text-[12px] text-muted-foreground">
                 · {selected.name}
               </span>
             )}
@@ -393,7 +393,7 @@ export function RouteExplorer({
             onClick={() => cycleSheet(-1)}
             disabled={sheet === "ingeklapt"}
             aria-label="Paneel kleiner"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.12] text-white/70 transition hover:border-white/30 disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:border-border disabled:opacity-30"
           >
             <ChevronDown className="h-4 w-4" strokeWidth={2} />
           </button>
@@ -402,7 +402,7 @@ export function RouteExplorer({
             onClick={() => cycleSheet(1)}
             disabled={sheet === "vol"}
             aria-label="Paneel groter"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.12] text-white/70 transition hover:border-white/30 disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:border-border disabled:opacity-30"
           >
             <ChevronUp className="h-4 w-4" strokeWidth={2} />
           </button>
@@ -411,7 +411,7 @@ export function RouteExplorer({
         {sheet !== "ingeklapt" && (
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
             {filtered.length === 0 ? (
-              <p className="text-[12px] leading-relaxed text-white/45">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 {mappable.length === 0
                   ? "Genereer een route of upload een GPX — daarna verschijnt hij hier op de kaart."
                   : "Zet een filter uit om weer routes te zien."}
@@ -420,7 +420,7 @@ export function RouteExplorer({
               <>
                 {/* Gegevens van de gekozen route */}
                 {selected && (
-                  <div className="rounded-2xl border border-cyan-300/25 bg-white/[0.03] p-3.5">
+                  <div className="rounded-2xl border border-accent-cyan bg-muted p-3.5">
                     <div className="flex items-center gap-2">
                       <span
                         className="font-mono text-[9px] uppercase tracking-[0.18em]"
@@ -428,43 +428,43 @@ export function RouteExplorer({
                       >
                         {surfaceLabel(selected.surface)}
                       </span>
-                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
                         {sourceLabel(selected.source)}
                       </span>
                     </div>
-                    <h3 className="mt-0.5 truncate text-[16px] font-medium tracking-tight text-white/95">
+                    <h3 className="mt-0.5 truncate text-[16px] font-medium tracking-tight text-foreground/95">
                       {selected.name}
                     </h3>
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                       {selected.durationSec != null && (
-                        <span className="flex items-center gap-1.5 text-[12px] tabular-nums text-white/70">
+                        <span className="flex items-center gap-1.5 text-[12px] tabular-nums text-muted-foreground">
                           <Clock
-                            className="h-3.5 w-3.5 text-white/35"
+                            className="h-3.5 w-3.5 text-muted-foreground"
                             strokeWidth={1.75}
                           />
                           {fmtDuration(selected.durationSec)}
                         </span>
                       )}
                       {selected.distanceKm != null && (
-                        <span className="flex items-center gap-1.5 text-[12px] tabular-nums text-white/70">
+                        <span className="flex items-center gap-1.5 text-[12px] tabular-nums text-muted-foreground">
                           <Ruler
-                            className="h-3.5 w-3.5 text-white/35"
+                            className="h-3.5 w-3.5 text-muted-foreground"
                             strokeWidth={1.75}
                           />
                           {selected.distanceKm} km
                         </span>
                       )}
                       {selected.elevationGainM != null && (
-                        <span className="flex items-center gap-1.5 text-[12px] tabular-nums text-white/70">
+                        <span className="flex items-center gap-1.5 text-[12px] tabular-nums text-muted-foreground">
                           <Mountain
-                            className="h-3.5 w-3.5 text-white/35"
+                            className="h-3.5 w-3.5 text-muted-foreground"
                             strokeWidth={1.75}
                           />
                           {selected.elevationGainM} m
                         </span>
                       )}
                       {(selected.climbs?.length ?? 0) > 0 && (
-                        <span className="text-[12px] text-white/50">
+                        <span className="text-[12px] text-muted-foreground">
                           {selected.climbs!.length}{" "}
                           {selected.climbs!.length === 1 ? "klim" : "klimmen"}
                         </span>
@@ -477,7 +477,7 @@ export function RouteExplorer({
                       <button
                         type="button"
                         onClick={() => onNavigate(selected.id)}
-                        className="flex items-center gap-1.5 rounded-full bg-cyan-400/90 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300"
+                        className="flex items-center gap-1.5 rounded-full bg-accent-cyan px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] transition hover:brightness-110"
                       >
                         <Navigation className="h-3.5 w-3.5" strokeWidth={2} />
                         Navigeer
@@ -485,7 +485,7 @@ export function RouteExplorer({
                       <button
                         type="button"
                         onClick={() => onOpenRoute(selected.id)}
-                        className="rounded-full border border-white/[0.16] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/35 hover:text-white/90"
+                        className="rounded-full border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border hover:text-foreground/90"
                       >
                         Alle details
                       </button>
@@ -506,14 +506,14 @@ export function RouteExplorer({
                         }}
                         className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                           r.id === selectedId
-                            ? "bg-cyan-300/[0.08]"
-                            : "hover:bg-white/[0.05]"
+                            ? "bg-accent-cyan"
+                            : "hover:bg-muted"
                         }`}
                       >
-                        <span className="min-w-0 flex-1 truncate text-[13px] text-white/85">
+                        <span className="min-w-0 flex-1 truncate text-[13px] text-foreground/90">
                           {r.name}
                         </span>
-                        <span className="shrink-0 font-mono text-[10px] tabular-nums text-white/40">
+                        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
                           {surfaceLabel(r.surface)}
                           {r.distanceKm != null ? ` · ${r.distanceKm} km` : ""}
                           {r.elevationGainM != null
@@ -526,7 +526,7 @@ export function RouteExplorer({
                 )}
 
                 {notOnMap > 0 && (
-                  <p className="mt-2 text-[10px] text-white/35">
+                  <p className="mt-2 text-[10px] text-muted-foreground">
                     {notOnMap} route{notOnMap === 1 ? "" : "s"} zonder kaartlijn{" "}
                     {notOnMap === 1 ? "staat" : "staan"} niet op de kaart — je
                     vindt ze in de lijst bij Bewaarde routes.

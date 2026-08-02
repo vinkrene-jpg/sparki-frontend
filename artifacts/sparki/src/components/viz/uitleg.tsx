@@ -129,7 +129,7 @@ export function UitlegDot({
         aria-label={`Uitleg${label ? ` over ${label}` : ""}`}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="-m-2.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/35 transition-colors hover:text-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400/60"
+        className="-m-2.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400/60"
       >
         <Info className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
@@ -146,15 +146,15 @@ export function UitlegDot({
               type="button"
               aria-label="Sluiten"
               tabIndex={-1}
-              className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 cursor-default bg-foreground/60 backdrop-blur-sm"
               onClick={() => setOpen(false)}
             />
             <div
               ref={dialogRef}
-              className="relative m-3 max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#070d16]/95 p-5 shadow-2xl backdrop-blur-md"
+              className="relative m-3 max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-2xl backdrop-blur-md"
             >
               <div className="flex items-start justify-between gap-3">
-                <h3 id={titleId} className="text-[15px] font-medium text-white/90">
+                <h3 id={titleId} className="text-[15px] font-medium text-foreground/90">
                   {label ?? "Uitleg"}
                 </h3>
                 <button
@@ -162,7 +162,7 @@ export function UitlegDot({
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Sluiten"
-                  className="-m-2 rounded-full p-3 text-white/45 transition-colors hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400/60"
+                  className="-m-2 rounded-full p-3 text-muted-foreground transition-colors hover:text-foreground/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400/60"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -185,8 +185,8 @@ export function UitlegDot({
                             background: "rgba(80,200,230,0.08)",
                           }
                         : {
-                            borderColor: "rgba(255,255,255,0.1)",
-                            color: "rgba(255,255,255,0.5)",
+                            borderColor: "var(--color-border)",
+                            color: "var(--color-muted-foreground)",
                           }
                     }
                   >
@@ -195,40 +195,40 @@ export function UitlegDot({
                 ))}
               </div>
 
-              <p className="mt-3 text-[13px] leading-relaxed text-white/75">
+              <p className="mt-3 text-[13px] leading-relaxed text-foreground/75">
                 {uitleg[level]}
               </p>
 
               {uitleg.verbanden && (
-                <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+                <div className="mt-4 rounded-xl border border-border bg-muted p-3">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
                     Hangt samen met
                   </p>
-                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/70">
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
                     {uitleg.verbanden}
                   </p>
                 </div>
               )}
 
               {uitleg.beinvloeden && (
-                <div className="mt-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+                <div className="mt-3 rounded-xl border border-border bg-muted p-3">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
                     Zo beïnvloed je dit
                   </p>
-                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/70">
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
                     {uitleg.beinvloeden}
                   </p>
                 </div>
               )}
 
               {contextRegels.length > 0 && (
-                <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+                <div className="mt-4 rounded-xl border border-border bg-muted p-3">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
                     Bij jou
                   </p>
                   <div className="mt-1.5 space-y-1.5">
                     {contextRegels.map((r, i) => (
-                      <p key={i} className="text-[12.5px] leading-relaxed text-white/70">
+                      <p key={i} className="text-[12.5px] leading-relaxed text-muted-foreground">
                         {r}
                       </p>
                     ))}

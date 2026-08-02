@@ -51,15 +51,15 @@ export function RouteDetailDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full overflow-y-auto border-l border-white/[0.08] bg-[#05070e]/95 p-0 backdrop-blur-xl sm:max-w-md"
+        className="w-full overflow-y-auto border-l border-border bg-card p-0 backdrop-blur-xl sm:max-w-md"
       >
         {!route ? null : (
           <div className="flex flex-col gap-6 px-6 pb-16 pt-7">
             <SheetHeader className="space-y-2 text-left">
-              <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+              <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
                 ROUTE · {route.source.toUpperCase()}
               </p>
-              <SheetTitle className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight text-white">
+              <SheetTitle className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight text-foreground">
                 {route.name}
               </SheetTitle>
             </SheetHeader>
@@ -75,7 +75,7 @@ export function RouteDetailDrawer({
               />
             )}
 
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/[0.07] pt-4">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border pt-4">
               <Stat
                 label="Afstand"
                 value={route.distanceKm != null ? `${route.distanceKm} km` : "—"}
@@ -98,24 +98,24 @@ export function RouteDetailDrawer({
 
             {climbs.length > 0 && (
               <div>
-                <span className="label-xs text-white/35">KLIMMEN</span>
+                <span className="label-xs text-muted-foreground">KLIMMEN</span>
                 <div className="mt-2 flex flex-col">
                   {climbs.map((c, i) => (
                     <div
                       key={i}
-                      className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
+                      className="flex items-baseline gap-3 border-b border-border py-2 last:border-0"
                     >
                       <div className="flex-1">
-                        <span className="text-[13px] tracking-tight text-white/85">
+                        <span className="text-[13px] tracking-tight text-foreground/85">
                           {c.name}
                         </span>
                         {Number.isFinite(c.summitKm) && (
-                          <span className="ml-2 font-mono text-[10px] tabular-nums text-white/35">
+                          <span className="ml-2 font-mono text-[10px] tabular-nums text-muted-foreground">
                             top op {c.summitKm} km
                           </span>
                         )}
                       </div>
-                      <span className="font-mono text-[11px] tabular-nums text-white/45">
+                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                         {c.lengthKm} km
                       </span>
                       <span
@@ -131,13 +131,13 @@ export function RouteDetailDrawer({
             )}
 
             {route.rationale && (
-              <p className="whitespace-pre-line text-[12px] leading-relaxed text-white/55">
+              <p className="whitespace-pre-line text-[12px] leading-relaxed text-foreground/55">
                 {route.rationale}
               </p>
             )}
 
             <div>
-              <span className="label-xs text-white/35">
+              <span className="label-xs text-muted-foreground">
                 {nav.length > 0
                   ? `STAP-VOOR-STAP (${nav.length})`
                   : "NAVIGATIE"}
@@ -147,22 +147,22 @@ export function RouteDetailDrawer({
                   {nav.map((n, i) => (
                     <div
                       key={i}
-                      className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
+                      className="flex items-baseline gap-3 border-b border-border py-2.5 last:border-0"
                     >
-                      <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
+                      <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan">
                         {n.km}
                       </span>
-                      <span className="w-24 shrink-0 break-words text-[13px] tracking-tight text-white/85">
+                      <span className="w-24 shrink-0 break-words text-[13px] tracking-tight text-foreground/85">
                         {n.dir}
                       </span>
-                      <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
+                      <span className="min-w-0 flex-1 break-words text-[12px] text-muted-foreground">
                         {n.note}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-[12px] text-white/30">
+                <p className="mt-2 text-[12px] text-muted-foreground">
                   Stap-voor-stap navigatie nog niet beschikbaar voor deze route
                 </p>
               )}
@@ -186,14 +186,14 @@ function RoutePreviewCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group block w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] text-left backdrop-blur-md transition-colors hover:border-cyan-300/25"
+      className="group block w-full overflow-hidden rounded-2xl border border-border bg-card text-left backdrop-blur-md transition-colors hover:border-accent-cyan/25"
     >
       {geometry.length > 1 && (
         <RouteMap
           geometry={geometry}
           height={132}
           interactive={false}
-          className="rounded-none border-0 border-b border-white/[0.07]"
+          className="rounded-none border-0 border-b border-border"
         />
       )}
       <div className="flex items-center gap-3 p-4">
@@ -207,10 +207,10 @@ function RoutePreviewCard({
           <MapIcon className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-medium tracking-tight text-white/90">
+          <p className="truncate text-[14px] font-medium tracking-tight text-foreground/90">
             {route.name}
           </p>
-          <div className="mt-0.5 flex items-center gap-3 font-mono text-[10px] tabular-nums text-white/45">
+          <div className="mt-0.5 flex items-center gap-3 font-mono text-[10px] tabular-nums text-muted-foreground">
             <span>{route.distanceKm != null ? `${route.distanceKm} km` : "—"}</span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" strokeWidth={1.75} />
@@ -225,7 +225,7 @@ function RoutePreviewCard({
           </div>
         </div>
         <ChevronRight
-          className="h-4 w-4 shrink-0 text-white/30 transition-colors group-hover:text-cyan-300/60"
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-accent-cyan"
           strokeWidth={1.75}
         />
       </div>
@@ -268,19 +268,19 @@ export function LinkedRoutePreview({
     if (!isPending) return null
     return (
       <div className={className}>
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.02] px-4 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-border bg-muted px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <MapIcon
-              className="h-4 w-4 shrink-0 text-white/35"
+              className="h-4 w-4 shrink-0 text-muted-foreground"
               strokeWidth={1.75}
             />
-            <p className="truncate text-[12px] text-white/45">
+            <p className="truncate text-[12px] text-muted-foreground">
               Nog geen route voor deze training
             </p>
           </div>
           <Link
             href="/routes"
-            className="shrink-0 rounded-xl border border-cyan-300/25 bg-cyan-300/[0.08] px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-cyan-200/90 transition-colors hover:border-cyan-300/45"
+            className="shrink-0 rounded-xl border border-accent-cyan/25 bg-accent-cyan/10 px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-accent-cyan transition-colors hover:border-accent-cyan/45"
           >
             STEL SAMEN
           </Link>
@@ -292,8 +292,8 @@ export function LinkedRoutePreview({
   return (
     <div className={className}>
       <div className="mb-2 flex items-center gap-2">
-        <MapIcon className="h-3.5 w-3.5 text-white/40" strokeWidth={1.75} />
-        <span className="font-mono text-[10px] tracking-[0.2em] text-white/45">
+        <MapIcon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+        <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
           {routes.length > 1 ? `ROUTES (${routes.length})` : "JOUW ROUTE"}
         </span>
       </div>

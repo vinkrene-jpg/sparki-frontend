@@ -7,6 +7,12 @@ import { useEffect, useRef, useState } from "react"
  * atmosphere while keeping navigation, cards and components identical. Only the
  * scene changes per main screen.
  *
+ * LICHT_THEMA_01 LT-04: de scène is nu LICHT en RUSTIG. De basis is warm
+ * gebroken wit; de haze/beams/glow zijn héél subtiele, licht getinte lagen
+ * (sfeer behouden, maar zacht) i.p.v. felle gloed op donker. De onderrand-
+ * vignette is een zeer lichte warme veeg zodat de navigatie leesbaar blijft
+ * zonder naar zwart te knijpen.
+ *
  * - One shared structure (image → gradient → haze → beams → ambient → bloom →
  *   vignette → scan line), tuned per scene via `SCENES`.
  * - Motion is near-imperceptible (20–36s loops, ≤5px parallax) and runs purely
@@ -18,7 +24,7 @@ import { useEffect, useRef, useState } from "react"
 export type SceneName = "home" | "train" | "feed" | "lab" | "you"
 
 type SceneConfig = {
-  /** Base color behind everything — lifted off pure black for OLED. */
+  /** Base color behind everything — warm gebroken wit (lichte laag). */
   base: string
   /** Foreground photo opacity (rider visibility). */
   imageOpacity: number
@@ -40,102 +46,105 @@ type SceneConfig = {
   bloomAt: string
 }
 
+// LICHT_THEMA_01 LT-04: alle scènes zijn nu licht en rustig. De basis is warm
+// gebroken wit; foto's staan op lage dekking zodat de pagina helder blijft; de
+// gradient legt een zachte lichte sluier over de foto (niet naar zwart); haze/
+// beams/glow zijn héél lichte, subtiel getinte accenten (sfeer, geen spektakel).
 export const SCENES: Record<SceneName, SceneConfig> = {
-  // Home — rider in mist, calm, focused.
+  // Home — rider in mist, kalm, licht.
   home: {
-    base: "#05070e",
-    imageOpacity: 0.7,
+    base: "#f7f6f2",
+    imageOpacity: 0.16,
     gradient:
-      "linear-gradient(180deg, rgba(6,12,22,0.30) 0%, rgba(5,10,18,0.40) 50%, rgba(4,8,14,0.44) 100%)",
-    haze: "radial-gradient(58% 46% at 50% 38%, rgba(140,190,215,0.18), rgba(140,190,215,0.05) 45%, transparent 72%)",
+      "linear-gradient(180deg, rgba(247,246,242,0.82) 0%, rgba(247,246,242,0.90) 50%, rgba(247,246,242,0.96) 100%)",
+    haze: "radial-gradient(58% 46% at 50% 32%, rgba(120,180,205,0.10), rgba(120,180,205,0.03) 45%, transparent 72%)",
     hazeLow:
-      "radial-gradient(52% 42% at 66% 80%, rgba(90,150,185,0.10), transparent 70%)",
-    beamColor: "rgba(120,200,225,0.06)",
-    beamOpacity: 0.5,
-    ambient:
-      "radial-gradient(60% 50% at 30% 30%, rgba(90,160,200,0.10), transparent 70%)",
-    topGlow:
-      "radial-gradient(50% 50% at 50% 0%, rgba(120,200,220,0.12), transparent 72%)",
-    bloom:
-      "radial-gradient(circle, rgba(150,215,235,0.5), transparent 65%)",
-    bloomAt: "top-[18%] right-[16%]",
-  },
-  // Train — more energy, more contrast, moving light lines.
-  train: {
-    base: "#05080f",
-    imageOpacity: 0.66,
-    gradient:
-      "linear-gradient(180deg, rgba(5,11,22,0.34) 0%, rgba(4,9,18,0.44) 48%, rgba(3,6,12,0.50) 100%)",
-    haze: "radial-gradient(56% 44% at 52% 34%, rgba(120,195,225,0.20), rgba(120,195,225,0.05) 44%, transparent 70%)",
-    hazeLow:
-      "radial-gradient(50% 40% at 40% 82%, rgba(70,150,195,0.12), transparent 68%)",
-    beamColor: "rgba(130,215,235,0.10)",
-    beamOpacity: 0.85,
-    ambient:
-      "radial-gradient(58% 48% at 70% 28%, rgba(80,175,210,0.13), transparent 68%)",
-    topGlow:
-      "radial-gradient(50% 50% at 50% 0%, rgba(120,210,230,0.16), transparent 70%)",
-    bloom:
-      "radial-gradient(circle, rgba(150,225,245,0.55), transparent 65%)",
-    bloomAt: "top-[14%] left-[20%]",
-  },
-  // Feed — lighter, more depth.
-  feed: {
-    base: "#06090f",
-    imageOpacity: 0.72,
-    gradient:
-      "linear-gradient(180deg, rgba(8,14,24,0.24) 0%, rgba(6,12,20,0.34) 50%, rgba(4,8,14,0.42) 100%)",
-    haze: "radial-gradient(60% 48% at 48% 36%, rgba(150,195,220,0.20), rgba(150,195,220,0.06) 46%, transparent 74%)",
-    hazeLow:
-      "radial-gradient(54% 44% at 62% 78%, rgba(100,160,195,0.12), transparent 72%)",
-    beamColor: "rgba(140,205,228,0.07)",
-    beamOpacity: 0.55,
-    ambient:
-      "radial-gradient(62% 52% at 35% 32%, rgba(110,170,205,0.12), transparent 72%)",
-    topGlow:
-      "radial-gradient(50% 50% at 50% 0%, rgba(130,205,225,0.13), transparent 72%)",
-    bloom:
-      "radial-gradient(circle, rgba(165,220,240,0.5), transparent 65%)",
-    bloomAt: "top-[20%] right-[22%]",
-  },
-  // Lab — futuristic laboratory; glass, light, distant data feel.
-  lab: {
-    base: "#05080f",
-    imageOpacity: 0.64,
-    gradient:
-      "linear-gradient(180deg, rgba(6,13,24,0.30) 0%, rgba(5,11,20,0.42) 50%, rgba(3,7,13,0.46) 100%)",
-    haze: "radial-gradient(58% 46% at 50% 34%, rgba(150,210,235,0.22), rgba(150,210,235,0.06) 44%, transparent 72%)",
-    hazeLow:
-      "radial-gradient(52% 42% at 50% 84%, rgba(90,165,205,0.12), transparent 70%)",
-    beamColor: "rgba(160,225,245,0.10)",
-    beamOpacity: 0.8,
-    ambient:
-      "radial-gradient(60% 50% at 50% 30%, rgba(110,190,225,0.14), transparent 70%)",
-    topGlow:
-      "radial-gradient(50% 50% at 50% 0%, rgba(150,220,240,0.16), transparent 70%)",
-    bloom:
-      "radial-gradient(circle, rgba(180,235,250,0.6), transparent 64%)",
-    bloomAt: "top-[16%] left-[50%] -translate-x-1/2",
-  },
-  // You — persoonlijk, warm herfstlicht. imageOpacity hoog zodat de sfeerfoto
-  // herkenbaar blijft. Gradient is neutraal-warm (geen blauw) zodat de oranje
-  // herfstbomen niet worden doodgedrukt. Haze geeft zachte warme gloed.
-  you: {
-    base: "#080705",
-    imageOpacity: 0.72,
-    gradient:
-      "linear-gradient(180deg, rgba(8,7,5,0.14) 0%, rgba(6,5,4,0.26) 50%, rgba(4,3,3,0.46) 100%)",
-    haze: "radial-gradient(58% 46% at 48% 38%, rgba(220,180,130,0.12), rgba(190,160,110,0.04) 46%, transparent 74%)",
-    hazeLow:
-      "radial-gradient(52% 42% at 58% 80%, rgba(140,110,80,0.08), transparent 72%)",
-    beamColor: "rgba(220,190,140,0.05)",
+      "radial-gradient(52% 42% at 66% 82%, rgba(120,170,200,0.06), transparent 70%)",
+    beamColor: "rgba(120,190,215,0.05)",
     beamOpacity: 0.35,
     ambient:
-      "radial-gradient(60% 50% at 32% 34%, rgba(200,160,100,0.08), transparent 72%)",
+      "radial-gradient(60% 50% at 30% 28%, rgba(130,180,215,0.06), transparent 70%)",
     topGlow:
-      "radial-gradient(50% 50% at 50% 0%, rgba(200,170,110,0.09), transparent 74%)",
+      "radial-gradient(50% 50% at 50% 0%, rgba(120,190,215,0.08), transparent 72%)",
     bloom:
-      "radial-gradient(circle, rgba(230,195,140,0.35), transparent 66%)",
+      "radial-gradient(circle, rgba(150,205,230,0.20), transparent 65%)",
+    bloomAt: "top-[18%] right-[16%]",
+  },
+  // Train — iets meer energie, nog steeds licht.
+  train: {
+    base: "#f6f5f1",
+    imageOpacity: 0.15,
+    gradient:
+      "linear-gradient(180deg, rgba(246,245,241,0.80) 0%, rgba(246,245,241,0.90) 48%, rgba(246,245,241,0.96) 100%)",
+    haze: "radial-gradient(56% 44% at 52% 30%, rgba(90,170,205,0.11), rgba(90,170,205,0.03) 44%, transparent 70%)",
+    hazeLow:
+      "radial-gradient(50% 40% at 40% 84%, rgba(90,165,200,0.07), transparent 68%)",
+    beamColor: "rgba(100,185,215,0.06)",
+    beamOpacity: 0.45,
+    ambient:
+      "radial-gradient(58% 48% at 70% 26%, rgba(90,175,210,0.07), transparent 68%)",
+    topGlow:
+      "radial-gradient(50% 50% at 50% 0%, rgba(100,190,215,0.09), transparent 70%)",
+    bloom:
+      "radial-gradient(circle, rgba(140,205,230,0.22), transparent 65%)",
+    bloomAt: "top-[14%] left-[20%]",
+  },
+  // Feed — licht en luchtig.
+  feed: {
+    base: "#f8f7f3",
+    imageOpacity: 0.15,
+    gradient:
+      "linear-gradient(180deg, rgba(248,247,243,0.82) 0%, rgba(248,247,243,0.90) 50%, rgba(248,247,243,0.96) 100%)",
+    haze: "radial-gradient(60% 48% at 48% 32%, rgba(130,180,205,0.10), rgba(130,180,205,0.03) 46%, transparent 74%)",
+    hazeLow:
+      "radial-gradient(54% 44% at 62% 80%, rgba(120,170,200,0.06), transparent 72%)",
+    beamColor: "rgba(130,190,215,0.05)",
+    beamOpacity: 0.35,
+    ambient:
+      "radial-gradient(62% 52% at 35% 30%, rgba(130,180,210,0.06), transparent 72%)",
+    topGlow:
+      "radial-gradient(50% 50% at 50% 0%, rgba(130,190,215,0.08), transparent 72%)",
+    bloom:
+      "radial-gradient(circle, rgba(155,205,230,0.20), transparent 65%)",
+    bloomAt: "top-[20%] right-[22%]",
+  },
+  // Lab — helder, glasachtig, rustig data-gevoel.
+  lab: {
+    base: "#f6f6f3",
+    imageOpacity: 0.14,
+    gradient:
+      "linear-gradient(180deg, rgba(246,246,243,0.80) 0%, rgba(246,246,243,0.90) 50%, rgba(246,246,243,0.96) 100%)",
+    haze: "radial-gradient(58% 46% at 50% 30%, rgba(110,185,215,0.11), rgba(110,185,215,0.03) 44%, transparent 72%)",
+    hazeLow:
+      "radial-gradient(52% 42% at 50% 86%, rgba(110,175,205,0.06), transparent 70%)",
+    beamColor: "rgba(120,195,220,0.06)",
+    beamOpacity: 0.4,
+    ambient:
+      "radial-gradient(60% 50% at 50% 28%, rgba(110,185,215,0.07), transparent 70%)",
+    topGlow:
+      "radial-gradient(50% 50% at 50% 0%, rgba(120,195,220,0.09), transparent 70%)",
+    bloom:
+      "radial-gradient(circle, rgba(150,210,235,0.22), transparent 64%)",
+    bloomAt: "top-[16%] left-[50%] -translate-x-1/2",
+  },
+  // You — persoonlijk, warm licht. Gradient is neutraal-warm zodat een warme
+  // sfeerfoto herkenbaar blijft; haze geeft zachte warme gloed.
+  you: {
+    base: "#f8f5f0",
+    imageOpacity: 0.18,
+    gradient:
+      "linear-gradient(180deg, rgba(248,245,240,0.78) 0%, rgba(248,245,240,0.88) 50%, rgba(248,245,240,0.95) 100%)",
+    haze: "radial-gradient(58% 46% at 48% 36%, rgba(215,175,120,0.09), rgba(200,165,110,0.03) 46%, transparent 74%)",
+    hazeLow:
+      "radial-gradient(52% 42% at 58% 82%, rgba(190,150,105,0.05), transparent 72%)",
+    beamColor: "rgba(215,180,130,0.04)",
+    beamOpacity: 0.3,
+    ambient:
+      "radial-gradient(60% 50% at 32% 32%, rgba(205,165,110,0.05), transparent 72%)",
+    topGlow:
+      "radial-gradient(50% 50% at 50% 0%, rgba(205,170,115,0.07), transparent 74%)",
+    bloom:
+      "radial-gradient(circle, rgba(225,190,140,0.18), transparent 66%)",
     bloomAt: "top-[18%] right-[22%]",
   },
 }
@@ -286,20 +295,21 @@ export function CinematicScene({
         />
       </div>
 
-      {/* Bottom vignette — keeps navigation legible without crushing to black. */}
+      {/* Onderrand-veeg (licht) — houdt de navigatie leesbaar door de
+          onderkant iets te verdiepen naar warm wit, nooit naar zwart. */}
       <div
         className="absolute inset-x-0 bottom-0 h-48"
         style={{
-          background: "linear-gradient(180deg, transparent, rgba(4,7,12,0.72))",
+          background: "linear-gradient(180deg, transparent, rgba(240,238,232,0.85))",
         }}
       />
 
-      {/* Scan line. */}
+      {/* Scan line — subtiele donkere veeg op licht. */}
       <div
         className={`absolute inset-x-0 top-0 h-px ${anim("animate-scan")}`}
         style={{
           background:
-            "linear-gradient(90deg, transparent, rgba(120,210,230,0.5), transparent)",
+            "linear-gradient(90deg, transparent, rgba(8,145,178,0.28), transparent)",
         }}
       />
     </div>

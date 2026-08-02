@@ -25,7 +25,7 @@ const dsStatusVariants = cva(
         positief: "border-positive/30 bg-positive/10 text-positive",
         waarschuwing: "border-warning/30 bg-warning/10 text-warning",
         fout: "border-negative/30 bg-negative/10 text-negative",
-        neutraal: "border-border bg-surface text-white/70",
+        neutraal: "border-border bg-surface text-muted-foreground",
       },
     },
     defaultVariants: { status: "neutraal" },

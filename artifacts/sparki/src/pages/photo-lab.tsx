@@ -125,17 +125,17 @@ export default function PhotoLabPage() {
       : null
 
   return (
-    <div className="min-h-dvh bg-[#05070e] text-white">
+    <div className="min-h-dvh bg-background text-foreground">
       {/* Top bar with an always-visible way back. */}
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/[0.06] bg-[#05070e]/85 px-4 py-3 backdrop-blur-md">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3 backdrop-blur-md">
         <button
           type="button"
           onClick={() => navigate("/you")}
-          className="flex items-center gap-1.5 text-sm text-white/70 transition hover:text-white"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Terug
         </button>
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300/60">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-cyan">
           Foto-lab · test
         </span>
         <span className="w-12" />
@@ -143,7 +143,7 @@ export default function PhotoLabPage() {
 
       <div className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
         <h1 className="text-xl font-semibold">Sparki-foto</h1>
-        <p className="mt-1.5 text-sm leading-relaxed text-white/55">
+        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
           Upload een foto. Er wordt een rustige, donkere lab-versie van gemaakt —
           dezelfde echte persoon, geen cartoon, geen vervorming. Jij kiest wat je
           houdt.
@@ -165,27 +165,27 @@ export default function PhotoLabPage() {
           <button
             type="button"
             onClick={handlePick}
-            className="mt-6 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-6 py-12 text-center transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+            className="mt-6 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted px-6 py-12 text-center transition hover:border-accent-cyan/40 hover:bg-muted"
           >
-            <ArrowUp className="h-8 w-8 text-white/70" aria-hidden="true" />
-            <span className="text-sm font-medium text-white/85">
+            <ArrowUp className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+            <span className="text-sm font-medium text-foreground/85">
               Kies een foto
             </span>
-            <span className="text-xs text-white/45">
+            <span className="text-xs text-muted-foreground">
               Vanaf je telefoon of camera
             </span>
           </button>
         )}
 
         {stage === "intro" && (
-          <p className="mt-3 text-[11px] leading-relaxed text-white/35">
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
             Je foto wordt verwerkt met AI-beeldtechniek. Hiervoor wordt geen
             eigen API-sleutel gebruikt; de verwerking telt mee in je tegoed.
           </p>
         )}
 
         {error && stage !== "working" && (
-          <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-100/90">
+          <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-[color:var(--color-warning)]">
             {error}
           </p>
         )}
@@ -194,19 +194,19 @@ export default function PhotoLabPage() {
         {originalUrl && stage !== "intro" && (
           <div className="mt-6 space-y-5">
             <figure>
-              <figcaption className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <figcaption className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Origineel
               </figcaption>
               <img
                 src={originalUrl}
                 alt="Jouw originele foto"
-                className="w-full rounded-2xl border border-white/8 object-cover"
+                className="w-full rounded-2xl border border-border object-cover"
               />
             </figure>
 
             {/* SPARKI version — working / styled / honest failure. */}
             <figure>
-              <figcaption className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300/70">
+              <figcaption className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-accent-cyan">
                 <span
                   className="inline-block h-1.5 w-1.5 rounded-full"
                   style={{ background: ACCENT }}
@@ -215,12 +215,12 @@ export default function PhotoLabPage() {
               </figcaption>
 
               {stage === "working" && (
-                <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-2xl border border-cyan-300/15 bg-[#070d16]/80">
+                <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-2xl border border-accent-cyan/15 bg-card">
                   <span
-                    className="h-7 w-7 animate-spin rounded-full border-2 border-white/15"
+                    className="h-7 w-7 animate-spin rounded-full border-2 border-border"
                     style={{ borderTopColor: ACCENT }}
                   />
-                  <span className="text-sm text-white/60">
+                  <span className="text-sm text-muted-foreground">
                     Je foto wordt bewerkt…
                   </span>
                 </div>
@@ -230,13 +230,13 @@ export default function PhotoLabPage() {
                 <img
                   src={styledSrc}
                   alt="De Sparki-versie van je foto"
-                  className="w-full rounded-2xl border border-cyan-300/25 object-cover shadow-[0_0_40px_rgba(120,210,230,0.12)]"
+                  className="w-full rounded-2xl border border-accent-cyan/25 object-cover shadow-card"
                 />
               )}
 
               {stage !== "working" && !styledSrc && (
                 <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.07] px-4 py-5">
-                  <p className="text-sm leading-relaxed text-amber-100/90">
+                  <p className="text-sm leading-relaxed text-[color:var(--color-warning)]">
                     {result?.failureReason ??
                       "De sfeer kon nu niet worden toegepast. Je originele foto blijft bruikbaar."}
                   </p>
@@ -254,7 +254,7 @@ export default function PhotoLabPage() {
                 type="button"
                 disabled={choose.isPending}
                 onClick={() => handleChoose("sparki_style")}
-                className="rounded-full px-5 py-3 text-sm font-semibold text-[#05070e] transition hover:brightness-110 disabled:opacity-60"
+                className="rounded-full px-5 py-3 text-sm font-semibold text-[color:var(--color-on-accent)] transition hover:brightness-110 disabled:opacity-60"
                 style={{ background: ACCENT }}
               >
                 {choose.isPending ? "Bezig…" : "Sparki-versie gebruiken"}
@@ -264,14 +264,14 @@ export default function PhotoLabPage() {
               type="button"
               disabled={choose.isPending}
               onClick={() => handleChoose("original")}
-              className="rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-white/85 transition hover:bg-white/5 disabled:opacity-60"
+              className="rounded-full border border-border px-5 py-3 text-sm font-medium text-foreground/85 transition hover:bg-muted disabled:opacity-60"
             >
               Origineel houden
             </button>
             <button
               type="button"
               onClick={handlePick}
-              className="rounded-full px-5 py-2.5 text-sm text-white/50 transition hover:text-white/80"
+              className="rounded-full px-5 py-2.5 text-sm text-muted-foreground transition hover:text-foreground/80"
             >
               Opnieuw uploaden
             </button>
@@ -281,8 +281,8 @@ export default function PhotoLabPage() {
         {/* KEPT — confirmation. */}
         {stage === "kept" && (
           <div className="mt-6 space-y-4">
-            <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/80 px-4 py-4">
-              <p className="text-sm text-white/85">
+            <div className="rounded-2xl border border-accent-cyan/20 bg-card px-4 py-4">
+              <p className="text-sm text-foreground/85">
                 Bewaard als je{" "}
                 <span style={{ color: ACCENT }}>
                   {kept === "sparki_style" ? "Sparki-versie" : "originele foto"}
@@ -295,8 +295,8 @@ export default function PhotoLabPage() {
                 persisted (a session row exists) — an offline-only original
                 can't be served back, so we don't pretend it can. */}
             {result && !decorSet && (
-              <div className="rounded-2xl border border-white/10 bg-[#070d16]/70 px-4 py-4">
-                <p className="text-sm leading-relaxed text-white/75">
+              <div className="rounded-2xl border border-border bg-card px-4 py-4">
+                <p className="text-sm leading-relaxed text-foreground/75">
                   Wil je deze foto als sfeerbeeld op je profiel? Hij komt dan
                   bovenaan je profiel te staan.
                 </p>
@@ -304,7 +304,7 @@ export default function PhotoLabPage() {
                   type="button"
                   disabled={setDecor.isPending}
                   onClick={handleUseAsDecor}
-                  className="mt-3 rounded-full px-5 py-3 text-sm font-semibold text-[#05070e] transition hover:brightness-110 disabled:opacity-60"
+                  className="mt-3 rounded-full px-5 py-3 text-sm font-semibold text-[color:var(--color-on-accent)] transition hover:brightness-110 disabled:opacity-60"
                   style={{ background: ACCENT }}
                 >
                   {setDecor.isPending ? "Bezig…" : "Gebruik als sfeerbeeld"}
@@ -313,14 +313,14 @@ export default function PhotoLabPage() {
             )}
 
             {decorSet && (
-              <div className="rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.06] px-4 py-4">
-                <p className="text-sm leading-relaxed text-white/85">
+              <div className="rounded-2xl border border-accent-cyan/25 bg-accent-cyan/[0.06] px-4 py-4">
+                <p className="text-sm leading-relaxed text-foreground/85">
                   Ingesteld als sfeerbeeld. Je ziet hem bovenaan je profiel.
                 </p>
                 <button
                   type="button"
                   onClick={() => navigate("/you")}
-                  className="mt-3 rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/5"
+                  className="mt-3 rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground/85 transition hover:bg-muted"
                 >
                   Naar je profiel
                 </button>
@@ -330,7 +330,7 @@ export default function PhotoLabPage() {
             <button
               type="button"
               onClick={reset}
-              className="rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-white/85 transition hover:bg-white/5"
+              className="rounded-full border border-border px-5 py-3 text-sm font-medium text-foreground/85 transition hover:bg-muted"
             >
               Nog een foto
             </button>

@@ -64,7 +64,7 @@ function RecoveryRow({ connector }: { connector: ConnectorItem }) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="flex items-start gap-1.5 text-pretty text-[13px] leading-relaxed text-white/60">
+      <p className="flex items-start gap-1.5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
         <AlertTriangle
           className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/80"
           strokeWidth={1.75}
@@ -76,10 +76,10 @@ function RecoveryRow({ connector }: { connector: ConnectorItem }) {
         type="button"
         onClick={onRetry}
         disabled={sync.isPending}
-        className="inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+        className="inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted disabled:opacity-50"
         style={{
-          borderColor: "rgba(120,210,230,0.4)",
-          background: "rgba(255,255,255,0.04)",
+          borderColor: "var(--color-accent-cyan)",
+          background: "var(--color-muted)",
           color: ACCENT,
         }}
       >
@@ -118,16 +118,15 @@ export function ConnectorRecoveryNudge() {
   if (needsRecovery.length === 0) return null
 
   return (
-    <section className="rounded-2xl border border-amber-300/20 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="rounded-2xl border border-amber-300/20 bg-card p-5 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <span
           className="h-1.5 w-1.5 shrink-0 rounded-full"
           style={{
             background: "rgba(245,200,110,0.9)",
-            boxShadow: "0 0 8px rgba(245,200,110,0.6)",
           }}
         />
-        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-amber-300/70">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[color:var(--color-warning)]">
           Koppeling zonder gegevens
         </span>
       </div>

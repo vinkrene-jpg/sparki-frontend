@@ -43,13 +43,13 @@ export function EstimateTag() {
 /** Compact race summary card — name, date, location, priority, discipline. */
 export function RaceSummaryCard({ race }: { race: Race }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-sans text-[15px] font-light tracking-tight text-white/90">
+          <h3 className="truncate font-sans text-[15px] font-light tracking-tight text-foreground/90">
             {race.name}
           </h3>
-          <p className="mt-0.5 text-[12px] capitalize text-white/45">
+          <p className="mt-0.5 text-[12px] capitalize text-muted-foreground">
             {formatRaceDate(race.raceDate)}
             {race.startTime ? ` · ${race.startTime}` : ""}
           </p>
@@ -66,7 +66,7 @@ export function RaceSummaryCard({ race }: { race: Race }) {
         </span>
       </div>
       {(race.location || race.discipline) && (
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/40">
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
           {race.location && (
             <span className="inline-flex items-center gap-1">
               <MapPin className="h-3 w-3" aria-hidden="true" />
@@ -133,7 +133,7 @@ export function RaceCountdown({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-0 h-32 w-32 -translate-x-1/2 animate-breathe rounded-full"
@@ -149,7 +149,7 @@ export function RaceCountdown({
         >
           {big}
         </span>
-        <p className="mt-3 font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+        <p className="mt-3 font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
           {sub}
         </p>
       </div>
@@ -170,13 +170,13 @@ export function GuidanceList({
       {items.slice(0, 3).map((tip) => (
         <li
           key={tip}
-          className="flex gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+          className="flex gap-3 rounded-xl border border-border bg-card p-4 backdrop-blur-md"
         >
           <span
             className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
             style={{ background: dotColor, boxShadow: `0 0 8px ${dotColor}` }}
           />
-          <span className="text-[13px] leading-relaxed text-white/70">{tip}</span>
+          <span className="text-[13px] leading-relaxed text-muted-foreground">{tip}</span>
         </li>
       ))}
     </ul>
@@ -187,15 +187,15 @@ export function GuidanceList({
 export function NoRaceCard() {
   const [, navigate] = useLocation()
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 text-center backdrop-blur-md">
-      <p className="text-[13px] leading-relaxed text-white/55">
+    <div className="rounded-2xl border border-border bg-card p-5 text-center backdrop-blur-md">
+      <p className="text-[13px] leading-relaxed text-muted-foreground">
         Nog geen wedstrijd ingepland. Voeg je volgende race toe om je
         race-week, checklist en timings te activeren.
       </p>
       <button
         type="button"
         onClick={() => navigate("/races")}
-        className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
+        className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
         style={{ borderColor: ACCENT, background: "rgba(255,255,255,0.04)", color: ACCENT }}
       >
         Race toevoegen
@@ -215,9 +215,9 @@ export function InfoBlock({
   empty?: string
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <span className="label-xs text-white/35">{label.toUpperCase()}</span>
-      <p className={`mt-1.5 text-[13px] leading-relaxed ${value ? "text-white/75" : "text-white/30"}`}>
+    <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+      <span className="label-xs text-muted-foreground">{label.toUpperCase()}</span>
+      <p className={`mt-1.5 text-[13px] leading-relaxed ${value ? "text-muted-foreground" : "text-muted-foreground"}`}>
         {value || empty}
       </p>
     </div>

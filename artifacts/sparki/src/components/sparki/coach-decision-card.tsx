@@ -5,7 +5,7 @@ import type { CoachArchetype, CoachDecision } from "@/lib/coach-engine"
 // Per-archetype accent tint. Stays within the Sparki cyan design language but
 // gives each coach a subtle signature so the three feel distinct at a glance.
 const archetypeAccent: Record<CoachArchetype, string> = {
-  consistentiecoach: "rgba(120,210,230,1)",
+  consistentiecoach: "var(--color-accent-cyan)",
   wedstrijdcoach: "rgba(255,200,120,0.98)",
   prestatiecoach: "rgba(170,235,248,1)",
 }
@@ -22,7 +22,7 @@ const archetypeLabel: Record<CoachArchetype, string> = {
 export function CoachDecisionCard({ decision }: { decision: CoachDecision }) {
   const c = archetypeAccent[decision.archetype]
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 animate-breathe rounded-full"
@@ -43,7 +43,7 @@ export function CoachDecisionCard({ decision }: { decision: CoachDecision }) {
         </div>
 
         {/* HOOFDONDERWERP — het thema van vandaag */}
-        <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
+        <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
           Onderwerp
         </p>
         <h2 className="mt-1 text-balance font-sans text-2xl font-light leading-tight tracking-tight">
@@ -51,21 +51,21 @@ export function CoachDecisionCard({ decision }: { decision: CoachDecision }) {
         </h2>
 
         {/* ADVIES */}
-        <p className="mt-4 text-pretty text-[14px] leading-relaxed text-white/80">
+        <p className="mt-4 text-pretty text-[14px] leading-relaxed text-foreground/80">
           {decision.advies}
         </p>
 
         {/* PRIORITEIT — waar Sparki vandaag op let */}
-        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5">
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border bg-muted p-3.5">
           <span
             className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ background: c, boxShadow: `0 0 8px ${c}` }}
+            style={{ background: c }}
           />
           <span className="flex flex-col gap-0.5">
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
               Vandaag ligt de focus op
             </span>
-            <span className="text-[13px] leading-relaxed text-white/70">
+            <span className="text-[13px] leading-relaxed text-muted-foreground">
               {decision.prioriteit}
             </span>
           </span>
@@ -80,7 +80,7 @@ export function CoachDecisionCard({ decision }: { decision: CoachDecision }) {
             >
               ?
             </span>
-            <p className="text-[13px] font-medium leading-relaxed text-white/85">
+            <p className="text-[13px] font-medium leading-relaxed text-foreground/85">
               {decision.vraag}
             </p>
           </div>

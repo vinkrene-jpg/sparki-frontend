@@ -54,12 +54,12 @@ export function CheckinSheet({
 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-t-2xl border border-white/[0.1] bg-[#070d16] p-5 sm:rounded-2xl">
+      <div className="absolute inset-0 bg-foreground/60" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-t-2xl border border-border bg-card p-5 sm:rounded-2xl">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[15px] font-medium text-white/90">Check-in</p>
-            <p className="mt-0.5 text-[12px] text-white/45">
+            <p className="text-[15px] font-medium text-foreground/90">Check-in</p>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
               {ctx?.doneToday
                 ? "Je hebt vandaag al ingecheckt — aanvullen mag, hoeft niet."
                 : "Alleen wat vandaag nog ontbreekt. Overslaan mag altijd."}
@@ -69,14 +69,14 @@ export function CheckinSheet({
             type="button"
             onClick={onClose}
             aria-label="Sluiten"
-            className="rounded-full p-1.5 text-white/40 hover:bg-white/[0.06] hover:text-white/70"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </div>
 
         {questions.length === 0 ? (
-          <p className="mt-4 text-[13px] text-white/55">
+          <p className="mt-4 text-[13px] text-muted-foreground">
             Alles is voor vandaag al ingevuld — niets meer nodig.
           </p>
         ) : (
@@ -85,9 +85,9 @@ export function CheckinSheet({
               const q = QUESTION[k]
               return (
                 <div key={k}>
-                  <p className="text-[13px] text-white/75">{q.label}</p>
+                  <p className="text-[13px] text-muted-foreground">{q.label}</p>
                   <div className="mt-1.5 flex items-center gap-1.5">
-                    <span className="w-12 text-right text-[10px] text-white/35">
+                    <span className="w-12 text-right text-[10px] text-muted-foreground">
                       {q.low}
                     </span>
                     {Array.from({ length: q.max }, (_, i) => i + 1).map((n) => (
@@ -99,14 +99,14 @@ export function CheckinSheet({
                         }
                         className={`h-8 w-8 rounded-full border text-[12px] transition-colors ${
                           answers[k] === n
-                            ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-200"
-                            : "border-white/[0.12] bg-white/[0.03] text-white/55 hover:bg-white/[0.08]"
+                            ? "border-accent-cyan/60 bg-accent-cyan/15 text-accent-cyan"
+                            : "border-border bg-muted text-muted-foreground hover:bg-muted"
                         }`}
                       >
                         {n}
                       </button>
                     ))}
-                    <span className="w-12 text-[10px] text-white/35">{q.high}</span>
+                    <span className="w-12 text-[10px] text-muted-foreground">{q.high}</span>
                   </div>
                 </div>
               )
@@ -115,7 +115,7 @@ export function CheckinSheet({
         )}
 
         {log.isError && (
-          <p className="mt-3 text-[12px] text-amber-300/90">
+          <p className="mt-3 text-[12px] text-[color:var(--color-warning)]">
             Opslaan lukte niet — probeer het zo nog eens.
           </p>
         )}
@@ -125,14 +125,14 @@ export function CheckinSheet({
             type="button"
             disabled={log.isPending || Object.keys(answers).length === 0}
             onClick={submit}
-            className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-2 text-[13px] font-medium text-cyan-200 hover:bg-cyan-300/20 disabled:opacity-40"
+            className="rounded-full border border-accent-cyan/40 bg-accent-cyan/10 px-4 py-2 text-[13px] font-medium text-accent-cyan hover:bg-accent-cyan/20 disabled:opacity-40"
           >
             {log.isPending ? "Opslaan…" : "Opslaan"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/[0.12] px-4 py-2 text-[13px] text-white/55 hover:bg-white/[0.05]"
+            className="rounded-full border border-border px-4 py-2 text-[13px] text-muted-foreground hover:bg-muted"
           >
             Overslaan
           </button>

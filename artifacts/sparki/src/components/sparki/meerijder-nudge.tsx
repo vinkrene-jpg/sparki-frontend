@@ -72,20 +72,20 @@ function ReminderNudgeCard({
   onDismiss: () => void
 }) {
   return (
-    <section className="mt-6 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <section className="mt-6 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start gap-3">
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border"
           style={{ background: "rgba(120,210,230,0.08)" }}
         >
-          <BellRing className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />
+          <BellRing className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-white/90">
+          <p className="text-[13px] font-medium text-foreground/90">
             {notification.title}
           </p>
           {notification.body && (
-            <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/55">
+            <p className="mt-1 text-pretty text-[12px] leading-relaxed text-foreground/55">
               {notification.body}
             </p>
           )}
@@ -94,7 +94,7 @@ function ReminderNudgeCard({
           type="button"
           disabled={dismissing}
           onClick={onDismiss}
-          className="shrink-0 text-[12px] text-cyan-300/70 transition-colors hover:text-cyan-300 disabled:opacity-50"
+          className="shrink-0 text-[12px] text-accent-cyan transition-colors hover:text-accent-cyan disabled:opacity-50"
         >
           Gezien
         </button>

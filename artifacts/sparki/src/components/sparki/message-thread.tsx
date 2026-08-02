@@ -66,17 +66,17 @@ function SecureImage({ url, alt }: { url: string; alt: string }) {
   }, [url])
   if (error)
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[12px] text-white/45">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-[12px] text-muted-foreground">
         <ImageOff className="h-3.5 w-3.5" strokeWidth={1.75} /> {error}
       </div>
     )
   if (!objectUrl)
-    return <div className="h-32 w-full max-w-[220px] animate-pulse rounded-lg bg-white/[0.05]" />
+    return <div className="h-32 w-full max-w-[220px] animate-pulse rounded-lg bg-muted" />
   return (
     <img
       src={objectUrl}
       alt={alt}
-      className="max-h-56 max-w-full rounded-lg border border-white/[0.08] object-contain"
+      className="max-h-56 max-w-full rounded-lg border border-border object-contain"
     />
   )
 }
@@ -115,12 +115,12 @@ function DownloadButton({ url, name }: { url: string; name: string | null }) {
         type="button"
         onClick={() => void doDownload()}
         disabled={busy}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.12] px-2.5 py-1 text-[12px] text-white/70 hover:bg-white/[0.05] disabled:opacity-40"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-[12px] text-foreground/70 hover:bg-muted disabled:opacity-40"
       >
         <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
         {busy ? "Bezig…" : "Download"}
       </button>
-      {error && <p className="mt-1 text-[11px] text-red-300/80">{error}</p>}
+      {error && <p className="mt-1 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
     </div>
   )
 }
@@ -141,7 +141,7 @@ function AttachmentView({
         href={att.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1.5 text-[12px] text-cyan-200/85 hover:bg-white/[0.06]"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[12px] text-accent-cyan hover:bg-muted"
       >
         <Link2 className="h-3.5 w-3.5" strokeWidth={1.75} />
         <span className="truncate max-w-[220px]">{att.title || att.url}</span>
@@ -150,7 +150,7 @@ function AttachmentView({
   // Bestand/afbeelding. Ingetrokken ⇒ eerlijke staat, geen preview/download.
   if (att.revoked)
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[12px] text-white/40">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-[12px] text-muted-foreground">
         <ImageOff className="h-3.5 w-3.5" strokeWidth={1.75} />
         {att.name ? `“${att.name}” is` : "Deze bijlage is"} ingetrokken en niet meer beschikbaar.
       </div>
@@ -160,10 +160,10 @@ function AttachmentView({
       {att.kind === "afbeelding" ? (
         <SecureImage url={att.url} alt={att.name ?? "afbeelding"} />
       ) : (
-        <div className="flex items-center gap-1.5 text-[12px] text-white/60">
-          <FileText className="h-3.5 w-3.5 text-white/40" strokeWidth={1.75} />
+        <div className="flex items-center gap-1.5 text-[12px] text-foreground/60">
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
           <span className="truncate max-w-[220px]">{att.name ?? "bestand"}</span>
-          {att.sizeBytes != null && <span className="text-white/30">· {fmtBytes(att.sizeBytes)}</span>}
+          {att.sizeBytes != null && <span className="text-muted-foreground">· {fmtBytes(att.sizeBytes)}</span>}
         </div>
       )}
       <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ function AttachmentView({
           <button
             type="button"
             onClick={() => onRevoke(att.id)}
-            className="text-[11px] text-white/40 underline-offset-2 hover:text-white/70 hover:underline"
+            className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground/70 hover:underline"
           >
             Intrekken
           </button>
@@ -265,7 +265,7 @@ export function MessageComposer({
           {files.map((f, i) => (
             <span
               key={`f${i}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.12] bg-white/[0.04] px-2 py-1 text-[11px] text-white/70"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1 text-[11px] text-foreground/70"
             >
               {f.name}
               <button
@@ -280,7 +280,7 @@ export function MessageComposer({
           {links.map((l, i) => (
             <span
               key={`l${i}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-2 py-1 text-[11px] text-cyan-200/85"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-accent-cyan/25 bg-accent-cyan/10 px-2 py-1 text-[11px] text-accent-cyan"
             >
               <Link2 className="h-3 w-3" strokeWidth={1.75} />
               <span className="max-w-[160px] truncate">{l.url}</span>
@@ -301,7 +301,7 @@ export function MessageComposer({
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder={placeholder}
-          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault()
@@ -313,7 +313,7 @@ export function MessageComposer({
           }}
         />
         <label
-          className="flex cursor-pointer items-center rounded-lg border border-white/15 px-2.5 text-white/60 hover:border-white/30"
+          className="flex cursor-pointer items-center rounded-lg border border-border px-2.5 text-foreground/60 hover:border-border"
           title="Bestand of afbeelding toevoegen"
         >
           <Paperclip className="h-4 w-4" strokeWidth={1.75} />
@@ -337,7 +337,7 @@ export function MessageComposer({
             setFiles([])
             setLinks([])
           }}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-2 text-[12px] text-accent-cyan disabled:opacity-40"
         >
           <Send className="h-3.5 w-3.5" strokeWidth={1.75} />
           Plaats
@@ -349,7 +349,7 @@ export function MessageComposer({
           value={linkDraft}
           onChange={(e) => setLinkDraft(e.target.value)}
           placeholder="Link toevoegen (https://…)"
-          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-[12px] text-white/70 placeholder:text-white/25 focus:border-cyan-300/30 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-transparent px-3 py-1.5 text-[12px] text-foreground/70 placeholder:text-muted-foreground focus:border-accent-cyan/30 focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault()
@@ -360,14 +360,14 @@ export function MessageComposer({
         <button
           type="button"
           onClick={addLink}
-          className="rounded-lg border border-white/12 px-2.5 py-1.5 text-[12px] text-white/55 hover:border-white/30"
+          className="rounded-lg border border-border px-2.5 py-1.5 text-[12px] text-foreground/55 hover:border-border"
         >
           Link
         </button>
       </div>
 
-      {clientError && <p className="text-[11px] text-amber-200/85">{clientError}</p>}
-      {serverError && <p className="text-[11px] text-red-300/85">{serverError}</p>}
+      {clientError && <p className="text-[11px] text-[color:var(--color-warning)]">{clientError}</p>}
+      {serverError && <p className="text-[11px] text-[color:var(--color-negative)]">{serverError}</p>}
     </div>
   )
 }
@@ -390,19 +390,19 @@ export function MessageBubble({
   return (
     <div
       className={`rounded-xl border px-3.5 py-3 backdrop-blur-md ${
-        message.read ? "border-white/[0.08]" : "border-cyan-300/25"
-      } bg-[#070d16]/[0.82]`}
+        message.read ? "border-border" : "border-accent-cyan/25"
+      } bg-card`}
       onClick={() => {
         if (!message.read && onSeen) onSeen()
       }}
     >
-      <p className="text-[11px] text-white/40">
+      <p className="text-[11px] text-muted-foreground">
         {message.authorName ?? (mine ? "Jij" : "Verstuurd")} ·{" "}
         {new Date(message.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
-        {!message.read && <span className="ml-1.5 text-cyan-300/85">nieuw</span>}
+        {!message.read && <span className="ml-1.5 text-accent-cyan">nieuw</span>}
       </p>
       {message.body && (
-        <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-white/85">{message.body}</p>
+        <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-foreground/85">{message.body}</p>
       )}
       {message.attachments.length > 0 && (
         <div className="mt-2 space-y-2">

@@ -26,7 +26,7 @@ import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ACCENT } from "@/components/sparki/ui"
 
 const CARD =
-  "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
 
 // ── Laag 1: het ene visuele element (DSH-05/20) ──────────────────────────────
 // Eén rustige band bovenaan met een kop, één grote leesbare waarde en een korte
@@ -48,7 +48,7 @@ function Layer1Band({ kicker, value, meaning, accent, detail }: Layer1) {
   const color = accent ?? ACCENT
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 backdrop-blur-md"
+      className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 backdrop-blur-md"
       data-testid="dashboard-laag1"
       aria-label={kicker}
     >
@@ -64,14 +64,14 @@ function Layer1Band({ kicker, value, meaning, accent, detail }: Layer1) {
       >
         {kicker}
       </p>
-      <p className="mt-3 font-sans text-[40px] font-light leading-none tracking-tight text-white">
+      <p className="mt-3 font-sans text-[40px] font-light leading-none tracking-tight text-foreground">
         {value}
       </p>
-      <p className="mt-3 max-w-sm text-[15px] font-light leading-snug tracking-tight text-white/80">
+      <p className="mt-3 max-w-sm text-[15px] font-light leading-snug tracking-tight text-foreground/80">
         {meaning}
       </p>
       {detail && (
-        <p className="mt-2 text-[12px] leading-relaxed text-white/45">{detail}</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">{detail}</p>
       )}
     </section>
   )
@@ -98,13 +98,13 @@ function Layer2Block({ title, body, href, actionLabel, urgent }: Layer2) {
       data-testid="dashboard-laag2"
       style={urgent ? { borderColor: "oklch(0.78 0.16 60 / 0.5)" } : undefined}
     >
-      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
         Vraagt aandacht
       </p>
-      <h2 className="mt-2 text-[16px] font-medium leading-snug tracking-tight text-white">
+      <h2 className="mt-2 text-[16px] font-medium leading-snug tracking-tight text-foreground">
         {title}
       </h2>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{body}</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{body}</p>
       <Link
         href={href}
         className="mt-3 inline-flex items-center gap-1 text-[13px]"
@@ -129,18 +129,18 @@ export type Layer3Item = {
 function Layer3List({ title, items }: { title: string; items: Layer3Item[] }) {
   return (
     <section className="space-y-3" data-testid="dashboard-laag3">
-      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/40">
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
         {title}
       </p>
       <div className="space-y-2.5">
         {items.map((it) => (
           <div
             key={it.key}
-            className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4"
+            className="rounded-2xl border border-border bg-muted p-4"
           >
-            <p className="text-[14px] tracking-tight text-white/85">{it.title}</p>
+            <p className="text-[14px] tracking-tight text-foreground/90">{it.title}</p>
             {it.body && (
-              <p className="mt-1 text-[12px] leading-relaxed text-white/55">
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
                 {it.body}
               </p>
             )}
@@ -200,8 +200,8 @@ export function RoleDashboard({
       <div className="space-y-5" data-testid="role-dashboard">
         {loading ? (
           <>
-            <div className="h-40 animate-pulse rounded-3xl bg-white/[0.05]" />
-            <div className="h-28 animate-pulse rounded-2xl bg-white/[0.05]" />
+            <div className="h-40 animate-pulse rounded-3xl bg-muted" />
+            <div className="h-28 animate-pulse rounded-2xl bg-muted" />
           </>
         ) : (
           <>
@@ -216,20 +216,20 @@ export function RoleDashboard({
             {werkscherm && (
               <Link
                 href={werkscherm.href}
-                className="flex items-center justify-between rounded-2xl border border-white/[0.08] px-4 py-3.5 text-left transition-colors hover:border-cyan-300/25"
+                className="flex items-center justify-between rounded-2xl border border-border px-4 py-3.5 text-left transition-colors hover:border-accent-cyan"
                 data-testid="dashboard-werkscherm"
               >
                 <span>
-                  <span className="text-[14px] text-white/85">
+                  <span className="text-[14px] text-foreground/90">
                     {werkscherm.label}
                   </span>
                   {werkscherm.hint && (
-                    <span className="mt-0.5 block text-[12px] text-white/40">
+                    <span className="mt-0.5 block text-[12px] text-muted-foreground">
                       {werkscherm.hint}
                     </span>
                   )}
                 </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-white/35" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </Link>
             )}
 

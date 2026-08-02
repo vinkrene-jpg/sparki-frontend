@@ -68,7 +68,7 @@ function GlassCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md ${className}`}
+      className={`rounded-2xl border border-border bg-card p-4 backdrop-blur-md ${className}`}
     >
       {children}
     </div>
@@ -84,8 +84,8 @@ function Avatar({ name, color }: { name: string; color?: string | null }) {
     .slice(0, 2)
   return (
     <span
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 font-sans text-[12px] font-medium text-white/85"
-      style={{ background: color ? `${color}22` : "rgba(255,255,255,0.05)" }}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border font-sans text-[12px] font-medium text-foreground/85"
+      style={{ background: color ? `${color}22` : "var(--color-muted)" }}
     >
       {initials}
     </span>
@@ -125,8 +125,8 @@ const STATUS_LABEL: Record<string, string> = {
 function statusColor(status: string): string {
   if (status === "accepted") return ACCENT
   if (status === "declined") return "rgba(255,140,120,0.85)"
-  if (status === "expired") return "rgba(255,255,255,0.35)"
-  return "rgba(255,255,255,0.55)"
+  if (status === "expired") return "var(--color-muted-foreground)"
+  return "var(--color-muted-foreground)"
 }
 
 function formatDateTime(iso: string): string {
@@ -167,8 +167,8 @@ function FriendRequests() {
             <div className="flex items-center gap-3">
               <Avatar name={r.displayName} />
               <div className="flex-1">
-                <p className="text-[14px] text-white/90">{r.displayName}</p>
-                <p className="font-mono text-[10px] tracking-wide text-white/40">
+                <p className="text-[14px] text-foreground/90">{r.displayName}</p>
+                <p className="font-mono text-[10px] tracking-wide text-muted-foreground">
                   {r.direction === "incoming"
                     ? "wil je toevoegen"
                     : "verzoek verstuurd"}
@@ -197,13 +197,13 @@ function FriendRequests() {
                     onClick={() =>
                       respond.mutate({ id: r.id, accept: false })
                     }
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 text-white/50"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground"
                   >
                     <X className="h-4 w-4" strokeWidth={2} />
                   </button>
                 </div>
               ) : (
-                <span className="font-mono text-[10px] tracking-wide text-white/30">
+                <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
                   In afwachting
                 </span>
               )}
@@ -225,21 +225,21 @@ function AddFriend() {
   return (
     <section>
       <SectionLabel title="Sporter zoeken" />
-      <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5">
-        <Search className="h-4 w-4 text-white/35" strokeWidth={1.75} />
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted px-3.5 py-2.5">
+        <Search className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Naam van een sporter…"
-          className="w-full bg-transparent font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          className="w-full bg-transparent font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
         />
       </div>
       {query.trim().length >= 2 && (
         <div className="mt-2 flex flex-col gap-2">
           {isFetching && results.length === 0 ? (
-            <p className="px-1 font-mono text-[11px] text-white/30">Zoeken…</p>
+            <p className="px-1 font-mono text-[11px] text-muted-foreground">Zoeken…</p>
           ) : results.length === 0 ? (
-            <p className="px-1 font-mono text-[11px] text-white/30">
+            <p className="px-1 font-mono text-[11px] text-muted-foreground">
               Geen sporters gevonden
             </p>
           ) : (
@@ -248,19 +248,19 @@ function AddFriend() {
                 <div className="flex items-center gap-3">
                   <Avatar name={r.displayName} />
                   <div className="flex-1">
-                    <p className="text-[14px] text-white/90">
+                    <p className="text-[14px] text-foreground/90">
                       {r.displayName}
                     </p>
-                    <p className="font-mono text-[10px] tracking-wide text-white/40">
+                    <p className="font-mono text-[10px] tracking-wide text-muted-foreground">
                       {[sportLabel(r.sport), r.club].filter(Boolean).join(" · ") || "Sporter"}
                     </p>
                   </div>
                   {r.relation === "friends" ? (
-                    <span className="font-mono text-[10px] tracking-wide text-white/35">
+                    <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
                       Verbonden
                     </span>
                   ) : r.relation === "pending" ? (
-                    <span className="font-mono text-[10px] tracking-wide text-white/35">
+                    <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
                       In afwachting
                     </span>
                   ) : (
@@ -298,10 +298,10 @@ function PersonRow({
       <div className="flex items-center gap-3">
         <Avatar name={person.displayName} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] text-white/90">
+          <p className="truncate text-[14px] text-foreground/90">
             {person.displayName}
           </p>
-          <p className="truncate font-mono text-[10px] tracking-wide text-white/40">
+          <p className="truncate font-mono text-[10px] tracking-wide text-muted-foreground">
             {[sportLabel(person.sport), person.club].filter(Boolean).join(" · ") ||
               "Sporter"}
           </p>
@@ -309,7 +309,7 @@ function PersonRow({
         <Link
           href={`/profiel/${person.clerkId}`}
           aria-label="Profiel bekijken"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 text-white/40 transition-colors hover:text-white/80"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground/80"
         >
           <UserCircle className="h-4 w-4" strokeWidth={1.75} />
         </Link>
@@ -335,7 +335,7 @@ function NetwerkOverzicht() {
     <section>
       <SectionLabel n="02" title="Jouw netwerk" />
       {isLoading ? (
-        <div className="mt-3 h-14 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="mt-3 h-14 animate-pulse rounded-2xl bg-muted" />
       ) : (
         <>
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -355,15 +355,15 @@ function NetwerkOverzicht() {
                   borderColor:
                     tab === t.key
                       ? "rgba(120,210,230,0.4)"
-                      : "rgba(255,255,255,0.08)",
+                      : "var(--color-border)",
                   background:
                     tab === t.key
                       ? "rgba(120,210,230,0.07)"
                       : "rgba(7,13,22,0.82)",
                 }}
               >
-                <p className="text-[20px] font-light text-white">{t.n ?? 0}</p>
-                <p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-white/45">
+                <p className="text-[20px] font-light text-foreground">{t.n ?? 0}</p>
+                <p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-muted-foreground">
                   {t.label}
                 </p>
               </button>
@@ -372,7 +372,7 @@ function NetwerkOverzicht() {
           {tab === "volgers" && (
             <div className="mt-2 flex flex-col gap-2">
               {(data?.volgers ?? []).length === 0 ? (
-                <p className="px-1 text-[12px] text-white/40">
+                <p className="px-1 text-[12px] text-muted-foreground">
                   Nog niemand volgt je.
                 </p>
               ) : (
@@ -383,7 +383,7 @@ function NetwerkOverzicht() {
           {tab === "gevolgd" && (
             <div className="mt-2 flex flex-col gap-2">
               {(data?.gevolgd ?? []).length === 0 ? (
-                <p className="px-1 text-[12px] text-white/40">
+                <p className="px-1 text-[12px] text-muted-foreground">
                   Je volgt nog niemand. Open een profiel en kies "Volgen".
                 </p>
               ) : (
@@ -396,7 +396,7 @@ function NetwerkOverzicht() {
                         type="button"
                         disabled={unfollow.isPending}
                         onClick={() => unfollow.mutate(p.clerkId)}
-                        className="rounded-full border border-white/12 px-3 py-1.5 font-sans text-[11px] text-white/50 disabled:opacity-40"
+                        className="rounded-full border border-border px-3 py-1.5 font-sans text-[11px] text-muted-foreground disabled:opacity-40"
                       >
                         Ontvolgen
                       </button>
@@ -484,18 +484,18 @@ function MensenVinden() {
       <div className="mt-3 flex flex-col gap-2">
         <GlassCard>
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border">
               <BookUser className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
             </span>
             <div className="flex-1">
-              <p className="text-[13.5px] text-white/85">Zoek via je contacten</p>
-              <p className="mt-0.5 text-pretty text-[12px] leading-relaxed text-white/45">
+              <p className="text-[13.5px] text-foreground/85">Zoek via je contacten</p>
+              <p className="mt-0.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
                 Jij kiest zelf welke contacten je deelt. Alleen versleutelde
                 controlegetallen van e-mailadressen worden vergeleken — je
                 adresboek wordt nooit geüpload of bewaard.
               </p>
               {contactState === "unsupported" ? (
-                <p className="mt-2 text-[12px] text-white/40">
+                <p className="mt-2 text-[12px] text-muted-foreground">
                   Contacten kiezen wordt door deze browser niet ondersteund.
                   Gebruik de zoekfunctie of een uitnodigingslink.
                 </p>
@@ -504,7 +504,7 @@ function MensenVinden() {
                   type="button"
                   disabled={contactState === "busy"}
                   onClick={pickContacts}
-                  className="mt-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-3.5 py-1.5 font-sans text-[12px] font-medium disabled:opacity-40"
+                  className="mt-2 rounded-full border border-accent-cyan/30 bg-accent-cyan/[0.08] px-3.5 py-1.5 font-sans text-[12px] font-medium disabled:opacity-40"
                   style={{ color: ACCENT }}
                 >
                   {contactState === "busy" ? "Vergelijken…" : "Contacten kiezen"}
@@ -513,7 +513,7 @@ function MensenVinden() {
               {contactState === "done" && (
                 <div className="mt-2 flex flex-col gap-2">
                   {matches.length === 0 ? (
-                    <p className="text-[12px] text-white/40">
+                    <p className="text-[12px] text-muted-foreground">
                       Geen van je gekozen contacten is op Sparki gevonden.
                     </p>
                   ) : (
@@ -544,18 +544,18 @@ function MensenVinden() {
 
         <GlassCard>
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border">
               <Link2 className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
             </span>
             <div className="flex-1">
-              <p className="text-[13.5px] text-white/85">Nodig uit via een link</p>
-              <p className="mt-0.5 text-[12px] leading-relaxed text-white/45">
+              <p className="text-[13.5px] text-foreground/85">Nodig uit via een link</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
                 Deel een persoonlijke link. Wie accepteert, wordt direct je
                 vriend op Sparki.
               </p>
               {inviteUrl ? (
                 <div className="mt-2 flex items-center gap-2">
-                  <code className="min-w-0 flex-1 truncate rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 font-mono text-[11px] text-white/70">
+                  <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-muted px-2.5 py-1.5 font-mono text-[11px] text-muted-foreground">
                     {inviteUrl}
                   </code>
                   <button
@@ -576,7 +576,7 @@ function MensenVinden() {
                   type="button"
                   disabled={createInvite.isPending}
                   onClick={makeInviteLink}
-                  className="mt-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-3.5 py-1.5 font-sans text-[12px] font-medium disabled:opacity-40"
+                  className="mt-2 rounded-full border border-accent-cyan/30 bg-accent-cyan/[0.08] px-3.5 py-1.5 font-sans text-[12px] font-medium disabled:opacity-40"
                   style={{ color: ACCENT }}
                 >
                   {createInvite.isPending ? "Bezig…" : "Maak uitnodigingslink"}
@@ -601,10 +601,10 @@ function Circle() {
     <section id="mijn-vrienden">
       <SectionLabel n="01" title="Mijn vrienden" />
       {isLoading ? (
-        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-muted" />
       ) : friends.length === 0 ? (
         <div className="mt-3 space-y-1.5">
-          <p className="text-pretty text-[13px] leading-relaxed text-white/40">
+          <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
             Je hebt nog geen vrienden. Zoek hierboven een sporter om
             samen te trainen.
           </p>
@@ -617,10 +617,10 @@ function Circle() {
               <div className="flex items-center gap-3">
                 <Avatar name={f.displayName} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] text-white/90">
+                  <p className="truncate text-[14px] text-foreground/90">
                     {f.displayName}
                   </p>
-                  <p className="truncate font-mono text-[10px] tracking-wide text-white/40">
+                  <p className="truncate font-mono text-[10px] tracking-wide text-muted-foreground">
                     {[sportLabel(f.sport), f.club].filter(Boolean).join(" · ") || "Sporter"}
                     {f.availableDays.length > 0
                       ? ` · ${f.availableDays
@@ -632,7 +632,7 @@ function Circle() {
                 <Link
                   href={`/profiel/${f.clerkId}`}
                   aria-label="Profiel bekijken"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 text-white/40 transition-colors hover:text-white/80"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground/80"
                 >
                   <UserCircle className="h-4 w-4" strokeWidth={1.75} />
                 </Link>
@@ -653,7 +653,7 @@ function Circle() {
                   style={{
                     borderColor: f.isTrainingBuddy
                       ? "rgba(120,210,230,0.45)"
-                      : "rgba(255,255,255,0.12)",
+                      : "var(--color-border)",
                     background: f.isTrainingBuddy
                       ? "rgba(120,210,230,0.12)"
                       : "transparent",
@@ -662,7 +662,7 @@ function Circle() {
                   <Star
                     className="h-4 w-4"
                     style={{
-                      color: f.isTrainingBuddy ? ACCENT : "rgba(255,255,255,0.4)",
+                      color: f.isTrainingBuddy ? ACCENT : "var(--color-muted-foreground)",
                     }}
                     fill={f.isTrainingBuddy ? ACCENT : "none"}
                     strokeWidth={1.75}
@@ -672,7 +672,7 @@ function Circle() {
                   type="button"
                   aria-label="Vriend verwijderen"
                   onClick={() => removeFriend.mutate(f.clerkId)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 text-white/35 transition-colors hover:text-[rgba(255,140,120,0.85)]"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-[rgba(255,140,120,0.85)]"
                 >
                   <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
                 </button>
@@ -704,19 +704,19 @@ function FollowUpCard({ item }: { item: CircleFeedItem }) {
   }
 
   return (
-    <GlassCard className="border-cyan-300/20 bg-cyan-300/[0.05]">
+    <GlassCard className="border-accent-cyan/20 bg-accent-cyan/[0.05]">
       <div className="flex items-start gap-3">
         <span
-          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-300/30"
+          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent-cyan/30"
           style={{ background: "rgba(120,210,230,0.10)" }}
         >
           <Sparkles className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
         </span>
         <div className="flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/70">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan">
             Nog even dit
           </p>
-          <p className="mt-1 text-pretty text-[14px] leading-relaxed text-white/90">
+          <p className="mt-1 text-pretty text-[14px] leading-relaxed text-foreground/90">
             {item.prompt ?? item.detail}
           </p>
           <div className="mt-3">
@@ -725,7 +725,7 @@ function FollowUpCard({ item }: { item: CircleFeedItem }) {
               onChange={(e) => setText(e.target.value)}
               rows={2}
               placeholder="Vertel kort hoe het ging…"
-              className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white/90 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+              className="w-full resize-none rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
             />
             <div className="mt-2 flex items-center gap-2">
               <button
@@ -749,7 +749,7 @@ function FollowUpCard({ item }: { item: CircleFeedItem }) {
                 onClick={() =>
                   dismiss.mutate(item.memoryId!, { onSuccess: invalidate })
                 }
-                className="rounded-full border border-white/12 px-3.5 py-1.5 font-sans text-[12px] text-white/55 disabled:opacity-40"
+                className="rounded-full border border-border px-3.5 py-1.5 font-sans text-[12px] text-muted-foreground disabled:opacity-40"
               >
                 Later
               </button>
@@ -765,28 +765,28 @@ function CircleItemCard({ item }: { item: CircleFeedItem }) {
   const Icon = FEED_ICON[item.type]
   const isMine = item.type === "my_race"
   return (
-    <GlassCard className={isMine ? "border-cyan-300/15" : ""}>
+    <GlassCard className={isMine ? "border-accent-cyan/15" : ""}>
       <div className="flex items-start gap-3">
         <span
-          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10"
-          style={{ background: "rgba(255,255,255,0.03)" }}
+          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border"
+          style={{ background: "var(--color-muted)" }}
         >
           <Icon className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
         </span>
         <div className="flex-1">
           {isMine ? (
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/70">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan">
               Jouw wedstrijd
             </p>
           ) : null}
-          <p className="text-[13.5px] leading-snug text-white/85">{item.title}</p>
+          <p className="text-[13.5px] leading-snug text-foreground/85">{item.title}</p>
           {item.detail ? (
-            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/40">
+            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
               {item.detail}
             </p>
           ) : null}
         </div>
-        <span className="shrink-0 font-mono text-[9.5px] tracking-wide text-white/30">
+        <span className="shrink-0 font-mono text-[9.5px] tracking-wide text-muted-foreground">
           {formatDateTime(item.at)}
         </span>
       </div>
@@ -802,23 +802,23 @@ function NewsCard({ item }: { item: FeedNewsItem }) {
       rel="noopener noreferrer"
       className="block"
     >
-      <GlassCard className="transition-colors hover:border-white/20">
+      <GlassCard className="transition-colors hover:border-border">
         <div className="flex items-start gap-3">
           <span
-            className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10"
-            style={{ background: "rgba(255,255,255,0.03)" }}
+            className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border"
+            style={{ background: "var(--color-muted)" }}
           >
             <Newspaper className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
           </span>
           <div className="flex-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               {item.source ?? "Sparki nieuws"}
             </p>
-            <p className="mt-0.5 text-[13.5px] leading-snug text-white/85">
+            <p className="mt-0.5 text-[13.5px] leading-snug text-foreground/85">
               {item.title}
             </p>
             {item.summary ? (
-              <p className="mt-1 line-clamp-2 text-pretty text-[12px] leading-relaxed text-white/45">
+              <p className="mt-1 line-clamp-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
                 {item.summary}
               </p>
             ) : null}
@@ -857,13 +857,13 @@ function CircleFeed() {
     <section>
       <SectionLabel n="05" title="Jouw overzicht" />
       {isLoading ? (
-        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-muted" />
       ) : isError ? (
-        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-rose-300/80">
+        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-[color:var(--color-negative)]">
           Je overzicht kon niet geladen worden. Probeer het zo opnieuw.
         </p>
       ) : isEmpty ? (
-        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
+        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
           Nog niets te zien. Zodra je vrienden hun activiteit delen, je een
           wedstrijd plant of er nog een vraag voor je is, verschijnt het hier.
         </p>
@@ -880,7 +880,7 @@ function CircleFeed() {
             ),
           )}
           {newsError && (
-            <p className="text-pretty text-[12px] leading-relaxed text-rose-300/70">
+            <p className="text-pretty text-[12px] leading-relaxed text-[color:var(--color-negative)]">
               Het laatste nieuws kon even niet geladen worden.
             </p>
           )}
@@ -903,12 +903,12 @@ function TrainTogether() {
       <SectionLabel n="04" title="Samen trainen" />
       <div className="mt-3">
         {suggestion?.available ? (
-          <GlassCard className="border-cyan-300/20 bg-cyan-300/[0.04]">
-            <p className="text-pretty text-[14px] leading-relaxed text-white/85">
+          <GlassCard className="border-accent-cyan/20 bg-accent-cyan/[0.04]">
+            <p className="text-pretty text-[14px] leading-relaxed text-foreground/85">
               {suggestion.message}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-cyan-300/25 bg-cyan-300/[0.08] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-300/90">
+              <span className="rounded-full border border-accent-cyan/25 bg-accent-cyan/[0.08] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-cyan">
                 {suggestion.dayLabel} · {suggestion.suggestedDurationMin} min
               </span>
               <button
@@ -924,7 +924,7 @@ function TrainTogether() {
           </GlassCard>
         ) : (
           <GlassCard>
-            <p className="text-pretty text-[13px] leading-relaxed text-white/50">
+            <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
               {suggestion?.available === false
                 ? suggestion.reason
                 : "Er wordt gezocht naar momenten om samen te trainen."}
@@ -1023,19 +1023,19 @@ function ProposalComposer({
   }
 
   const fieldClass =
-    "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+    "w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-white/10 bg-[#070d16] p-5 sm:rounded-3xl">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-foreground/60 backdrop-blur-sm sm:items-center">
+      <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-border bg-card p-5 sm:rounded-3xl">
         <div className="flex items-center justify-between">
-          <h2 className="font-sans text-lg font-light tracking-tight text-white">
+          <h2 className="font-sans text-lg font-light tracking-tight text-foreground">
             Nieuw voorstel
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 rounded-full border border-white/12 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/55"
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
             Sluiten
@@ -1044,7 +1044,7 @@ function ProposalComposer({
 
         <div className="mt-5 flex flex-col gap-4">
           <div>
-            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+            <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               MAATJES
             </label>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -1059,9 +1059,9 @@ function ProposalComposer({
                     style={{
                       borderColor: on
                         ? "rgba(120,210,230,0.45)"
-                        : "rgba(255,255,255,0.12)",
+                        : "var(--color-border)",
                       background: on ? "rgba(120,210,230,0.12)" : "transparent",
-                      color: on ? ACCENT : "rgba(255,255,255,0.55)",
+                      color: on ? ACCENT : "var(--color-muted-foreground)",
                     }}
                   >
                     {b.displayName}
@@ -1072,7 +1072,7 @@ function ProposalComposer({
           </div>
 
           <div>
-            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+            <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               TYPE
             </label>
             <input
@@ -1085,7 +1085,7 @@ function ProposalComposer({
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 DATUM
               </label>
               <input
@@ -1096,7 +1096,7 @@ function ProposalComposer({
               />
             </div>
             <div className="w-28">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 TIJD
               </label>
               <input
@@ -1110,7 +1110,7 @@ function ProposalComposer({
 
           <div className="flex gap-3">
             <div className="w-32">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 DUUR (MIN)
               </label>
               <input
@@ -1123,7 +1123,7 @@ function ProposalComposer({
               />
             </div>
             <div className="flex-1">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 INTENSITEIT
               </label>
               <select
@@ -1139,7 +1139,7 @@ function ProposalComposer({
           </div>
 
           <div>
-            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+            <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               GEBIED (OPTIONEEL)
             </label>
             <input
@@ -1151,7 +1151,7 @@ function ProposalComposer({
           </div>
 
           <div>
-            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+            <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               NOTITIE (OPTIONEEL)
             </label>
             <textarea
@@ -1193,16 +1193,16 @@ function ReceivedProposalCard({ p }: { p: ReceivedProposal }) {
       <div className="flex items-start gap-3">
         <Avatar name={p.proposerName} />
         <div className="flex-1">
-          <p className="text-[14px] text-white/90">
+          <p className="text-[14px] text-foreground/90">
             {p.proposerName} · {p.trainingType}
           </p>
-          <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/40">
+          <p className="mt-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
             {formatDateTime(p.scheduledAt)}
             {p.durationMin ? ` · ${p.durationMin} min` : ""}
             {p.area ? ` · ${p.area}` : ""}
           </p>
           {p.note ? (
-            <p className="mt-1.5 text-pretty text-[12.5px] leading-relaxed text-white/55">
+            <p className="mt-1.5 text-pretty text-[12.5px] leading-relaxed text-muted-foreground">
               {p.note}
             </p>
           ) : null}
@@ -1222,7 +1222,7 @@ function ReceivedProposalCard({ p }: { p: ReceivedProposal }) {
           <button
             type="button"
             onClick={() => respond.mutate({ id: p.id, accept: false })}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/12 py-2.5 font-sans text-[13px] text-white/55"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 font-sans text-[13px] text-muted-foreground"
           >
             <X className="h-4 w-4" strokeWidth={2} />
             Niet deze keer
@@ -1243,8 +1243,8 @@ function ReceivedProposalCard({ p }: { p: ReceivedProposal }) {
 function SentProposalCard({ p }: { p: SentProposal }) {
   return (
     <GlassCard>
-      <p className="text-[14px] text-white/90">{p.trainingType}</p>
-      <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/40">
+      <p className="text-[14px] text-foreground/90">{p.trainingType}</p>
+      <p className="mt-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
         {formatDateTime(p.scheduledAt)}
         {p.durationMin ? ` · ${p.durationMin} min` : ""}
         {p.area ? ` · ${p.area}` : ""}
@@ -1252,7 +1252,7 @@ function SentProposalCard({ p }: { p: SentProposal }) {
       <div className="mt-3 flex flex-col gap-1.5">
         {p.invitees.map((i) => (
           <div key={i.clerkId} className="flex items-center justify-between">
-            <span className="text-[13px] text-white/70">{i.displayName}</span>
+            <span className="text-[13px] text-muted-foreground">{i.displayName}</span>
             <span
               className="font-mono text-[10px] uppercase tracking-[0.12em]"
               style={{ color: statusColor(i.status) }}
@@ -1275,7 +1275,7 @@ function Proposals() {
     return (
       <section>
         <SectionLabel n="03" title="Voorstellen" />
-        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-muted" />
       </section>
     )
   }
@@ -1284,14 +1284,14 @@ function Proposals() {
     <section>
       <SectionLabel n="03" title="Voorstellen" />
       {received.length === 0 && sent.length === 0 ? (
-        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
+        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
           Nog geen voorstellen. Maak er een via "Samen trainen" hieronder.
         </p>
       ) : (
         <div className="mt-3 flex flex-col gap-4">
           {received.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-white/35">
+              <span className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 ONTVANGEN
               </span>
               {received.map((p) => (
@@ -1301,7 +1301,7 @@ function Proposals() {
           )}
           {sent.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-white/35">
+              <span className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                 VERSTUURD
               </span>
               {sent.map((p) => (
@@ -1338,7 +1338,7 @@ function ClubBanner() {
           style={{
             borderColor: team.primaryColor
               ? `${team.primaryColor}66`
-              : "rgba(255,255,255,0.15)",
+              : "var(--color-border)",
             background: team.primaryColor ? `${team.primaryColor}22` : undefined,
           }}
         >
@@ -1357,10 +1357,10 @@ function ClubBanner() {
           )}
         </span>
         <div>
-          <p className="text-[14px] font-medium text-white/90">
+          <p className="text-[14px] font-medium text-foreground/90">
             {team.clubName}
           </p>
-          <p className="font-mono text-[10px] tracking-wide text-white/40">
+          <p className="font-mono text-[10px] tracking-wide text-muted-foreground">
             {[team.teamName, team.category].filter(Boolean).join(" · ")}
           </p>
         </div>
@@ -1374,16 +1374,16 @@ export default function SamenPage() {
     <ScreenShell bg="/atmosphere/samen-koffiestop-stad.webp" section="samen">
       <section className="flex items-center gap-3">
         <span
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"
-          style={{ background: "rgba(255,255,255,0.03)" }}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border"
+          style={{ background: "var(--color-muted)" }}
         >
           <Users className="h-5 w-5" style={{ color: ACCENT }} strokeWidth={1.75} />
         </span>
         <div>
-          <h1 className="font-sans text-2xl font-extralight tracking-tight text-white">
+          <h1 className="font-sans text-2xl font-extralight tracking-tight text-foreground">
             Samen
           </h1>
-          <p className="font-mono text-[10px] tracking-[0.2em] text-white/40">
+          <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
             JOUW VRIENDEN & TEAM
           </p>
         </div>

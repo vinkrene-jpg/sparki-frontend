@@ -64,6 +64,10 @@ const FRAME_COLOR: Record<string, number> = {
   anders: 0x22303c,
 }
 
+// Wielstraal — gedeeld zodat de grondschaduw op dezelfde "grond" ligt als de
+// wielen (het model wordt met g.position.y = WHEEL_R op de grond gezet).
+const WHEEL_R = 0.62
+
 function tube(
   from: THREE.Vector3,
   to: THREE.Vector3,
@@ -115,7 +119,7 @@ function buildBike(bikeType: string | null): THREE.Group {
   const headTop = new THREE.Vector3(0.72, 1.05, 0)
   const headBottom = new THREE.Vector3(0.86, 0.62, 0)
 
-  const wheelR = 0.62
+  const wheelR = WHEEL_R
 
   const addPart = (part: BikePart, ...meshes: THREE.Object3D[]) => {
     for (const m of meshes) {
@@ -287,20 +291,55 @@ export function Bike3D({
       return
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    // LICHT_THEMA_01 (LT-04): het model staat nu in een lichte omgeving. In
+    // plaats van een gloed/rim-licht (dat alleen op donker werkt) gebruiken we
+    // een neutrale lichtopstelling met een zachte grondschaduw. Zachte
+    // schaduwmap voor een rustige contactschaduw op de "grond".
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 50)
 
-    scene.add(new THREE.AmbientLight(0xdfefff, 0.55))
-    const key = new THREE.DirectionalLight(0xffffff, 1.4)
-    key.position.set(3, 4, 4)
+    // Lichte omgeving: heldere, koele ambient + een hemisphere (licht van boven,
+    // subtiele opvulling van onderaf) i.p.v. gekleurd rim-licht.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75))
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe6ee, 0.55))
+    // Key light werpt de grondschaduw. Zachte, natuurlijke schaduw i.p.v. gloed.
+    const key = new THREE.DirectionalLight(0xffffff, 1.25)
+    key.position.set(3, 5, 4)
+    key.castShadow = true
+    key.shadow.mapSize.set(1024, 1024)
+    key.shadow.camera.near = 0.5
+    key.shadow.camera.far = 20
+    key.shadow.camera.left = -3
+    key.shadow.camera.right = 3
+    key.shadow.camera.top = 3
+    key.shadow.camera.bottom = -3
+    key.shadow.radius = 4
+    key.shadow.bias = -0.0004
     scene.add(key)
-    const rim = new THREE.DirectionalLight(0x7ed2e6, 0.8)
-    rim.position.set(-3, 2, -3)
-    scene.add(rim)
+    // Neutrale opvulling van de andere kant — géén gekleurde gloed op licht.
+    const fill = new THREE.DirectionalLight(0xffffff, 0.35)
+    fill.position.set(-3, 2, -3)
+    scene.add(fill)
 
     const bikeGroup = buildBike(bikeType)
+    bikeGroup.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.castShadow = true
+    })
     scene.add(bikeGroup)
+
+    // Zachte contactschaduw op een onzichtbare grondvlak (ShadowMaterial toont
+    // alléén de schaduw, niet het vlak zelf — de kaartachtergrond blijft licht).
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(12, 12),
+      new THREE.ShadowMaterial({ opacity: 0.18 }),
+    )
+    ground.rotation.x = -Math.PI / 2
+    ground.position.y = -WHEEL_R
+    ground.receiveShadow = true
+    bikeGroup.add(ground)
 
     // Camera-baan
     let yaw = 0.6
@@ -410,12 +449,15 @@ export function Bike3D({
     renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true })
     renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: true })
 
-    // Markering van het geselecteerde onderdeel (cyaan gloed).
+    // Markering van het geselecteerde onderdeel: een subtiele cyaan emissive-
+    // highlight. LT-04: op de lichte omgeving géén gloed-effect — lage
+    // emissiveIntensity zodat het onderdeel oplicht als accent, niet als lamp.
     const baseEmissive = new Map<THREE.Mesh, number>()
     const applySelection = () => {
       bikeGroup.traverse((o) => {
         if (!(o instanceof THREE.Mesh)) return
         const mat = o.material as THREE.MeshStandardMaterial
+        if (!mat.emissive) return
         if (!baseEmissive.has(o)) baseEmissive.set(o, mat.emissive?.getHex() ?? 0)
         const isSel =
           selectable && selectedRef.current && o.userData.part === selectedRef.current
@@ -423,7 +465,7 @@ export function Bike3D({
           if (mat.emissive.getHex() !== 0x2aa5c0) {
             o.material = mat.clone()
             ;(o.material as THREE.MeshStandardMaterial).emissive.setHex(0x2aa5c0)
-            ;(o.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.55
+            ;(o.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.28
           }
         }
       })
@@ -483,7 +525,7 @@ export function Bike3D({
         className={className}
         style={{ height }}
       >
-        <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-[#070d16]/60 text-[12px] text-white/45">
+        <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-card text-[12px] text-muted-foreground">
           3D-weergave is op dit toestel niet beschikbaar.
         </div>
       </div>

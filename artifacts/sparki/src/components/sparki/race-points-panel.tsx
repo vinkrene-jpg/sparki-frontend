@@ -24,10 +24,10 @@ const STATUS_LABELS: Record<RacePoint["status"], string> = {
 }
 
 const STATUS_STYLE: Record<RacePoint["status"], string> = {
-  voorgesteld: "border-amber-400/40 text-amber-300",
-  bevestigd: "border-emerald-400/40 text-emerald-300",
-  aangepast: "border-cyan-400/40 text-cyan-300",
-  afgewezen: "border-white/15 text-white/40",
+  voorgesteld: "border-amber-400/40 text-[color:var(--color-warning)]",
+  bevestigd: "border-emerald-400/40 text-[color:var(--color-positive)]",
+  aangepast: "border-cyan-400/40 text-accent-cyan",
+  afgewezen: "border-border text-muted-foreground",
 }
 
 const CONFIDENCE_LABELS: Record<string, string> = {
@@ -85,17 +85,17 @@ export function RacePointsPanel({
   return (
     <section>
       <div className="flex items-baseline justify-between">
-        <h3 className="text-[13px] font-semibold tracking-wide text-white/80">
+        <h3 className="text-[13px] font-semibold tracking-wide text-foreground/80">
           Wedstrijdpunten
         </h3>
         {data && (
-          <span className="text-[11px] text-white/40">
+          <span className="text-[11px] text-muted-foreground">
             {data.activeCount} actief
             {data.localLaps != null ? ` · ${data.localLaps} lokale ronden` : ""}
           </span>
         )}
       </div>
-      <p className="mt-1 text-[11px] leading-relaxed text-white/35">
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
         Punten uit de technische gids komen binnen als voorstel. Controleer ze
         hier: alleen bevestigde of aangepaste punten verschijnen in de
         wedstrijdmodus.
@@ -118,7 +118,7 @@ export function RacePointsPanel({
             <select
               value={addKind}
               onChange={(e) => setAddKind(e.target.value as RacePointKind)}
-              className="rounded-lg border border-white/10 bg-[#070d16]/80 px-2 py-1.5 text-[12px] text-white/80"
+              className="rounded-lg border border-border bg-card px-2 py-1.5 text-[12px] text-foreground/80"
             >
               {ADDABLE_KINDS.map((k) => (
                 <option key={k} value={k}>
@@ -131,14 +131,14 @@ export function RacePointsPanel({
               onClick={() => setMapMode(mapMode === "add" ? null : "add")}
               className={`rounded-lg border px-2.5 py-1.5 text-[12px] ${
                 mapMode === "add"
-                  ? "border-cyan-400/60 text-cyan-300"
-                  : "border-white/15 text-white/60"
+                  ? "border-cyan-400/60 text-accent-cyan"
+                  : "border-border text-muted-foreground"
               }`}
             >
               {mapMode === "add" ? "Klik op de kaart…" : "+ Punt op kaart"}
             </button>
             {typeof mapMode === "number" && (
-              <span className="text-[11px] text-cyan-300">
+              <span className="text-[11px] text-accent-cyan">
                 Klik op de kaart om het punt te verplaatsen —{" "}
                 <button
                   type="button"
@@ -153,16 +153,16 @@ export function RacePointsPanel({
         </div>
       )}
       {!geometry && routeId == null && (
-        <p className="mt-3 text-[11px] text-white/35">
+        <p className="mt-3 text-[11px] text-muted-foreground">
           Geen route gekoppeld — punten kun je wel op kilometer beheren, maar
           niet op de kaart plaatsen.
         </p>
       )}
 
       {isLoading ? (
-        <p className="mt-3 text-[11px] text-white/35">Laden…</p>
+        <p className="mt-3 text-[11px] text-muted-foreground">Laden…</p>
       ) : visible.length === 0 ? (
-        <p className="mt-3 text-[11px] text-white/35">
+        <p className="mt-3 text-[11px] text-muted-foreground">
           Nog geen wedstrijdpunten. Upload een technische gids in het werkblad
           of voeg zelf punten toe.
         </p>
@@ -171,12 +171,12 @@ export function RacePointsPanel({
           {visible.map((p) => (
             <li
               key={p.id}
-              className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] p-3"
+              className="rounded-xl border border-border bg-card p-3"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[13px] font-medium text-white/85">
+                    <span className="text-[13px] font-medium text-foreground/90">
                       {p.label}
                     </span>
                     <span
@@ -185,27 +185,27 @@ export function RacePointsPanel({
                       {STATUS_LABELS[p.status]}
                     </span>
                     {p.pointClass === "wedstrijd" && (
-                      <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-white/50">
+                      <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
                         wedstrijd
                       </span>
                     )}
                     {p.needsReconfirm && (
-                      <span className="rounded-full border border-amber-400/40 px-2 py-0.5 text-[10px] text-amber-300/90">
+                      <span className="rounded-full border border-amber-400/40 px-2 py-0.5 text-[10px] text-[color:var(--color-warning)]">
                         herbevestigen
                       </span>
                     )}
                   </div>
                   {p.needsReconfirm && p.reviewNote && (
-                    <p className="mt-1 text-[11px] leading-relaxed text-amber-200/70">
+                    <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--color-warning)]">
                       {p.reviewNote}
                     </p>
                   )}
                   {p.description && (
-                    <p className="mt-1 text-[11px] leading-relaxed text-white/50">
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                       {p.description}
                     </p>
                   )}
-                  <p className="mt-1 text-[10px] text-white/35">
+                  <p className="mt-1 text-[10px] text-muted-foreground">
                     {p.raceKm != null ? `km ${p.raceKm.toFixed(1)}` : "km onbekend"}
                     {p.sourceFile
                       ? ` · uit ${p.sourceFile}${p.sourcePage != null ? `, p. ${p.sourcePage}` : ""}`
@@ -269,12 +269,12 @@ export function RacePointsPanel({
                     }
                   }}
                   placeholder="km"
-                  className="w-16 rounded-lg border border-white/10 bg-transparent px-2 py-1 text-[11px] text-white/70"
+                  className="w-16 rounded-lg border border-border bg-transparent px-2 py-1 text-[11px] text-muted-foreground"
                 />
                 <button
                   type="button"
                   onClick={() => del.mutate(p.id)}
-                  className="ml-auto text-[11px] text-red-300/70 hover:text-red-300"
+                  className="ml-auto text-[11px] text-[color:var(--color-negative)] hover:text-[color:var(--color-negative)]"
                 >
                   Verwijder
                 </button>
@@ -289,7 +289,7 @@ export function RacePointsPanel({
           <select
             value={addKind}
             onChange={(e) => setAddKind(e.target.value as RacePointKind)}
-            className="rounded-lg border border-white/10 bg-[#070d16]/80 px-2 py-1.5 text-[12px] text-white/80"
+            className="rounded-lg border border-border bg-card px-2 py-1.5 text-[12px] text-foreground/80"
           >
             {ADDABLE_KINDS.map((k) => (
               <option key={k} value={k}>
@@ -321,8 +321,8 @@ function PanelBtn({
       onClick={onClick}
       className={`rounded-lg border px-2.5 py-1 text-[11px] ${
         active
-          ? "border-cyan-400/60 text-cyan-300"
-          : "border-white/15 text-white/60 hover:text-white/80"
+          ? "border-cyan-400/60 text-accent-cyan"
+          : "border-border text-muted-foreground hover:text-foreground/80"
       }`}
     >
       {children}

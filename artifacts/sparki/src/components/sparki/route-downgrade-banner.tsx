@@ -46,14 +46,14 @@ export function RouteDowngradeBanner() {
   if (!state?.vanToepassing) return null
   if (!state.keuzeVereist && state.gekozenRouteIds.length > 0) {
     return (
-      <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4">
-        <p className="text-[12px] text-white/60">
+      <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+        <p className="text-[12px] text-muted-foreground">
           Je account staat op Gratis. Je hebt {state.gekozenRouteIds.length} van
           maximaal {state.limiet} actieve routes gekozen; al je andere routes
           blijven zichtbaar en zijn alleen-lezen. Er is niets verwijderd.
         </p>
         <button
-          className="mt-2 rounded-xl border border-white/[0.1] bg-white/[0.05] px-3 py-1.5 text-[12px] text-white/80 transition hover:bg-white/[0.1]"
+          className="mt-2 rounded-xl border border-border bg-muted px-3 py-1.5 text-[12px] text-foreground/80 transition hover:bg-muted"
           onClick={() => setGekozen(state.gekozenRouteIds)}
         >
           Keuze aanpassen
@@ -75,10 +75,10 @@ export function RouteDowngradeBanner() {
   const selectie = gekozen ?? []
   return (
     <div className="mt-4 rounded-2xl border border-amber-400/25 bg-amber-500/[0.07] p-4">
-      <p className="text-[13px] font-medium text-amber-100/90">
+      <p className="text-[13px] font-medium text-[color:var(--color-warning)]">
         Kies je {state.limiet} actieve routes
       </p>
-      <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
         Je account staat nu op Gratis en je hebt {state.totaalRoutes} routes.
         Al je routes blijven bewaard en zichtbaar — er wordt níéts verwijderd.
         Kies hieronder maximaal {state.limiet} routes die actief blijven; de
@@ -129,10 +129,10 @@ function Keuzelijst({
               <button
                 className={`w-full rounded-xl border px-3 py-2 text-left text-[12px] transition ${
                   actief
-                    ? "border-emerald-400/40 bg-emerald-500/[0.12] text-white"
+                    ? "border-emerald-400/40 bg-emerald-500/[0.12] text-foreground"
                     : vol
-                      ? "border-white/[0.05] bg-white/[0.02] text-white/30"
-                      : "border-white/[0.08] bg-white/[0.04] text-white/75 hover:bg-white/[0.08]"
+                      ? "border-border bg-muted text-muted-foreground"
+                      : "border-border bg-muted text-muted-foreground hover:bg-muted"
                 }`}
                 disabled={vol}
                 onClick={() => toggle(r.id)}
@@ -146,14 +146,14 @@ function Keuzelijst({
       </ul>
       <div className="mt-3 flex items-center gap-3">
         <button
-          className="rounded-xl border border-white/[0.12] bg-white/[0.08] px-4 py-2 text-[12px] font-medium text-white transition hover:bg-white/[0.14] disabled:opacity-40"
+          className="rounded-xl border border-border bg-muted px-4 py-2 text-[12px] font-medium text-foreground transition hover:bg-muted disabled:opacity-40"
           disabled={bezig || gekozen.length === 0}
           onClick={opslaan}
         >
           {bezig ? "Bezig…" : `Bewaar keuze (${gekozen.length}/${limiet})`}
         </button>
         {fout != null && (
-          <p className="text-[11px] text-red-300/80">
+          <p className="text-[11px] text-[color:var(--color-negative)]">
             Opslaan lukte niet. Probeer het opnieuw.
           </p>
         )}

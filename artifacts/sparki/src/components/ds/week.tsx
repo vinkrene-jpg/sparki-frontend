@@ -54,7 +54,7 @@ function DagMarkering({ status }: { status: DsWeekDagStatus }) {
       />
     );
   }
-  return <span className="h-px w-2 bg-white/25" aria-hidden="true" />;
+  return <span className="h-px w-2 bg-muted" aria-hidden="true" />;
 }
 
 function dagAriaLabel(dag: DsWeekDag, selecteerbaar: boolean): string {
@@ -74,9 +74,9 @@ function dagVlakKlassen(dag: DsWeekDag): string {
     dag.actief
       ? "border-accent-cyan/60 bg-accent-cyan/10"
       : dag.vandaag
-        ? "border-white/20 bg-surface"
+        ? "border-border bg-surface"
         : dag.status === "leeg"
-          ? "border-white/5 bg-white/[0.02]"
+          ? "border-border bg-muted"
           : "border-border bg-surface",
   );
 }
@@ -90,8 +90,8 @@ function DagInhoud({ dag }: { dag: DsWeekDag }) {
           dag.actief
             ? "text-accent-cyan"
             : dag.vandaag
-              ? "text-white/85"
-              : "text-white/60",
+              ? "text-foreground/80"
+              : "text-muted-foreground",
         )}
       >
         {dag.label}
@@ -101,7 +101,7 @@ function DagInhoud({ dag }: { dag: DsWeekDag }) {
         <span
           className={cn(
             "num text-[11px] leading-none",
-            dag.actief ? "text-white/85" : "text-white/55",
+            dag.actief ? "text-foreground/80" : "text-muted-foreground",
           )}
           aria-hidden="true"
         >
@@ -147,7 +147,7 @@ export function DsWeek({
             aria-current={dag.vandaag ? "date" : undefined}
             className={cn(
               dagVlakKlassen(dag),
-              "transition-colors hover:border-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
+              "transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
             )}
           >
             <DagInhoud dag={dag} />

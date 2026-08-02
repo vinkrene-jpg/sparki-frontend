@@ -46,20 +46,20 @@ import {
 import { useSessions } from "@/hooks/use-sessions"
 
 const cardClass =
-  "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
 
 const KIND_META: Record<
   JourneyEventKind,
   { label: string; icon: typeof Trophy; color: string }
 > = {
-  wedstrijd: { label: "Wedstrijd", icon: Flag, color: "text-cyan-300" },
-  training: { label: "Training", icon: Bike, color: "text-white/70" },
-  trainingskamp: { label: "Trainingskamp", icon: Tent, color: "text-emerald-300" },
-  record: { label: "Record", icon: Trophy, color: "text-amber-300" },
-  doel_behaald: { label: "Doel behaald", icon: Target, color: "text-emerald-300" },
-  blessure_herstel: { label: "Blessure & herstel", icon: HeartPulse, color: "text-rose-300" },
-  materiaalwissel: { label: "Materiaal", icon: Wrench, color: "text-white/70" },
-  mijlpaal: { label: "Mijlpaal", icon: Star, color: "text-amber-300" },
+  wedstrijd: { label: "Wedstrijd", icon: Flag, color: "text-accent-cyan" },
+  training: { label: "Training", icon: Bike, color: "text-muted-foreground" },
+  trainingskamp: { label: "Trainingskamp", icon: Tent, color: "text-[color:var(--color-positive)]" },
+  record: { label: "Record", icon: Trophy, color: "text-[color:var(--color-warning)]" },
+  doel_behaald: { label: "Doel behaald", icon: Target, color: "text-[color:var(--color-positive)]" },
+  blessure_herstel: { label: "Blessure & herstel", icon: HeartPulse, color: "text-[color:var(--color-negative)]" },
+  materiaalwissel: { label: "Materiaal", icon: Wrench, color: "text-muted-foreground" },
+  mijlpaal: { label: "Mijlpaal", icon: Star, color: "text-[color:var(--color-warning)]" },
 }
 
 const FILTERS: { key: JourneyEventKind | "alles"; label: string }[] = [
@@ -96,7 +96,7 @@ export default function JourneyPage() {
         <TimelineView />
       )}
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
@@ -131,22 +131,22 @@ function TimelineView() {
           <button
             type="button"
             onClick={() => setLocation("/dashboard")}
-            className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Terug
           </button>
           <div>
-            <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+            <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
               TIJDLIJN
             </span>
-            <h1 className="text-lg font-semibold text-white">Jouw verhaal</h1>
+            <h1 className="text-lg font-semibold text-foreground">Jouw verhaal</h1>
           </div>
         </div>
         <button
           type="button"
           onClick={() => setShowAdd((v) => !v)}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2} />
           Moment
@@ -161,8 +161,8 @@ function TimelineView() {
             onClick={() => setFilter(f.key)}
             className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${
               filter === f.key
-                ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-300"
-                : "border-white/10 text-white/50 hover:text-white/80"
+                ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                : "border-border text-muted-foreground hover:text-foreground/80"
             }`}
           >
             {f.label}
@@ -181,13 +181,13 @@ function TimelineView() {
           </div>
         ) : isError ? (
           <div className={cardClass}>
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-muted-foreground">
               Je verhaal kon nu niet worden geladen. Probeer het opnieuw.
             </p>
           </div>
         ) : (data?.events.length ?? 0) === 0 ? (
           <div className={cardClass}>
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-muted-foreground">
               Nog geen gebeurtenissen in dit overzicht. Wedstrijden, trainingen,
               records en doelen verschijnen hier vanzelf zodra ze er zijn — of
               voeg zelf een moment toe.
@@ -196,7 +196,7 @@ function TimelineView() {
         ) : (
           groups.map(([year, events]) => (
             <section key={year}>
-              <h2 className="pb-2 font-mono text-[11px] tracking-[0.3em] text-white/40">
+              <h2 className="pb-2 font-mono text-[11px] tracking-[0.3em] text-muted-foreground">
                 {year}
               </h2>
               <div className="space-y-2">
@@ -221,7 +221,7 @@ function EventRow({ event }: { event: JourneyEvent }) {
 
   return (
     <div
-      className={`${cardClass} flex items-start gap-3 ${clickable ? "cursor-pointer transition-colors hover:border-cyan-300/30" : ""}`}
+      className={`${cardClass} flex items-start gap-3 ${clickable ? "cursor-pointer transition-colors hover:border-accent-cyan/30" : ""}`}
       onClick={
         clickable
           ? () => setLocation(`/journey/wedstrijd/${event.ref.id}`)
@@ -234,20 +234,20 @@ function EventRow({ event }: { event: JourneyEvent }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             {meta.label}
           </span>
-          <span className="font-mono text-[10px] text-white/40">
+          <span className="font-mono text-[10px] text-muted-foreground">
             {formatDate(event.date)}
             {event.endDate ? ` – ${formatDate(event.endDate)}` : ""}
           </span>
         </div>
-        <p className="truncate text-sm font-medium text-white">{event.title}</p>
+        <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
         {event.subtitle && (
-          <p className="truncate text-xs text-white/50">{event.subtitle}</p>
+          <p className="truncate text-xs text-muted-foreground">{event.subtitle}</p>
         )}
         {event.facts?.uitslag && (
-          <p className="text-xs text-cyan-300/80">Uitslag: {event.facts.uitslag}</p>
+          <p className="text-xs text-accent-cyan">Uitslag: {event.facts.uitslag}</p>
         )}
       </div>
       {event.ref.type === "item" && (
@@ -257,7 +257,7 @@ function EventRow({ event }: { event: JourneyEvent }) {
             ev.stopPropagation()
             deleteItem.mutate(event.ref.id)
           }}
-          className="text-white/30 transition-colors hover:text-rose-300"
+          className="text-muted-foreground transition-colors hover:text-[color:var(--color-negative)]"
           aria-label="Verwijderen"
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -291,7 +291,7 @@ function AddMomentForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className={`${cardClass} mt-3 space-y-3`}>
-      <p className="text-sm font-medium text-white">Moment toevoegen</p>
+      <p className="text-sm font-medium text-foreground">Moment toevoegen</p>
       <div className="flex gap-1.5">
         {(
           [
@@ -306,8 +306,8 @@ function AddMomentForm({ onDone }: { onDone: () => void }) {
             onClick={() => setKind(k)}
             className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] ${
               kind === k
-                ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-300"
-                : "border-white/10 text-white/50"
+                ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                : "border-border text-muted-foreground"
             }`}
           >
             {label}
@@ -318,32 +318,32 @@ function AddMomentForm({ onDone }: { onDone: () => void }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Titel (bijv. eerste koers gewonnen)"
-        className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+        className="w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
       />
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Korte omschrijving (optioneel)"
         rows={2}
-        className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+        className="w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
       />
       <div className="flex gap-2">
-        <label className="flex-1 text-xs text-white/50">
+        <label className="flex-1 text-xs text-muted-foreground">
           Vanaf
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:border-cyan-300/40 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
         </label>
-        <label className="flex-1 text-xs text-white/50">
+        <label className="flex-1 text-xs text-muted-foreground">
           Tot en met (optioneel)
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:border-cyan-300/40 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
         </label>
       </div>
@@ -351,7 +351,7 @@ function AddMomentForm({ onDone }: { onDone: () => void }) {
         <button
           type="button"
           onClick={onDone}
-          className="rounded-full border border-white/15 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60"
+          className="rounded-full border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
         >
           Annuleren
         </button>
@@ -359,13 +359,13 @@ function AddMomentForm({ onDone }: { onDone: () => void }) {
           type="button"
           onClick={submit}
           disabled={!title.trim() || !startDate || create.isPending}
-          className="rounded-full border border-cyan-300/50 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300 disabled:opacity-40"
+          className="rounded-full border border-accent-cyan/50 bg-accent-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan disabled:opacity-40"
         >
           {create.isPending ? "Bezig…" : "Opslaan"}
         </button>
       </div>
       {create.isError && (
-        <p className="text-xs text-rose-300">
+        <p className="text-xs text-[color:var(--color-negative)]">
           Opslaan is niet gelukt. Controleer de titel en de datum.
         </p>
       )}
@@ -393,7 +393,7 @@ function RaceDossierView({ raceId }: { raceId: number }) {
       <>
         <BackButton onClick={() => setLocation("/journey")} />
         <div className={`${cardClass} mt-3`}>
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-muted-foreground">
             Dit dossier kon niet worden geladen of bestaat niet.
           </p>
         </div>
@@ -409,15 +409,15 @@ function RaceDossierView({ raceId }: { raceId: number }) {
       <header className="flex items-center gap-3">
         <BackButton onClick={() => setLocation("/journey")} />
         <div className="min-w-0">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+          <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
             WEDSTRIJDDOSSIER
           </span>
-          <h1 className="truncate text-lg font-semibold text-white">{race.name}</h1>
+          <h1 className="truncate text-lg font-semibold text-foreground">{race.name}</h1>
         </div>
       </header>
 
       <section className={cardClass}>
-        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Basis
         </h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
@@ -445,25 +445,25 @@ function RaceDossierView({ raceId }: { raceId: number }) {
           />
         </dl>
         {race.goalNotes && (
-          <p className="pt-2 text-sm text-white/70">
-            <span className="text-white/40">Doel: </span>
+          <p className="pt-2 text-sm text-muted-foreground">
+            <span className="text-muted-foreground">Doel: </span>
             {race.goalNotes}
           </p>
         )}
         {race.courseNotes && (
-          <p className="pt-1 text-sm text-white/70">
-            <span className="text-white/40">Parcours: </span>
+          <p className="pt-1 text-sm text-muted-foreground">
+            <span className="text-muted-foreground">Parcours: </span>
             {race.courseNotes}
           </p>
         )}
       </section>
 
       <section className={cardClass}>
-        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Aanloop (laatste 14 dagen)
         </h2>
         {taper.length === 0 ? (
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-muted-foreground">
             Geen geplande trainingen gevonden in de twee weken voor deze
             wedstrijd.
           </p>
@@ -471,10 +471,10 @@ function RaceDossierView({ raceId }: { raceId: number }) {
           <ul className="space-y-1.5">
             {taper.map((w) => (
               <li key={w.id} className="flex items-center justify-between text-sm">
-                <span className="truncate text-white/80">
+                <span className="truncate text-foreground/80">
                   {formatDate(w.scheduledDate)} — {w.title}
                 </span>
-                <span className="pl-2 font-mono text-[10px] uppercase text-white/40">
+                <span className="pl-2 font-mono text-[10px] uppercase text-muted-foreground">
                   {w.targetDurationMin ? `${w.targetDurationMin} min` : w.status}
                 </span>
               </li>
@@ -496,7 +496,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+      className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
     >
       <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
       Terug
@@ -507,8 +507,8 @@ function BackButton({ onClick }: { onClick: () => void }) {
 function Fact({ label, value }: { label: string; value: string | null }) {
   return (
     <>
-      <dt className="text-white/40">{label}</dt>
-      <dd className="text-white/85">{value ?? "—"}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-foreground/85">{value ?? "—"}</dd>
     </>
   )
 }
@@ -527,25 +527,25 @@ function ActivitySection({
   return (
     <section className={cardClass}>
       <div className="flex items-center justify-between pb-2">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Activiteit
         </h2>
         <button
           type="button"
           onClick={() => setShowPicker((v) => !v)}
-          className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 hover:text-cyan-300"
+          className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan hover:text-accent-cyan"
         >
           {showPicker ? "Sluiten" : "Corrigeren"}
         </button>
       </div>
 
       {activity.session ? (
-        <div className="text-sm text-white/80">
-          <p className="font-medium text-white">
+        <div className="text-sm text-foreground/80">
+          <p className="font-medium text-foreground">
             {activity.session.title || "Activiteit"} —{" "}
             {formatDate(activity.session.sessionDate)}
           </p>
-          <p className="text-xs text-white/50">
+          <p className="text-xs text-muted-foreground">
             {[
               activity.session.durationMin
                 ? `${activity.session.durationMin} min`
@@ -561,36 +561,36 @@ function ActivitySection({
               .filter(Boolean)
               .join(" · ")}
           </p>
-          <p className="pt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/35">
+          <p className="pt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
             {activity.mode === "auto"
               ? "Automatisch gekoppeld op datum"
               : "Handmatig gekoppeld"}
           </p>
         </div>
       ) : activity.mode === "none" ? (
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-muted-foreground">
           Je gaf aan dat er geen activiteit bij deze wedstrijd hoort.
         </p>
       ) : activity.removed ? (
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-muted-foreground">
           De gekoppelde activiteit is inmiddels verwijderd.
         </p>
       ) : (
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-muted-foreground">
           Geen activiteit gevonden op de wedstrijddag. Koppel er zelf één, of
           geef aan dat er geen bestaat.
         </p>
       )}
 
       {showPicker && (
-        <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+        <div className="mt-3 space-y-2 border-t border-border pt-3">
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() =>
                 setLink.mutate({ mode: "auto" }, { onSuccess: () => setShowPicker(false) })
               }
-              className="rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70 hover:border-cyan-300/40"
+              className="rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:border-accent-cyan/40"
             >
               Automatisch
             </button>
@@ -599,12 +599,12 @@ function ActivitySection({
               onClick={() =>
                 setLink.mutate({ mode: "none" }, { onSuccess: () => setShowPicker(false) })
               }
-              className="rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70 hover:border-cyan-300/40"
+              className="rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:border-accent-cyan/40"
             >
               Geen activiteit
             </button>
           </div>
-          <p className="pt-1 text-xs text-white/40">Of kies een activiteit:</p>
+          <p className="pt-1 text-xs text-muted-foreground">Of kies een activiteit:</p>
           <div className="max-h-48 space-y-1 overflow-y-auto">
             {(sessions ?? []).map((s) => (
               <button
@@ -616,20 +616,20 @@ function ActivitySection({
                     { onSuccess: () => setShowPicker(false) },
                   )
                 }
-                className="block w-full rounded-xl border border-white/10 px-3 py-2 text-left text-sm text-white/80 transition-colors hover:border-cyan-300/40"
+                className="block w-full rounded-xl border border-border px-3 py-2 text-left text-sm text-foreground/80 transition-colors hover:border-accent-cyan/40"
               >
                 {formatDate(s.sessionDate)} — {s.title || "Training"}
                 {s.durationMin ? ` (${s.durationMin} min)` : ""}
               </button>
             ))}
             {(sessions ?? []).length === 0 && (
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-muted-foreground">
                 Er zijn nog geen activiteiten om te koppelen.
               </p>
             )}
           </div>
           {setLink.isError && (
-            <p className="text-xs text-rose-300">Koppelen is niet gelukt.</p>
+            <p className="text-xs text-[color:var(--color-negative)]">Koppelen is niet gelukt.</p>
           )}
         </div>
       )}
@@ -680,7 +680,7 @@ function MediaSection({
   return (
     <section className={cardClass}>
       <div className="flex items-center justify-between pb-2">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Foto's & video's
         </h2>
         <button
@@ -688,7 +688,7 @@ function MediaSection({
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
           aria-label="Foto of video toevoegen aan dit wedstrijddossier"
-          className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 hover:text-cyan-300 disabled:opacity-40"
+          className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan hover:text-accent-cyan disabled:opacity-40"
         >
           {uploading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
@@ -707,10 +707,10 @@ function MediaSection({
           onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
         />
       </div>
-      {uploadError && <p className="pb-2 text-xs text-rose-300">{uploadError}</p>}
+      {uploadError && <p className="pb-2 text-xs text-[color:var(--color-negative)]">{uploadError}</p>}
 
       {media.own.length === 0 && media.room.length === 0 ? (
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-muted-foreground">
           Nog geen media bij deze wedstrijd. Voeg je eerste foto of video toe.
         </p>
       ) : (
@@ -739,7 +739,7 @@ function MediaSection({
             />
           ))}
           {media.room.length > 0 && (
-            <p className="pt-1 text-xs text-white/40">
+            <p className="pt-1 text-xs text-muted-foreground">
               Plus {media.room.length}{" "}
               {media.room.length === 1 ? "item" : "items"} uit je
               Wedstrijd-room.
@@ -770,7 +770,7 @@ function MediaRow({
   const isVideo = media.mediaType.startsWith("video/")
 
   return (
-    <div className="flex gap-3 rounded-xl border border-white/10 p-2">
+    <div className="flex gap-3 rounded-xl border border-border p-2">
       {isVideo ? (
         <video
           src={journeyMediaUrl(media)}
@@ -792,7 +792,7 @@ function MediaRow({
             if (caption !== (media.caption ?? "")) onCaption(caption)
           }}
           placeholder="Onderschrift…"
-          className="w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+          className="w-full rounded-lg border border-border bg-muted px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
         />
         <div className="flex items-center gap-2">
           <button
@@ -802,26 +802,26 @@ function MediaRow({
             }
             className={`rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
               media.visibility === "gedeeld"
-                ? "border-cyan-300/50 text-cyan-300"
-                : "border-white/15 text-white/50"
+                ? "border-accent-cyan/50 text-accent-cyan"
+                : "border-border text-muted-foreground"
             }`}
           >
             {media.visibility === "gedeeld" ? "Deelbaar" : "Privé"}
           </button>
           {onUp && (
-            <button type="button" onClick={onUp} className="text-white/40 hover:text-white" aria-label="Omhoog">
+            <button type="button" onClick={onUp} className="text-muted-foreground hover:text-foreground" aria-label="Omhoog">
               <ArrowUp className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
           )}
           {onDown && (
-            <button type="button" onClick={onDown} className="text-white/40 hover:text-white" aria-label="Omlaag">
+            <button type="button" onClick={onDown} className="text-muted-foreground hover:text-foreground" aria-label="Omlaag">
               <ArrowDown className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
           )}
           <button
             type="button"
             onClick={onDelete}
-            className="ml-auto text-white/30 hover:text-rose-300"
+            className="ml-auto text-muted-foreground hover:text-[color:var(--color-negative)]"
             aria-label="Verwijderen"
           >
             <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -850,44 +850,44 @@ function ReflectionSection({
 
   return (
     <section className={cardClass}>
-      <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+      <h2 className="pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         Terugblik
       </h2>
       <div className="space-y-2">
-        <label className="block text-xs text-white/50">
+        <label className="block text-xs text-muted-foreground">
           Hoe was het?
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
             placeholder="In je eigen woorden…"
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
         </label>
-        <label className="block text-xs text-white/50">
+        <label className="block text-xs text-muted-foreground">
           Belangrijkste les
           <input
             value={lesson}
             onChange={(e) => setLesson(e.target.value)}
             placeholder="Wat neem je mee?"
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
         </label>
-        <label className="block text-xs text-white/50">
+        <label className="block text-xs text-muted-foreground">
           Vervolgactie
           <input
             value={nextAction}
             onChange={(e) => setNextAction(e.target.value)}
             placeholder="Wat ga je hiermee doen?"
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
         </label>
         <div className="flex items-center justify-end gap-2 pt-1">
           {save.isSuccess && !dirty && (
-            <span className="text-xs text-emerald-300/80">Opgeslagen</span>
+            <span className="text-xs text-[color:var(--color-positive)]">Opgeslagen</span>
           )}
           {save.isError && (
-            <span className="text-xs text-rose-300">Opslaan is niet gelukt.</span>
+            <span className="text-xs text-[color:var(--color-negative)]">Opslaan is niet gelukt.</span>
           )}
           <button
             type="button"
@@ -895,7 +895,7 @@ function ReflectionSection({
               save.mutate({ reflection: text, lesson, nextAction })
             }
             disabled={!dirty || save.isPending}
-            className="rounded-full border border-cyan-300/50 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300 disabled:opacity-40"
+            className="rounded-full border border-accent-cyan/50 bg-accent-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan disabled:opacity-40"
           >
             {save.isPending ? "Bezig…" : "Opslaan"}
           </button>
@@ -963,19 +963,19 @@ function ShareCardSection({
   return (
     <section className={cardClass}>
       <div className="flex items-center justify-between pb-1">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Prestatiekaart
         </h2>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 hover:text-cyan-300"
+          className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan hover:text-accent-cyan"
         >
           <Share2 className="h-3.5 w-3.5" strokeWidth={2} />
           {open ? "Sluiten" : "Samenstellen"}
         </button>
       </div>
-      <p className="text-xs text-white/40">
+      <p className="text-xs text-muted-foreground">
         Alleen wat jij hier aanvinkt komt op de kaart. Niets wordt automatisch
         gedeeld.
       </p>
@@ -989,8 +989,8 @@ function ShareCardSection({
                 onClick={() => toggle(f)}
                 className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] ${
                   fields.has(f)
-                    ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-300"
-                    : "border-white/10 text-white/50"
+                    ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                    : "border-border text-muted-foreground"
                 }`}
               >
                 {label}
@@ -1014,7 +1014,7 @@ function ShareCardSection({
                   aria-pressed={mediaIds.has(m.id)}
                   aria-label={`${mediaIds.has(m.id) ? "Verwijder van" : "Voeg toe aan"} de deelkaart: ${m.caption ?? "foto"}`}
                   className={`overflow-hidden rounded-lg border-2 ${
-                    mediaIds.has(m.id) ? "border-cyan-300" : "border-transparent"
+                    mediaIds.has(m.id) ? "border-accent-cyan" : "border-transparent"
                   }`}
                 >
                   <img
@@ -1026,7 +1026,7 @@ function ShareCardSection({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-muted-foreground">
               Zet een foto op "Deelbaar" om die op de kaart te kunnen zetten.
             </p>
           )}
@@ -1035,13 +1035,13 @@ function ShareCardSection({
               type="button"
               onClick={() => void buildAndShare()}
               disabled={fields.size === 0 || share.isPending}
-              className="rounded-full border border-cyan-300/50 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300 disabled:opacity-40"
+              className="rounded-full border border-accent-cyan/50 bg-accent-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan disabled:opacity-40"
             >
               {share.isPending ? "Bezig…" : "Deel kaart"}
             </button>
           </div>
           {share.isError && (
-            <p className="text-xs text-rose-300">
+            <p className="text-xs text-[color:var(--color-negative)]">
               De kaart kon niet worden gemaakt.
             </p>
           )}

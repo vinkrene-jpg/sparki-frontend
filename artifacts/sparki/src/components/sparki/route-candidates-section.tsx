@@ -109,7 +109,7 @@ export function RouteCandidatesSection() {
   const data = query.data
   if (query.isLoading) {
     return (
-      <div className="flex items-center gap-2 text-[12px] text-white/40">
+      <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Routekandidaten laden…
       </div>
     )
@@ -122,20 +122,20 @@ export function RouteCandidatesSection() {
 
   return (
     <section className="mt-8">
-      <h2 className="text-[15px] font-semibold text-white/85">
+      <h2 className="text-[15px] font-semibold text-foreground/80">
         Uit jouw ritten
       </h2>
-      <p className="mt-0.5 text-[12px] leading-relaxed text-white/40">
+      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
         Routes die herkend zijn in je geïmporteerde ritgeschiedenis. Bewaren
         of starten gaat altijd door de actuele blokkadecontrole — een eerder
         gereden route is niet automatisch nog veilig.
       </p>
 
       {showOnboarding && (
-        <div className="mt-3 flex items-start justify-between gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
-          <p className="text-[13px] leading-relaxed text-white/75">
+        <div className="mt-3 flex items-start justify-between gap-3 rounded-2xl border border-border bg-muted p-4">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Uit je ritgeschiedenis hebben we{" "}
-            <span className="font-semibold text-white">
+            <span className="font-semibold text-foreground">
               {scan.activitiesSeen} activiteiten
             </span>{" "}
             bekeken. Daaruit lijken{" "}
@@ -149,7 +149,7 @@ export function RouteCandidatesSection() {
             type="button"
             aria-label="Samenvatting sluiten"
             onClick={() => onboardingSeen.mutate()}
-            className="shrink-0 rounded-full p-1 text-white/40 hover:text-white/70"
+            className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-muted-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -157,11 +157,11 @@ export function RouteCandidatesSection() {
       )}
 
       {saveError && (
-        <p className="mt-2 text-[12px] text-red-300/90">{saveError}</p>
+        <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">{saveError}</p>
       )}
 
       {data.candidates.length === 0 ? (
-        <p className="mt-3 text-[12px] text-white/40">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           Nog geen bruikbare routekandidaten gevonden in je geïmporteerde
           ritten.
         </p>
@@ -170,7 +170,7 @@ export function RouteCandidatesSection() {
           {data.candidates.map((c) => (
             <li
               key={c.id}
-              className="rounded-2xl border border-white/[0.06] bg-map-panel/[0.55] p-3 backdrop-blur-md"
+              className="rounded-2xl border border-border bg-map-panel/[0.55] p-3 backdrop-blur-md"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -178,18 +178,18 @@ export function RouteCandidatesSection() {
                     {c.labels.map((l) => (
                       <span
                         key={l}
-                        className="rounded-full bg-white/[0.07] px-2 py-0.5 text-[11px] text-white/70"
+                        className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
                       >
                         {l}
                       </span>
                     ))}
                     {c.userLabels && c.userLabels.length > 0 && (
-                      <span className="text-[10px] text-white/35">
+                      <span className="text-[10px] text-muted-foreground">
                         (door jou aangepast)
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-[12px] text-white/55">
+                  <p className="mt-1 text-[12px] text-muted-foreground">
                     {c.distanceKm != null ? `${c.distanceKm} km` : "afstand onbekend"}
                     {c.elevationM != null ? ` · ${Math.round(c.elevationM)} hm` : ""}
                     {` · ${c.rideCount}× gereden`}
@@ -198,7 +198,7 @@ export function RouteCandidatesSection() {
                       : ""}
                   </p>
                   {(c.trimmedStartM ?? 0) + (c.trimmedEndM ?? 0) > 0 && (
-                    <p className="mt-0.5 text-[11px] text-amber-200/70">
+                    <p className="mt-0.5 text-[11px] text-[color:var(--color-warning)]">
                       Mogelijk vervoer vóór/na de rit is niet meegenomen (
                       {Math.round(
                         ((c.trimmedStartM ?? 0) + (c.trimmedEndM ?? 0)) / 100,
@@ -214,7 +214,7 @@ export function RouteCandidatesSection() {
                     onClick={() =>
                       patch.mutate({ id: c.id, body: { favorite: !c.favorite } })
                     }
-                    className="rounded-full p-1.5 hover:bg-white/[0.06]"
+                    className="rounded-full p-1.5 hover:bg-muted"
                   >
                     <Star
                       className="h-4 w-4"
@@ -229,7 +229,7 @@ export function RouteCandidatesSection() {
                     onClick={() =>
                       patch.mutate({ id: c.id, body: { excluded: true } })
                     }
-                    className="rounded-full p-1.5 text-white/30 hover:bg-white/[0.06] hover:text-white/60"
+                    className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                   >
                     <EyeOff className="h-4 w-4" />
                   </button>
@@ -241,7 +241,7 @@ export function RouteCandidatesSection() {
                   <button
                     type="button"
                     onClick={() => setOpen(open === c.id ? null : c.id)}
-                    className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] px-2.5 py-1 text-[11px] text-white/60 hover:bg-white/[0.08]"
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted"
                   >
                     Kwaliteit {c.quality.score}/100
                     {open === c.id ? (
@@ -257,7 +257,7 @@ export function RouteCandidatesSection() {
                     setLabelEditId(labelEditId === c.id ? null : c.id)
                     setLabelDraft((c.userLabels ?? c.autoLabels).join(", "))
                   }}
-                  className="rounded-full bg-white/[0.05] px-2.5 py-1 text-[11px] text-white/60 hover:bg-white/[0.08]"
+                  className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted"
                 >
                   Labels aanpassen
                 </button>
@@ -277,31 +277,31 @@ export function RouteCandidatesSection() {
                     Bewaar als route
                   </button>
                 ) : (
-                  <span className="text-[11px] text-white/40">
+                  <span className="text-[11px] text-muted-foreground">
                     Bewaard in je bibliotheek
                   </span>
                 )}
               </div>
 
               {open === c.id && c.quality && (
-                <ul className="mt-2 space-y-1 rounded-xl bg-white/[0.03] p-2.5">
+                <ul className="mt-2 space-y-1 rounded-xl bg-muted p-2.5">
                   {c.quality.factors.map((f) => (
                     <li
                       key={f.factor}
                       className="flex items-baseline justify-between gap-3 text-[11px]"
                     >
-                      <span className="text-white/55">
+                      <span className="text-muted-foreground">
                         {FACTOR_LABEL[f.factor] ?? f.factor}
-                        <span className="ml-1 text-white/35">
+                        <span className="ml-1 text-muted-foreground">
                           — {f.toelichting}
                         </span>
                       </span>
-                      <span className="shrink-0 tabular-nums text-white/70">
+                      <span className="shrink-0 tabular-nums text-muted-foreground">
                         {f.score}
                       </span>
                     </li>
                   ))}
-                  <li className="pt-1 text-[10px] leading-relaxed text-white/35">
+                  <li className="pt-1 text-[10px] leading-relaxed text-muted-foreground">
                     Deze score zegt niets over actuele veiligheid; bij bewaren
                     of starten wordt de route opnieuw gecontroleerd op
                     blokkades.
@@ -326,7 +326,7 @@ export function RouteCandidatesSection() {
                     value={labelDraft}
                     onChange={(e) => setLabelDraft(e.target.value)}
                     placeholder="bijv. favoriet trainingsrondje, klimroute"
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-[12px] text-white/80 placeholder:text-white/25"
+                    className="w-full rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[12px] text-foreground/80 placeholder:text-muted-foreground"
                   />
                   <button
                     type="submit"
@@ -343,7 +343,7 @@ export function RouteCandidatesSection() {
       )}
 
       {data.excludedCount > 0 && (
-        <p className="mt-2 text-[11px] text-white/30">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           {data.excludedCount} uitgesloten kandidaat
           {data.excludedCount === 1 ? "" : "en"} verborgen.
         </p>

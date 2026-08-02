@@ -55,7 +55,7 @@ export default function AdminHealthDetailPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/admin"
-            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-muted-foreground"
           >
             <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug naar overzicht
           </Link>
@@ -74,7 +74,7 @@ export default function AdminHealthDetailPage() {
                 type="button"
                 onClick={() => resolve.mutate(checkKey)}
                 disabled={resolve.isPending}
-                className="rounded-full border border-white/15 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-white/30 disabled:opacity-40"
+                className="rounded-full border border-border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border disabled:opacity-40"
               >
                 Markeer als opgelost
               </button>
@@ -83,14 +83,14 @@ export default function AdminHealthDetailPage() {
         </div>
 
         {isLoading || !check ? (
-          <p className="mt-8 text-[13px] text-white/30">Laden…</p>
+          <p className="mt-8 text-[13px] text-muted-foreground">Laden…</p>
         ) : (
           <>
-            <div className="mt-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+            <div className="mt-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               <span>{CATEGORY_LABEL[check.category] ?? check.category}</span>
               <span>· {check.responsibleModule}</span>
             </div>
-            <h1 className="mt-1.5 flex items-center gap-2.5 font-sans text-2xl font-extralight text-white/90">
+            <h1 className="mt-1.5 flex items-center gap-2.5 font-sans text-2xl font-extralight text-foreground/90">
               <StatusDot color={meta.dot} />
               {check.title}
             </h1>
@@ -106,15 +106,15 @@ export default function AdminHealthDetailPage() {
                 >
                   {meta.label}
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/35">
+                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                   Urgentie: {URGENCY_LABEL[check.urgency]}
                 </span>
               </div>
-              <p className="mt-2 text-[14px] leading-relaxed text-white/85">
+              <p className="mt-2 text-[14px] leading-relaxed text-foreground/85">
                 {check.errorMessage ?? check.description}
               </p>
               {check.resolvedAt && (
-                <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
+                <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                   Gemarkeerd als opgelost · {formatWhen(check.resolvedAt)}
                 </p>
               )}
@@ -150,12 +150,12 @@ export default function AdminHealthDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowTech((v) => !v)}
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35 transition hover:text-white/60"
+                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:text-muted-foreground"
                 >
                   {showTech ? "Verberg" : "Toon"} technische details
                 </button>
                 {showTech && (
-                  <pre className="mt-2 overflow-x-auto rounded-xl border border-white/[0.08] bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-white/55">
+                  <pre className="mt-2 overflow-x-auto rounded-xl border border-border bg-foreground/40 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
                     {check.technicalDetails}
                   </pre>
                 )}
@@ -163,12 +163,12 @@ export default function AdminHealthDetailPage() {
             )}
 
             <section className="mt-7">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Testgeschiedenis
               </p>
               <div className="mt-3 space-y-1.5">
                 {history.length === 0 ? (
-                  <p className="text-[12px] text-white/30">
+                  <p className="text-[12px] text-muted-foreground">
                     Nog geen eerdere tests.
                   </p>
                 ) : (
@@ -177,15 +177,15 @@ export default function AdminHealthDetailPage() {
                     return (
                       <div
                         key={h.id}
-                        className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
+                        className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 backdrop-blur-md"
                       >
                         <div className="flex min-w-0 items-center gap-2">
                           <StatusDot color={hm.dot} />
-                          <span className="truncate text-[12px] text-white/65">
+                          <span className="truncate text-[12px] text-muted-foreground">
                             {hm.label}
                           </span>
                         </div>
-                        <div className="flex shrink-0 items-center gap-3 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                        <div className="flex shrink-0 items-center gap-3 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                           {h.responseTimeMs != null && (
                             <span>{h.responseTimeMs}ms</span>
                           )}
@@ -206,22 +206,22 @@ export default function AdminHealthDetailPage() {
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
-      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+    <div className="rounded-xl border border-border bg-card p-3.5 backdrop-blur-md">
+      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-[13px] leading-relaxed text-white/80">{value}</p>
+      <p className="mt-1 text-[13px] leading-relaxed text-foreground/80">{value}</p>
     </div>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md">
-      <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+    <div className="rounded-lg border border-border bg-card px-3 py-2.5 backdrop-blur-md">
+      <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-0.5 text-[12px] text-white/70">{value}</p>
+      <p className="mt-0.5 text-[12px] text-muted-foreground">{value}</p>
     </div>
   );
 }

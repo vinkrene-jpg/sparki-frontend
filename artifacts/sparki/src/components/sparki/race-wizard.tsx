@@ -94,12 +94,12 @@ const EMPTY_FORM: WizardForm = {
 // ── Stijl-helpers ────────────────────────────────────────────────────────────
 
 const inputCls =
-  "w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[14px] text-white placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
+  "w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">{label}</span>
+      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
       <div className="mt-1.5">{children}</div>
     </label>
   )
@@ -195,7 +195,7 @@ function StepIndicator({ current, total }: { current: WizardStep; total: number 
           )}
         </div>
       ))}
-      <span className="ml-2 font-mono text-[10px] tracking-[0.16em] text-white/40">
+      <span className="ml-2 font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
         {labels[(current - 1)]}
       </span>
     </div>
@@ -223,7 +223,7 @@ function WizardNav({
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-white/55 transition-colors hover:bg-white/[0.04]"
+          className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted"
         >
           <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
           Terug
@@ -294,10 +294,10 @@ function Step1({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans text-lg font-light tracking-tight text-white/90">
+        <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">
           Basis
         </h2>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
           Naam, datum en locatie. Je kunt rechtstreeks uit een externe kalender importeren.
         </p>
       </div>
@@ -372,7 +372,7 @@ function Step1({
           </Field>
 
           {!canAdvance && (
-            <p className="text-[11.5px] text-amber-200/60">
+            <p className="text-[11.5px] text-[color:var(--color-warning)]">
               Naam en datum zijn verplicht om verder te gaan.
             </p>
           )}
@@ -425,11 +425,11 @@ function DerivedRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">{label}</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
           <SourceBadge source={source} />
         </div>
-        <p className="mt-0.5 text-[13px] leading-relaxed text-white/80">{value}</p>
-        {sub && <p className="mt-0.5 text-[11px] leading-relaxed text-white/40">{sub}</p>}
+        <p className="mt-0.5 text-[13px] leading-relaxed text-foreground/80">{value}</p>
+        {sub && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{sub}</p>}
       </div>
     </div>
   )
@@ -449,8 +449,8 @@ function MissingRow({ label, reason }: { label: string; reason: string }) {
         <AlertCircle className="h-3.5 w-3.5" strokeWidth={2} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/25">{label}</p>
-        <p className="mt-0.5 text-[12px] leading-relaxed text-white/40">{reason}</p>
+        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+        <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{reason}</p>
       </div>
     </div>
   )
@@ -502,10 +502,10 @@ function Step2({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans text-lg font-light tracking-tight text-white/90">
+        <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">
           Automatisch ingevuld
         </h2>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
           Dit is automatisch opgehaald — uit de kalender, je profiel en live databronnen.
           Bekijk het en ga door.
         </p>
@@ -513,8 +513,8 @@ function Step2({
 
       {/* Uit kalender */}
       {calendarFields.length > 0 && (
-        <section className="space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
-          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
+        <section className="space-y-3 rounded-2xl border border-border bg-muted p-4">
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
             Uit kalender
           </span>
           {calendarFields.map((f) => (
@@ -530,7 +530,7 @@ function Step2({
       )}
 
       {/* Sparki-analyse */}
-      <section className="space-y-3 rounded-2xl border border-cyan-300/10 bg-white/[0.015] p-4">
+      <section className="space-y-3 rounded-2xl border border-cyan-300/10 bg-muted p-4">
         <div className="flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
           <span className="font-mono text-[9px] uppercase tracking-[0.22em]" style={{ color: ACCENT }}>
@@ -611,7 +611,7 @@ function Step2({
             )}
           </div>
         ) : (
-          <p className="text-[12px] text-white/45">
+          <p className="text-[12px] text-muted-foreground">
             Er kon niets worden afgeleid — geen locatie of datum beschikbaar.
           </p>
         )}
@@ -771,10 +771,10 @@ function Step3({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans text-lg font-light tracking-tight text-white/90">
+        <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">
           Aanvullen
         </h2>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
           {allKnown
             ? "Alles wat nodig is, is al ingevuld — je kunt direct door."
             : "Uitsluitend de velden die na de automatische invulling nog leeg zijn. Overslaan mag."}
@@ -784,7 +784,7 @@ function Step3({
       {allKnown ? (
         <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-center">
           <Check className="mx-auto h-5 w-5" style={{ color: ACCENT }} strokeWidth={2} />
-          <p className="mt-2 text-[13px] text-white/70">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Alle velden zijn al ingevuld — niets meer aan te vullen.
           </p>
         </div>
@@ -849,21 +849,21 @@ function ProposalBlock({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">{title}</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
           <p
             className="mt-1 text-[14px] font-light leading-snug"
             style={{ color: state === "skipped" ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.85)" }}
           >
             {value}
           </p>
-          <p className="mt-1.5 text-[11.5px] leading-relaxed text-white/45">{rationale}</p>
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">{rationale}</p>
           {confidence != null && (
-            <p className="mt-1 font-mono text-[9px] text-white/25">
+            <p className="mt-1 font-mono text-[9px] text-muted-foreground">
               zekerheid {Math.round(confidence * 100)}%
             </p>
           )}
           {basis && (
-            <p className="mt-1 text-[10px] text-white/25">Basis: {basis}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">Basis: {basis}</p>
           )}
         </div>
         {state === "accepted" && (
@@ -889,14 +889,14 @@ function ProposalBlock({
           <button
             type="button"
             onClick={onEdit}
-            className="rounded-xl border border-white/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/55 transition-colors hover:bg-white/[0.04]"
+            className="rounded-xl border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted"
           >
             Aanpassen
           </button>
           <button
             type="button"
             onClick={onSkip}
-            className="ml-auto flex items-center gap-1 rounded-xl border border-white/[0.06] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/30 transition-colors hover:bg-white/[0.02]"
+            className="ml-auto flex items-center gap-1 rounded-xl border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted"
           >
             <SkipForward className="h-3 w-3" strokeWidth={2} />
             Overslaan
@@ -908,7 +908,7 @@ function ProposalBlock({
         <button
           type="button"
           onClick={() => onEdit()}
-          className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-white/25 transition-colors hover:text-white/50"
+          className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-muted-foreground"
         >
           {state === "accepted" ? "Wijzigen" : "Toch invullen"}
         </button>
@@ -986,8 +986,8 @@ function Step4({
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="font-sans text-lg font-light tracking-tight text-white/90">Sparki's voorstel</h2>
-          <p className="mt-1 text-[12.5px] text-white/45">Even nadenken…</p>
+          <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">Sparki's voorstel</h2>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">Even nadenken…</p>
         </div>
         <div className="space-y-3">
           {[0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
@@ -1000,8 +1000,8 @@ function Step4({
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="font-sans text-lg font-light tracking-tight text-white/90">Sparki's voorstel</h2>
-          <p className="mt-2 text-[12.5px] text-white/45">
+          <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">Sparki's voorstel</h2>
+          <p className="mt-2 text-[12.5px] text-muted-foreground">
             Er kon geen voorstel worden opgesteld voor deze wedstrijd. Je kunt de velden zelf invullen in stap 5.
           </p>
         </div>
@@ -1019,13 +1019,13 @@ function Step4({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans text-lg font-light tracking-tight text-white/90">Sparki's voorstel</h2>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
+        <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">Sparki's voorstel</h2>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
           Deterministische voorstellen op basis van je echte data.
           Elk voorstel kun je accepteren, aanpassen of overslaan — jij beslist altijd.
         </p>
         {p.basis && (
-          <p className="mt-1 text-[10.5px] text-white/25">{p.basis}</p>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">{p.basis}</p>
         )}
       </div>
 
@@ -1096,9 +1096,9 @@ function Step4({
           }
         />
       ) : (
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.01] p-4">
-          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/30">Doel</p>
-          <p className="mt-1 text-[12px] text-white/40">
+        <div className="rounded-2xl border border-border bg-muted p-4">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Doel</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">
             Onvoldoende data om een doel voor te stellen — vul het zelf in in stap 5.
           </p>
         </div>
@@ -1228,20 +1228,20 @@ function Step5({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans text-lg font-light tracking-tight text-white/90">
+        <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">
           Samenvatting
         </h2>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
           Wat er over deze wedstrijd bekend is — per bron. Sla op als het klopt.
         </p>
       </div>
 
       {/* Race-header */}
-      <div className="rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4">
-        <h3 className="font-sans text-[18px] font-light tracking-tight text-white/90">
+      <div className="rounded-2xl border border-border bg-muted p-4">
+        <h3 className="font-sans text-[18px] font-light tracking-tight text-foreground/90">
           {form.name || "—"}
         </h3>
-        <p className="mt-0.5 text-[13px] text-white/50">
+        <p className="mt-0.5 text-[13px] text-muted-foreground">
           {form.raceDate ? formatValue("raceDate", form.raceDate) : "Datum onbekend"}
           {form.location ? ` · ${form.location}` : ""}
         </p>
@@ -1258,13 +1258,13 @@ function Step5({
         <section key={g.key}>
           <div className="flex items-center gap-2">
             <span className="text-[14px]">{g.icon}</span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">{g.label}</span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{g.label}</span>
           </div>
-          <ul className="mt-2 space-y-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+          <ul className="mt-2 space-y-1.5 rounded-xl border border-border bg-muted p-3">
             {g.items.map((k) => (
               <li key={k} className="flex items-start justify-between gap-3">
-                <span className="text-[12px] text-white/45">{FIELD_LABELS[k]}</span>
-                <span className="text-right text-[12px] leading-snug text-white/80">
+                <span className="text-[12px] text-muted-foreground">{FIELD_LABELS[k]}</span>
+                <span className="text-right text-[12px] leading-snug text-foreground/80">
                   {formatValue(k, form[k])}
                 </span>
               </li>
@@ -1278,19 +1278,19 @@ function Step5({
         <section>
           <div className="flex items-center gap-2">
             <span className="text-[14px]">❓</span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/25">Onbekend / niet ingevuld</span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Onbekend / niet ingevuld</span>
           </div>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-white/30">
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
             {unknownFields.map((k) => FIELD_LABELS[k]).join(" · ")}
           </p>
-          <p className="mt-1 text-[10.5px] text-white/20">
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
             Je kunt deze velden later aanvullen bij "Race bewerken".
           </p>
         </section>
       )}
 
       {error && (
-        <p className="rounded-xl border border-red-400/20 bg-red-400/[0.05] p-3 text-[12px] text-red-300/80">
+        <p className="rounded-xl border border-red-400/20 bg-red-400/[0.05] p-3 text-[12px] text-[color:var(--color-negative)]">
           {error}
         </p>
       )}
@@ -1521,14 +1521,14 @@ export function RaceWizard({
           <button
             type="button"
             onClick={step === 1 ? onCancel : () => setStep((s) => Math.max(1, s - 1) as WizardStep)}
-            className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-cyan-300/40 hover:text-accent-cyan"
           >
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
             {step === 1 ? "Annuleren" : "Terug"}
           </button>
           <div>
-            <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">WEDSTRIJDEN</span>
-            <h1 className="mt-0.5 font-sans text-xl font-light tracking-tight text-white/90">
+            <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">WEDSTRIJDEN</span>
+            <h1 className="mt-0.5 font-sans text-xl font-light tracking-tight text-foreground/90">
               {STEP_TITLES[step]}
             </h1>
           </div>
@@ -1592,7 +1592,7 @@ export function RaceWizard({
           <button
             type="button"
             onClick={onOpenFullForm}
-            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/30 underline-offset-4 transition-colors hover:text-white/60 hover:underline"
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground underline-offset-4 transition-colors hover:text-muted-foreground hover:underline"
           >
             Alle velden bewerken (uitgebreid formulier)
           </button>

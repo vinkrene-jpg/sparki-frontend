@@ -4,30 +4,49 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ══════════════════════════════════════════════════════════════════════════
+   LICHT_THEMA_01 — één licht thema, geen schakelaar (besluit 3 aug 2026).
+   ─────────────────────────────────────────────────────────────────────────
+   Lichte-laag-principes (waarom licht ≠ donker omgedraaid):
+   • Achtergrond is warm gebroken wit (oklch ~0.985 met een spoor warmte),
+     NOOIT klinisch #fff — dat oogt hard en vlak op scherm en in de zon.
+   • Tekst is donker (bijna-zwart met warme ondertoon), niet puur #000.
+   • Diepte komt van ECHTE schaduw (zachte, gelaagde box-shadows), niet van
+     gloed. Gloed werkt op donker; op licht is een lichtvlek onzichtbaar.
+   • Randen zijn subtieler en donkergetint (border op basis van de tekstkleur
+     met lage dekking), niet wit-op-wit.
+   • Accentkleuren (cyaan e.d.) worden DONKERDER gemaakt zodat ze leesbaar
+     contrasteren op licht — een lichte cyaan verdwijnt op wit.
+   • Kaart/popover krijgen een dekkende, iets koelere witte tint met schaduw
+     i.p.v. een half-doorzichtig "glas op donker".
+   Tokennamen blijven exact gelijk — alle consumers blijven werken; alleen de
+   waarden veranderen. Nieuwe losse kleuren horen HIER, nergens anders.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 @theme inline {
   --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'Inter Variable', 'Inter', ui-monospace, monospace;
 
-  --color-background: oklch(0.07 0 0);
-  --color-foreground: oklch(0.98 0 0);
-  --color-border: oklch(1 0 0 / 10%);
-  --color-ring: oklch(0.56 0 0);
-  --color-input: oklch(1 0 0 / 15%);
+  --color-background: oklch(0.985 0.004 95);   /* warm gebroken wit (body) */
+  --color-foreground: oklch(0.21 0.01 260);    /* donkere tekst, warme ondertoon */
+  --color-border: oklch(0.21 0.01 260 / 12%);  /* subtiele donkergetinte rand */
+  --color-ring: oklch(0.62 0.13 205);          /* focus-ring: donkerder accent */
+  --color-input: oklch(0.21 0.01 260 / 18%);   /* invoerrand */
 
-  --color-card: oklch(0.12 0 0);
-  --color-card-foreground: oklch(0.98 0 0);
-  --color-popover: oklch(0.12 0 0);
-  --color-popover-foreground: oklch(0.98 0 0);
-  --color-primary: oklch(0.92 0 0);
-  --color-primary-foreground: oklch(0.12 0 0);
-  --color-secondary: oklch(0.18 0 0);
-  --color-secondary-foreground: oklch(0.98 0 0);
-  --color-muted: oklch(0.18 0 0);
-  --color-muted-foreground: oklch(0.7 0 0);
-  --color-accent: oklch(0.18 0 0);
-  --color-accent-foreground: oklch(0.98 0 0);
-  --color-destructive: oklch(0.7 0.19 22.2);
-  --color-destructive-foreground: oklch(0.98 0 0);
+  --color-card: oklch(1 0 0);                   /* dekkend wit kaartvlak (schaduw geeft diepte) */
+  --color-card-foreground: oklch(0.21 0.01 260);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.21 0.01 260);
+  --color-primary: oklch(0.24 0.012 260);       /* donkere primaire vlakken/knoppen */
+  --color-primary-foreground: oklch(0.985 0.004 95);
+  --color-secondary: oklch(0.95 0.004 95);      /* zacht grijs-wit oppervlak */
+  --color-secondary-foreground: oklch(0.24 0.012 260);
+  --color-muted: oklch(0.955 0.004 95);         /* gedempt oppervlak */
+  --color-muted-foreground: oklch(0.44 0.01 260); /* gedempte tekst, leesbaar op licht */
+  --color-accent: oklch(0.95 0.02 200);         /* accent-oppervlak (licht cyaan-getint) */
+  --color-accent-foreground: oklch(0.24 0.012 260);
+  --color-destructive: oklch(0.55 0.2 25);      /* donkerder rood voor licht */
+  --color-destructive-foreground: oklch(0.985 0.004 95);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -40,26 +59,36 @@
      blijven geldig; deze laag voegt de Sparki-semantiek toe.
      Tekst primair = --color-foreground (text-foreground/text-white);
      standaardrand = --color-border (border-border of border-white/10). */
-  --color-app: #050608;                 /* app-achtergrond (body) */
-  --color-app-deep: #040506;            /* diepste laag: onderbalk/overlays */
-  --color-surface: oklch(1 0 0 / 5%);   /* kaart/oppervlak (glas op donker) */
-  --color-surface-strong: oklch(1 0 0 / 8%); /* opgelicht oppervlak */
-  --color-control: oklch(1 0 0 / 10%);  /* bedieningsvlak (knop/pill/input) */
-  --color-content-secondary: oklch(1 0 0 / 74%); /* secundaire tekst */
-  --color-positive: oklch(0.845 0.143 164.98);   /* positief (emerald-300) */
-  --color-warning: oklch(0.879 0.169 91.61);     /* waarschuwing (amber-300) */
-  --color-negative: oklch(0.808 0.114 19.57);    /* fout (red-300) */
-  --color-tempo: oklch(0.828 0.189 84.43);       /* trainingskleur tempo (amber-400) */
-  --color-accent-cyan: var(--accent-cyan);       /* merkaccent (cyaan) */
-  --color-on-accent: #04121a;           /* tekst óp accent-cyaan vlak */
+  --color-app: oklch(0.985 0.004 95);   /* app-achtergrond (body) — warm gebroken wit */
+  --color-app-deep: oklch(0.965 0.004 95); /* iets dieper wit: onderbalk/overlays */
+  --color-surface: oklch(1 0 0);        /* kaart/oppervlak — dekkend wit, schaduw = diepte */
+  --color-surface-strong: oklch(0.985 0.004 95); /* opgelicht oppervlak (subtiel warm) */
+  --color-control: oklch(0.21 0.01 260 / 6%);  /* bedieningsvlak (knop/pill/input) — zacht donkergetint */
+  --color-content-secondary: oklch(0.44 0.01 260); /* secundaire tekst — leesbaar op licht */
+  --color-positive: oklch(0.52 0.15 155);        /* positief — donkerder emerald voor licht */
+  --color-warning: oklch(0.55 0.14 75);          /* waarschuwing — amber, LT-13 verdiept 0.58→0.55 (tekst ≥ 4.74:1 op bg/card) */
+  --color-negative: oklch(0.55 0.2 25);          /* fout — donkerder rood voor licht */
+  --color-tempo: oklch(0.55 0.16 65);            /* trainingskleur tempo — oranje, LT-13 verdiept 0.62→0.55 (tekst ≥ 4.82:1 op bg/card) */
+  --color-accent-cyan: var(--accent-cyan);       /* merkaccent (cyaan, donkerder voor licht) */
+  --color-on-accent: oklch(0.985 0.004 95);      /* tekst óp accent-cyaan vlak — licht */
 
-  /* Kaart-/navigatiekleuren (route-navigator): donkere lagen boven de kaart. */
+  /* Kaart-/navigatiekleuren (route-navigator): de kaarttegels BLIJVEN DONKER
+     (leesbaarheid van straatnamen/route boven een dynamische kaart, besluit
+     LICHT_THEMA_01 — zie /tmp/lt-vertaalgids.md). Deze overlay-lagen leven
+     bovenop die donkere kaart en blijven daarom bewust donker. */
   --color-map-ink: #05070e;        /* diepste kaartlaag + tekst op accentvlak */
   --color-map-panel: #070d16;      /* overlay-panelen/pills op de kaart */
   --color-map-scrim: #02040a;      /* dimlaag achter kaart-sheets */
   --color-map-warn-panel: #1a1405; /* geelgetint waarschuwingspaneel (sprint) */
   --color-map-warn-deep: #0b0f08;  /* diepe geelgetinte overlay (sprint) */
   --color-map-warn-soft: #160f05;  /* zachte geelgetinte pill (sprint) */
+
+  /* ── Diepte via schaduw (lichte laag) ──────────────────────────────────
+     Gelaagde, zachte box-shadows vervangen de gloed van het donkere ontwerp.
+     Gebruik shadow-* utilities of deze tokens rechtstreeks. */
+  --shadow-card: 0 1px 2px oklch(0.21 0.01 260 / 6%), 0 4px 12px oklch(0.21 0.01 260 / 8%);
+  --shadow-float: 0 2px 6px oklch(0.21 0.01 260 / 8%), 0 12px 32px oklch(0.21 0.01 260 / 12%);
+  --shadow-pressed: inset 0 1px 2px oklch(0.21 0.01 260 / 10%);
 
   --radius-card: 1rem;      /* kaarten (16px, gelijk aan rounded-2xl) */
   --radius-control: 9999px; /* knoppen en pills (volledig rond) */
@@ -83,16 +112,21 @@
 
 :root {
   --radius: 0.625rem;
-  --accent-cyan: oklch(0.82 0.16 200);
+  /* Merkaccent cyaan — DONKERDER voor het lichte thema zodat het leesbaar
+     contrasteert op wit (een lichte cyaan verdwijnt op licht).
+     LT-13: verdiept van 0.58 → 0.50 zodat één enkele waarde ZOWEL als tekst
+     (text-accent-cyan ≥ 4.62:1 op background/card/muted/accent-vlak) ALS als
+     vlak met witte on-accent-tekst (bg-accent-cyan, ratio 5.09:1) de AA-norm
+     haalt. Gemeten met /tmp/contrast-meting.mjs — geen splitsing nodig. */
+  --accent-cyan: oklch(0.50 0.13 205);
 }
 
-/* Native <select> dropdown items — dark popup so options stay readable
-   (without this, white option text renders on the browser's white popup
-   background and is only visible on hover). */
+/* Native <select> dropdown items — lichte popup zodat opties leesbaar zijn op
+   het lichte thema (donkere tekst op zacht wit). */
 option,
 optgroup {
-  background-color: #0b1220;
-  color: #e7ecf3;
+  background-color: #ffffff;
+  color: oklch(0.21 0.01 260);
 }
 
 /* Sports-watch numeric rendering — tabular lining figures */
@@ -325,8 +359,10 @@ html[data-motion="off"] *::after {
   scroll-behavior: auto !important;
 }
 
-/* Kaartvermelding (licentie-plicht OpenStreetMap/CARTO) — zo subtiel mogelijk:
-   klein, halfdoorzichtig, donker, geen witte balk in het donkere ontwerp. */
+/* Kaartvermelding (licentie-plicht OpenStreetMap/CARTO) — zo subtiel mogelijk.
+   De kaarttegels BLIJVEN DONKER (besluit LICHT_THEMA_01, zie vertaalgids), dus
+   deze vermelding blijft óók donker: klein, halfdoorzichtig, geen felle balk
+   boven de donkere kaart. */
 .leaflet-control-attribution {
   background: rgba(5, 7, 14, 0.55) !important;
   color: rgba(255, 255, 255, 0.28) !important;
@@ -352,7 +388,7 @@ html[data-motion="off"] *::after {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-[#050608] text-white antialiased font-sans;
+    @apply bg-background text-foreground antialiased font-sans;
     font-variant-numeric: tabular-nums lining-nums;
     font-feature-settings: "kern" 1;
   }
@@ -361,40 +397,3 @@ html[data-motion="off"] *::after {
   }
 }
 
-/* ── Leesbaarheidslift ──────────────────────────────────────────────────
-   De app gebruikt overal witte tekst met lage dekking (text-white/25 t/m
-   /70). Op de donkere achtergrond leest dat als vaag grijs — vooral op
-   mobiele OLED-schermen. Deze centrale override tilt élke dekkingstrap
-   omhoog, terwijl de onderlinge hiërarchie (bijschrift < label < tekst)
-   intact blijft. Eén plek aanpassen = de hele app scherper, zonder
-   honderden componentwijzigingen. Decoratie (borders/achtergronden)
-   blijft ongemoeid — dit raakt alleen tekstkleur. */
-@layer utilities {
-  .text-white\/20 { color: rgb(255 255 255 / 0.42); }
-  .text-white\/25 { color: rgb(255 255 255 / 0.48); }
-  .text-white\/30 { color: rgb(255 255 255 / 0.54); }
-  .text-white\/35 { color: rgb(255 255 255 / 0.60); }
-  .text-white\/40 { color: rgb(255 255 255 / 0.65); }
-  .text-white\/45 { color: rgb(255 255 255 / 0.70); }
-  .text-white\/50 { color: rgb(255 255 255 / 0.74); }
-  .text-white\/55 { color: rgb(255 255 255 / 0.78); }
-  .text-white\/60 { color: rgb(255 255 255 / 0.82); }
-  .text-white\/65 { color: rgb(255 255 255 / 0.85); }
-  .text-white\/70 { color: rgb(255 255 255 / 0.88); }
-  .text-white\/75 { color: rgb(255 255 255 / 0.91); }
-  .text-white\/80 { color: rgb(255 255 255 / 0.93); }
-  .placeholder\:text-white\/25::placeholder { color: rgb(255 255 255 / 0.48); }
-  .placeholder\:text-white\/30::placeholder { color: rgb(255 255 255 / 0.54); }
-  /* Hover-varianten mee-optillen, anders wordt tekst bij aanwijzen dónkerder
-     dan de opgetilde basiskleur (omgekeerde hiërarchie). Zelfde trap. */
-  .hover\:text-white\/45:hover { color: rgb(255 255 255 / 0.70); }
-  .hover\:text-white\/50:hover { color: rgb(255 255 255 / 0.74); }
-  .hover\:text-white\/60:hover { color: rgb(255 255 255 / 0.82); }
-  .hover\:text-white\/65:hover { color: rgb(255 255 255 / 0.85); }
-  .hover\:text-white\/70:hover { color: rgb(255 255 255 / 0.88); }
-  .hover\:text-white\/75:hover { color: rgb(255 255 255 / 0.91); }
-  .hover\:text-white\/80:hover { color: rgb(255 255 255 / 0.93); }
-  .hover\:text-white\/85:hover { color: rgb(255 255 255 / 0.95); }
-  .hover\:text-white\/90:hover { color: rgb(255 255 255 / 0.97); }
-  .group-hover\:text-white\/50:is(:where(.group):hover *) { color: rgb(255 255 255 / 0.74); }
-}

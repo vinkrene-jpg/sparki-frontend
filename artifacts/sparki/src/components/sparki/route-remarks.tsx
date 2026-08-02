@@ -50,7 +50,7 @@ function RemarkRow({
   const [open, setOpen] = useState(false)
   const Icon = KIND_ICON[remark.kind] ?? TriangleAlert
   return (
-    <li className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+    <li className="rounded-xl border border-border bg-muted px-3 py-2.5">
       <div className="flex items-start gap-2.5">
         <Icon
           className="mt-0.5 h-4 w-4 shrink-0 text-warning/85"
@@ -58,8 +58,8 @@ function RemarkRow({
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-[13px] text-white/85">{remark.label}</span>
-            <span className="font-mono text-[10px] tracking-[0.08em] text-white/45">
+            <span className="text-[13px] text-foreground/80">{remark.label}</span>
+            <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground">
               km {fmtKm(remark.routeKm)}
               {remark.endKm != null && `–${fmtKm(remark.endKm)}`}
             </span>
@@ -71,10 +71,10 @@ function RemarkRow({
           </div>
           {open && (
             <div className="mt-1.5 space-y-1">
-              <p className="text-[12px] leading-relaxed text-white/55">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 {remark.detail}
               </p>
-              <p className="font-mono text-[10px] tracking-[0.06em] text-white/30">
+              <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground">
                 bron-tag: {remark.evidence} · {remark.offRouteM} m van de lijn
               </p>
             </div>
@@ -83,7 +83,7 @@ function RemarkRow({
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
-              className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-300/75 transition hover:text-cyan-200"
+              className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-cyan transition hover:text-accent-cyan"
             >
               <ChevronDown
                 className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
@@ -95,7 +95,7 @@ function RemarkRow({
               <button
                 type="button"
                 onClick={() => onShowOnMap(remark)}
-                className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/45 transition hover:text-cyan-300/80"
+                className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:text-accent-cyan"
               >
                 <MapPin className="h-3 w-3" strokeWidth={2} />
                 toon op kaart
@@ -133,12 +133,12 @@ export function RouteRemarksPanel({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/80 transition hover:text-cyan-200"
+          className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition hover:text-accent-cyan"
         >
           {open ? "− routeopmerkingen" : "+ routeopmerkingen"}
         </button>
         {!isLoading && !isError && (
-          <span className="font-mono text-[10px] tracking-[0.1em] text-white/40">
+          <span className="font-mono text-[10px] tracking-[0.1em] text-muted-foreground">
             {count === 0 ? "geen gevonden" : count}
           </span>
         )}
@@ -147,7 +147,7 @@ export function RouteRemarksPanel({
       {open && (
         <div className="mt-2">
           {isLoading && (
-            <p className="text-[12px] text-white/40">
+            <p className="text-[12px] text-muted-foreground">
               Routeopmerkingen worden opgehaald uit de kaartgegevens…
             </p>
           )}
@@ -161,7 +161,7 @@ export function RouteRemarksPanel({
           {!isLoading && !isError && data && (
             <>
               {remarks != null && remarks.length === 0 && dataRemarks.length === 0 && (
-                <p className="text-[12px] text-white/45">
+                <p className="text-[12px] text-muted-foreground">
                   Geen bijzonderheden gevonden in de kaartgegevens langs deze
                   route. Let op: de kaart kan onvolledig zijn — blijf zelf
                   opletten.
@@ -179,18 +179,18 @@ export function RouteRemarksPanel({
                   {dataRemarks.map((d) => (
                     <li
                       key={d.label}
-                      className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5"
+                      className="rounded-xl border border-border bg-muted px-3 py-2.5"
                     >
                       <div className="flex items-start gap-2.5">
                         <TriangleAlert
-                          className="mt-0.5 h-4 w-4 shrink-0 text-white/45"
+                          className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
                           strokeWidth={1.75}
                         />
                         <div>
-                          <span className="text-[13px] text-white/85">
+                          <span className="text-[13px] text-foreground/80">
                             {d.label}
                           </span>
-                          <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">
+                          <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
                             {d.detail}
                           </p>
                         </div>
@@ -199,7 +199,7 @@ export function RouteRemarksPanel({
                   ))}
                 </ul>
               )}
-              <p className="mt-2.5 text-[10px] leading-relaxed text-white/30">
+              <p className="mt-2.5 text-[10px] leading-relaxed text-muted-foreground">
                 Bron: {data.source.name} — {data.source.license}.{" "}
                 {data.source.note}
               </p>

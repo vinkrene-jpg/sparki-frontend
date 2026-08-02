@@ -50,7 +50,7 @@ export function PrepTimeline({ phases }: { phases: PrepPhase[] }) {
       {phases.map((p) => (
         <div
           key={p.id}
-          className="rounded-2xl border bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+          className="rounded-2xl border bg-card p-4 backdrop-blur-md"
           style={{
             borderColor:
               p.status === "active"
@@ -74,7 +74,7 @@ export function PrepTimeline({ phases }: { phases: PrepPhase[] }) {
                       : "none",
                 }}
               />
-              <span className="font-mono text-[10px] tracking-[0.2em] text-white/45">
+              <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                 {daysLabel(p.daysBefore).toUpperCase()}
               </span>
             </div>
@@ -86,14 +86,14 @@ export function PrepTimeline({ phases }: { phases: PrepPhase[] }) {
             </span>
           </div>
 
-          <h4 className="mt-2 font-sans text-[14px] font-light text-white/90">
+          <h4 className="mt-2 font-sans text-[14px] font-light text-foreground/90">
             {p.title}
           </h4>
-          <p className="text-[11px] text-white/40">{p.focus}</p>
+          <p className="text-[11px] text-muted-foreground">{p.focus}</p>
 
           <ul className="mt-3 space-y-2">
             {p.steps.map((s) => (
-              <li key={s} className="flex gap-2.5 text-[12.5px] leading-relaxed text-white/65">
+              <li key={s} className="flex gap-2.5 text-[12.5px] leading-relaxed text-muted-foreground">
                 <span
                   className="mt-1.5 h-1 w-1 shrink-0 rounded-full"
                   style={{ background: "rgba(120,210,230,0.7)" }}
@@ -107,7 +107,7 @@ export function PrepTimeline({ phases }: { phases: PrepPhase[] }) {
             <button
               type="button"
               onClick={() => navigate("/races")}
-              className="mt-3 inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
+              className="mt-3 inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
               style={{ borderColor: ACCENT, color: ACCENT, background: "rgba(255,255,255,0.03)" }}
             >
               Technische gids toevoegen
@@ -130,7 +130,7 @@ export function RaceDayReport({ report }: { report: RaceDayReportData }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1 px-1">
-        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
           WEDSTRIJDANALYSE
         </span>
         <UitlegDot uitlegKey="wedstrijdanalyse" label="Wedstrijdanalyse" />
@@ -138,20 +138,20 @@ export function RaceDayReport({ report }: { report: RaceDayReportData }) {
       {report.sections.map((section) => (
         <div
           key={section.id}
-          className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+          className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
         >
-          <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+          <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
             {section.title.toUpperCase()}
           </span>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-white/70">
+          <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">
             {section.summary}
           </p>
           {section.items.length > 0 && (
             <dl className="mt-3 space-y-1.5">
               {section.items.map((it, i) => (
                 <div key={`${section.id}-${i}`} className="flex justify-between gap-3 text-[12px]">
-                  <dt className="shrink-0 text-white/40">{it.label}</dt>
-                  <dd className={`text-right ${it.known ? "text-white/75" : "text-white/30"}`}>
+                  <dt className="shrink-0 text-muted-foreground">{it.label}</dt>
+                  <dd className={`text-right ${it.known ? "text-muted-foreground" : "text-muted-foreground"}`}>
                     {it.value ?? "nog niet ingevuld"}
                   </dd>
                 </div>
@@ -172,13 +172,13 @@ export function RaceDayReport({ report }: { report: RaceDayReportData }) {
         <span className="font-mono text-[10px] tracking-[0.22em]" style={{ color: ACCENT }}>
           WAT OPVALT
         </span>
-        <p className="mt-2 text-[13px] leading-relaxed text-white/80">
+        <p className="mt-2 text-[13px] leading-relaxed text-foreground/80">
           {report.personalNote}
         </p>
       </div>
 
       {report.dataGaps.length > 0 && (
-        <p className="px-1 text-[11px] leading-relaxed text-white/35">
+        <p className="px-1 text-[11px] leading-relaxed text-muted-foreground">
           Nog onbekend: {report.dataGaps.join(", ")}. Vul dit aan voor een
           completer rapport.
         </p>
@@ -197,9 +197,9 @@ const TIER_ACCENT: Record<string, string> = {
 export function RaceFuelCard({ fuel }: { fuel: RaceFuel }) {
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+          <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
             FUELPLAN
           </span>
           {fuel.isEstimate && (
@@ -239,12 +239,12 @@ export function RaceFuelCard({ fuel }: { fuel: RaceFuel }) {
           )}
         </div>
 
-        <p className="mt-3 text-[11px] leading-relaxed text-white/40">{fuel.note}</p>
+        <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{fuel.note}</p>
       </div>
 
       {/* Budget alternatives — practical, not automatically the priciest */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+      <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
           ZELFDE BRANDSTOF, JOUW BUDGET
         </span>
         <div className="mt-3 space-y-3">
@@ -260,13 +260,13 @@ export function RaceFuelCard({ fuel }: { fuel: RaceFuel }) {
                 {tier.items.map((it) => (
                   <li
                     key={it}
-                    className="rounded-full border border-white/[0.08] bg-white/[0.02] px-2.5 py-1 text-[11px] text-white/65"
+                    className="rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] text-muted-foreground"
                   >
                     {it}
                   </li>
                 ))}
               </ul>
-              <p className="mt-1.5 text-[10.5px] leading-relaxed text-white/35">
+              <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
                 {tier.note}
               </p>
             </div>
@@ -278,7 +278,7 @@ export function RaceFuelCard({ fuel }: { fuel: RaceFuel }) {
         {fuel.guidance.map((g) => (
           <li
             key={g}
-            className="flex gap-2.5 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-3 text-[12px] leading-relaxed text-white/65 backdrop-blur-md"
+            className="flex gap-2.5 rounded-xl border border-border bg-card p-3 text-[12px] leading-relaxed text-muted-foreground backdrop-blur-md"
           >
             <span
               className="mt-1.5 h-1 w-1 shrink-0 rounded-full"
@@ -294,9 +294,9 @@ export function RaceFuelCard({ fuel }: { fuel: RaceFuel }) {
 
 function FuelStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
-      <span className="label-xs text-white/35">{label.toUpperCase()}</span>
-      <p className="mt-1 font-sans text-[15px] font-light tabular-nums text-white/85">
+    <div className="rounded-xl border border-border bg-muted p-3">
+      <span className="label-xs text-muted-foreground">{label.toUpperCase()}</span>
+      <p className="mt-1 font-sans text-[15px] font-light tabular-nums text-foreground/90">
         {value}
       </p>
     </div>
@@ -339,7 +339,7 @@ export function MultiDayChecklist({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between px-1">
-        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
           VERSPREID OVER DE DAGEN
         </span>
         <span className="font-mono text-[11px] tabular-nums" style={{ color: ACCENT }}>
@@ -348,7 +348,7 @@ export function MultiDayChecklist({
       </div>
 
       {autoCount > 0 && (
-        <p className="flex items-center gap-1.5 px-1 text-[11.5px] leading-relaxed text-cyan-300/65">
+        <p className="flex items-center gap-1.5 px-1 text-[11.5px] leading-relaxed text-accent-cyan">
           <Sparkles size={12} className="shrink-0" />
           {autoCount} {autoCount === 1 ? "punt is" : "punten zijn"} alvast
           afgevinkt op basis van je recente materiaalcheck. Klopt het niet? Tik het uit.
@@ -361,14 +361,14 @@ export function MultiDayChecklist({
         return (
           <div
             key={group.id}
-            className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+            className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <span className="font-sans text-[13px] font-light text-white/85">
+                <span className="font-sans text-[13px] font-light text-foreground/90">
                   {group.label}
                 </span>
-                <span className="ml-2 font-mono text-[9px] tracking-[0.16em] text-white/35">
+                <span className="ml-2 font-mono text-[9px] tracking-[0.16em] text-muted-foreground">
                   {daysLabel(group.whenDaysBefore).toUpperCase()}
                 </span>
               </div>
@@ -380,7 +380,7 @@ export function MultiDayChecklist({
               </span>
             </div>
 
-            <p className={`mt-1.5 text-[11.5px] leading-relaxed ${isDue ? "text-white/55" : "text-white/30"}`}>
+            <p className={`mt-1.5 text-[11.5px] leading-relaxed ${isDue ? "text-muted-foreground" : "text-muted-foreground"}`}>
               {group.instruction}
             </p>
 
@@ -415,13 +415,13 @@ export function MultiDayChecklist({
                     >
                       {checked ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
                     </span>
-                    <span className={`flex-1 text-[12.5px] ${checked ? "text-white/85" : "text-white/55"}`}>
+                    <span className={`flex-1 text-[12.5px] ${checked ? "text-foreground/90" : "text-muted-foreground"}`}>
                       {group.itemLabels[i] ?? id}
                     </span>
                     {auto && (
                       <Sparkles
                         size={11}
-                        className="shrink-0 text-cyan-300/70"
+                        className="shrink-0 text-accent-cyan"
                         aria-label="Automatisch afgevinkt"
                       />
                     )}

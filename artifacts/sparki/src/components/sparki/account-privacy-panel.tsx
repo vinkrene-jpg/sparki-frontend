@@ -31,7 +31,7 @@ const CONFIRM_PHRASE = "VERWIJDER MIJN ACCOUNT"
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card px-4 py-4 backdrop-blur-md">
       {children}
     </div>
   )
@@ -40,20 +40,20 @@ function Card({ children }: { children: React.ReactNode }) {
 function VisRow({ naam, entry }: { naam: string; entry: RoleVisibilityEntry }) {
   return (
     <div className="py-3">
-      <div className="text-[13px] font-medium text-white/85">{naam}</div>
+      <div className="text-[13px] font-medium text-foreground/85">{naam}</div>
       {entry.ziet.length > 0 ? (
         <ul className="mt-1 space-y-0.5">
           {entry.ziet.map((z) => (
-            <li key={z} className="text-[12px] text-white/55">
+            <li key={z} className="text-[12px] text-muted-foreground">
               • {z}
             </li>
           ))}
         </ul>
       ) : (
-        <div className="mt-1 text-[12px] text-white/45">Ziet niets van jouw gegevens.</div>
+        <div className="mt-1 text-[12px] text-muted-foreground">Ziet niets van jouw gegevens.</div>
       )}
       {entry.zietNiet.length > 0 && (
-        <div className="mt-1 text-[11px] leading-snug text-white/30">
+        <div className="mt-1 text-[11px] leading-snug text-muted-foreground">
           Nooit zichtbaar: {entry.zietNiet.join(" · ")}
         </div>
       )}
@@ -87,33 +87,33 @@ function LegalDocBlock({ kind }: { kind: "privacy" | "terms" }) {
         className="flex w-full items-center justify-between text-left"
       >
         <div>
-          <div className="text-[13px] text-white/85">{title}</div>
-          <div className="mt-0.5 text-[11px] text-white/40">
+          <div className="text-[13px] text-foreground/85">{title}</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {acceptedAt
               ? `Akkoord gegeven op ${new Date(acceptedAt).toLocaleDateString("nl-NL")}${acceptedVersion ? ` (versie ${acceptedVersion})` : ""}`
               : "Nog geen akkoord vastgelegd"}
           </div>
         </div>
         <ChevronDown
-          className={`h-4 w-4 text-white/40 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open && (
         <div className="mt-3">
           {isLoading || !doc ? (
-            <div className="h-24 animate-pulse rounded bg-white/[0.06]" />
+            <div className="h-24 animate-pulse rounded bg-muted" />
           ) : (
             <>
-              <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-xl border border-white/[0.06] bg-black/20 p-3 text-[12px] leading-relaxed text-white/60">
+              <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-foreground/20 p-3 text-[12px] leading-relaxed text-muted-foreground">
                 {doc.bodyMd}
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-[11px] text-white/35">Versie {doc.version}</span>
+                <span className="text-[11px] text-muted-foreground">Versie {doc.version}</span>
                 <button
                   type="button"
                   disabled={accept.isPending || acceptedVersion === doc.version}
                   onClick={() => accept.mutate(kind)}
-                  className="rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/80 disabled:opacity-40"
+                  className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-foreground/80 disabled:opacity-40"
                 >
                   {acceptedVersion === doc.version
                     ? "Akkoord vastgelegd"
@@ -154,11 +154,11 @@ export function AccountPrivacyPanel() {
       <div className="mt-3 space-y-3">
         <Card>
           <div className="flex items-center gap-2">
-            <Eye className="h-4 w-4 text-white/50" strokeWidth={1.75} />
-            <span className="text-[13px] font-medium text-white/85">Wie ziet wat van jou</span>
+            <Eye className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            <span className="text-[13px] font-medium text-foreground/85">Wie ziet wat van jou</span>
           </div>
           {isLoading || !overview ? (
-            <div className="mt-3 h-24 animate-pulse rounded bg-white/[0.06]" />
+            <div className="mt-3 h-24 animate-pulse rounded bg-muted" />
           ) : (
             <div className="mt-1 divide-y divide-white/[0.06]">
               <VisRow naam="Coach" entry={overview.wieZietWat.coach} />
@@ -167,15 +167,15 @@ export function AccountPrivacyPanel() {
               <VisRow naam="Vrienden" entry={overview.wieZietWat.vrienden} />
             </div>
           )}
-          <p className="mt-2 text-[11px] leading-snug text-white/30">
+          <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
             Dit volgt live uit jouw deelinstellingen hierboven. Pas je die aan, dan verandert dit direct mee.
           </p>
         </Card>
 
         <Card>
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-white/50" strokeWidth={1.75} />
-            <span className="text-[13px] font-medium text-white/85">Voorwaarden & privacy</span>
+            <FileText className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            <span className="text-[13px] font-medium text-foreground/85">Voorwaarden & privacy</span>
           </div>
           <div className="mt-1 divide-y divide-white/[0.06]">
             <LegalDocBlock kind="privacy" />
@@ -187,10 +187,10 @@ export function AccountPrivacyPanel() {
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <Download className="h-4 w-4 text-white/50" strokeWidth={1.75} />
-                <span className="text-[13px] font-medium text-white/85">Al je gegevens downloaden</span>
+                <Download className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                <span className="text-[13px] font-medium text-foreground/85">Al je gegevens downloaden</span>
               </div>
-              <p className="mt-1 text-[12px] leading-snug text-white/40">
+              <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                 Eén bestand met alles wat er over jou wordt bewaard. Toegangssleutels van gekoppelde diensten zitten er om veiligheidsredenen niet in.
               </p>
               {exportAccount.isError && (
@@ -203,7 +203,7 @@ export function AccountPrivacyPanel() {
               type="button"
               disabled={exportAccount.isPending}
               onClick={() => exportAccount.mutate()}
-              className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/80 disabled:opacity-40"
+              className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-[12px] text-foreground/80 disabled:opacity-40"
             >
               {exportAccount.isPending ? "Bezig…" : "Download"}
             </button>
@@ -214,13 +214,13 @@ export function AccountPrivacyPanel() {
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <MonitorSmartphone className="h-4 w-4 text-white/50" strokeWidth={1.75} />
-                <span className="text-[13px] font-medium text-white/85">Overal uitloggen</span>
+                <MonitorSmartphone className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                <span className="text-[13px] font-medium text-foreground/85">Overal uitloggen</span>
               </div>
-              <p className="mt-1 text-[12px] leading-snug text-white/40">
+              <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                 Beëindig alle actieve sessies op al je apparaten. Je moet daarna overal opnieuw inloggen.
               </p>
-              {sessionsMsg && <p className="mt-1 text-[12px] text-white/55">{sessionsMsg}</p>}
+              {sessionsMsg && <p className="mt-1 text-[12px] text-muted-foreground">{sessionsMsg}</p>}
             </div>
             <button
               type="button"
@@ -231,7 +231,7 @@ export function AccountPrivacyPanel() {
                   onError: () => setSessionsMsg("Dat lukte niet. Probeer het opnieuw."),
                 })
               }
-              className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/80 disabled:opacity-40"
+              className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-[12px] text-foreground/80 disabled:opacity-40"
             >
               {endSessions.isPending ? "Bezig…" : "Uitloggen"}
             </button>
@@ -241,16 +241,16 @@ export function AccountPrivacyPanel() {
         <Card>
           <div className="flex items-center gap-2">
             <Trash2 className="h-4 w-4 text-red-400/70" strokeWidth={1.75} />
-            <span className="text-[13px] font-medium text-white/85">Account verwijderen</span>
+            <span className="text-[13px] font-medium text-foreground/85">Account verwijderen</span>
           </div>
 
           {isLoading || !overview || recoveryDays === null ? (
-            <div className="mt-3 h-16 animate-pulse rounded bg-white/[0.06]" />
+            <div className="mt-3 h-16 animate-pulse rounded bg-muted" />
           ) : pendingDelete ? (
             <div className="mt-2">
               <div className="flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-3">
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300/80" />
-                <div className="text-[12px] leading-snug text-amber-100/80">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-warning)]" />
+                <div className="text-[12px] leading-snug text-[color:var(--color-warning)]">
                   Je verwijdering staat gepland. Op{" "}
                   {new Date(pendingDelete.definitiefOp).toLocaleDateString("nl-NL")} worden al je
                   gegevens definitief verwijderd. Tot die tijd kun je dit nog terugdraaien.
@@ -260,7 +260,7 @@ export function AccountPrivacyPanel() {
                 type="button"
                 disabled={cancelDelete.isPending}
                 onClick={() => cancelDelete.mutate()}
-                className="mt-3 flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/80 disabled:opacity-40"
+                className="mt-3 flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-[12px] text-foreground/80 disabled:opacity-40"
               >
                 <Undo2 className="h-3.5 w-3.5" />
                 {cancelDelete.isPending ? "Bezig…" : "Verwijdering terugdraaien"}
@@ -268,14 +268,14 @@ export function AccountPrivacyPanel() {
             </div>
           ) : !deleteOpen ? (
             <div className="mt-2">
-              <p className="text-[12px] leading-snug text-white/40">
+              <p className="text-[12px] leading-snug text-muted-foreground">
                 Al je gegevens worden na een hersteltermijn van {recoveryDays} dagen definitief verwijderd —
                 trainingen, gesprekken, koppelingen en je inlogaccount.
               </p>
               <button
                 type="button"
                 onClick={() => setDeleteOpen(true)}
-                className="mt-3 rounded-lg border border-red-400/30 px-3 py-1.5 text-[12px] text-red-300/90"
+                className="mt-3 rounded-lg border border-red-400/30 px-3 py-1.5 text-[12px] text-[color:var(--color-negative)]"
               >
                 Ik wil mijn account verwijderen
               </button>
@@ -283,32 +283,32 @@ export function AccountPrivacyPanel() {
           ) : (
             <div className="mt-2">
               {/* GF8-04: uitdraai eerst aanbieden, vóór het verwijderen. */}
-              <div className="mb-3 flex items-start gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
-                <Download className="mt-0.5 h-4 w-4 shrink-0 text-white/50" strokeWidth={1.75} />
+              <div className="mb-3 flex items-start gap-2 rounded-xl border border-border bg-muted p-3">
+                <Download className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
                 <div className="flex-1">
-                  <p className="text-[12px] leading-snug text-white/55">
+                  <p className="text-[12px] leading-snug text-muted-foreground">
                     Wil je eerst alles bewaren? Download een volledige uitdraai van je gegevens voordat je verder gaat.
                   </p>
                   <button
                     type="button"
                     disabled={exportAccount.isPending}
                     onClick={() => exportAccount.mutate()}
-                    className="mt-2 rounded-lg border border-white/15 px-3 py-1 text-[12px] text-white/80 disabled:opacity-40"
+                    className="mt-2 rounded-lg border border-border px-3 py-1 text-[12px] text-foreground/80 disabled:opacity-40"
                   >
                     {exportAccount.isPending ? "Bezig…" : "Uitdraai downloaden"}
                   </button>
                 </div>
               </div>
 
-              <p className="text-[12px] leading-snug text-white/50">
-                Typ ter bevestiging exact: <span className="font-medium text-white/75">{CONFIRM_PHRASE}</span>
+              <p className="text-[12px] leading-snug text-muted-foreground">
+                Typ ter bevestiging exact: <span className="font-medium text-muted-foreground">{CONFIRM_PHRASE}</span>
               </p>
               <input
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={CONFIRM_PHRASE}
-                className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/85 outline-none placeholder:text-white/20"
+                className="mt-2 w-full rounded-lg border border-border bg-foreground/30 px-3 py-2 text-[13px] text-foreground/85 outline-none placeholder:text-muted-foreground"
               />
 
               {/* GF8-05: direct definitief als expliciete, extra gewaarschuwde keuze.
@@ -321,8 +321,8 @@ export function AccountPrivacyPanel() {
                     onChange={(e) => setDirectDefinitief(e.target.checked)}
                     className="mt-0.5 h-4 w-4 shrink-0 accent-red-400"
                   />
-                  <span className="text-[12px] leading-snug text-red-100/80">
-                    <span className="font-medium text-red-200/90">Direct definitief verwijderen</span> — sla de hersteltermijn over.
+                  <span className="text-[12px] leading-snug text-[color:var(--color-negative)]">
+                    <span className="font-medium text-[color:var(--color-negative)]">Direct definitief verwijderen</span> — sla de hersteltermijn over.
                     Je account en alle gegevens worden meteen verwijderd. Dit is <span className="font-medium">onomkeerbaar</span>:
                     je kunt hierna niet meer inloggen en niets terugdraaien.
                   </span>
@@ -350,8 +350,12 @@ export function AccountPrivacyPanel() {
                       },
                     )
                   }
-                  className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-[#05070e] disabled:opacity-40"
-                  style={{ background: confirmText === CONFIRM_PHRASE ? "#f87171" : "rgba(255,255,255,0.25)" }}
+                  className="rounded-lg px-3 py-1.5 text-[12px] font-medium disabled:opacity-40"
+                  style={
+                    confirmText === CONFIRM_PHRASE
+                      ? { background: "var(--color-negative)", color: "var(--color-on-accent)" }
+                      : { background: "var(--color-muted)", color: "var(--color-foreground)" }
+                  }
                 >
                   {requestDelete.isPending
                     ? "Bezig…"
@@ -366,12 +370,12 @@ export function AccountPrivacyPanel() {
                     setConfirmText("")
                     setDirectDefinitief(false)
                   }}
-                  className="rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/70"
+                  className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground"
                 >
                   Annuleren
                 </button>
               </div>
-              <p className="mt-2 text-[11px] leading-snug text-white/30">
+              <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
                 {directDefinitief
                   ? "Zonder hersteltermijn is verwijdering direct definitief en niet terug te draaien."
                   : `Na aanvraag heb je ${recoveryDays} dagen om dit terug te draaien. Daarna is verwijdering definitief.`}{" "}

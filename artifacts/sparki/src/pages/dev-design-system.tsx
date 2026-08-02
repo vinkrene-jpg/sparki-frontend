@@ -199,7 +199,7 @@ function Sectie({
 }) {
   return (
     <section className="mt-10">
-      <h2 className="label-sm text-white/40">{titel}</h2>
+      <h2 className="label-sm text-muted-foreground">{titel}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -210,11 +210,11 @@ export default function DevDesignSystemPage() {
   const [actieDemo, setActieDemo] = useState(false);
 
   return (
-    <div className="min-h-dvh bg-app pb-24 text-white">
+    <div className="min-h-dvh bg-app pb-24 text-foreground">
       <div className="mx-auto w-full max-w-3xl px-4 pt-16">
         <p className="label-sm text-accent-cyan/70">Designsysteem</p>
         <h1 className="type-display mt-2">Sparki-fundering</h1>
-        <p className="type-body mt-2 max-w-xl text-white/55">
+        <p className="type-body mt-2 max-w-xl text-muted-foreground">
           Interne testpagina — alleen zichtbaar in de ontwikkelomgeving. Alle
           tokens, typografie en basiscomponenten met hun staten. Alles hieronder
           is een statische voorbeeldweergave, geen echte sportergegevens.
@@ -228,7 +228,7 @@ export default function DevDesignSystemPage() {
                 className="rounded-card border border-border bg-surface p-card-compact"
               >
                 <div
-                  className={`h-9 w-full rounded-lg border border-white/5 ${t.swatch} ${
+                  className={`h-9 w-full rounded-lg border border-border ${t.swatch} ${
                     t.naam === "Tekst óp accent"
                       ? "flex items-center justify-center"
                       : ""
@@ -238,27 +238,27 @@ export default function DevDesignSystemPage() {
                     <span className="type-label text-on-accent">Aa</span>
                   )}
                 </div>
-                <p className="type-body-sm mt-2 font-medium text-white/80">
+                <p className="type-body-sm mt-2 font-medium text-foreground/80">
                   {t.naam}
                 </p>
-                <p className="type-label mt-0.5 break-all text-white/40">
+                <p className="type-label mt-0.5 break-all text-muted-foreground">
                   {t.utility}
                 </p>
-                <p className="type-label text-white/30">{t.waarde}</p>
+                <p className="type-label text-muted-foreground">{t.waarde}</p>
               </div>
             ))}
           </div>
-          <p className="type-body-sm mt-3 text-white/40">
-            Radius: <code className="text-white/60">rounded-card</code> (16px
-            kaarten) · <code className="text-white/60">rounded-control</code>{" "}
+          <p className="type-body-sm mt-3 text-muted-foreground">
+            Radius: <code className="text-muted-foreground">rounded-card</code> (16px
+            kaarten) · <code className="text-muted-foreground">rounded-control</code>{" "}
             (volledig ronde knoppen). Spacing:{" "}
-            <code className="text-white/60">p-card</code> (20px) ·{" "}
-            <code className="text-white/60">p-card-compact</code> (12px), verder
+            <code className="text-muted-foreground">p-card</code> (20px) ·{" "}
+            <code className="text-muted-foreground">p-card-compact</code> (12px), verder
             de 4px-basisschaal. Breekpunt desktop: 1024px (
-            <code className="text-white/60">lg:</code>). Schaduwen: geen
+            <code className="text-muted-foreground">lg:</code>). Schaduwen: geen
             schaduwtoken — het donkere ontwerp werkt met randen en
             glasoppervlakken; de icoon-gloed gebruikt{" "}
-            <code className="text-white/60">var(--accent-cyan)</code>.
+            <code className="text-muted-foreground">var(--accent-cyan)</code>.
           </p>
         </Sectie>
 
@@ -267,9 +267,9 @@ export default function DevDesignSystemPage() {
             {TYPOGRAFIE.map((t) => (
               <div
                 key={t.klasse}
-                className="border-b border-white/5 pb-4 last:border-0 last:pb-0"
+                className="border-b border-border pb-4 last:border-0 last:pb-0"
               >
-                <p className="type-label text-white/35">
+                <p className="type-label text-muted-foreground">
                   {t.klasse} · {t.spec}
                 </p>
                 <p
@@ -289,13 +289,13 @@ export default function DevDesignSystemPage() {
                 key={naam}
                 className="flex flex-col items-center gap-1.5 rounded-card border border-border bg-surface px-2 py-3 text-center"
               >
-                <Icon className="h-5 w-5 text-white/75" aria-hidden="true" />
-                <span className="type-label text-white/60">{naam}</span>
-                <span className="type-label text-white/30">{betekenis}</span>
+                <Icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                <span className="type-label text-muted-foreground">{naam}</span>
+                <span className="type-label text-muted-foreground">{betekenis}</span>
               </div>
             ))}
           </div>
-          <p className="type-body-sm mt-2 text-white/40">
+          <p className="type-body-sm mt-2 text-muted-foreground">
             Unicode-tekens en emoji zijn geen productie-iconen.
           </p>
         </Sectie>
@@ -304,14 +304,14 @@ export default function DevDesignSystemPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <DsCard>
               <DsCardTitel>Standaardkaart</DsCardTitel>
-              <p className="type-body mt-1.5 text-white/60">
+              <p className="type-body mt-1.5 text-muted-foreground">
                 Glasoppervlak, standaardrand en kaartradius uit de tokenlaag,
                 padding <code>p-card</code>.
               </p>
             </DsCard>
             <DsCard variant="compact">
               <DsCardTitel>Compacte kaart</DsCardTitel>
-              <p className="type-body-sm mt-1 text-white/60">
+              <p className="type-body-sm mt-1 text-muted-foreground">
                 Dichtere padding (<code>p-card-compact</code>) voor lijsten en
                 detailregels.
               </p>
@@ -377,8 +377,8 @@ export default function DevDesignSystemPage() {
         </Sectie>
 
         <Sectie titel="Weekcomponent — 7 dagen binnen 358px">
-          <div className="mx-auto w-[358px] max-w-full rounded-card border border-dashed border-white/15 p-2">
-            <p className="type-label mb-2 text-white/35">
+          <div className="mx-auto w-[358px] max-w-full rounded-card border border-dashed border-border p-2">
+            <p className="type-label mb-2 text-muted-foreground">
               Frame 358px — voorbeeldstaten (training · herstel · leeg · actief)
             </p>
             <DsWeek dagen={DEMO_WEEK} />
@@ -388,9 +388,9 @@ export default function DevDesignSystemPage() {
         <Sectie titel="Mobiele hoofdnavigatie — 44px, safe-area, aandachtstatus">
           <div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-card border border-border bg-app-deep">
             <div className="px-4 py-6">
-              <p className="type-body-sm text-white/40">
+              <p className="type-body-sm text-muted-foreground">
                 Demo in een 390px-frame. Actief:{" "}
-                <span className="text-white/70">{navPad}</span> — tik op een tab
+                <span className="text-muted-foreground">{navPad}</span> — tik op een tab
                 om te wisselen. "Plan" toont de aandachtstatus.
               </p>
             </div>

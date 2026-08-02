@@ -53,11 +53,11 @@ export default function RoutesPage() {
   const kiesTab = (v: RoutesView) => setLocation(`/routes?view=${v}`)
 
   const plannerUit = (
-    <div className="rounded-2xl border border-white/[0.06] bg-map-panel/[0.55] p-4 backdrop-blur-md">
-      <p className="text-[14px] font-medium text-white/70">
+    <div className="rounded-2xl border border-border bg-map-panel/[0.55] p-4 backdrop-blur-md">
+      <p className="text-[14px] font-medium text-muted-foreground">
         Routeplanner nog niet beschikbaar
       </p>
-      <p className="mt-0.5 text-[12px] leading-relaxed text-white/40">
+      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
         De routeplanner staat voor jouw account nog niet aan. Zodra hij
         beschikbaar is, verschijnt hij hier.
       </p>
@@ -70,10 +70,10 @@ export default function RoutesPage() {
           tekst tegen de schermrand (de schil zelf geeft geen zijmarge). */}
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Routes
         </h1>
-        <p className="text-sm text-white/55">{TAB_INTRO[view]}</p>
+        <p className="text-sm text-muted-foreground">{TAB_INTRO[view]}</p>
       </div>
 
       {/* Vast tabmenu: blijft bovenin staan tijdens scrollen, met een

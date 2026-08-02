@@ -35,7 +35,7 @@ function inviteUrl(token: string): string {
 const STATUS_STYLE: Record<InvitationStatus, { color: string; bg: string; border: string }> = {
   pending: { color: ACCENT, bg: "rgba(120,210,230,0.08)", border: "rgba(120,210,230,0.22)" },
   accepted: { color: "rgba(130,220,160,0.95)", bg: "rgba(130,220,160,0.08)", border: "rgba(130,220,160,0.22)" },
-  expired: { color: "rgba(255,255,255,0.5)", bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.12)" },
+  expired: { color: "var(--color-muted-foreground)", bg: "var(--color-muted-foreground)", border: "var(--color-muted-foreground)" },
   revoked: { color: "rgba(255,140,120,0.9)", bg: "rgba(255,140,120,0.07)", border: "rgba(255,140,120,0.22)" },
 }
 
@@ -164,15 +164,15 @@ export default function InvitationsPage() {
         <button
           type="button"
           onClick={() => setLocation("/you")}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+          className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
           Terug
         </button>
-        <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+        <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
           UITNODIGINGEN
         </span>
-        <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
+        <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-foreground/90">
           Testers & koppelingen
         </h1>
         <button
@@ -186,8 +186,8 @@ export default function InvitationsPage() {
       </header>
 
       {capabilities.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-          <p className="text-[13px] leading-relaxed text-white/55">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Je hebt geen rechten om uitnodigingen aan te maken. Coaches kunnen
             atleten uitnodigen, ouders kunnen een atleet koppelen.
           </p>
@@ -206,12 +206,12 @@ export default function InvitationsPage() {
                   onClick={() => setSelected(active ? null : cap.relationship)}
                   className="block w-full rounded-2xl border p-4 text-left backdrop-blur-md transition-colors"
                   style={{
-                    borderColor: active ? "rgba(120,210,230,0.4)" : "rgba(255,255,255,0.08)",
+                    borderColor: active ? "rgba(120,210,230,0.4)" : "var(--color-border)",
                     background: active ? "rgba(120,210,230,0.06)" : "rgba(7,13,22,0.82)",
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-sans text-[15px] font-light tracking-tight text-white/90">
+                    <span className="font-sans text-[15px] font-light tracking-tight text-foreground/90">
                       {cap.label}
                     </span>
                     <span
@@ -221,7 +221,7 @@ export default function InvitationsPage() {
                       {RELATIONSHIP_LABEL[cap.relationship]}
                     </span>
                   </div>
-                  <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+                  <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
                     {cap.description}
                   </p>
                 </button>
@@ -230,10 +230,10 @@ export default function InvitationsPage() {
           </div>
 
           {activeCap && (
-            <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+            <div className="space-y-4 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
               {activeCap.relationship === "none" && (
                 <label className="block">
-                  <span className="label-xs text-white/40">ROL</span>
+                  <span className="label-xs text-muted-foreground">ROL</span>
                   <div className="mt-1.5 flex gap-1.5">
                     {(["athlete", "coach", "parent"] as Role[]).map((r) => {
                       const on = adminRole === r
@@ -244,9 +244,9 @@ export default function InvitationsPage() {
                           onClick={() => setAdminRole(r)}
                           className="flex-1 rounded-xl border py-2.5 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors"
                           style={{
-                            borderColor: on ? "rgba(120,210,230,0.4)" : "rgba(255,255,255,0.1)",
+                            borderColor: on ? "rgba(120,210,230,0.4)" : "var(--color-border)",
                             background: on ? "rgba(120,210,230,0.1)" : "transparent",
-                            color: on ? ACCENT : "rgba(255,255,255,0.5)",
+                            color: on ? ACCENT : "var(--color-muted-foreground)",
                           }}
                         >
                           {r}
@@ -258,14 +258,14 @@ export default function InvitationsPage() {
               )}
 
               <label className="block">
-                <span className="label-xs text-white/40">E-MAIL (OPTIONEEL)</span>
+                <span className="label-xs text-muted-foreground">E-MAIL (OPTIONEEL)</span>
                 <div className="mt-1.5">
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="tester@voorbeeld.nl"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[14px] text-white placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
+                    className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-accent-cyan/40"
                   />
                 </div>
               </label>
@@ -284,7 +284,7 @@ export default function InvitationsPage() {
             </div>
           )}
 
-          {error && <p className="text-[12px] text-red-300/80">{error}</p>}
+          {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
         </section>
       )}
 
@@ -316,8 +316,8 @@ export default function InvitationsPage() {
               }
             />
           ) : (
-            <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-              <p className="text-[13px] leading-relaxed text-white/55">
+            <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+              <p className="text-[13px] leading-relaxed text-muted-foreground">
                 Het testdashboard kon niet worden geladen.
               </p>
             </div>
@@ -338,17 +338,17 @@ export default function InvitationsPage() {
           invitations.map((inv) => (
             <div
               key={inv.id}
-              className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+              className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-sans text-[14px] font-light text-white/90">
+                  <p className="font-sans text-[14px] font-light text-foreground/90">
                     {inv.email || RELATIONSHIP_LABEL[inv.relationship]}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-white/40">
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {RELATIONSHIP_LABEL[inv.relationship]} · rol: {inv.targetRole}
                   </p>
-                  <p className="mt-0.5 font-mono text-[10px] tracking-[0.08em] text-white/30">
+                  <p className="mt-0.5 font-mono text-[10px] tracking-[0.08em] text-muted-foreground">
                     {inv.status === "pending"
                       ? `verloopt ${formatDateTime(inv.expiresAt)}`
                       : `aangemaakt ${formatDateTime(inv.createdAt)}`}
@@ -362,7 +362,7 @@ export default function InvitationsPage() {
                   <button
                     type="button"
                     onClick={() => copyLink(inv)}
-                    className="flex-1 rounded-lg border border-white/10 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/[0.05]"
+                    className="flex-1 rounded-lg border border-border py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted"
                   >
                     {copiedId === inv.id ? (
                       <span className="inline-flex items-center justify-center gap-1">
@@ -377,7 +377,7 @@ export default function InvitationsPage() {
                     type="button"
                     onClick={() => revoke(inv)}
                     disabled={revokeInvite.isPending}
-                    className="rounded-lg border border-white/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition-colors hover:text-red-300/80 disabled:opacity-50"
+                    className="rounded-lg border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-[color:var(--color-negative)] disabled:opacity-50"
                   >
                     Intrekken
                   </button>
@@ -386,8 +386,8 @@ export default function InvitationsPage() {
             </div>
           ))
         ) : (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-            <p className="text-[13px] leading-relaxed text-white/55">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
               Nog geen uitnodigingen verstuurd.
             </p>
           </div>
@@ -395,7 +395,7 @@ export default function InvitationsPage() {
       </section>
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>

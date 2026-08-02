@@ -21,11 +21,11 @@ import {
 } from "lucide-react"
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 const cardClass =
-  "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
 
 export function SourceLayer() {
   const [, navigate] = useLocation()
@@ -85,16 +85,16 @@ export function SourceLayer() {
               <Icon className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
             </span>
             <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+              <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                 BRON
               </p>
-              <p className="font-sans text-[15px] font-medium text-white/90">
+              <p className="font-sans text-[15px] font-medium text-foreground/90">
                 {source.label}
               </p>
             </div>
           </div>
 
-          <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/65">
+          <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
             {source.detail}
           </p>
 
@@ -102,12 +102,12 @@ export function SourceLayer() {
           {source.kind === "sparki" && (
             <>
               {plan?.plan?.summary && (
-                <p className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-pretty text-[12px] leading-relaxed text-white/55">
+                <p className="mt-3 rounded-xl border border-border bg-muted p-3 text-pretty text-[12px] leading-relaxed text-muted-foreground">
                   {plan.plan.summary}
                 </p>
               )}
               {adaptationCount > 0 && (
-                <p className="mt-2 font-mono text-[10px] tracking-wide text-white/35">
+                <p className="mt-2 font-mono text-[10px] tracking-wide text-muted-foreground">
                   {adaptationCount}× aangepast op hoe je traint
                 </p>
               )}
@@ -116,7 +116,7 @@ export function SourceLayer() {
                   type="button"
                   onClick={() => adapt.mutate()}
                   disabled={adapt.isPending}
-                  className="flex items-center gap-2 rounded-xl border border-white/[0.12] px-4 py-2.5 font-sans text-[13px] font-medium text-white/75 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan disabled:opacity-50"
                 >
                   {adapt.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -129,7 +129,7 @@ export function SourceLayer() {
                   type="button"
                   onClick={build}
                   disabled={generate.isPending}
-                  className="flex items-center gap-2 rounded-xl border border-white/[0.12] px-4 py-2.5 font-sans text-[13px] font-medium text-white/55 transition-colors hover:border-white/20 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-border disabled:opacity-50"
                 >
                   {generate.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -140,7 +140,7 @@ export function SourceLayer() {
                 </button>
               </div>
               {adapt.isError && (
-                <p className="mt-2.5 text-[12px] text-red-300/70">
+                <p className="mt-2.5 text-[12px] text-[color:var(--color-negative)]">
                   Aanpassen lukte niet. Probeer het opnieuw.
                 </p>
               )}
@@ -148,8 +148,8 @@ export function SourceLayer() {
                 <p
                   className={`mt-2.5 rounded-xl border p-3 text-pretty text-[12px] leading-relaxed ${
                     adapt.data.adapted
-                      ? "border-cyan-300/20 bg-cyan-300/[0.06] text-cyan-100/80"
-                      : "border-white/[0.08] bg-white/[0.02] text-white/60"
+                      ? "border-accent-cyan bg-accent-cyan text-accent-cyan"
+                      : "border-border bg-muted text-muted-foreground"
                   }`}
                 >
                   {adapt.data.adapted
@@ -191,7 +191,7 @@ export function SourceLayer() {
                 </button>
               )}
               {generate.isError && (
-                <p className="mt-3 text-[12px] text-red-300/70">
+                <p className="mt-3 text-[12px] text-[color:var(--color-negative)]">
                   {generate.error instanceof Error &&
                   generate.error.message.includes("profile_incomplete")
                     ? "Je FTP of wekelijkse uren ontbreken nog. Vul ze aan bij je profiel."
@@ -206,7 +206,7 @@ export function SourceLayer() {
             <button
               type="button"
               onClick={() => navigate("/samen")}
-              className="mt-4 font-mono text-[11px] tracking-wide text-cyan-300/70 transition-colors hover:text-cyan-300"
+              className="mt-4 font-mono text-[11px] tracking-wide text-accent-cyan transition-colors hover:text-accent-cyan"
             >
               Bekijk wat je trainer heeft klaargezet →
             </button>
@@ -214,7 +214,7 @@ export function SourceLayer() {
 
           {/* Honest about what isn't wired: no external schedule import yet. */}
           {source.kind !== "coach" && (
-            <p className="mt-4 border-t border-white/[0.06] pt-3 font-mono text-[10px] leading-relaxed tracking-wide text-white/25">
+            <p className="mt-4 border-t border-border pt-3 font-mono text-[10px] leading-relaxed tracking-wide text-muted-foreground">
               Externe schema's importeren (zoals TrainingPeaks) kan nog niet —
               alleen je eigen invoer en gekoppelde platforms tellen mee.
             </p>

@@ -167,8 +167,8 @@ function isActive(current: string, path: string): boolean {
 }
 
 const pillStyle = (active: boolean) => ({
-  background: active ? "rgba(120,210,230,0.16)" : "transparent",
-  color: active ? "rgba(120,210,230,1)" : "rgba(255,255,255,0.45)",
+  background: active ? "var(--color-accent)" : "transparent",
+  color: active ? "var(--color-accent-cyan)" : "var(--color-muted-foreground)",
 })
 
 type PreviewAthlete = {
@@ -208,17 +208,17 @@ function AthleteSwitcher() {
   }
 
   return (
-    <div className="mt-3 border-t border-white/[0.07] pt-3">
-      <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+    <div className="mt-3 border-t border-border pt-3">
+      <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-muted-foreground">
         Kijk als gebruiker
       </span>
       {error ? (
-        <p className="mt-1.5 text-[10px] text-amber-200/70">
+        <p className="mt-1.5 text-[10px] text-[color:var(--color-warning)]">
           Kon preview-atleten niet laden. Draai{" "}
           <span className="font-mono">seed:preview</span>.
         </p>
       ) : athletes.length === 0 ? (
-        <p className="mt-1.5 text-[10px] text-white/40">
+        <p className="mt-1.5 text-[10px] text-muted-foreground">
           Nog geen preview-atleten geseed.
         </p>
       ) : (
@@ -237,7 +237,7 @@ function AthleteSwitcher() {
             return (
               <div key={a.clerkId} className="flex flex-col gap-1">
                 {showHeader ? (
-                  <span className="mt-1.5 font-mono text-[8px] uppercase tracking-[0.2em] text-white/25">
+                  <span className="mt-1.5 font-mono text-[8px] uppercase tracking-[0.2em] text-muted-foreground">
                     {a.group}
                   </span>
                 ) : null}
@@ -250,7 +250,7 @@ function AthleteSwitcher() {
                   <span className="block font-mono text-[10px] uppercase tracking-[0.1em]">
                     {a.name ?? a.clerkId}
                   </span>
-                  <span className="block text-[9px] normal-case tracking-normal text-white/35">
+                  <span className="block text-[9px] normal-case tracking-normal text-muted-foreground">
                     {a.personaLabel} — {a.basis}
                   </span>
                 </button>
@@ -314,10 +314,10 @@ function DevPanel({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed left-3 top-3 z-[9999] flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-[#040506]/85 px-3 py-1.5 shadow-[0_0_20px_rgba(230,190,120,0.14)] backdrop-blur-xl"
+        className="fixed left-3 top-3 z-[9999] flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-background px-3 py-1.5 shadow-float backdrop-blur-xl"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" />
-        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber-200/80">
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-warning)]">
           {contextLabel}
         </span>
       </button>
@@ -325,22 +325,22 @@ function DevPanel({
   }
 
   return (
-    <div className="fixed left-3 top-3 z-[9999] max-h-[calc(100vh-1.5rem)] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-cyan-300/20 bg-[#040506]/90 p-3 shadow-[0_0_30px_rgba(120,210,230,0.12)] backdrop-blur-xl">
+    <div className="fixed left-3 top-3 z-[9999] max-h-[calc(100vh-1.5rem)] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-accent-cyan/20 bg-background p-3 shadow-float backdrop-blur-xl">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber-200/80">
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-warning)]">
           {contextLabel}
         </span>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40 transition-colors hover:text-white/70"
+          className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-muted-foreground"
         >
           Sluiten
         </button>
       </div>
 
       <div className="mt-3">
-        <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+        <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-muted-foreground">
           Pagina
         </span>
         <div className="mt-1.5 flex flex-wrap gap-1">
@@ -364,10 +364,10 @@ function DevPanel({
       <AthleteSwitcher />
 
       {isHome && (
-        <div className="mt-3 border-t border-white/[0.07] pt-3">
-          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+        <div className="mt-3 border-t border-border pt-3">
+          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-muted-foreground">
             Dagtype{" "}
-            <span className="text-amber-200/60">— illustratie, geen echte data</span>
+            <span className="text-[color:var(--color-warning)]">— illustratie, geen echte data</span>
           </span>
           <div className="mt-1.5 flex flex-wrap gap-1">
             {DAY_TYPE_OPTIONS.map((o) => {
@@ -389,10 +389,10 @@ function DevPanel({
       )}
 
       {isHome && (
-        <div className="mt-3 border-t border-white/[0.07] pt-3">
-          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+        <div className="mt-3 border-t border-border pt-3">
+          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-muted-foreground">
             Coach-engine · type sporter{" "}
-            <span className="text-amber-200/60">— illustratie, geen echte data</span>
+            <span className="text-[color:var(--color-warning)]">— illustratie, geen echte data</span>
           </span>
 
           {/* Mode toggle — Scenario (fictief profiel + dagdata) is default;
@@ -438,7 +438,7 @@ function DevPanel({
               </button>
             ))}
           </div>
-          <p className="mt-1.5 font-mono text-[8px] leading-relaxed text-white/25">
+          <p className="mt-1.5 font-mono text-[8px] leading-relaxed text-muted-foreground">
             {coachMode === "scenario"
               ? "Fictief profiel + dagdata + wedstrijdcontext."
               : "Alleen profiel wisselt — echte check-in/hersteldata blijven."}

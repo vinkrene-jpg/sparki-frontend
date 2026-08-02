@@ -133,14 +133,14 @@ export function FtpEstimateWizard({
     <Sheet open={open} onOpenChange={(v) => (v ? onOpenChange(true) : close())}>
       <SheetContent
         side="bottom"
-        className="max-h-[90vh] overflow-y-auto border-white/[0.08] bg-[#070d16]/95 backdrop-blur-xl"
+        className="max-h-[90vh] overflow-y-auto border-border bg-card backdrop-blur-xl"
       >
         <SheetHeader className="flex flex-row items-center gap-3 space-y-0">
           {step !== "experience" ? (
             <button
               type="button"
               onClick={back}
-              className="flex items-center gap-1 rounded-lg px-2 py-1 font-sans text-[12px] text-white/55 transition-colors hover:text-white/85"
+              className="flex items-center gap-1 rounded-lg px-2 py-1 font-sans text-[12px] text-foreground/55 transition-colors hover:text-foreground/85"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2} />
               Terug
@@ -149,12 +149,12 @@ export function FtpEstimateWizard({
             <button
               type="button"
               onClick={close}
-              className="rounded-lg px-2 py-1 font-sans text-[12px] text-white/55 transition-colors hover:text-white/85"
+              className="rounded-lg px-2 py-1 font-sans text-[12px] text-foreground/55 transition-colors hover:text-foreground/85"
             >
               Sluiten
             </button>
           )}
-          <SheetTitle className="font-sans text-[14px] font-light text-white/85">
+          <SheetTitle className="font-sans text-[14px] font-light text-foreground/85">
             FTP inschatten
           </SheetTitle>
         </SheetHeader>
@@ -162,7 +162,7 @@ export function FtpEstimateWizard({
         <div className="mt-4 flex flex-col gap-4 pb-2">
           {step === "experience" && (
             <>
-              <p className="text-[13px] leading-relaxed text-white/50">
+              <p className="text-[13px] leading-relaxed text-foreground/50">
                 Hoe ervaren ben je op de fiets? Dit helpt bij een eerste
                 inschatting.
               </p>
@@ -177,7 +177,7 @@ export function FtpEstimateWizard({
                       borderColor:
                         experience === o.value
                           ? "rgba(120,210,230,0.45)"
-                          : "rgba(255,255,255,0.1)",
+                          : "var(--color-border)",
                       background:
                         experience === o.value
                           ? "rgba(120,210,230,0.08)"
@@ -185,10 +185,10 @@ export function FtpEstimateWizard({
                     }}
                   >
                     <div>
-                      <p className="font-sans text-[14px] text-white/85">
+                      <p className="font-sans text-[14px] text-foreground/85">
                         {o.label}
                       </p>
-                      <p className="text-[11px] text-white/40">{o.hint}</p>
+                      <p className="text-[11px] text-muted-foreground">{o.hint}</p>
                     </div>
                     {experience === o.value && (
                       <Check
@@ -204,7 +204,7 @@ export function FtpEstimateWizard({
                 type="button"
                 onClick={() => setStep("method")}
                 className="mt-1 rounded-2xl py-3 font-sans text-[13px] font-semibold"
-                style={{ background: ACCENT, color: "#040506" }}
+                style={{ background: ACCENT, color: "var(--color-on-accent)" }}
               >
                 Volgende
               </button>
@@ -213,7 +213,7 @@ export function FtpEstimateWizard({
 
           {step === "method" && (
             <>
-              <p className="text-[13px] leading-relaxed text-white/50">
+              <p className="text-[13px] leading-relaxed text-foreground/50">
                 Welke gegevens heb je? Hoe beter de bron, hoe nauwkeuriger de
                 schatting.
               </p>
@@ -228,7 +228,7 @@ export function FtpEstimateWizard({
                       borderColor:
                         method === o.value
                           ? "rgba(120,210,230,0.45)"
-                          : "rgba(255,255,255,0.1)",
+                          : "var(--color-border)",
                       background:
                         method === o.value
                           ? "rgba(120,210,230,0.08)"
@@ -236,10 +236,10 @@ export function FtpEstimateWizard({
                     }}
                   >
                     <div>
-                      <p className="font-sans text-[14px] text-white/85">
+                      <p className="font-sans text-[14px] text-foreground/85">
                         {o.label}
                       </p>
-                      <p className="text-[11px] text-white/40">{o.hint}</p>
+                      <p className="text-[11px] text-muted-foreground">{o.hint}</p>
                     </div>
                     {method === o.value && (
                       <Check
@@ -255,13 +255,13 @@ export function FtpEstimateWizard({
               <button
                 type="button"
                 onClick={() => setShowTestInfo((s) => !s)}
-                className="flex items-center gap-1.5 text-[12px] text-cyan-300/70"
+                className="flex items-center gap-1.5 text-[12px] text-accent-cyan"
               >
                 <Info className="h-3.5 w-3.5" strokeWidth={2} />
                 Zo doe je een echte 20-minuten test
               </button>
               {showTestInfo && (
-                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[12px] leading-relaxed text-white/55">
+                <div className="rounded-xl border border-border bg-muted px-4 py-3 text-[12px] leading-relaxed text-foreground/55">
                   Warm 15 minuten in. Rijd daarna 20 minuten zo hard als je
                   constant volhoudt — vlak parcours of op de trainer. Je
                   gemiddelde vermogen over die 20 minuten × 0,95 is je FTP. Doe de
@@ -273,7 +273,7 @@ export function FtpEstimateWizard({
                 type="button"
                 onClick={() => setStep("input")}
                 className="mt-1 rounded-2xl py-3 font-sans text-[13px] font-semibold"
-                style={{ background: ACCENT, color: "#040506" }}
+                style={{ background: ACCENT, color: "var(--color-on-accent)" }}
               >
                 Volgende
               </button>
@@ -284,7 +284,7 @@ export function FtpEstimateWizard({
             <>
               {method !== "experience" ? (
                 <>
-                  <p className="text-[13px] leading-relaxed text-white/50">
+                  <p className="text-[13px] leading-relaxed text-foreground/50">
                     {method === "twentyMin"
                       ? "Wat was je gemiddelde vermogen over je 20-minuten test?"
                       : "Wat was je gemiddelde vermogen tijdens die harde rit van ongeveer een uur?"}
@@ -299,16 +299,16 @@ export function FtpEstimateWizard({
                       placeholder="bijv. 250"
                       min={50}
                       max={700}
-                      className="w-32 rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-2.5 font-sans text-[15px] text-white/90 placeholder:text-white/25 focus:outline-none"
+                      className="w-32 rounded-xl border border-accent-cyan/30 bg-muted px-3.5 py-2.5 font-sans text-[15px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
                     />
-                    <span className="font-mono text-[12px] text-white/40">
+                    <span className="font-mono text-[12px] text-muted-foreground">
                       watt
                     </span>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="text-[13px] leading-relaxed text-white/50">
+                  <p className="text-[13px] leading-relaxed text-foreground/50">
                     {weightKg
                       ? "FTP-schatting op basis van niveau en gewicht. Verfijn dit later met een echte test."
                       : "Vul je gewicht in voor een betere inschatting op basis van je niveau."}
@@ -324,9 +324,9 @@ export function FtpEstimateWizard({
                         placeholder="bijv. 70"
                         min={30}
                         max={150}
-                        className="w-32 rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-2.5 font-sans text-[15px] text-white/90 placeholder:text-white/25 focus:outline-none"
+                        className="w-32 rounded-xl border border-accent-cyan/30 bg-muted px-3.5 py-2.5 font-sans text-[15px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
                       />
-                      <span className="font-mono text-[12px] text-white/40">
+                      <span className="font-mono text-[12px] text-muted-foreground">
                         kg
                       </span>
                     </div>
@@ -338,7 +338,7 @@ export function FtpEstimateWizard({
                 onClick={compute}
                 disabled={!canCompute}
                 className="mt-1 rounded-2xl py-3 font-sans text-[13px] font-semibold disabled:opacity-40"
-                style={{ background: ACCENT, color: "#040506" }}
+                style={{ background: ACCENT, color: "var(--color-on-accent)" }}
               >
                 Bereken schatting
               </button>
@@ -347,8 +347,8 @@ export function FtpEstimateWizard({
 
           {step === "result" && result && (
             <>
-              <div className="flex flex-col items-center gap-1 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] px-6 py-7 text-center">
-                <p className="font-mono text-[10px] tracking-[0.2em] text-white/40">
+              <div className="flex flex-col items-center gap-1 rounded-2xl border border-accent-cyan/20 bg-accent-cyan/10 px-6 py-7 text-center">
+                <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                   GESCHATTE FTP
                 </p>
                 <p
@@ -356,18 +356,18 @@ export function FtpEstimateWizard({
                   style={{ color: ACCENT }}
                 >
                   {result.ftp}
-                  <span className="text-lg text-white/40"> W</span>
+                  <span className="text-lg text-muted-foreground"> W</span>
                 </p>
-                <p className="text-[12px] text-white/45">
+                <p className="text-[12px] text-muted-foreground">
                   Bereik {result.low}–{result.high} W (±{result.marginPct}%)
                 </p>
               </div>
-              <p className="text-[12px] leading-relaxed text-white/45">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 {result.basis} Dit is een inschatting — doe een 20-minuten test
                 wanneer je kunt om je FTP exact vast te leggen.
               </p>
               {save.isError && (
-                <p className="text-[12px] text-red-300/70">
+                <p className="text-[12px] text-[color:var(--color-negative)]">
                   Opslaan lukte niet. Probeer het opnieuw.
                 </p>
               )}
@@ -376,7 +376,7 @@ export function FtpEstimateWizard({
                 onClick={handleSave}
                 disabled={save.isPending}
                 className="flex items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-                style={{ background: ACCENT, color: "#040506" }}
+                style={{ background: ACCENT, color: "var(--color-on-accent)" }}
               >
                 {save.isPending ? (
                   <>

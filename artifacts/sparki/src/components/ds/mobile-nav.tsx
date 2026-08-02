@@ -56,7 +56,7 @@ export function DsMobileNav({
       aria-label="Hoofdnavigatie"
       className={cn(
         vast && "fixed inset-x-0 bottom-0 z-40",
-        "border-t border-white/5 bg-app-deep/90 backdrop-blur-xl",
+        "border-t border-border bg-app-deep/90 backdrop-blur-xl",
         className,
       )}
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}
@@ -78,7 +78,7 @@ export function DsMobileNav({
                 <Icon
                   className={cn(
                     "h-5 w-5",
-                    actief ? "text-accent-cyan" : "text-white/40",
+                    actief ? "text-accent-cyan" : "text-muted-foreground",
                   )}
                   style={
                     actief
@@ -97,7 +97,7 @@ export function DsMobileNav({
               <span
                 className={cn(
                   "type-label",
-                  actief ? "text-accent-cyan" : "text-white/45",
+                  actief ? "text-accent-cyan" : "text-muted-foreground",
                 )}
               >
                 {item.label}

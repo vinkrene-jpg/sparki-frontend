@@ -50,10 +50,10 @@ function ComparisonBlock({
   if (!cmp.comparable) {
     return (
       <ChartFrame title="Vergelijking met vorige rit" uitlegKey="vergelijkbaarheid">
-        <p className="text-[13px] leading-relaxed text-white/60">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           De rit van {prevDate} is niet goed te vergelijken met deze rit:
         </p>
-        <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4 text-[12px] leading-relaxed text-white/45">
+        <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4 text-[12px] leading-relaxed text-muted-foreground">
           {cmp.reasons.map((r, i) => (
             <li key={i}>{r}</li>
           ))}
@@ -103,10 +103,10 @@ function ComparisonBlock({
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between text-[12px]">
-            <span className="text-white/45">{r.label}</span>
-            <span className="font-mono tabular-nums text-white/70">
+            <span className="text-muted-foreground">{r.label}</span>
+            <span className="font-mono tabular-nums text-muted-foreground">
               {r.now}
-              <span className="text-white/40"> / toen {r.prev}</span>
+              <span className="text-muted-foreground"> / toen {r.prev}</span>
               <span
                 className="ml-1"
                 style={{
@@ -154,14 +154,14 @@ function AnalyseRow({
   return (
     <div className="flex items-start justify-between gap-3 py-2">
       <div className="flex items-center gap-1">
-        <span className="text-[12px] text-white/50">{label}</span>
+        <span className="text-[12px] text-muted-foreground">{label}</span>
         <UitlegDot uitlegKey={uitlegKey} label={label} />
       </div>
       <div className="text-right">
         <p className="text-[13px] font-medium" style={{ color }}>
           {verdict}
         </p>
-        <p className="font-mono text-[10px] tabular-nums text-white/40">{detail}</p>
+        <p className="font-mono text-[10px] tabular-nums text-muted-foreground">{detail}</p>
       </div>
     </div>
   )
@@ -198,10 +198,10 @@ export function SessionGraphs({
   if (!streams) {
     return (
       <div className="mt-6">
-        <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
           GRAFIEKEN
         </span>
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/45">
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           Voor deze sessie zijn geen meetreeksen beschikbaar. Grafieken
           verschijnen bij ritten die als FIT-, TCX- of GPX-bestand zijn
           binnengekomen ná deze update — eerdere bestanden bewaarden alleen de
@@ -241,7 +241,7 @@ export function SessionGraphs({
 
   return (
     <div className="mt-6 flex flex-col gap-3">
-      <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
         GRAFIEKEN &amp; ANALYSE
       </span>
 
@@ -278,7 +278,7 @@ export function SessionGraphs({
       )}
 
       {hasAnyAnalysis && (
-        <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 [&>div+div]:border-t [&>div+div]:border-white/[0.06]">
+        <div className="rounded-xl border border-border bg-muted px-4 py-2 [&>div+div]:border-t [&>div+div]:border-border">
           {drift && (
             <AnalyseRow
               label="Hartslagdrift"
@@ -343,16 +343,16 @@ export function SessionGraphs({
             detail.plannedWorkout ? `gepland schema "${detail.plannedWorkout.title}"` : null
           }
         >
-          <p className="text-[13px] leading-relaxed text-white/75">{planCmp.conclusion}</p>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">{planCmp.conclusion}</p>
           {planCmp.matches.some((m) => m.riddenAvgW != null) && (
             <div className="mt-2 flex flex-col gap-1">
               {planCmp.matches.map((m, i) => (
                 <div key={i} className="flex items-center justify-between text-[12px]">
-                  <span className="text-white/45">Blok {i + 1}</span>
-                  <span className="font-mono tabular-nums text-white/70">
+                  <span className="text-muted-foreground">Blok {i + 1}</span>
+                  <span className="font-mono tabular-nums text-muted-foreground">
                     {m.riddenAvgW != null ? `${m.riddenAvgW} W · ${fmtDur(m.riddenDurationSec!)}` : "niet teruggevonden"}
                     {m.plannedTargetW != null && (
-                      <span className="text-white/40"> / doel {m.plannedTargetW} W</span>
+                      <span className="text-muted-foreground"> / doel {m.plannedTargetW} W</span>
                     )}
                     {m.deltaPct != null && (
                       <span
@@ -383,8 +383,8 @@ export function SessionGraphs({
           <div className="flex flex-col gap-1">
             {intervals.map((iv, i) => (
               <div key={i} className="flex items-center justify-between text-[12px]">
-                <span className="text-white/45">Blok {i + 1}</span>
-                <span className="font-mono tabular-nums text-white/70">
+                <span className="text-muted-foreground">Blok {i + 1}</span>
+                <span className="font-mono tabular-nums text-muted-foreground">
                   {iv.avgW} W · {fmtDur(iv.durationSec)}
                 </span>
               </div>

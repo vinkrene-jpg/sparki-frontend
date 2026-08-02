@@ -277,18 +277,18 @@ function InsightRow({
       <div
         className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
         style={{
-          color: found ? ACCENT : "rgba(255,255,255,0.35)",
-          background: found ? "rgba(120,210,230,0.08)" : "rgba(255,255,255,0.03)",
-          border: `1px solid ${found ? "rgba(120,210,230,0.22)" : "rgba(255,255,255,0.08)"}`,
+          color: found ? ACCENT : "var(--color-muted-foreground)",
+          background: found ? "rgba(120,210,230,0.08)" : "var(--color-muted)",
+          border: `1px solid ${found ? "rgba(120,210,230,0.22)" : "var(--color-border)"}`,
         }}
       >
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
+        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
           {title}
         </p>
-        <div className="mt-1 text-[13px] leading-relaxed text-white/75">{children}</div>
+        <div className="mt-1 text-[13px] leading-relaxed text-foreground/75">{children}</div>
       </div>
     </div>
   )
@@ -313,14 +313,14 @@ function RaceInsightPanel({
   const weatherNote = formatWeatherNote(weather)
 
   return (
-    <section className="rounded-2xl border border-cyan-300/15 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <section className="rounded-2xl border border-accent-cyan/15 bg-card p-4 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
         <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: ACCENT }}>
           Alvast bekeken
         </span>
       </div>
-      <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+      <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
         Dit is automatisch erbij gezocht. Controleer het en vul alleen aan wat
         ontbreekt — overschrijven mag altijd.
       </p>
@@ -329,43 +329,43 @@ function RaceInsightPanel({
         <InsightRow icon={<CloudSun className="h-4 w-4" />} title="Weer op wedstrijddag" found={weather.available}>
           {weather.available && weatherNote ? (
             <>
-              <span className="text-white/85">{weatherNote}</span>
+              <span className="text-foreground/85">{weatherNote}</span>
               {weather.locationLabel && (
-                <span className="text-white/40"> · {weather.locationLabel}</span>
+                <span className="text-muted-foreground"> · {weather.locationLabel}</span>
               )}
               {weather.advisory && (
-                <p className="mt-1 text-[12px] text-amber-200/80">
+                <p className="mt-1 text-[12px] text-[color:var(--color-warning)]">
                   {weather.advisory.headline}
                   {weather.advisory.suggestion ? ` — ${weather.advisory.suggestion}` : ""}
                 </p>
               )}
             </>
           ) : (
-            <span className="text-white/45">{weatherReasonNl(weather.reason)}</span>
+            <span className="text-muted-foreground">{weatherReasonNl(weather.reason)}</span>
           )}
         </InsightRow>
 
         <InsightRow icon={<MapPin className="h-4 w-4" />} title="Afstand vanaf huis" found={travel.available}>
           {travel.available && travel.straightLineKm != null ? (
             <>
-              <span className="text-white/85">≈ {travel.straightLineKm} km hemelsbreed</span>
-              {travel.fromLabel && <span className="text-white/40"> vanaf {travel.fromLabel}</span>}
-              <p className="mt-1 text-[12px] text-white/40">
+              <span className="text-foreground/85">≈ {travel.straightLineKm} km hemelsbreed</span>
+              {travel.fromLabel && <span className="text-muted-foreground"> vanaf {travel.fromLabel}</span>}
+              <p className="mt-1 text-[12px] text-muted-foreground">
                 Reistijd met de auto wordt niet automatisch berekend — vul je
                 reistijd hieronder zelf in.
               </p>
             </>
           ) : (
-            <span className="text-white/45">{travelReasonNl(travel.reason)}</span>
+            <span className="text-muted-foreground">{travelReasonNl(travel.reason)}</span>
           )}
         </InsightRow>
 
         <InsightRow icon={<Clock className="h-4 w-4" />} title="Logistiek-voorstel" found>
-          <span className="text-white/85">
+          <span className="text-foreground/85">
             Aankomst {logistics.arrivalBufferMin} min vooraf · warming-up{" "}
             {logistics.warmupMin} min · call-up {logistics.callUpMin} min
           </span>
-          <p className="mt-1 text-[12px] text-white/40">{logistics.rationale}</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">{logistics.rationale}</p>
         </InsightRow>
       </div>
     </section>
@@ -382,14 +382,14 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="label-xs text-white/40">{label.toUpperCase()}</span>
+      <span className="label-xs text-muted-foreground">{label.toUpperCase()}</span>
       <div className="mt-1.5">{children}</div>
     </label>
   )
 }
 
 const inputCls =
-  "w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[14px] text-white placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
+  "w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-accent-cyan/40"
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={inputCls} />
@@ -670,17 +670,17 @@ export default function RacesPage() {
             <button
               type="button"
               onClick={showForm ? closeForm : closeImport}
-              className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+              className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
               Terug
             </button>
           )}
           <div>
-            <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+            <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
               WEDSTRIJDEN
             </span>
-            <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
+            <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-foreground/90">
               {showImport
                 ? "Uit kalender"
                 : showForm
@@ -696,7 +696,7 @@ export default function RacesPage() {
             <button
               type="button"
               onClick={() => setLocation("/wedstrijd-room")}
-              className="flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+              className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               <Film className="h-3.5 w-3.5" strokeWidth={2} />
               Wedstrijd-room
@@ -704,22 +704,22 @@ export default function RacesPage() {
             <button
               type="button"
               onClick={() => setLocation("/journey")}
-              className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+              className="rounded-full border border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               Jouw verhaal
             </button>
             <button
               type="button"
               onClick={() => startCreate("kalender")}
-              className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+              className="rounded-full border border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               Uit kalender
             </button>
             <button
               type="button"
               onClick={() => startCreate("handmatig")}
-              className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
-              style={{ borderColor: ACCENT, color: ACCENT, background: "rgba(255,255,255,0.04)" }}
+              className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
+              style={{ borderColor: ACCENT, color: ACCENT, background: "var(--color-border)" }}
             >
               + Race
             </button>
@@ -773,14 +773,14 @@ export default function RacesPage() {
               key={r.id}
               type="button"
               onClick={() => setLocation(`/races/${r.id}`)}
-              className="block w-full rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/20"
+              className="block w-full rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/20"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="truncate font-sans text-[15px] font-light tracking-tight text-white/90">
+                  <h3 className="truncate font-sans text-[15px] font-light tracking-tight text-foreground/90">
                     {r.name}
                   </h3>
-                  <p className="mt-0.5 text-[12px] text-white/45">
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
                     {formatDate(r.raceDate)}
                     {r.startTime ? ` · ${r.startTime}` : ""}
                     {r.location ? ` · ${r.location}` : ""}
@@ -809,7 +809,7 @@ export default function RacesPage() {
       )}
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
@@ -923,9 +923,9 @@ function RaceForm({
                       onClick={() => set("priority", p.value)}
                       className="flex-1 rounded-xl border py-2.5 font-mono text-[11px] tracking-[0.1em] transition-colors"
                       style={{
-                        borderColor: active ? "rgba(120,210,230,0.4)" : "rgba(255,255,255,0.1)",
+                        borderColor: active ? "rgba(120,210,230,0.4)" : "var(--color-border)",
                         background: active ? "rgba(120,210,230,0.1)" : "transparent",
-                        color: active ? ACCENT : "rgba(255,255,255,0.5)",
+                        color: active ? ACCENT : "var(--color-muted-foreground)",
                       }}
                     >
                       {p.value}
@@ -959,9 +959,9 @@ function RaceForm({
                     }
                     className="rounded-xl border px-3 py-2 font-mono text-[10px] tracking-[0.08em] transition-colors"
                     style={{
-                      borderColor: active ? "rgba(120,210,230,0.4)" : "rgba(255,255,255,0.1)",
+                      borderColor: active ? "rgba(120,210,230,0.4)" : "var(--color-border)",
                       background: active ? "rgba(120,210,230,0.1)" : "transparent",
-                      color: active ? ACCENT : "rgba(255,255,255,0.5)",
+                      color: active ? ACCENT : "var(--color-muted-foreground)",
                     }}
                   >
                     {o.label}
@@ -988,9 +988,9 @@ function RaceForm({
                       onClick={() => set("status", o.value)}
                       className="flex-1 rounded-xl border py-2.5 font-mono text-[11px] tracking-[0.1em] transition-colors"
                       style={{
-                        borderColor: active ? "rgba(120,210,230,0.4)" : "rgba(255,255,255,0.1)",
+                        borderColor: active ? "rgba(120,210,230,0.4)" : "var(--color-border)",
                         background: active ? "rgba(120,210,230,0.1)" : "transparent",
-                        color: active ? ACCENT : "rgba(255,255,255,0.5)",
+                        color: active ? ACCENT : "var(--color-muted-foreground)",
                       }}
                     >
                       {o.label}
@@ -999,7 +999,7 @@ function RaceForm({
                 })}
               </div>
               {form.status === "geannuleerd" && (
-                <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
                   Een geannuleerde wedstrijd telt nergens in mee — niet in je
                   plan, statistieken of doelen. Hij blijft wel zichtbaar in je
                   verhaal.
@@ -1045,7 +1045,7 @@ function RaceForm({
       {/* 03 Logistiek */}
       <section>
         <SectionLabel n="03" title="Logistiek" large />
-        <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
           Er is alvast een voorstel ingevuld op basis van je discipline en
           thuislocatie. Pas aan waar nodig — dit berekent je dagplanning.
         </p>
@@ -1089,7 +1089,7 @@ function RaceForm({
           <button
             type="button"
             onClick={addRider}
-            className="rounded-full border border-white/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70 transition-colors hover:bg-white/[0.06]"
+            className="rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition-colors hover:bg-muted"
           >
             + Renner
           </button>
@@ -1106,14 +1106,14 @@ function RaceForm({
           </Field>
 
           {availableFriends.length > 0 && (
-            <div className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-3">
+            <div className="rounded-xl border border-border bg-muted p-3">
               <div className="flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5 text-cyan-300/70" strokeWidth={2} />
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">
+                <Users className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={2} />
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
                   Uit je Circle
                 </span>
               </div>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
+              <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
                 Tik om een vriend uit je Circle als renner toe te voegen — geen
                 naam meer overtypen.
               </p>
@@ -1123,7 +1123,7 @@ function RaceForm({
                     key={fr.clerkId}
                     type="button"
                     onClick={() => addRiderNamed(fr.displayName)}
-                    className="rounded-full border border-white/10 px-3 py-1.5 text-[12px] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+                    className="rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
                   >
                     + {fr.displayName}
                   </button>
@@ -1134,11 +1134,11 @@ function RaceForm({
 
           {teamRiders.length > 0 && (
             <div className="space-y-3">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-white/35">
+              <span className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                 RENNERS (CARPOOL / ETA)
               </span>
               {teamRiders.map((r) => (
-                <div key={r.id} className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-3">
+                <div key={r.id} className="rounded-xl border border-border bg-muted p-3">
                   <div className="flex items-center gap-2">
                     <TextInput
                       value={r.name}
@@ -1148,7 +1148,7 @@ function RaceForm({
                     <button
                       type="button"
                       onClick={() => removeRider(r.id)}
-                      className="shrink-0 rounded-lg border border-white/10 px-2.5 py-2 text-white/40 transition-colors hover:text-red-300/80"
+                      className="shrink-0 rounded-lg border border-border px-2.5 py-2 text-muted-foreground transition-colors hover:text-[color:var(--color-negative)]"
                       aria-label="Verwijder renner"
                     >
                       <X className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1181,14 +1181,14 @@ function RaceForm({
       </Field>
 
       {error && (
-        <p className="text-[12px] text-red-300/80">{error}</p>
+        <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>
       )}
 
       <div className="ds-actiebalk flex gap-3">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-white/10 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/55 transition-colors hover:bg-white/[0.04]"
+          className="flex-1 rounded-xl border border-border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
         >
           Annuleren
         </button>
@@ -1208,7 +1208,7 @@ function RaceForm({
             type="button"
             onClick={onDelete}
             disabled={deleting}
-            className="w-full rounded-xl border border-red-400/20 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-red-300/70 transition-colors hover:bg-red-400/[0.06] disabled:opacity-50"
+            className="w-full rounded-xl border border-red-400/20 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-negative)] transition-colors hover:bg-red-400/[0.06] disabled:opacity-50"
           >
             {deleting ? "Verwijderen…" : "Verwijderen"}
           </button>
@@ -1250,9 +1250,9 @@ function KindTag({ label, strong }: { label: string; strong?: boolean }) {
               border: "1px solid rgba(120,210,230,0.35)",
             }
           : {
-              color: "rgba(255,255,255,0.45)",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              color: "var(--color-muted-foreground)",
+              background: "var(--color-muted)",
+              border: "1px solid var(--color-border)",
             }
       }
     >
@@ -1277,20 +1277,20 @@ export function RaceWerkbladPanel({ raceId }: { raceId: number }) {
   const knownFacts = course.facts.filter((f) => f.kind !== "ontbreekt")
   const missing = course.facts.filter((f) => f.kind === "ontbreekt")
   return (
-    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">
+    <section className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-accent-cyan">
         Parcours & advies
       </span>
-      <p className="mt-2 text-[12px] leading-relaxed text-white/60">{course.character}</p>
+      <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">{course.character}</p>
 
       {knownFacts.length > 0 && (
         <ul className="mt-3 space-y-2">
           {knownFacts.map((f) => (
             <li key={f.key} className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-[12px] text-white/45">{f.label}: </span>
-                <span className="text-[12px] text-white/80">{f.value}</span>
-                <span className="ml-1.5 text-[10px] text-white/30">({f.origin})</span>
+                <span className="text-[12px] text-muted-foreground">{f.label}: </span>
+                <span className="text-[12px] text-foreground/80">{f.value}</span>
+                <span className="ml-1.5 text-[10px] text-muted-foreground">({f.origin})</span>
               </div>
               <KindTag label={FACT_KIND_LABEL[f.kind]} />
             </li>
@@ -1299,13 +1299,13 @@ export function RaceWerkbladPanel({ raceId }: { raceId: number }) {
       )}
 
       {missing.length > 0 && (
-        <div className="mt-3 rounded-xl border border-white/[0.07] bg-white/[0.015] p-3">
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">
+        <div className="mt-3 rounded-xl border border-border bg-muted p-3">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
             Nog onbekend
           </span>
           <ul className="mt-1.5 space-y-1">
             {missing.map((f) => (
-              <li key={f.key} className="text-[11px] leading-relaxed text-white/45">
+              <li key={f.key} className="text-[11px] leading-relaxed text-muted-foreground">
                 {f.label} — {f.question ?? "vul dit aan in het formulier hierboven."}
               </li>
             ))}
@@ -1322,16 +1322,16 @@ export function RaceWerkbladPanel({ raceId }: { raceId: number }) {
                 key={a.id}
                 className="rounded-xl border p-3"
                 style={{
-                  borderColor: coach ? "rgba(120,210,230,0.3)" : "rgba(255,255,255,0.07)",
-                  background: coach ? "rgba(120,210,230,0.05)" : "rgba(255,255,255,0.015)",
+                  borderColor: coach ? "rgba(120,210,230,0.3)" : "var(--color-border)",
+                  background: coach ? "rgba(120,210,230,0.05)" : "var(--color-muted)",
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h4 className="text-[13px] font-light text-white/85">{a.title}</h4>
+                  <h4 className="text-[13px] font-light text-foreground/85">{a.title}</h4>
                   <KindTag label={ADVICE_KIND_LABEL[a.kind]} strong={coach} />
                 </div>
-                <p className="mt-1 text-[12px] leading-relaxed text-white/60">{a.text}</p>
-                <p className="mt-1.5 text-[10px] text-white/30">Gebaseerd op: {a.basis}</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{a.text}</p>
+                <p className="mt-1.5 text-[10px] text-muted-foreground">Gebaseerd op: {a.basis}</p>
               </div>
             )
           })}
@@ -1340,12 +1340,12 @@ export function RaceWerkbladPanel({ raceId }: { raceId: number }) {
 
       {advice.notPossible.length > 0 && (
         <div className="mt-3">
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
             Nog geen advies mogelijk
           </span>
           <ul className="mt-1.5 space-y-1">
             {advice.notPossible.map((n) => (
-              <li key={n.domain} className="text-[11px] leading-relaxed text-white/45">
+              <li key={n.domain} className="text-[11px] leading-relaxed text-muted-foreground">
                 {n.reason}
               </li>
             ))}

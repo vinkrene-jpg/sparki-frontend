@@ -43,8 +43,8 @@ export const NAV_SETTINGS_DEFAULTS: NavSettings = {
 function pill(active: boolean) {
   return `rounded-full border px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition ${
     active
-      ? "border-cyan-300/50 text-cyan-300"
-      : "border-white/[0.14] text-white/55 hover:border-white/30"
+      ? "border-cyan-300/50 text-accent-cyan"
+      : "border-border text-muted-foreground hover:border-border"
   }`
 }
 
@@ -76,7 +76,7 @@ export function NavSettingsPanel() {
           Instellingen konden niet worden geladen — probeer het later opnieuw.
         </p>
       )
-    return <div className="h-40 w-full animate-pulse rounded-xl bg-white/[0.06]" />
+    return <div className="h-40 w-full animate-pulse rounded-xl bg-muted" />
   }
 
   function update(patch: Partial<NavSettings>) {
@@ -96,10 +96,10 @@ export function NavSettingsPanel() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           DATAVELDEN OP HET SCHERM
         </label>
-        <p className="mb-2 text-[12px] leading-relaxed text-white/40">
+        <p className="mb-2 text-[12px] leading-relaxed text-muted-foreground">
           Kies wat je onderweg wilt zien. Sensorvelden (hartslag, vermogen,
           cadans) werken zodra de bijbehorende sensor gekoppeld is.
         </p>
@@ -118,7 +118,7 @@ export function NavSettingsPanel() {
       </div>
 
       <div>
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           MAXIMAAL TEGELIJK ZICHTBAAR
         </label>
         <div className="flex flex-wrap gap-2">
@@ -137,7 +137,7 @@ export function NavSettingsPanel() {
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             LETTERGROOTTE
           </label>
           <div className="flex gap-2">
@@ -154,7 +154,7 @@ export function NavSettingsPanel() {
           </div>
         </div>
         <div>
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             DATABALK
           </label>
           <div className="flex gap-2">
@@ -173,7 +173,7 @@ export function NavSettingsPanel() {
       </div>
 
       <div>
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           KAART & AUTOMATISCHE LAGEN
         </label>
         <div className="flex flex-col gap-2">
@@ -208,9 +208,9 @@ export function NavSettingsPanel() {
               role="switch"
               aria-checked={draft[k]}
               onClick={() => update({ [k]: !draft[k] } as Partial<NavSettings>)}
-              className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-3 text-left"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted px-3.5 py-3 text-left"
             >
-              <span className="text-[13px] text-white/80">{l}</span>
+              <span className="text-[13px] text-foreground/80">{l}</span>
               {/* Echte schakelaar (groter raakvlak) i.p.v. mini-pill; puur decoratief */}
               <span
                 aria-hidden

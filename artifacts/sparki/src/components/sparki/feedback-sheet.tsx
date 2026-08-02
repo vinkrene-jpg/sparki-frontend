@@ -59,7 +59,7 @@ function MyReportsView({
 }) {
   if (loading) {
     return (
-      <div className="mt-6 flex items-center justify-center gap-2 text-[12px] text-white/40">
+      <div className="mt-6 flex items-center justify-center gap-2 text-[12px] text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         Meldingen laden…
       </div>
@@ -67,14 +67,14 @@ function MyReportsView({
   }
   if (error) {
     return (
-      <p className="mt-6 text-center text-[12px] text-red-300/80">
+      <p className="mt-6 text-center text-[12px] text-[color:var(--color-negative)]">
         Je meldingen konden niet geladen worden. Probeer het zo opnieuw.
       </p>
     )
   }
   if (reports.length === 0) {
     return (
-      <p className="mt-6 text-center text-[12px] leading-relaxed text-white/40">
+      <p className="mt-6 text-center text-[12px] leading-relaxed text-muted-foreground">
         Je hebt nog niets gemeld. Zodra je iets meldt, zie je hier de status —
         en je krijgt bericht wanneer het opgepakt of opgelost is.
       </p>
@@ -97,7 +97,7 @@ function MyReportCard({ report: r }: { report: BugReport }) {
   const kind = kindOf(r)
   const meta = STATUS_META[status]
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+    <div className="rounded-xl border border-border bg-muted p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <span
@@ -113,18 +113,18 @@ function MyReportCard({ report: r }: { report: BugReport }) {
             {meta.label}
           </span>
         </div>
-        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
           {formatWhen(r.createdAt)}
         </span>
       </div>
-      <p className="mt-2 text-[13px] leading-snug text-white/80">
+      <p className="mt-2 text-[13px] leading-snug text-foreground/80">
         {r.description}
       </p>
 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="mt-2.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300"
+        className="mt-2.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:text-accent-cyan"
       >
         <MessagesSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
         {open ? "Gesprek sluiten" : "Reageren of detail toevoegen"}
@@ -156,7 +156,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
   const [contextConsent, setContextConsent] = useState(true)
 
   const inputCls =
-    "w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+    "w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
 
   function pickFile(f: File | null) {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -211,23 +211,23 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
         type="button"
         aria-label="Sluiten"
         onClick={onClose}
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-foreground/70 backdrop-blur-sm"
       />
-      <div className="relative z-10 w-full max-w-md rounded-t-3xl border border-white/[0.1] bg-[#070d16]/95 p-6 backdrop-blur-xl sm:rounded-3xl">
+      <div className="relative z-10 w-full max-w-md rounded-t-3xl border border-border bg-card p-6 backdrop-blur-xl sm:rounded-3xl">
         {/* Top-anchored close — never exit-by-scroll. */}
         <div className="flex items-start justify-between">
           <div>
-            <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+            <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
               FEEDBACK & BUG MELDEN
             </span>
-            <h2 className="mt-1 font-sans text-xl font-light tracking-tight text-white/90">
+            <h2 className="mt-1 font-sans text-xl font-light tracking-tight text-foreground/90">
               Help Sparki beter worden
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="rounded-full border border-border p-1.5 text-foreground/60 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" />
@@ -235,7 +235,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Tab toggle: new report vs. the status of your own reports. */}
-        <div className="mt-4 grid grid-cols-2 gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-1">
+        <div className="mt-4 grid grid-cols-2 gap-1.5 rounded-xl border border-border bg-muted p-1">
           {([
             { key: "new", label: "Nieuwe melding" },
             { key: "mine", label: "Jouw meldingen" },
@@ -249,7 +249,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
                 className="rounded-lg py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition"
                 style={{
                   background: active ? "rgba(120,210,230,0.12)" : "transparent",
-                  color: active ? ACCENT : "rgba(255,255,255,0.5)",
+                  color: active ? ACCENT : "var(--color-muted-foreground)",
                 }}
               >
                 {t.label}
@@ -267,7 +267,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
         ) : done ? (
           <div className="mt-6 rounded-xl border p-5 text-center"
             style={{ borderColor: "rgba(130,220,160,0.3)", background: "rgba(130,220,160,0.06)" }}>
-            <p className="text-[14px] font-light text-white/90">
+            <p className="text-[14px] font-light text-foreground/90">
               Verstuurd — bedankt. We nemen het mee.
             </p>
           </div>
@@ -283,9 +283,9 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
                     onClick={() => setKind(key)}
                     className="flex flex-col items-center gap-1.5 rounded-xl border py-3 transition-colors"
                     style={{
-                      borderColor: active ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.08)",
-                      background: active ? "rgba(120,210,230,0.1)" : "rgba(255,255,255,0.02)",
-                      color: active ? ACCENT : "rgba(255,255,255,0.55)",
+                      borderColor: active ? "rgba(120,210,230,0.5)" : "var(--color-border)",
+                      background: active ? "rgba(120,210,230,0.1)" : "var(--color-muted)",
+                      color: active ? ACCENT : "var(--color-muted-foreground)",
                     }}
                   >
                     <Icon className="h-4 w-4" strokeWidth={1.75} />
@@ -311,13 +311,13 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
               onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
             />
             {previewUrl ? (
-              <div className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-muted p-2.5">
                 <img src={previewUrl} alt="" className="h-12 w-12 rounded object-cover" />
-                <span className="flex-1 truncate text-[12px] text-white/55">{file?.name}</span>
+                <span className="flex-1 truncate text-[12px] text-foreground/55">{file?.name}</span>
                 <button
                   type="button"
                   onClick={() => pickFile(null)}
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 hover:text-white/70"
+                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground/70"
                 >
                   Verwijderen
                 </button>
@@ -326,37 +326,37 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-white/[0.14] py-3 text-[12px] text-white/45 transition-colors hover:border-cyan-300/30 hover:text-white/70"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-foreground/70"
               >
                 <ImagePlus className="h-4 w-4" strokeWidth={1.75} />
                 Screenshot toevoegen (optioneel)
               </button>
             )}
 
-            <p className="text-[11px] leading-relaxed text-white/35">
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
               De pagina waar je nu bent en je rol worden automatisch meegestuurd.
             </p>
 
-            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-muted p-2.5">
               <input
                 type="checkbox"
                 checked={contextConsent}
                 onChange={(e) => setContextConsent(e.target.checked)}
                 className="mt-0.5 h-3.5 w-3.5 accent-cyan-300"
               />
-              <span className="text-[11px] leading-relaxed text-white/45">
+              <span className="text-[11px] leading-relaxed text-muted-foreground">
                 Stuur ook technische gegevens mee (appversie en een technisch
                 volgnummer) zodat de oorzaak sneller gevonden wordt.
               </span>
             </label>
 
-            {error && <p className="text-[12px] text-red-300/85">{error}</p>}
+            {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
 
             <button
               type="button"
               onClick={submit}
               disabled={busy || description.trim().length < 3}
-              className="flex w-full items-center justify-center gap-2 rounded-lg py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-on-accent)] transition disabled:opacity-50"
               style={{ background: ACCENT }}
             >
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}

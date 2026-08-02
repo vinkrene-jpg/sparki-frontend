@@ -97,9 +97,9 @@ function QrCard({
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start gap-4">
-        <div className="shrink-0 rounded-xl bg-white p-2.5">
+        <div className="shrink-0 rounded-xl bg-card p-2.5">
           <QRCodeCanvas
             ref={canvasRef}
             value={url}
@@ -111,13 +111,13 @@ function QrCard({
           />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-sans text-[15px] font-light tracking-tight text-white/90">
+          <p className="font-sans text-[15px] font-light tracking-tight text-foreground/90">
             {title}
           </p>
-          <p className="mt-0.5 text-[12px] leading-relaxed text-white/45">
+          <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
             {subtitle}
           </p>
-          <p className="mt-2 break-all font-mono text-[10px] leading-relaxed text-white/30">
+          <p className="mt-2 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">
             {url}
           </p>
         </div>
@@ -138,7 +138,7 @@ function QrCard({
         <button
           type="button"
           onClick={copyLink}
-          className="rounded-lg border border-white/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/[0.05]"
+          className="rounded-lg border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted"
         >
           {copied ? (
             <span className="inline-flex items-center gap-1">
@@ -254,18 +254,18 @@ export default function TesterQrPage() {
         <button
           type="button"
           onClick={() => setLocation("/invitations")}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+          className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
           Terug
         </button>
-        <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+        <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
           TESTER-TOEGANG
         </span>
-        <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
+        <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-foreground/90">
           QR-codes om te testen
         </h1>
-        <p className="mt-2 text-[13px] leading-relaxed text-white/55">
+        <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
           Scan een code met je telefoon om de echte app te openen. Met een
           tester-code krijg je meteen de juiste toegang en start de snelle
           onboarding.
@@ -274,18 +274,18 @@ export default function TesterQrPage() {
 
       <section className="space-y-3">
         <SectionLabel n="01" title="Live adres" large />
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+        <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
           <label className="block">
-            <span className="label-xs text-white/40">ADRES VAN DE APP</span>
+            <span className="label-xs text-muted-foreground">ADRES VAN DE APP</span>
             <input
               type="url"
               value={base}
               onChange={(e) => saveBase(e.target.value)}
               placeholder="https://jouw-app.replit.app"
-              className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[14px] text-white placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
+              className="mt-1.5 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-accent-cyan/40"
             />
           </label>
-          <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
             Open deze pagina op de gepubliceerde app, of plak hierboven het
             live-adres. De QR-codes verwijzen altijd naar dit adres.
           </p>
@@ -306,15 +306,15 @@ export default function TesterQrPage() {
         <SectionLabel n="03" title="Tester-codes" large />
 
         {isAdmin && (
-          <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+          <div className="space-y-3 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
             <label className="block">
-              <span className="label-xs text-white/40">NAAM TESTER (OPTIONEEL)</span>
+              <span className="label-xs text-muted-foreground">NAAM TESTER (OPTIONEEL)</span>
               <input
                 type="text"
                 value={testerName}
                 onChange={(e) => setTesterName(e.target.value)}
                 placeholder="bijv. Dylan"
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[14px] text-white placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
+                className="mt-1.5 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-accent-cyan/40"
               />
             </label>
             <label className="flex cursor-pointer items-start gap-2.5">
@@ -322,10 +322,10 @@ export default function TesterQrPage() {
                 type="checkbox"
                 checked={asHeadTester}
                 onChange={(e) => setAsHeadTester(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-cyan-300"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent-cyan)]"
               />
-              <span className="text-[12px] leading-relaxed text-white/55">
-                Markeer als <span className="text-white/80">hoofdtester</span> — geeft
+              <span className="text-[12px] leading-relaxed text-muted-foreground">
+                Markeer als <span className="text-foreground/80">hoofdtester</span> — geeft
                 deze tester de Hoofdtester-status in Sparki.
               </span>
             </label>
@@ -348,7 +348,7 @@ export default function TesterQrPage() {
                     : "Tester-code maken"}
               </button>
             </div>
-            {error && <p className="text-[12px] text-red-300/80">{error}</p>}
+            {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
           </div>
         )}
 
@@ -369,13 +369,13 @@ export default function TesterQrPage() {
             />
           ))
         ) : (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-            <p className="text-[13px] leading-relaxed text-white/55">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
               Nog geen openstaande tester-codes.{" "}
               <button
                 type="button"
                 onClick={() => setLocation("/invitations")}
-                className="underline transition-colors hover:text-cyan-300/90"
+                className="underline transition-colors hover:text-accent-cyan"
                 style={{ color: ACCENT }}
               >
                 Maak een uitnodiging
@@ -389,8 +389,8 @@ export default function TesterQrPage() {
       {isAdmin && (
         <section className="space-y-3">
           <SectionLabel n="04" title="Onboarding testen" large />
-          <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-            <p className="text-[13px] leading-relaxed text-white/55">
+          <div className="space-y-3 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
               Loop de onboarding opnieuw door om hem te controleren. Je profiel en
               gegevens blijven bewaard; alleen de onboarding-stappen worden gereset.
             </p>
@@ -409,13 +409,13 @@ export default function TesterQrPage() {
                 {resetting ? "Bezig…" : "Onboarding opnieuw doorlopen"}
               </button>
             </div>
-            {resetError && <p className="text-[12px] text-red-300/80">{resetError}</p>}
+            {resetError && <p className="text-[12px] text-[color:var(--color-negative)]">{resetError}</p>}
           </div>
         </section>
       )}
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>

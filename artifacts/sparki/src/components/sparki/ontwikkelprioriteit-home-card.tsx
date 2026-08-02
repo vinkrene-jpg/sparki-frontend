@@ -33,32 +33,32 @@ export function OntwikkelprioriteitHomeCard() {
     <button
       type="button"
       onClick={open}
-      className="group w-full rounded-2xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      className="group w-full rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/30"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Compass className="h-4 w-4 text-cyan-300" strokeWidth={1.75} />
-          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+          <Compass className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
             Je grootste hefboom
           </span>
         </div>
         {!prioriteit.balanced && (
-          <span className="shrink-0 rounded-full bg-cyan-300/10 px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/20">
+          <span className="shrink-0 rounded-full bg-accent-cyan/10 px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring">
             {prioriteit.label}
           </span>
         )}
       </div>
 
-      <p className="mt-2.5 text-[13.5px] leading-relaxed text-white/80">
+      <p className="mt-2.5 text-[13.5px] leading-relaxed text-foreground/80">
         {prioriteit.finding}
       </p>
 
-      <div className="mt-3 flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2.5">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" strokeWidth={1.75} />
-        <p className="text-[12.5px] leading-relaxed text-white/80">{prioriteit.action}</p>
+      <div className="mt-3 flex items-start gap-2 rounded-xl border border-accent-cyan/15 bg-accent-cyan/10 px-3 py-2.5">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-cyan" strokeWidth={1.75} />
+        <p className="text-[12.5px] leading-relaxed text-foreground/80">{prioriteit.action}</p>
       </div>
 
-      <span className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/70 transition-colors group-hover:text-cyan-300">
+      <span className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan transition-colors group-hover:text-accent-cyan">
         Bekijk je ontwikkelkompas
         <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
       </span>

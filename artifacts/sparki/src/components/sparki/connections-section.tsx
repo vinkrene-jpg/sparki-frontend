@@ -57,8 +57,8 @@ const READINESS_STYLE: Record<
   },
   beschikbaar: {
     color: ACCENT,
-    border: "rgba(120,210,230,0.25)",
-    bg: "rgba(120,210,230,0.08)",
+    border: "var(--color-accent-cyan)",
+    bg: "var(--color-accent)",
   },
   testbaar: {
     color: "rgb(196,181,253)",
@@ -66,9 +66,9 @@ const READINESS_STYLE: Record<
     bg: "rgba(196,181,253,0.07)",
   },
   voorbereid: {
-    color: "rgba(255,255,255,0.4)",
-    border: "rgba(255,255,255,0.1)",
-    bg: "rgba(255,255,255,0.03)",
+    color: "var(--color-muted-foreground)",
+    border: "var(--color-border)",
+    bg: "var(--color-muted)",
   },
 }
 
@@ -76,14 +76,14 @@ const READINESS_STYLE: Record<
 // mobiel): groen = echt gekoppeld, cyaan = bezig, amber = actie van de sporter
 // nodig, grijs = neutraal/niet gekoppeld.
 const CONNECT_STATUS_STYLE: Record<ConnectStatus, { color: string; border: string; bg: string }> = {
-  not_connected: { color: "rgba(255,255,255,0.45)", border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.04)" },
-  connecting: { color: ACCENT, border: "rgba(120,210,230,0.25)", bg: "rgba(120,210,230,0.08)" },
+  not_connected: { color: "var(--color-muted-foreground)", border: "var(--color-border)", bg: "var(--color-muted)" },
+  connecting: { color: ACCENT, border: "var(--color-accent-cyan)", bg: "var(--color-accent)" },
   connected: { color: "rgb(110,231,183)", border: "rgba(110,231,183,0.25)", bg: "rgba(110,231,183,0.08)" },
-  sync_in_progress: { color: ACCENT, border: "rgba(120,210,230,0.25)", bg: "rgba(120,210,230,0.08)" },
+  sync_in_progress: { color: ACCENT, border: "var(--color-accent-cyan)", bg: "var(--color-accent)" },
   action_required: { color: "rgb(251,191,36)", border: "rgba(251,191,36,0.25)", bg: "rgba(251,191,36,0.08)" },
   temporarily_unavailable: { color: "rgb(251,191,36)", border: "rgba(251,191,36,0.22)", bg: "rgba(251,191,36,0.06)" },
   permission_revoked: { color: "rgb(251,191,36)", border: "rgba(251,191,36,0.25)", bg: "rgba(251,191,36,0.08)" },
-  disconnected: { color: "rgba(255,255,255,0.45)", border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.04)" },
+  disconnected: { color: "var(--color-muted-foreground)", border: "var(--color-border)", bg: "var(--color-muted)" },
 }
 
 function ConnectStatusBadge({ status }: { status: ConnectStatus }) {
@@ -157,8 +157,8 @@ function CapabilityList({ capabilities }: { capabilities: Record<string, string>
     <ul className="flex flex-col gap-1">
       {rows.map((r) => (
         <li key={r.label} className="flex items-baseline gap-1.5 text-[11px] leading-snug">
-          <span className="text-white/55">{r.label}</span>
-          <span className="text-white/30">— {r.text}</span>
+          <span className="text-muted-foreground">{r.label}</span>
+          <span className="text-muted-foreground">— {r.text}</span>
         </li>
       ))}
     </ul>
@@ -173,7 +173,7 @@ function DataTypeChips({ types }: { types: string[] }) {
       {types.map((t) => (
         <span
           key={t}
-          className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-sans text-[10px] text-white/55"
+          className="rounded-full border border-border bg-muted px-2 py-0.5 font-sans text-[10px] text-muted-foreground"
         >
           {dataTypeLabel(t)}
         </span>
@@ -204,34 +204,34 @@ function ConsentDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-foreground/70 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       onClick={onCancel}
     >
       <div
-        className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-[#070d16]/95 shadow-2xl backdrop-blur-xl"
+        className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-border bg-card shadow-2xl backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-3 border-b border-white/[0.06] p-5">
+        <div className="flex items-start gap-3 border-b border-border p-5">
           <span
             className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-sans text-base font-bold"
-            style={{ background: "rgba(120,210,230,0.1)", color: ACCENT }}
+            style={{ background: "var(--color-accent)", color: ACCENT }}
           >
             {letter(connector.displayName)}
           </span>
           <div className="flex flex-1 flex-col gap-0.5">
-            <span className="text-[15px] font-semibold tracking-tight text-white/90">
+            <span className="text-[15px] font-semibold tracking-tight text-foreground/90">
               {connector.displayName} koppelen
             </span>
-            <span className="font-mono text-[10px] uppercase tracking-wide text-white/40">
+            <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
               {CATEGORY_LABEL[connector.category] ?? connector.category}
             </span>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/45 transition-colors hover:text-white/80"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground/80"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" />
@@ -240,14 +240,14 @@ function ConsentDialog({
 
         <div className="flex flex-col gap-4 p-5">
           <div className="flex flex-col gap-2">
-            <span className="flex items-center gap-1.5 text-[12px] font-medium text-white/70">
+            <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" style={{ color: ACCENT }} />
               Beschikbare gegevens
             </span>
             <DataTypeChips types={connector.provides} />
           </div>
 
-          <p className="text-[12px] leading-relaxed text-white/45">
+          <p className="text-[12px] leading-relaxed text-muted-foreground">
             {isOauth
               ? `Je wordt doorgestuurd naar ${connector.displayName} om toestemming te geven. Daarna worden je gegevens automatisch opgehaald.`
               : "Na je toestemming worden je gegevens automatisch opgehaald."}
@@ -258,7 +258,7 @@ function ConsentDialog({
               type="button"
               onClick={onCancel}
               disabled={busy}
-              className="h-9 rounded-lg px-4 font-sans text-xs font-medium text-white/55 transition-colors hover:text-white/80 disabled:opacity-40"
+              className="h-9 rounded-lg px-4 font-sans text-xs font-medium text-muted-foreground transition-colors hover:text-foreground/80 disabled:opacity-40"
             >
               Annuleren
             </button>
@@ -266,7 +266,7 @@ function ConsentDialog({
               type="button"
               onClick={onConfirm}
               disabled={busy}
-              className="flex h-9 items-center gap-1.5 rounded-lg px-4 font-sans text-xs font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex h-9 items-center gap-1.5 rounded-lg px-4 font-sans text-xs font-semibold text-[color:var(--color-on-accent)] transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{ background: ACCENT }}
             >
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : confirmLabel}
@@ -308,14 +308,14 @@ function RunsPanel({ connectorId }: { connectorId: string }) {
   }
   if (runs === null) {
     return (
-      <p className="flex items-center gap-1.5 pl-12 text-[11px] text-white/40">
+      <p className="flex items-center gap-1.5 pl-12 text-[11px] text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" /> Historie laden…
       </p>
     )
   }
   if (runs.length === 0) {
     return (
-      <p className="pl-12 text-[11px] text-white/40">
+      <p className="pl-12 text-[11px] text-muted-foreground">
         Nog geen synchronisaties uitgevoerd.
       </p>
     )
@@ -328,7 +328,7 @@ function RunsPanel({ connectorId }: { connectorId: string }) {
         const merged = r.counts?.merged ?? 0
         return (
           <div key={r.id} className="flex flex-col gap-0.5">
-            <span className="font-mono text-[10px] tracking-wide text-white/50">
+            <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
               {formatLastSync(r.startedAt) ?? r.startedAt} ·{" "}
               {SYNC_TRIGGER_LABELS[r.trigger] ?? r.trigger} ·{" "}
               <span className={ok ? "text-emerald-400/80" : "text-red-400/90"}>
@@ -389,18 +389,18 @@ function ConnectionRow({
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl font-sans text-sm font-bold"
           style={
             connector.available
-              ? { background: "rgba(120,210,230,0.1)", color: ACCENT }
-              : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)" }
+              ? { background: "var(--color-accent)", color: ACCENT }
+              : { background: "var(--color-muted)", color: "var(--color-muted-foreground)" }
           }
         >
           {letter(connector.displayName)}
         </span>
         <div className="flex flex-1 flex-col gap-0.5">
-          <span className="text-[14px] tracking-tight text-white/85">
+          <span className="text-[14px] tracking-tight text-foreground/85">
             {connector.displayName}
           </span>
           {isConnected ? (
-            <span className="font-mono text-[10px] tracking-wide text-white/40">
+            <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
               {cs === "sync_in_progress"
                 ? "Gegevens worden nu opgehaald…"
                 : lastSync
@@ -410,13 +410,13 @@ function ConnectionRow({
           ) : (
             !isAvailable &&
             connector.unavailableReason && (
-              <span className="text-[11px] leading-snug text-white/35">
+              <span className="text-[11px] leading-snug text-muted-foreground">
                 {connector.unavailableReason}
               </span>
             )
           )}
           {isAvailable && !isConnected && lastSync && cs !== "not_connected" && (
-            <span className="font-mono text-[10px] tracking-wide text-white/40">
+            <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
               Laatst gesynct {lastSync}
             </span>
           )}
@@ -460,7 +460,7 @@ function ConnectionRow({
               onClick={() => onSync(connector.id)}
               disabled={busy}
               title="Opnieuw synchroniseren"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 text-white/55 transition-colors hover:text-white/80 disabled:opacity-40"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground/80 disabled:opacity-40"
             >
               {busy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -473,7 +473,7 @@ function ConnectionRow({
               onClick={() => onDisconnect(connector.id)}
               disabled={busy}
               title="Koppeling verwijderen"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 text-white/45 transition-colors hover:text-red-400 disabled:opacity-40"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:text-red-400 disabled:opacity-40"
             >
               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
@@ -485,7 +485,7 @@ function ConnectionRow({
             type="button"
             onClick={() => onConnect(connector.id)}
             disabled={busy}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 font-sans text-xs font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 font-sans text-xs font-semibold text-[color:var(--color-on-accent)] transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ background: ACCENT }}
           >
             {busy ? (
@@ -532,7 +532,7 @@ function ConnectionRow({
             type="button"
             onClick={() => onBackfill(connector.id)}
             disabled={busy}
-            className="font-mono text-[9px] tracking-[0.15em] text-white/35 transition-colors hover:text-white/60 disabled:opacity-40"
+            className="font-mono text-[9px] tracking-[0.15em] text-muted-foreground transition-colors hover:text-muted-foreground disabled:opacity-40"
             title="Haal oudere activiteiten van dit platform op"
           >
             OUDERE ACTIVITEITEN OPHALEN
@@ -541,7 +541,7 @@ function ConnectionRow({
             type="button"
             onClick={() => setShowRuns((v) => !v)}
             aria-expanded={showRuns}
-            className="font-mono text-[9px] tracking-[0.15em] text-white/35 transition-colors hover:text-white/60"
+            className="font-mono text-[9px] tracking-[0.15em] text-muted-foreground transition-colors hover:text-muted-foreground"
           >
             {showRuns ? "HISTORIE VERBERGEN" : "SYNC-HISTORIE"}
           </button>
@@ -555,7 +555,7 @@ function ConnectionRow({
           type="button"
           onClick={() => onRevoke(connector.id)}
           disabled={busy}
-          className="self-start pl-12 font-mono text-[9px] tracking-[0.15em] text-white/25 transition-colors hover:text-white/45 disabled:opacity-40"
+          className="self-start pl-12 font-mono text-[9px] tracking-[0.15em] text-muted-foreground transition-colors hover:text-muted-foreground disabled:opacity-40"
         >
           TOEGANG VOLLEDIG INTREKKEN
         </button>
@@ -783,20 +783,20 @@ export function ConnectionsSection({
   return (
     <section className="pt-2">
       <SectionLabel n="04" title="Koppelingen" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
         Koppel je sport- en gezondheidsapps — je gegevens worden dan automatisch
         opgehaald. Verbreken of opnieuw synchroniseren kan altijd.
       </p>
 
       {loading ? (
-        <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] py-8 text-white/40 backdrop-blur-md">
+        <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-8 text-muted-foreground backdrop-blur-md">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span className="font-sans text-sm">Koppelingen laden…</span>
         </div>
       ) : (
         <>
           {ready.length > 0 && (
-            <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+            <div className="mt-3 rounded-2xl border border-border bg-card px-4 backdrop-blur-md">
               <div className="divide-y divide-white/[0.06]">
                 {ready.map((c) => (
                   <ConnectionRow
@@ -815,30 +815,30 @@ export function ConnectionsSection({
           )}
 
           {upcoming.length > 0 && (
-            <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] backdrop-blur-md">
+            <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card backdrop-blur-md">
               <button
                 type="button"
                 onClick={() => setShowUpcoming((v) => !v)}
                 aria-expanded={showUpcoming}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted"
               >
                 <span
                   className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.04)" }}
+                  style={{ background: "var(--color-muted)" }}
                 >
-                  <Link2 className="h-4 w-4 text-white/35" strokeWidth={1.75} />
+                  <Link2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                 </span>
                 <div className="flex flex-1 flex-col gap-0.5">
-                  <span className="text-[14px] tracking-tight text-white/75">
+                  <span className="text-[14px] tracking-tight text-muted-foreground">
                     Binnenkort beschikbaar
                   </span>
-                  <span className="text-[11px] leading-snug text-white/35">
+                  <span className="text-[11px] leading-snug text-muted-foreground">
                     {upcoming.length} platforms wachten op goedkeuring of zijn nog
                     in voorbereiding
                   </span>
                 </div>
                 <ChevronDown
-                  className={`h-4 w-4 shrink-0 text-white/40 transition-transform ${
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
                     showUpcoming ? "rotate-180" : ""
                   }`}
                   strokeWidth={1.75}
@@ -846,7 +846,7 @@ export function ConnectionsSection({
               </button>
 
               {showUpcoming && (
-                <div className="divide-y divide-white/[0.06] border-t border-white/[0.06] px-4">
+                <div className="divide-y divide-white/[0.06] border-t border-border px-4">
                   {upcoming.map((c) => (
                     <ConnectionRow
                       key={c.id}
@@ -867,7 +867,7 @@ export function ConnectionsSection({
       )}
 
       {importing && (
-        <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-white/55">
+        <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">
           <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
           Je gegevens worden opgehaald…
         </p>
@@ -887,7 +887,7 @@ export function ConnectionsSection({
         </p>
       )}
 
-      <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] leading-snug text-white/30">
+      <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] leading-snug text-muted-foreground">
         <Link2 className="h-3 w-3 shrink-0" />
         Sommige platforms geven externe apps pas toegang na een officieel
         goedkeuringsproces — die koppelingen schakelen we automatisch in zodra

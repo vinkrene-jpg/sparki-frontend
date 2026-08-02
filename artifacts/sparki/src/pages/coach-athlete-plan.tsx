@@ -69,7 +69,7 @@ function ObservationRow({ obs }: { obs: CoachAthleteObservation }) {
   const sev = obsSeverityStyle(obs.severity)
   const category = OBS_CATEGORY_NL[obs.category] ?? obs.category
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -77,20 +77,20 @@ function ObservationRow({ obs }: { obs: CoachAthleteObservation }) {
               className="h-1.5 w-1.5 shrink-0 rounded-full"
               style={{ background: sev.color }}
             />
-            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
               {category}
             </span>
           </div>
-          <h4 className="mt-1 text-pretty text-[14px] font-light tracking-tight text-white/90">
+          <h4 className="mt-1 text-pretty text-[14px] font-light tracking-tight text-foreground/90">
             {obs.title}
           </h4>
         </div>
-        <span className="shrink-0 font-mono text-[10px] text-white/30">
+        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
           {formatObsDate(obs.createdAt)}
         </span>
       </div>
       {obs.summary && (
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/60">
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           {obs.summary}
         </p>
       )}
@@ -99,7 +99,7 @@ function ObservationRow({ obs }: { obs: CoachAthleteObservation }) {
 }
 
 function intensityColor(label: string | null): string {
-  if (!label) return "rgba(255,255,255,0.4)"
+  if (!label) return "var(--color-muted-foreground)"
   if (label.includes("Zone 4") || label.includes("Zone 5"))
     return "rgba(255,140,80,0.9)"
   if (label.includes("Zone 3")) return "rgba(255,220,100,0.85)"
@@ -109,18 +109,18 @@ function intensityColor(label: string | null): string {
 
 function PlanRouteSummary({ route }: { route: NonNullable<PlanDay["route"]> }) {
   return (
-    <div className="mt-3 flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-white/55">
+    <div className="mt-3 flex items-center gap-4 rounded-xl border border-border bg-muted px-3 py-2.5">
+      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
         <MapPin className="h-3 w-3" strokeWidth={1.75} />
         {route.name}
       </span>
       {route.distanceKm != null && (
-        <span className="font-mono text-[11px] text-white/40">
+        <span className="font-mono text-[11px] text-muted-foreground">
           {route.distanceKm} km
         </span>
       )}
       {route.elevationGainM != null && (
-        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-white/40">
+        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
           <Mountain className="h-3 w-3" strokeWidth={1.75} />
           {route.elevationGainM} m
         </span>
@@ -143,28 +143,28 @@ function SuggestedDay({
   const dayName = formatDay(day.dayDate)
   if (day.isRest) {
     return (
-      <div className="flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0">
-        <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-white/30">
+      <div className="flex items-center gap-4 border-b border-border py-3.5 last:border-0">
+        <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
           {dayName}
         </span>
-        <span className="text-[13px] text-white/40">Rust</span>
+        <span className="text-[13px] text-muted-foreground">Rust</span>
       </div>
     )
   }
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
             {dayName}
           </span>
-          <h4 className="mt-0.5 truncate font-sans text-[15px] font-light tracking-tight text-white/90">
+          <h4 className="mt-0.5 truncate font-sans text-[15px] font-light tracking-tight text-foreground/90">
             {day.workout?.title ?? day.focus}
           </h4>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-4 border-t border-white/[0.06] pt-3">
+      <div className="mt-3 flex items-center gap-4 border-t border-border pt-3">
         <Stat label="Focus" value={day.focus} />
         {day.estDurationMin != null && (
           <>
@@ -180,23 +180,23 @@ function SuggestedDay({
             className="h-2 w-2 rounded-full"
             style={{ background: intensityColor(day.intensityLabel) }}
           />
-          <span className="font-mono text-[11px] text-white/55">
+          <span className="font-mono text-[11px] text-muted-foreground">
             {day.intensityLabel}
           </span>
         </div>
       )}
 
       {day.rationale && (
-        <p className="mt-3 text-[12px] leading-relaxed text-white/60">
+        <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
           {day.rationale}
         </p>
       )}
 
       {day.route && <PlanRouteSummary route={day.route} />}
 
-      <div className="mt-3 border-t border-white/[0.06] pt-3">
+      <div className="mt-3 border-t border-border pt-3">
         {day.adopted ? (
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.08] px-2.5 py-1.5 text-[12px] text-emerald-300/90">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.08] px-2.5 py-1.5 text-[12px] text-[color:var(--color-positive)]">
             <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
             Overgenomen in jouw plan
           </span>
@@ -205,7 +205,7 @@ function SuggestedDay({
             type="button"
             onClick={() => onAdopt(day.id)}
             disabled={isAdopting}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 transition-colors hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan transition-colors hover:bg-accent-cyan/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isAdopting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
@@ -223,22 +223,22 @@ function SuggestedDay({
 function PreviewDay({ day }: { day: PlanDay }) {
   const dayName = formatDay(day.dayDate)
   return (
-    <div className="flex items-start gap-4 border-b border-white/[0.05] py-3 last:border-0">
-      <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-white/30">
+    <div className="flex items-start gap-4 border-b border-border py-3 last:border-0">
+      <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
         {dayName}
       </span>
       <div className="min-w-0 flex-1">
         {day.isRest ? (
-          <span className="text-[13px] text-white/40">Rust</span>
+          <span className="text-[13px] text-muted-foreground">Rust</span>
         ) : (
           <div className="flex items-center gap-2">
             <span
               className="h-1.5 w-1.5 rounded-full"
               style={{ background: intensityColor(day.intensityLabel) }}
             />
-            <span className="text-[13px] text-white/80">{day.focus}</span>
+            <span className="text-[13px] text-foreground/80">{day.focus}</span>
             {day.estDurationMin != null && (
-              <span className="font-mono text-[10px] text-white/35">
+              <span className="font-mono text-[10px] text-muted-foreground">
                 {day.estDurationMin}m
               </span>
             )}
@@ -298,7 +298,7 @@ export default function CoachAthletePlanPage() {
       <div className="space-y-5">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-[12px] text-white/45 transition-colors hover:text-white/70"
+          className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground transition-colors hover:text-muted-foreground"
         >
           <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
           Terug naar je atleten
@@ -306,8 +306,8 @@ export default function CoachAthletePlanPage() {
 
         <div>
           <SectionLabel n="01" title="Wat opvalt" />
-          <p className="mt-2 text-[13px] text-white/45">
-            Wat er speelt bij <span className="text-white/70">{name}</span>,
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            Wat er speelt bij <span className="text-muted-foreground">{name}</span>,
             gedeeld op basis van hun eigen privacy-instelling.
           </p>
         </div>
@@ -317,29 +317,29 @@ export default function CoachAthletePlanPage() {
             {[0, 1].map((i) => (
               <div
                 key={i}
-                className="h-20 animate-pulse rounded-2xl bg-white/[0.05]"
+                className="h-20 animate-pulse rounded-2xl bg-muted"
               />
             ))}
           </div>
         ) : detailError ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-            <Info className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
-            <p className="text-[14px] text-white/60">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+            <Info className="mx-auto mb-3 h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[14px] text-muted-foreground">
               Kon dit even niet ophalen. Probeer het zo opnieuw.
             </p>
           </div>
         ) : !sharesData ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-            <Info className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
-            <p className="text-[14px] text-white/60">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+            <Info className="mx-auto mb-3 h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[14px] text-muted-foreground">
               {name} deelt geen data met jou.
             </p>
           </div>
         ) : observations.length === 0 ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-            <Info className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
-            <p className="text-[14px] text-white/60">Nog niets om te delen.</p>
-            <p className="mt-2 text-[12px] text-white/40">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+            <Info className="mx-auto mb-3 h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[14px] text-muted-foreground">Nog niets om te delen.</p>
+            <p className="mt-2 text-[12px] text-muted-foreground">
               Zodra {name} inzichten bewaart, verschijnen ze hier.
             </p>
           </div>
@@ -353,9 +353,9 @@ export default function CoachAthletePlanPage() {
 
         <div className="pt-1">
           <SectionLabel n="02" title="Adviesschema" />
-          <p className="mt-2 text-[13px] text-white/45">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Het vrijblijvende adviesschema voor{" "}
-            <span className="text-white/70">{name}</span>. Dit is
+            <span className="text-muted-foreground">{name}</span>. Dit is
             alleen ter informatie — het verandert jouw eigen planning niet.
           </p>
         </div>
@@ -365,41 +365,41 @@ export default function CoachAthletePlanPage() {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-24 animate-pulse rounded-2xl bg-white/[0.05]"
+                className="h-24 animate-pulse rounded-2xl bg-muted"
               />
             ))}
           </div>
         ) : data?.sharing === "none" ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-            <Info className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
-            <p className="text-[14px] text-white/60">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+            <Info className="mx-auto mb-3 h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[14px] text-muted-foreground">
               {name} deelt geen data met jou.
             </p>
           </div>
         ) : !data?.plan ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
             <Sparkles
-              className="mx-auto mb-3 h-7 w-7 text-white/30"
+              className="mx-auto mb-3 h-7 w-7 text-muted-foreground"
               strokeWidth={1.5}
             />
-            <p className="text-[14px] text-white/60">
+            <p className="text-[14px] text-muted-foreground">
               Er is nog geen adviesschema voor {name}.
             </p>
-            <p className="mt-2 text-[12px] text-white/40">
+            <p className="mt-2 text-[12px] text-muted-foreground">
               Zodra de atleet een adviesschema aanvraagt, zie je het hier.
             </p>
           </div>
         ) : (
           <>
             {/* Read-only advice banner */}
-            <div className="flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] p-3">
+            <div className="flex items-start gap-2 rounded-xl border border-accent-cyan/15 bg-accent-cyan/[0.04] p-3">
               <Info
                 className="mt-0.5 h-3.5 w-3.5 shrink-0"
                 style={{ color: ACCENT }}
                 strokeWidth={1.75}
               />
-              <p className="text-[12px] leading-relaxed text-white/65">
-                Dit is een <span className="text-white/85">adviesschema</span>, geen
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                Dit is een <span className="text-foreground/85">adviesschema</span>, geen
                 vastgelegde training. Gebruik het als gesprekstof — jouw eigen
                 planning blijft ongewijzigd.
               </p>
@@ -407,14 +407,14 @@ export default function CoachAthletePlanPage() {
 
             {/* Plan summary */}
             {data.plan.summary && (
-              <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+              <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
-                  <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
+                  <span className="font-mono text-[10px] tracking-[0.25em] text-accent-cyan">
                     ADVIESSCHEMA
                   </span>
                 </div>
-                <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/75">
+                <p className="mt-3 text-pretty text-[13px] leading-relaxed text-foreground/75">
                   {data.plan.summary}
                 </p>
               </div>
@@ -425,10 +425,10 @@ export default function CoachAthletePlanPage() {
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Calendar
-                    className="h-3.5 w-3.5 text-white/40"
+                    className="h-3.5 w-3.5 text-muted-foreground"
                     strokeWidth={1.75}
                   />
-                  <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">
+                  <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                     ADVIES · KOMENDE 7 DAGEN
                   </span>
                 </div>
@@ -437,7 +437,7 @@ export default function CoachAthletePlanPage() {
                     type="button"
                     onClick={() => handleAdopt(adoptableDays.map((d) => d.id))}
                     disabled={adopt.isPending}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/90 transition-colors hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[11px] text-accent-cyan transition-colors hover:bg-accent-cyan/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {adopt.isPending && pendingIds.length > 1 ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
@@ -448,7 +448,7 @@ export default function CoachAthletePlanPage() {
                   </button>
                 )}
               </div>
-              <p className="mb-3 text-[12px] leading-relaxed text-white/45">
+              <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
                 Neem losse dagen over in jouw eigen plan. Ze worden vastgelegd als
                 jouw trainingen — het adviesschema zelf verandert niet en
                 bestaande trainingen worden nooit overschreven.
@@ -469,16 +469,16 @@ export default function CoachAthletePlanPage() {
             {previewDays.length > 0 && (
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">
+                  <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                     VOORUITBLIK · VOORLOPIG
                   </span>
                 </div>
-                <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.6] p-4 backdrop-blur-md">
+                <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
                   {previewDays.map((d) => (
                     <PreviewDay key={d.id} day={d} />
                   ))}
                 </div>
-                <p className="mt-2 flex items-start gap-1.5 font-mono text-[10px] leading-snug text-white/30">
+                <p className="mt-2 flex items-start gap-1.5 font-mono text-[10px] leading-snug text-muted-foreground">
                   <Info className="mt-0.5 h-3 w-3 shrink-0" />
                   Deze weken zijn een voorlopige vooruitblik en bewegen mee met
                   het herstel en de wedstrijden van de atleet.

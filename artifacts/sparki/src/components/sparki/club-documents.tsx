@@ -37,8 +37,8 @@ function formatPublished(iso: string | null): string {
   })
 }
 
-const CARD = "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3.5 py-3 backdrop-blur-md"
-const EMPTY = "rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45"
+const CARD = "rounded-xl border border-border bg-card px-3.5 py-3 backdrop-blur-md"
+const EMPTY = "rounded-xl border border-border bg-card px-3.5 py-3 text-[12px] text-muted-foreground"
 
 function DocumentRow({ clubId, doc }: { clubId: number; doc: ClubDocumentRow }) {
   const [busy, setBusy] = useState(false)
@@ -63,10 +63,10 @@ function DocumentRow({ clubId, doc }: { clubId: number; doc: ClubDocumentRow }) 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5 shrink-0 text-cyan-200/70" />
-            <p className="truncate text-[13px] text-white/85">{doc.title}</p>
+            <FileText className="h-3.5 w-3.5 shrink-0 text-accent-cyan" />
+            <p className="truncate text-[13px] text-foreground/85">{doc.title}</p>
           </div>
-          <p className="mt-0.5 text-[11px] text-white/45">
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
             {CLUB_DOC_CATEGORY_LABELS[doc.category] ?? doc.category}
             {" · versie "}
             {doc.current.versionNumber}
@@ -74,7 +74,7 @@ function DocumentRow({ clubId, doc }: { clubId: number; doc: ClubDocumentRow }) 
             {formatPublished(doc.current.publishedAt)}
           </p>
           {doc.visibility === "trainers_bestuur" && (
-            <p className="mt-0.5 flex items-center gap-1 text-[10px] text-amber-200/70">
+            <p className="mt-0.5 flex items-center gap-1 text-[10px] text-[color:var(--color-warning)]">
               <Lock className="h-2.5 w-2.5" /> Alleen trainers en bestuur
             </p>
           )}
@@ -82,13 +82,13 @@ function DocumentRow({ clubId, doc }: { clubId: number; doc: ClubDocumentRow }) 
         <button
           onClick={onDownload}
           disabled={busy}
-          className="flex shrink-0 items-center gap-1 rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-1.5 text-[11px] text-cyan-200 disabled:opacity-40"
+          className="flex shrink-0 items-center gap-1 rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-2.5 py-1.5 text-[11px] text-accent-cyan disabled:opacity-40"
           data-testid={`download-clubdoc-${doc.id}`}
         >
           <Download className="h-3 w-3" /> {busy ? "Bezig…" : "Openen"}
         </button>
       </div>
-      {error && <p className="mt-1.5 text-[11px] text-rose-300/80">{error}</p>}
+      {error && <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
     </div>
   )
 }
@@ -97,7 +97,7 @@ function DocumentRow({ clubId, doc }: { clubId: number; doc: ClubDocumentRow }) 
 export function ClubDocumentsList({ clubId }: { clubId: number }) {
   const { data, isLoading, isError } = useClubDocuments(clubId)
   if (isLoading) {
-    return <div className="h-16 animate-pulse rounded-xl bg-white/[0.05]" />
+    return <div className="h-16 animate-pulse rounded-xl bg-muted" />
   }
   if (isError) {
     return <p className={EMPTY}>Documenten zijn nu niet beschikbaar.</p>

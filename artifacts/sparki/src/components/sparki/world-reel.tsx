@@ -78,14 +78,14 @@ function ReelAvatar({
         alt=""
         width={size}
         height={size}
-        className="shrink-0 rounded-full border border-white/30 object-cover"
+        className="shrink-0 rounded-full border border-border object-cover"
         style={{ width: size, height: size }}
       />
     )
   }
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full border border-white/30 bg-cyan-300/15 font-mono text-[11px] uppercase tracking-wider text-cyan-100"
+      className="flex shrink-0 items-center justify-center rounded-full border border-border bg-accent-cyan/15 font-mono text-[11px] uppercase tracking-wider text-cyan-100"
       style={{ width: size, height: size }}
     >
       {initials(athlete.name)}
@@ -95,6 +95,10 @@ function ReelAvatar({
 
 // A deterministic, calm gradient for text-only posts — never a fabricated image.
 // Derived from the post id so the same post always reads the same.
+// LICHT_THEMA_01-uitzondering (vertaalgids uitzondering 1): dit verloop is de
+// media-vervanger bínnen de foto-kaart wanneer een post geen afbeelding heeft.
+// De witte kaarttekst ligt eróp, dus het verloop blijft bewust donker voor
+// leesbaarheid — dit is een leesbaarheidsmaatregel, geen thema-kleur.
 function textGradient(seed: number): string {
   const hue = ((seed * 47) % 60) + 190 // cyan-leaning band, stays on-brand
   return `linear-gradient(160deg, oklch(0.30 0.07 ${hue}) 0%, #070d16 60%, #04060c 100%)`
@@ -138,21 +142,21 @@ function CommentsSheet({
         type="button"
         aria-label="Sluiten"
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-foreground/60 backdrop-blur-[2px]"
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Reacties"
-        className="relative mx-auto flex max-h-[72dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-white/10 bg-[#070d16]/95 backdrop-blur-xl"
+        className="relative mx-auto flex max-h-[72dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-border bg-card backdrop-blur-xl"
       >
         <div className="flex items-center justify-between px-5 pb-3 pt-4">
-          <p className="text-[14px] font-semibold text-white">Reacties</p>
+          <p className="text-[14px] font-semibold text-foreground">Reacties</p>
           <button
             type="button"
             onClick={onClose}
             aria-label="Sluiten"
-            className="rounded-full border border-white/15 p-1.5 text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="rounded-full border border-border p-1.5 text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>
@@ -160,7 +164,7 @@ function CommentsSheet({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-2">
           {isLoading ? (
-            <p className="text-[12px] text-white/40">Reacties laden…</p>
+            <p className="text-[12px] text-muted-foreground">Reacties laden…</p>
           ) : data && data.comments.length > 0 ? (
             <ul className="flex flex-col gap-3 pb-2">
               {data.comments.map((c) => (
@@ -168,23 +172,23 @@ function CommentsSheet({
                   <span
                     className="font-medium"
                     style={{
-                      color: c.byMe ? "var(--accent-cyan)" : "rgba(255,255,255,0.85)",
+                      color: c.byMe ? "var(--accent-cyan)" : "var(--color-foreground)",
                     }}
                   >
                     {c.authorName}
                   </span>{" "}
-                  <span className="text-white/70">{c.body}</span>
+                  <span className="text-muted-foreground">{c.body}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-[12px] text-white/40">
+            <p className="text-[12px] text-muted-foreground">
               Nog geen reacties. Wees de eerste.
             </p>
           )}
         </div>
 
-        <div className="flex items-center gap-2 border-t border-white/[0.07] px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3">
+        <div className="flex items-center gap-2 border-t border-border px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3">
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -193,14 +197,14 @@ function CommentsSheet({
             }}
             maxLength={500}
             placeholder="Schrijf een reactie…"
-            className="min-w-0 flex-1 rounded-full border border-white/12 bg-white/[0.04] px-3.5 py-2 text-[13px] text-white placeholder-white/30 outline-none focus:border-cyan-300/40"
+            className="min-w-0 flex-1 rounded-full border border-border bg-muted px-3.5 py-2 text-[13px] text-foreground placeholder-muted-foreground outline-none focus:border-accent-cyan"
           />
           <button
             type="button"
             onClick={submit}
             disabled={addComment.isPending || draft.trim().length < 1}
             aria-label="Reactie plaatsen"
-            className="rounded-full border border-cyan-300/30 p-2 text-cyan-300 transition-colors hover:bg-cyan-300/10 disabled:opacity-40"
+            className="rounded-full border border-accent-cyan p-2 text-accent-cyan transition-colors hover:bg-accent-cyan/10 disabled:opacity-40"
           >
             <Send className="h-4 w-4" strokeWidth={1.75} />
           </button>
@@ -236,16 +240,16 @@ function RailAction({
       className="flex flex-col items-center gap-1 disabled:opacity-50"
     >
       <span
-        className="flex h-9 w-9 items-center justify-center rounded-full border bg-black/35 backdrop-blur-sm transition-colors"
+        className="flex h-9 w-9 items-center justify-center rounded-full border bg-muted backdrop-blur-sm transition-colors"
         style={{
-          borderColor: active ? "rgba(120,210,230,0.6)" : "rgba(255,255,255,0.18)",
-          color: active ? "var(--accent-cyan)" : "rgba(255,255,255,0.92)",
+          borderColor: active ? "var(--accent-cyan)" : "var(--color-border)",
+          color: active ? "var(--accent-cyan)" : "var(--color-foreground)",
         }}
       >
         {icon}
       </span>
       {typeof count === "number" && count > 0 && (
-        <span className="text-[10px] font-medium text-white/80">
+        <span className="text-[10px] font-medium text-foreground/80">
           {formatCount(count)}
         </span>
       )}
@@ -317,7 +321,13 @@ function ReelSlide({
       dir="ltr"
       className="w-[74vw] max-w-[290px] shrink-0 snap-start"
     >
-      {/* The photo card — deliberately compact (4:5), not full-screen. */}
+      {/* The photo card — deliberately compact (4:5), not full-screen.
+          LICHT_THEMA_01-uitzondering: alles binnen deze kaart ligt ÓP een foto
+          (<img>). De donkere kaartbodem (bg-black), de leesbaarheids-scrims
+          (from-black gradients), de badge-pills (bg-black/40..45) en de witte
+          tekst/randen blijven bewust donker/wit — dit is een leesbaarheids-
+          maatregel over de afbeelding, geen thema-kleur (zie vertaalgids
+          uitzondering 1). */}
       <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-black">
         {/* Media layer — photo, or a calm gradient text slide when the post has
             no image (honest: nothing fabricated). */}
@@ -458,7 +468,7 @@ function ReelSlide({
             }
             disabled={recordShare.isPending}
           />
-          <span className="ml-auto text-[10px] text-white/45">
+          <span className="ml-auto text-[10px] text-muted-foreground">
             {relativeDay(post.publishedAt)}
           </span>
         </div>
@@ -468,7 +478,7 @@ function ReelSlide({
         {hasMedia && (
           <div>
             <p
-              className={`text-[12px] leading-relaxed text-white/85 ${
+              className={`text-[12px] leading-relaxed text-foreground/85 ${
                 expanded ? "" : "line-clamp-2"
               }`}
             >
@@ -478,7 +488,7 @@ function ReelSlide({
               <button
                 type="button"
                 onClick={() => setExpanded((s) => !s)}
-                className="mt-0.5 text-[11px] font-medium text-cyan-200/90"
+                className="mt-0.5 text-[11px] font-medium text-accent-cyan"
               >
                 {expanded ? "Minder" : "Meer"}
               </button>
@@ -597,7 +607,7 @@ export function WorldReel({
           type="button"
           onClick={toggleHand}
           aria-label="Wissel veegrichting voor links- of rechtshandig"
-          className="flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-200"
+          className="flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <Hand
             className="h-3.5 w-3.5"
@@ -632,7 +642,7 @@ export function WorldReel({
           The arrow points the way the thumb should sweep for this handedness. */}
       {showHint && posts.length > 1 && (
         <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-          <span className="flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-1.5 text-[11px] text-white/85 backdrop-blur-sm">
+          <span className="flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-[11px] text-foreground/85 shadow-card backdrop-blur-sm">
             {leftHanded ? (
               <ChevronRight className="h-3.5 w-3.5 animate-pulse" strokeWidth={2} />
             ) : (

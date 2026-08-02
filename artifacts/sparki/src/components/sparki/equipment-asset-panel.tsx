@@ -85,23 +85,27 @@ export function EquipmentAssetPanel({
         <div className="flex flex-wrap gap-3">
           {assets.map((a) => (
             <figure key={a.id} className="w-[104px]">
-              <div className="relative h-[88px] w-[104px] overflow-hidden rounded-lg bg-white/[0.04]">
+              <div className="relative h-[88px] w-[104px] overflow-hidden rounded-lg bg-muted">
                 <img
                   src={assetImageUrl(a.id)}
                   alt={`${a.brand} ${a.model}`}
-                  className="h-full w-full object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
+                  className="h-full w-full object-contain drop-shadow-md"
                   loading="lazy"
                 />
+                {/* LICHT_THEMA_01-uitzondering: deze verwijderknop ligt ÓP de
+                    foto in een donkere ink-chip (bg-foreground/60). De lichte
+                    rose-hover blijft daarom bewust licht — leesbaar op de
+                    donkere chip over het beeld (vertaalgids uitzondering 1). */}
                 <button
                   type="button"
                   aria-label="Beeld verwijderen"
                   onClick={() => deleteAsset.mutate(a.id)}
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white/60 hover:text-rose-300"
+                  className="absolute right-1 top-1 rounded-full bg-foreground/60 p-1 text-muted-foreground hover:text-rose-300"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-              <figcaption className="mt-1 text-[9.5px] leading-tight text-white/35">
+              <figcaption className="mt-1 text-[9.5px] leading-tight text-muted-foreground">
                 {SOURCE_LABEL[a.source]}
                 {a.sourceUrl ? " · bron vastgelegd" : ""}
               </figcaption>
@@ -114,13 +118,13 @@ export function EquipmentAssetPanel({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] text-white/60 hover:border-cyan-300/30 hover:text-cyan-200"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[11px] text-muted-foreground hover:border-accent-cyan/30 hover:text-accent-cyan"
         >
           <ImagePlus className="h-3.5 w-3.5" /> Productbeeld toevoegen
         </button>
       ) : (
-        <div className="mt-2 space-y-2 rounded-xl border border-white/10 bg-black/30 p-3">
-          <p className="text-[11px] leading-snug text-white/50">
+        <div className="mt-2 space-y-2 rounded-xl border border-border bg-foreground/30 p-3">
+          <p className="text-[11px] leading-snug text-muted-foreground">
             Herkomst is verplicht. Gebruik alleen beeld waar je gebruiksrecht
             voor hebt — officieel fabrikantmateriaal, een persbeeld of je eigen
             foto. Zonder herkomst wordt niets opgeslagen.
@@ -128,7 +132,7 @@ export function EquipmentAssetPanel({
           <select
             value={source}
             onChange={(e) => setSource(e.target.value as EquipmentAsset["source"])}
-            className="w-full rounded-lg border border-white/15 bg-black/40 px-2.5 py-2 text-[12px] text-white/80"
+            className="w-full rounded-lg border border-border bg-foreground/40 px-2.5 py-2 text-[12px] text-foreground/80"
             aria-label="Bron van het beeld"
           >
             {(Object.keys(SOURCE_LABEL) as EquipmentAsset["source"][]).map((s) => (
@@ -142,29 +146,29 @@ export function EquipmentAssetPanel({
               value={sourceUrl}
               onChange={(e) => setSourceUrl(e.target.value)}
               placeholder="Bron-URL (verplicht bij externe bron)"
-              className="w-full rounded-lg border border-white/15 bg-black/40 px-2.5 py-2 text-[12px] text-white/80 placeholder:text-white/30"
+              className="w-full rounded-lg border border-border bg-foreground/40 px-2.5 py-2 text-[12px] text-foreground/80 placeholder:text-muted-foreground"
             />
           )}
           <input
             value={license}
             onChange={(e) => setLicense(e.target.value)}
             placeholder="Licentie / gebruiksrecht (bijv. 'officieel persbeeld' of 'eigen foto')"
-            className="w-full rounded-lg border border-white/15 bg-black/40 px-2.5 py-2 text-[12px] text-white/80 placeholder:text-white/30"
+            className="w-full rounded-lg border border-border bg-foreground/40 px-2.5 py-2 text-[12px] text-foreground/80 placeholder:text-muted-foreground"
           />
           <input
             ref={fileRef}
             type="file"
             accept="image/*"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="w-full text-[11px] text-white/60 file:mr-2 file:rounded-full file:border file:border-white/15 file:bg-transparent file:px-3 file:py-1 file:text-[11px] file:text-white/70"
+            className="w-full text-[11px] text-muted-foreground file:mr-2 file:rounded-full file:border file:border-border file:bg-transparent file:px-3 file:py-1 file:text-[11px] file:text-muted-foreground"
           />
-          {error && <p className="text-[11px] text-amber-300">{error}</p>}
+          {error && <p className="text-[11px] text-[color:var(--color-warning)]">{error}</p>}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => void save()}
               disabled={addAsset.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-cyan-300 px-3.5 py-1.5 text-[12px] font-semibold text-black disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-accent-cyan px-3.5 py-1.5 text-[12px] font-semibold text-[color:var(--color-on-accent)] disabled:opacity-50"
             >
               {addAsset.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
               Opslaan
@@ -175,7 +179,7 @@ export function EquipmentAssetPanel({
                 setOpen(false)
                 setError(null)
               }}
-              className="rounded-full border border-white/15 px-3.5 py-1.5 text-[12px] text-white/60"
+              className="rounded-full border border-border px-3.5 py-1.5 text-[12px] text-muted-foreground"
             >
               Annuleren
             </button>

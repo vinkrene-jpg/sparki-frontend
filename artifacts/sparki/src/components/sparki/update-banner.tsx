@@ -58,7 +58,7 @@ export function UpdateBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[90] flex items-center justify-center gap-3 border-t border-accent-cyan/30 bg-[#05070e]/95 px-4 py-3 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-[90] flex items-center justify-center gap-3 border-t border-accent-cyan/30 bg-card px-4 py-3 backdrop-blur"
       role="status"
     >
       <span className="type-body-sm text-content-primary">

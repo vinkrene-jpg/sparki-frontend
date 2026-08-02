@@ -95,7 +95,7 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
                 <button
                   type="button"
                   onClick={() => navigate(step.href)}
-                  className="flex w-full items-start gap-4 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:bg-white/[0.05]"
+                  className="flex w-full items-start gap-4 rounded-xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:bg-muted"
                 >
                   <span
                     className="mt-0.5 font-mono text-[11px] tabular-nums"
@@ -104,10 +104,10 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span className="flex flex-col gap-1">
-                    <span className="text-[14px] font-medium tracking-tight text-white/90">
+                    <span className="text-[14px] font-medium tracking-tight text-foreground/90">
                       {step.label}
                     </span>
-                    <span className="text-[12px] leading-relaxed text-white/45">
+                    <span className="text-[12px] leading-relaxed text-muted-foreground">
                       {step.hint}
                     </span>
                   </span>
@@ -150,7 +150,7 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
               ) : metricsHistory && metricsHistory.length > 0 ? (
                 <VitalsGrid metrics={metricsHistory} />
               ) : (
-                <p className="text-[12px] text-white/35">
+                <p className="text-[12px] text-muted-foreground">
                   Log een check-in om je hersteldata te zien
                 </p>
               )}
@@ -187,8 +187,8 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
                   onPrimary={() => navigate(advice.primary.href)}
                 />
               ) : (
-                <div className="flex flex-col items-start gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-                  <p className="text-[13px] leading-relaxed text-white/70">
+                <div className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+                  <p className="text-[13px] leading-relaxed text-muted-foreground">
                     Log je check-in van vandaag, dan verschijnt hier een concreet
                     advies op basis van je vorm, FTP en doel.
                   </p>
@@ -203,7 +203,7 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
       )}
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
@@ -222,29 +222,29 @@ function DayAdviceCard({
   onPrimary: () => void
 }) {
   return (
-    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <div className="rounded-2xl border border-accent-cyan/20 bg-card p-5 backdrop-blur-md">
       <div className="flex items-start gap-3">
         <span
           className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
+          style={{ background: ACCENT }}
         />
         <div className="flex-1">
-          <p className="text-[15px] font-medium leading-snug tracking-tight text-white/95">
+          <p className="text-[15px] font-medium leading-snug tracking-tight text-foreground/95">
             {advice.headline}
           </p>
           {advice.power && (
-            <p className="mt-1.5 font-mono text-[12px] tabular-nums tracking-wide text-cyan-300/90">
+            <p className="mt-1.5 font-mono text-[12px] tabular-nums tracking-wide text-accent-cyan">
               {advice.power.low}–{advice.power.high} W · {advice.power.label}
             </p>
           )}
-          <p className="mt-2 text-[13px] leading-relaxed text-white/55">
+          <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
             {advice.focus}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 border-t border-white/[0.07] pt-4">
-        <p className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+      <div className="mt-4 border-t border-border pt-4">
+        <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           WAAROM DIT ADVIES
         </p>
         <ul className="mt-3 space-y-2.5">
@@ -252,9 +252,9 @@ function DayAdviceCard({
             <li key={reason} className="flex gap-2.5">
               <span
                 className="mt-1.5 h-1 w-1 shrink-0 rounded-full"
-                style={{ background: "rgba(120,210,230,0.7)" }}
+                style={{ background: "var(--color-accent-cyan)" }}
               />
-              <span className="text-[12.5px] leading-relaxed text-white/70">
+              <span className="text-[12.5px] leading-relaxed text-muted-foreground">
                 {reason}
               </span>
             </li>
@@ -265,7 +265,7 @@ function DayAdviceCard({
       <button
         type="button"
         onClick={onPrimary}
-        className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-5 py-2.5 text-[13px] font-medium tracking-tight text-white/90 transition-colors hover:bg-cyan-300/[0.14]"
+        className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent-cyan/30 bg-accent-cyan/[0.08] px-5 py-2.5 text-[13px] font-medium tracking-tight text-foreground/90 transition-colors hover:bg-accent-cyan/[0.14]"
       >
         {advice.primary.label}
         <span aria-hidden="true" style={{ color: ACCENT }}>
@@ -278,7 +278,7 @@ function DayAdviceCard({
         subjectType="dagadvies"
         subjectId={localAdviceDate()}
         question="Hoe goed past dit advies?"
-        className="mt-4 border-t border-white/[0.07] pt-4"
+        className="mt-4 border-t border-border pt-4"
       />
     </div>
   )
@@ -309,8 +309,8 @@ function HomeWeatherCard({
 }) {
   if (!weather || (!weather.available && weather.reason === "no_home")) {
     return (
-      <div className="flex flex-col items-start gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-        <p className="text-[13px] leading-relaxed text-white/70">
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           Thuislocatie is nog niet ingesteld, dus het lokale weer kan niet worden
           opgehaald. Stel je thuislocatie in om weersomstandigheden mee te
           wegen in je dagelijkse advies.
@@ -318,7 +318,7 @@ function HomeWeatherCard({
         <button
           type="button"
           onClick={onSetHome}
-          className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-4 py-2 text-[12.5px] font-medium tracking-tight text-white/90 transition-colors hover:bg-cyan-300/[0.14]"
+          className="inline-flex items-center gap-2 rounded-full border border-accent-cyan/30 bg-accent-cyan/[0.08] px-4 py-2 text-[12.5px] font-medium tracking-tight text-foreground/90 transition-colors hover:bg-accent-cyan/[0.14]"
         >
           <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
           Thuislocatie instellen
@@ -329,8 +329,8 @@ function HomeWeatherCard({
 
   if (!weather.available || !weather.today) {
     return (
-      <div className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-        <p className="text-[13px] leading-relaxed text-white/55">
+      <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           Er is op dit moment geen weersverwachting beschikbaar voor vandaag
           {weather.locationLabel ? ` (${weather.locationLabel})` : ""}. Sparki
           laat hier geen schatting zien.
@@ -342,19 +342,19 @@ function HomeWeatherCard({
   const s = weather.today
   const a = weather.advisory
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       {weather.locationLabel && (
-        <div className="flex items-center gap-1.5 text-white/45">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
           <MapPin className="h-3 w-3" strokeWidth={1.75} />
           <span className="font-mono text-[10px] uppercase tracking-[0.15em]">
             {weather.locationLabel}
           </span>
         </div>
       )}
-      <p className="mt-2 text-[15px] font-medium tracking-tight text-white/95">
+      <p className="mt-2 text-[15px] font-medium tracking-tight text-foreground/95">
         {s.label}
       </p>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[12px] tabular-nums text-white/65">
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[12px] tabular-nums text-muted-foreground">
         {(s.tempMinC != null || s.tempMaxC != null) && (
           <span className="flex items-center gap-1.5">
             <Thermometer className="h-3 w-3" strokeWidth={1.75} />
@@ -386,19 +386,19 @@ function HomeWeatherCard({
       </div>
 
       {a && a.severity !== "ok" && (
-        <div className="mt-4 border-t border-white/[0.07] pt-3">
+        <div className="mt-4 border-t border-border pt-3">
           <p
             className="font-mono text-[10px] uppercase tracking-[0.15em]"
             style={{ color: SEVERITY_TEXT[a.severity] }}
           >
             {a.headline}
           </p>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/65">
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
             {a.detail}
           </p>
           {a.suggestion && (
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/50">
-              <span className="text-white/40">Sparki: </span>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
+              <span className="text-muted-foreground">Sparki: </span>
               {a.suggestion}
             </p>
           )}

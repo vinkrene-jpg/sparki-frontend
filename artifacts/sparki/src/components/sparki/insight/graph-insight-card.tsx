@@ -13,7 +13,7 @@ const CONF_LABEL: Record<AiObservation["confidence"], string> = {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
 
 function fmt(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1)
@@ -52,7 +52,7 @@ export function GraphInsightCard({
   const positive = goodDown ? delta < 0 : delta > 0
   const deltaColor =
     delta === 0
-      ? "rgba(255,255,255,0.35)"
+      ? "var(--color-muted-foreground)"
       : positive
         ? ACCENT
         : "rgba(255,140,120,0.85)"
@@ -66,11 +66,11 @@ export function GraphInsightCard({
             <>
               <div className="flex items-end justify-between">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-sans text-3xl font-extralight tabular-nums text-white">
+                  <span className="font-sans text-3xl font-extralight tabular-nums text-foreground">
                     {fmt(latest)}
                   </span>
                   {series.unit && (
-                    <span className="font-mono text-[11px] text-white/35">
+                    <span className="font-mono text-[11px] text-muted-foreground">
                       {series.unit}
                     </span>
                   )}
@@ -93,16 +93,16 @@ export function GraphInsightCard({
                   height={44}
                   stroke={ACCENT}
                   fill="rgba(120,210,230,0.07)"
-                  className="w-full text-cyan-300"
+                  className="w-full text-accent-cyan"
                 />
               </div>
-              <p className="mt-2 font-mono text-[10px] tracking-wide text-white/30">
+              <p className="mt-2 font-mono text-[10px] tracking-wide text-muted-foreground">
                 {series.caption}
               </p>
             </>
           ) : (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-              <p className="text-[12px] leading-relaxed text-white/40">
+            <div className="rounded-xl border border-border bg-muted px-3 py-2.5">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 Nog geen meetreeks voor deze maatstaf — die verschijnt zodra er een
                 paar metingen zijn.
               </p>
@@ -126,10 +126,10 @@ export function GraphInsightCard({
             strokeWidth={2}
           />
         )}
-        <span className="flex-1 text-pretty font-sans text-[14px] font-medium leading-snug text-white/90">
+        <span className="flex-1 text-pretty font-sans text-[14px] font-medium leading-snug text-foreground/90">
           {title}
         </span>
-        <span className="shrink-0 font-mono text-[9px] tracking-wide text-white/35">
+        <span className="shrink-0 font-mono text-[9px] tracking-wide text-muted-foreground">
           {CONF_LABEL[confidence]}
         </span>
       </div>

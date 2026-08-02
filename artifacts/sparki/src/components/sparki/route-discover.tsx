@@ -110,7 +110,7 @@ function DiscoverMap({
   return (
     <div
       ref={containerRef}
-      className="h-[340px] w-full overflow-hidden rounded-2xl border border-white/[0.08]"
+      className="h-[340px] w-full overflow-hidden rounded-2xl border border-border"
     />
   )
 }
@@ -122,18 +122,18 @@ export function RouteDiscover() {
   const selected = routes.find((r) => r.id === selectedId) ?? null
 
   if (isLoading) {
-    return <p className="text-[13px] text-white/45">Openbare routes laden…</p>
+    return <p className="text-[13px] text-muted-foreground">Openbare routes laden…</p>
   }
   if (isError) {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-        <p className="text-sm text-white/70">
+      <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+        <p className="text-sm text-muted-foreground">
           Openbare routes konden niet geladen worden.
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="mt-3 rounded-full bg-[oklch(0.82_0.16_200)] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+          className="mt-3 rounded-full bg-accent-cyan px-4 py-2 text-sm font-semibold text-[color:var(--color-on-accent)] transition hover:brightness-110"
         >
           Opnieuw proberen
         </button>
@@ -142,12 +142,12 @@ export function RouteDiscover() {
   }
   if (routes.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-        <Globe2 className="mx-auto h-8 w-8 text-white/25" strokeWidth={1.5} />
-        <p className="mt-3 text-sm font-medium text-white">
+      <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+        <Globe2 className="mx-auto h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
+        <p className="mt-3 text-sm font-medium text-foreground">
           Nog geen openbare routes
         </p>
-        <p className="mt-1 text-[13px] leading-relaxed text-white/55">
+        <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
           Hier verschijnen gereden routes die andere gebruikers bewust openbaar
           hebben gezet. Wil je jouw gereden route hier tonen? Zet hem in je
           routebibliotheek op &ldquo;Openbaar&rdquo; via het driepuntenmenu.
@@ -158,7 +158,7 @@ export function RouteDiscover() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[12.5px] leading-relaxed text-white/50">
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
         Gereden routes die andere gebruikers openbaar hebben gezet. Start en
         einde zijn afgeschermd voor hun privacy. Tik op een lijn of kaartje
         voor de details.
@@ -171,13 +171,13 @@ export function RouteDiscover() {
       />
 
       {selected ? (
-        <div className="rounded-2xl border border-cyan-300/25 bg-[#070d16]/[0.85] p-4 backdrop-blur-md">
+        <div className="rounded-2xl border border-accent-cyan bg-card p-4 backdrop-blur-md">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[14px] font-medium text-white/90">
+              <p className="truncate text-[14px] font-medium text-foreground/90">
                 {displayRouteName(selected.name, selected.distanceKm).display}
               </p>
-              <p className="mt-1 text-[12.5px] tabular-nums text-white/60">
+              <p className="mt-1 text-[12.5px] tabular-nums text-muted-foreground">
                 {fmtKm(selected.distanceKm)}
                 {typeof selected.elevationGainM === "number"
                   ? ` · ${Math.round(selected.elevationGainM)} hm`
@@ -186,7 +186,7 @@ export function RouteDiscover() {
                   ? ` · ${SURFACE_LABEL[selected.surface]}`
                   : ""}
               </p>
-              <p className="mt-0.5 text-[11.5px] text-white/45">
+              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
                 Gereden door {selected.eigenaarNaam}
               </p>
             </div>
@@ -194,12 +194,12 @@ export function RouteDiscover() {
               type="button"
               onClick={() => setSelectedId(null)}
               aria-label="Selectie sluiten"
-              className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-white/85"
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground/90"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
             {selected.privacyNote}
           </p>
         </div>
@@ -217,19 +217,19 @@ export function RouteDiscover() {
                 }
                 className={`w-full rounded-2xl border p-3.5 text-left backdrop-blur-md transition-colors ${
                   selectedId === r.id
-                    ? "border-cyan-300/40 bg-cyan-300/[0.06]"
-                    : "border-white/[0.08] bg-[#070d16]/[0.82] hover:border-cyan-300/30"
+                    ? "border-accent-cyan bg-accent-cyan"
+                    : "border-border bg-card hover:border-accent-cyan"
                 }`}
               >
-                <p className="truncate text-[14px] font-medium text-white/90">
+                <p className="truncate text-[14px] font-medium text-foreground/90">
                   {named.display}
                 </p>
-                <p className="mt-1 text-[12.5px] tabular-nums text-white/60">
+                <p className="mt-1 text-[12.5px] tabular-nums text-muted-foreground">
                   {fmtKm(r.distanceKm)}
                   {typeof r.elevationGainM === "number"
                     ? ` · ${Math.round(r.elevationGainM)} hm`
                     : ""}
-                  <span className="text-white/40">
+                  <span className="text-muted-foreground">
                     {" "}
                     · door {r.eigenaarNaam}
                   </span>

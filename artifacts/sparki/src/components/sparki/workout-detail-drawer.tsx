@@ -113,8 +113,8 @@ function SectionHead({
       >
         {n}
       </span>
-      <Icon className="h-3.5 w-3.5 text-white/40" strokeWidth={1.75} />
-      <span className="font-mono text-[10px] tracking-[0.2em] text-white/50">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+      <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
         {title.toUpperCase()}
       </span>
       <span className="h-px flex-1 bg-gradient-to-r from-white/12 to-transparent" />
@@ -124,21 +124,21 @@ function SectionHead({
 
 function BlockRow({ block }: { block: WorkoutBlock }) {
   return (
-    <div className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 last:border-0">
+    <div className="flex items-center gap-3 border-b border-border py-2.5 last:border-0">
       <span
         className="h-3 w-1 shrink-0 rounded-full"
         style={{ background: zoneColor[block.zone] ?? "rgba(120,210,230,0.4)" }}
       />
-      <span className="w-7 shrink-0 font-mono text-[11px] tabular-nums text-white/50">
+      <span className="w-7 shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
         Z{block.zone}
       </span>
-      <span className="flex-1 text-[13px] tracking-tight text-white/85">
+      <span className="flex-1 text-[13px] tracking-tight text-foreground/85">
         {block.label}
         {block.reps && block.reps > 1 ? (
-          <span className="ml-1.5 text-white/35">×{block.reps}</span>
+          <span className="ml-1.5 text-muted-foreground">×{block.reps}</span>
         ) : null}
       </span>
-      <span className="font-mono text-[11px] tabular-nums text-white/55">
+      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
         {block.durationMin}m
       </span>
       {block.targetPctFtp != null && (
@@ -192,11 +192,11 @@ function BlockGroup({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-mono text-[9px] tracking-[0.2em] text-white/45">
+        <span className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
           {label.toUpperCase()}
         </span>
         {total > 0 && (
-          <span className="font-mono text-[9px] tabular-nums text-white/30">
+          <span className="font-mono text-[9px] tabular-nums text-muted-foreground">
             {total}m
           </span>
         )}
@@ -212,11 +212,11 @@ function BlockGroup({
 
 function ExplainRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-b border-white/[0.05] py-3 last:border-0">
-      <p className="font-mono text-[9px] tracking-[0.2em] text-white/35">
+    <div className="border-b border-border py-3 last:border-0">
+      <p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
         {label.toUpperCase()}
       </p>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-white/80">{value}</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">{value}</p>
     </div>
   )
 }
@@ -372,25 +372,25 @@ export function WorkoutDetailDrawer({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
-        className="w-full overflow-y-auto border-l border-white/[0.08] bg-[#05070e]/95 p-0 backdrop-blur-xl sm:max-w-md"
+        className="w-full overflow-y-auto border-l border-border bg-card p-0 backdrop-blur-xl sm:max-w-md"
       >
         {isLoading || !workout ? (
           <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-white/40" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <div className="flex flex-col gap-7 px-6 pb-16 pt-7">
             <button
               type="button"
               onClick={() => handleOpenChange(false)}
-              className="-ml-1 flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-white/45 transition-colors hover:text-white/80"
+              className="-ml-1 flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground/80"
               aria-label="Sluiten"
             >
               <X className="h-3.5 w-3.5" strokeWidth={2} />
               SLUITEN
             </button>
             <SheetHeader className="space-y-2 text-left">
-              <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+              <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
                 {new Date(
                   workout.scheduledDate + "T12:00:00Z",
                 ).toLocaleDateString("nl-NL", {
@@ -399,7 +399,7 @@ export function WorkoutDetailDrawer({
                   month: "long",
                 })}
               </p>
-              <SheetTitle className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight text-white">
+              <SheetTitle className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight text-foreground">
                 {workout.title}
               </SheetTitle>
               {structure && (
@@ -413,7 +413,7 @@ export function WorkoutDetailDrawer({
                   >
                     {structure.intensity.toUpperCase()}
                   </span>
-                  <span className="rounded-full bg-white/[0.06] px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-white/50">
+                  <span className="rounded-full bg-muted px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
                     {structure.phase === "recovery"
                       ? "HERSTELWEEK"
                       : `WEEK ${structure.week}`}
@@ -451,9 +451,9 @@ export function WorkoutDetailDrawer({
                 />
               </div>
 
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-2.5">
-                <RouteIcon className="h-4 w-4 text-white/45" strokeWidth={1.75} />
-                <span className="text-[12px] text-white/70">{route.label}</span>
+              <div className="flex items-center gap-2.5 rounded-xl border border-border bg-muted px-3.5 py-2.5">
+                <RouteIcon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                <span className="text-[12px] text-muted-foreground">{route.label}</span>
               </div>
 
               {structure && structure.blocks.length > 0 && (() => {
@@ -466,7 +466,7 @@ export function WorkoutDetailDrawer({
                 if (!showGroups) {
                   return (
                     <div>
-                      <p className="mb-1 font-mono text-[9px] tracking-[0.2em] text-white/35">
+                      <p className="mb-1 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                         OPBOUW
                       </p>
                       <div className="flex flex-col">
@@ -489,10 +489,10 @@ export function WorkoutDetailDrawer({
               {structure && structure.equipment.length > 0 && (
                 <div className="flex items-start gap-2.5">
                   <Wrench
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/35"
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
                     strokeWidth={1.75}
                   />
-                  <p className="text-[12px] leading-relaxed text-white/55">
+                  <p className="text-[12px] leading-relaxed text-muted-foreground">
                     {structure.equipment.join(" · ")}
                   </p>
                 </div>
@@ -531,11 +531,11 @@ export function WorkoutDetailDrawer({
                   }
                 />
                 {structure.recoveryAdvice && (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
-                    <p className="font-mono text-[9px] tracking-[0.2em] text-white/35">
+                  <div className="rounded-xl border border-border bg-muted px-3.5 py-3">
+                    <p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                       HERSTELADVIES
                     </p>
-                    <p className="mt-1.5 text-[12px] leading-relaxed text-white/70">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
                       {structure.recoveryAdvice}
                     </p>
                   </div>
@@ -547,10 +547,10 @@ export function WorkoutDetailDrawer({
             <section className="flex flex-col gap-3">
               <SectionHead n="03" title="Waarom?" icon={HelpCircle} />
               {explanation ? (
-                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
                   <div className="mb-3 flex items-center gap-2">
                     <SparkiCore size={24} accent={ACCENT} readiness={0.9} variant="orb" />
-                    <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
+                    <span className="font-mono text-[10px] tracking-[0.25em] text-accent-cyan">
                       SPARKI
                     </span>
                   </div>
@@ -571,7 +571,7 @@ export function WorkoutDetailDrawer({
                   type="button"
                   onClick={loadExplanation}
                   disabled={explain.isPending}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-4 font-sans text-[13px] font-medium text-white/55 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/70 disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan disabled:opacity-50"
                 >
                   {explain.isPending ? (
                     <>
@@ -587,7 +587,7 @@ export function WorkoutDetailDrawer({
                 </button>
               )}
               {(explain.isError || explainExtended.isError) && (
-                <p className="text-[12px] text-red-300/70">
+                <p className="text-[12px] text-[color:var(--color-negative)]">
                   Even niet bereikbaar. Probeer het zo opnieuw.
                 </p>
               )}
@@ -601,15 +601,15 @@ export function WorkoutDetailDrawer({
                 title={isUpcoming ? "Past deze training?" : "Jouw feedback"}
                 icon={Check}
               />
-              <p className="text-[12px] leading-relaxed text-white/45">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 {isUpcoming
                   ? "Deze training komt er nog aan. Klopt er iets niet of past het beter op een andere dag? Dan wordt je plan er vast op afgestemd."
                   : "Laat weten hoe het ging — je plan wordt zo nodig aangepast."}
               </p>
               {!isUpcoming && (
-                <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
+                <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted px-3.5 py-3">
                   <div>
-                    <p className="mb-1.5 flex items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-white/40">
+                    <p className="mb-1.5 flex items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                       <HeartPulse className="h-3 w-3" strokeWidth={1.75} />
                       HOE ZWAAR VOELDE HET? (RPE 1–10, OPTIONEEL)
                     </p>
@@ -625,10 +625,10 @@ export function WorkoutDetailDrawer({
                             borderColor:
                               rpe === n
                                 ? "rgba(120,210,230,0.5)"
-                                : "rgba(255,255,255,0.1)",
+                                : "var(--color-border)",
                             background:
                               rpe === n ? "rgba(120,210,230,0.12)" : "transparent",
-                            color: rpe === n ? ACCENT : "rgba(255,255,255,0.5)",
+                            color: rpe === n ? ACCENT : "var(--color-muted-foreground)",
                           }}
                         >
                           {n}
@@ -637,7 +637,7 @@ export function WorkoutDetailDrawer({
                     </div>
                   </div>
                   <div>
-                    <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-white/40">
+                    <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                       AFGEMAAKT? (OPTIONEEL)
                     </p>
                     <div className="flex gap-2">
@@ -662,7 +662,7 @@ export function WorkoutDetailDrawer({
                             borderColor:
                               completion === opt.value
                                 ? "rgba(120,210,230,0.5)"
-                                : "rgba(255,255,255,0.1)",
+                                : "var(--color-border)",
                             background:
                               completion === opt.value
                                 ? "rgba(120,210,230,0.12)"
@@ -670,7 +670,7 @@ export function WorkoutDetailDrawer({
                             color:
                               completion === opt.value
                                 ? ACCENT
-                                : "rgba(255,255,255,0.55)",
+                                : "var(--color-muted-foreground)",
                           }}
                         >
                           {opt.label}
@@ -683,7 +683,7 @@ export function WorkoutDetailDrawer({
                       value={deviationReason}
                       onChange={(e) => setDeviationReason(e.target.value)}
                       placeholder="Waarom anders dan gepland? (optioneel)…"
-                      className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+                      className="w-full rounded-xl border border-border bg-muted px-3.5 py-2 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
                     />
                   )}
                 </div>
@@ -697,7 +697,7 @@ export function WorkoutDetailDrawer({
                     ? "Wat is goed om te weten? (optioneel)…"
                     : "Toelichting (optioneel)…"
                 }
-                className="w-full resize-none rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+                className="w-full resize-none rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
               />
               <div className="flex flex-wrap gap-2">
                 {feedbackOptions.map((opt) => {
@@ -713,11 +713,11 @@ export function WorkoutDetailDrawer({
                       style={{
                         borderColor: active
                           ? "rgba(120,210,230,0.5)"
-                          : "rgba(255,255,255,0.12)",
+                          : "var(--color-border)",
                         background: active
                           ? "rgba(120,210,230,0.12)"
                           : "transparent",
-                        color: active ? ACCENT : "rgba(255,255,255,0.6)",
+                        color: active ? ACCENT : "var(--color-muted-foreground)",
                       }}
                     >
                       {opt.label}
@@ -727,48 +727,48 @@ export function WorkoutDetailDrawer({
               </div>
 
               {adjust.isPending && (
-                <div className="flex items-center gap-2 text-[12px] text-white/50">
+                <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Voorstel wordt opgesteld…
                 </div>
               )}
 
               {proposal && (
-                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
                   <div className="mb-2 flex items-center gap-2">
                     <SparkiCore size={24} accent={ACCENT} readiness={0.9} variant="orb" />
-                    <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
+                    <span className="font-mono text-[10px] tracking-[0.25em] text-accent-cyan">
                       SPARKI VOORSTEL
                     </span>
                   </div>
-                  <p className="font-sans text-[15px] font-light text-white/90">
+                  <p className="font-sans text-[15px] font-light text-foreground/90">
                     {proposal.title}
                   </p>
-                  <p className="mt-2 text-[13px] leading-relaxed text-white/70">
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                     {proposal.message}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex rounded-full bg-white/[0.06] px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-white/55">
+                    <span className="inline-flex rounded-full bg-muted px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
                       {recommendationLabel(proposal.recommendation).toUpperCase()}
                     </span>
                     {proposal.confidence != null && (
-                      <span className="inline-flex rounded-full bg-white/[0.06] px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-white/45">
+                      <span className="inline-flex rounded-full bg-muted px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
                         ZEKERHEID {Math.round(proposal.confidence * 100)}%
                       </span>
                     )}
                   </div>
                   {proposal.basis && proposal.basis.length > 0 && (
-                    <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-3">
-                      <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-white/35">
+                    <div className="mt-3 rounded-xl border border-border bg-muted px-3.5 py-3">
+                      <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                         WAAROM DIT VOORSTEL
                       </p>
                       <ul className="flex flex-col gap-1">
                         {proposal.basis.map((b, i) => (
                           <li
                             key={i}
-                            className="flex items-start gap-2 text-[12px] leading-relaxed text-white/60"
+                            className="flex items-start gap-2 text-[12px] leading-relaxed text-muted-foreground"
                           >
-                            <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-cyan-300/50" />
+                            <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cyan/50" />
                             {b}
                           </li>
                         ))}
@@ -794,7 +794,7 @@ export function WorkoutDetailDrawer({
                       <button
                         type="button"
                         onClick={() => setProposal(null)}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-white/[0.12] px-4 py-2.5 font-sans text-[13px] text-white/55"
+                        className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 font-sans text-[13px] text-muted-foreground"
                       >
                         <X className="h-4 w-4" strokeWidth={1.75} />
                         Houden
@@ -805,36 +805,36 @@ export function WorkoutDetailDrawer({
               )}
 
               {adjust.isError && (
-                <p className="text-[12px] text-red-300/70">
+                <p className="text-[12px] text-[color:var(--color-negative)]">
                   Er kon nu geen voorstel worden gemaakt. Je feedback is wel bewaard.
                 </p>
               )}
 
               {workout.feedback.length > 0 && (
                 <div className="mt-1">
-                  <p className="mb-2 font-mono text-[9px] tracking-[0.2em] text-white/30">
+                  <p className="mb-2 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                     EERDERE FEEDBACK
                   </p>
                   <div className="flex flex-col gap-1.5">
                     {workout.feedback.map((f) => (
                       <div
                         key={f.id}
-                        className="flex items-center gap-2 text-[11px] text-white/45"
+                        className="flex items-center gap-2 text-[11px] text-muted-foreground"
                       >
-                        <span className="h-1 w-1 rounded-full bg-white/25" />
-                        <span className="text-white/65">
+                        <span className="h-1 w-1 rounded-full bg-muted" />
+                        <span className="text-muted-foreground">
                           {FEEDBACK_OPTIONS.find((o) => o.type === f.feedbackType)
                             ?.label ?? f.feedbackType}
                         </span>
                         {f.rpe != null && (
-                          <span className="font-mono tabular-nums text-white/40">
+                          <span className="font-mono tabular-nums text-muted-foreground">
                             RPE {f.rpe}
                           </span>
                         )}
                         {f.completion && (
-                          <span className="text-white/40">{f.completion}</span>
+                          <span className="text-muted-foreground">{f.completion}</span>
                         )}
-                        {f.note && <span className="text-white/35">— {f.note}</span>}
+                        {f.note && <span className="text-muted-foreground">— {f.note}</span>}
                       </div>
                     ))}
                   </div>
@@ -847,10 +847,10 @@ export function WorkoutDetailDrawer({
               <section className="flex flex-col gap-3">
                 <SectionHead n="05" title="Uitvoering" icon={Link2} />
                 {workout.sessionId != null ? (
-                  <div className="flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-3.5 py-3">
                     <div className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-cyan-300/70" strokeWidth={2} />
-                      <span className="text-[12px] text-white/70">
+                      <Check className="h-4 w-4 text-accent-cyan" strokeWidth={2} />
+                      <span className="text-[12px] text-muted-foreground">
                         Gekoppeld aan activiteit #{workout.sessionId}
                       </span>
                     </div>
@@ -860,7 +860,7 @@ export function WorkoutDetailDrawer({
                         linkSession.mutate({ id: workout.id, sessionId: null })
                       }
                       disabled={linkSession.isPending}
-                      className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-sans text-[11px] text-white/55 transition-colors hover:text-white/80 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-sans text-[11px] text-muted-foreground transition-colors hover:text-foreground/80 disabled:opacity-50"
                     >
                       <Unlink className="h-3 w-3" strokeWidth={1.75} />
                       Ontkoppel
@@ -873,7 +873,7 @@ export function WorkoutDetailDrawer({
                     )
                     if (sameDay.length === 0) {
                       return (
-                        <p className="text-[12px] leading-relaxed text-white/40">
+                        <p className="text-[12px] leading-relaxed text-muted-foreground">
                           Nog geen activiteit gekoppeld. Zodra er een rit van{" "}
                           {new Date(
                             workout.scheduledDate + "T12:00:00Z",
@@ -888,7 +888,7 @@ export function WorkoutDetailDrawer({
                     }
                     return (
                       <div className="flex flex-col gap-2">
-                        <p className="text-[12px] text-white/45">
+                        <p className="text-[12px] text-muted-foreground">
                           Activiteiten van dezelfde dag — koppel de juiste:
                         </p>
                         {sameDay.map((s) => (
@@ -902,12 +902,12 @@ export function WorkoutDetailDrawer({
                               })
                             }
                             disabled={linkSession.isPending}
-                            className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-left transition-colors hover:border-cyan-300/30 disabled:opacity-50"
+                            className="flex items-center justify-between rounded-xl border border-border bg-muted px-3.5 py-2.5 text-left transition-colors hover:border-accent-cyan/30 disabled:opacity-50"
                           >
-                            <span className="text-[12px] text-white/75">
+                            <span className="text-[12px] text-foreground/75">
                               {s.title ?? s.type}
                             </span>
-                            <span className="font-mono text-[11px] tabular-nums text-white/45">
+                            <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                               {s.durationMin != null ? `${s.durationMin} min` : ""}
                             </span>
                           </button>
@@ -917,7 +917,7 @@ export function WorkoutDetailDrawer({
                   })()
                 )}
                 {linkSession.isError && (
-                  <p className="text-[12px] text-red-300/70">
+                  <p className="text-[12px] text-[color:var(--color-negative)]">
                     Koppelen is niet gelukt. Controleer of de activiteit op
                     dezelfde dag valt.
                   </p>
@@ -931,7 +931,7 @@ export function WorkoutDetailDrawer({
               <button
                 type="button"
                 onClick={() => setShowHistory((v) => !v)}
-                className="flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-white/45 transition-colors hover:text-white/80"
+                className="flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground/80"
               >
                 <History className="h-3.5 w-3.5" strokeWidth={1.75} />
                 {showHistory ? "VERBERG WIJZIGINGEN" : "TOON WIJZIGINGEN"}
@@ -939,28 +939,28 @@ export function WorkoutDetailDrawer({
               {showHistory && (
                 <div className="flex flex-col gap-1.5">
                   {history.isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white/40" />
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   ) : (history.data?.changes ?? []).length === 0 ? (
-                    <p className="text-[12px] text-white/40">
+                    <p className="text-[12px] text-muted-foreground">
                       Nog geen wijzigingen geregistreerd.
                     </p>
                   ) : (
                     (history.data?.changes ?? []).map((c) => (
                       <div
                         key={c.id}
-                        className="flex items-start gap-2 text-[11px] leading-relaxed text-white/45"
+                        className="flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground"
                       >
-                        <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-white/25" />
+                        <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-muted" />
                         <span>
-                          <span className="font-mono text-[10px] text-white/35">
+                          <span className="font-mono text-[10px] text-muted-foreground">
                             {new Date(c.createdAt).toLocaleDateString("nl-NL", {
                               day: "numeric",
                               month: "short",
                             })}
                           </span>{" "}
-                          <span className="text-white/65">{c.action}</span>
+                          <span className="text-muted-foreground">{c.action}</span>
                           {c.reason && (
-                            <span className="text-white/40"> — {c.reason}</span>
+                            <span className="text-muted-foreground"> — {c.reason}</span>
                           )}
                         </span>
                       </div>
@@ -974,7 +974,7 @@ export function WorkoutDetailDrawer({
                   <div className="mt-1">
                     {confirmCancel ? (
                       <div className="flex items-center gap-2.5">
-                        <span className="text-[12px] text-white/55">
+                        <span className="text-[12px] text-muted-foreground">
                           Training echt annuleren?
                         </span>
                         <button
@@ -985,14 +985,14 @@ export function WorkoutDetailDrawer({
                             })
                           }
                           disabled={cancelWorkout.isPending}
-                          className="rounded-full border border-red-300/30 px-3 py-1 font-sans text-[12px] text-red-300/80 disabled:opacity-50"
+                          className="rounded-full border border-red-300/30 px-3 py-1 font-sans text-[12px] text-[color:var(--color-negative)] disabled:opacity-50"
                         >
                           {cancelWorkout.isPending ? "Bezig…" : "Ja, annuleer"}
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmCancel(false)}
-                          className="rounded-full border border-white/[0.12] px-3 py-1 font-sans text-[12px] text-white/55"
+                          className="rounded-full border border-border px-3 py-1 font-sans text-[12px] text-muted-foreground"
                         >
                           Nee
                         </button>
@@ -1001,21 +1001,21 @@ export function WorkoutDetailDrawer({
                       <button
                         type="button"
                         onClick={() => setConfirmCancel(true)}
-                        className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-white/35 transition-colors hover:text-red-300/70"
+                        className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-muted-foreground transition-colors hover:text-[color:var(--color-negative)]"
                       >
                         <Ban className="h-3.5 w-3.5" strokeWidth={1.75} />
                         TRAINING ANNULEREN
                       </button>
                     )}
                     {cancelWorkout.isError && (
-                      <p className="mt-1.5 text-[12px] text-red-300/70">
+                      <p className="mt-1.5 text-[12px] text-[color:var(--color-negative)]">
                         Annuleren is niet gelukt. Probeer het opnieuw.
                       </p>
                     )}
                   </div>
                 )}
               {workout.status === "cancelled" && (
-                <p className="text-[12px] text-white/40">
+                <p className="text-[12px] text-muted-foreground">
                   Deze training is geannuleerd en telt nergens meer mee.
                 </p>
               )}
@@ -1040,14 +1040,14 @@ function PracticalStat({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.15em] text-white/35">
+      <span className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
         <Icon className="h-3 w-3" strokeWidth={1.75} />
         {label.toUpperCase()}
       </span>
       <span
         className="font-sans text-[16px] font-light capitalize tabular-nums leading-none"
         style={{
-          color: accent ? ACCENT : "rgba(255,255,255,0.9)",
+          color: accent ? ACCENT : "var(--color-foreground)",
         }}
       >
         {value}

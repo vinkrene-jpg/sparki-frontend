@@ -229,8 +229,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   modalOverlay: {
+    // LICHT_THEMA_01: scrim dimt met de donkere voorgrond i.p.v. puur zwart.
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(22,24,29,0.5)",
     justifyContent: "flex-end",
   },
   modalContainer: {

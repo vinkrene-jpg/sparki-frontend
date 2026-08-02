@@ -18,7 +18,7 @@ import {
 } from "@/hooks/use-today"
 
 const CARD =
-  "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
 
 function RoleTodayCard({
   item,
@@ -38,17 +38,17 @@ function RoleTodayCard({
           : undefined
       }
     >
-      <div className="text-[15px] tracking-tight text-white/90">{item.title}</div>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{item.body}</p>
+      <div className="text-[15px] tracking-tight text-foreground/90">{item.title}</div>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{item.body}</p>
       {support && (
         <details className="mt-2">
-          <summary className="cursor-pointer text-[12px] text-white/45">
+          <summary className="cursor-pointer text-[12px] text-muted-foreground">
             {support.title}
           </summary>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
+          <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
             {support.body}
           </p>
-          <p className="mt-1 font-mono text-[10px] text-white/25">
+          <p className="mt-1 font-mono text-[10px] text-muted-foreground">
             Bron: {support.source}
           </p>
         </details>
@@ -124,34 +124,34 @@ export function TodayDebugPanel({ rol }: { rol?: TodayRole }) {
 
   const d = open ? debugQuery.data?.debug : undefined
   return (
-    <div className="rounded-xl border border-dashed border-white/[0.12] px-3.5 py-2.5">
+    <div className="rounded-xl border border-dashed border-border px-3.5 py-2.5">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40"
+        className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground"
       >
         Onderbouwing (tester) {open ? "▾" : "▸"}
       </button>
       {open && !d && (
-        <p className="mt-2 text-[11px] text-white/40">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           {debugQuery.isLoading ? "Onderbouwing wordt geladen…" : "Geen onderbouwing beschikbaar."}
         </p>
       )}
       {open && d && (
-        <div className="mt-2 space-y-2 text-[11px] leading-relaxed text-white/55">
+        <div className="mt-2 space-y-2 text-[11px] leading-relaxed text-muted-foreground">
           <p>
-            Profiel: <span className="text-white/75">{d.profile.variant}</span> · Rol:{" "}
-            <span className="text-white/75">{d.role}</span> · Beschikbare rollen:{" "}
+            Profiel: <span className="text-muted-foreground">{d.profile.variant}</span> · Rol:{" "}
+            <span className="text-muted-foreground">{d.role}</span> · Beschikbare rollen:{" "}
             {d.availableRoles.join(", ")} · AI gebruikt:{" "}
-            <span className="text-white/75">{d.aiUsed ? "ja" : "nee"}</span> · Samengesteld:{" "}
+            <span className="text-muted-foreground">{d.aiUsed ? "ja" : "nee"}</span> · Samengesteld:{" "}
             {new Date(d.generatedAt).toLocaleString("nl-NL")}
           </p>
           <div>
-            <p className="text-white/45">Gekozen kaarten (bron · confidence):</p>
+            <p className="text-muted-foreground">Gekozen kaarten (bron · confidence):</p>
             {(["lead", "support", "insight", "rotating"] as const).map((slot) => {
               const c = d.chosen[slot]
               return (
-                <p key={slot} className="font-mono text-[10px] text-white/60">
+                <p key={slot} className="font-mono text-[10px] text-muted-foreground">
                   {slot}: {c ? `${c.key} — ${c.source} · ${c.confidence ?? "—"}${c.urgent ? " · URGENT" : ""}` : "leeg (eerlijk)"}
                 </p>
               )
@@ -159,9 +159,9 @@ export function TodayDebugPanel({ rol }: { rol?: TodayRole }) {
           </div>
           {d.passedOver.length > 0 && (
             <div>
-              <p className="text-white/45">Afgevallen kandidaten:</p>
+              <p className="text-muted-foreground">Afgevallen kandidaten:</p>
               {d.passedOver.map((p) => (
-                <p key={p.key} className="font-mono text-[10px] text-white/50">
+                <p key={p.key} className="font-mono text-[10px] text-muted-foreground">
                   {p.key} — {p.reason}
                 </p>
               ))}
@@ -169,9 +169,9 @@ export function TodayDebugPanel({ rol }: { rol?: TodayRole }) {
           )}
           {d.history.length > 0 && (
             <div>
-              <p className="text-white/45">Weergavehistorie (waarom opnieuw getoond):</p>
+              <p className="text-muted-foreground">Weergavehistorie (waarom opnieuw getoond):</p>
               {d.history.map((h) => (
-                <p key={h.itemKey} className="font-mono text-[10px] text-white/50">
+                <p key={h.itemKey} className="font-mono text-[10px] text-muted-foreground">
                   {h.itemKey} — {h.daysShown} dag(en) getoond, laatst{" "}
                   {new Date(h.lastShownAt).toLocaleDateString("nl-NL")}
                   {h.clicked ? ", interactie geregistreerd" : ", nog geen interactie"}
@@ -209,8 +209,8 @@ export function RoleViewSwitch({
           onClick={() => onChange(o.rol)}
           className={`rounded-full px-3 py-1.5 text-[12px] transition-colors ${
             value === o.rol
-              ? "border border-cyan-300/40 bg-cyan-300/[0.12] text-cyan-100"
-              : "border border-white/[0.1] text-white/55"
+              ? "border border-accent-cyan bg-accent-cyan text-accent-cyan"
+              : "border border-border text-muted-foreground"
           }`}
         >
           {o.label}

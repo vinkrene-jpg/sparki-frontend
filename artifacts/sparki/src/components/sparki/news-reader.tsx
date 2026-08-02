@@ -63,22 +63,22 @@ export function NewsReader({
       className="fixed inset-0 z-[9998] flex flex-col overflow-y-auto"
       style={{
         background:
-          "radial-gradient(120% 80% at 50% 0%, #0a1622 0%, #05070e 60%, #03040a 100%)",
+          "var(--color-background)",
       }}
       role="dialog"
       aria-modal="true"
       aria-label={item.title}
     >
       {/* Top-anchored close bar — always reachable, never scroll-to-exit. */}
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/[0.08] bg-[#05070e]/85 px-5 py-4 backdrop-blur-md">
-        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-5 py-4 backdrop-blur-md">
+        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-accent-cyan">
           Nieuws
         </span>
         <button
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.06]"
+          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground/60 transition-colors hover:bg-muted"
         >
           <X className="h-3.5 w-3.5" />
           Sluiten
@@ -99,27 +99,27 @@ export function NewsReader({
             {sourceName}
           </span>
           {date && (
-            <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/40">
+            <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-muted-foreground">
               <Calendar className="h-3 w-3" />
               {date}
             </span>
           )}
         </div>
 
-        <h1 className="mt-5 text-balance font-sans text-2xl font-light leading-tight tracking-tight text-white/95">
+        <h1 className="mt-5 text-balance font-sans text-2xl font-light leading-tight tracking-tight text-foreground/95">
           {item.titleNl ?? item.title}
         </h1>
 
         {/* Original headline stays visible when the shown title is a
             translation — honest attribution to the real source. */}
         {item.titleNl && item.titleNl !== item.title && (
-          <p className="mt-2 font-sans text-[13px] font-light italic leading-snug text-white/40">
+          <p className="mt-2 font-sans text-[13px] font-light italic leading-snug text-muted-foreground">
             Oorspronkelijke kop: {item.title}
           </p>
         )}
 
         {authors && (
-          <p className="mt-3 flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-white/45">
+          <p className="mt-3 flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-muted-foreground">
             <User className="h-3 w-3" />
             {authors}
           </p>
@@ -127,15 +127,15 @@ export function NewsReader({
 
         {/* Sparki summary of the real excerpt. */}
         {item.summary && (
-          <p className="mt-6 text-pretty font-sans text-[15px] font-light leading-relaxed text-white/80">
+          <p className="mt-6 text-pretty font-sans text-[15px] font-light leading-relaxed text-foreground/80">
             {item.summary}
           </p>
         )}
 
         {/* Real fetched excerpt (not the full article — copyright-respecting). */}
         {item.abstract && item.abstract !== item.summary && (
-          <div className="mt-6 border-l-2 border-white/[0.12] pl-4">
-            <p className="text-pretty font-sans text-[14px] font-light leading-relaxed text-white/55">
+          <div className="mt-6 border-l-2 border-border pl-4">
+            <p className="text-pretty font-sans text-[14px] font-light leading-relaxed text-foreground/55">
               {item.abstract}
             </p>
           </div>
@@ -146,7 +146,7 @@ export function NewsReader({
             {item.disciplines.map((d) => (
               <span
                 key={d}
-                className="rounded-full border border-white/[0.1] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40"
+                className="rounded-full border border-border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground"
               >
                 {d}
               </span>
@@ -155,11 +155,11 @@ export function NewsReader({
         )}
 
         {/* Copyright notice + explicit link to the full article at the source. */}
-        <div className="mt-8 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
-          <p className="text-[12px] leading-relaxed text-white/45">
+        <div className="mt-8 rounded-2xl border border-border bg-muted p-5">
+          <p className="text-[12px] leading-relaxed text-muted-foreground">
             Dit is een samenvatting met een fragment. Het volledige artikel is
             eigendom van{" "}
-            <span className="text-white/70">{sourceName}</span>. Lees het hele
+            <span className="text-foreground/70">{sourceName}</span>. Lees het hele
             verhaal bij de bron.
           </p>
           <a
@@ -167,13 +167,13 @@ export function NewsReader({
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-sans text-[13px] font-semibold transition-opacity hover:opacity-90"
-            style={{ background: ACCENT, color: "#040506" }}
+            style={{ background: ACCENT, color: "var(--color-on-accent)" }}
           >
             Lees verder bij {sourceName}
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
           {item.doi && (
-            <p className="mt-3 font-mono text-[10px] tracking-wide text-white/25">
+            <p className="mt-3 font-mono text-[10px] tracking-wide text-muted-foreground">
               DOI: {item.doi}
             </p>
           )}

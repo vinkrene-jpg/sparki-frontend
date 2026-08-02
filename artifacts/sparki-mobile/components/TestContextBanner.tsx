@@ -29,14 +29,18 @@ export default function TestContextBanner() {
   );
 }
 
+// LICHT_THEMA_01: waarschuwings-/testmarkering op het lichte thema — zacht
+// amber vlak met donkeramber tekst/rand (dezelfde logica als de web-warning:
+// donker-op-licht i.p.v. licht-op-donker). --color-warning ≈ #a96b00.
+const WARN = "#a96b00";
 const styles = StyleSheet.create({
   banner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#2a2005",
+    backgroundColor: "#fbf3e0", // zacht amber vlak (licht)
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(252,211,77,0.45)",
+    borderBottomColor: "rgba(169,107,0,0.45)",
     paddingHorizontal: 12,
     paddingBottom: 5,
   },
@@ -44,10 +48,10 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#fcd34d",
+    backgroundColor: WARN,
   },
   text: {
-    color: "#fde68a",
+    color: WARN,
     fontSize: 10,
     letterSpacing: 1.2,
     textTransform: "uppercase",

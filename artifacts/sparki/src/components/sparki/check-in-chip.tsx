@@ -26,8 +26,8 @@ export function CheckInChip() {
   if (!state || state.checkInDone) return null
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/[0.08] bg-[#070d16]/[0.7] px-4 py-2 backdrop-blur-md">
-      <span className="text-[13px] text-white/70">Hoe voel je je?</span>
+    <div className="flex flex-wrap items-center gap-2 rounded-full border border-border bg-card px-4 py-2 backdrop-blur-md">
+      <span className="text-[13px] text-muted-foreground">Hoe voel je je?</span>
       <div className="flex flex-1 flex-wrap justify-end gap-1.5">
         {OPTIONS.map((o) => (
           <button
@@ -35,14 +35,14 @@ export function CheckInChip() {
             type="button"
             disabled={checkIn.isPending}
             onClick={() => checkIn.mutate(o.value)}
-            className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1 text-[12px] text-white/80 transition-colors hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-50"
+            className="rounded-full border border-border bg-muted px-3 py-1 text-[12px] text-foreground/80 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-50"
           >
             {o.label}
           </button>
         ))}
       </div>
       {checkIn.isError && (
-        <p className="w-full text-[11px] text-amber-300/90">
+        <p className="w-full text-[11px] text-[color:var(--color-warning)]">
           Opslaan lukte niet — probeer het zo nog eens.
         </p>
       )}

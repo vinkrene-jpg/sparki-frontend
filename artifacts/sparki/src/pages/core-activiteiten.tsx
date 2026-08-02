@@ -214,7 +214,7 @@ export default function CoreActiviteitenPage() {
         </DsCard>
 
         <section className="mt-10" aria-label="Je ontwikkeling">
-          <h2 className="type-title-card text-white/90">Je ontwikkeling</h2>
+          <h2 className="type-title-card text-foreground/90">Je ontwikkeling</h2>
           <p className="type-body mt-1 text-content-secondary">
             Van je laatste ritten tot de afgelopen weken — zo bouw je op over tijd, niet alleen vandaag.
           </p>
@@ -229,7 +229,7 @@ export default function CoreActiviteitenPage() {
         </section>
 
         <section className="mt-10" aria-label="Filters">
-          <h2 className="type-title-card text-white/90">Alle ritten</h2>
+          <h2 className="type-title-card text-foreground/90">Alle ritten</h2>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <input
@@ -237,13 +237,13 @@ export default function CoreActiviteitenPage() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Zoek op titel, type of bron…"
-                className="type-body flex min-h-11 w-full rounded-lg border border-border bg-surface px-4 text-white placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
+                className="type-body flex min-h-11 w-full rounded-lg border border-border bg-surface px-4 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
               />
             </div>
             <select
               value={monthFilter ?? ""}
               onChange={(e) => setMonthFilter(e.target.value || null)}
-              className="type-body flex min-h-11 w-full appearance-none rounded-lg border border-border bg-surface px-4 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60 sm:w-auto"
+              className="type-body flex min-h-11 w-full appearance-none rounded-lg border border-border bg-surface px-4 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60 sm:w-auto"
               aria-label="Filter op maand"
             >
               <option value="">Alle maanden</option>
@@ -265,7 +265,7 @@ export default function CoreActiviteitenPage() {
                   "type-action min-h-11 rounded-control border px-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
                   typeFilter === null
                     ? "border-accent-cyan/30 bg-accent-cyan/10 text-accent-cyan"
-                    : "border-border bg-surface text-content-secondary hover:text-white/90"
+                    : "border-border bg-surface text-content-secondary hover:text-foreground/90"
                 )}
               >
                 Alles
@@ -279,7 +279,7 @@ export default function CoreActiviteitenPage() {
                   "type-action min-h-11 rounded-control border px-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
                   typeFilter === FILTER_CYCLING
                     ? "border-accent-cyan/30 bg-accent-cyan/10 text-accent-cyan"
-                    : "border-border bg-surface text-content-secondary hover:text-white/90"
+                    : "border-border bg-surface text-content-secondary hover:text-foreground/90"
                 )}
               >
                 Fietsen
@@ -301,7 +301,7 @@ export default function CoreActiviteitenPage() {
               <section key={key} className="flex flex-col gap-3">
                 <h3 className="label-sm text-content-secondary">
                   {monthLabel(key)}
-                  <span className="num ml-2 text-white/30">
+                  <span className="num ml-2 text-muted-foreground">
                     {list.length} {list.length === 1 ? "rit" : "ritten"}
                   </span>
                 </h3>
@@ -337,14 +337,14 @@ function ActivityRow({
     <button
       type="button"
       onClick={onOpen}
-      className="group flex min-h-11 w-full flex-col gap-2 rounded-card border border-border bg-surface p-card text-left transition-colors hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
+      className="group flex min-h-11 w-full flex-col gap-2 rounded-card border border-border bg-surface p-card text-left transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
     >
       <div className="flex w-full items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="label-sm text-content-secondary">
             {relativeDate(session.sessionDate, localISODate())}
           </p>
-          <h4 className="type-title-card mt-1 truncate text-white/90">
+          <h4 className="type-title-card mt-1 truncate text-foreground/90">
             {session.title?.trim() || typeLabel(session.type)}
           </h4>
           {session.title?.trim() && (
@@ -360,7 +360,7 @@ function ActivityRow({
           )}
         </div>
         <IconChevron
-          className="h-5 w-5 shrink-0 text-white/30 transition-transform group-hover:translate-x-1 group-hover:text-accent-cyan"
+          className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-accent-cyan"
           aria-hidden="true"
         />
       </div>
@@ -370,7 +370,7 @@ function ActivityRow({
           {metrics.map((m, i) => (
             <span
               key={i}
-              className="num inline-flex items-center rounded-sm bg-control px-1.5 py-0.5 text-[11px] font-medium text-white/75"
+              className="num inline-flex items-center rounded-sm bg-control px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground"
             >
               {m}
             </span>

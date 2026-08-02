@@ -57,23 +57,23 @@ export function DayDetailDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full overflow-y-auto border-l border-white/[0.08] bg-[#05070e]/95 p-0 backdrop-blur-xl sm:max-w-md"
+        className="w-full overflow-y-auto border-l border-border bg-card p-0 backdrop-blur-xl sm:max-w-md"
       >
         <div className="flex flex-col gap-6 px-6 pb-16 pt-7">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="-ml-1 flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-white/45 transition-colors hover:text-white/80"
+            className="-ml-1 flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground/80"
             aria-label="Sluiten"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
             SLUITEN
           </button>
           <SheetHeader className="space-y-2 text-left">
-            <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+            <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
               DAGOVERZICHT
             </p>
-            <SheetTitle className="font-sans text-2xl font-extralight leading-tight tracking-tight text-white">
+            <SheetTitle className="font-sans text-2xl font-extralight leading-tight tracking-tight text-foreground">
               {date
                 ? new Date(date + "T12:00:00Z").toLocaleDateString("nl-NL", {
                     weekday: "long",
@@ -84,7 +84,7 @@ export function DayDetailDrawer({
             </SheetTitle>
             {dayWorkouts.length > 0 && totalMin > 0 && (
               <div className="flex items-center gap-4 pt-1">
-                <span className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-white/50">
+                <span className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
                   <Clock className="h-3 w-3" strokeWidth={1.75} />
                   {totalMin} min
                 </span>
@@ -101,10 +101,10 @@ export function DayDetailDrawer({
 
           {dayWorkouts.length === 0 ? (
             <div className="flex flex-col items-center gap-4 py-10">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
-                <Moon className="h-5 w-5 text-white/25" strokeWidth={1.5} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted">
+                <Moon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
               </div>
-              <p className="text-[13px] text-white/35">Niets gepland deze dag</p>
+              <p className="text-[13px] text-muted-foreground">Niets gepland deze dag</p>
               {date && <AddTrainingButton variant="inline" contextDate={date} />}
             </div>
           ) : (
@@ -117,13 +117,13 @@ export function DayDetailDrawer({
                     key={w.id}
                     type="button"
                     onClick={() => onOpenWorkout(w.id)}
-                    className="group flex items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/25"
+                    className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-4 py-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/25"
                   >
                     <span
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border"
                       style={{
-                        borderColor: "rgba(255,255,255,0.1)",
-                        background: "rgba(255,255,255,0.03)",
+                        borderColor: "var(--color-border)",
+                        background: "var(--color-muted)",
                       }}
                     >
                       <Icon
@@ -133,35 +133,35 @@ export function DayDetailDrawer({
                       />
                     </span>
                     <div className="flex-1 overflow-hidden">
-                      <p className="truncate font-sans text-[15px] font-light text-white/90">
+                      <p className="truncate font-sans text-[15px] font-light text-foreground/90">
                         {w.title}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                         {w.structure?.intensity && (
-                          <span className="font-mono text-[10px] tracking-wide text-cyan-300/70">
+                          <span className="font-mono text-[10px] tracking-wide text-accent-cyan">
                             {w.structure.intensity}
                           </span>
                         )}
                         {w.targetDurationMin ? (
                           <>
-                            <span className="h-1 w-1 rounded-full bg-white/20" />
-                            <span className="font-mono text-[10px] text-white/40">
+                            <span className="h-1 w-1 rounded-full bg-muted" />
+                            <span className="font-mono text-[10px] text-muted-foreground">
                               {w.targetDurationMin}m
                             </span>
                           </>
                         ) : null}
                         {w.targetTSS ? (
                           <>
-                            <span className="h-1 w-1 rounded-full bg-white/20" />
-                            <span className="font-mono text-[10px] text-white/40">
+                            <span className="h-1 w-1 rounded-full bg-muted" />
+                            <span className="font-mono text-[10px] text-muted-foreground">
                               {w.targetTSS} TSS
                             </span>
                           </>
                         ) : null}
                         {route && route !== "none" && (
                           <>
-                            <span className="h-1 w-1 rounded-full bg-white/20" />
-                            <span className="font-mono text-[10px] text-white/40">
+                            <span className="h-1 w-1 rounded-full bg-muted" />
+                            <span className="font-mono text-[10px] text-muted-foreground">
                               {routeNeedShort[route]}
                             </span>
                           </>
@@ -173,12 +173,12 @@ export function DayDetailDrawer({
                           style={{
                             background:
                               w.status === "completed"
-                                ? "rgba(120,210,230,0.12)"
-                                : "rgba(255,255,255,0.06)",
+                                ? "var(--color-accent)"
+                                : "var(--color-muted)",
                             color:
                               w.status === "completed"
                                 ? ACCENT
-                                : "rgba(255,255,255,0.5)",
+                                : "var(--color-muted-foreground)",
                           }}
                         >
                           {(statusLabel[w.status] ?? w.status).toUpperCase()}
@@ -186,7 +186,7 @@ export function DayDetailDrawer({
                       )}
                     </div>
                     <ChevronRight
-                      className="h-4 w-4 shrink-0 text-white/25 transition-colors group-hover:text-cyan-300/60"
+                      className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-accent-cyan"
                       strokeWidth={1.75}
                     />
                   </button>

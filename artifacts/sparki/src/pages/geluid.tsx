@@ -48,8 +48,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-      <h2 className="mb-4 font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+    <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+      <h2 className="mb-4 font-mono text-[10px] uppercase tracking-[0.28em] text-accent-cyan">
         {title}
       </h2>
       {children}
@@ -84,17 +84,17 @@ export default function GeluidPage() {
         <button
           type="button"
           onClick={() => navigate("/you")}
-          className="flex w-fit items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.06]"
+          className="flex w-fit items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Terug
         </button>
 
         <header>
-          <h1 className="text-2xl font-semibold text-white">Geluid &amp; wekker</h1>
-          <p className="mt-1.5 text-sm text-white/55">
+          <h1 className="text-2xl font-semibold text-foreground">Geluid &amp; wekker</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
             De eigen Sparki-geluiden — set{" "}
-            <span className="text-white/80">{pack.label}</span>. {pack.description}
+            <span className="text-foreground/80">{pack.label}</span>. {pack.description}
           </p>
         </header>
 
@@ -102,8 +102,8 @@ export default function GeluidPage() {
         <Card title="Geluid">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-white">App-geluiden</p>
-              <p className="text-xs text-white/50">
+              <p className="text-sm font-medium text-foreground">App-geluiden</p>
+              <p className="text-xs text-muted-foreground">
                 Korte tonen bij gebeurtenissen in de app.
               </p>
             </div>
@@ -113,11 +113,11 @@ export default function GeluidPage() {
               aria-checked={prefs.enabled}
               onClick={() => update({ enabled: !prefs.enabled })}
               className={`relative h-7 w-12 rounded-full transition-colors ${
-                prefs.enabled ? "bg-[oklch(0.82_0.16_200)]" : "bg-white/15"
+                prefs.enabled ? "bg-accent-cyan" : "bg-muted"
               }`}
             >
               <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${
+                className={`absolute top-1 h-5 w-5 rounded-full bg-card transition-all ${
                   prefs.enabled ? "left-6" : "left-1"
                 }`}
               />
@@ -126,9 +126,9 @@ export default function GeluidPage() {
 
           <div className="mt-5 flex items-center gap-3">
             {vol === 0 ? (
-              <VolumeX className="h-4 w-4 text-white/40" />
+              <VolumeX className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <Volume2 className="h-4 w-4 text-cyan-300/80" />
+              <Volume2 className="h-4 w-4 text-accent-cyan" />
             )}
             <input
               type="range"
@@ -142,9 +142,9 @@ export default function GeluidPage() {
                 if (u) preview(u);
               }}
               onBlur={() => update({ volume: vol })}
-              className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-[oklch(0.82_0.16_200)]"
+              className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-[oklch(0.82_0.16_200)]"
             />
-            <span className="w-9 text-right font-mono text-xs text-white/60">
+            <span className="w-9 text-right font-mono text-xs text-muted-foreground">
               {vol}%
             </span>
           </div>
@@ -161,13 +161,13 @@ export default function GeluidPage() {
                     key={event}
                     className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
                   >
-                    <span className="text-sm text-white/80">
+                    <span className="text-sm text-foreground/80">
                       {EVENT_LABELS[event]}
                     </span>
                     <button
                       type="button"
                       onClick={() => preview(url)}
-                      className="flex items-center gap-1.5 rounded-full border border-cyan-300/30 px-3 py-1.5 text-xs font-medium text-cyan-300 transition-colors hover:bg-cyan-300/10"
+                      className="flex items-center gap-1.5 rounded-full border border-accent-cyan/30 px-3 py-1.5 text-xs font-medium text-accent-cyan transition-colors hover:bg-accent-cyan/10"
                     >
                       <Play className="h-3.5 w-3.5" />
                       Speel af
@@ -183,10 +183,10 @@ export default function GeluidPage() {
         <Card title="Wekker">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <Bell className="h-4 w-4 text-cyan-300/80" />
+              <Bell className="h-4 w-4 text-accent-cyan" />
               <div>
-                <p className="text-sm font-medium text-white">Wekker aan</p>
-                <p className="text-xs text-white/50">
+                <p className="text-sm font-medium text-foreground">Wekker aan</p>
+                <p className="text-xs text-muted-foreground">
                   Wekt je op de ingestelde tijd terwijl de app openstaat.
                 </p>
               </div>
@@ -197,11 +197,11 @@ export default function GeluidPage() {
               aria-checked={prefs.alarmEnabled}
               onClick={() => update({ alarmEnabled: !prefs.alarmEnabled })}
               className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                prefs.alarmEnabled ? "bg-[oklch(0.82_0.16_200)]" : "bg-white/15"
+                prefs.alarmEnabled ? "bg-accent-cyan" : "bg-muted"
               }`}
             >
               <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${
+                className={`absolute top-1 h-5 w-5 rounded-full bg-card transition-all ${
                   prefs.alarmEnabled ? "left-6" : "left-1"
                 }`}
               />
@@ -214,17 +214,17 @@ export default function GeluidPage() {
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm text-white/70">Tijd</span>
+              <span className="text-sm text-muted-foreground">Tijd</span>
               <input
                 type="time"
                 value={prefs.alarmTime}
                 onChange={(e) => update({ alarmTime: e.target.value })}
-                className="rounded-lg border border-white/10 bg-[oklch(0.16_0_0)] px-3 py-1.5 font-mono text-sm text-white [color-scheme:dark]"
+                className="rounded-lg border border-border bg-muted px-3 py-1.5 font-mono text-sm text-foreground [color-scheme:light]"
               />
             </div>
 
             <div>
-              <p className="mb-2 text-sm text-white/70">Dagen</p>
+              <p className="mb-2 text-sm text-muted-foreground">Dagen</p>
               <div className="flex gap-1.5">
                 {DAYS.map(({ d, label }) => {
                   const active = prefs.alarmDays.includes(d);
@@ -235,8 +235,8 @@ export default function GeluidPage() {
                       onClick={() => toggleDay(d)}
                       className={`h-9 flex-1 rounded-lg text-xs font-medium transition-colors ${
                         active
-                          ? "bg-[oklch(0.82_0.16_200)] text-[#040506]"
-                          : "border border-white/10 text-white/60 hover:bg-white/[0.06]"
+                          ? "bg-accent-cyan text-[color:var(--color-on-accent)]"
+                          : "border border-border text-muted-foreground hover:bg-muted"
                       }`}
                     >
                       {label}
@@ -244,13 +244,13 @@ export default function GeluidPage() {
                   );
                 })}
               </div>
-              <p className="mt-2 text-[11px] text-white/40">
+              <p className="mt-2 text-[11px] text-muted-foreground">
                 Geen dag gekozen = elke dag.
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-sm text-white/70">Wekkergeluid</p>
+              <p className="mb-2 text-sm text-muted-foreground">Wekkergeluid</p>
               <ul className="flex flex-col gap-2">
                 {alarms.map((a) => {
                   const selected = prefs.alarmSound === a.id;
@@ -259,8 +259,8 @@ export default function GeluidPage() {
                       <div
                         className={`flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors ${
                           selected
-                            ? "border-cyan-300/40 bg-cyan-300/[0.06]"
-                            : "border-white/[0.08]"
+                            ? "border-accent-cyan/40 bg-accent-cyan/[0.06]"
+                            : "border-border"
                         }`}
                       >
                         <button
@@ -271,17 +271,17 @@ export default function GeluidPage() {
                           <span
                             className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                               selected
-                                ? "border-cyan-300 bg-cyan-300 text-[#040506]"
-                                : "border-white/25"
+                                ? "border-accent-cyan bg-accent-cyan text-[color:var(--color-on-accent)]"
+                                : "border-border"
                             }`}
                           >
                             {selected && <Check className="h-3 w-3" />}
                           </span>
                           <span>
-                            <span className="block text-sm font-medium text-white">
+                            <span className="block text-sm font-medium text-foreground">
                               {a.label}
                             </span>
-                            <span className="block text-xs text-white/50">
+                            <span className="block text-xs text-muted-foreground">
                               {a.description}
                             </span>
                           </span>
@@ -293,7 +293,7 @@ export default function GeluidPage() {
                             preview(u);
                           }}
                           aria-label={`Beluister ${a.label}`}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-300/30 text-cyan-300 transition-colors hover:bg-cyan-300/10"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent-cyan/30 text-accent-cyan transition-colors hover:bg-accent-cyan/10"
                         >
                           <Play className="h-4 w-4" />
                         </button>
@@ -305,7 +305,7 @@ export default function GeluidPage() {
             </div>
           </div>
 
-          <p className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] p-3 text-[11px] leading-relaxed text-amber-100/70">
+          <p className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] p-3 text-[11px] leading-relaxed text-[color:var(--color-warning)]">
             Let op: een website kan je telefoon niet wekken als het scherm op slot
             staat of de app dicht is. Deze wekker werkt nu volledig zolang de app
             openstaat. Een melding bij gesloten app volgt in een latere stap.

@@ -22,12 +22,12 @@ export function RacePlannerTimeline({
   const missingTravel = race.logistics?.travelDurationMin == null
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
           {title.toUpperCase()}
         </span>
-        <span className="font-mono text-[8px] tracking-[0.18em] text-white/30">
+        <span className="font-mono text-[8px] tracking-[0.18em] text-muted-foreground">
           GESCHATTE TIJDEN
         </span>
       </div>
@@ -46,7 +46,7 @@ export function RacePlannerTimeline({
                     boxShadow: last ? `0 0 10px ${ACCENT}` : "none",
                   }}
                 />
-                {!last && <span className="mt-1 w-px flex-1 bg-white/[0.08]" />}
+                {!last && <span className="mt-1 w-px flex-1 bg-muted" />}
               </div>
               <div className="-mt-0.5 flex-1">
                 <div className="flex items-center gap-2">
@@ -59,12 +59,12 @@ export function RacePlannerTimeline({
                   {step.time && step.isEstimate && <EstimateTag />}
                 </div>
                 <p
-                  className={`text-[13px] ${last ? "font-medium text-white/90" : "text-white/65"}`}
+                  className={`text-[13px] ${last ? "font-medium text-foreground/90" : "text-muted-foreground"}`}
                 >
                   {step.label}
                 </p>
                 {step.note && (
-                  <p className="mt-0.5 text-[11px] text-white/35">{step.note}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{step.note}</p>
                 )}
               </div>
             </li>
@@ -76,7 +76,7 @@ export function RacePlannerTimeline({
         <button
           type="button"
           onClick={() => navigate("/races")}
-          className="mt-2 w-full rounded-xl border border-white/[0.08] py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70 transition-colors hover:bg-white/[0.04]"
+          className="mt-2 w-full rounded-xl border border-border py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition-colors hover:bg-muted"
         >
           Reistijd invullen voor exacte tijden
         </button>

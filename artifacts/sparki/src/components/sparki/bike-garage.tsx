@@ -95,7 +95,7 @@ function AssessmentLine({ component }: { component: GarageComponent }) {
   const a = component.assessment
   if (!a.known) {
     return (
-      <p className="mt-1 text-[12px] leading-relaxed text-white/40">
+      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
         Nog niet in de kennisbank — {a.reason}
       </p>
     )
@@ -105,26 +105,26 @@ function AssessmentLine({ component }: { component: GarageComponent }) {
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
       <span
         className="rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]"
-        style={{ color: ACCENT, background: "rgba(120,210,230,0.1)" }}
+        style={{ color: ACCENT, background: "var(--color-accent)" }}
       >
         {e.klasseLabel}
       </span>
       {e.aero && (
-        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55">
+        <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           Aero: {e.aero}
         </span>
       )}
       {e.gewicht && (
-        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55">
+        <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           Gewicht: {e.gewicht}
         </span>
       )}
       {e.richtprijs && (
-        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55">
+        <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           Richtprijs nieuw: €{e.richtprijs.van}–{e.richtprijs.tot}
         </span>
       )}
-      <span className="w-full text-[12px] leading-relaxed text-white/45">
+      <span className="w-full text-[12px] leading-relaxed text-muted-foreground">
         {e.note}
       </span>
     </div>
@@ -167,9 +167,9 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
   const usage = usageData?.usage
 
   return (
-    <div className="mt-2 space-y-2 border-t border-white/[0.06] pt-2">
+    <div className="mt-2 space-y-2 border-t border-border pt-2">
       {usage && usage.rides > 0 ? (
-        <p className="text-[11px] text-white/45">
+        <p className="text-[11px] text-muted-foreground">
           {Math.round(usage.km)} km · {usage.hours.toFixed(1)} uur ·{" "}
           {usage.rides} ritten sinds{" "}
           {usage.basis === "montagedatum" ? "montage" : "registratie"}
@@ -177,7 +177,7 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
           ritten.
         </p>
       ) : (
-        <p className="text-[11px] text-white/35">
+        <p className="text-[11px] text-muted-foreground">
           Nog geen gekoppelde ritten voor dit onderdeel — kilometers en uren
           verschijnen zodra ritten aan deze fiets gekoppeld zijn.
         </p>
@@ -186,22 +186,22 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
       {events.length > 0 && (
         <div className="space-y-1">
           {events.map((e) => (
-            <p key={e.id} className="text-[11.5px] leading-snug text-white/55">
-              <span className="text-white/75">
+            <p key={e.id} className="text-[11.5px] leading-snug text-muted-foreground">
+              <span className="text-muted-foreground">
                 {EVENT_TYPE_OPTIONS.find((o) => o.key === e.eventType)?.label ??
                   e.eventType}
               </span>{" "}
               · {e.eventDate}
               {e.kmAtEvent != null &&
                 ` · ${Math.round(Number(e.kmAtEvent))} km-stand`}
-              {e.note && <span className="text-white/40"> — {e.note}</span>}
+              {e.note && <span className="text-muted-foreground"> — {e.note}</span>}
             </p>
           ))}
         </div>
       )}
 
       {adding ? (
-        <div className="space-y-2 rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
+        <div className="space-y-2 rounded-lg border border-border bg-muted p-2.5">
           <div className="flex flex-wrap gap-1.5">
             {EVENT_TYPE_OPTIONS.map((o) => (
               <button
@@ -211,8 +211,8 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
                 className="rounded-full border px-2.5 py-1 text-[11px]"
                 style={
                   eventType === o.key
-                    ? { borderColor: ACCENT, color: ACCENT, background: "rgba(120,210,230,0.08)" }
-                    : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+                    ? { borderColor: ACCENT, color: ACCENT, background: "var(--color-accent)" }
+                    : { borderColor: "var(--color-border)", color: "var(--color-muted-foreground)" }
                 }
               >
                 {o.label}
@@ -220,13 +220,13 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
             ))}
           </div>
           {eventType === "vervanging" && (
-            <p className="text-[11px] leading-snug text-white/45">
+            <p className="text-[11px] leading-snug text-muted-foreground">
               Bij vervangen begint de kilometertelling van dit onderdeel opnieuw
               vanaf deze datum.
             </p>
           )}
           {eventType === "defect_vastgesteld" && (
-            <p className="text-[11px] leading-snug text-amber-200/70">
+            <p className="text-[11px] leading-snug text-[color:var(--color-warning)]">
               Rijd niet verder op een onderdeel dat je zelf als defect
               beoordeelt voordat het gecontroleerd of vervangen is.
             </p>
@@ -236,16 +236,16 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
               type="date"
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
-              className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1.5 text-[12px] text-white/85 outline-none focus:border-cyan-300/40"
+              className="rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[12px] text-foreground/85 outline-none focus:border-accent-cyan/40"
             />
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Notitie (optioneel)"
-              className="min-w-0 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1.5 text-[12px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[12px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
             />
           </div>
-          {error && <p className="text-[11.5px] text-red-300/80">{error}</p>}
+          {error && <p className="text-[11.5px] text-[color:var(--color-negative)]">{error}</p>}
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -268,7 +268,7 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
                   },
                 )
               }}
-              className="rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-black disabled:opacity-50"
+              className="rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] disabled:opacity-50"
               style={{ background: ACCENT }}
             >
               {addEvent.isPending ? "Bezig…" : "Vastleggen"}
@@ -276,7 +276,7 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
             <button
               type="button"
               onClick={() => setAdding(false)}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
             >
               Annuleren
             </button>
@@ -286,7 +286,7 @@ function ComponentLogboek({ component }: { component: GarageComponent }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/50 transition-colors hover:text-cyan-200"
+          className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-accent-cyan"
         >
           <Wrench className="h-3 w-3" strokeWidth={1.75} />
           Onderhoud of vervanging vastleggen
@@ -310,20 +310,20 @@ function ComponentRow({
       ? { color: "rgb(252,165,165)", background: "rgba(252,165,165,0.1)" }
       : component.status === "defect_vermoed"
         ? { color: "rgb(253,230,138)", background: "rgba(253,230,138,0.1)" }
-        : { color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.06)" }
+        : { color: "var(--color-muted-foreground)", background: "var(--color-muted)" }
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+    <div className="rounded-xl border border-border bg-muted p-3">
       <div className="flex items-start justify-between gap-2">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="min-w-0 text-left"
         >
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             {CATEGORY_LABEL[component.category] ?? component.category}
           </p>
-          <p className="mt-0.5 text-[13px] font-medium text-white/85">
+          <p className="mt-0.5 text-[13px] font-medium text-foreground/85">
             {[component.brand, component.model].filter(Boolean).join(" ") ||
               "Merk en model nog onbekend"}
           </p>
@@ -341,7 +341,7 @@ function ComponentRow({
             type="button"
             onClick={onDelete}
             aria-label="Onderdeel verwijderen"
-            className="text-white/25 transition-colors hover:text-red-300/70"
+            className="text-muted-foreground transition-colors hover:text-[color:var(--color-negative)]"
           >
             <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
           </button>
@@ -350,15 +350,15 @@ function ComponentRow({
       {/* Herkend uit een scan of foto maar nog niet bevestigd — de renner
           bevestigt zelf; nooit stilzwijgend als vaststaand behandelen. */}
       {!component.confirmed && component.source !== "handmatig" && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-cyan-300/20 bg-cyan-300/[0.05] px-2.5 py-2">
-          <p className="min-w-0 flex-1 text-[11.5px] leading-snug text-white/60">
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.05] px-2.5 py-2">
+          <p className="min-w-0 flex-1 text-[11.5px] leading-snug text-muted-foreground">
             Herkend uit je foto's — klopt dit onderdeel?
           </p>
           <button
             type="button"
             disabled={update.isPending}
             onClick={() => update.mutate({ id: component.id, confirmed: true })}
-            className="inline-flex items-center gap-1 rounded-full border border-cyan-300/40 px-2.5 py-1 text-[11px] text-cyan-200 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-full border border-accent-cyan/40 px-2.5 py-1 text-[11px] text-accent-cyan disabled:opacity-50"
           >
             <Check className="h-3 w-3" strokeWidth={2} />
             Klopt
@@ -371,7 +371,7 @@ function ComponentRow({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/35 transition-colors hover:text-white/60"
+          className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-muted-foreground"
         >
           Gebruik & logboek
         </button>
@@ -402,16 +402,16 @@ function AddComponentForm({
   const catalogItems = catalog.data?.items ?? []
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3">
+    <div className="space-y-3 rounded-xl border border-border bg-muted p-3">
       <div className="flex items-center justify-between">
-        <p className="text-[13px] font-medium text-white/80">
+        <p className="text-[13px] font-medium text-foreground/80">
           Onderdeel toevoegen
         </p>
         <button
           type="button"
           onClick={onClose}
           aria-label="Sluiten"
-          className="text-white/40"
+          className="text-muted-foreground"
         >
           <X className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -425,8 +425,8 @@ function AddComponentForm({
             className="rounded-full border px-3 py-1.5 text-[12px] transition-colors"
             style={
               category === c.key
-                ? { borderColor: ACCENT, color: ACCENT, background: "rgba(120,210,230,0.08)" }
-                : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+                ? { borderColor: ACCENT, color: ACCENT, background: "var(--color-accent)" }
+                : { borderColor: "var(--color-border)", color: "var(--color-muted-foreground)" }
             }
           >
             {c.label}
@@ -435,7 +435,7 @@ function AddComponentForm({
       </div>
       {catalogItems.length > 0 && (
         <div>
-          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             Veelgebruikt — tik aan of typ zelf
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -452,8 +452,8 @@ function AddComponentForm({
                   className="rounded-full border px-2.5 py-1 text-[11px] transition-colors"
                   style={
                     selected
-                      ? { borderColor: ACCENT, color: ACCENT, background: "rgba(120,210,230,0.08)" }
-                      : { borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.55)" }
+                      ? { borderColor: ACCENT, color: ACCENT, background: "var(--color-accent)" }
+                      : { borderColor: "var(--color-border)", color: "var(--color-muted-foreground)" }
                   }
                 >
                   {it.brand} {it.model}
@@ -468,16 +468,16 @@ function AddComponentForm({
           value={brand}
           onChange={(e) => setBrand(e.target.value)}
           placeholder="Merk (bijv. Shimano)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
         />
         <input
           value={model}
           onChange={(e) => setModel(e.target.value)}
           placeholder="Model (bijv. Ultegra Di2)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
         />
       </div>
-      {error && <p className="text-[12px] text-red-300/80">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
       <button
         type="button"
         disabled={add.isPending}
@@ -496,7 +496,7 @@ function AddComponentForm({
             },
           )
         }}
-        className="rounded-lg px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black disabled:opacity-50"
+        className="rounded-lg px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] disabled:opacity-50"
         style={{ background: ACCENT }}
       >
         {add.isPending ? "Bezig…" : "Opslaan"}
@@ -511,8 +511,8 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
   const advice = data?.advice
 
   return (
-    <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">
+    <div className="mt-3 rounded-xl border border-border bg-muted p-3">
+      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
         <TrendingUp className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: ACCENT }} />
         Verbeteren — waar zit de grootste winst?
       </p>
@@ -525,8 +525,8 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
             className="rounded-full border px-3 py-1.5 text-[12px] transition-colors"
             style={
               specialism === s.key
-                ? { borderColor: ACCENT, color: ACCENT, background: "rgba(120,210,230,0.08)" }
-                : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+                ? { borderColor: ACCENT, color: ACCENT, background: "var(--color-accent)" }
+                : { borderColor: "var(--color-border)", color: "var(--color-muted-foreground)" }
             }
           >
             {s.label}
@@ -535,7 +535,7 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
       </div>
 
       {specialism && isLoading && (
-        <p className="mt-3 text-[12px] text-white/40">Bezig…</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">Bezig…</p>
       )}
 
       {advice && (
@@ -543,7 +543,7 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
           {advice.suggestions.length === 0 &&
             advice.unknown.length === 0 &&
             advice.alreadyTop.length === 0 && (
-              <p className="text-[12px] leading-relaxed text-white/45">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 Er staan nog geen onderdelen op deze fiets. Voeg eerst je
                 groepset, wielen of banden toe — dan wordt inzichtelijk waar de
                 winst zit.
@@ -552,12 +552,12 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
           {advice.suggestions.map((s) => (
             <div
               key={s.componentId}
-              className="rounded-lg border border-white/[0.06] p-2.5"
+              className="rounded-lg border border-border p-2.5"
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[13px] font-medium text-white/85">
+                <p className="text-[13px] font-medium text-foreground/85">
                   {CATEGORY_LABEL[s.category] ?? s.category}
-                  <span className="text-white/40">
+                  <span className="text-muted-foreground">
                     {" "}
                     — nu {s.current.klasseLabel.toLowerCase()}
                   </span>
@@ -566,20 +566,20 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
                   className="shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em]"
                   style={
                     s.gain === "groot"
-                      ? { color: ACCENT, background: "rgba(120,210,230,0.12)" }
-                      : { color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.06)" }
+                      ? { color: ACCENT, background: "var(--color-accent)" }
+                      : { color: "var(--color-muted-foreground)", background: "var(--color-muted)" }
                   }
                 >
                   {s.gainLabel}
                 </span>
               </div>
-              <p className="mt-1 text-[12px] leading-relaxed text-white/50">
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
                 {s.why}
               </p>
               {s.besteKoop && (
                 <p
                   className="mt-1.5 inline-block rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em]"
-                  style={{ color: ACCENT, background: "rgba(120,210,230,0.12)" }}
+                  style={{ color: ACCENT, background: "var(--color-accent)" }}
                 >
                   Meeste winst per euro
                 </p>
@@ -589,10 +589,10 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
                   {s.targets.map((t) => (
                     <p
                       key={`${t.brand}-${t.model}`}
-                      className="text-[12px] leading-relaxed text-white/55"
+                      className="text-[12px] leading-relaxed text-muted-foreground"
                     >
                       → {t.brand} {t.model}{" "}
-                      <span className="text-white/35">
+                      <span className="text-muted-foreground">
                         ({t.klasseLabel.toLowerCase()}
                         {t.richtprijs
                           ? `, richtprijs €${t.richtprijs.van}–${t.richtprijs.tot}`
@@ -606,17 +606,17 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
             </div>
           ))}
           {advice.suggestions.some((s) => s.targets.length > 0) && (
-            <p className="text-[11px] leading-relaxed text-white/35">
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
               {advice.prijsToelichting}
             </p>
           )}
           {advice.alreadyTop.map((t) => (
-            <p key={t.componentId} className="text-[12px] leading-relaxed text-white/40">
+            <p key={t.componentId} className="text-[12px] leading-relaxed text-muted-foreground">
               {t.label}
             </p>
           ))}
           {advice.unknown.length > 0 && (
-            <p className="text-[12px] leading-relaxed text-white/40">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
               {advice.unknown.length === 1
                 ? "1 onderdeel is nog niet herkend"
                 : `${advice.unknown.length} onderdelen zijn nog niet herkend`}{" "}
@@ -647,7 +647,7 @@ function BikeCard({
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -658,18 +658,18 @@ function BikeCard({
             <img
               src={`/api/garage/photo/${bike.id}/0`}
               alt={bike.name}
-              className="h-12 w-12 shrink-0 rounded-lg border border-white/[0.08] object-cover"
+              className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover"
             />
           ) : (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] text-white/30">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground">
               <Bike className="h-5 w-5" strokeWidth={1.5} />
             </span>
           )}
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-medium text-white/90">
+            <p className="truncate text-[15px] font-medium text-foreground/90">
               {bike.name}
             </p>
-            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               {BIKE_TYPE_LABEL[bike.bikeType] ?? bike.bikeType}
               {(bike.brand || bike.model) &&
                 ` · ${[bike.brand, bike.model].filter(Boolean).join(" ")}`}
@@ -677,24 +677,24 @@ function BikeCard({
               {bike.status === "archief" && " · Archief"}
             </p>
             {usage && usage.rides > 0 ? (
-              <p className="mt-0.5 text-[11px] text-white/45">
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
                 {Math.round(usage.km)} km · {usage.hours.toFixed(1)} uur ·{" "}
                 {usage.rides} ritten — uit je gekoppelde ritten
               </p>
             ) : (
-              <p className="mt-0.5 text-[11px] text-white/30">
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
                 Nog geen ritten aan deze fiets gekoppeld
               </p>
             )}
             {bike.purpose && (
-              <p className="mt-0.5 truncate text-[11px] text-white/40">
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                 {bike.purpose}
               </p>
             )}
           </div>
         </div>
         <ChevronRight
-          className={`h-4 w-4 shrink-0 text-white/35 transition-transform ${expanded ? "rotate-90" : ""}`}
+          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`}
           strokeWidth={1.75}
         />
       </button>
@@ -708,7 +708,7 @@ function BikeCard({
                   key={i}
                   src={`/api/garage/photo/${bike.id}/${i}`}
                   alt={`Foto ${i + 1}`}
-                  className="h-20 w-20 shrink-0 rounded-lg border border-white/[0.08] object-cover"
+                  className="h-20 w-20 shrink-0 rounded-lg border border-border object-cover"
                 />
               ))}
             </div>
@@ -725,7 +725,7 @@ function BikeCard({
               ))}
             </div>
           ) : (
-            <p className="text-[12px] leading-relaxed text-white/40">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
               Nog geen onderdelen vastgelegd. Begin met je groepset — dat zegt
               het meest over deze fiets.
             </p>
@@ -742,7 +742,7 @@ function BikeCard({
               <button
                 type="button"
                 onClick={() => setAdding(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/35"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/35"
               >
                 <Plus className="h-3.5 w-3.5" strokeWidth={2} />
                 Onderdeel
@@ -777,7 +777,7 @@ function BikeCard({
                   type="button"
                   disabled={addPhoto.isPending}
                   onClick={() => fileRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/35 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/35 disabled:opacity-50"
                 >
                   <Camera className="h-3.5 w-3.5" strokeWidth={1.75} />
                   {addPhoto.isPending ? "Bezig…" : "Foto"}
@@ -792,7 +792,7 @@ function BikeCard({
                     status: bike.status === "archief" ? "actief" : "archief",
                   })
                 }
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35 transition-colors hover:text-white/70 disabled:opacity-40"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-muted-foreground disabled:opacity-40"
               >
                 {bike.status === "archief"
                   ? "Terug naar actief"
@@ -806,7 +806,7 @@ function BikeCard({
                     deleteBike.mutate(bike.id)
                   }
                 }}
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35 transition-colors hover:text-red-300/70 disabled:opacity-40"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-[color:var(--color-negative)] disabled:opacity-40"
               >
                 Verwijderen
               </button>
@@ -839,17 +839,17 @@ function AddBikeForm({
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <div className="space-y-3 rounded-2xl border border-white/[0.1] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <p className="text-[14px] font-medium text-white/85">
+        <p className="text-[14px] font-medium text-foreground/85">
           {suggestion ? "Fiets overnemen" : "Fiets toevoegen"}
         </p>
-        <button type="button" onClick={onClose} aria-label="Sluiten" className="text-white/40">
+        <button type="button" onClick={onClose} aria-label="Sluiten" className="text-muted-foreground">
           <X className="h-4 w-4" strokeWidth={1.75} />
         </button>
       </div>
       {suggestion && (
-        <p className="text-[12px] leading-relaxed text-white/45">
+        <p className="text-[12px] leading-relaxed text-muted-foreground">
           Overgenomen uit je gekoppelde gegevens — controleer en vul aan.
         </p>
       )}
@@ -862,8 +862,8 @@ function AddBikeForm({
             className="rounded-full border px-3 py-1.5 text-[12px] transition-colors"
             style={
               bikeType === t.key
-                ? { borderColor: ACCENT, color: ACCENT, background: "rgba(120,210,230,0.08)" }
-                : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+                ? { borderColor: ACCENT, color: ACCENT, background: "var(--color-accent)" }
+                : { borderColor: "var(--color-border)", color: "var(--color-muted-foreground)" }
             }
           >
             {t.label}
@@ -874,20 +874,20 @@ function AddBikeForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Naam (bijv. Mijn racefiets)"
-        className="w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+        className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
       />
       <div className="grid gap-2 sm:grid-cols-2">
         <input
           value={brand}
           onChange={(e) => setBrand(e.target.value)}
           placeholder="Merk (optioneel)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
         />
         <input
           value={model}
           onChange={(e) => setModel(e.target.value)}
           placeholder="Model (optioneel)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
         />
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -896,16 +896,16 @@ function AddBikeForm({
           onChange={(e) => setBuildYear(e.target.value)}
           inputMode="numeric"
           placeholder="Bouwjaar (optioneel)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
         />
         <input
           value={purpose}
           onChange={(e) => setPurpose(e.target.value)}
           placeholder="Waarvoor gebruik je 'm? (bijv. wedstrijden)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40"
         />
       </div>
-      {error && <p className="text-[12px] text-red-300/80">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
       <button
         type="button"
         disabled={add.isPending || !name.trim()}
@@ -927,7 +927,7 @@ function AddBikeForm({
             },
           )
         }}
-        className="rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-black disabled:opacity-50"
+        className="rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-on-accent)] disabled:opacity-50"
         style={{ background: ACCENT }}
       >
         {add.isPending ? "Bezig…" : "Opslaan"}
@@ -941,18 +941,18 @@ function Developments() {
   const items = data?.items ?? []
   return (
     <div className="mt-6">
-      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">
+      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
         <Newspaper className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: ACCENT }} />
         Nieuwe ontwikkelingen
       </p>
-      {isLoading && <p className="mt-2 text-[12px] text-white/40">Bezig…</p>}
+      {isLoading && <p className="mt-2 text-[12px] text-muted-foreground">Bezig…</p>}
       {isError && (
-        <p className="mt-2 text-[12px] text-white/40">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           Kon nieuwe ontwikkelingen nu niet laden.
         </p>
       )}
       {!isLoading && !isError && items.length === 0 && (
-        <p className="mt-2 text-[12px] leading-relaxed text-white/40">
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
           Er is op dit moment geen materiaalnieuws dat bij jouw fietsen past.
           Zodra er iets relevants verschijnt, zie je het hier.
         </p>
@@ -964,17 +964,17 @@ function Developments() {
             href={it.url}
             target="_blank"
             rel="noreferrer"
-            className="block rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:border-cyan-300/25"
+            className="block rounded-xl border border-border bg-muted p-3 transition-colors hover:border-accent-cyan/25"
           >
-            <p className="text-[13px] font-medium leading-snug text-white/85">
+            <p className="text-[13px] font-medium leading-snug text-foreground/85">
               {it.title}
             </p>
             {it.summary && (
-              <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-white/50">
+              <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
                 {it.summary}
               </p>
             )}
-            <p className="mt-1 font-mono text-[10px] tracking-wide text-white/30">
+            <p className="mt-1 font-mono text-[10px] tracking-wide text-muted-foreground">
               {[it.source, it.publishedAt].filter(Boolean).join(" · ")}
             </p>
           </a>
@@ -989,7 +989,7 @@ function ProTeams() {
   if (isLoading || !data) return null
   return (
     <div className="mt-6">
-      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">
+      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
         <Trophy className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: ACCENT }} />
         Profploegen en hun materiaal
       </p>
@@ -997,10 +997,10 @@ function ProTeams() {
         {data.teams.map((t) => (
           <div
             key={t.name}
-            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"
+            className="rounded-xl border border-border bg-muted p-3"
           >
-            <p className="text-[13px] font-medium text-white/85">{t.name}</p>
-            <p className="mt-0.5 text-[12px] text-white/50">
+            <p className="text-[13px] font-medium text-foreground/85">{t.name}</p>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
               {t.bike} · {t.groupset} · {t.wheels}
             </p>
             {t.matches.map((m, i) => (
@@ -1011,7 +1011,7 @@ function ProTeams() {
           </div>
         ))}
       </div>
-      <p className="mt-2 font-mono text-[10px] tracking-wide text-white/25">
+      <p className="mt-2 font-mono text-[10px] tracking-wide text-muted-foreground">
         {data.season} · Bron: {data.source}
       </p>
     </div>
@@ -1031,15 +1031,15 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
   return (
     <section>
       <SectionLabel n={n} title="Fietsengarage" />
-      <p className="mt-2 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 text-pretty text-[12px] leading-relaxed text-white/50 backdrop-blur-md">
+      <p className="mt-2 rounded-xl border border-border bg-card p-3.5 text-pretty text-[12px] leading-relaxed text-muted-foreground backdrop-blur-md">
         Leg je fietsen en uitrusting vast. Per herkend onderdeel zie je een
         beoordeling uit de kennisbank — en waar per specialisme de grootste
         winst zit.
       </p>
 
-      {isLoading && <p className="mt-4 text-[12px] text-white/40">Bezig…</p>}
+      {isLoading && <p className="mt-4 text-[12px] text-muted-foreground">Bezig…</p>}
       {isError && (
-        <p className="mt-4 text-[12px] text-white/50">
+        <p className="mt-4 text-[12px] text-muted-foreground">
           Kon de fietsengarage nu niet laden. Probeer het later opnieuw.
         </p>
       )}
@@ -1047,11 +1047,11 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
       {data && (
         <div className="mt-4 space-y-3">
           {data.equipmentSuggestions.length > 0 && !adoptSuggestion && (
-            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] p-4">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">
+            <div className="rounded-2xl border border-accent-cyan/20 bg-accent-cyan/[0.06] p-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Al bekend uit je gekoppelde gegevens
               </p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
+              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
                 {data.equipmentSuggestions.length === 1
                   ? "Er staat al een fiets in je gekoppelde gegevens."
                   : `Er staan al ${data.equipmentSuggestions.length} fietsen in je gekoppelde gegevens.`}{" "}
@@ -1063,7 +1063,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
                     key={s.id}
                     type="button"
                     onClick={() => setAdoptSuggestion(s)}
-                    className="rounded-lg border border-white/15 px-3 py-2 text-[12px] text-white/80 transition-colors hover:border-cyan-300/40"
+                    className="rounded-lg border border-border px-3 py-2 text-[12px] text-foreground/80 transition-colors hover:border-accent-cyan/40"
                   >
                     {s.name} overnemen
                   </button>
@@ -1095,7 +1095,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
               <button
                 type="button"
                 onClick={() => setShowArchive((v) => !v)}
-                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition-colors hover:text-white/65"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-muted-foreground"
               >
                 {showArchive ? "Archief verbergen" : "Archief tonen"} (
                 {data.bikes.filter((b) => b.status === "archief").length})
@@ -1118,8 +1118,8 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
           )}
 
           {data.bikes.length === 0 && !addingBike && !adoptSuggestion && (
-            <div className="space-y-1.5 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
-              <p className="text-[13px] leading-relaxed text-white/55">
+            <div className="space-y-1.5 rounded-xl border border-border bg-card p-3.5 backdrop-blur-md">
+              <p className="text-[13px] leading-relaxed text-muted-foreground">
                 Nog geen fietsen in je garage. Voeg je eerste fiets toe — daarna
                 krijg je onderhoudsadvies per onderdeel.
               </p>
@@ -1133,7 +1133,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
             <button
               type="button"
               onClick={() => setAddingBike(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/35"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/35"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2} />
               Fiets toevoegen
@@ -1141,7 +1141,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
           )}
 
           <div className="mt-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
               Persoonlijke uitrusting
             </p>
             {data.personalGear.length > 0 ? (
@@ -1155,7 +1155,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
                 ))}
               </div>
             ) : (
-              <p className="mt-2 text-[12px] leading-relaxed text-white/40">
+              <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
                 Nog geen helm, kleding of schoenen vastgelegd.
               </p>
             )}
@@ -1170,7 +1170,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
               <button
                 type="button"
                 onClick={() => setAddingGear(true)}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/35"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/35"
               >
                 <Plus className="h-3.5 w-3.5" strokeWidth={2} />
                 Uitrusting toevoegen

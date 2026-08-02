@@ -35,11 +35,11 @@ function Toggle({
       onClick={onClick}
       className="relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40"
       style={{
-        background: on ? ACCENT : "rgba(255,255,255,0.12)",
+        background: on ? ACCENT : "var(--color-muted)",
       }}
     >
       <span
-        className="absolute top-0.5 h-6 w-6 rounded-full bg-[#05070e] transition-all"
+        className="absolute top-0.5 h-6 w-6 rounded-full bg-background transition-all"
         style={{ left: on ? "calc(100% - 1.625rem)" : "0.125rem" }}
       />
     </button>
@@ -67,26 +67,26 @@ function PurposeCard({
 }) {
   return (
     <section
-      className="rounded-2xl border bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+      className="rounded-2xl border bg-card p-4 backdrop-blur-md"
       style={{
         borderColor: sensitive
           ? "rgba(255,180,120,0.22)"
-          : "rgba(255,255,255,0.08)",
+          : "var(--color-border)",
       }}
     >
       <div className="flex items-start gap-3">
         <span
           className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border"
           style={{
-            borderColor: "rgba(255,255,255,0.1)",
-            background: "rgba(255,255,255,0.03)",
+            borderColor: "var(--color-border)",
+            background: "var(--color-muted)",
           }}
         >
-          <Icon className="h-5 w-5 text-white/60" strokeWidth={1.75} />
+          <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
         </span>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-[15px] font-medium tracking-tight text-white/90">
+            <h2 className="text-[15px] font-medium tracking-tight text-foreground/90">
               {title}
             </h2>
             {sensitive && (
@@ -113,10 +113,10 @@ function PurposeCard({
         </div>
       </div>
 
-      <div className="mt-3 space-y-2 text-[13px] leading-relaxed text-white/60">
+      <div className="mt-3 space-y-2 text-[13px] leading-relaxed text-muted-foreground">
         <p>{wat}</p>
-        <p className="text-white/45">
-          <span className="text-white/55">Met je gegevens: </span>
+        <p className="text-muted-foreground">
+          <span className="text-muted-foreground">Met je gegevens: </span>
           {data}
         </p>
       </div>
@@ -126,15 +126,15 @@ function PurposeCard({
 
 function SkeletonCard() {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start gap-3">
-        <div className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-white/[0.06]" />
+        <div className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-muted" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-1/2 animate-pulse rounded bg-white/[0.06]" />
-          <div className="h-3 w-full animate-pulse rounded bg-white/[0.05]" />
-          <div className="h-3 w-3/4 animate-pulse rounded bg-white/[0.05]" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-full animate-pulse rounded bg-muted" />
+          <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
         </div>
-        <div className="h-7 w-12 shrink-0 animate-pulse rounded-full bg-white/[0.06]" />
+        <div className="h-7 w-12 shrink-0 animate-pulse rounded-full bg-muted" />
       </div>
     </div>
   )
@@ -142,7 +142,7 @@ function SkeletonCard() {
 
 function Intro({ children }: { children: ReactNode }) {
   return (
-    <p className="text-[14px] leading-relaxed text-white/55">{children}</p>
+    <p className="text-[14px] leading-relaxed text-muted-foreground">{children}</p>
   )
 }
 
@@ -158,7 +158,7 @@ export default function AiToestemmingPage() {
     <ScreenShell bg={null} section="you">
       <div className="space-y-6">
         <header className="space-y-3">
-          <h1 className="text-[22px] font-semibold tracking-tight text-white/95">
+          <h1 className="text-[22px] font-semibold tracking-tight text-foreground/95">
             AI-toestemming
           </h1>
           <Intro>
@@ -167,8 +167,8 @@ export default function AiToestemmingPage() {
             hem hieronder aanzet. Zet je iets uit, dan stopt dat gebruik meteen
             — je hoeft niets extra's te doen.
           </Intro>
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
-            <p className="text-[12px] leading-relaxed text-white/50">
+          <div className="rounded-xl border border-border bg-muted px-4 py-3">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
               Je keuzes worden bijgehouden in een toestemmingslogboek. Zolang
               een functie uit staat, verwerken we daarvoor geen gegevens met
               AI.
@@ -241,7 +241,7 @@ export default function AiToestemmingPage() {
           </div>
         )}
 
-        <p className="px-1 text-[12px] leading-relaxed text-white/40">
+        <p className="px-1 text-[12px] leading-relaxed text-muted-foreground">
           Intrekken werkt per direct: zodra je een functie uitzet, verwerken we
           daarvoor geen gegevens meer met AI. De volledige voorwaarden, een
           export van je gegevens en het verwijderen van je account vind je in je

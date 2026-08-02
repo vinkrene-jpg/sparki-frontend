@@ -142,7 +142,7 @@ function shellNavForRole(
 }
 
 const FOCUS_RING_SHELL =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 
 const SECTION_SCENE: Record<string, SceneName> = {
   start: "home",
@@ -239,7 +239,7 @@ function ClubCrest() {
       ) : (
         <Shield className="h-3 w-3" style={{ color }} strokeWidth={2} />
       )}
-      <span className="max-w-[8rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-white/70">
+      <span className="max-w-[8rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
         {team.shirtBadge || team.clubName}
       </span>
     </span>
@@ -287,11 +287,11 @@ function HeaderContext({ displayName }: { displayName: string | null }) {
   if (firstName) {
     // Alleen de voornaam — de pagina zelf begroet al ("Goedemorgen, …"),
     // dus de balk blijft stil en dubbelt de groet niet.
-    return <span className="truncate text-[13px] text-white/80">{firstName}</span>
+    return <span className="truncate text-[13px] text-foreground/80">{firstName}</span>
   }
   const now = new Date()
   const label = now.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" })
-  return <span className="truncate text-[13px] text-white/60">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
+  return <span className="truncate text-[13px] text-muted-foreground">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
 }
 
 // Hoofdnavigatie-wortels per rol: op deze paden toont de schil géén
@@ -388,7 +388,7 @@ export function ScreenShell({
     else setLocation("/")
   }
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
+    <main className="relative min-h-dvh overflow-hidden bg-background text-foreground">
       {/* Per-screen cinematic background — shared structure, scene-specific
           atmosphere. Fixed + ≤5px parallax so it sits behind the whole page. */}
       <CinematicScene scene={scene} image={bg} />
@@ -398,10 +398,10 @@ export function ScreenShell({
           (onboarding, tester-welcome, wedstrijd-room). */}
       {!bare && (
         <aside
-          className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-white/[0.08] bg-[#05070e]/95 backdrop-blur lg:flex"
+          className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-background/95 backdrop-blur lg:flex"
           aria-label="Zijbalknavigatie"
         >
-          <div className="px-6 pt-7 font-mono text-[11px] tracking-[0.35em] text-white/70">
+          <div className="px-6 pt-7 font-mono text-[11px] tracking-[0.35em] text-muted-foreground">
             SPARKI
           </div>
           <nav className="mt-8 flex flex-col gap-0.5 px-3" aria-label="Hoofdmenu">
@@ -417,8 +417,8 @@ export function ScreenShell({
                     "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors",
                     FOCUS_RING_SHELL,
                     active
-                      ? "bg-white/[0.08] text-cyan-300"
-                      : "text-white/60 hover:bg-white/[0.05] hover:text-white/85",
+                      ? "bg-accent text-accent-cyan"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                   aria-current={active ? "page" : undefined}
                 >
@@ -434,8 +434,8 @@ export function ScreenShell({
                 "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors",
                 FOCUS_RING_SHELL,
                 pathname.startsWith(COMMERCIAL_ACCOUNT_NAV.href)
-                  ? "text-cyan-300"
-                  : "text-white/60 hover:bg-white/[0.05] hover:text-white/85",
+                  ? "text-accent-cyan"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               {COMMERCIAL_ACCOUNT_NAV.label}
@@ -460,9 +460,9 @@ export function ScreenShell({
         <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
           <span className="flex items-center gap-2" aria-label="Sparki">
             <span className="relative flex h-2 w-2">
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-cyan" />
             </span>
-            <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
+            <span className="font-mono text-[11px] tracking-[0.35em] text-muted-foreground">SPARKI</span>
           </span>
           <div className="flex min-w-0 justify-center">
             <HeaderContext displayName={profile?.displayName ?? null} />
@@ -476,7 +476,7 @@ export function ScreenShell({
               onClick={() => setZoekOpen(true)}
               aria-label="Zoeken"
               title="Zoeken"
-              className="text-white/60 transition-colors hover:text-cyan-300"
+              className="text-muted-foreground transition-colors hover:text-accent-cyan"
             >
               <Search className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
@@ -485,7 +485,7 @@ export function ScreenShell({
               onClick={() => setMenuOpen(true)}
               aria-label="Menu openen"
               title="Menu"
-              className="text-white/60 transition-colors hover:text-cyan-300"
+              className="text-muted-foreground transition-colors hover:text-accent-cyan"
             >
               <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
@@ -496,7 +496,7 @@ export function ScreenShell({
             eventueel het clubembleem. Rolwissel, testerbadge en Vraag Sparki
             verhuisden naar het hoofdmenu — de balk blijft rustig. */}
         <div className="-mt-6 flex items-center justify-between gap-3">
-          <span className="flex items-center gap-1.5 text-white/50">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             <SectionIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="font-mono text-[10px] tracking-[0.28em] uppercase">{sectionLabel}</span>
           </span>
@@ -510,7 +510,7 @@ export function ScreenShell({
           <button
             type="button"
             onClick={goBack}
-            className="-mt-4 flex items-center gap-1.5 self-start rounded-full border border-white/15 px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="-mt-4 flex items-center gap-1.5 self-start rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <ChevronLeft className="h-4 w-4" />
             Terug

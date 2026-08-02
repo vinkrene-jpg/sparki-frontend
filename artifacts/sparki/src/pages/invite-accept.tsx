@@ -90,10 +90,10 @@ export default function InviteAcceptPage() {
   return (
     <ScreenShell section="Home" bg="/atmosphere/samen-groepsrit-zee.webp">
       <header>
-        <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+        <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
           UITNODIGING
         </span>
-        <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
+        <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-foreground/90">
           Word lid van Sparki
         </h1>
       </header>
@@ -101,34 +101,34 @@ export default function InviteAcceptPage() {
       {isLoading ? (
         <Skeleton className="h-40 w-full rounded-2xl" />
       ) : error || !invite ? (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-          <p className="text-[13px] leading-relaxed text-white/55">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Deze uitnodiging bestaat niet of is niet langer geldig.
           </p>
           <button
             type="button"
             onClick={() => setLocation("/")}
-            className="mt-4 inline-flex rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
-            style={{ borderColor: ACCENT, color: ACCENT, background: "rgba(255,255,255,0.04)" }}
+            className="mt-4 inline-flex rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
+            style={{ borderColor: ACCENT, color: ACCENT, background: "var(--color-border)" }}
           >
             Naar home
           </button>
         </div>
       ) : (
         <section className="space-y-5">
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-            <p className="text-[13px] leading-relaxed text-white/70">
+          <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
               {invite.relationship === "coach_athlete" && (
-                <>Een coach nodigt je uit als <strong className="text-white/90">atleet</strong>. Je wordt aan deze coach gekoppeld.</>
+                <>Een coach nodigt je uit als <strong className="text-foreground/90">atleet</strong>. Je wordt aan deze coach gekoppeld.</>
               )}
               {invite.relationship === "parent_athlete" && (
-                <>Je wordt gekoppeld als <strong className="text-white/90">atleet</strong> aan een ouderaccount.</>
+                <>Je wordt gekoppeld als <strong className="text-foreground/90">atleet</strong> aan een ouderaccount.</>
               )}
               {invite.relationship === "none" && (
-                <>Je krijgt toegang met de rol <strong className="text-white/90">{ROLE_LABEL[invite.targetRole] ?? invite.targetRole}</strong>.</>
+                <>Je krijgt toegang met de rol <strong className="text-foreground/90">{ROLE_LABEL[invite.targetRole] ?? invite.targetRole}</strong>.</>
               )}
               {invite.relationship === "head_tester" && (
-                <>Je wordt <strong className="text-white/90">hoofdtester</strong> van Sparki — vroege toegang tot alles, plus een directe lijn om bugs en ideeën te melden.</>
+                <>Je wordt <strong className="text-foreground/90">hoofdtester</strong> van Sparki — vroege toegang tot alles, plus een directe lijn om bugs en ideeën te melden.</>
               )}
             </p>
             <div className="mt-4 flex items-center gap-2">
@@ -138,15 +138,15 @@ export default function InviteAcceptPage() {
               >
                 {RELATIONSHIP_LABEL[invite.relationship]}
               </span>
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                 rol: {ROLE_LABEL[invite.targetRole] ?? invite.targetRole}
               </span>
             </div>
           </div>
 
           {invite.status !== "pending" ? (
-            <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 text-center backdrop-blur-md">
-              <p className="text-[13px] text-white/55">
+            <div className="rounded-2xl border border-border bg-card p-5 text-center backdrop-blur-md">
+              <p className="text-[13px] text-muted-foreground">
                 {NON_PENDING_COPY[invite.status as Exclude<InvitationStatus, "pending">] ??
                   `Status: ${STATUS_LABEL[invite.status]}`}
               </p>
@@ -154,11 +154,11 @@ export default function InviteAcceptPage() {
           ) : accepted ? (
             <div className="rounded-2xl border p-5 text-center backdrop-blur-md"
               style={{ borderColor: "rgba(130,220,160,0.3)", background: "rgba(130,220,160,0.06)" }}>
-              <p className="text-[14px] font-light text-white/90">Gelukt! Je wordt doorgestuurd…</p>
+              <p className="text-[14px] font-light text-foreground/90">Gelukt! Je wordt doorgestuurd…</p>
             </div>
           ) : declined ? (
-            <div className="rounded-2xl border border-white/[0.12] bg-white/[0.03] p-5 text-center backdrop-blur-md">
-              <p className="text-[14px] font-light text-white/90">
+            <div className="rounded-2xl border border-border bg-muted p-5 text-center backdrop-blur-md">
+              <p className="text-[14px] font-light text-foreground/90">
                 Je hebt deze uitnodiging geweigerd. Er is niets gekoppeld.
               </p>
             </div>
@@ -179,14 +179,14 @@ export default function InviteAcceptPage() {
                     type="button"
                     onClick={onDecline}
                     disabled={accept.isPending || decline.isPending}
-                    className="w-full rounded-xl border border-white/[0.14] px-4 py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] text-white/55 transition-colors hover:bg-white/[0.05] disabled:opacity-50"
+                    className="w-full rounded-xl border border-border px-4 py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
                   >
                     {decline.isPending ? "Weigeren…" : "Uitnodiging weigeren"}
                   </button>
                 )}
               </div>
               {acceptError && (
-                <p className="text-center text-[12px] text-red-300/80">{acceptError}</p>
+                <p className="text-center text-[12px] text-[color:var(--color-negative)]">{acceptError}</p>
               )}
             </>
           )}
@@ -194,7 +194,7 @@ export default function InviteAcceptPage() {
       )}
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>

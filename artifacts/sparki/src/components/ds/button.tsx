@@ -25,7 +25,7 @@ const dsButtonVariants = cva(
         primair:
           "bg-accent-cyan font-semibold text-on-accent hover:brightness-110",
         secundair:
-          "border border-border bg-control text-white hover:bg-white/15",
+          "border border-border bg-control text-foreground hover:bg-muted",
         tekst: "px-2 text-accent-cyan underline-offset-4 hover:underline",
       },
     },

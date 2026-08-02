@@ -77,7 +77,7 @@ function Keuzeknop({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
         actief
           ? "border-accent-cyan/60 bg-accent-cyan/10"
-          : "border-border bg-surface hover:bg-white/5",
+          : "border-border bg-surface hover:bg-muted",
         className,
       )}
     >
@@ -272,7 +272,7 @@ export function PlanWizard({ missing }: { missing: string[] }) {
               </DsButton>
             </div>
           ))}
-          <div className="flex flex-col gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted p-3">
             <input
               type="text"
               value={agTitel}
@@ -363,14 +363,14 @@ export function PlanWizard({ missing }: { missing: string[] }) {
         <div className="flex flex-col gap-2">
           <p className="type-action">Klopt dit?</p>
           <ul className="flex flex-col gap-1 type-body text-content-secondary">
-            <li>Niveau: <span className="text-white/80">{NIVEAUS.find((n) => n.id === niveau)?.label}</span></li>
-            <li>Trainingsdagen: <span className="text-white/80">{dagen.map((d) => WEEKDAGEN.find((w) => w.id === d)?.label).join(", ") || "—"}</span></li>
-            <li>Uren per week: <span className="num text-white/80">{uren === "" ? "—" : uren}</span></li>
+            <li>Niveau: <span className="text-foreground/80">{NIVEAUS.find((n) => n.id === niveau)?.label}</span></li>
+            <li>Trainingsdagen: <span className="text-foreground/80">{dagen.map((d) => WEEKDAGEN.find((w) => w.id === d)?.label).join(", ") || "—"}</span></li>
+            <li>Uren per week: <span className="num text-foreground/80">{uren === "" ? "—" : uren}</span></li>
             {belastbaarheid != null && (
-              <li>Belastbaarheid: <span className="text-white/80">{BELASTBAARHEID.find((b) => b.id === belastbaarheid)?.label}</span></li>
+              <li>Belastbaarheid: <span className="text-foreground/80">{BELASTBAARHEID.find((b) => b.id === belastbaarheid)?.label}</span></li>
             )}
             {(events?.length ?? 0) > 0 && (
-              <li>Agenda-periodes: <span className="num text-white/80">{events!.length}</span></li>
+              <li>Agenda-periodes: <span className="num text-foreground/80">{events!.length}</span></li>
             )}
           </ul>
           {missing.includes("ftp") && (
@@ -453,7 +453,7 @@ function PlanGereedModal({
       aria-label="Je trainingsplan staat klaar"
     >
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-foreground/70 backdrop-blur-sm"
         onClick={onSluiten}
       />
       <DsCard
@@ -485,7 +485,7 @@ function PlanGereedModal({
               key={s.l}
               className="rounded-lg border border-border bg-surface px-2 py-3 text-center"
             >
-              <span className="num type-title block text-white">{s.n}</span>
+              <span className="num type-title block text-foreground">{s.n}</span>
               <span className="type-label text-content-secondary">{s.l}</span>
             </div>
           ))}
@@ -495,9 +495,9 @@ function PlanGereedModal({
           {eerste && (
             <p className="type-body text-content-secondary">
               Je trapt af op{" "}
-              <span className="text-white/90">{datumLabel(eerste.dayDate)}</span>
+              <span className="text-foreground/90">{datumLabel(eerste.dayDate)}</span>
               {" "}met{" "}
-              <span className="text-white/90">
+              <span className="text-foreground/90">
                 {eerste.workout?.title ?? eerste.focus}
               </span>
               {eerste.estDurationMin != null && (

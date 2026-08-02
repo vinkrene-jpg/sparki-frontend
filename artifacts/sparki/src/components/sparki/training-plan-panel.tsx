@@ -51,16 +51,16 @@ function PlanMetaCard({ plan }: { plan: PlanHeader }) {
   })
   const period = `${formatDay(plan.weekStartDate)} – ${formatDay(plan.horizonEndDate)}`
   return (
-    <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <div className="mt-3 rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] tracking-[0.25em] text-white/40">
+        <span className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground">
           OVER DIT PLAN
         </span>
         <span
           className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.15em] ${
             paused
-              ? "bg-amber-400/10 text-amber-300/80"
-              : "bg-cyan-300/10 text-cyan-300/80"
+              ? "bg-amber-400/10 text-[color:var(--color-warning)]"
+              : "bg-accent-cyan text-accent-cyan"
           }`}
         >
           {paused ? "GEPAUZEERD" : "ACTIEF"}
@@ -76,27 +76,27 @@ function PlanMetaCard({ plan }: { plan: PlanHeader }) {
           ["Actieve periode", period],
         ].map(([label, value]) => (
           <div key={label} className="flex flex-col">
-            <dt className="font-mono text-[10px] tracking-[0.15em] text-white/30">
+            <dt className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
               {label.toUpperCase()}
             </dt>
-            <dd className="text-white/70">{value}</dd>
+            <dd className="text-muted-foreground">{value}</dd>
           </div>
         ))}
       </dl>
       {paused && (
-        <p className="mt-3 text-[12px] leading-relaxed text-amber-200/70">
+        <p className="mt-3 text-[12px] leading-relaxed text-[color:var(--color-warning)]">
           Dit plan staat op pauze: er worden geen nieuwe weken opgebouwd en het
           telt niet mee als actief schema. Hervat het wanneer je er klaar voor
           bent.
         </p>
       )}
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
         {paused ? (
           <button
             type="button"
             onClick={() => resume.mutate()}
             disabled={resume.isPending}
-            className="rounded-xl border border-cyan-300/25 px-3.5 py-2 font-sans text-[12px] font-medium text-cyan-300/80 transition hover:border-cyan-300/50 disabled:opacity-50"
+            className="rounded-xl border border-accent-cyan px-3.5 py-2 font-sans text-[12px] font-medium text-accent-cyan transition hover:border-accent-cyan disabled:opacity-50"
           >
             {resume.isPending ? "Hervatten…" : "Plan hervatten"}
           </button>
@@ -105,7 +105,7 @@ function PlanMetaCard({ plan }: { plan: PlanHeader }) {
             type="button"
             onClick={() => pause.mutate()}
             disabled={pause.isPending}
-            className="rounded-xl border border-white/[0.15] px-3.5 py-2 font-sans text-[12px] font-medium text-white/60 transition hover:border-amber-300/40 hover:text-amber-200/80 disabled:opacity-50"
+            className="rounded-xl border border-border px-3.5 py-2 font-sans text-[12px] font-medium text-muted-foreground transition hover:border-amber-300/40 hover:text-[color:var(--color-warning)] disabled:opacity-50"
           >
             {pause.isPending ? "Pauzeren…" : "Plan pauzeren"}
           </button>
@@ -116,14 +116,14 @@ function PlanMetaCard({ plan }: { plan: PlanHeader }) {
               type="button"
               onClick={() => del.mutate()}
               disabled={del.isPending}
-              className="rounded-xl border border-red-400/40 bg-red-400/10 px-3.5 py-2 font-sans text-[12px] font-medium text-red-300 transition hover:border-red-400/70 disabled:opacity-50"
+              className="rounded-xl border border-red-400/40 bg-red-400/10 px-3.5 py-2 font-sans text-[12px] font-medium text-[color:var(--color-negative)] transition hover:border-red-400/70 disabled:opacity-50"
             >
               {del.isPending ? "Verwijderen…" : "Ja, verwijder dit plan"}
             </button>
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="rounded-xl border border-white/[0.15] px-3.5 py-2 font-sans text-[12px] text-white/60"
+              className="rounded-xl border border-border px-3.5 py-2 font-sans text-[12px] text-muted-foreground"
             >
               Annuleren
             </button>
@@ -132,14 +132,14 @@ function PlanMetaCard({ plan }: { plan: PlanHeader }) {
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="rounded-xl border border-white/[0.15] px-3.5 py-2 font-sans text-[12px] font-medium text-white/60 transition hover:border-red-400/40 hover:text-red-300/80"
+            className="rounded-xl border border-border px-3.5 py-2 font-sans text-[12px] font-medium text-muted-foreground transition hover:border-red-400/40 hover:text-[color:var(--color-negative)]"
           >
             Plan verwijderen
           </button>
         )}
       </div>
       {confirmDelete && (
-        <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
           Dit verwijdert het schema en de geplande (nog niet gereden) trainingen
           eruit. Al gereden trainingen blijven altijd bewaard.
         </p>
@@ -172,7 +172,7 @@ const LOAD: { value: string; label: string }[] = [
 ]
 
 const inputClass =
-  "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+  "w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan focus:outline-none"
 
 function formatDay(dateStr: string): string {
   return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString("nl-NL", {
@@ -205,7 +205,7 @@ function DayRouteMap({ routeId }: { routeId: number }) {
               )
             : null
         return v?.status === "niet_volledig_geverifieerd" ? (
-          <p className="mt-2 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+          <p className="mt-2 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-warning)]">
             Niet volledig geverifieerd ·{" "}
             {v.onbekendPct != null
               ? `${String(v.onbekendPct).replace(".", ",")}% wegdek onbekend`
@@ -214,7 +214,7 @@ function DayRouteMap({ routeId }: { routeId: number }) {
         ) : null
       })()}
       {route?.rationale && (
-        <p className="mt-2 text-[12px] leading-relaxed text-white/55">
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
           {route.rationale}
         </p>
       )}
@@ -250,8 +250,8 @@ function tempLabel(w: DayWeather): string | null {
 function WeatherStrip({ w }: { w: DayWeather }) {
   const temp = tempLabel(w)
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-white/45">
-      <span className="text-white/55">{w.label}</span>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-muted-foreground">
+      <span className="text-muted-foreground">{w.label}</span>
       {temp && (
         <span className="flex items-center gap-1">
           <Thermometer className="h-2.5 w-2.5" strokeWidth={1.75} />
@@ -298,10 +298,10 @@ function WeatherAdvisoryCard({ a }: { a: WeatherAdvisory }) {
           {a.headline}
         </span>
       </div>
-      <p className="mt-1.5 text-[12px] leading-relaxed text-white/70">{a.detail}</p>
+      <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{a.detail}</p>
       {a.suggestion && (
-        <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
-          <span className="text-white/40">Sparki: </span>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
+          <span className="text-muted-foreground">Sparki: </span>
           {a.suggestion}
         </p>
       )}
@@ -314,22 +314,22 @@ function WeatherNutritionCard({ a }: { a: WeatherNutritionAdvisory }) {
   if (!a.hydrationNote && !a.fuelNote) return null
   const color = SEVERITY_COLOR[a.severity]
   return (
-    <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="mt-2 rounded-xl border border-border bg-muted p-3">
       <div className="flex items-center gap-1.5">
         <Utensils className="h-3 w-3 shrink-0" style={{ color }} strokeWidth={1.75} />
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/45">
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
           Voeding bij dit weer
         </span>
       </div>
       {a.hydrationNote && (
-        <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-white/65">
-          <Droplets className="mt-0.5 h-3 w-3 shrink-0 text-cyan-300/60" strokeWidth={1.75} />
+        <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-muted-foreground">
+          <Droplets className="mt-0.5 h-3 w-3 shrink-0 text-accent-cyan" strokeWidth={1.75} />
           {a.hydrationNote}
         </p>
       )}
       {a.fuelNote && (
-        <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-white/65">
-          <Utensils className="mt-0.5 h-3 w-3 shrink-0 text-white/40" strokeWidth={1.75} />
+        <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-muted-foreground">
+          <Utensils className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" strokeWidth={1.75} />
           {a.fuelNote}
         </p>
       )}
@@ -350,17 +350,17 @@ function RaceWeatherCard({ rw }: { rw: RaceWeather }) {
             ? "De wedstrijdlocatie kon niet op de kaart worden gevonden — controleer de plaatsnaam."
             : "Nog geen weersverwachting beschikbaar voor de wedstrijdlocatie."
     return (
-      <div className="mt-3 flex items-start gap-1.5 border-t border-white/[0.06] pt-3 font-mono text-[10px] leading-relaxed text-white/35">
+      <div className="mt-3 flex items-start gap-1.5 border-t border-border pt-3 font-mono text-[10px] leading-relaxed text-muted-foreground">
         <MapPin className="mt-0.5 h-3 w-3 shrink-0" strokeWidth={1.75} />
         {msg}
       </div>
     )
   }
   return (
-    <div className="mt-3 border-t border-white/[0.06] pt-3">
+    <div className="mt-3 border-t border-border pt-3">
       <div className="flex items-center gap-1.5">
         <MapPin className="h-3 w-3 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/45">
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
           Weer op wedstrijddag{rw.locationLabel ? ` · ${rw.locationLabel}` : ""}
         </span>
       </div>
@@ -378,22 +378,22 @@ function CommittedDay({ day }: { day: PlanDay }) {
   const dayName = formatDay(day.dayDate)
   if (day.isRest) {
     return (
-      <div className="flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0">
-        <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-white/30">
+      <div className="flex items-center gap-4 border-b border-border py-3.5 last:border-0">
+        <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
           {dayName}
         </span>
-        <span className="text-[13px] text-white/40">Rust</span>
+        <span className="text-[13px] text-muted-foreground">Rust</span>
       </div>
     )
   }
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
             {dayName}
           </span>
-          <h4 className="mt-0.5 truncate font-sans text-[15px] font-light tracking-tight text-white/90">
+          <h4 className="mt-0.5 truncate font-sans text-[15px] font-light tracking-tight text-foreground/90">
             {day.workout?.title ?? day.focus}
           </h4>
         </div>
@@ -407,7 +407,7 @@ function CommittedDay({ day }: { day: PlanDay }) {
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-4 border-t border-white/[0.06] pt-3">
+      <div className="mt-3 flex items-center gap-4 border-t border-border pt-3">
         <Stat label="Focus" value={day.focus} />
         {day.estDurationMin != null && (
           <>
@@ -423,20 +423,20 @@ function CommittedDay({ day }: { day: PlanDay }) {
             className="h-2 w-2 rounded-full"
             style={{ background: intensityColor(day.intensityLabel) }}
           />
-          <span className="font-mono text-[11px] text-white/55">
+          <span className="font-mono text-[11px] text-muted-foreground">
             {day.intensityLabel}
           </span>
         </div>
       )}
 
       {day.rationale && (
-        <p className="mt-3 text-[12px] leading-relaxed text-white/60">
+        <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
           {day.rationale}
         </p>
       )}
 
       {day.weather && (
-        <div className="mt-3 border-t border-white/[0.06] pt-3">
+        <div className="mt-3 border-t border-border pt-3">
           <WeatherStrip w={day.weather} />
         </div>
       )}
@@ -449,7 +449,7 @@ function CommittedDay({ day }: { day: PlanDay }) {
         <DayRouteMap routeId={day.route.id} />
       ) : (
         day.routeNeeded && (
-          <p className="mt-3 flex items-center gap-1.5 font-mono text-[10px] text-white/30">
+          <p className="mt-3 flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
             <MapPin className="h-3 w-3" strokeWidth={1.75} />
             Geen route beschikbaar (stel je thuislocatie in voor automatische
             routes)
@@ -463,13 +463,13 @@ function CommittedDay({ day }: { day: PlanDay }) {
 function PreviewDay({ day }: { day: PlanDay }) {
   const dayName = formatDay(day.dayDate)
   return (
-    <div className="flex items-start gap-4 border-b border-white/[0.05] py-3 last:border-0">
-      <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-white/30">
+    <div className="flex items-start gap-4 border-b border-border py-3 last:border-0">
+      <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
         {dayName}
       </span>
       <div className="min-w-0 flex-1">
         {day.isRest ? (
-          <span className="text-[13px] text-white/40">Rust</span>
+          <span className="text-[13px] text-muted-foreground">Rust</span>
         ) : (
           <>
             <div className="flex items-center gap-2">
@@ -477,15 +477,15 @@ function PreviewDay({ day }: { day: PlanDay }) {
                 className="h-1.5 w-1.5 rounded-full"
                 style={{ background: intensityColor(day.intensityLabel) }}
               />
-              <span className="text-[13px] text-white/80">{day.focus}</span>
+              <span className="text-[13px] text-foreground/80">{day.focus}</span>
               {day.estDurationMin != null && (
-                <span className="font-mono text-[10px] text-white/35">
+                <span className="font-mono text-[10px] text-muted-foreground">
                   {day.estDurationMin}m
                 </span>
               )}
             </div>
             {day.adaptationReason && (
-              <p className="mt-1 flex items-start gap-1 text-[11px] leading-snug text-cyan-300/55">
+              <p className="mt-1 flex items-start gap-1 text-[11px] leading-snug text-accent-cyan">
                 <RefreshCw className="mt-0.5 h-2.5 w-2.5 shrink-0" />
                 {day.adaptationReason}
               </p>
@@ -556,10 +556,10 @@ function HomeLocationField({
 
   return (
     <div>
-      <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+      <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
         THUISLOCATIE
       </label>
-      <p className="mb-3 text-[12px] leading-relaxed text-white/45">
+      <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
         Zoek je adres of zet een speld op de kaart. Dit vertrekpunt wordt
         gebruikt om automatisch routes bij je trainingen te plannen.
       </p>
@@ -568,7 +568,7 @@ function HomeLocationField({
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30"
+              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
               strokeWidth={1.75}
             />
             <input
@@ -588,30 +588,30 @@ function HomeLocationField({
         </div>
 
         {geocode.isPending && (
-          <p className="mt-2 font-mono text-[10px] text-white/35">Zoeken…</p>
+          <p className="mt-2 font-mono text-[10px] text-muted-foreground">Zoeken…</p>
         )}
         {geocode.isError && (
-          <p className="mt-2 font-mono text-[10px] text-orange-300/70">
+          <p className="mt-2 font-mono text-[10px] text-[color:var(--color-warning)]">
             Zoeken lukte niet. Probeer opnieuw of zet een speld op de kaart.
           </p>
         )}
         {searched && !geocode.isPending && results.length === 0 && (
-          <p className="mt-2 font-mono text-[10px] text-white/35">
+          <p className="mt-2 font-mono text-[10px] text-muted-foreground">
             Geen plaats gevonden — zet een speld op de kaart.
           </p>
         )}
 
         {results.length > 0 && (
-          <ul className="mt-2 max-h-44 overflow-auto rounded-xl border border-white/[0.1] bg-[#070d16]/95 backdrop-blur-md">
+          <ul className="mt-2 max-h-44 overflow-auto rounded-xl border border-border bg-card backdrop-blur-md">
             {results.map((r, i) => (
               <li key={`${r.lat},${r.lon},${i}`}>
                 <button
                   type="button"
                   onClick={() => pickResult(r)}
-                  className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-[13px] text-white/75 transition-colors hover:bg-white/[0.05]"
+                  className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-[13px] text-muted-foreground transition-colors hover:bg-muted"
                 >
                   <MapPin
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30"
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
                     strokeWidth={1.75}
                   />
                   <span className="leading-snug">{r.label}</span>
@@ -644,7 +644,7 @@ function HomeLocationField({
 
       {value && (
         <div className="mt-2 flex items-center justify-between gap-2">
-          <p className="flex min-w-0 items-center gap-1.5 font-mono text-[10px] text-white/45">
+          <p className="flex min-w-0 items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
             <MapPin
               className="h-3 w-3 shrink-0"
               style={{ color: ACCENT }}
@@ -663,7 +663,7 @@ function HomeLocationField({
               setResults([])
               setSearched(false)
             }}
-            className="shrink-0 font-mono text-[10px] text-white/40 transition-colors hover:text-white/70"
+            className="shrink-0 font-mono text-[10px] text-muted-foreground transition-colors hover:text-muted-foreground"
           >
             wissen
           </button>
@@ -719,15 +719,15 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-4 flex flex-col gap-5 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+      className="mt-4 flex flex-col gap-5 rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
     >
-      <p className="text-[13px] leading-relaxed text-white/60">
+      <p className="text-[13px] leading-relaxed text-muted-foreground">
         Een trainingsschema op maat wordt opgebouwd op basis van je profiel. Vul
         je gegevens in zodat volume, intensiteit en rust correct worden gepland.
       </p>
 
       <div>
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           ERVARING
         </label>
         <div className="grid grid-cols-4 gap-2">
@@ -757,7 +757,7 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             UREN PER WEEK
           </label>
           <input
@@ -772,7 +772,7 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
           />
         </div>
         <div>
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             BELASTBAARHEID
           </label>
           <select
@@ -790,7 +790,7 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
       </div>
 
       <div>
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           BESCHIKBARE TRAININGSDAGEN
         </label>
         <div className="flex gap-2">
@@ -863,7 +863,7 @@ export function TrainingPlanPanel() {
     return (
       <section>
         <SectionLabel n="04" title="Trainingsschema" />
-        <div className="mt-4 h-24 animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div className="mt-4 h-24 animate-pulse rounded-2xl bg-muted" />
       </section>
     )
   }
@@ -875,15 +875,15 @@ export function TrainingPlanPanel() {
 
       {/* Coach advisory banner */}
       {data.hasCoach && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] p-3">
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-accent-cyan bg-accent-cyan p-3">
           <Info
             className="mt-0.5 h-3.5 w-3.5 shrink-0"
             style={{ color: ACCENT }}
             strokeWidth={1.75}
           />
-          <p className="text-[12px] leading-relaxed text-white/65">
+          <p className="text-[12px] leading-relaxed text-muted-foreground">
             Je hebt een coach. Je trainingen worden hier niet zelf geschreven, wel
-            krijg je een <span className="text-white/85">vrijblijvend advies</span> dat je
+            krijg je een <span className="text-foreground/90">vrijblijvend advies</span> dat je
             met je coach kunt bespreken.
           </p>
         </div>
@@ -893,9 +893,9 @@ export function TrainingPlanPanel() {
       {data.needsSetup ? (
         <SetupForm data={data} />
       ) : !data.plan ? (
-        <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+        <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
           <Sparkles className="h-7 w-7" style={{ color: ACCENT }} strokeWidth={1.5} />
-          <p className="max-w-sm text-[13px] leading-relaxed text-white/60">
+          <p className="max-w-sm text-[13px] leading-relaxed text-muted-foreground">
             {data.hasCoach
               ? "Schema wordt opgesteld op basis van je profiel, herstel en wedstrijden."
               : "Compleet trainingsschema op basis van je profiel, herstel en wedstrijden — vaste weekstructuur plus drie weken vooruitblik."}
@@ -911,7 +911,7 @@ export function TrainingPlanPanel() {
             {generate.isPending ? "Schema bouwen…" : "Genereer mijn schema"}
           </button>
           {!data.hasHome && (
-            <p className="font-mono text-[10px] text-white/30">
+            <p className="font-mono text-[10px] text-muted-foreground">
               Tip: stel je thuislocatie in je profiel in voor automatische routes.
             </p>
           )}
@@ -920,18 +920,18 @@ export function TrainingPlanPanel() {
         <>
           {/* Plan summary */}
           {data.plan.summary && (
-            <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+            <div className="mt-4 rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
-                <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
+                <span className="font-mono text-[10px] tracking-[0.25em] text-accent-cyan">
                   {data.plan.mode === "advisory" ? "ADVIES" : "JOUW SCHEMA"}
                 </span>
               </div>
-              <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/75">
+              <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 {data.plan.summary}
               </p>
               {data.inputs.nextRace && (
-                <div className="mt-4 flex items-center gap-4 border-t border-white/[0.06] pt-3">
+                <div className="mt-4 flex items-center gap-4 border-t border-border pt-3">
                   <Stat label="Volgende wedstrijd" value={data.inputs.nextRace.name} />
                   <Divider />
                   <Stat
@@ -954,8 +954,8 @@ export function TrainingPlanPanel() {
           {/* Committed 7-day week */}
           <div className="mt-5">
             <div className="mb-3 flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5 text-white/40" strokeWidth={1.75} />
-              <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+              <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                 {data.plan.mode === "advisory"
                   ? "ADVIES · KOMENDE 7 DAGEN"
                   : "VASTE WEEK · 7 DAGEN"}
@@ -972,14 +972,14 @@ export function TrainingPlanPanel() {
           {previewDays.length > 0 && (
             <div className="mt-6">
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">
+                <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
                   VOORUITBLIK · VOORLOPIG
                 </span>
                 <button
                   type="button"
                   onClick={() => adapt.mutate()}
                   disabled={adapt.isPending}
-                  className="flex items-center gap-1.5 font-mono text-[10px] text-cyan-300/60 transition hover:text-cyan-300 disabled:opacity-40"
+                  className="flex items-center gap-1.5 font-mono text-[10px] text-accent-cyan transition hover:text-accent-cyan disabled:opacity-40"
                 >
                   <RefreshCw
                     className={`h-3 w-3 ${adapt.isPending ? "animate-spin" : ""}`}
@@ -988,14 +988,14 @@ export function TrainingPlanPanel() {
                 </button>
               </div>
               {adapt.data?.note && (
-                <p className="mb-2 text-[11px] text-white/45">{adapt.data.note}</p>
+                <p className="mb-2 text-[11px] text-muted-foreground">{adapt.data.note}</p>
               )}
-              <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.6] p-4 backdrop-blur-md">
+              <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
                 {previewDays.map((d) => (
                   <PreviewDay key={d.id} day={d} />
                 ))}
               </div>
-              <p className="mt-2 flex items-start gap-1.5 font-mono text-[10px] leading-snug text-white/30">
+              <p className="mt-2 flex items-start gap-1.5 font-mono text-[10px] leading-snug text-muted-foreground">
                 <Info className="mt-0.5 h-3 w-3 shrink-0" />
                 Deze weken zijn een voorlopige vooruitblik en bewegen mee met je
                 herstel en wedstrijden.
@@ -1009,7 +1009,7 @@ export function TrainingPlanPanel() {
               type="button"
               onClick={() => generate.mutate()}
               disabled={generate.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-3.5 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-3.5 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan hover:text-accent-cyan disabled:opacity-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${generate.isPending ? "animate-spin" : ""}`}

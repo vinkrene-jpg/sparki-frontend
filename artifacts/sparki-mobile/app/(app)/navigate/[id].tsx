@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Battery from "expo-battery";
@@ -839,6 +840,10 @@ export default function NavigateScreen() {
 
   return (
     <View style={[styles.fill, { backgroundColor: c.background }]}>
+      {/* Navigatie-HUD boven de donkere CARTO-kaart is een bewuste UITZONDERING
+          op het lichte thema (LICHT_THEMA_01): lichte statusbalk-tekst zodat de
+          klok/iconen leesbaar blijven op de donkere kaart en HUD-panelen. */}
+      <StatusBar style="light" />
       {/* ---------- Map ---------- */}
       {showMap ? (
         // De kaartcontainer eindigt boven de klimkaart (nooit overlap);

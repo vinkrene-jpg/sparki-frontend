@@ -65,7 +65,7 @@ export function RestDayHome({ briefing }: DayHomeComponentProps) {
           ) : metricsHistory && metricsHistory.length > 0 ? (
             <VitalsGrid metrics={metricsHistory} />
           ) : (
-            <p className="text-[12px] text-white/35">
+            <p className="text-[12px] text-muted-foreground">
               Log een check-in om je hersteldata te zien
             </p>
           )}
@@ -79,10 +79,10 @@ export function RestDayHome({ briefing }: DayHomeComponentProps) {
           {REST_GUIDANCE.map((tip) => (
             <li
               key={tip}
-              className="flex gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+              className="flex gap-3 rounded-xl border border-border bg-card p-4 backdrop-blur-md"
             >
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/40" />
-              <span className="text-[13px] leading-relaxed text-white/70">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted" />
+              <span className="text-[13px] leading-relaxed text-muted-foreground">
                 {tip}
               </span>
             </li>
@@ -93,7 +93,7 @@ export function RestDayHome({ briefing }: DayHomeComponentProps) {
       <HealthStatusControl />
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>

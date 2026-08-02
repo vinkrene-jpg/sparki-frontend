@@ -73,13 +73,13 @@ function Stat({
   value: string
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2">
-      <Icon className="h-4 w-4 text-white/45" strokeWidth={1.75} />
+    <div className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2">
+      <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
       <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-wider text-white/35">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
           {label}
         </div>
-        <div className="text-[13px] text-white/80">{value}</div>
+        <div className="text-[13px] text-foreground/80">{value}</div>
       </div>
     </div>
   )
@@ -101,13 +101,13 @@ function SmallButton({
       ? { borderColor: "rgba(120,210,230,0.35)", color: ACCENT }
       : tone === "warn"
         ? { borderColor: "rgba(240,170,110,0.35)", color: "oklch(0.8 0.12 60)" }
-        : { borderColor: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.7)" }
+        : { borderColor: "var(--color-border)", color: "var(--color-foreground)" }
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="rounded-full border px-3 py-1.5 text-[12px] transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+      className="rounded-full border px-3 py-1.5 text-[12px] transition-colors hover:bg-muted disabled:opacity-40"
       style={style}
     >
       {children}
@@ -125,8 +125,8 @@ function ReportPanel({ child }: { child: ParentOverviewChild }) {
     )
   }
   return (
-    <div className="mt-3 border-t border-white/[0.06] pt-3">
-      <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/35">
+    <div className="mt-3 border-t border-border pt-3">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
         <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.75} />
         Melding doen
       </div>
@@ -142,7 +142,7 @@ function ReportPanel({ child }: { child: ParentOverviewChild }) {
         </SmallButton>
       </div>
       {done && (
-        <p className="mt-2 text-[12px] text-white/50">
+        <p className="mt-2 text-[12px] text-foreground/50">
           {REPORT_LABEL[done]}. De sporter{" "}
           {done !== "afwezig" ? "en de bevoegde coach zijn" : "is"} op de hoogte
           gebracht. Er wordt niets automatisch aan de training veranderd.
@@ -151,7 +151,7 @@ function ReportPanel({ child }: { child: ParentOverviewChild }) {
       {child.openReports && child.openReports.length > 0 && (
         <ul className="mt-2 space-y-1">
           {child.openReports.map((r) => (
-            <li key={r.id} className="text-[12px] text-white/45">
+            <li key={r.id} className="text-[12px] text-muted-foreground">
               {REPORT_LABEL[r.kind] ?? r.kind} · {fmtDate(r.createdAt)} ·{" "}
               {r.status === "open" ? "nog niet gezien" : r.status}
             </li>
@@ -169,9 +169,9 @@ function ContactsPanel({ child }: { child: ParentOverviewChild }) {
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   return (
-    <div className="mt-3 border-t border-white/[0.06] pt-3">
+    <div className="mt-3 border-t border-border pt-3">
       <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/35">
+        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
           <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
           Noodcontacten
         </div>
@@ -180,13 +180,13 @@ function ContactsPanel({ child }: { child: ParentOverviewChild }) {
         </SmallButton>
       </div>
       {child.emergencyContacts.length === 0 && !open && (
-        <p className="text-[12px] text-white/40">
+        <p className="text-[12px] text-muted-foreground">
           Nog geen noodcontact ingesteld.
         </p>
       )}
       <ul className="space-y-1.5">
         {child.emergencyContacts.map((c) => (
-          <li key={c.id} className="flex items-center justify-between text-[12px] text-white/60">
+          <li key={c.id} className="flex items-center justify-between text-[12px] text-foreground/60">
             <span className="truncate">
               {c.name} · {c.phone}
               {c.relation ? ` (${c.relation})` : ""}
@@ -197,7 +197,7 @@ function ContactsPanel({ child }: { child: ParentOverviewChild }) {
               onClick={() =>
                 del.mutate({ athleteClerkId: child.athleteClerkId, id: c.id })
               }
-              className="ml-2 text-white/30 hover:text-white/70"
+              className="ml-2 text-muted-foreground hover:text-foreground/70"
             >
               <X className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
@@ -210,13 +210,13 @@ function ContactsPanel({ child }: { child: ParentOverviewChild }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Naam"
-            className="w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:outline-none"
+            className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:outline-none"
           />
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="Telefoonnummer"
-            className="w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:outline-none"
+            className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:outline-none"
           />
           <SmallButton
             tone="accent"
@@ -252,9 +252,9 @@ function MessagesPanel({ child }: { child: ParentOverviewChild }) {
   const send = useSendParentMessage()
   const [text, setText] = useState("")
   return (
-    <div className="mt-3 border-t border-white/[0.06] pt-3">
+    <div className="mt-3 border-t border-border pt-3">
       <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/35">
+        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
           <MessageCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
           Berichten
           {!!child.unreadMessages && (
@@ -281,18 +281,18 @@ function MessagesPanel({ child }: { child: ParentOverviewChild }) {
                   key={m.id}
                   className={`rounded-lg px-3 py-1.5 text-[12px] ${
                     m.senderClerkId === child.athleteClerkId
-                      ? "bg-white/[0.04] text-white/70"
-                      : "bg-[rgba(120,210,230,0.08)] text-white/80"
+                      ? "bg-muted text-foreground/70"
+                      : "bg-[rgba(120,210,230,0.08)] text-foreground/80"
                   }`}
                 >
                   {m.body}
-                  <span className="ml-2 text-[10px] text-white/30">
+                  <span className="ml-2 text-[10px] text-muted-foreground">
                     {fmtDate(m.createdAt)}
                   </span>
                 </li>
               ))}
             {data && data.messages.length === 0 && (
-              <li className="text-[12px] text-white/35">Nog geen berichten.</li>
+              <li className="text-[12px] text-muted-foreground">Nog geen berichten.</li>
             )}
           </ul>
           <div className="flex gap-2">
@@ -300,7 +300,7 @@ function MessagesPanel({ child }: { child: ParentOverviewChild }) {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Schrijf een bericht…"
-              className="min-w-0 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:outline-none"
             />
             <SmallButton
               tone="accent"
@@ -327,9 +327,9 @@ export function PermissionsPanel({ child }: { child: ParentOverviewChild }) {
   const [draft, setDraft] = useState(child.access.permissions)
   const mayEdit = child.access.parentMayEdit
   return (
-    <div className="mt-3 border-t border-white/[0.06] pt-3">
+    <div className="mt-3 border-t border-border pt-3">
       <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/35">
+        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
           <Settings2 className="h-3.5 w-3.5" strokeWidth={1.75} />
           Gedeelde gegevens
         </div>
@@ -338,7 +338,7 @@ export function PermissionsPanel({ child }: { child: ParentOverviewChild }) {
         </SmallButton>
       </div>
       {!open ? (
-        <p className="text-[12px] text-white/40">
+        <p className="text-[12px] text-muted-foreground">
           {Object.values(child.access.permissions).filter(Boolean).length} van{" "}
           {Object.keys(CATEGORY_LABELS).length} categorieën zichtbaar.
           Vermogenswaarden, volledige analyses, medische details en
@@ -349,7 +349,7 @@ export function PermissionsPanel({ child }: { child: ParentOverviewChild }) {
           {(Object.keys(CATEGORY_LABELS) as ParentDataCategory[]).map((c) => (
             <label
               key={c}
-              className="flex items-center justify-between text-[12px] text-white/65"
+              className="flex items-center justify-between text-[12px] text-foreground/65"
             >
               <span>{CATEGORY_LABELS[c]}</span>
               {mayEdit ? (
@@ -362,7 +362,7 @@ export function PermissionsPanel({ child }: { child: ParentOverviewChild }) {
                   className="accent-cyan-300"
                 />
               ) : (
-                <span className="text-white/40">
+                <span className="text-muted-foreground">
                   {child.access.permissions[c] ? "Aan" : "Uit"}
                 </span>
               )}
@@ -387,7 +387,7 @@ export function PermissionsPanel({ child }: { child: ParentOverviewChild }) {
               </SmallButton>
             </div>
           ) : (
-            <p className="pt-1 text-[11px] text-white/35">
+            <p className="pt-1 text-[11px] text-muted-foreground">
               Vanaf 16 jaar beheert de sporter zelf wat er gedeeld wordt.
             </p>
           )}
@@ -411,13 +411,13 @@ function ChildCard({
   const wb = child.wellbeing
   const sharingOff = child.access.level === "none"
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-[15px] tracking-tight text-white/90">
+          <div className="text-[15px] tracking-tight text-foreground/90">
             {child.displayName ?? "Sporter"}
           </div>
-          <div className="text-[11px] text-white/35">
+          <div className="text-[11px] text-muted-foreground">
             {child.relationship === "verzorger" ? "Verzorger" : "Ouder"}
           </div>
         </div>
@@ -429,7 +429,7 @@ function ChildCard({
                 child.healthStatus !== "ok"
                   ? "oklch(0.75 0.17 40)"
                   : "oklch(0.82 0.16 150)",
-              background: "rgba(255,255,255,0.05)",
+              background: "var(--color-muted)",
             }}
           >
             {healthLabel[child.healthStatus] ?? child.healthStatus}
@@ -441,14 +441,14 @@ function ChildCard({
           disabled={ending}
           aria-label="Koppeling met sporter beëindigen"
           title="Koppeling beëindigen"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/70 disabled:opacity-40"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground/70 disabled:opacity-40"
         >
           <X className="h-4 w-4" strokeWidth={1.75} />
         </button>
       </div>
 
       {child.access.reconfirmRequired && (
-        <p className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.08] px-3 py-2 text-[12px] text-amber-200/90">
+        <p className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.08] px-3 py-2 text-[12px] text-[color:var(--color-warning)]">
           De leeftijdscategorie van deze sporter is veranderd. De sporter moet
           opnieuw bevestigen wat er gedeeld wordt; tot die tijd zie je alleen
           het veiligheidsminimum.
@@ -456,7 +456,7 @@ function ChildCard({
       )}
 
       {sharingOff ? (
-        <p className="mt-3 text-[12px] text-white/35">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           Deze sporter deelt momenteel geen gegevens. Melden van ziekte of
           blessure kan altijd.
         </p>
@@ -489,14 +489,14 @@ function ChildCard({
           )}
 
           {perm.planning && child.today && child.today.length > 0 && (
-            <div className="mt-3 border-t border-white/[0.06] pt-3">
-              <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/35">
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
                 <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.75} />
                 Vandaag
               </div>
               <ul className="space-y-1.5">
                 {child.today.map((s) => (
-                  <li key={s.id} className="text-[12px] text-white/60">
+                  <li key={s.id} className="text-[12px] text-foreground/60">
                     {s.title}
                   </li>
                 ))}
@@ -505,18 +505,18 @@ function ChildCard({
           )}
 
           {perm.wedstrijd && child.races && child.races.length > 0 && (
-            <div className="mt-3 border-t border-white/[0.06] pt-3">
-              <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/35">
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
                 <Trophy className="h-3.5 w-3.5" strokeWidth={1.75} />
                 Komende wedstrijden
               </div>
               <ul className="space-y-2">
                 {child.races.map((r) => (
-                  <li key={r.id} className="text-[12px] text-white/60">
+                  <li key={r.id} className="text-[12px] text-foreground/60">
                     <div className="flex items-center justify-between">
                       <span className="truncate">
                         {r.name}
-                        <span className="ml-2 text-white/35">
+                        <span className="ml-2 text-muted-foreground">
                           {fmtDate(r.raceDate)}
                         </span>
                       </span>
@@ -619,7 +619,7 @@ export function ParentHome() {
         <RoleTodaySection rol="ouder" />
         <div>
           <SectionLabel n="01" title="Welzijn & veiligheid" />
-          <p className="mt-2 text-[13px] text-white/45">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Rust, herstel en welzijn van je kind. Prestatiedata wordt niet
             gedeeld — alleen wat de sporter (of jij, bij een kind onder de 16)
             per gegevenstype hebt afgesproken.
@@ -631,17 +631,17 @@ export function ParentHome() {
             {[0, 1].map((i) => (
               <div
                 key={i}
-                className="h-32 animate-pulse rounded-2xl bg-white/[0.05]"
+                className="h-32 animate-pulse rounded-2xl bg-muted"
               />
             ))}
           </div>
         ) : children.length === 0 ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
             <Users
-              className="mx-auto mb-3 h-7 w-7 text-white/30"
+              className="mx-auto mb-3 h-7 w-7 text-muted-foreground"
               strokeWidth={1.5}
             />
-            <p className="text-[14px] text-white/60">
+            <p className="text-[14px] text-foreground/60">
               Nog geen sporter gekoppeld
             </p>
             <Link
@@ -672,8 +672,8 @@ export function ParentHome() {
                               background: "rgba(120,210,230,0.10)",
                             }
                           : {
-                              borderColor: "rgba(255,255,255,0.10)",
-                              color: "rgba(255,255,255,0.6)",
+                              borderColor: "var(--color-border)",
+                              color: "var(--color-muted-foreground)",
                             }
                       }
                     >

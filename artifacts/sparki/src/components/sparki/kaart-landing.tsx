@@ -40,7 +40,7 @@ function OnderbladGratis() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="type-title-card text-white/90">Wat wil je vandaag rijden?</h2>
+        <h2 className="type-title-card text-foreground/90">Wat wil je vandaag rijden?</h2>
         <p className="type-body mt-1 text-content-secondary">
           Zoek een route of pak er een uit je bewaarde routes.
         </p>
@@ -54,7 +54,7 @@ function OnderbladGratis() {
       {/* Bewaarde routes — compacte lijst, doorklik naar de bibliotheek. */}
       <div>
         <div className="flex items-baseline justify-between">
-          <h3 className="type-title-card text-white/90">Bewaarde routes</h3>
+          <h3 className="type-title-card text-foreground/90">Bewaarde routes</h3>
           {routes.length > 0 && (
             <DsButton variant="tekst" onClick={() => navigate("/routes?view=bewaard")}>
               Alle bekijken
@@ -93,7 +93,7 @@ function OnderbladGratis() {
                   className="flex w-full items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
                 >
                   <span className="min-w-0">
-                    <span className="type-body block truncate font-medium text-white/90">
+                    <span className="type-body block truncate font-medium text-foreground/90">
                       {r.name}
                     </span>
                     {r.distanceKm != null && (
@@ -102,7 +102,7 @@ function OnderbladGratis() {
                       </span>
                     )}
                   </span>
-                  <IconChevron aria-hidden="true" className="shrink-0 text-white/40" />
+                  <IconChevron aria-hidden="true" className="shrink-0 text-muted-foreground" />
                 </button>
               </li>
             ))}
@@ -132,7 +132,7 @@ function OnderbladGo() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="type-title-card text-white/90">Jouw rit van vandaag</h2>
+        <h2 className="type-title-card text-foreground/90">Jouw rit van vandaag</h2>
         <p className="type-body mt-1 text-content-secondary">
           Een voorstel op basis van je training van vandaag.
         </p>
@@ -154,7 +154,7 @@ function OnderbladGo() {
           <DsCardTitel>{w.title}</DsCardTitel>
           {reden && (
             <p className="type-body mt-2 text-content-secondary">
-              <span className="font-medium text-white/90">Waarom deze rit:</span> {reden}
+              <span className="font-medium text-foreground/90">Waarom deze rit:</span> {reden}
             </p>
           )}
           {linked ? (
@@ -221,7 +221,7 @@ export function KaartLanding({ pkg }: { pkg: Package }) {
           {/* Greep — visuele hint dat dit een onderblad is. */}
           <div
             aria-hidden="true"
-            className="mx-auto mb-5 h-1 w-10 rounded-full bg-white/20"
+            className="mx-auto mb-5 h-1 w-10 rounded-full bg-muted"
           />
           {pkg === "go" ? <OnderbladGo /> : <OnderbladGratis />}
         </section>

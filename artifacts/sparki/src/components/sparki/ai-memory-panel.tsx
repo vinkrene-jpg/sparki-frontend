@@ -87,14 +87,14 @@ function GroupExtended({
 
       {signals.length > 0 && (
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
             Gebruikte signalen
           </p>
           <ul className="mt-1.5 space-y-1">
             {signals.map((s, i) => (
               <li
                 key={i}
-                className="flex items-baseline gap-2 text-[11px] leading-snug text-white/55"
+                className="flex items-baseline gap-2 text-[11px] leading-snug text-muted-foreground"
               >
                 <span
                   className="mt-px shrink-0 rounded px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider"
@@ -103,9 +103,9 @@ function GroupExtended({
                   {SIGNAL_LABEL[s.kind] ?? s.kind}
                 </span>
                 <span className="min-w-0">
-                  <span className="text-white/70">{s.label}:</span> {s.value}
+                  <span className="text-muted-foreground">{s.label}:</span> {s.value}
                   {s.date && (
-                    <span className="text-white/30"> · {relativeDate(s.date)}</span>
+                    <span className="text-muted-foreground"> · {relativeDate(s.date)}</span>
                   )}
                 </span>
               </li>
@@ -116,13 +116,13 @@ function GroupExtended({
 
       {others.length > 0 && (
         <div className="space-y-2">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Ook hierover opgevallen
           </p>
           {others.map((o) => (
             <p
               key={o.id}
-              className="text-pretty text-[12px] leading-relaxed text-white/55"
+              className="text-pretty text-[12px] leading-relaxed text-muted-foreground"
             >
               {o.observationText}
             </p>
@@ -132,14 +132,14 @@ function GroupExtended({
 
       {alts.length > 0 && (
         <div>
-          <p className="text-[11px] leading-relaxed text-white/40">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
             Andere mogelijke verklaringen:
           </p>
           <ul className="mt-1 flex flex-col gap-1">
             {alts.map((a, i) => (
               <li
                 key={i}
-                className="text-pretty text-[12px] leading-relaxed text-white/45"
+                className="text-pretty text-[12px] leading-relaxed text-muted-foreground"
               >
                 • {a}
               </li>
@@ -150,7 +150,7 @@ function GroupExtended({
 
       {/* Verantwoording: waar deze conclusie vandaan komt (engine/regel/versie). */}
       {(lead.engine || lead.engineVersion) && (
-        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/25">
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
           Bron: {lead.engine ?? "onbekend"}
           {lead.ruleKey ? ` · regel ${lead.ruleKey}` : ""}
           {lead.engineVersion ? ` · versie ${lead.engineVersion}` : ""}
@@ -159,7 +159,7 @@ function GroupExtended({
         </p>
       )}
       {(lead.missingData?.length ?? 0) > 0 && (
-        <p className="text-[11px] leading-relaxed text-amber-100/50">
+        <p className="text-[11px] leading-relaxed text-[color:var(--color-warning)]">
           Ontbrak bij deze berekening: {lead.missingData!.join(", ")}
         </p>
       )}
@@ -169,7 +169,7 @@ function GroupExtended({
         subjectKey={String(lead.id)}
       />
 
-      <div className="flex items-center gap-3 border-t border-white/[0.06] pt-2.5">
+      <div className="flex items-center gap-3 border-t border-border pt-2.5">
         {saved && (
           <span
             className="font-mono text-[9px] uppercase tracking-wider"
@@ -184,7 +184,7 @@ function GroupExtended({
               type="button"
               disabled={busy}
               onClick={onSave}
-              className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-cyan-300 disabled:opacity-40"
+              className="font-mono text-[10px] tracking-wide text-muted-foreground transition hover:text-accent-cyan disabled:opacity-40"
             >
               Bewaren
             </button>
@@ -193,7 +193,7 @@ function GroupExtended({
             type="button"
             disabled={busy}
             onClick={onDismiss}
-            className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-white/80 disabled:opacity-40"
+            className="font-mono text-[10px] tracking-wide text-muted-foreground transition hover:text-foreground/80 disabled:opacity-40"
           >
             Verbergen
           </button>
@@ -271,7 +271,7 @@ export function AiMemoryPanel() {
   return (
     <section>
       <SectionLabel n="08" title="Sparki Geheugen" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
         Hier worden verbanden gelegd tussen je training, slaap, herstel, wedstrijden en
         terugkoppeling. Bij elk inzicht zie je de meetreeks erachter, hoe zeker
         het is en — onder "Uitgebreid" — welke signalen zijn gebruikt en welke
@@ -283,12 +283,12 @@ export function AiMemoryPanel() {
           type="button"
           disabled={runConnections.isPending}
           onClick={() => runConnections.mutate()}
-          className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/70 transition hover:border-cyan-400/40 hover:text-cyan-300 disabled:opacity-40"
+          className="rounded-lg border border-border bg-muted px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:border-cyan-400/40 hover:text-accent-cyan disabled:opacity-40"
         >
           {runConnections.isPending ? "Bezig met zoeken…" : "Verbanden zoeken"}
         </button>
         {runConnections.isSuccess && !runConnections.isPending && (
-          <span className="font-mono text-[10px] text-white/40">
+          <span className="font-mono text-[10px] text-muted-foreground">
             {runConnections.data.derived === 0
               ? "Geen nieuwe verbanden gevonden"
               : `${runConnections.data.derived} verband${runConnections.data.derived === 1 ? "" : "en"} bekeken`}
@@ -301,12 +301,12 @@ export function AiMemoryPanel() {
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="h-20 w-full animate-pulse rounded-xl bg-white/[0.06]"
+              className="h-20 w-full animate-pulse rounded-xl bg-muted"
             />
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <p className="mt-4 text-[13px] text-white/35">
+        <p className="mt-4 text-[13px] text-muted-foreground">
           Nog geen verbanden · Houd je training, slaap en herstel bij en klik op
           "Verbanden zoeken" om patronen te vinden
         </p>

@@ -47,19 +47,19 @@ export function SparkiChatOverlay({
         type="button"
         aria-label="Sluiten"
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-foreground/60 backdrop-blur-sm"
       />
 
       {/* Panel — app-width, full height, dark cinematic surface. */}
-      <div className="relative flex h-dvh w-full max-w-md flex-col bg-[#05070e]/95 shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-5 py-4">
+      <div className="relative flex h-dvh w-full max-w-md flex-col bg-card shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2.5">
             <SparkiCore size={26} accent={ACCENT} readiness={0.9} variant="orb" />
             <div className="flex flex-col">
-              <span className="font-mono text-[11px] tracking-[0.3em] text-white/70">
+              <span className="font-mono text-[11px] tracking-[0.3em] text-muted-foreground">
                 SPARKI
               </span>
-              <span className="text-[11px] text-white/35">Vraag of deel iets</span>
+              <span className="text-[11px] text-muted-foreground">Vraag of deel iets</span>
             </div>
           </div>
           <button
@@ -67,7 +67,7 @@ export function SparkiChatOverlay({
             onClick={onClose}
             aria-label="Chat sluiten"
             title="Sluiten"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-accent-cyan hover:text-accent-cyan"
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>

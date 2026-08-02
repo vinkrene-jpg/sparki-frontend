@@ -53,8 +53,8 @@ export function HerkomstKnop({
         onClick={() => setOpen(true)}
         className={
           compact
-            ? "inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition-colors hover:border-white/25 hover:text-white/75"
-            : "inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-[12px] text-white/55 transition-colors hover:border-white/25 hover:text-white/80"
+            ? "inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-border hover:text-foreground/75"
+            : "inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-[12px] text-foreground/55 transition-colors hover:border-border hover:text-foreground/80"
         }
         aria-label="Herkomst van deze gegevens"
       >
@@ -94,22 +94,22 @@ function HerkomstOverlay({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-foreground/60 backdrop-blur-sm sm:items-center"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label="Herkomst van gegevens"
     >
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/[0.1] bg-[#060b13] p-5 sm:rounded-3xl"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border bg-card p-5 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Herkomst
             </p>
-            <h2 className="mt-1 text-[15px] font-medium text-white/90">
+            <h2 className="mt-1 text-[15px] font-medium text-foreground/90">
               {data?.onderwerp ?? "Waar komt dit vandaan?"}
             </h2>
           </div>
@@ -117,7 +117,7 @@ function HerkomstOverlay({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/10 p-2 text-white/50 transition-colors hover:border-white/25 hover:text-white/80"
+            className="rounded-lg border border-border p-2 text-foreground/50 transition-colors hover:border-border hover:text-foreground/80"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" aria-hidden />
@@ -125,13 +125,13 @@ function HerkomstOverlay({
         </div>
 
         {isLoading && (
-          <div className="flex items-center gap-2 py-6 text-[13px] text-white/50">
+          <div className="flex items-center gap-2 py-6 text-[13px] text-foreground/50">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             Herkomst wordt opgehaald…
           </div>
         )}
         {isError && (
-          <p className="py-4 text-[13px] text-white/55">
+          <p className="py-4 text-[13px] text-foreground/55">
             Herkomst kon nu niet worden opgehaald.
           </p>
         )}
@@ -139,17 +139,17 @@ function HerkomstOverlay({
         {data && (
           <div className="space-y-5">
             {data.melding && (
-              <p className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-3 py-2 text-[13px] text-amber-100/85">
+              <p className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-3 py-2 text-[13px] text-[color:var(--color-warning)]">
                 {data.melding}
               </p>
             )}
 
             <section>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Gebruikte gegevens
               </p>
               {data.gebruikteGegevens.length === 0 ? (
-                <p className="mt-2 text-[13px] text-white/50">
+                <p className="mt-2 text-[13px] text-foreground/50">
                   Onvoldoende gegevens beschikbaar.
                 </p>
               ) : (
@@ -160,12 +160,12 @@ function HerkomstOverlay({
                         className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
                         style={{ background: ACCENT }}
                       />
-                      <p className="text-[13px] leading-relaxed text-white/65">
-                        <span className="text-white/85">{g.label}</span>
+                      <p className="text-[13px] leading-relaxed text-foreground/65">
+                        <span className="text-foreground/85">{g.label}</span>
                         {" — "}
                         {g.bron}
                         {g.detail ? (
-                          <span className="text-white/45"> · {g.detail}</span>
+                          <span className="text-muted-foreground"> · {g.detail}</span>
                         ) : null}
                       </p>
                     </li>
@@ -176,16 +176,16 @@ function HerkomstOverlay({
 
             {data.berekeningen.length > 0 && (
               <section>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                   Berekening
                 </p>
                 <ul className="mt-2 space-y-2">
                   {data.berekeningen.map((b, i) => (
-                    <li key={i} className="text-[13px] leading-relaxed text-white/65">
-                      <span className="text-white/85">{b.engine}</span>
-                      <span className="text-white/45"> · versie {b.versie}</span>
+                    <li key={i} className="text-[13px] leading-relaxed text-foreground/65">
+                      <span className="text-foreground/85">{b.engine}</span>
+                      <span className="text-muted-foreground"> · versie {b.versie}</span>
                       {b.parameters && Object.keys(b.parameters).length > 0 && (
-                        <span className="text-white/45">
+                        <span className="text-muted-foreground">
                           {" · "}
                           {Object.entries(b.parameters)
                             .filter(([, v]) => v != null)
@@ -200,23 +200,23 @@ function HerkomstOverlay({
             )}
 
             <section>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Verwoording
               </p>
-              <p className="mt-2 text-[13px] leading-relaxed text-white/65">
+              <p className="mt-2 text-[13px] leading-relaxed text-foreground/65">
                 {data.ai.toelichting}
               </p>
             </section>
 
             <section>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Betrouwbaarheid
               </p>
-              <p className="mt-2 text-[13px] text-white/80">
+              <p className="mt-2 text-[13px] text-foreground/80">
                 {data.betrouwbaarheid}
               </p>
               {data.ontbrekend.length > 0 && (
-                <p className="mt-2 text-[12px] leading-relaxed text-white/50">
+                <p className="mt-2 text-[12px] leading-relaxed text-foreground/50">
                   Niet beschikbaar bij deze conclusie:{" "}
                   {data.ontbrekend.join(", ")}
                 </p>

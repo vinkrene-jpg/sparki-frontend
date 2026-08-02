@@ -62,7 +62,7 @@ function todayIso(): string {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
 
 export default function WedstrijdRoomPage() {
   const [, setLocation] = useLocation()
@@ -84,7 +84,7 @@ export default function WedstrijdRoomPage() {
       )}
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
@@ -114,16 +114,16 @@ function RoomList({
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Terug
           </button>
           <div>
-            <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+            <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
               WEDSTRIJD-ROOM
             </span>
-            <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
+            <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-foreground/90">
               Mijn rooms
             </h1>
           </div>
@@ -132,11 +132,11 @@ function RoomList({
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
+          className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
           style={{
             borderColor: ACCENT,
             color: ACCENT,
-            background: "rgba(255,255,255,0.04)",
+            background: "var(--color-muted)",
           }}
         >
           + Room
@@ -156,12 +156,12 @@ function RoomList({
               key={room.id}
               type="button"
               onClick={() => onOpen(room.id)}
-              className="block w-full rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/20"
+              className="block w-full rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/20"
             >
-              <h3 className="truncate font-sans text-[15px] font-light tracking-tight text-white/90">
+              <h3 className="truncate font-sans text-[15px] font-light tracking-tight text-foreground/90">
                 {room.title}
               </h3>
-              <p className="mt-0.5 text-[12px] text-white/45">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {formatDate(room.startDate)} · {room.days}{" "}
                 {room.days === 1 ? "dag" : "dagen"}
               </p>
@@ -170,13 +170,13 @@ function RoomList({
         </section>
       ) : (
         <div className={cardClass}>
-          <h3 className="font-sans text-[15px] font-light text-white/90">
+          <h3 className="font-sans text-[15px] font-light text-foreground/90">
             Nog geen wedstrijd-room
           </h3>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
             Maak een room aan om per wedstrijddag je foto's, korte clips en
             updates te verzamelen. Daarna maak je er met één druk een
-            dagcompilatie van. Gebruik de knop <span className="text-cyan-200/80">+ Room</span> bovenaan.
+            dagcompilatie van. Gebruik de knop <span className="text-accent-cyan">+ Room</span> bovenaan.
           </p>
         </div>
       )}
@@ -252,9 +252,9 @@ function CreateRoomForm({
   }
 
   const labelClass =
-    "block font-mono text-[10px] uppercase tracking-[0.16em] text-white/40"
+    "block font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground"
   const inputClass =
-    "mt-1.5 w-full rounded-xl border border-white/12 bg-[#040912]/70 px-3 py-2.5 text-[14px] text-white/90 outline-none transition-colors focus:border-cyan-300/40"
+    "mt-1.5 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-[14px] text-foreground/90 outline-none transition-colors focus:border-accent-cyan/40"
 
   return (
     <div className="space-y-4">
@@ -312,7 +312,7 @@ function CreateRoomForm({
       </div>
 
       {error && (
-        <p className="text-[12px] text-amber-300/80">{error}</p>
+        <p className="text-[12px] text-[color:var(--color-warning)]">{error}</p>
       )}
 
       <div className="flex items-center gap-2">
@@ -320,11 +320,11 @@ function CreateRoomForm({
           type="button"
           onClick={submit}
           disabled={createRoom.isPending}
-          className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+          className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted disabled:opacity-50"
           style={{
             borderColor: ACCENT,
             color: ACCENT,
-            background: "rgba(255,255,255,0.04)",
+            background: "var(--color-muted)",
           }}
         >
           {createRoom.isPending ? "Bezig…" : "Room maken"}
@@ -332,7 +332,7 @@ function CreateRoomForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:text-white/80"
+          className="rounded-full border border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-foreground/80"
         >
           Annuleren
         </button>
@@ -397,7 +397,7 @@ function RoomDetail({
         <button
           type="button"
           onClick={handleDelete}
-          className="rounded-full border border-white/15 p-2 text-white/50 transition-colors hover:border-rose-300/40 hover:text-rose-300/80"
+          className="rounded-full border border-border p-2 text-muted-foreground transition-colors hover:border-rose-300/40 hover:text-[color:var(--color-negative)]"
           aria-label="Room verwijderen"
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -423,10 +423,10 @@ function RoomDetail({
                   background: active ? "rgba(120,210,230,0.16)" : "transparent",
                   color: active
                     ? "rgba(120,210,230,1)"
-                    : "rgba(255,255,255,0.45)",
+                    : "var(--color-muted-foreground)",
                   border: active
                     ? "1px solid rgba(120,210,230,0.3)"
-                    : "1px solid rgba(255,255,255,0.1)",
+                    : "1px solid var(--color-border)",
                 }}
               >
                 Dag {i}
@@ -436,7 +436,7 @@ function RoomDetail({
         </div>
       )}
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
         {formatDate(dayDate)}
       </p>
 
@@ -489,16 +489,16 @@ function DetailHeader({
         <button
           type="button"
           onClick={onBack}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
         >
           <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
           Terug
         </button>
         <div className="min-w-0">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+          <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
             WEDSTRIJD-ROOM
           </span>
-          <h1 className="mt-1 truncate font-sans text-2xl font-light tracking-tight text-white/90">
+          <h1 className="mt-1 truncate font-sans text-2xl font-light tracking-tight text-foreground/90">
             {title}
           </h1>
         </div>
@@ -522,10 +522,10 @@ function RoomRaceNote({
     <button
       type="button"
       onClick={onOpenRaces}
-      className="block w-full rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2 text-left text-[12px] text-cyan-100/70 transition-colors hover:border-cyan-300/30"
+      className="block w-full rounded-xl border border-accent-cyan/15 bg-accent-cyan/[0.04] px-3 py-2 text-left text-[12px] text-accent-cyan transition-colors hover:border-accent-cyan/30"
     >
       Gekoppeld aan{" "}
-      <span className="text-cyan-200/90">{race.name}</span> ·{" "}
+      <span className="text-accent-cyan">{race.name}</span> ·{" "}
       {formatDate(race.raceDate)}
     </button>
   )
@@ -574,14 +574,14 @@ function DayMedia({
   return (
     <section className={`${cardClass} space-y-3`}>
       <div className="flex items-center justify-between">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Foto's & clips
         </h2>
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors hover:bg-muted disabled:opacity-50"
           style={{ borderColor: ACCENT, color: ACCENT }}
         >
           {uploading ? (
@@ -601,10 +601,10 @@ function DayMedia({
         />
       </div>
 
-      {error && <p className="text-[12px] text-amber-300/80">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--color-warning)]">{error}</p>}
 
       {media.length === 0 ? (
-        <p className="text-[13px] leading-relaxed text-white/50">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           Nog geen media voor deze dag. Voeg foto's of korte clips toe — die
           worden straks je dagcompilatie.
         </p>
@@ -613,7 +613,7 @@ function DayMedia({
           {media.map((m) => (
             <div
               key={m.id}
-              className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-black/40"
+              className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-foreground/40"
             >
               {m.mediaType?.startsWith("video/") ? (
                 <video
@@ -631,12 +631,12 @@ function DayMedia({
                 />
               )}
               {m.mediaType?.startsWith("video/") && (
-                <Film className="absolute left-1.5 top-1.5 h-3.5 w-3.5 text-white/80 drop-shadow" />
+                <Film className="absolute left-1.5 top-1.5 h-3.5 w-3.5 text-foreground/80 drop-shadow" />
               )}
               <button
                 type="button"
                 onClick={() => deleteItem.mutate(m.id)}
-                className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white/70 opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute right-1.5 top-1.5 rounded-full bg-foreground/60 p-1 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
                 aria-label="Verwijderen"
               >
                 <Trash2 className="h-3 w-3" />
@@ -681,7 +681,7 @@ function DayUpdates({
 
   return (
     <section className={`${cardClass} space-y-3`}>
-      <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         Updates
       </h2>
 
@@ -690,15 +690,15 @@ function DayUpdates({
           {updates.map((u) => (
             <div
               key={u.id}
-              className="group flex items-start justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-border bg-muted px-3 py-2"
             >
-              <p className="text-[13px] leading-relaxed text-white/80">
+              <p className="text-[13px] leading-relaxed text-foreground/80">
                 {u.text}
               </p>
               <button
                 type="button"
                 onClick={() => deleteItem.mutate(u.id)}
-                className="shrink-0 text-white/30 opacity-0 transition-opacity group-hover:opacity-100 hover:text-rose-300/80"
+                className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-[color:var(--color-negative)]"
                 aria-label="Verwijderen"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -714,20 +714,20 @@ function DayUpdates({
           onChange={(e) => setText(e.target.value)}
           rows={2}
           placeholder="Schrijf een korte update — die wordt een tekstkaart in de compilatie."
-          className="w-full resize-none rounded-xl border border-white/12 bg-[#040912]/70 px-3 py-2.5 text-[14px] text-white/90 outline-none transition-colors focus:border-cyan-300/40"
+          className="w-full resize-none rounded-xl border border-border bg-card px-3 py-2.5 text-[14px] text-foreground/90 outline-none transition-colors focus:border-accent-cyan/40"
         />
         <button
           type="button"
           onClick={submit}
           disabled={addItem.isPending || !text.trim()}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+          className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors hover:bg-muted disabled:opacity-40"
           style={{ borderColor: ACCENT, color: ACCENT }}
         >
           <MessageSquarePlus className="h-3.5 w-3.5" />
           Plaats
         </button>
       </div>
-      {error && <p className="text-[12px] text-amber-300/80">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--color-warning)]">{error}</p>}
     </section>
   )
 }
@@ -792,19 +792,19 @@ function CompilePanel({
 
   return (
     <section className={`${cardClass} space-y-3`}>
-      <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         Dagcompilatie
       </h2>
 
       {tracks.length > 0 ? (
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Muziek
           </label>
           <select
             value={musicKey}
             onChange={(e) => setMusicKey(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-white/12 bg-[#040912]/70 px-3 py-2.5 text-[14px] text-white/90 outline-none transition-colors focus:border-cyan-300/40"
+            className="mt-1.5 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-[14px] text-foreground/90 outline-none transition-colors focus:border-accent-cyan/40"
           >
             <option value="">Geen muziek</option>
             {tracks.map((t) => (
@@ -815,7 +815,7 @@ function CompilePanel({
           </select>
         </div>
       ) : (
-        <p className="text-[12px] text-white/45">
+        <p className="text-[12px] text-muted-foreground">
           Geen muziekbedden beschikbaar — de compilatie wordt zonder muziek
           gemaakt.
         </p>
@@ -826,11 +826,11 @@ function CompilePanel({
           type="button"
           onClick={run}
           disabled={busy || mediaCount === 0}
-          className="flex w-full items-center justify-center gap-2 rounded-full border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+          className="flex w-full items-center justify-center gap-2 rounded-full border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted disabled:opacity-40"
           style={{
             borderColor: ACCENT,
             color: ACCENT,
-            background: "rgba(255,255,255,0.04)",
+            background: "var(--color-muted)",
           }}
         >
           {busy ? (
@@ -848,7 +848,7 @@ function CompilePanel({
       </div>
 
       {mediaCount === 0 && (
-        <p className="text-[12px] text-white/45">
+        <p className="text-[12px] text-muted-foreground">
           Voeg eerst foto's of clips toe om een compilatie te kunnen maken.
         </p>
       )}
@@ -861,7 +861,7 @@ function CompilePanel({
         />
       )}
 
-      {error && <p className="text-[12px] text-amber-300/80">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--color-warning)]">{error}</p>}
     </section>
   )
 }
@@ -880,8 +880,8 @@ function CompilationStatusCard({
       ? Math.round(Number(compilation.durationSec))
       : null
     return (
-      <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.05] p-3">
-        <p className="text-[13px] text-white/80">
+      <div className="rounded-xl border border-accent-cyan/20 bg-accent-cyan/[0.05] p-3">
+        <p className="text-[13px] text-foreground/80">
           Compilatie klaar — {compilation.itemCount}{" "}
           {compilation.itemCount === 1 ? "fragment" : "fragmenten"}
           {dur != null ? ` · ${dur}s` : ""}.
@@ -890,7 +890,7 @@ function CompilationStatusCard({
           type="button"
           onClick={onDownload}
           disabled={downloading}
-          className="mt-2.5 flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+          className="mt-2.5 flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted disabled:opacity-50"
           style={{ borderColor: ACCENT, color: ACCENT }}
         >
           {downloading ? (
@@ -906,8 +906,8 @@ function CompilationStatusCard({
 
   if (compilation.status === "empty") {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-        <p className="text-[13px] text-white/65">
+      <div className="rounded-xl border border-border bg-muted p-3">
+        <p className="text-[13px] text-muted-foreground">
           {compilation.reason ??
             "Geen media gevonden voor deze dag om een compilatie van te maken."}
         </p>
@@ -918,8 +918,8 @@ function CompilationStatusCard({
   if (compilation.status === "failed") {
     return (
       <div className="flex items-start gap-2 rounded-xl border border-rose-300/20 bg-rose-300/[0.05] p-3">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300/80" />
-        <p className="text-[13px] text-rose-100/80">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-negative)]" />
+        <p className="text-[13px] text-[color:var(--color-negative)]">
           {compilation.reason ??
             "Het maken van de compilatie is mislukt. Probeer het opnieuw."}
         </p>
@@ -928,9 +928,9 @@ function CompilationStatusCard({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3">
-      <Loader2 className="h-4 w-4 animate-spin text-white/50" />
-      <p className="text-[13px] text-white/65">Compilatie wordt verwerkt…</p>
+    <div className="flex items-center gap-2 rounded-xl border border-border bg-muted p-3">
+      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      <p className="text-[13px] text-muted-foreground">Compilatie wordt verwerkt…</p>
     </div>
   )
 }

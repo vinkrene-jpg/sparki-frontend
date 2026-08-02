@@ -63,7 +63,7 @@ export default function RolStartPage() {
   if (start && ownershipLoading) {
     return (
       <ScreenShell section="Startpunt">
-        <p className="text-sm text-white/40" data-testid="rolstart-laden">
+        <p className="text-sm text-muted-foreground" data-testid="rolstart-laden">
           Startpunt wordt geladen…
         </p>
       </ScreenShell>
@@ -74,14 +74,14 @@ export default function RolStartPage() {
     return (
       <ScreenShell section="Geen toegang">
         <div
-          className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+          className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
           data-testid="rolstart-geen-toegang"
         >
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-muted-foreground">
             Dit startscherm hoort bij een rol die niet aan jouw account is
             gekoppeld. Er wordt daarom niets van getoond.
           </p>
-          <p className="mt-2 text-sm text-white/40">
+          <p className="mt-2 text-sm text-muted-foreground">
             Denk je dat dit een fout is? De clubbeheerder of jouw trainer ziet
             welke rol er werkelijk aan jouw account hangt.
           </p>
@@ -94,14 +94,14 @@ export default function RolStartPage() {
     return (
       <ScreenShell section="Onbekende rol">
         <div
-          className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+          className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
           data-testid="rolstart-onbekend"
         >
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-muted-foreground">
             De rol "{params.rol}" bestaat niet in Sparki. Er is daarom ook geen
             startscherm voor — er wordt niets nagebootst.
           </p>
-          <p className="mt-2 text-sm text-white/40">
+          <p className="mt-2 text-sm text-muted-foreground">
             Denk je dat dit een fout is? De clubbeheerder ziet jouw werkelijke
             rol in het clubbeheer.
           </p>
@@ -127,11 +127,11 @@ export default function RolStartPage() {
                 <Link
                   key={f.href}
                   href={f.href}
-                  className="flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+                  className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
                   data-testid={`rolstart-functie-${f.href}`}
                 >
-                  <span className="text-sm text-white/80">{f.label}</span>
-                  <ArrowRight className="h-4 w-4 text-white/30" aria-hidden="true" />
+                  <span className="text-sm text-foreground/80">{f.label}</span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 </Link>
               ))}
             </div>
@@ -140,17 +140,17 @@ export default function RolStartPage() {
 
         {start.leeg && (
           <section
-            className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+            className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
             data-testid="rolstart-leeg"
           >
             <div className="flex items-start gap-3">
-              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300/80" aria-hidden="true" />
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-warning)]" aria-hidden="true" />
               <div className="space-y-2">
-                <p className="text-sm text-white/75">{start.leeg.ontbreekt}</p>
-                <p className="text-sm text-white/45">{start.leeg.wieLostOp}</p>
+                <p className="text-sm text-foreground/75">{start.leeg.ontbreekt}</p>
+                <p className="text-sm text-muted-foreground">{start.leeg.wieLostOp}</p>
                 <Link
                   href={start.leeg.vervolgstap.href}
-                  className="inline-flex items-center gap-1.5 text-sm text-cyan-300/90 hover:text-cyan-200"
+                  className="inline-flex items-center gap-1.5 text-sm text-accent-cyan hover:text-accent-cyan"
                 >
                   {start.leeg.vervolgstap.label}
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

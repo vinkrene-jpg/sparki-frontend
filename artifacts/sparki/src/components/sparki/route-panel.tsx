@@ -116,9 +116,9 @@ function PointRow({
   return (
     <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2">
       {icon}
-      <span className="min-w-0 flex-1 truncate font-sans text-[13px] text-white/90">
+      <span className="min-w-0 flex-1 truncate font-sans text-[13px] text-foreground/90">
         {label}
-        <span className="ml-2 font-mono text-[10px] text-white/35">
+        <span className="ml-2 font-mono text-[10px] text-muted-foreground">
           {point[0].toFixed(4)}, {point[1].toFixed(4)}
         </span>
       </span>
@@ -126,7 +126,7 @@ function PointRow({
         type="button"
         onClick={onRemove}
         aria-label={`${label} verwijderen`}
-        className="shrink-0 text-white/30 transition hover:text-negative/85"
+        className="shrink-0 text-muted-foreground transition hover:text-negative/85"
       >
         <X className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
@@ -156,13 +156,13 @@ function PlaceholderRow({
       className={`flex items-center gap-2 rounded-xl border border-dashed px-3 py-2 text-left transition ${
         active
           ? "border-accent-cyan/40 bg-accent-cyan/[0.06]"
-          : "border-white/[0.12] bg-transparent hover:border-white/25"
+          : "border-border bg-transparent hover:border-border"
       }`}
     >
       {icon}
-      <span className="min-w-0 flex-1 font-sans text-[13px] text-white/55">
+      <span className="min-w-0 flex-1 font-sans text-[13px] text-muted-foreground">
         {label}
-        <span className="ml-2 text-[11px] text-white/35">{hint}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground">{hint}</span>
       </span>
     </button>
   )
@@ -188,7 +188,7 @@ function MeetpointList({
             strokeWidth={1.75}
           />
           <input
-            className="min-w-0 flex-1 bg-transparent font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none"
             value={mp.name}
             placeholder="Naam verzamelpunt"
             onChange={(e) =>
@@ -204,7 +204,7 @@ function MeetpointList({
             onClick={() =>
               setMeetpoints((m) => m.filter((_, idx) => idx !== i))
             }
-            className="shrink-0 text-white/30 transition hover:text-negative/85"
+            className="shrink-0 text-muted-foreground transition hover:text-negative/85"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
           </button>
@@ -427,7 +427,7 @@ function TempoBlock({
     <div className="mt-3 rounded-lg border border-border bg-surface px-3 py-2.5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             Verwacht tempo
           </p>
           <div className="mt-1 flex items-center gap-2">
@@ -435,33 +435,33 @@ function TempoBlock({
               type="button"
               onClick={() => step(-0.5)}
               aria-label="Langzamer"
-              className="h-6 w-6 rounded-full border border-border font-mono text-[12px] text-white/60 transition hover:text-white/90"
+              className="h-6 w-6 rounded-full border border-border font-mono text-[12px] text-muted-foreground transition hover:text-foreground/90"
             >
               −
             </button>
-            <span className="font-sans text-[15px] tabular-nums text-white/90">
+            <span className="font-sans text-[15px] tabular-nums text-foreground/90">
               {effectiveKph.toString().replace(".", ",")} km/u
             </span>
             <button
               type="button"
               onClick={() => step(0.5)}
               aria-label="Sneller"
-              className="h-6 w-6 rounded-full border border-border font-mono text-[12px] text-white/60 transition hover:text-white/90"
+              className="h-6 w-6 rounded-full border border-border font-mono text-[12px] text-muted-foreground transition hover:text-foreground/90"
             >
               +
             </button>
           </div>
         </div>
         <div className="text-right">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             Jouw verwachte duur
           </p>
-          <p className="mt-1 font-sans text-[15px] tabular-nums text-white/90">
+          <p className="mt-1 font-sans text-[15px] tabular-nums text-foreground/90">
             {formatDuration(expectedSec)}
           </p>
         </div>
       </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
         {basis}
         {" "}De "Duur" hierboven komt van de routeplanner
         {routerKph != null
@@ -471,7 +471,7 @@ function TempoBlock({
         {deltaMin != null && Math.abs(deltaMin) >= 5 && (
           <>
             {" "}Bij dit tempo ben je{" "}
-            <span className="text-white/70">
+            <span className="text-muted-foreground">
               {Math.abs(deltaMin)} min {deltaMin > 0 ? "langer" : "korter"}
             </span>{" "}
             onderweg dan de planner rekent.
@@ -512,13 +512,13 @@ function NavigateInfoCard({ sport = null }: { sport?: string | null }) {
           className="mt-0.5 h-4 w-4 shrink-0 text-accent-cyan"
           strokeWidth={1.75}
         />
-        <div className="min-w-0 text-[12.5px] leading-relaxed text-white/60">
-          <p className="font-medium text-white/85">Navigeren met Sparki</p>
+        <div className="min-w-0 text-[12.5px] leading-relaxed text-muted-foreground">
+          <p className="font-medium text-foreground/90">Navigeren met Sparki</p>
           {hasGeo ? (
             <>
               <p>
                 Tik op{" "}
-                <span className="font-medium text-white/85">Navigeer</span> om
+                <span className="font-medium text-foreground/90">Navigeer</span> om
                 deze route te openen en je positie onderweg te volgen.
               </p>
               <p>Tijdens het navigeren wordt ook je rit geregistreerd.</p>
@@ -538,7 +538,7 @@ function NavigateInfoCard({ sport = null }: { sport?: string | null }) {
             </p>
           )}
           {more && hasGeo && (
-            <ul className="mt-2 flex list-disc flex-col gap-1 pl-4 text-white/55">
+            <ul className="mt-2 flex list-disc flex-col gap-1 pl-4 text-muted-foreground">
               <li>
                 Locatietoestemming wordt pas gevraagd op het moment dat de
                 navigatie start — niet eerder, en alleen voor je locatie.
@@ -605,38 +605,38 @@ function KlimZoeker({
         onChange={(e) => setNaamFilter(e.target.value)}
         placeholder="Filter op naam (optioneel)"
         aria-label="Klimnaam filteren"
-        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 placeholder:text-white/30 focus:border-accent-cyan/40 focus:outline-none"
+        className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
       />
       {zoek.isLoading && (
-        <p className="mt-2 text-[12px] text-white/45">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           Klimmen zoeken rond je startpunt…
         </p>
       )}
       {zoek.error != null && (
-        <p className="mt-2 text-[12px] text-amber-300/80">
+        <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">
           {zoek.error instanceof Error
             ? zoek.error.message
             : "Klimmen zoeken is nu niet beschikbaar."}
         </p>
       )}
       {zoek.data && hits.length === 0 && (
-        <p className="mt-2 text-[12px] text-white/45">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           Geen klimmen gevonden binnen {zoek.data.radiusKm} km rond je start
           {naamFilter.trim() ? " met deze naam" : ""}. Vlak gebied is eerlijk
           vlak — probeer een ander startpunt of een andere naam.
         </p>
       )}
       {hits.length > 0 && (
-        <div className="mt-2 flex max-h-56 flex-col overflow-y-auto rounded-xl border border-white/[0.08]">
+        <div className="mt-2 flex max-h-56 flex-col overflow-y-auto rounded-xl border border-border">
           {hits.slice(0, 12).map((k) => (
             <button
               key={k.osmId}
               type="button"
               onClick={() => onKies(k)}
-              className="flex min-h-11 items-baseline gap-3 border-b border-white/[0.05] px-3 py-2.5 text-left last:border-0 hover:bg-white/[0.04]"
+              className="flex min-h-11 items-baseline gap-3 border-b border-border px-3 py-2.5 text-left last:border-0 hover:bg-muted"
             >
-              <span className="flex-1 text-[13px] text-white/85">{k.name}</span>
-              <span className="font-mono text-[10px] text-white/40">
+              <span className="flex-1 text-[13px] text-foreground/90">{k.name}</span>
+              <span className="font-mono text-[10px] text-muted-foreground">
                 {KIND_LABEL[k.kind]}
                 {k.elevationM != null ? ` · ${Math.round(k.elevationM)} m` : ""}
               </span>
@@ -672,21 +672,21 @@ function GekozenKlimKaart({
       data-testid="gekozen-klim"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[13px] font-medium text-white/90">
+        <span className="text-[13px] font-medium text-foreground/90">
           {klim.name}
         </span>
-        <span className="font-mono text-[10px] text-white/40">
+        <span className="font-mono text-[10px] text-muted-foreground">
           {KIND_LABEL[klim.kind]}
         </span>
       </div>
       {detail.isLoading && (
-        <p className="mt-2 text-[12px] text-white/45">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           Klimprofiel en kaart laden…
         </p>
       )}
       {!detail.isLoading && detail.data && p && (
         <>
-          <p className="mt-1.5 font-mono text-[11px] tabular-nums text-white/55">
+          <p className="mt-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
             {p.lengthKm} km · {p.elevationGainM} hm · gem. {p.avgGradePct}% ·
             max {p.maxGradePct}%
           </p>
@@ -729,7 +729,7 @@ function GekozenKlimKaart({
         </>
       )}
       {!detail.isLoading && detail.data && !p && (
-        <p className="mt-2 text-[12px] leading-relaxed text-amber-300/80">
+        <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--color-warning)]">
           {detail.data.profileUnavailableReason ??
             "Voor deze klim is geen betrouwbaar klimprofiel beschikbaar."}{" "}
           Deze klim kan daardoor niet in de route worden gelegd — vervang of
@@ -737,7 +737,7 @@ function GekozenKlimKaart({
         </p>
       )}
       {!detail.isLoading && detail.error != null && (
-        <p className="mt-2 text-[12px] text-amber-300/80">
+        <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">
           Klimdetails konden niet geladen worden — probeer het opnieuw of
           vervang de klim.
         </p>
@@ -746,14 +746,14 @@ function GekozenKlimKaart({
         <button
           type="button"
           onClick={onVervang}
-          className="min-h-11 flex-1 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+          className="min-h-11 flex-1 rounded-xl border border-border px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:border-border"
         >
           Vervangen
         </button>
         <button
           type="button"
           onClick={onVerwijder}
-          className="min-h-11 flex-1 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+          className="min-h-11 flex-1 rounded-xl border border-border px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:border-border"
         >
           Verwijderen
         </button>
@@ -766,24 +766,24 @@ function Climbs({ climbs }: { climbs: RouteClimb[] }) {
   if (climbs.length === 0) return null
   return (
     <div className="mt-4">
-      <span className="label-xs text-white/35">KLIMMEN</span>
+      <span className="label-xs text-muted-foreground">KLIMMEN</span>
       <div className="mt-2 flex flex-col">
         {climbs.map((c, i) => (
           <div
             key={i}
-            className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
+            className="flex items-baseline gap-3 border-b border-border py-2 last:border-0"
           >
             <div className="flex-1">
-              <span className="text-[13px] tracking-tight text-white/85">
+              <span className="text-[13px] tracking-tight text-foreground/90">
                 {c.name}
               </span>
               {Number.isFinite(c.summitKm) && (
-                <span className="ml-2 font-mono text-[10px] tabular-nums text-white/35">
+                <span className="ml-2 font-mono text-[10px] tabular-nums text-muted-foreground">
                   top op {c.summitKm} km
                 </span>
               )}
             </div>
-            <span className="font-mono text-[11px] tabular-nums text-white/45">
+            <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
               {c.lengthKm} km
             </span>
             <span className="font-mono text-[11px] tabular-nums text-accent-cyan">
@@ -887,22 +887,22 @@ function RoutePassport({
   return (
     <div className="mt-4 rounded-lg border border-border bg-surface p-3.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="label-xs text-white/35">ROUTE-PASPOORT</span>
-        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">
+        <span className="label-xs text-muted-foreground">ROUTE-PASPOORT</span>
+        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           Vertrek
           <input
             type="datetime-local"
             value={departAt}
             onChange={(e) => setDepartAt(e.target.value)}
-            className="rounded-md border border-border bg-control px-2 py-1 font-sans text-[12px] text-white/80 focus:border-accent-cyan/40 focus:outline-none [color-scheme:dark]"
+            className="rounded-md border border-border bg-control px-2 py-1 font-sans text-[12px] text-foreground/80 focus:border-accent-cyan/40 focus:outline-none [color-scheme:light]"
           />
         </label>
       </div>
 
       {isLoading ? (
-        <p className="mt-3 text-[12px] text-white/35">Feiten worden opgehaald…</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">Feiten worden opgehaald…</p>
       ) : isError ? (
-        <p className="mt-3 text-[12px] text-white/35">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           Het route-paspoort kon nu niet worden opgehaald. Probeer het later
           opnieuw.
         </p>
@@ -910,30 +910,30 @@ function RoutePassport({
         <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
           {rows.map((r) => (
             <div key={r.label} className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
                 {r.label}
               </p>
-              <p className="break-words text-[13px] tracking-tight text-white/85">
+              <p className="break-words text-[13px] tracking-tight text-foreground/90">
                 {r.value}
               </p>
             </div>
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-[12px] text-white/35">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           Voor deze route zijn nog geen feiten beschikbaar — er is geen
           hoogteprofiel of routegeometrie opgeslagen.
         </p>
       )}
 
       {insight && !insight.weather && insight.hasGeometry && !isLoading && (
-        <p className="mt-2 text-[11px] text-white/30">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           Weerbericht voor dit tijdstip is nog niet beschikbaar (maximaal ±15
           dagen vooruit).
         </p>
       )}
       {insight && insight.environment == null && !isLoading && (
-        <p className="mt-2 text-[11px] text-white/30">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           Verkeerslichten en bos-aandeel (een extra controlelaag uit
           OpenStreetMap) konden nu niet worden opgehaald. De route zelf is
           gewoon berekend door de routemotor.
@@ -941,22 +941,22 @@ function RoutePassport({
       )}
 
       {onAdjust && route.source === "gegenereerd" && (
-        <div className="mt-3 border-t border-white/[0.06] pt-3">
-          <p className="text-[11px] text-white/40">
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="text-[11px] text-muted-foreground">
             Past dit niet? Bouw een nieuwe route met een andere voorkeur:
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => onAdjust("flat")}
-              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-accent-cyan/40 hover:text-accent-cyan"
+              className="rounded-full border border-border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               Vlakker
             </button>
             <button
               type="button"
               onClick={() => onAdjust("hilly")}
-              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-accent-cyan/40 hover:text-accent-cyan"
+              className="rounded-full border border-border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               Meer klimmen
             </button>
@@ -985,14 +985,14 @@ function DeviceSyncBlock({ routeId, sport = null }: { routeId: number; sport?: s
   const anyConfigured = providers.some((p) => p.configured)
 
   return (
-    <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+    <div className="mt-4 rounded-xl border border-border bg-muted p-3">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         {sport === "walking" || sport === "hiking"
           ? "Naar je horloge"
           : "Naar je fietscomputer"}
       </p>
       {!anyConfigured ? (
-        <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">
+        <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
           Rechtstreeks versturen naar Garmin en Wahoo is gebouwd en wacht
           alleen nog op goedkeuring van de fabrikanten. Tot die tijd werkt
           downloaden (GPX/TCX) of &ldquo;Naar app&rdquo; gewoon.
@@ -1003,7 +1003,7 @@ function DeviceSyncBlock({ routeId, sport = null }: { routeId: number; sport?: s
             !p.configured ? (
               <span
                 key={p.provider}
-                className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/30"
+                className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
               >
                 {p.label}: wacht op goedkeuring fabrikant
               </span>
@@ -1050,7 +1050,7 @@ function DeviceSyncBlock({ routeId, sport = null }: { routeId: number; sport?: s
                       ),
                   })
                 }}
-                className="rounded-full border border-white/[0.14] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-40"
+                className="rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-40"
               >
                 Koppel {p.label}
               </button>
@@ -1261,7 +1261,7 @@ function RouteCard({
   return (
     <div
       id={`route-card-${route.id}`}
-      className="rounded-xl border border-border bg-map-panel/[0.82] p-4 backdrop-blur-md"
+      className="rounded-xl border border-border bg-card p-4 backdrop-blur-md"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 basis-44">
@@ -1290,11 +1290,11 @@ function RouteCard({
                         ? "Klaar"
                         : route.status}
             </DsStatus>
-            <span className="font-mono text-[9px] uppercase text-white/25">
+            <span className="font-mono text-[9px] uppercase text-muted-foreground">
               · {route.source}
             </span>
           </div>
-          <h3 className="mt-1 line-clamp-2 font-sans text-lg font-light leading-snug tracking-tight text-white/90">
+          <h3 className="mt-1 line-clamp-2 font-sans text-lg font-light leading-snug tracking-tight text-foreground/90">
             {route.name}
           </h3>
           {hardBlocked && (
@@ -1324,13 +1324,13 @@ function RouteCard({
                   type="button"
                   onClick={() => setShareOpen((v) => !v)}
                   title="Deel deze route — als bestand, link of via WhatsApp"
-                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-accent-cyan/80"
+                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:text-accent-cyan/80"
                 >
                   <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
                   Delen
                 </button>
                 {shareOpen && (
-                  <div className="absolute right-0 top-7 z-30 w-56 rounded-xl border border-white/[0.12] bg-map-scrim p-1.5 shadow-xl shadow-black/50">
+                  <div className="absolute right-0 top-7 z-30 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl shadow-float">
                     {canShareRouteFiles() && (
                       <button
                         type="button"
@@ -1350,10 +1350,10 @@ function RouteCard({
                           )
                         }}
                         disabled={share.isPending}
-                        className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong disabled:opacity-40"
+                        className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-muted-foreground transition hover:bg-surface-strong disabled:opacity-40"
                       >
                         Bestand naar app (GPX)
-                        <span className="mt-0.5 block text-[10px] text-white/35">
+                        <span className="mt-0.5 block text-[10px] text-muted-foreground">
                           Garmin Connect, Komoot, Wahoo…
                         </span>
                       </button>
@@ -1374,7 +1374,7 @@ function RouteCard({
                           )
                         }
                       }}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-muted-foreground transition hover:bg-surface-strong"
                     >
                       {linkCopied ? (
                         <span className="inline-flex items-center gap-1">
@@ -1384,7 +1384,7 @@ function RouteCard({
                       ) : (
                         "Link kopiëren"
                       )}
-                      <span className="mt-0.5 block text-[10px] text-white/35">
+                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
                         Werkt voor iedereen met een Sparki-account
                       </span>
                     </button>
@@ -1397,17 +1397,17 @@ function RouteCard({
                       target="_blank"
                       rel="noreferrer"
                       onClick={() => setShareOpen(false)}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-muted-foreground transition hover:bg-surface-strong"
                     >
                       Via WhatsApp
-                      <span className="mt-0.5 block text-[10px] text-white/35">
+                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
                         Stuur de link naar wie je wilt
                       </span>
                     </a>
                     <button
                       type="button"
                       onClick={() => setShowFriendPick((v) => !v)}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-muted-foreground transition hover:bg-surface-strong"
                     >
                       {proposalSent ? (
                         <span className="inline-flex items-center gap-1">
@@ -1419,14 +1419,14 @@ function RouteCard({
                           ? "Stel voor aan wandelmaatje"
                           : "Stel voor aan fietsmaatje"
                       )}
-                      <span className="mt-0.5 block text-[10px] text-white/35">
+                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
                         Je maatje kan accepteren, afwijzen of aanpassen
                       </span>
                     </button>
                     {showFriendPick && (
-                      <div className="border-t border-white/[0.08] pt-1">
+                      <div className="border-t border-border pt-1">
                         {cardFriends.length === 0 ? (
-                          <p className="px-3 py-2 text-[11px] text-white/40">
+                          <p className="px-3 py-2 text-[11px] text-muted-foreground">
                             {route.sport === "walking" ||
                             route.sport === "hiking"
                               ? "Nog geen wandelmaatjes — voeg eerst iemand toe via Samen."
@@ -1481,7 +1481,7 @@ function RouteCard({
                     ? "Download als GPX voor je sporthorloge"
                     : "Download als GPX voor je fietscomputer"
                 }
-                className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-accent-cyan/80 disabled:opacity-40"
+                className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:text-accent-cyan/80 disabled:opacity-40"
               >
                 <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
                 GPX
@@ -1491,7 +1491,7 @@ function RouteCard({
                 onClick={() => exportRoute("tcx")}
                 disabled={download.isPending}
                 title="Download als TCX-course — meest betrouwbare navigatie op Garmin/Wahoo"
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-accent-cyan/80 disabled:opacity-40"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:text-accent-cyan/80 disabled:opacity-40"
               >
                 TCX
               </button>
@@ -1501,7 +1501,7 @@ function RouteCard({
             type="button"
             onClick={() => del.mutate(route.id)}
             disabled={del.isPending}
-            className="font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
+            className="font-mono text-[10px] text-muted-foreground transition hover:text-muted-foreground disabled:opacity-40"
           >
             wis
           </button>
@@ -1591,7 +1591,7 @@ function RouteCard({
           <button
             type="button"
             onClick={() => onEditWaypoints(route)}
-            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-accent-cyan/80"
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-accent-cyan/80"
           >
             + wijzig met routepunten
           </button>
@@ -1623,7 +1623,7 @@ function RouteCard({
       <Climbs climbs={climbs} />
 
       {route.rationale && (
-        <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
+        <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-muted-foreground">
           {route.rationale}
         </p>
       )}
@@ -1646,15 +1646,15 @@ function RouteCard({
               {nav.map((n, i) => (
                 <div
                   key={i}
-                  className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
+                  className="flex items-baseline gap-3 border-b border-border py-2.5 last:border-0"
                 >
                   <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
                     {n.km}
                   </span>
-                  <span className="w-20 shrink-0 break-words text-[13px] tracking-tight text-white/85">
+                  <span className="w-20 shrink-0 break-words text-[13px] tracking-tight text-foreground/90">
                     {n.dir}
                   </span>
-                  <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
+                  <span className="min-w-0 flex-1 break-words text-[12px] text-muted-foreground">
                     {n.note}
                   </span>
                 </div>
@@ -1663,7 +1663,7 @@ function RouteCard({
           )}
         </div>
       ) : (
-        <p className="mt-4 text-[12px] text-white/30">
+        <p className="mt-4 text-[12px] text-muted-foreground">
           Stap-voor-stap navigatie nog niet beschikbaar voor deze route
         </p>
       )}
@@ -1725,7 +1725,7 @@ function RouteCard({
 }
 
 const inputClass =
-  "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-accent-cyan/40 focus:outline-none"
+  "w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
 
 // Vertaal echte routegeometrie naar een handvol sleepbare routepunten voor de
 // eigen-route-bouwer. We kiezen gelijkmatig verdeelde punten uit de ECHTE lijn
@@ -1813,22 +1813,22 @@ function MobielDetailSheet({
   }, [onClose])
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center lg:hidden">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="absolute inset-0 bg-foreground/60" onClick={onClose} />
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-white/[0.1] bg-[#070d16] outline-none"
+        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-border bg-card outline-none"
         role="dialog"
         aria-modal="true"
         aria-label={title}
         data-testid="route-detail-sheet"
       >
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-          <p className="text-[15px] font-medium text-white/90">{title}</p>
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <p className="text-[15px] font-medium text-foreground/90">{title}</p>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/[0.12] px-3 py-1.5 text-[12px] text-white/60 transition-colors hover:border-white/25"
+            className="rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-border"
           >
             Sluiten
           </button>
@@ -1944,33 +1944,33 @@ function CandidateDetails({
         </p>
       )}
 
-      <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
+      <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-muted-foreground">
         {candidate.rationale}
       </p>
       {enrichFailed && (
-        <p className="mt-1.5 text-[11px] text-white/30">
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
           De uitgebreide routetoelichting kon niet worden gegenereerd.
         </p>
       )}
 
       {candidate.nav.length > 0 && (
         <details className="mt-4">
-          <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-accent-cyan/80">
+          <summary className="label-xs cursor-pointer list-none text-muted-foreground transition hover:text-accent-cyan/80">
             STAP-VOOR-STAP ({candidate.nav.length}) — toon
           </summary>
           <div className="mt-2 max-h-64 overflow-y-auto pr-1">
             {candidate.nav.map((n, i) => (
               <div
                 key={i}
-                className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
+                className="flex items-baseline gap-3 border-b border-border py-2 last:border-0"
               >
                 <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
                   {n.km}
                 </span>
-                <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-white/85">
+                <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-foreground/90">
                   {n.dir}
                 </span>
-                <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
+                <span className="min-w-0 flex-1 break-words text-[12px] text-muted-foreground">
                   {n.note}
                 </span>
               </div>
@@ -2858,7 +2858,7 @@ export function RouteGenerator({
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.09] bg-map-panel/[0.82] p-5 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
@@ -2870,7 +2870,7 @@ export function RouteGenerator({
           <button
             type="button"
             onClick={onClose}
-            className="font-mono text-[10px] text-white/35 transition hover:text-white/60"
+            className="font-mono text-[10px] text-muted-foreground transition hover:text-muted-foreground"
           >
             begin opnieuw
           </button>
@@ -2889,7 +2889,7 @@ export function RouteGenerator({
       {mobielV2 && !showResult && (
         <div className="mt-4 lg:hidden" data-testid="mobiele-wizard-kop">
           <div className="flex items-center justify-between">
-            <span className="font-sans text-[13px] font-medium text-white/85">
+            <span className="font-sans text-[13px] font-medium text-foreground/90">
               {step === 1
                 ? "Waar rijd je?"
                 : step === 2
@@ -2900,7 +2900,7 @@ export function RouteGenerator({
                     ? "Wensen & samen"
                     : "Controleren"}
             </span>
-            <span className="font-mono text-[11px] tabular-nums text-white/45">
+            <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
               Stap {step} van 4
             </span>
           </div>
@@ -2929,7 +2929,7 @@ export function RouteGenerator({
                 onClick={() => n < step && setStep(n)}
                 aria-label={n < step ? `Terug naar stap ${n}` : undefined}
                 className={`h-1.5 min-w-0 flex-1 rounded-full ${
-                  n <= step ? "bg-accent-cyan/80" : "bg-white/10"
+                  n <= step ? "bg-accent-cyan/80" : "bg-muted"
                 } ${n < step ? "cursor-pointer" : ""}`}
               />
             ))}
@@ -2955,16 +2955,16 @@ export function RouteGenerator({
                   n === step
                     ? "border-accent-cyan/60 bg-accent-cyan/[0.12] text-accent-cyan"
                     : n < step
-                      ? "border-white/[0.12] bg-transparent text-accent-cyan/55"
-                      : "border-white/[0.12] bg-transparent text-white/35"
+                      ? "border-border bg-transparent text-accent-cyan/55"
+                      : "border-border bg-transparent text-muted-foreground"
                 }`}
               >
                 {n}
               </span>
-              {n < 4 && <span className="h-px w-4 bg-white/10" />}
+              {n < 4 && <span className="h-px w-4 bg-muted" />}
             </button>
           ))}
-          <span className="ml-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+          <span className="ml-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             {step === 1
               ? "Waar rijd je?"
               : step === 2
@@ -2981,7 +2981,7 @@ export function RouteGenerator({
       {/* Stap 1 — vorm: bepaalt wat je op de kaart doet */}
       {stepVisible(1) && (<>
       <div className="mt-5">
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           WAT VOOR ROUTE?
         </label>
         <div className="flex gap-2">
@@ -3004,7 +3004,7 @@ export function RouteGenerator({
               key={m.v}
               type="button"
               onClick={() => setMode(m.v)}
-              className={`flex-1 rounded-xl border py-2.5 text-[13px] transition-colors ${mode === m.v ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
+              className={`flex-1 rounded-xl border py-2.5 text-[13px] transition-colors ${mode === m.v ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-border bg-transparent text-muted-foreground"}`}
             >
               {m.l}
             </button>
@@ -3015,10 +3015,10 @@ export function RouteGenerator({
       {/* Stap 2 — de kaart: hét hart van de planner, altijd direct zichtbaar.
           Lus/A→B: tik = startpunt. Eigen route: tik = punten plaatsen. */}
       <div className="mt-4">
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           KIES OP DE KAART
         </label>
-        <p className="text-[12px] leading-relaxed text-white/40">
+        <p className="text-[12px] leading-relaxed text-muted-foreground">
           {mode === "waypoints"
             ? placeMode === "start"
               ? "Tik op de kaart om je startpunt (groene S) te zetten. Daarna schakelt de kaart automatisch door naar routepunten."
@@ -3088,33 +3088,33 @@ export function RouteGenerator({
               }}
               placeholder="Startpunt zoeken — adres of plaats…"
               aria-label="Startpunt zoeken op adres of plaats"
-              className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-transparent px-3.5 py-2 font-sans text-[13px] text-white/80 placeholder:text-white/30 focus:border-accent-cyan/40 focus:outline-none"
+              className="min-w-0 flex-1 rounded-xl border border-border bg-transparent px-3.5 py-2 font-sans text-[13px] text-foreground/80 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
             />
             <button
               type="button"
               onClick={zoekStartAdres}
               disabled={adresQ.trim().length < 2 || geocode.isPending}
-              className="rounded-xl border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-accent-cyan/30 disabled:opacity-40"
+              className="rounded-xl border border-border px-3.5 py-2 font-sans text-[12px] text-muted-foreground transition hover:border-accent-cyan/30 disabled:opacity-40"
             >
               {geocode.isPending ? "Zoeken…" : "Zoek"}
             </button>
           </div>
           {adresResults && adresResults.length === 0 && (
-            <p className="mt-1.5 text-[12px] text-white/40">
+            <p className="mt-1.5 text-[12px] text-muted-foreground">
               Geen plek gevonden voor &ldquo;{adresQ.trim()}&rdquo; — probeer een
               vollediger adres of andere plaatsnaam.
             </p>
           )}
           {adresResults && adresResults.length > 0 && (
-            <ul className="mt-1.5 overflow-hidden rounded-xl border border-white/[0.1]">
+            <ul className="mt-1.5 overflow-hidden rounded-xl border border-border">
               {adresResults.map((r, i) => (
                 <li key={`${r.lat},${r.lon},${i}`}>
                   <button
                     type="button"
                     onClick={() => kiesStartAdres(r)}
-                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left font-sans text-[12px] text-white/70 transition hover:bg-accent-cyan/10 hover:text-white"
+                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left font-sans text-[12px] text-muted-foreground transition hover:bg-accent-cyan/10 hover:text-foreground"
                   >
-                    <MapPin className="h-3.5 w-3.5 shrink-0 text-white/40" strokeWidth={1.75} />
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={1.75} />
                     {r.label}
                   </button>
                 </li>
@@ -3127,13 +3127,13 @@ export function RouteGenerator({
             type="button"
             onClick={useMyLocation}
             disabled={geoState === "loading"}
-            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-accent-cyan/30 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full border border-border px-3.5 py-2 font-sans text-[12px] text-muted-foreground transition hover:border-accent-cyan/30 disabled:opacity-50"
           >
             <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
             {geoState === "loading" ? "Locatie ophalen…" : "Gebruik mijn locatie"}
           </button>
           {mode === "waypoints" ? (
-            <span className="font-mono text-[10px] text-white/40">
+            <span className="font-mono text-[10px] text-muted-foreground">
               {startPoint ? (
                 <>
                   start <IconCheck className="inline h-3 w-3" aria-hidden /> ·{" "}
@@ -3150,7 +3150,7 @@ export function RouteGenerator({
             </span>
           ) : (
             start && (
-              <span className="font-mono text-[10px] text-white/40">
+              <span className="font-mono text-[10px] text-muted-foreground">
                 Startpunt: {start.lat.toFixed(4)}, {start.lon.toFixed(4)}
               </span>
             )
@@ -3167,7 +3167,7 @@ export function RouteGenerator({
                   setMeetpoints([])
                   setPlaceMode("start")
                 }}
-                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-negative/85"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-negative/85"
               >
                 wis alles
               </button>
@@ -3179,7 +3179,7 @@ export function RouteGenerator({
       {/* Sport — only shown when more than one sport family is active */}
       {stepVisible(2) && SPORT_OPTIONS.length > 1 && (
       <div className="mt-5">
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           SPORT
         </label>
         <div className="grid grid-cols-4 gap-2">
@@ -3191,15 +3191,15 @@ export function RouteGenerator({
               className={`flex flex-col items-center rounded-xl border py-2.5 transition-colors ${
                 sport === s.value
                   ? "border-accent-cyan/50 bg-accent-cyan/[0.12]"
-                  : "border-white/10 bg-transparent"
+                  : "border-border bg-transparent"
               }`}
             >
               <span
-                className={`text-[12px] font-medium ${sport === s.value ? "text-accent-cyan" : "text-white/60"}`}
+                className={`text-[12px] font-medium ${sport === s.value ? "text-accent-cyan" : "text-muted-foreground"}`}
               >
                 {s.label}
               </span>
-              <span className="font-mono text-[8px] text-white/30">{s.hint}</span>
+              <span className="font-mono text-[8px] text-muted-foreground">{s.hint}</span>
             </button>
           ))}
         </div>
@@ -3209,7 +3209,7 @@ export function RouteGenerator({
       {/* Bike type — only for cycling; Sparki auto-selects the routing profile */}
       {stepVisible(2) && sport === "cycling" && (
         <div className="mt-4">
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             FIETSTYPE
           </label>
           {derivedBike && !bikeTouched && (
@@ -3224,14 +3224,14 @@ export function RouteGenerator({
                 key={b.value}
                 type="button"
                 onClick={() => chooseBike(b.value)}
-                className={`flex flex-1 flex-col items-center rounded-xl border py-2.5 transition-colors ${bikeType === b.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12]" : "border-white/10 bg-transparent"}`}
+                className={`flex flex-1 flex-col items-center rounded-xl border py-2.5 transition-colors ${bikeType === b.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12]" : "border-border bg-transparent"}`}
               >
                 <span
-                  className={`text-[13px] font-medium ${bikeType === b.value ? "text-accent-cyan" : "text-white/60"}`}
+                  className={`text-[13px] font-medium ${bikeType === b.value ? "text-accent-cyan" : "text-muted-foreground"}`}
                 >
                   {b.label}
                 </span>
-                <span className="font-mono text-[9px] text-white/30">
+                <span className="font-mono text-[9px] text-muted-foreground">
                   {b.hint}
                 </span>
               </button>
@@ -3245,7 +3245,7 @@ export function RouteGenerator({
               zijn (eerlijkheid boven eenvoud). */}
           {(heeft("onverhard") || unpavedAdjustable) && (
           <div className="mt-4">
-            <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+            <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               ONVERHARD-VOORKEUR
             </label>
             {unpavedAdjustable ? (
@@ -3259,13 +3259,13 @@ export function RouteGenerator({
                     value={unpavedPct}
                     onChange={(e) => chooseUnpavedPct(Number(e.target.value))}
                     aria-label="Onverhard-voorkeur (percentage)"
-                    className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-accent-cyan"
+                    className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-accent-cyan"
                   />
                   <span className="w-11 text-right font-mono text-[12px] text-accent-cyan">
                     {unpavedPct}%
                   </span>
                 </div>
-                <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
                   De kandidaat die hier het dichtst bij komt wordt gekozen — een
                   voorkeur, geen garantie op een exact aandeel onverhard.
                 </p>
@@ -3281,14 +3281,14 @@ export function RouteGenerator({
                     value={0}
                     disabled
                     aria-label="Onverhard-voorkeur (vast op 0 voor racefiets)"
-                    className="h-1.5 flex-1 appearance-none rounded-full bg-white/15"
+                    className="h-1.5 flex-1 appearance-none rounded-full bg-muted"
                   />
-                  <span className="w-11 text-right font-mono text-[12px] text-white/50">
+                  <span className="w-11 text-right font-mono text-[12px] text-muted-foreground">
                     0%
                   </span>
                 </div>
-                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] leading-relaxed text-white/40">
-                  <Lock className="h-3 w-3 shrink-0 text-white/40" aria-hidden />
+                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                  <Lock className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
                   Racefiets: altijd volledig verhard
                 </p>
               </>
@@ -3302,7 +3302,7 @@ export function RouteGenerator({
               Vanaf de Go-weergaven; verborgen = telt niet mee. */}
           {heeft("nWegen") && (
           <div className="mt-4">
-            <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+            <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
               DRUKKE WEGEN
             </label>
             <label className="flex cursor-pointer items-start gap-2.5">
@@ -3311,11 +3311,11 @@ export function RouteGenerator({
                 checked={avoidBusyRoads}
                 onChange={(e) => chooseAvoidBusyRoads(e.target.checked)}
                 aria-label="Vermijd drukke N-wegen"
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-white/25 bg-white/10 accent-accent-cyan"
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border bg-muted accent-accent-cyan"
               />
-              <span className="text-[12px] leading-relaxed text-white/70">
+              <span className="text-[12px] leading-relaxed text-muted-foreground">
                 Vermijd drukke N-wegen
-                <span className="mt-0.5 block text-[11px] text-white/40">
+                <span className="mt-0.5 block text-[11px] text-muted-foreground">
                   De route gaat waar mogelijk om doorgaande wegen
                   zonder vrijliggend fietspad heen — een voorkeur, geen
                   garantie. Lukt het in dit gebied niet, dan staat dat
@@ -3331,7 +3331,7 @@ export function RouteGenerator({
       {/* Elevation preference — vanaf de Go-weergaven */}
       {stepVisible(2) && heeft("hoogte") && (
       <div className="mt-4">
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           HOOGTEVOORKEUR
         </label>
         <div className="flex gap-2">
@@ -3340,7 +3340,7 @@ export function RouteGenerator({
               key={e.value}
               type="button"
               onClick={() => setElevationPreference(e.value)}
-              className={`flex-1 rounded-xl border py-2.5 text-[13px] transition-colors ${elevationPreference === e.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
+              className={`flex-1 rounded-xl border py-2.5 text-[13px] transition-colors ${elevationPreference === e.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-border bg-transparent text-muted-foreground"}`}
             >
               {e.label}
             </button>
@@ -3355,7 +3355,7 @@ export function RouteGenerator({
           selectie. */}
       {stepVisible(2) && klimActief && (
       <div className="mt-4" data-testid="klimmen-toevoegen">
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           KLIMMEN TOEVOEGEN
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -3374,20 +3374,20 @@ export function RouteGenerator({
                 setKlimKeuze(o.value)
                 if (o.value !== "specifiek") setGekozenKlim(null)
               }}
-              className={`min-h-11 rounded-xl border px-3 py-2.5 text-[13px] transition-colors ${klimKeuze === o.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
+              className={`min-h-11 rounded-xl border px-3 py-2.5 text-[13px] transition-colors ${klimKeuze === o.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-border bg-transparent text-muted-foreground"}`}
             >
               {o.label}
             </button>
           ))}
         </div>
         {klimKeuze === "enkele" && (
-          <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
             De echte kandidaat met wat klimwerk wint — een voorkeur, geen
             garantie in vlak gebied.
           </p>
         )}
         {klimKeuze === "max" && (
-          <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
             De route met de meeste echte hoogtemeters rond je start wint — een
             eerlijke keuze uit echte kandidaten, geen garantie.
           </p>
@@ -3395,7 +3395,7 @@ export function RouteGenerator({
         {klimKeuze === "specifiek" && !gekozenKlim && (
           <div className="mt-2.5">
             {!start ? (
-              <p className="text-[12px] leading-relaxed text-white/50">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 Kies eerst een startpunt (stap 1) — Sparki zoekt dan klimmen in
                 de buurt van je start.
               </p>
@@ -3427,7 +3427,7 @@ export function RouteGenerator({
       {stepVisible(2) && heeft("training") && (
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             TRAININGSTYPE
           </label>
           <select
@@ -3444,7 +3444,7 @@ export function RouteGenerator({
           </select>
         </div>
         <div>
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             KOPPEL TRAINING
           </label>
           {(() => {
@@ -3509,13 +3509,13 @@ export function RouteGenerator({
                     getoond.
                   </p>
                 ) : nearby.length === 0 && !searchActive ? (
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
                     Geen open trainingen rond vandaag in je kalender. Plan
                     een training in of zoek hierboven in je overige
                     trainingen.
                   </p>
                 ) : searchActive && extra.length === 0 ? (
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
                     Geen overige trainingen gevonden voor “{workoutSearch.trim()}”.
                   </p>
                 ) : null}
@@ -3529,7 +3529,7 @@ export function RouteGenerator({
       {/* Distance (loop, manual) */}
       {stepVisible(1) && mode === "loop" && (
         <div className="mt-4">
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             DOELAFSTAND (KM)
           </label>
           <input
@@ -3547,7 +3547,7 @@ export function RouteGenerator({
             disabled={!!linkedWorkout?.targetDurationMin}
           />
           {!!linkedWorkout?.targetDurationMin && (
-            <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
               De afstand volgt uit de gekoppelde training.
             </p>
           )}
@@ -3557,7 +3557,7 @@ export function RouteGenerator({
       {/* Destination (ptp) */}
       {stepVisible(1) && mode === "ptp" && (
         <div className="mt-4">
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             BESTEMMING
           </label>
           <input
@@ -3572,7 +3572,7 @@ export function RouteGenerator({
       {/* Interactive builder — waypoints + verzamelpunten */}
       {stepVisible(1) && mode === "waypoints" && (
         <div className="mt-4">
-          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
             TEKEN JE EIGEN ROUTE
           </label>
           <div className="flex flex-wrap gap-2">
@@ -3591,7 +3591,7 @@ export function RouteGenerator({
                   key={p.v}
                   type="button"
                   onClick={() => setPlaceMode(p.v)}
-                  className={`flex min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] transition-colors sm:min-w-0 ${active ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
+                  className={`flex min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] transition-colors sm:min-w-0 ${active ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-border bg-transparent text-muted-foreground"}`}
                 >
                   <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                   {p.l}
@@ -3617,7 +3617,7 @@ export function RouteGenerator({
               />
             ) : (
               <PlaceholderRow
-                icon={<MapPin className="h-3.5 w-3.5 shrink-0 text-white/30" strokeWidth={1.75} />}
+                icon={<MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={1.75} />}
                 label="Startpunt"
                 hint="Tik op de kaart om je startpunt te plaatsen"
                 active={placeMode === "start"}
@@ -3648,7 +3648,7 @@ export function RouteGenerator({
               />
             ) : (
               <PlaceholderRow
-                icon={<Flag className="h-3.5 w-3.5 shrink-0 text-white/30" strokeWidth={1.75} />}
+                icon={<Flag className="h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={1.75} />}
                 label="Finish"
                 hint="Tik op de kaart om je eindpunt te plaatsen — of laat leeg voor een rondje"
                 active={placeMode === "end"}
@@ -3665,7 +3665,7 @@ export function RouteGenerator({
       {/* Free-text wish — sportieve weergaven; geldt voor elke vorm */}
       {stepVisible(3) && heeft("wens") && (
       <div className="mt-4">
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           SPECIFIEKE WENS (OPTIONEEL)
         </label>
         <textarea
@@ -3675,7 +3675,7 @@ export function RouteGenerator({
           value={wish}
           onChange={(e) => setWish(e.target.value)}
         />
-        <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
           Hier wordt rekening mee gehouden. Kan een wens niet worden ingevuld,
           dan hoor je dat — met een passend alternatief.
         </p>
@@ -3685,8 +3685,8 @@ export function RouteGenerator({
       {stepVisible(3) && (<>
       {/* Samen rijden? — de plek waar je je maten kiest. (Bordjes-sprint is
           gestopt — veiligheidsrisico op openbare weg, besluit 31-07-2026.) */}
-      <div className="mt-4 border-t border-white/[0.08] pt-4">
-        <span className="label-xs text-white/35">SAMEN RIJDEN?</span>
+      <div className="mt-4 border-t border-border pt-4">
+        <span className="label-xs text-muted-foreground">SAMEN RIJDEN?</span>
         <div className="mt-2 flex items-center gap-1.5">
           <button
             type="button"
@@ -3697,7 +3697,7 @@ export function RouteGenerator({
             className={`rounded-full px-3.5 py-1.5 font-sans text-[12px] transition ${
               !withOthers
                 ? "bg-accent-cyan text-on-accent"
-                : "border border-white/10 text-white/55 hover:text-white/85"
+                : "border border-border text-muted-foreground hover:text-foreground/90"
             }`}
           >
             Alleen
@@ -3708,7 +3708,7 @@ export function RouteGenerator({
             className={`rounded-full px-3.5 py-1.5 font-sans text-[12px] transition ${
               withOthers
                 ? "bg-accent-cyan text-on-accent"
-                : "border border-white/10 text-white/55 hover:text-white/85"
+                : "border border-border text-muted-foreground hover:text-foreground/90"
             }`}
           >
             Met anderen
@@ -3716,14 +3716,14 @@ export function RouteGenerator({
         </div>
         {withOthers && (
           <div className="mt-2.5">
-            <p className="text-[12px] leading-relaxed text-white/50">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
               {sport === "walking" || sport === "hiking"
                 ? "Kies met wie je op pad gaat — dat zie je terug in de navigatie."
                 : "Kies met wie je rijdt — dat zie je terug in de navigatie."}
             </p>
             {friends.length > 0 ? (
               <>
-                <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                   {sport === "walking" || sport === "hiking"
                     ? "Wie gaat er mee?"
                     : "Wie fietst er mee?"}
@@ -3745,7 +3745,7 @@ export function RouteGenerator({
                         className={`rounded-full px-3 py-1.5 font-sans text-[12px] transition ${
                           active
                             ? "border border-accent-cyan/50 bg-accent-cyan/15 text-accent-cyan"
-                            : "border border-white/10 text-white/55 hover:text-white/85"
+                            : "border border-border text-muted-foreground hover:text-foreground/90"
                         }`}
                       >
                         {f.displayName}
@@ -3755,7 +3755,7 @@ export function RouteGenerator({
                 </div>
               </>
             ) : (
-              <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                 Nog geen vrienden gekoppeld — voeg ze toe via Samen, dan kun je
                 ze hier kiezen.
               </p>
@@ -3767,11 +3767,11 @@ export function RouteGenerator({
 
       {/* Stap 4 — samenvatting: alles nog één keer nalopen vóór het rekenen */}
       {stepVisible(4) && (
-        <div className="mt-5 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4">
-          <span className="label-xs text-white/35">JOUW KEUZES</span>
-          <div className="mt-2.5 flex flex-col gap-1.5 text-[13px] text-white/75">
+        <div className="mt-5 rounded-2xl border border-border bg-muted p-4">
+          <span className="label-xs text-muted-foreground">JOUW KEUZES</span>
+          <div className="mt-2.5 flex flex-col gap-1.5 text-[13px] text-muted-foreground">
             <p>
-              <span className="text-white/40">Route: </span>
+              <span className="text-muted-foreground">Route: </span>
               {mode === "loop"
                 ? "Lus (rondje)"
                 : mode === "ptp"
@@ -3787,7 +3787,7 @@ export function RouteGenerator({
                 ` · ${allPoints.length} punt${allPoints.length === 1 ? "" : "en"}`}
             </p>
             <p>
-              <span className="text-white/40">Start: </span>
+              <span className="text-muted-foreground">Start: </span>
               {mode === "waypoints"
                 ? startPoint
                   ? `${startPoint[0].toFixed(4)}, ${startPoint[1].toFixed(4)}`
@@ -3797,7 +3797,7 @@ export function RouteGenerator({
                   : "nog niet gekozen"}
             </p>
             <p>
-              <span className="text-white/40">
+              <span className="text-muted-foreground">
                 {sport === "cycling" ? "Fiets & hoogte: " : "Sport & hoogte: "}
               </span>
               {sport === "cycling"
@@ -3813,7 +3813,7 @@ export function RouteGenerator({
             </p>
             {heeft("training") && (
             <p>
-              <span className="text-white/40">Training: </span>
+              <span className="text-muted-foreground">Training: </span>
               {linkedWorkout
                 ? `gekoppeld aan ${linkedWorkout.title}`
                 : effectiefTrainingstype.charAt(0).toUpperCase() +
@@ -3822,13 +3822,13 @@ export function RouteGenerator({
             )}
             {effectieveWens && (
               <p>
-                <span className="text-white/40">Wens: </span>
+                <span className="text-muted-foreground">Wens: </span>
                 {effectieveWens}
               </p>
             )}
             {klimActief && effectieveKlimKeuze !== "geen" && (
               <p>
-                <span className="text-white/40">Klimmen: </span>
+                <span className="text-muted-foreground">Klimmen: </span>
                 {effectieveKlimKeuze === "enkele"
                   ? "enkele klimmen (voorkeur)"
                   : effectieveKlimKeuze === "max"
@@ -3839,7 +3839,7 @@ export function RouteGenerator({
               </p>
             )}
             <p>
-              <span className="text-white/40">Gezelschap: </span>
+              <span className="text-muted-foreground">Gezelschap: </span>
               {withOthers
                 ? `je rijdt met anderen${
                     buddyIds.length > 0
@@ -3874,7 +3874,7 @@ export function RouteGenerator({
                   mode === "loop" ? runGenerateOptions() : runGenerate()
                 }
                 disabled={genPending}
-                className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30 disabled:opacity-50"
+                className="rounded-full border border-border px-3 py-1.5 font-sans text-[12px] text-muted-foreground transition hover:border-border disabled:opacity-50"
               >
                 Opnieuw proberen
               </button>
@@ -3885,7 +3885,7 @@ export function RouteGenerator({
                     setError(null)
                     setStep(3)
                   }}
-                  className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
+                  className="rounded-full border border-border px-3 py-1.5 font-sans text-[12px] text-muted-foreground transition hover:border-border"
                 >
                   Wensen aanpassen (stap 3)
                 </button>
@@ -3896,14 +3896,14 @@ export function RouteGenerator({
                   setError(null)
                   setStep(1)
                 }}
-                className="rounded-full border border-white/15 px-3 py-1.5 font-sans text-[12px] text-white/75 transition hover:border-white/30"
+                className="rounded-full border border-border px-3 py-1.5 font-sans text-[12px] text-muted-foreground transition hover:border-border"
               >
                 Startpunt of afstand aanpassen
               </button>
             </div>
           )}
           {step >= 3 && (
-            <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
               Je keuzes zijn bewaard — pas gerust één ding aan (korter, ander
               startpunt of soepelere voorkeuren) en probeer opnieuw.
             </p>
@@ -3918,7 +3918,7 @@ export function RouteGenerator({
               ? // F1: primaire actie altijd bereikbaar op telefoon — vaste balk
                 // onderaan het paneel, met veilige schermrand. Desktop
                 // ongewijzigd (lg:static).
-                "sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 -mx-5 w-auto max-w-none rounded-2xl bg-map-panel/95 px-5 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-md lg:static lg:z-auto lg:mx-auto lg:w-full lg:max-w-md lg:rounded-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+                "sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 -mx-5 w-auto max-w-none rounded-2xl bg-card px-5 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-md lg:static lg:z-auto lg:mx-auto lg:w-full lg:max-w-md lg:rounded-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
               : ""
           }`}
           data-testid={mobielV2 ? "mobiele-actiebalk" : undefined}
@@ -3932,7 +3932,7 @@ export function RouteGenerator({
                 setError(null)
                 setStep((s) => Math.max(1, s - 1))
               }}
-              className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
+              className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-border py-3.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-border"
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Terug
             </button>
@@ -4044,7 +4044,7 @@ export function RouteGenerator({
               setMeetpoints([])
               setStep(4)
             }}
-            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-accent-cyan/80"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-accent-cyan/80"
           >
             <ArrowLeft className="h-3 w-3" aria-hidden="true" /> terug naar de stappen
           </button>
@@ -4056,8 +4056,8 @@ export function RouteGenerator({
           fail-closed blokkadecontrole. Daaronder pas de nieuwe voorstellen. */}
       {(mode === "loop" ? !candidate : mode === "ptp") &&
         (options || bekend) && (
-        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/[0.08] pt-5">
-          <span className="label-xs text-white/35">RESULTATEN</span>
+        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-5">
+          <span className="label-xs text-muted-foreground">RESULTATEN</span>
           {(
             [
               ["alles", "Alles"],
@@ -4072,7 +4072,7 @@ export function RouteGenerator({
               className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
                 bekendFilter === val
                   ? "border-accent-cyan/50 text-accent-cyan/90"
-                  : "border-white/[0.12] text-white/40 hover:text-white/70"
+                  : "border-border text-muted-foreground hover:text-muted-foreground"
               }`}
             >
               {label}
@@ -4085,9 +4085,9 @@ export function RouteGenerator({
         bekend &&
         bekendFilter !== "nieuw" && (
         <div className="mt-4">
-          <span className="label-xs text-white/35">BEKENDE ROUTES</span>
+          <span className="label-xs text-muted-foreground">BEKENDE ROUTES</span>
           {bekend.length === 0 ? (
-            <p className="mt-1 text-[12px] leading-relaxed text-white/40">
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
               Geen passende route gevonden in je eigen ritten, bibliotheek of
               gedeelde routes — hieronder alleen nieuwe voorstellen.
             </p>
@@ -4098,7 +4098,7 @@ export function RouteGenerator({
                   key={m.routeId}
                   className={`min-w-0 rounded-2xl border p-4 ${
                     m.bruikbaar
-                      ? "border-white/[0.1] bg-white/[0.03] hover:border-accent-cyan/40"
+                      ? "border-border bg-muted hover:border-accent-cyan/40"
                       : "border-warning/40 bg-warning/[0.04]"
                   } transition-colors`}
                 >
@@ -4109,11 +4109,11 @@ export function RouteGenerator({
                     {m.originLabel}
                   </span>
                   <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-2.5">
-                    <span className="truncate font-sans text-lg font-light tracking-tight text-white/90">
+                    <span className="truncate font-sans text-lg font-light tracking-tight text-foreground/90">
                       {m.name}
                     </span>
                   </div>
-                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[11px] tabular-nums text-white/45">
+                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[11px] tabular-nums text-muted-foreground">
                     <span className="whitespace-nowrap">
                       {m.distanceKm != null
                         ? `${Math.round(m.distanceKm)} km`
@@ -4139,7 +4139,7 @@ export function RouteGenerator({
                     {m.matchReasons.map((r) => (
                       <li
                         key={r}
-                        className="text-[11px] leading-relaxed text-white/50"
+                        className="text-[11px] leading-relaxed text-muted-foreground"
                       >
                         · {r}
                       </li>
@@ -4153,7 +4153,7 @@ export function RouteGenerator({
                       {m.verificatie.reden}
                     </p>
                   ) : m.ownership === "gedeeld" ? (
-                    <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                    <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                       Gedeelde route (veilige weergave) — open hem via je
                       routebibliotheek om hem te gebruiken.
                     </p>
@@ -4177,7 +4177,7 @@ export function RouteGenerator({
                           type="button"
                           disabled={generate.isPending}
                           onClick={() => runGenerate(undefined, m.routeId)}
-                          className="w-full rounded-xl border border-white/[0.15] py-2 font-sans text-[12px] text-white/70 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50"
+                          className="w-full rounded-xl border border-border py-2 font-sans text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50"
                         >
                           Maak hiervan een nieuwe variant
                         </button>
@@ -4200,7 +4200,7 @@ export function RouteGenerator({
                 onClick={() =>
                   mode === "loop" ? doGenerateOptions() : doGenerate()
                 }
-                className="mt-4 w-full rounded-xl border border-white/[0.15] py-2.5 font-sans text-[13px] text-white/75 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50 lg:w-auto lg:px-5"
+                className="mt-4 w-full rounded-xl border border-border py-2.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/85 disabled:opacity-50 lg:w-auto lg:px-5"
               >
                 {genPending
                   ? "Nieuwe voorstellen worden gemaakt…"
@@ -4212,11 +4212,11 @@ export function RouteGenerator({
 
       {/* Loop mode: pick one of the 3 distance variants Sparki proposed */}
       {mode === "loop" && options && !candidate && bekendFilter !== "bekend" && (
-        <div className="mt-5 border-t border-white/[0.08] pt-5">
-          <span className="label-xs text-white/35">
+        <div className="mt-5 border-t border-border pt-5">
+          <span className="label-xs text-muted-foreground">
             NIEUWE VOORSTELLEN VAN SPARKI
           </span>
-          <p className="mt-1 text-[12px] leading-relaxed text-white/40">
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
             {options.length > 1
               ? "Varianten rond je gekozen afstand — korter, zoals gevraagd en langer. Bekijk de kaart en het hoogteprofiel en kies wat past."
               : "Rond deze afstand is één passende lus gevonden. Kies hem om de details en navigatie te zien."}
@@ -4225,7 +4225,7 @@ export function RouteGenerator({
             {options.map((o) => (
               <div
                 key={o.candidateId}
-                className="min-w-0 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4 transition-colors hover:border-accent-cyan/40"
+                className="min-w-0 rounded-2xl border border-border bg-muted p-4 transition-colors hover:border-accent-cyan/40"
               >
                 <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5">
                   <span
@@ -4235,13 +4235,13 @@ export function RouteGenerator({
                     {(o as RouteCandidate & { variant?: string }).variant ??
                       "Route"}
                   </span>
-                  <span className="font-sans text-2xl font-light tracking-tight text-white/90">
+                  <span className="font-sans text-2xl font-light tracking-tight text-foreground/90">
                     {o.distanceKm != null
                       ? `${Math.round(o.distanceKm)} km`
                       : "—"}
                   </span>
                 </div>
-                <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[11px] tabular-nums text-white/45">
+                <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[11px] tabular-nums text-muted-foreground">
                   <span className="whitespace-nowrap">
                     {o.elevationGainM != null
                       ? `${o.elevationGainM} m omhoog`
@@ -4293,7 +4293,7 @@ export function RouteGenerator({
 
       {/* Proposed candidate */}
       {candidate && (
-        <div className="mt-5 border-t border-white/[0.08] pt-5">
+        <div className="mt-5 border-t border-border pt-5">
           {mode === "loop" && options && options.length > 1 && (
             <button
               type="button"
@@ -4301,12 +4301,12 @@ export function RouteGenerator({
                 setCandidate(null)
                 setMeetpoints([])
               }}
-              className="mb-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-accent-cyan/80"
+              className="mb-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-accent-cyan/80"
             >
               <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Andere afstand kiezen
             </button>
           )}
-          <h4 className="font-sans text-lg font-light tracking-tight text-white/90">
+          <h4 className="font-sans text-lg font-light tracking-tight text-foreground/90">
             {candidate.name}
           </h4>
           {/* Herkomstlabel in de gemengde resultatenlijst (taak #512):
@@ -4326,22 +4326,22 @@ export function RouteGenerator({
               verificatie zichtbaar mee. */}
           {klimActief && effectieveKlimKeuze !== "geen" && (
             <div
-              className="mt-3 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-3.5"
+              className="mt-3 rounded-2xl border border-border bg-muted p-3.5"
               data-testid="klim-resultaat"
             >
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Klimmen op deze route
               </span>
               {candidate.climbInclusion && (
                 <p
-                  className={`mt-1.5 text-[12px] leading-relaxed ${candidate.climbInclusion.verified ? "text-emerald-300/85" : "text-amber-300/85"}`}
+                  className={`mt-1.5 text-[12px] leading-relaxed ${candidate.climbInclusion.verified ? "text-[color:var(--color-positive)]" : "text-[color:var(--color-warning)]"}`}
                 >
                   {candidate.climbInclusion.verified
                     ? `✓ ${candidate.climbInclusion.name} ligt aantoonbaar op deze route (top ${candidate.climbInclusion.offsetM} m van de routelijn).`
                     : `${candidate.climbInclusion.name} kon niet op de route worden geverifieerd.`}
                 </p>
               )}
-              <div className="mt-2 flex flex-col gap-1 font-mono text-[12px] tabular-nums text-white/70">
+              <div className="mt-2 flex flex-col gap-1 font-mono text-[12px] tabular-nums text-muted-foreground">
                 <span>
                   Aantal klimmen: {candidate.climbs.length}
                 </span>
@@ -4388,7 +4388,7 @@ export function RouteGenerator({
                     setOptions(null)
                     setStep(2)
                   }}
-                  className="mt-2.5 min-h-11 rounded-xl border border-white/[0.12] px-3 py-2 text-[13px] text-white/70 transition-colors hover:border-white/25"
+                  className="mt-2.5 min-h-11 rounded-xl border border-border px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:border-border"
                 >
                   Klim vervangen of verwijderen
                 </button>
@@ -4399,8 +4399,8 @@ export function RouteGenerator({
           {/* Andere echte voorstellen uit dezelfde generatieronde — de motor
               bouwde meerdere lussen; wissel gerust, de huidige blijft kiesbaar. */}
           {candidate.alternates && candidate.alternates.length > 0 && (
-            <div className="mt-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3">
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+            <div className="mt-3 rounded-2xl border border-border bg-muted p-3">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Andere voorstellen uit deze ronde
               </span>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -4418,15 +4418,15 @@ export function RouteGenerator({
                       setCandidate({ ...a, alternates: rest })
                       setMeetpoints([])
                     }}
-                    className="min-w-0 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-left transition-colors hover:border-accent-cyan/40"
+                    className="min-w-0 rounded-xl border border-border bg-muted p-3 text-left transition-colors hover:border-accent-cyan/40"
                   >
                     <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                      <span className="font-sans text-lg font-light tracking-tight text-white/90">
+                      <span className="font-sans text-lg font-light tracking-tight text-foreground/90">
                         {a.distanceKm != null
                           ? `${Math.round(a.distanceKm)} km`
                           : "—"}
                       </span>
-                      <span className="font-mono text-[11px] tabular-nums text-white/45">
+                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                         {a.elevationGainM != null
                           ? `${a.elevationGainM} m omhoog`
                           : "—"}
@@ -4451,7 +4451,7 @@ export function RouteGenerator({
 
           {candidate.geometry.length > 1 && (
             <>
-              <p className="mt-4 text-[12px] leading-relaxed text-white/40">
+              <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
                 Tik op de route om een verzamelpunt te plaatsen — bijvoorbeeld om
                 een vriend op te halen. Tik op een pin om hem te verwijderen.
                 Verzamelpunten veranderen de route niet; het zijn markeringen die
@@ -4492,7 +4492,7 @@ export function RouteGenerator({
 
           {/* Direct na de kaart: cijfers + acties — zodat meteen duidelijk is
               wat de volgende stap is. Detailpanelen volgen daaronder. */}
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/[0.07] pt-4">
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4">
             <Stat
               label="Afstand"
               value={
@@ -4521,7 +4521,7 @@ export function RouteGenerator({
               voorgevuld met de voorgestelde naam, de rijder kan hem hier
               direct aanpassen. Leeg laten valt terug op de voorgestelde naam. */}
           <label className="mt-4 block">
-            <span className="font-sans text-[11px] uppercase tracking-wider text-white/40">
+            <span className="font-sans text-[11px] uppercase tracking-wider text-muted-foreground">
               Routenaam
             </span>
             <input
@@ -4537,7 +4537,7 @@ export function RouteGenerator({
                     c ? { ...c, name: `Route ${new Date().toLocaleDateString("nl-NL")}` } : c,
                   )
               }}
-              className="mt-1 w-full rounded-xl border border-white/[0.12] bg-transparent px-3 py-2.5 font-sans text-[14px] text-white/85 outline-none transition-colors focus:border-white/30"
+              className="mt-1 w-full rounded-xl border border-border bg-transparent px-3 py-2.5 font-sans text-[14px] text-foreground/90 outline-none transition-colors focus:border-border"
               placeholder="Geef je route een naam"
             />
           </label>
@@ -4547,7 +4547,7 @@ export function RouteGenerator({
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-warning/90">
                 Niet volledig geverifieerd voor de racefiets
               </span>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-white/60">
+              <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
                 {candVerification.onbekendPct != null
                   ? `${String(candVerification.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
                   : "Een deel van het wegdek is onbekend"}
@@ -4561,7 +4561,7 @@ export function RouteGenerator({
                 kiest.
               </p>
               <div className="mt-2.5 flex flex-wrap items-center gap-3">
-                <label className="flex cursor-pointer items-center gap-2 text-[12px] text-white/75">
+                <label className="flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground">
                   <input
                     type="checkbox"
                     checked={unknownAccepted}
@@ -4596,7 +4596,7 @@ export function RouteGenerator({
               type="button"
               onClick={() => saveCandidate(false)}
               disabled={save.isPending || needsUnknownChoice}
-              className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
+              className="min-w-0 flex-1 basis-40 rounded-2xl border border-border py-3.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-border disabled:opacity-50"
             >
               {save.isPending ? "Opslaan…" : "Bewaar route"}
             </button>
@@ -4604,7 +4604,7 @@ export function RouteGenerator({
               type="button"
               onClick={() => runGenerate(Math.floor(Math.random() * 1e6))}
               disabled={generate.isPending}
-              className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
+              className="min-w-0 flex-1 basis-40 rounded-2xl border border-border py-3.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-border disabled:opacity-50"
             >
               {generate.isPending
                 ? genPhase === "veiligheidscontrole"
@@ -4647,13 +4647,13 @@ export function RouteGenerator({
                   setMeetpoints([])
                   setStep(1)
                 }}
-                className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
+                className="min-w-0 flex-1 basis-40 rounded-2xl border border-border py-3.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-border"
               >
                 Pas aan met routepunten
               </button>
             )}
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
             Na het bewaren vind je hieronder de route terug — met navigeren,
             downloaden (GPX/TCX) en delen naar je{" "}
             {sport === "walking" || sport === "hiking"
@@ -4686,7 +4686,7 @@ export function RouteGenerator({
             type="button"
             onClick={() => setDetailsOpen(true)}
             data-testid="route-details-knop"
-            className="mt-4 w-full rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-white/25 lg:hidden"
+            className="mt-4 w-full rounded-2xl border border-border py-3.5 font-sans text-[13px] text-muted-foreground transition-colors hover:border-border lg:hidden"
           >
             Details van deze route — hoogteprofiel, wegdek, opmerkingen
             {candidate.climbs.length > 0 ? ", klimmen" : ""}
@@ -4715,7 +4715,7 @@ export function RouteGenerator({
           )}
 
           {candidate.plannedWorkoutId != null && (
-            <p className="mt-3 font-mono text-[10px] text-white/35">
+            <p className="mt-3 font-mono text-[10px] text-muted-foreground">
               Wordt opgeslagen bij de gekoppelde training.
             </p>
           )}
@@ -4936,7 +4936,7 @@ export function RoutePanel({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={create.isPending}
-            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full border border-border px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border hover:text-foreground/90 disabled:opacity-50"
           >
             <Download className="h-4 w-4" strokeWidth={1.75} />
             {create.isPending ? "Verwerken…" : "GPX uploaden"}
@@ -4946,7 +4946,7 @@ export function RoutePanel({
           <button
             type="button"
             onClick={() => setShowExplorer(true)}
-            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
+            className="flex items-center gap-2 rounded-full border border-border px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border hover:text-foreground/90"
           >
             <MapIcon className="h-4 w-4" strokeWidth={1.75} />
             Bewaarde routes op kaart
@@ -4956,7 +4956,7 @@ export function RoutePanel({
           <button
             type="button"
             onClick={() => setShowSavedPicker((s) => !s)}
-            className={`flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90 ${showSavedPicker ? "border-accent-cyan/50 text-accent-cyan" : ""}`}
+            className={`flex items-center gap-2 rounded-full border border-border px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border hover:text-foreground/90 ${showSavedPicker ? "border-accent-cyan/50 text-accent-cyan" : ""}`}
           >
             <Flag className="h-4 w-4" strokeWidth={1.75} />
             Bewaarde routes ({routes.length})
@@ -4980,12 +4980,12 @@ export function RoutePanel({
                 }, 50)
                 setTimeout(() => setHighlightId(null), 2600)
               }}
-              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-white/[0.05]"
+              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted"
             >
-              <span className="min-w-0 flex-1 truncate text-[13px] text-white/85">
+              <span className="min-w-0 flex-1 truncate text-[13px] text-foreground/90">
                 {r.name}
               </span>
-              <span className="shrink-0 font-mono text-[10px] tabular-nums text-white/40">
+              <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
                 {r.distanceKm != null ? `${r.distanceKm} km` : "—"}
                 {r.elevationGainM != null ? ` · ${r.elevationGainM} m` : ""}
               </span>
@@ -5040,12 +5040,12 @@ export function RoutePanel({
       />
 
       {showMaken ? (
-        <p className="mt-2 text-[12px] leading-relaxed text-white/35">
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
           Plan je route direct op de kaart: kies je startpunt, stel afstand en
           voorkeuren in en genereer{view === null ? ". Of upload een GPX-bestand voor een echt hoogteprofiel." : "."}
         </p>
       ) : showGpx ? (
-        <p className="mt-2 text-[12px] leading-relaxed text-white/35">
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
           Upload een GPX-bestand (max 11 MB) — de echte lijn en het
           hoogteprofiel worden ingelezen en bij je bewaarde routes gezet.
         </p>
@@ -5139,7 +5139,7 @@ export function RoutePanel({
         <button
           type="button"
           onClick={clearSelection}
-          className="mt-4 flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
+          className="mt-4 flex items-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border hover:text-foreground/90"
         >
           ← Alle routes
         </button>
@@ -5148,11 +5148,11 @@ export function RoutePanel({
       {showBewaard && (
       <div className="mt-4 space-y-4">
         {isLoading && (view !== "bewaard" || selectedId != null) ? (
-          <div className="h-40 w-full animate-pulse rounded-xl bg-white/[0.06]" />
+          <div className="h-40 w-full animate-pulse rounded-xl bg-muted" />
         ) : view === "bewaard" && selectedId == null ? null : view ===
             "bewaard" && !routes.some((r) => r.id === selectedId) ? (
           <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-[12px] leading-relaxed text-white/40">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
               Deze route staat niet (meer) in je lijst.
             </p>
           </div>
@@ -5175,7 +5175,7 @@ export function RoutePanel({
           ))
         ) : (
           <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-[12px] leading-relaxed text-white/40">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
               Nog geen routes opgeslagen — plan er hierboven één op de kaart, of
               upload een GPX-bestand.
             </p>
@@ -5207,7 +5207,7 @@ function RouteProposalsInbox() {
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-accent-cyan/[0.18] bg-map-panel/[0.82] p-4 backdrop-blur-md">
+    <div className="mt-4 rounded-xl border border-accent-cyan/[0.18] bg-card p-4 backdrop-blur-md">
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan/70">
         Routevoorstellen
       </p>
@@ -5217,12 +5217,12 @@ function RouteProposalsInbox() {
           className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5"
         >
           <div className="min-w-0">
-            <p className="text-[13px] text-white/85">
+            <p className="text-[13px] text-foreground/90">
               {p.fromName} stelt "{p.route?.name ?? "een route"}" voor
               {p.route?.distanceKm ? ` · ${p.route.distanceKm} km` : ""}
             </p>
             {p.note && (
-              <p className="mt-0.5 text-[11px] text-white/45">{p.note}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{p.note}</p>
             )}
           </div>
           <div className="flex shrink-0 gap-2">
@@ -5260,7 +5260,7 @@ function RouteProposalsInbox() {
                   },
                 )
               }}
-              className="rounded-full border border-white/[0.14] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-white/30 disabled:opacity-40"
+              className="rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border disabled:opacity-40"
             >
               Wijs af
             </button>
@@ -5270,7 +5270,7 @@ function RouteProposalsInbox() {
       {verstuurd.length > 0 && (
         <div className="mt-3 space-y-1">
           {verstuurd.map((p) => (
-            <p key={p.id} className="text-[11px] text-white/40">
+            <p key={p.id} className="text-[11px] text-muted-foreground">
               Aan {p.toName}: "{p.route?.name ?? "route"}" —{" "}
               {statusLabel[p.status] ?? p.status}
             </p>

@@ -91,9 +91,9 @@ export function DsStarRating({
             onBlur={() => setHover(null)}
             className={cn(
               "rounded-sm p-0.5 transition-colors",
-              filled ? "text-amber-300" : "text-white/25",
+              filled ? "text-[color:var(--color-warning)]" : "text-muted-foreground",
               interactive &&
-                "cursor-pointer hover:text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
+                "cursor-pointer hover:text-[color:var(--color-warning)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
               !interactive && "cursor-default",
             )}
           >

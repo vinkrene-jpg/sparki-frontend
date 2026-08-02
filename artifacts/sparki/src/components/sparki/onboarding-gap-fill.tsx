@@ -119,7 +119,7 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <span className="font-sans text-sm text-white/40">Even kijken wat er nog mist…</span>
+        <span className="font-sans text-sm text-muted-foreground">Even kijken wat er nog mist…</span>
       </div>
     )
   }
@@ -127,10 +127,10 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
   if (fetchFailed && !data) {
     return (
       <div className="flex min-h-0 flex-1 flex-col justify-center gap-4">
-        <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-white">
+        <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-foreground">
           Even geen verbinding
         </h2>
-        <p className="text-pretty text-[13px] leading-relaxed text-white/45">
+        <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
           Ik kon niet controleren welke gegevens er nog missen. Probeer het
           opnieuw, of ga toch door — dan bouw ik je eerste schema met
           voorzichtige schattingen (die pas je later makkelijk aan).
@@ -164,10 +164,10 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-col gap-1.5 pt-2">
-        <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-white">
+        <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-foreground">
           {missing.length > 0 ? "Nog even dit" : "Alles compleet"}
         </h2>
-        <p className="text-pretty text-[13px] leading-relaxed text-white/45">
+        <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
           {missing.length > 0
             ? "Dit kon ik nergens vinden. Vul het aan, dan bouw ik je eerste schema."
             : "Ik heb alles wat ik nodig heb om je eerste schema te bouwen."}
@@ -177,7 +177,7 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
       <div className="-mx-6 mt-4 flex-1 space-y-5 overflow-y-auto px-6">
         {missing.map((field) => (
           <div key={field.key} className="flex flex-col gap-2">
-            <label className="font-sans text-sm font-medium text-white/80">
+            <label className="font-sans text-sm font-medium text-foreground/80">
               {field.label}
             </label>
 
@@ -230,9 +230,9 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
                   type={field.type === "number" ? "number" : "text"}
                   value={typeof values[field.key] === "string" ? (values[field.key] as string) : ""}
                   onChange={(e) => setText(field.key, e.target.value)}
-                  className="h-11 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 font-sans text-sm text-white/90 placeholder:text-white/25 focus:border-white/20 focus:outline-none"
+                  className="h-11 flex-1 rounded-xl border border-border bg-muted px-3 font-sans text-sm text-foreground/90 placeholder:text-muted-foreground focus:border-border focus:outline-none"
                 />
-                {field.unit && <span className="font-sans text-sm text-white/35">{field.unit}</span>}
+                {field.unit && <span className="font-sans text-sm text-muted-foreground">{field.unit}</span>}
               </div>
             )}
           </div>

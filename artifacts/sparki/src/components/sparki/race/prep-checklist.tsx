@@ -98,10 +98,10 @@ export function PrepChecklist({ race }: { race: Race }) {
   return (
     <div
       id="prep-checklist"
-      className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+      className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
           MATERIAAL & VOORBEREIDING
         </span>
         <span className="font-mono text-[11px] tabular-nums" style={{ color: ACCENT }}>
@@ -109,7 +109,7 @@ export function PrepChecklist({ race }: { race: Race }) {
         </span>
       </div>
 
-      <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full transition-all duration-300"
           style={{ width: `${pct}%`, background: ACCENT, boxShadow: `0 0 10px ${ACCENT}` }}
@@ -117,7 +117,7 @@ export function PrepChecklist({ race }: { race: Race }) {
       </div>
 
       {autoCount > 0 && (
-        <p className="mt-3 flex items-center gap-1.5 text-[11.5px] leading-relaxed text-cyan-300/65">
+        <p className="mt-3 flex items-center gap-1.5 text-[11.5px] leading-relaxed text-accent-cyan">
           <Sparkles size={12} className="shrink-0" />
           {autoCount} {autoCount === 1 ? "punt is" : "punten zijn"} alvast
           afgevinkt op basis van je recente materiaalcheck. Klopt het niet? Tik het uit.
@@ -156,14 +156,14 @@ export function PrepChecklist({ race }: { race: Race }) {
                 {checked ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
               </span>
               <span
-                className={`flex-1 text-[12.5px] ${checked ? "text-white/85" : "text-white/55"}`}
+                className={`flex-1 text-[12.5px] ${checked ? "text-foreground/90" : "text-muted-foreground"}`}
               >
                 {item.label}
               </span>
               {auto && (
                 <Sparkles
                   size={11}
-                  className="shrink-0 text-cyan-300/70"
+                  className="shrink-0 text-accent-cyan"
                   aria-label="Automatisch afgevinkt"
                 />
               )}
@@ -183,9 +183,9 @@ export function ChecklistStatus({ race }: { race: Race }) {
   const missing = PREP_CHECKLIST.filter((i) => !state[i.id])
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
           MATERIAALSTATUS
         </span>
         <span
@@ -196,11 +196,11 @@ export function ChecklistStatus({ race }: { race: Race }) {
         </span>
       </div>
       {missing.length > 0 ? (
-        <p className="mt-3 text-[12.5px] leading-relaxed text-white/55">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-muted-foreground">
           Nog te checken: {missing.map((m) => m.label).join(", ")}
         </p>
       ) : (
-        <p className="mt-3 text-[12.5px] text-white/70">Alles gecheckt — klaar om te racen.</p>
+        <p className="mt-3 text-[12.5px] text-muted-foreground">Alles gecheckt — klaar om te racen.</p>
       )}
     </div>
   )

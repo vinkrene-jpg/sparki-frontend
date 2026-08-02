@@ -34,7 +34,7 @@ export default function ParentToestemmingenPage() {
   if (profile && profile.activeRole !== "parent") {
     return (
       <ScreenShell section="Ouder">
-        <p className="text-[14px] text-white/60">
+        <p className="text-[14px] text-muted-foreground">
           Deze pagina hoort bij de ouderomgeving.
         </p>
       </ScreenShell>
@@ -50,34 +50,34 @@ export default function ParentToestemmingenPage() {
       <div className="space-y-5">
         <div>
           <SectionLabel n="01" title="Toestemmingen & privacy" />
-          <p className="mt-2 text-[13px] text-white/45">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Per kind bepaal je (of bekijk je) welke gegevenscategorieën met jou
             gedeeld worden. De regels volgen de leeftijd van je kind.
           </p>
         </div>
 
         {isLoading ? (
-          <div className="h-40 animate-pulse rounded-2xl bg-white/[0.05]" />
+          <div className="h-40 animate-pulse rounded-2xl bg-muted" />
         ) : isError ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.07] p-5 text-center">
-            <p className="text-[13px] text-red-300/90">
+            <p className="text-[13px] text-[color:var(--color-negative)]">
               Toestemmingen konden niet geladen worden.
             </p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="mt-3 rounded-full border border-white/[0.14] px-4 py-1.5 text-[13px] text-white/75"
+              className="mt-3 rounded-full border border-border px-4 py-1.5 text-[13px] text-foreground/75"
             >
               Opnieuw proberen
             </button>
           </div>
         ) : children.length === 0 ? (
           <div
-            className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md"
+            className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md"
             data-testid="toestemmingen-leeg"
           >
-            <Users className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
-            <p className="text-[14px] text-white/60">Nog geen kind gekoppeld</p>
+            <Users className="mx-auto mb-3 h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[14px] text-muted-foreground">Nog geen kind gekoppeld</p>
             <Link
               href="/invitations"
               className="mt-3 inline-flex items-center gap-1.5 text-[13px]"
@@ -102,7 +102,7 @@ export default function ParentToestemmingenPage() {
                       style={
                         active
                           ? { borderColor: "rgba(120,210,230,0.4)", color: ACCENT, background: "rgba(120,210,230,0.10)" }
-                          : { borderColor: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.6)" }
+                          : { borderColor: "var(--color-border)", color: "var(--color-border)" }
                       }
                     >
                       {c.displayName ?? "Sporter"}
@@ -113,20 +113,20 @@ export default function ParentToestemmingenPage() {
             )}
             {child && (
               <div
-                className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+                className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
                 data-testid={`toestemmingen-${child.athleteClerkId}`}
               >
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-white/40" strokeWidth={1.75} />
-                  <span className="text-[15px] text-white/90">
+                  <ShieldCheck className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  <span className="text-[15px] text-foreground/90">
                     {child.displayName ?? "Sporter"}
                   </span>
                 </div>
-                <p className="mt-2 text-[12px] text-white/45">
+                <p className="mt-2 text-[12px] text-muted-foreground">
                   {tierUitleg[child.access.tier] ?? tierUitleg.unknown}
                 </p>
                 {child.access.reconfirmRequired && (
-                  <p className="mt-2 rounded-xl border border-amber-400/25 bg-amber-400/[0.08] px-3 py-2 text-[12px] text-amber-200/90">
+                  <p className="mt-2 rounded-xl border border-amber-400/25 bg-amber-400/[0.08] px-3 py-2 text-[12px] text-[color:var(--color-warning)]">
                     De leeftijdscategorie is veranderd — je kind moet opnieuw
                     bevestigen wat er gedeeld wordt.
                   </p>

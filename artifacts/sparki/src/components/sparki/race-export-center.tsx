@@ -38,10 +38,10 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
   if (isLoading || !data) {
     return (
       <section>
-        <h3 className="text-[13px] font-semibold tracking-wide text-white/80">
+        <h3 className="text-[13px] font-semibold tracking-wide text-foreground/80">
           Export naar fietscomputer
         </h3>
-        <p className="mt-1 text-[11px] text-white/35">Laden…</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">Laden…</p>
       </section>
     )
   }
@@ -79,27 +79,27 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
   return (
     <section>
       <div className="flex items-baseline justify-between">
-        <h3 className="text-[13px] font-semibold tracking-wide text-white/80">
+        <h3 className="text-[13px] font-semibold tracking-wide text-foreground/80">
           Export naar fietscomputer
         </h3>
         {data.exports.length > 0 && (
           <button
             type="button"
             onClick={() => setShowHistory((v) => !v)}
-            className="text-[11px] text-white/40 underline decoration-white/20 underline-offset-2 hover:text-white/60"
+            className="text-[11px] text-muted-foreground underline decoration-white/20 underline-offset-2 hover:text-muted-foreground"
           >
             {showHistory ? "Verberg historie" : `Historie (${data.exports.length})`}
           </button>
         )}
       </div>
-      <p className="mt-1 text-[11px] leading-relaxed text-white/35">
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
         Ieder bestand wordt vóór het downloaden gecontroleerd en teruggelezen.
         Alleen bevestigde of aangepaste wedstrijdpunten gaan mee.
       </p>
 
       {data.reconfirmCount > 0 && (
         <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] p-3">
-          <p className="text-[12px] text-amber-200/90">
+          <p className="text-[12px] text-[color:var(--color-warning)]">
             Een nieuwe technische gids heeft {data.reconfirmCount} punt(en)
             gewijzigd. Herbevestig die eerst bij Wedstrijdpunten voordat je
             opnieuw exporteert.
@@ -108,17 +108,17 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
       )}
 
       {blockedByRoute && (
-        <p className="mt-3 text-[12px] text-white/45">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           Er is geen route met opgeslagen parcours gekoppeld — koppel eerst een
           route om te kunnen exporteren.
         </p>
       )}
       {!blockedByRoute && validationBlocked && (
         <div className="mt-3 rounded-xl border border-red-400/25 bg-red-400/[0.06] p-3">
-          <p className="text-[12px] font-medium text-red-200/90">
+          <p className="text-[12px] font-medium text-[color:var(--color-negative)]">
             Export geblokkeerd door de controle vooraf:
           </p>
-          <ul className="mt-1 list-disc pl-4 text-[11px] text-red-200/70">
+          <ul className="mt-1 list-disc pl-4 text-[11px] text-[color:var(--color-negative)]">
             {data.validation!.errors.map((e, i) => (
               <li key={i}>{e}</li>
             ))}
@@ -129,7 +129,7 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
         data.validation != null &&
         data.validation.ok &&
         data.validation.warnings.length > 0 && (
-          <ul className="mt-3 list-disc pl-4 text-[11px] text-amber-200/70">
+          <ul className="mt-3 list-disc pl-4 text-[11px] text-[color:var(--color-warning)]">
             {data.validation.warnings.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
@@ -146,13 +146,13 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
           return (
             <div
               key={type}
-              className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted px-3 py-2.5"
             >
               <div className="min-w-0">
-                <p className="text-[12px] font-medium text-white/80">
+                <p className="text-[12px] font-medium text-foreground/80">
                   {data.types[type]}
                 </p>
-                <p className="mt-0.5 text-[11px] text-white/40">
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {type === "fit-workout" && !data.hasWorkoutSource
                     ? "Geen warming-up of gekoppelde training — er valt geen workout te maken."
                     : TYPE_HELP[type]}
@@ -162,7 +162,7 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
                 type="button"
                 disabled={disabled}
                 onClick={() => makeExport(type)}
-                className="shrink-0 rounded-lg border border-cyan-400/40 px-3 py-1.5 text-[12px] text-cyan-300 transition-colors hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/25"
+                className="shrink-0 rounded-lg border border-cyan-400/40 px-3 py-1.5 text-[12px] text-accent-cyan transition-colors hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground"
               >
                 {busyType === type ? "Bezig…" : "Download"}
               </button>
@@ -171,21 +171,21 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
         })}
       </div>
 
-      {message && <p className="mt-2 text-[11px] text-emerald-300/80">{message}</p>}
-      {error && <p className="mt-2 text-[11px] text-red-300/80">{error}</p>}
+      {message && <p className="mt-2 text-[11px] text-[color:var(--color-positive)]">{message}</p>}
+      {error && <p className="mt-2 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
 
       {showHistory && data.exports.length > 0 && (
         <div className="mt-3 space-y-1.5">
           {data.exports.map((e) => (
             <div
               key={e.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
             >
               <div className="min-w-0">
-                <p className="truncate font-mono text-[11px] text-white/70">
+                <p className="truncate font-mono text-[11px] text-muted-foreground">
                   {e.fileName}
                 </p>
-                <p className="mt-0.5 text-[10px] text-white/35">
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
                   {formatDateTime(e.createdAt)} · v{e.version} ·{" "}
                   {e.roundTripOk ? "controle geslaagd" : "controle mislukt"}
                   {e.status === "verouderd" && e.staleReason
@@ -195,28 +195,28 @@ export function RaceExportCenter({ raceId }: { raceId: number }) {
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {e.status === "verouderd" && (
-                  <span className="rounded-full border border-amber-400/30 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-amber-300/80">
+                  <span className="rounded-full border border-amber-400/30 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-warning)]">
                     verouderd
                   </span>
                 )}
                 <button
                   type="button"
                   onClick={() => redownload(e.id, e.fileName)}
-                  className="text-[11px] text-cyan-300/80 underline decoration-cyan-300/30 underline-offset-2 hover:text-cyan-200"
+                  className="text-[11px] text-accent-cyan underline decoration-cyan-300/30 underline-offset-2 hover:text-accent-cyan"
                 >
                   Opnieuw
                 </button>
               </div>
             </div>
           ))}
-          <p className="text-[10px] leading-relaxed text-white/30">
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
             "Opnieuw" bouwt het bestand met de huidige punten en route — een
             verouderde registratie levert dus altijd de actuele inhoud.
           </p>
         </div>
       )}
 
-      <p className="mt-3 text-[10px] leading-relaxed text-white/30">
+      <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
         {data.deviceNote}
       </p>
     </section>

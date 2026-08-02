@@ -87,11 +87,11 @@ function FeatureRegel({ featureKey }: { featureKey: string }) {
   const copy = GO_FEATURE_COPY[featureKey]
   if (!copy) return null
   return (
-    <li className="flex items-start gap-2.5 text-[13px] text-white/75">
-      <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2} />
+    <li className="flex items-start gap-2.5 text-[13px] text-muted-foreground">
+      <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-cyan" strokeWidth={2} />
       <span>
-        <span className="text-white/90">{copy.titel}</span>
-        <span className="mt-0.5 block text-[11px] leading-snug text-white/40">
+        <span className="text-foreground/90">{copy.titel}</span>
+        <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
           {copy.uitleg}
         </span>
       </span>
@@ -101,9 +101,9 @@ function FeatureRegel({ featureKey }: { featureKey: string }) {
 
 function GratisRegel({ tekst }: { tekst: string }) {
   return (
-    <li className="flex items-start gap-2.5 text-[13px] text-white/75">
-      <Check className="mt-0.5 h-4 w-4 shrink-0 text-white/40" strokeWidth={2} />
-      <span className="text-white/80">{tekst}</span>
+    <li className="flex items-start gap-2.5 text-[13px] text-muted-foreground">
+      <Check className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
+      <span className="text-foreground/80">{tekst}</span>
     </li>
   )
 }
@@ -128,11 +128,11 @@ function LaagKaart({
       }}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-[17px] font-semibold text-white/92">
+        <h2 className="text-[17px] font-semibold text-foreground/90">
           {TIER_LABEL[tier]}
         </h2>
         {huidig && (
-          <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-cyan-200">
+          <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent-cyan">
             Jouw laag
           </span>
         )}
@@ -144,9 +144,9 @@ function LaagKaart({
 }
 
 const btn =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-[13px] font-medium text-cyan-200 transition hover:bg-cyan-300/20 disabled:opacity-40"
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-[13px] font-medium text-accent-cyan transition hover:bg-cyan-300/20 disabled:opacity-40"
 const btnRustig =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white/80 transition hover:bg-white/[0.08] disabled:opacity-40"
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-muted px-4 py-2.5 text-[13px] text-foreground/80 transition hover:bg-muted disabled:opacity-40"
 
 // Betaalstap voor een betaalde laag. Echte checkout wanneer die beschikbaar is;
 // anders keuze vastleggen + eerlijke "binnenkort beschikbaar"-melding.
@@ -185,7 +185,7 @@ function BetaalActie({
           </button>
         )}
         {checkout.isError && (
-          <p className="w-full text-[11px] text-red-300/70">
+          <p className="w-full text-[11px] text-[color:var(--color-negative)]">
             {checkout.error?.message ?? "Er ging iets mis"}
           </p>
         )}
@@ -206,17 +206,17 @@ function BetaalActie({
         {gekozen ? "Keuze vastgelegd" : `Kies ${TIER_LABEL[tier]}`}
         {!gekozen && <ArrowRight className="h-4 w-4" strokeWidth={2} />}
       </button>
-      <p className="mt-2 text-[11px] leading-snug text-amber-200/70">
+      <p className="mt-2 text-[11px] leading-snug text-[color:var(--color-warning)]">
         Online betalen is nog niet beschikbaar. Je keuze wordt bewaard; zodra
         betalen live is nemen we hierop contact met je op.
       </p>
       {gekozen && (
-        <p className="mt-1 text-[11px] text-cyan-200/70">
+        <p className="mt-1 text-[11px] text-accent-cyan">
           Je koos {TIER_LABEL[tier]}. Wijzigen kan door een andere laag te kiezen.
         </p>
       )}
       {record.isError && (
-        <p className="mt-1 text-[11px] text-red-300/70">
+        <p className="mt-1 text-[11px] text-[color:var(--color-negative)]">
           {record.error?.message ?? "Er ging iets mis"}
         </p>
       )}
@@ -233,7 +233,7 @@ function GratisActie({ status }: { status: BillingStatus }) {
 
   if (!status.available.downgrade) {
     return (
-      <p className="text-[12px] text-white/45">Je zit al op de gratis laag.</p>
+      <p className="text-[12px] text-muted-foreground">Je zit al op de gratis laag.</p>
     )
   }
 
@@ -261,11 +261,11 @@ function GratisActie({ status }: { status: BillingStatus }) {
   }
 
   return (
-    <div className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-3">
-      <p className="text-[13px] font-medium text-white/85">
+    <div className="rounded-xl border border-border bg-muted p-3">
+      <p className="text-[13px] font-medium text-foreground/80">
         Terug naar Gratis — weet je het zeker?
       </p>
-      <p className="mt-1 text-[12px] leading-snug text-white/55">
+      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
         Je verliest direct toegang tot de betaalde onderdelen (o.a.
         trainingsplan-engine, race-intelligentie, coach-observaties, Performance
         Lab, course points en de live-kaart). Een lopende proefperiode stopt
@@ -290,7 +290,7 @@ function GratisActie({ status }: { status: BillingStatus }) {
         </button>
       </div>
       {downgrade.isError && (
-        <p className="mt-2 text-[11px] text-red-300/70">
+        <p className="mt-2 text-[11px] text-[color:var(--color-negative)]">
           {downgrade.error?.message ?? "Er ging iets mis"}
         </p>
       )}
@@ -306,16 +306,16 @@ export default function AbonnementPage() {
     <ScreenShell bg={null} section="Abonnement">
       <div className="mx-auto w-full max-w-md px-4 pb-24 pt-4">
         <SectionLabel title="Abonnement" />
-        <p className="mt-2 text-[13px] leading-snug text-white/55">
+        <p className="mt-2 text-[13px] leading-snug text-muted-foreground">
           Drie lagen, van gratis tot alles. Kies wat bij je past — routes
           plannen, opslaan en navigeren blijft altijd gratis.
         </p>
 
         {isLoading && (
-          <p className="mt-6 text-[13px] text-white/45">Bezig met laden…</p>
+          <p className="mt-6 text-[13px] text-muted-foreground">Bezig met laden…</p>
         )}
         {isError && (
-          <p className="mt-6 text-[13px] text-red-300/70">
+          <p className="mt-6 text-[13px] text-[color:var(--color-negative)]">
             Kon je abonnementsgegevens niet laden. Probeer het later opnieuw.
           </p>
         )}
@@ -324,8 +324,8 @@ export default function AbonnementPage() {
           <>
             {huidig === "LEGACY" && (
               <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-cyan-300/25 bg-cyan-300/[0.06] p-3">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={1.75} />
-                <p className="text-[12px] leading-snug text-white/70">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent-cyan" strokeWidth={1.75} />
+                <p className="text-[12px] leading-snug text-muted-foreground">
                   Je account heeft volledige toegang (bestaand account). Alle
                   onderdelen hieronder zijn voor jou al beschikbaar.
                 </p>
@@ -339,7 +339,7 @@ export default function AbonnementPage() {
                 huidig={huidig === "FREE"}
                 actie={<GratisActie status={status} />}
               >
-                <p className="mt-1 text-[13px] text-white/60">Altijd gratis</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">Altijd gratis</p>
                 <ul className="mt-3 space-y-2.5">
                   {GRATIS_ONDERDELEN.map((t) => (
                     <GratisRegel key={t} tekst={t} />
@@ -353,16 +353,16 @@ export default function AbonnementPage() {
                 huidig={huidig === "GO"}
                 actie={
                   huidig === "GO" ? (
-                    <p className="text-[12px] text-cyan-200/70">Dit is je huidige laag.</p>
+                    <p className="text-[12px] text-accent-cyan">Dit is je huidige laag.</p>
                   ) : (
                     <BetaalActie status={status} tier="GO" />
                   )
                 }
               >
-                <p className="mt-1 text-[13px] text-white/60">
+                <p className="mt-1 text-[13px] text-muted-foreground">
                   {priceLabel(status, "GO")}
                 </p>
-                <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-white/35">
+                <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                   Alles van Gratis, plus
                 </p>
                 <ul className="mt-2 space-y-2.5">
@@ -378,16 +378,16 @@ export default function AbonnementPage() {
                 huidig={huidig === "COMPLETE"}
                 actie={
                   huidig === "COMPLETE" ? (
-                    <p className="text-[12px] text-cyan-200/70">Dit is je huidige laag.</p>
+                    <p className="text-[12px] text-accent-cyan">Dit is je huidige laag.</p>
                   ) : (
                     <BetaalActie status={status} tier="COMPLETE" />
                   )
                 }
               >
-                <p className="mt-1 text-[13px] text-white/60">
+                <p className="mt-1 text-[13px] text-muted-foreground">
                   {priceLabel(status, "COMPLETE")}
                 </p>
-                <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-white/35">
+                <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                   Alles van Sparki Go, plus
                 </p>
                 <ul className="mt-2 space-y-2.5">
@@ -398,7 +398,7 @@ export default function AbonnementPage() {
               </LaagKaart>
             </div>
 
-            <p className="mt-5 flex items-center gap-2 text-[11px] text-white/35">
+            <p className="mt-5 flex items-center gap-2 text-[11px] text-muted-foreground">
               <Lock className="h-3.5 w-3.5" strokeWidth={1.75} />
               Je rechten worden altijd server-side bepaald. Deze pagina toont
               alleen wat er echt voor je account geldt.

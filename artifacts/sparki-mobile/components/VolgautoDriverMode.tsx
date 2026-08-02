@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -237,6 +238,10 @@ export function VolgautoDriverMode({
 
   return (
     <View style={[styles.fill, { backgroundColor: c.background }]}>
+      {/* Volgauto-HUD boven de donkere kaart is een bewuste UITZONDERING op het
+          lichte thema (LICHT_THEMA_01): lichte statusbalk-tekst voor
+          leesbaarheid op de donkere kaart en HUD-panelen. */}
+      <StatusBar style="light" />
       {showMap ? (
         <RouteMap
           path={carPath}

@@ -1,11 +1,11 @@
 export function BioRadar({
   size = 200,
-  accent = "rgba(120,210,230,1)",
-  // Kleur van as-labels en raster. Standaard licht (voor donkere kaarten);
-  // op lichte kaarten (bijv. /analyse) een donkere kleur meegeven, anders
-  // zijn de labels onzichtbaar (wit-op-wit).
-  labelColor = "rgba(255,255,255,0.55)",
-  gridColor = "rgba(255,255,255,0.07)",
+  accent = "rgba(8,145,178,1)",
+  // Kleur van as-labels en raster. LICHT_THEMA_01 LT-03: standaard DONKER
+  // (leesbaar op de lichte kaarten van de app). Op een uitzonderlijk donkere
+  // ondergrond kan een lichte kleur worden meegegeven.
+  labelColor = "rgba(20,24,31,0.62)",
+  gridColor = "rgba(20,24,31,0.10)",
   axes,
   overlay = null,
   overlayAccent = "rgba(147,51,234,0.9)",

@@ -39,19 +39,19 @@ export function RaceModeOverlay({
     >
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+          <span className="font-mono text-[10px] tracking-[0.3em] text-accent-cyan">
             RACE MODE
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/55 transition-colors hover:bg-white/[0.06]"
+            className="rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
           >
             Sluiten
           </button>
         </div>
 
-        <h2 className="mt-6 font-sans text-xl font-light tracking-tight text-white/90">
+        <h2 className="mt-6 font-sans text-xl font-light tracking-tight text-foreground/90">
           {race.name}
         </h2>
 
@@ -63,9 +63,9 @@ export function RaceModeOverlay({
           {timings.map((t) => (
             <div
               key={t.id}
-              className="flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3"
+              className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3"
             >
-              <span className="text-[13px] text-white/65">{t.label}</span>
+              <span className="text-[13px] text-muted-foreground">{t.label}</span>
               <span className="flex items-center gap-2">
                 <span
                   className="font-mono text-[15px] tabular-nums"
@@ -83,7 +83,7 @@ export function RaceModeOverlay({
           <p className="font-sans text-lg font-light" style={{ color: ACCENT }}>
             Sterkte — vertrouw op je voorbereiding.
           </p>
-          <p className="mt-1 font-mono text-[9px] tracking-[0.3em] text-white/25">
+          <p className="mt-1 font-mono text-[9px] tracking-[0.3em] text-muted-foreground">
             SPARKI PERFORMANCE CENTER
           </p>
         </div>

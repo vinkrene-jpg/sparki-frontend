@@ -80,13 +80,13 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
 
   if (analysis.status === "failed") {
     return (
-      <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
+      <div className="rounded-xl border border-border bg-card p-3.5 backdrop-blur-md">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[rgba(255,120,110,0.95)]">
               Mislukt
             </span>
-            <p className="mt-1 truncate text-[13px] font-medium text-white/85">
+            <p className="mt-1 truncate text-[13px] font-medium text-foreground/85">
               {analysis.fileName}
             </p>
             <p className="mt-1 text-[12px] text-[rgba(255,140,120,0.8)]">
@@ -97,7 +97,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
             type="button"
             onClick={() => del.mutate(analysis.id)}
             disabled={del.isPending}
-            className="shrink-0 font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
+            className="shrink-0 font-mono text-[10px] text-muted-foreground transition hover:text-muted-foreground disabled:opacity-40"
           >
             wis
           </button>
@@ -109,7 +109,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
   const linkedRace = races?.find((r) => r.id === analysis.linkedRaceId)
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-3.5 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -120,11 +120,11 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
               {KIND_LABEL[analysis.documentKind]}
             </span>
           </div>
-          <p className="mt-1 truncate text-[13px] font-medium text-white/85">
+          <p className="mt-1 truncate text-[13px] font-medium text-foreground/85">
             {analysis.fileName}
           </p>
           {analysis.summary && (
-            <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
               {analysis.summary}
             </p>
           )}
@@ -133,7 +133,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
           type="button"
           onClick={() => del.mutate(analysis.id)}
           disabled={del.isPending}
-          className="shrink-0 font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
+          className="shrink-0 font-mono text-[10px] text-muted-foreground transition hover:text-muted-foreground disabled:opacity-40"
         >
           wis
         </button>
@@ -151,10 +151,10 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
               if (!f || f.value == null) return null
               return (
                 <div key={key} className="flex items-baseline justify-between gap-2">
-                  <dt className="text-[11px] text-white/40">
+                  <dt className="text-[11px] text-muted-foreground">
                     {FIELD_LABEL[key] ?? key}
                   </dt>
-                  <dd className="text-right text-[12px] text-white/80">
+                  <dd className="text-right text-[12px] text-foreground/80">
                     {fmtValue(key, f.value)}
                     {f.confidence === "low" && (
                       <span className="ml-1 text-[10px] text-[rgba(245,200,110,0.85)]">
@@ -175,7 +175,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[rgba(245,200,110,0.9)]">
             Ontbreekt nog
           </p>
-          <p className="mt-1 text-[12px] text-white/45">
+          <p className="mt-1 text-[12px] text-muted-foreground">
             {missing.map((k) => FIELD_LABEL[k] ?? k).join(" · ")}
           </p>
         </div>
@@ -184,14 +184,14 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
       {/* Vervolgvragen */}
       {questions.length > 0 && (
         <div className="mt-3 space-y-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             Nog even dit
           </p>
           {questions.map((q, i) => {
             const key = questionToFieldKey(q)
             return (
-              <div key={i} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
-                <p className="text-[12px] text-white/70">{q}</p>
+              <div key={i} className="rounded-lg border border-border bg-muted p-2">
+                <p className="text-[12px] text-muted-foreground">{q}</p>
                 {key && (
                   <div className="mt-1.5 flex gap-2">
                     <input
@@ -200,7 +200,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
                         setDrafts((d) => ({ ...d, [key]: e.target.value }))
                       }
                       placeholder="Jouw antwoord"
-                      className="min-w-0 flex-1 rounded-md border border-white/[0.08] bg-[#05070e]/60 px-2 py-1 text-[12px] text-white/85 outline-none placeholder:text-white/25 focus:border-white/20"
+                      className="min-w-0 flex-1 rounded-md border border-border bg-card px-2 py-1 text-[12px] text-foreground/85 outline-none placeholder:text-muted-foreground focus:border-border"
                     />
                     <button
                       type="button"
@@ -234,7 +234,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
       )}
 
       {/* Koppelen aan wedstrijd */}
-      <div className="mt-3 border-t border-white/[0.06] pt-3">
+      <div className="mt-3 border-t border-border pt-3">
         {linkedRace ? (
           <p className="text-[12px] text-[rgba(140,230,170,0.85)]">
             Gekoppeld aan: {linkedRace.name}
@@ -244,7 +244,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
             <select
               value={raceSel}
               onChange={(e) => setRaceSel(e.target.value)}
-              className="min-w-0 flex-1 rounded-md border border-white/[0.08] bg-[#05070e]/60 px-2 py-1 text-[12px] text-white/85 outline-none focus:border-white/20"
+              className="min-w-0 flex-1 rounded-md border border-border bg-card px-2 py-1 text-[12px] text-foreground/85 outline-none focus:border-border"
             >
               <option value="">Koppel aan wedstrijd…</option>
               {races!.map((r) => (
@@ -266,7 +266,7 @@ function AnalysisCard({ analysis }: { analysis: DocumentAnalysis }) {
             </button>
           </div>
         ) : (
-          <p className="text-[11px] text-white/30">
+          <p className="text-[11px] text-muted-foreground">
             Voeg eerst een wedstrijd toe om dit document te koppelen.
           </p>
         )}
@@ -315,7 +315,7 @@ export function DocumentAnalysisPanel() {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={upload.isPending}
-          className="flex items-center gap-2 rounded-full bg-cyan-400/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#05070e] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:bg-cyan-300 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-accent-cyan/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] shadow-card transition hover:bg-accent-cyan disabled:opacity-50"
         >
           {upload.isPending ? "Lezen…" : "Document uploaden"}
         </button>
@@ -333,7 +333,7 @@ export function DocumentAnalysisPanel() {
         }}
       />
 
-      <p className="mt-2 text-[12px] leading-relaxed text-white/35">
+      <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
         Upload een technische gids, wedstrijdgids, etappeboek, routekaart of
         tijdschema (PDF of foto). De kerninfo wordt eruit gehaald en er wordt
         doorgevraagd wat nog ontbreekt.
@@ -345,11 +345,11 @@ export function DocumentAnalysisPanel() {
 
       <div className="mt-4 space-y-3">
         {isLoading ? (
-          <div className="h-16 w-full animate-pulse rounded-xl bg-white/[0.06]" />
+          <div className="h-16 w-full animate-pulse rounded-xl bg-muted" />
         ) : analyses.length > 0 ? (
           analyses.map((a) => <AnalysisCard key={a.id} analysis={a} />)
         ) : (
-          <p className="text-[12px] text-white/30">
+          <p className="text-[12px] text-muted-foreground">
             Nog geen documenten gelezen
           </p>
         )}

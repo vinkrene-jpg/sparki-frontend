@@ -84,12 +84,12 @@ function ChoiceInput({
           style={
             value === opt.value
               ? { borderColor: "rgba(120,210,230,0.4)", background: ACCENT_DIM }
-              : { borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }
+              : { borderColor: "var(--color-border)", background: "var(--color-muted)" }
           }
         >
           <span
             className="font-sans text-sm"
-            style={{ color: value === opt.value ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.6)" }}
+            style={{ color: value === opt.value ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
           >
             {opt.label}
           </span>
@@ -132,7 +132,7 @@ export function ProfilePromptCard() {
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <div
@@ -141,7 +141,7 @@ export function ProfilePromptCard() {
           >
             <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/70">
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-cyan">
             Nog even dit
           </span>
         </div>
@@ -150,14 +150,14 @@ export function ProfilePromptCard() {
           onClick={handleSkip}
           disabled={busy}
           aria-label="Voorlopig overslaan"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-white/30 transition-colors hover:bg-white/5 hover:text-white/60 disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground/60 disabled:opacity-40"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <h3 className="mt-3 font-sans text-base font-semibold leading-snug text-white">{question.prompt}</h3>
-      {question.help && <p className="mt-1 font-sans text-xs leading-relaxed text-white/45">{question.help}</p>}
+      <h3 className="mt-3 font-sans text-base font-semibold leading-snug text-foreground">{question.prompt}</h3>
+      {question.help && <p className="mt-1 font-sans text-xs leading-relaxed text-muted-foreground">{question.help}</p>}
 
       <div className="mt-4">
         {question.inputType === "choice" && question.options ? (
@@ -172,9 +172,9 @@ export function ProfilePromptCard() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSave()
               }}
-              className="h-11 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 font-sans text-sm text-white/90 placeholder:text-white/25 focus:border-white/20 focus:outline-none"
+              className="h-11 flex-1 rounded-xl border border-border bg-muted px-3 font-sans text-sm text-foreground/90 placeholder:text-muted-foreground focus:border-border focus:outline-none"
             />
-            {question.unit && <span className="font-sans text-sm text-white/35">{question.unit}</span>}
+            {question.unit && <span className="font-sans text-sm text-muted-foreground">{question.unit}</span>}
           </div>
         )}
       </div>
@@ -188,7 +188,7 @@ export function ProfilePromptCard() {
           type="button"
           onClick={handleSave}
           disabled={!canSubmit || busy}
-          className="flex h-10 flex-1 items-center justify-center rounded-xl font-sans text-sm font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="flex h-10 flex-1 items-center justify-center rounded-xl font-sans text-sm font-semibold text-[color:var(--color-on-accent)] transition-opacity hover:opacity-90 disabled:opacity-40"
           style={{ background: ACCENT }}
         >
           {answer.isPending ? "Opslaan…" : "Opslaan"}
@@ -197,7 +197,7 @@ export function ProfilePromptCard() {
           type="button"
           onClick={handleSkip}
           disabled={busy}
-          className="font-sans text-sm text-white/35 transition-colors hover:text-white/60 disabled:opacity-40"
+          className="font-sans text-sm text-muted-foreground transition-colors hover:text-foreground/60 disabled:opacity-40"
         >
           Overslaan
         </button>

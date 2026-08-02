@@ -144,7 +144,9 @@ export default function SupportScreen() {
           )}
         </Pressable>
       </View>
-      {error && <Text style={[styles.error, { color: "#fb923c" }]}>{error}</Text>}
+      {/* LICHT_THEMA_01: foutmelding in het donkerder destructief-token,
+          leesbaar op het lichte thema (was #fb923c). */}
+      {error && <Text style={[styles.error, { color: c.destructive }]}>{error}</Text>}
 
       {answers.map((a) => (
         <View

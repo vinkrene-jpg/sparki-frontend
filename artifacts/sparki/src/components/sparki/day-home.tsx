@@ -141,23 +141,22 @@ function HealthMomentBlock() {
   const label =
     data?.athleteProfile?.healthStatus === "injured" ? "geblesseerd" : "ziek"
   return (
-    <section className="rounded-2xl border border-[rgba(255,140,120,0.28)] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="rounded-2xl border border-[rgba(255,140,120,0.28)] bg-card p-5 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <span
           className="h-1.5 w-1.5 shrink-0 rounded-full"
           style={{
             background: "rgba(255,140,120,0.9)",
-            boxShadow: "0 0 8px rgba(255,140,120,0.8)",
           }}
         />
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,170,150,0.85)]">
           Herstel gaat voor
         </span>
       </div>
-      <p className="mt-2.5 text-[15px] font-medium leading-snug text-white/90">
+      <p className="mt-2.5 text-[15px] font-medium leading-snug text-foreground/90">
         Je hebt jezelf {label} gemeld.
       </p>
-      <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-white/60">
+      <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
         Er komt nu geen trainingsdruk bij. Rust, slaap, hydratatie en voeding
         gaan voor. Meld je weer beter zodra het kan, dan bouwt je plan rustig op.
       </p>
@@ -165,7 +164,7 @@ function HealthMomentBlock() {
         type="button"
         disabled={setStatus.isPending}
         onClick={() => setStatus.mutate("ok")}
-        className="mt-4 w-full rounded-full border border-cyan-300/30 bg-cyan-300/[0.06] px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.12] disabled:opacity-50"
+        className="mt-4 w-full rounded-full border border-accent-cyan/30 bg-accent-cyan/[0.06] px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-accent-cyan transition-colors hover:bg-accent-cyan/[0.12] disabled:opacity-50"
       >
         {setStatus.isPending ? "Bijwerken…" : "Ik ben weer hersteld"}
       </button>
@@ -267,7 +266,7 @@ function StateDayHome() {
 
         <section className="mt-2">
           <SectionLabel title="Jouw update vandaag" />
-          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
             Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven —
             open je voeding of bekijk je materiaalstatus.
           </p>
@@ -280,23 +279,23 @@ function StateDayHome() {
             id="nutrition"
             type="button"
             onClick={() => setVoedingOpen(true)}
-            className="mt-5 flex w-full scroll-mt-4 items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+            className="mt-5 flex w-full scroll-mt-4 items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/30"
           >
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
-              style={{ background: "rgba(120,210,230,0.08)" }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border"
+              style={{ background: "var(--color-accent)" }}
             >
               <Apple className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-medium text-white/90">
+              <span className="block text-[14px] font-medium text-foreground/90">
                 Voeding &amp; hydratatie
               </span>
-              <span className="mt-0.5 block text-[12px] text-white/45">
+              <span className="mt-0.5 block text-[12px] text-muted-foreground">
                 {voedingSummary}
               </span>
             </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
           </button>
 
           <div className="mt-7">
@@ -364,7 +363,7 @@ function StateDayHome() {
 
       <section className="mt-8">
         <SectionLabel title="Jouw update vandaag" />
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven —
           open je voeding of bekijk je materiaalstatus.
         </p>
@@ -379,23 +378,23 @@ function StateDayHome() {
           id="nutrition"
           type="button"
           onClick={() => setVoedingOpen(true)}
-          className="mt-5 flex w-full scroll-mt-4 items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+          className="mt-5 flex w-full scroll-mt-4 items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/30"
         >
           <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
-            style={{ background: "rgba(120,210,230,0.08)" }}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border"
+            style={{ background: "var(--color-accent)" }}
           >
             <Apple className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[14px] font-medium text-white/90">
+            <span className="block text-[14px] font-medium text-foreground/90">
               Voeding &amp; hydratatie
             </span>
-            <span className="mt-0.5 block text-[12px] text-white/45">
+            <span className="mt-0.5 block text-[12px] text-muted-foreground">
               {voedingSummary}
             </span>
           </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
         </button>
 
         {/* Gear coach stays reachable as a self-update tool, but its inline

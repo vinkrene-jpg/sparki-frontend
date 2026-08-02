@@ -148,14 +148,14 @@ function DepthStars({
               title={DEPTH_LABEL[d]}
               aria-label={`${d} ${d === 1 ? "ster" : "sterren"}: ${DEPTH_LABEL[d]}`}
               className="px-0.5 text-[16px] leading-none transition-colors disabled:opacity-50"
-              style={{ color: filled ? ACCENT : "rgba(255,255,255,0.2)" }}
+              style={{ color: filled ? ACCENT : "var(--color-muted-foreground)" }}
             >
               {filled ? "★" : "☆"}
             </button>
           )
         })}
       </div>
-      {pending && <Loader2 className="h-3 w-3 animate-spin text-white/40" />}
+      {pending && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
     </div>
   )
 }
@@ -164,24 +164,24 @@ function MentalTrainingCardBlock({ card }: { card: TrainingCard }) {
   const setDepth = useSetCardDepth()
   const [, navigate] = useLocation()
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#070d16]/[0.82] p-3 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-3 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[13px] font-medium text-white/85">{card.name}</p>
+        <p className="text-[13px] font-medium text-foreground/85">{card.name}</p>
         <DepthStars
           card={card}
           pending={setDepth.isPending}
           onSelect={(depth) => setDepth.mutate({ cardKey: card.key, depth })}
         />
       </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-white/70">
+      <p className="mt-1 text-[12px] leading-relaxed text-foreground/70">
         {card.core}
       </p>
       {card.how && (
         <div className="mt-2">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             Zo doe je het
           </p>
-          <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+          <p className="mt-1 text-[12px] leading-relaxed text-foreground/60">
             {card.how}
           </p>
         </div>
@@ -189,33 +189,33 @@ function MentalTrainingCardBlock({ card }: { card: TrainingCard }) {
       {card.deepening && (
         <div className="mt-2 flex flex-col gap-2">
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Waarom dit werkt
             </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+            <p className="mt-1 text-[12px] leading-relaxed text-foreground/60">
               {card.deepening.why}
             </p>
           </div>
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               De valkuil
             </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+            <p className="mt-1 text-[12px] leading-relaxed text-foreground/60">
               {card.deepening.pitfall}
             </p>
           </div>
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Oefening voor deze week
             </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+            <p className="mt-1 text-[12px] leading-relaxed text-foreground/60">
               {card.deepening.weekPractice}
             </p>
           </div>
         </div>
       )}
       {setDepth.isError && (
-        <p className="mt-2 text-[11px] text-red-300/70">
+        <p className="mt-2 text-[11px] text-[color:var(--color-negative)]">
           Diepgang opslaan lukte niet. Probeer het zo opnieuw.
         </p>
       )}
@@ -239,7 +239,7 @@ function MentalTrainingLibrary() {
   if (isLoading) return <Skeleton className="h-40 w-full rounded-xl" />
   if (isError || !data) {
     return (
-      <p className="text-[12px] text-white/45">
+      <p className="text-[12px] text-muted-foreground">
         De trainingskaarten konden nu niet worden geladen. Probeer het later
         opnieuw.
       </p>
@@ -247,10 +247,10 @@ function MentalTrainingLibrary() {
   }
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
         Mentale training
       </p>
-      <p className="text-[11px] leading-relaxed text-white/45">
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
         Zes technieken om je hoofd te trainen. Stel per kaart met de sterren in
         hoeveel diepgang je wilt: ★ alleen de kern, ★★ ook hoe je het doet, ★★★
         de volledige verdieping. Je keuze wordt per kaart bewaard.
@@ -272,7 +272,7 @@ function useMentalOverview() {
 }
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 function scoreColor(score: number): string {
@@ -288,7 +288,7 @@ function WeekBars({ weeks }: { weeks: WeekPoint[] }) {
     <div className="flex items-end gap-2" aria-hidden>
       {shown.map((w) => (
         <div key={w.weekStart} className="flex flex-col items-center gap-1">
-          <div className="flex h-14 w-6 items-end rounded bg-white/[0.04]">
+          <div className="flex h-14 w-6 items-end rounded bg-muted">
             {w.score != null ? (
               <div
                 className="w-full rounded"
@@ -300,11 +300,11 @@ function WeekBars({ weeks }: { weeks: WeekPoint[] }) {
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <span className="text-[9px] text-white/25">?</span>
+                <span className="text-[9px] text-muted-foreground">?</span>
               </div>
             )}
           </div>
-          <span className="font-mono text-[9px] text-white/30">
+          <span className="font-mono text-[9px] text-muted-foreground">
             {new Date(w.weekStart + "T12:00:00").toLocaleDateString("nl-NL", {
               day: "numeric",
               month: "numeric",
@@ -324,13 +324,13 @@ function TechniqueChip({ technique }: { technique: Technique }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full border border-white/[0.1] px-3 py-1 text-[11px] text-white/70 transition-colors hover:border-white/25"
+        className="rounded-full border border-border px-3 py-1 text-[11px] text-foreground/70 transition-colors hover:border-border"
       >
         Techniek: {technique.name} {open ? "−" : "+"}
       </button>
       {open && (
-        <div className="mt-2 rounded-xl bg-white/[0.03] p-3">
-          <p className="text-[12px] text-white/70">{technique.how}</p>
+        <div className="mt-2 rounded-xl bg-muted p-3">
+          <p className="text-[12px] text-foreground/70">{technique.how}</p>
           {technique.intelDedupeKey && (
             <button
               type="button"
@@ -381,7 +381,7 @@ function ScalePicker({
 }) {
   return (
     <div>
-      <p className="text-[11px] text-white/45">{label}</p>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
       <div className="mt-1.5 flex gap-1.5">
         {[1, 2, 3, 4, 5].map((v) => {
           const active = value === v
@@ -394,9 +394,9 @@ function ScalePicker({
               style={{
                 borderColor: active
                   ? "rgba(120,210,230,0.5)"
-                  : "rgba(255,255,255,0.12)",
+                  : "var(--color-border)",
                 background: active ? "rgba(120,210,230,0.12)" : "transparent",
-                color: active ? ACCENT : "rgba(255,255,255,0.55)",
+                color: active ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {v}
@@ -404,7 +404,7 @@ function ScalePicker({
           )
         })}
       </div>
-      <div className="mt-1 flex justify-between text-[9px] text-white/30">
+      <div className="mt-1 flex justify-between text-[9px] text-muted-foreground">
         <span>{endpoints[0]}</span>
         <span>{endpoints[1]}</span>
       </div>
@@ -463,29 +463,29 @@ function MentalReflectionBlock({ debrief }: { debrief: Debrief }) {
   // Read-only summary of an existing reflection.
   if (existing && !editing) {
     return (
-      <div className="mt-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+      <div className="mt-3 rounded-lg border border-border bg-muted p-3">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           Jouw mentale reflectie
         </p>
         <div className="mt-1.5 flex flex-col gap-1">
           {existing.motivationBefore != null && (
-            <p className="text-[12px] text-white/65">
+            <p className="text-[12px] text-foreground/65">
               Motivatie vooraf:{" "}
-              <span className="text-white/85">
+              <span className="text-foreground/85">
                 {MOTIVATION_LABELS[existing.motivationBefore - 1]}
               </span>
             </p>
           )}
           {existing.mentalEffort != null && (
-            <p className="text-[12px] text-white/65">
+            <p className="text-[12px] text-foreground/65">
               Mentaal zwaar:{" "}
-              <span className="text-white/85">
+              <span className="text-foreground/85">
                 {EFFORT_LABELS[existing.mentalEffort - 1]}
               </span>
             </p>
           )}
           {existing.note && (
-            <p className="text-[12px] italic leading-relaxed text-white/70">
+            <p className="text-[12px] italic leading-relaxed text-foreground/70">
               “{existing.note}”
             </p>
           )}
@@ -504,12 +504,12 @@ function MentalReflectionBlock({ debrief }: { debrief: Debrief }) {
 
   // Invite / edit form.
   return (
-    <div className="mt-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+    <div className="mt-3 rounded-lg border border-border bg-muted p-3">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         Jouw mentale reflectie
       </p>
       {debrief.reflectionPrompt && !existing && (
-        <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
+        <p className="mt-1.5 text-[12px] leading-relaxed text-foreground/55">
           {debrief.reflectionPrompt}
         </p>
       )}
@@ -537,7 +537,7 @@ function MentalReflectionBlock({ debrief }: { debrief: Debrief }) {
               ? "Wat gaf de doorslag om niet te rijden? (optioneel)…"
               : "Wat ging er in je hoofd om? (optioneel)…"
           }
-          className="w-full resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+          className="w-full resize-none rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
         />
       </div>
       <div className="mt-3 flex items-center gap-3">
@@ -559,14 +559,14 @@ function MentalReflectionBlock({ debrief }: { debrief: Debrief }) {
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="text-[12px] text-white/45 transition-colors hover:text-white/70"
+            className="text-[12px] text-muted-foreground transition-colors hover:text-foreground/70"
           >
             Annuleren
           </button>
         )}
       </div>
       {save.isError && (
-        <p className="mt-2 text-[11px] text-red-300/70">
+        <p className="mt-2 text-[11px] text-[color:var(--color-negative)]">
           Opslaan lukte niet. Probeer het zo opnieuw.
         </p>
       )}
@@ -586,7 +586,7 @@ export function MentalResilienceCard({ n }: { n?: string }) {
         {isLoading ? (
           <Skeleton className="h-32 w-full rounded-xl" />
         ) : isError || !data ? (
-          <p className="text-[12px] text-white/45">
+          <p className="text-[12px] text-muted-foreground">
             Het overzicht kon nu niet worden geladen. Probeer het later opnieuw.
           </p>
         ) : data.overview.state === "insufficient" ? (
@@ -617,9 +617,9 @@ export function MentalResilienceCard({ n }: { n?: string }) {
                   >
                     {data.overview.score}
                   </span>
-                  <span className="text-[11px] text-white/35">/ 100</span>
+                  <span className="text-[11px] text-muted-foreground">/ 100</span>
                 </div>
-                <p className="mt-1 max-w-[30ch] text-[11px] leading-relaxed text-white/45">
+                <p className="mt-1 max-w-[30ch] text-[11px] leading-relaxed text-muted-foreground">
                   Uitvoering van je geplande trainingen, laatste{" "}
                   {data.overview.windowDays} dagen:{" "}
                   {data.overview.completedCount} van {data.overview.plannedCount}{" "}
@@ -630,7 +630,7 @@ export function MentalResilienceCard({ n }: { n?: string }) {
             </div>
 
             {data.overview.confidenceReason && (
-              <p className="text-[11px] leading-relaxed text-white/35">
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
                 {data.overview.confidenceReason}
               </p>
             )}
@@ -638,18 +638,18 @@ export function MentalResilienceCard({ n }: { n?: string }) {
             {/* Patterns */}
             {data.overview.patterns.length > 0 && (
               <div className="flex flex-col gap-3">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Terugkerende patronen
                 </p>
                 {data.overview.patterns.map((p) => (
                   <div
                     key={p.key}
-                    className="rounded-xl border border-white/[0.06] bg-[#070d16]/[0.82] p-3 backdrop-blur-md"
+                    className="rounded-xl border border-border bg-card p-3 backdrop-blur-md"
                   >
-                    <p className="text-[13px] font-medium text-white/85">
+                    <p className="text-[13px] font-medium text-foreground/85">
                       {p.label}
                     </p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-white/55">
+                    <p className="mt-1 text-[12px] leading-relaxed text-foreground/55">
                       {p.detail}
                     </p>
                     <TechniqueChip technique={p.technique} />
@@ -661,12 +661,12 @@ export function MentalResilienceCard({ n }: { n?: string }) {
             {/* Risk factors */}
             {data.overview.riskFactors.length > 0 && (
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Waar dit toe kan leiden
                 </p>
                 <ul className="mt-2 flex flex-col gap-1.5">
                   {data.overview.riskFactors.map((r) => (
-                    <li key={r} className="text-[12px] leading-relaxed text-white/55">
+                    <li key={r} className="text-[12px] leading-relaxed text-foreground/55">
                       {r}
                     </li>
                   ))}
@@ -677,14 +677,14 @@ export function MentalResilienceCard({ n }: { n?: string }) {
             {/* Advice */}
             {data.overview.advice.length > 0 && (
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Advies
                 </p>
                 <ul className="mt-2 flex flex-col gap-1.5">
                   {data.overview.advice.map((a) => (
                     <li
                       key={a}
-                      className="text-[12px] leading-relaxed text-white/70"
+                      className="text-[12px] leading-relaxed text-foreground/70"
                     >
                       {a}
                     </li>
@@ -695,11 +695,11 @@ export function MentalResilienceCard({ n }: { n?: string }) {
 
             {/* Preparation for the next quality workout */}
             {data.overview.preparation && (
-              <div className="rounded-xl border border-white/[0.06] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+              <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Voorbereiding
                 </p>
-                <p className="mt-1.5 text-[13px] font-medium text-white/85">
+                <p className="mt-1.5 text-[13px] font-medium text-foreground/85">
                   {data.overview.preparation.title} —{" "}
                   {new Date(
                     data.overview.preparation.date + "T12:00:00",
@@ -709,30 +709,30 @@ export function MentalResilienceCard({ n }: { n?: string }) {
                     month: "long",
                   })}
                 </p>
-                <p className="mt-1 text-[12px] leading-relaxed text-white/55">
+                <p className="mt-1 text-[12px] leading-relaxed text-foreground/55">
                   {data.overview.preparation.whyItMatters}
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowPrep((v) => !v)}
-                  className="mt-3 rounded-full border border-white/[0.1] px-3 py-1 text-[11px] text-white/70 transition-colors hover:border-white/25"
+                  className="mt-3 rounded-full border border-border px-3 py-1 text-[11px] text-foreground/70 transition-colors hover:border-border"
                 >
                   {showPrep ? "Verberg voorbereiding" : "Bereid je voor"}
                 </button>
                 {showPrep && (
                   <div className="mt-3 flex flex-col gap-3">
-                    <p className="text-[12px] leading-relaxed text-white/55">
+                    <p className="text-[12px] leading-relaxed text-foreground/55">
                       {data.overview.preparation.expectedResistance}
                     </p>
                     <div>
-                      <p className="text-[11px] text-white/40">
+                      <p className="text-[11px] text-muted-foreground">
                         Zinnen om te onthouden voor onderweg:
                       </p>
                       <ul className="mt-1.5 flex flex-col gap-1">
                         {data.overview.preparation.cues.map((c) => (
                           <li
                             key={c}
-                            className="text-[12px] italic leading-relaxed text-white/70"
+                            className="text-[12px] italic leading-relaxed text-foreground/70"
                           >
                             “{c}”
                           </li>
@@ -749,22 +749,22 @@ export function MentalResilienceCard({ n }: { n?: string }) {
 
             {/* Debrief of the most recent workout */}
             {data.overview.debrief && (
-              <div className="rounded-xl border border-white/[0.06] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+              <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Nabespreking
                 </p>
                 <div className="mt-1.5 flex items-center gap-2">
-                  <p className="text-[13px] font-medium text-white/85">
+                  <p className="text-[13px] font-medium text-foreground/85">
                     {data.overview.debrief.title}
                   </p>
-                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/55">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-foreground/55">
                     {OUTCOME_LABEL[data.overview.debrief.outcome]}
                   </span>
                 </div>
-                <p className="mt-1 font-mono text-[11px] text-white/40">
+                <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                   {data.overview.debrief.facts}
                 </p>
-                <p className="mt-2 text-[12px] leading-relaxed text-white/60">
+                <p className="mt-2 text-[12px] leading-relaxed text-foreground/60">
                   {data.overview.debrief.reflection}
                 </p>
                 <MentalReflectionBlock debrief={data.overview.debrief} />

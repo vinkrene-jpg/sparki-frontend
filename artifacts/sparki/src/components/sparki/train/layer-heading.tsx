@@ -22,10 +22,10 @@ export function LayerHeading({
         }}
       />
       <div>
-        <h2 className="font-sans text-lg font-light tracking-tight text-white/90">
+        <h2 className="font-sans text-lg font-light tracking-tight text-foreground/90">
           {title}
         </h2>
-        <p className="mt-0.5 text-pretty text-[12px] leading-relaxed text-white/40">
+        <p className="mt-0.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           {subtitle}
         </p>
       </div>

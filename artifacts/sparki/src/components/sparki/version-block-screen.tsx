@@ -24,16 +24,16 @@ export function VersionBlockScreen() {
   if (!message) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#05070e]/95 p-6">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#070d16]/[0.92] p-6 text-center backdrop-blur-md">
-        <div className="text-lg font-semibold text-white">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-card p-6">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+        <div className="text-lg font-semibold text-foreground">
           Nieuwe versie nodig
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-white/70">{message}</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{message}</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="mt-5 w-full rounded-xl bg-[oklch(0.82_0.16_200)] px-4 py-3 text-sm font-semibold text-[#05070e]"
+          className="mt-5 w-full rounded-xl bg-accent-cyan px-4 py-3 text-sm font-semibold text-[color:var(--color-on-accent)]"
         >
           Vernieuw de app
         </button>

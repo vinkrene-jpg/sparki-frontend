@@ -33,7 +33,7 @@ import {
 } from "@/hooks/use-trainer-billing"
 
 const CARD =
-  "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
 
 function euro(cents: number | undefined): string {
   return typeof cents === "number" ? `€ ${(cents / 100).toFixed(2)}` : "—"
@@ -68,35 +68,35 @@ const STATUS_LABELS: Record<string, string> = {
 function BlockCard({ block }: { block: DashboardBlock }) {
   return (
     <div className={CARD} data-block={block.key}>
-      <p className="type-caption text-white/50">{BLOCK_LABELS[block.key] ?? block.key}</p>
+      <p className="type-caption text-muted-foreground">{BLOCK_LABELS[block.key] ?? block.key}</p>
       {block.amountCents !== undefined && (
-        <p className="type-title mt-1 text-white">{euro(block.amountCents)}</p>
+        <p className="type-title mt-1 text-foreground">{euro(block.amountCents)}</p>
       )}
       {block.count !== undefined && block.amountCents === undefined && (
-        <p className="type-title mt-1 text-white">{block.count}</p>
+        <p className="type-title mt-1 text-foreground">{block.count}</p>
       )}
       {block.key === "eerstvolgend_facturatiemoment" && (
-        <p className="type-title mt-1 text-white">{block.date ?? "geen gepland"}</p>
+        <p className="type-title mt-1 text-foreground">{block.date ?? "geen gepland"}</p>
       )}
       {block.items && (
         <ul className="mt-1 space-y-0.5">
-          {block.items.length === 0 && <li className="type-caption text-white/60">alles compleet</li>}
+          {block.items.length === 0 && <li className="type-caption text-muted-foreground">alles compleet</li>}
           {block.items.map((it) => (
-            <li key={it} className="type-caption text-amber-300/90">{it}</li>
+            <li key={it} className="type-caption text-[color:var(--color-warning)]">{it}</li>
           ))}
         </ul>
       )}
       {block.clients && block.clients.length > 0 && (
-        <p className="type-caption mt-1 text-white/70">
+        <p className="type-caption mt-1 text-muted-foreground">
           {block.clients.map((c) => c.name).join(", ")}
         </p>
       )}
-      {block.note && <p className="type-caption mt-1 text-white/60">{block.note}</p>}
+      {block.note && <p className="type-caption mt-1 text-muted-foreground">{block.note}</p>}
       {block.events && (
         <ul className="mt-1 space-y-0.5">
-          {block.events.length === 0 && <li className="type-caption text-white/60">nog geen</li>}
+          {block.events.length === 0 && <li className="type-caption text-muted-foreground">nog geen</li>}
           {block.events.map((e, i) => (
-            <li key={i} className="type-caption text-white/70">{e.body}</li>
+            <li key={i} className="type-caption text-muted-foreground">{e.body}</li>
           ))}
         </ul>
       )}
@@ -122,26 +122,26 @@ function InvoiceRow({ inv }: { inv: TrainerInvoice }) {
     <div className={CARD}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="type-body text-white">
+          <p className="type-body text-foreground">
             {inv.invoiceNumber ?? "concept"} · {euro(inv.amountInclCents)}
             {inv.paidCents > 0 && inv.paidCents < inv.amountInclCents && (
-              <span className="text-white/60"> (nog {euro(rest)})</span>
+              <span className="text-muted-foreground"> (nog {euro(rest)})</span>
             )}
           </p>
-          <p className="type-caption text-white/50">
+          <p className="type-caption text-muted-foreground">
             {STATUS_LABELS[inv.status] ?? inv.status}
             {inv.isOverdue && " · te laat"}
             {inv.dueDate && ` · vervalt ${inv.dueDate}`}
             {inv.paymentAgreementDate && ` · betaalafspraak ${inv.paymentAgreementDate}`}
             {inv.uncollectibleReason && ` · oninbaar: ${inv.uncollectibleReason}`}
           </p>
-          {inv.description && <p className="type-caption text-white/60">{inv.description}</p>}
+          {inv.description && <p className="type-caption text-muted-foreground">{inv.description}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           {/* Mobiel toegestaan: herinneren en betaald markeren. */}
           {open && (
             <button
-              className="flex items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 type-caption text-white/80"
+              className="flex items-center gap-1 rounded-full border border-border px-3 py-1.5 type-caption text-foreground/80"
               onClick={() => remind.mutate({ invoiceId: inv.id })}
               disabled={remind.isPending}
             >
@@ -150,7 +150,7 @@ function InvoiceRow({ inv }: { inv: TrainerInvoice }) {
           )}
           {open && (
             <button
-              className="flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 type-caption text-emerald-300"
+              className="flex items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 type-caption text-[color:var(--color-positive)]"
               onClick={() => markPaid.mutate({ invoiceId: inv.id, body: { amountCents: rest } })}
               disabled={markPaid.isPending}
             >
@@ -160,7 +160,7 @@ function InvoiceRow({ inv }: { inv: TrainerInvoice }) {
           {/* Desktop-only (samenstellen/afwikkelen): verzenden, betaalafspraak, oninbaar. */}
           {inv.status === "concept" && (
             <button
-              className="hidden sm:flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 type-caption text-black"
+              className="hidden sm:flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 type-caption text-foreground"
               onClick={() => send.mutate({ invoiceId: inv.id })}
               disabled={send.isPending}
             >
@@ -169,7 +169,7 @@ function InvoiceRow({ inv }: { inv: TrainerInvoice }) {
           )}
           {open && (
             <button
-              className="hidden sm:flex items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 type-caption text-white/80"
+              className="hidden sm:flex items-center gap-1 rounded-full border border-border px-3 py-1.5 type-caption text-foreground/80"
               onClick={() => setShowAgreement((v) => !v)}
             >
               <CalendarClock className="h-3.5 w-3.5" /> Betaalafspraak
@@ -177,7 +177,7 @@ function InvoiceRow({ inv }: { inv: TrainerInvoice }) {
           )}
           {open && (
             <button
-              className="hidden sm:flex items-center gap-1 rounded-full border border-red-400/30 px-3 py-1.5 type-caption text-red-300/90"
+              className="hidden sm:flex items-center gap-1 rounded-full border border-red-400/30 px-3 py-1.5 type-caption text-[color:var(--color-negative)]"
               onClick={() => setShowUncollectible((v) => !v)}
             >
               <Ban className="h-3.5 w-3.5" /> Oninbaar
@@ -189,19 +189,19 @@ function InvoiceRow({ inv }: { inv: TrainerInvoice }) {
         <div className="mt-3 hidden sm:flex flex-wrap items-center gap-2">
           <input
             type="date"
-            className="rounded-lg border border-white/15 bg-transparent px-2 py-1 type-caption text-white"
+            className="rounded-lg border border-border bg-transparent px-2 py-1 type-caption text-foreground"
             value={agreementDate}
             onChange={(e) => setAgreementDate(e.target.value)}
           />
           <input
             type="text"
             placeholder="Afspraak (bijv. betaalt na salarisdatum)"
-            className="min-w-48 flex-1 rounded-lg border border-white/15 bg-transparent px-2 py-1 type-caption text-white"
+            className="min-w-48 flex-1 rounded-lg border border-border bg-transparent px-2 py-1 type-caption text-foreground"
             value={agreementNote}
             onChange={(e) => setAgreementNote(e.target.value)}
           />
           <button
-            className="rounded-full bg-white/90 px-3 py-1.5 type-caption text-black disabled:opacity-40"
+            className="rounded-full bg-muted px-3 py-1.5 type-caption text-foreground disabled:opacity-40"
             disabled={!agreementDate || agreement.isPending}
             onClick={() => {
               agreement.mutate({
@@ -220,12 +220,12 @@ function InvoiceRow({ inv }: { inv: TrainerInvoice }) {
           <input
             type="text"
             placeholder="Reden (verplicht)"
-            className="min-w-48 flex-1 rounded-lg border border-white/15 bg-transparent px-2 py-1 type-caption text-white"
+            className="min-w-48 flex-1 rounded-lg border border-border bg-transparent px-2 py-1 type-caption text-foreground"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
           <button
-            className="rounded-full border border-red-400/40 px-3 py-1.5 type-caption text-red-300 disabled:opacity-40"
+            className="rounded-full border border-red-400/40 px-3 py-1.5 type-caption text-[color:var(--color-negative)] disabled:opacity-40"
             disabled={!reason.trim() || uncollectible.isPending}
             onClick={() => {
               uncollectible.mutate({ invoiceId: inv.id, body: { reason: reason.trim() } })
@@ -255,14 +255,14 @@ export default function FacturatiePage() {
       <div className="space-y-5 pb-24">
         {dashboard.isLoading && (
           <div className="flex justify-center py-10">
-            <Loader2 className="h-5 w-5 animate-spin text-white/60" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
 
         {primary && (
-          <div className={`${CARD} border-white/20`} data-testid="primary-action">
+          <div className={`${CARD} border-border`} data-testid="primary-action">
             <SectionLabel title="Eerstvolgende actie" />
-            <p className="type-body mt-1 text-white">{primary.label}</p>
+            <p className="type-body mt-1 text-foreground">{primary.label}</p>
           </div>
         )}
 
@@ -278,7 +278,7 @@ export default function FacturatiePage() {
           <SectionLabel title="Facturen" />
           <div className="mt-2 space-y-3">
             {invoices.data?.length === 0 && (
-              <p className="type-caption text-white/60">
+              <p className="type-caption text-muted-foreground">
                 Nog geen facturen. Samenstellen doe je op een groter scherm.
               </p>
             )}
@@ -286,7 +286,7 @@ export default function FacturatiePage() {
               <div key={inv.id}>
                 <InvoiceRow inv={inv} />
                 <button
-                  className="mt-1 flex items-center gap-1 type-caption text-white/50 hover:text-white/80"
+                  className="mt-1 flex items-center gap-1 type-caption text-muted-foreground hover:text-foreground/80"
                   onClick={() =>
                     setHistoryClientId((cur) => (cur === inv.clientId ? null : inv.clientId))
                   }
@@ -301,23 +301,23 @@ export default function FacturatiePage() {
         {historyClientId != null && history.data && (
           <section className={CARD}>
             <SectionLabel title={`Historie · ${history.data.client.name}`} />
-            <p className="type-caption mt-1 text-white/70">
+            <p className="type-caption mt-1 text-muted-foreground">
               Gemiddelde betaaltermijn:{" "}
               {history.data.paymentBehavior.avgPaymentDays != null
                 ? `${history.data.paymentBehavior.avgPaymentDays} dagen`
                 : "nog onbekend"}{" "}
               · {history.data.paymentBehavior.timesLate}× te laat
             </p>
-            <p className="type-caption text-white/40">{history.data.paymentBehavior.note}</p>
+            <p className="type-caption text-muted-foreground">{history.data.paymentBehavior.note}</p>
             <ul className="mt-2 space-y-1">
               {history.data.events.map((e) => (
-                <li key={e.id} className="type-caption text-white/70">
-                  <span className="text-white/40">{e.createdAt.slice(0, 10)}</span> · {e.body}
+                <li key={e.id} className="type-caption text-muted-foreground">
+                  <span className="text-muted-foreground">{e.createdAt.slice(0, 10)}</span> · {e.body}
                   {e.channel === "e-mail" && " (per e-mail)"}
                 </li>
               ))}
               {history.data.events.length === 0 && (
-                <li className="type-caption text-white/50">Nog geen gebeurtenissen.</li>
+                <li className="type-caption text-muted-foreground">Nog geen gebeurtenissen.</li>
               )}
             </ul>
           </section>
@@ -329,35 +329,35 @@ export default function FacturatiePage() {
             <SectionLabel title={`Rapportage ${reports.data.year}`} />
             <div className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div>
-                <p className="type-caption text-white/50">Omzet</p>
-                <p className="type-body text-white">{euro(reports.data.totalCents)}</p>
+                <p className="type-caption text-muted-foreground">Omzet</p>
+                <p className="type-body text-foreground">{euro(reports.data.totalCents)}</p>
               </div>
               <div>
-                <p className="type-caption text-white/50">Openstaand</p>
-                <p className="type-body text-white">{euro(reports.data.openAmountCents)}</p>
+                <p className="type-caption text-muted-foreground">Openstaand</p>
+                <p className="type-body text-foreground">{euro(reports.data.openAmountCents)}</p>
               </div>
               <div>
-                <p className="type-caption text-white/50">Gem. betaaltermijn</p>
-                <p className="type-body text-white">
+                <p className="type-caption text-muted-foreground">Gem. betaaltermijn</p>
+                <p className="type-body text-foreground">
                   {reports.data.avgPaymentDays != null ? `${reports.data.avgPaymentDays} dagen` : "—"}
                 </p>
               </div>
               <div>
-                <p className="type-caption text-white/50">Facturen</p>
-                <p className="type-body text-white">{reports.data.invoiceCount}</p>
+                <p className="type-caption text-muted-foreground">Facturen</p>
+                <p className="type-body text-foreground">{reports.data.invoiceCount}</p>
               </div>
             </div>
             <div className="mt-3">
-              <p className="type-caption text-white/50">Per kwartaal</p>
+              <p className="type-caption text-muted-foreground">Per kwartaal</p>
               <div className="mt-1 flex flex-wrap gap-3">
                 {Object.entries(reports.data.perQuarter).map(([q, cents]) => (
-                  <span key={q} className="type-caption text-white/80">
+                  <span key={q} className="type-caption text-foreground/80">
                     {q}: {euro(cents)}
                   </span>
                 ))}
               </div>
             </div>
-            <p className="type-caption mt-3 text-white/40">{reports.data.vatOverview.note}</p>
+            <p className="type-caption mt-3 text-muted-foreground">{reports.data.vatOverview.note}</p>
           </section>
         )}
       </div>

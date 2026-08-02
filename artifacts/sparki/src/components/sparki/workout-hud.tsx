@@ -60,7 +60,7 @@ export function WorkoutHud({
       : null
 
   return (
-    <div className="pointer-events-auto overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/95 backdrop-blur-md">
+    <div className="pointer-events-auto overflow-hidden rounded-2xl border border-border bg-card backdrop-blur-md">
       {/* Blokkenbalk: de hele training in één oogopslag, voortgang loopt mee. */}
       <div className="relative flex h-2.5 w-full">
         {segs.map((s) => (
@@ -74,7 +74,7 @@ export function WorkoutHud({
           />
         ))}
         <div
-          className="absolute top-0 h-full w-[2px] bg-white"
+          className="absolute top-0 h-full w-[2px] bg-card"
           style={{ left: `${Math.min(100, (elapsedSec / totalSec) * 100)}%` }}
         />
       </div>
@@ -84,13 +84,13 @@ export function WorkoutHud({
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center justify-between gap-2 px-3 pt-2 text-left"
       >
-        <span className="truncate font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+        <span className="truncate font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
           {title}
         </span>
         {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-white/40" />
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         ) : (
-          <ChevronUp className="h-3.5 w-3.5 shrink-0 text-white/40" />
+          <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         )}
       </button>
 
@@ -100,22 +100,22 @@ export function WorkoutHud({
             {done ? "Training afgerond" : current!.block.label}
           </span>
           {!done && (
-            <span className="font-mono text-[13px] tabular-nums text-white/80">
+            <span className="font-mono text-[13px] tabular-nums text-foreground/80">
               {formatClock(remaining)}
             </span>
           )}
           {turnHold && (
-            <span className="truncate text-[11px] font-medium text-amber-300">
+            <span className="truncate text-[11px] font-medium text-[color:var(--color-warning)]">
               start na de bocht
             </span>
           )}
         </div>
       ) : done ? (
         <div className="px-3 pb-3 pt-1">
-          <p className="text-[15px] font-medium text-emerald-300">
+          <p className="text-[15px] font-medium text-[color:var(--color-positive)]">
             Training afgerond — goed gedaan.
           </p>
-          <p className="mt-0.5 text-[11px] text-white/45">
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
             {structure.recoveryAdvice}
           </p>
         </div>
@@ -134,7 +134,7 @@ export function WorkoutHud({
               </p>
               {/* Bij intervallen extra groot: resterende tijd + doelwatts. */}
               <p
-                className={`font-mono tabular-nums leading-none text-white ${
+                className={`font-mono tabular-nums leading-none text-foreground ${
                   isWork ? "mt-1 text-[38px]" : "mt-0.5 text-[26px]"
                 }`}
               >
@@ -146,13 +146,13 @@ export function WorkoutHud({
                 <p
                   className={`font-mono tabular-nums leading-none ${
                     isWork ? "text-[26px]" : "text-[18px]"
-                  } text-white/90`}
+                  } text-foreground/90`}
                 >
                   {target.low}–{target.high}
-                  <span className="ml-1 text-[12px] text-white/40">W</span>
+                  <span className="ml-1 text-[12px] text-muted-foreground">W</span>
                 </p>
               ) : (
-                <p className="font-mono text-[18px] leading-none text-white/80">
+                <p className="font-mono text-[18px] leading-none text-foreground/80">
                   Zone {current!.block.zone}
                 </p>
               )}
@@ -160,12 +160,12 @@ export function WorkoutHud({
                 <p
                   className={`mt-1 font-mono text-[13px] tabular-nums ${
                     status === "goed"
-                      ? "text-emerald-300"
+                      ? "text-[color:var(--color-positive)]"
                       : status === "onder"
-                        ? "text-sky-300"
+                        ? "text-sky-700"
                         : status === "boven"
-                          ? "text-orange-300"
-                          : "text-white/60"
+                          ? "text-[color:var(--color-warning)]"
+                          : "text-muted-foreground"
                   }`}
                 >
                   nu {liveWatts} W
@@ -181,17 +181,17 @@ export function WorkoutHud({
             </div>
           </div>
           <div className="mt-1.5 flex items-center justify-between gap-2">
-            <p className="truncate text-[11px] text-white/40">
+            <p className="truncate text-[11px] text-muted-foreground">
               {next
                 ? `Hierna: ${next.block.label} (${formatClock(next.endSec - next.startSec)})`
                 : "Laatste blok"}
             </p>
-            <p className="shrink-0 font-mono text-[11px] tabular-nums text-white/40">
+            <p className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
               totaal {formatClock(Math.max(0, totalSec - elapsedSec))}
             </p>
           </div>
           {turnHold && (
-            <p className="mt-1 text-[12px] font-medium text-amber-300">
+            <p className="mt-1 text-[12px] font-medium text-[color:var(--color-warning)]">
               Bocht vooruit — het interval start zodra je de bocht door bent.
             </p>
           )}

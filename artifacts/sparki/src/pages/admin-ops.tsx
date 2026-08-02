@@ -76,29 +76,29 @@ function SystemModePanel({ onShutdown }: { onShutdown: () => void }) {
   const mutation = useSetSystemMode()
 
   if (isLoading || !data) {
-    return <p className="text-sm text-white/40">Modus laden…</p>
+    return <p className="text-sm text-muted-foreground">Modus laden…</p>
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-      <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/40">
+    <div className="rounded-2xl border border-border bg-muted p-5">
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         Huidige systeemmodus
       </h2>
       <div className="flex items-center gap-3 mt-2">
         <ModeTag mode={data.mode} />
         {data.reason && (
-          <span className="text-sm text-white/50">{data.reason}</span>
+          <span className="text-sm text-muted-foreground">{data.reason}</span>
         )}
       </div>
       {data.changedAt && (
-        <p className="mt-1 text-xs text-white/30">
+        <p className="mt-1 text-xs text-muted-foreground">
           Gewijzigd: {new Date(data.changedAt).toLocaleString("nl-NL")}
         </p>
       )}
 
       {/* Modus wijzigen — alleen de niet-destructieve modi inline. */}
-      <div className="mt-5 border-t border-white/[0.07] pt-4">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/40">
+      <div className="mt-5 border-t border-border pt-4">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Modus wijzigen
         </h3>
         <div className="flex flex-wrap gap-2 mb-3">
@@ -109,8 +109,8 @@ function SystemModePanel({ onShutdown }: { onShutdown: () => void }) {
               onClick={() => setNewMode(m.value)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 newMode === m.value
-                  ? `border-white/30 ${m.bg} ${m.color}`
-                  : "border-white/[0.08] text-white/40 hover:border-white/20"
+                  ? `border-border ${m.bg} ${m.color}`
+                  : "border-border text-muted-foreground hover:border-border"
               }`}
             >
               {m.label}
@@ -122,7 +122,7 @@ function SystemModePanel({ onShutdown }: { onShutdown: () => void }) {
           placeholder="Reden (optioneel)"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          className="mb-3 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-white/25"
+          className="mb-3 w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-white/30 outline-none focus:border-border"
         />
         <button
           type="button"
@@ -131,7 +131,7 @@ function SystemModePanel({ onShutdown }: { onShutdown: () => void }) {
             if (!newMode) return
             mutation.mutate({ mode: newMode, reason: reason || undefined })
           }}
-          className="rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40 hover:bg-white/15 transition-colors"
+          className="rounded-xl bg-muted px-5 py-2.5 text-sm font-semibold text-foreground disabled:opacity-40 hover:bg-muted transition-colors"
         >
           {mutation.isPending ? "Opslaan…" : "Modus instellen"}
         </button>
@@ -146,14 +146,14 @@ function SystemModePanel({ onShutdown }: { onShutdown: () => void }) {
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-widest text-red-400/80">
           Dienst stoppen
         </h3>
-        <p className="mb-3 text-xs text-white/40">
+        <p className="mb-3 text-xs text-muted-foreground">
           {SHUTDOWN_MODE.label} zet de hele dienst stil. Dit opent een apart
           bevestigingsvenster.
         </p>
         <button
           type="button"
           onClick={onShutdown}
-          className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15"
+          className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-[color:var(--color-negative)] transition-colors hover:bg-red-500/15"
         >
           Dienst stoppen openen
         </button>
@@ -178,7 +178,7 @@ function ShutdownSheet({
   return (
     <BeheerSheet open={open} onOpenChange={onOpenChange} titel="Dienst stoppen">
       <div className="space-y-4">
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-muted-foreground">
           {SHUTDOWN_MODE.label} ({SHUTDOWN_MODE.value}) zet de volledige dienst
           stil en vereist bevestiging van twee beheerders. Er gebeurt niets
           totdat je hieronder expliciet bevestigt.
@@ -188,9 +188,9 @@ function ShutdownSheet({
           placeholder="Reden (verplicht)"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-white/25"
+          className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-white/30 outline-none focus:border-border"
         />
-        <label className="flex items-start gap-2 text-sm text-white/70">
+        <label className="flex items-start gap-2 text-sm text-muted-foreground">
           <input
             type="checkbox"
             checked={confirmed}
@@ -215,14 +215,14 @@ function ShutdownSheet({
                 },
               )
             }}
-            className="rounded-xl border border-red-500/40 bg-red-500/15 px-5 py-2.5 text-sm font-semibold text-red-200 disabled:opacity-40 hover:bg-red-500/25 transition-colors"
+            className="rounded-xl border border-red-500/40 bg-red-500/15 px-5 py-2.5 text-sm font-semibold text-[color:var(--color-negative)] disabled:opacity-40 hover:bg-red-500/25 transition-colors"
           >
             {mutation.isPending ? "Bezig…" : "Dienst stoppen"}
           </button>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-xl border border-white/15 px-5 py-2.5 text-sm text-white/70"
+            className="rounded-xl border border-border px-5 py-2.5 text-sm text-muted-foreground"
           >
             Annuleren
           </button>
@@ -249,7 +249,7 @@ type BuildRatingAggregateRow = {
 const TREND_LABEL: Record<string, { text: string; color: string }> = {
   beter: { text: "↑ beter", color: "text-emerald-400" },
   slechter: { text: "↓ slechter", color: "text-red-400" },
-  gelijk: { text: "→ gelijk", color: "text-white/40" },
+  gelijk: { text: "→ gelijk", color: "text-muted-foreground" },
 }
 
 // Sterren-beoordelingen op gebouwde onderdelen — vaste audit-input. Alleen
@@ -264,23 +264,23 @@ function BuildRatingsPanel() {
   })
 
   if (isLoading)
-    return <p className="text-sm text-white/40">Beoordelingen laden…</p>
+    return <p className="text-sm text-muted-foreground">Beoordelingen laden…</p>
 
   const rows = data?.aggregates ?? []
   const weak = new Set(data?.weakSubjectTypes ?? [])
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-      <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/40">
+    <div className="rounded-2xl border border-border bg-muted p-5">
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         Beoordelingen op gebouwde onderdelen
       </h2>
-      <p className="mb-3 text-xs text-white/40">
+      <p className="mb-3 text-xs text-muted-foreground">
         Sterren van sporters per onderdeel (alleen geaggregeerd). Zwak scorende
         onderdelen (gem. &lt; 3★ bij ≥ 3 beoordelingen) staan bovenaan de
         auditagenda.
       </p>
       {rows.length === 0 ? (
-        <p className="text-sm text-white/30">Nog geen beoordelingen.</p>
+        <p className="text-sm text-muted-foreground">Nog geen beoordelingen.</p>
       ) : (
         <div className="space-y-2">
           {rows.map((row) => {
@@ -292,23 +292,23 @@ function BuildRatingsPanel() {
                 className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 ${
                   isWeak
                     ? "border-red-400/30 bg-red-400/[0.06]"
-                    : "border-white/[0.07] bg-white/[0.03]"
+                    : "border-border bg-muted"
                 }`}
               >
                 <div className="min-w-0">
-                  <span className="text-sm text-white/80">{row.label}</span>
+                  <span className="text-sm text-foreground/80">{row.label}</span>
                   {isWeak && (
-                    <span className="ml-2 rounded-full bg-red-400/15 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                    <span className="ml-2 rounded-full bg-red-400/15 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--color-negative)]">
                       Audit-prioriteit
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-4 font-mono text-xs tabular-nums">
-                  <span className="text-amber-300">
+                  <span className="text-[color:var(--color-warning)]">
                     {row.average != null ? `${row.average.toFixed(2)}★` : "—"}
                   </span>
-                  <span className="text-white/40">{row.count}×</span>
-                  <span className="text-white/40">
+                  <span className="text-muted-foreground">{row.count}×</span>
+                  <span className="text-muted-foreground">
                     30d:{" "}
                     {row.recentAverage != null
                       ? `${row.recentAverage.toFixed(2)}★ (${row.recentCount}×)`
@@ -317,7 +317,7 @@ function BuildRatingsPanel() {
                   {trend ? (
                     <span className={trend.color}>{trend.text}</span>
                   ) : (
-                    <span className="text-white/25">geen trend</span>
+                    <span className="text-muted-foreground">geen trend</span>
                   )}
                 </div>
               </div>
@@ -335,31 +335,31 @@ function OpsLogPanel() {
     queryFn: () => apiFetch("/api/admin/ops-log"),
   })
 
-  if (isLoading) return <p className="text-sm text-white/40">Log laden…</p>
+  if (isLoading) return <p className="text-sm text-muted-foreground">Log laden…</p>
 
   const rows = data?.log ?? []
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/40">
+    <div className="rounded-2xl border border-border bg-muted p-5">
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         Recente beheerdersacties
       </h2>
       {rows.length === 0 ? (
-        <p className="text-sm text-white/30">Nog geen acties geregistreerd.</p>
+        <p className="text-sm text-muted-foreground">Nog geen acties geregistreerd.</p>
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (
-            <div key={row.id} className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+            <div key={row.id} className="rounded-xl border border-border bg-muted px-4 py-3">
               <div className="flex items-start justify-between gap-2">
-                <span className="font-mono text-xs text-white/70">{row.action}</span>
-                <span className="shrink-0 text-xs text-white/30">
+                <span className="font-mono text-xs text-muted-foreground">{row.action}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
                   {new Date(row.createdAt).toLocaleString("nl-NL")}
                 </span>
               </div>
               {row.reason && (
-                <p className="mt-1 text-xs text-white/50">{row.reason}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{row.reason}</p>
               )}
-              <p className="mt-1 font-mono text-[10px] text-white/25">
+              <p className="mt-1 font-mono text-[10px] text-muted-foreground">
                 {row.actorClerkId}
               </p>
             </div>
@@ -390,15 +390,15 @@ export default function AdminOpsPage() {
       <div className="flex flex-col gap-5">
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-lg font-semibold text-white">Operationeel beheer</h1>
-            <p className="mt-1 text-sm text-white/50">
+            <h1 className="text-lg font-semibold text-foreground">Operationeel beheer</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               Systeemmodus en auditlog. De modus is fail-open (NORMAL bij
               leesfout). Wijzigingen worden opgeslagen in de admin-ops-log.
             </p>
           </div>
           <Link
             href="/admin"
-            className="shrink-0 text-xs text-white/40 hover:text-white/70"
+            className="shrink-0 text-xs text-muted-foreground hover:text-muted-foreground"
           >
             ← Admin
           </Link>

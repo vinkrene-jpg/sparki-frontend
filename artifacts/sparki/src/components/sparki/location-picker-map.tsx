@@ -85,7 +85,7 @@ export function LocationPickerMap({
   return (
     <div
       ref={containerRef}
-      className={`w-full overflow-hidden rounded-xl border border-white/[0.08] ${className}`}
+      className={`w-full overflow-hidden rounded-xl border border-border ${className}`}
       style={{ height: 220, background: "#05070e" }}
     />
   )

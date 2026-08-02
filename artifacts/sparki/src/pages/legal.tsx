@@ -15,7 +15,7 @@ function renderInline(text: string, keyPrefix: string) {
   const parts = text.split(/\*\*(.+?)\*\*/g)
   return parts.map((part, i) =>
     i % 2 === 1 ? (
-      <strong key={`${keyPrefix}-${i}`} className="font-semibold text-white/90">
+      <strong key={`${keyPrefix}-${i}`} className="font-semibold text-foreground/90">
         {part}
       </strong>
     ) : (
@@ -32,7 +32,7 @@ function MarkdownBody({ md }: { md: string }) {
   const flushList = (key: string) => {
     if (list.length === 0) return
     blocks.push(
-      <ul key={key} className="my-2 list-disc space-y-1 pl-5 text-white/65">
+      <ul key={key} className="my-2 list-disc space-y-1 pl-5 text-muted-foreground">
         {list.map((item, i) => (
           <li key={i}>{renderInline(item, `${key}-${i}`)}</li>
         ))}
@@ -51,19 +51,19 @@ function MarkdownBody({ md }: { md: string }) {
     flushList(`ul-${idx}`)
     if (line.startsWith("## ")) {
       blocks.push(
-        <h2 key={key} className="mt-6 text-[15px] font-semibold text-white/90">
+        <h2 key={key} className="mt-6 text-[15px] font-semibold text-foreground/90">
           {line.slice(3)}
         </h2>,
       )
     } else if (line.startsWith("# ")) {
       blocks.push(
-        <h1 key={key} className="text-xl font-semibold text-white">
+        <h1 key={key} className="text-xl font-semibold text-foreground">
           {line.slice(2)}
         </h1>,
       )
     } else if (line.startsWith("*") && line.endsWith("*") && !line.startsWith("**")) {
       blocks.push(
-        <p key={key} className="mt-1 text-[12px] italic text-white/45">
+        <p key={key} className="mt-1 text-[12px] italic text-muted-foreground">
           {line.replace(/^\*|\*$/g, "")}
         </p>,
       )
@@ -71,7 +71,7 @@ function MarkdownBody({ md }: { md: string }) {
       // lege regel — spacing zit al in de blokken
     } else {
       blocks.push(
-        <p key={key} className="mt-2 text-[13px] leading-relaxed text-white/65">
+        <p key={key} className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
           {renderInline(line, key)}
         </p>,
       )
@@ -85,26 +85,26 @@ export default function LegalPage({ kind }: { kind: "privacy" | "terms" }) {
   const { data: doc, isLoading, isError } = useLegalDocument(kind)
 
   return (
-    <div className="min-h-screen bg-[#05070e] px-5 py-10">
+    <div className="min-h-screen bg-background px-5 py-10">
       <div className="mx-auto max-w-2xl">
-        <Link href="/" className="inline-flex items-center gap-2 text-white/80">
+        <Link href="/" className="inline-flex items-center gap-2 text-foreground/80">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400/15">
-            <Zap className="h-4 w-4 text-cyan-300" />
+            <Zap className="h-4 w-4 text-accent-cyan" />
           </span>
           <span className="text-sm font-semibold tracking-wide">SPARKI</span>
         </Link>
 
         <div className="mt-8">
           {isLoading ? (
-            <div className="h-40 animate-pulse rounded-xl bg-white/[0.06]" />
+            <div className="h-40 animate-pulse rounded-xl bg-muted" />
           ) : isError || !doc ? (
-            <p className="text-[13px] text-white/60">
+            <p className="text-[13px] text-muted-foreground">
               Het document kon niet geladen worden. Probeer het straks opnieuw.
             </p>
           ) : (
             <>
               <MarkdownBody md={doc.bodyMd} />
-              <p className="mt-8 text-[11px] text-white/35">
+              <p className="mt-8 text-[11px] text-muted-foreground">
                 Versie {doc.version}
                 {doc.publishedAt
                   ? ` — gepubliceerd op ${new Date(doc.publishedAt).toLocaleDateString("nl-NL")}`

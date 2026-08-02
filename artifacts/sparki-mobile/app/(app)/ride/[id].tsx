@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ElevationProfile } from "@/components/ElevationProfile";
 import { TrackMap } from "@/components/TrackMap";
+import palette from "@/constants/colors";
 import { useColors } from "@/hooks/useColors";
 import type { LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
@@ -1051,8 +1052,11 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   shareText: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  // Deelbare statistiekkaart (geëxporteerde PNG): LICHT_THEMA_01 — licht vlak,
+  // donkere tekst, merkaccent in het donkerder cyaan. Geen eigen donkere hex
+  // meer; het lichte thema geldt ook voor de deelafbeelding (app == browser).
   shareStatsCard: {
-    backgroundColor: "#05070e",
+    backgroundColor: palette.light.card,
     padding: 18,
     marginTop: 10,
     gap: 4,
@@ -1061,12 +1065,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 10,
     letterSpacing: 2,
-    color: "rgba(125,227,244,0.75)",
+    color: palette.light.tint,
   },
   shareStatsTitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 22,
-    color: "rgba(255,255,255,0.95)",
+    color: palette.light.foreground,
     marginTop: 2,
   },
   shareStatsRow: {
@@ -1078,19 +1082,19 @@ const styles = StyleSheet.create({
   shareStatsValue: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 18,
-    color: "rgba(255,255,255,0.92)",
+    color: palette.light.foreground,
   },
   shareStatsLabel: {
     fontFamily: "Inter_400Regular",
     fontSize: 11,
-    color: "rgba(255,255,255,0.45)",
+    color: palette.light.mutedForeground,
     marginTop: 1,
   },
   shareStatsBrand: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     letterSpacing: 3,
-    color: "rgba(125,227,244,0.9)",
+    color: palette.light.tint,
     marginTop: 14,
   },
   shareNote: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17 },

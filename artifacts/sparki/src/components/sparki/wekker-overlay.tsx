@@ -54,7 +54,7 @@ export function WekkerOverlay({
       aria-label="Wekker"
       onClick={() => soundManager.resumeAlarm()}
     >
-      <div className="flex items-center gap-2 text-cyan-300/80">
+      <div className="flex items-center gap-2 text-accent-cyan">
         <span className="relative flex h-2.5 w-2.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300/60" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-300" />
@@ -64,14 +64,14 @@ export function WekkerOverlay({
         </span>
       </div>
 
-      <Bell className="mt-8 h-10 w-10 text-cyan-300" strokeWidth={1.5} />
+      <Bell className="mt-8 h-10 w-10 text-accent-cyan" strokeWidth={1.5} />
 
-      <div className="mt-4 text-7xl font-semibold tabular-nums tracking-tight text-white">
+      <div className="mt-4 text-7xl font-semibold tabular-nums tracking-tight text-foreground">
         {hh}
-        <span className="text-cyan-300/70">:</span>
+        <span className="text-accent-cyan">:</span>
         {mm}
       </div>
-      <p className="mt-3 text-base text-white/70">{greet}</p>
+      <p className="mt-3 text-base text-muted-foreground">{greet}</p>
 
       <div className="mt-12 flex w-full max-w-xs flex-col gap-3">
         <button
@@ -84,7 +84,7 @@ export function WekkerOverlay({
         <button
           type="button"
           onClick={onSnooze}
-          className="rounded-full border border-white/15 px-6 py-3.5 text-sm font-medium text-white/70 transition hover:bg-white/[0.06]"
+          className="rounded-full border border-border px-6 py-3.5 text-sm font-medium text-muted-foreground transition hover:bg-muted"
         >
           9 minuten sluimeren
         </button>

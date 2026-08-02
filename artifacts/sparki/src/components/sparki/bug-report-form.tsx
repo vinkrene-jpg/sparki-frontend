@@ -9,8 +9,8 @@ export function BugReportForm() {
   return (
     <section>
       <SectionLabel n="09" title="Feedback & bugs" />
-      <div className="mt-4 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-        <p className="text-[12px] leading-relaxed text-white/45">
+      <div className="mt-4 rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+        <p className="text-[12px] leading-relaxed text-muted-foreground">
           Iets kapot, een idee of een vraag? Meld het direct — de pagina en je
           rol worden automatisch meegestuurd, en je kunt een screenshot
           toevoegen.
@@ -18,7 +18,7 @@ export function BugReportForm() {
         <button
           type="button"
           onClick={openFeedback}
-          className="mt-3 w-full rounded-lg py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition active:scale-[0.99]"
+          className="mt-3 w-full rounded-lg py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-on-accent)] transition active:scale-[0.99]"
           style={{ background: ACCENT }}
         >
           Feedback & bug melden

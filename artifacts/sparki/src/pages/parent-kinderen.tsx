@@ -30,35 +30,35 @@ import { useParentChildGoals } from "@/hooks/use-goals"
 function DoelenBlock({ athleteClerkId }: { athleteClerkId: string }) {
   const { data, isLoading, isError } = useParentChildGoals(athleteClerkId)
   if (isLoading)
-    return <div className="mt-3 h-5 w-40 animate-pulse rounded bg-white/[0.06]" />
+    return <div className="mt-3 h-5 w-40 animate-pulse rounded bg-muted" />
   if (isError)
     return (
-      <p className="mt-3 text-[12px] text-white/35">
+      <p className="mt-3 text-[12px] text-muted-foreground">
         Doelen zijn hier niet beschikbaar.
       </p>
     )
   if (!data) return null
   return (
     <div className="mt-3" data-testid="ouder-doelen">
-      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         Doelen (meekijken)
       </p>
       {data.goals.length === 0 ? (
-        <p className="mt-1.5 text-[12px] text-white/35">Nog geen doelen vastgelegd.</p>
+        <p className="mt-1.5 text-[12px] text-muted-foreground">Nog geen doelen vastgelegd.</p>
       ) : (
         <ul className="mt-1.5 space-y-1">
           {data.goals.map((g) => (
-            <li key={g.id} className="text-[12px] text-white/60">
-              <span className="text-white/80">{g.title}</span>
+            <li key={g.id} className="text-[12px] text-muted-foreground">
+              <span className="text-foreground/80">{g.title}</span>
               {g.priority === 1 && (
-                <span className="ml-1.5 text-[10px] text-cyan-200/70">hoofddoel</span>
+                <span className="ml-1.5 text-[10px] text-accent-cyan">hoofddoel</span>
               )}
             </li>
           ))}
         </ul>
       )}
       {data.events.length > 0 && (
-        <p className="mt-1.5 text-[11px] text-white/30">
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
           Laatste wijziging:{" "}
           {new Date(data.events[0].createdAt).toLocaleDateString("nl-NL", {
             day: "numeric",
@@ -86,23 +86,23 @@ function TrainerBlock({
 }) {
   const { data, isLoading, isError } = useParentTrainers(athleteClerkId)
   if (isLoading)
-    return <div className="mt-3 h-5 w-40 animate-pulse rounded bg-white/[0.06]" />
+    return <div className="mt-3 h-5 w-40 animate-pulse rounded bg-muted" />
   if (isError)
     return (
-      <p className="mt-3 text-[12px] text-white/35">
+      <p className="mt-3 text-[12px] text-muted-foreground">
         Trainergegevens konden niet geladen worden.
       </p>
     )
   if (!data) return null
   if (!data.allowed)
     return (
-      <p className="mt-3 text-[12px] text-white/35" data-testid="trainer-blocked">
+      <p className="mt-3 text-[12px] text-muted-foreground" data-testid="trainer-blocked">
         Trainercontact is niet gedeeld (categorie “communicatie” staat uit).
       </p>
     )
   if (data.trainers.length === 0)
     return (
-      <p className="mt-3 text-[12px] text-white/35">
+      <p className="mt-3 text-[12px] text-muted-foreground">
         Geen trainer gekoppeld aan dit kind.
       </p>
     )
@@ -110,9 +110,9 @@ function TrainerBlock({
     <div className="mt-3 space-y-1.5" data-testid="trainer-contact">
       {data.trainers.map((t, i) => (
         <div key={i} className="space-y-1">
-          <div className="flex items-center gap-2 text-[12px] text-white/60">
-            <Contact className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-            <span className="text-white/80">{t.displayName}</span>
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <Contact className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+            <span className="text-foreground/80">{t.displayName}</span>
             {t.email && (
               <a
                 href={`mailto:${t.email}`}
@@ -156,17 +156,17 @@ function KindCard({
     <div
       className="rounded-2xl border p-4 backdrop-blur-md transition-colors"
       style={{
-        borderColor: selected ? "rgba(120,210,230,0.35)" : "rgba(255,255,255,0.08)",
+        borderColor: selected ? "rgba(120,210,230,0.35)" : "var(--color-border)",
         background: "rgba(7,13,22,0.82)",
       }}
       data-testid={`kind-card-${child.athleteClerkId}`}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-[15px] tracking-tight text-white/90">
+          <div className="text-[15px] tracking-tight text-foreground/90">
             {child.displayName ?? "Sporter"}
           </div>
-          <div className="mt-0.5 text-[11px] text-white/40">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {tierLabel[child.access.tier] ?? tierLabel.unknown}
           </div>
         </div>
@@ -181,7 +181,7 @@ function KindCard({
           <button
             type="button"
             onClick={onSelect}
-            className="shrink-0 rounded-full border border-white/[0.12] px-3 py-1.5 text-[12px] text-white/70 transition-colors hover:bg-white/[0.06]"
+            className="shrink-0 rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted"
             data-testid={`kies-kind-${child.athleteClerkId}`}
           >
             Kies dit kind
@@ -234,20 +234,20 @@ function ClubDocsBlock({ athleteClerkId }: { athleteClerkId: string }) {
 
   return (
     <div className="mt-3" data-testid="ouder-clubdocumenten">
-      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         Clubdocumenten
       </p>
       {clubs.map((club) => (
         <div key={club.clubId} className="mt-1.5">
-          <p className="text-[11px] text-white/50">{club.clubName}</p>
+          <p className="text-[11px] text-muted-foreground">{club.clubName}</p>
           <ul className="mt-1 space-y-1">
             {club.documents.map((d) => (
               <li key={d.id} className="flex items-center justify-between gap-2">
-                <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-white/70">
-                  <FileText className="h-3 w-3 shrink-0 text-cyan-200/60" />
+                <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+                  <FileText className="h-3 w-3 shrink-0 text-accent-cyan" />
                   <span className="truncate">
                     {d.title}
-                    <span className="ml-1 text-white/35">
+                    <span className="ml-1 text-muted-foreground">
                       ({CLUB_DOC_CATEGORY_LABELS[d.category] ?? d.category})
                     </span>
                   </span>
@@ -266,7 +266,7 @@ function ClubDocsBlock({ athleteClerkId }: { athleteClerkId: string }) {
           </ul>
         </div>
       ))}
-      {error && <p className="mt-1 text-[11px] text-rose-300/80">{error}</p>}
+      {error && <p className="mt-1 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
     </div>
   )
 }
@@ -281,7 +281,7 @@ export default function ParentKinderenPage() {
   if (profile && profile.activeRole !== "parent") {
     return (
       <ScreenShell section="Ouder">
-        <p className="text-[14px] text-white/60">
+        <p className="text-[14px] text-muted-foreground">
           Deze pagina hoort bij de ouderomgeving. Wissel naar de ouderrol om je
           kinderen te zien.
         </p>
@@ -297,7 +297,7 @@ export default function ParentKinderenPage() {
       <div className="space-y-5">
         <div>
           <SectionLabel n="01" title="Kinderen" />
-          <p className="mt-2 text-[13px] text-white/45">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Kies welk kind centraal staat — Dashboard en Toestemmingen volgen je
             keuze. Je ziet alleen kinderen die aan jou gekoppeld zijn.
           </p>
@@ -306,30 +306,30 @@ export default function ParentKinderenPage() {
         {isLoading ? (
           <div className="space-y-3">
             {[0, 1].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-2xl bg-white/[0.05]" />
+              <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />
             ))}
           </div>
         ) : isError ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.07] p-5 text-center">
-            <p className="text-[13px] text-red-300/90">
+            <p className="text-[13px] text-[color:var(--color-negative)]">
               Je kinderen konden niet geladen worden.
             </p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="mt-3 rounded-full border border-white/[0.14] px-4 py-1.5 text-[13px] text-white/75"
+              className="mt-3 rounded-full border border-border px-4 py-1.5 text-[13px] text-foreground/75"
             >
               Opnieuw proberen
             </button>
           </div>
         ) : children.length === 0 ? (
           <div
-            className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md"
+            className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md"
             data-testid="kinderen-leeg"
           >
-            <Users className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
-            <p className="text-[14px] text-white/60">Nog geen kind gekoppeld</p>
-            <p className="mt-1 text-[12px] text-white/40">
+            <Users className="mx-auto mb-3 h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[14px] text-muted-foreground">Nog geen kind gekoppeld</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">
               Stuur je kind een uitnodiging; zodra die geaccepteerd is, zie je
               hier hun welzijn en planning.
             </p>
@@ -354,7 +354,7 @@ export default function ParentKinderenPage() {
             ))}
             <Link
               href="/invitations"
-              className="inline-flex items-center gap-1.5 text-[13px] text-white/50 hover:text-white/80"
+              className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground/80"
             >
               <UserPlus className="h-4 w-4" />
               Nog een kind koppelen

@@ -42,13 +42,13 @@ function OpenLoops() {
   })
 
   if (isLoading) {
-    return <div className="h-16 animate-pulse rounded-2xl bg-white/[0.03]" />
+    return <div className="h-16 animate-pulse rounded-2xl bg-muted" />
   }
 
   const loops = data?.loops ?? []
   if (loops.length === 0) {
     return (
-      <p className="text-pretty text-[12px] leading-relaxed text-white/35">
+      <p className="text-pretty text-[12px] leading-relaxed text-muted-foreground">
         Nog geen observaties beschikbaar. Log een paar ritten of koppel je data —
         zodra de data er aanleiding toe geeft, verschijnen ze hier.
       </p>
@@ -64,7 +64,7 @@ function OpenLoops() {
           style={{ borderColor: "rgba(120,210,230,0.18)", background: "rgba(120,210,230,0.05)" }}
         >
           <Sparkles className="h-4 w-4 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />
-          <span className="font-sans text-[13px] leading-snug text-white/85">{loop.text}</span>
+          <span className="font-sans text-[13px] leading-snug text-foreground/80">{loop.text}</span>
         </div>
       ))}
     </div>
@@ -130,7 +130,7 @@ function IdentityBadges() {
   })
 
   if (isLoading) {
-    return <div className="h-24 animate-pulse rounded-2xl bg-white/[0.03]" />
+    return <div className="h-24 animate-pulse rounded-2xl bg-muted" />
   }
   if (!data) return null
 
@@ -143,7 +143,7 @@ function IdentityBadges() {
         >
           <div className="flex items-center gap-3">
             <Award className="h-5 w-5 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />
-            <span className="font-sans text-[15px] font-semibold tracking-tight text-white/95">
+            <span className="font-sans text-[15px] font-semibold tracking-tight text-foreground/90">
               {data.foundingLabel}
             </span>
           </div>
@@ -162,19 +162,19 @@ function IdentityBadges() {
           )}
         </div>
       ) : (
-        <p className="text-pretty text-[12px] leading-relaxed text-white/35">
+        <p className="text-pretty text-[12px] leading-relaxed text-muted-foreground">
           Rond de kennismaking met Sparki af om je Founding Athlete-nummer te verdienen.
         </p>
       )}
 
       {data.isHeadTester && data.headTesterLine && (
-        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] px-5 py-4">
-          <Wrench className="h-4 w-4 shrink-0 text-white/55" strokeWidth={1.75} />
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted px-5 py-4">
+          <Wrench className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
           <div className="flex flex-1 flex-col gap-0.5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Hoofdtester
             </span>
-            <span className="font-sans text-[13px] leading-snug text-white/80">
+            <span className="font-sans text-[13px] leading-snug text-foreground/80">
               {data.headTesterLine}
             </span>
           </div>
@@ -196,13 +196,13 @@ export function SparkiObservations() {
   return (
     <section>
       <SectionLabel title="Observaties uit je data" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
         Automatische observaties op basis van je eigen trainingsdata — alleen zichtbaar wanneer de data er aanleiding toe geeft
       </p>
       <div className="mt-5 flex flex-col gap-6">
         <OpenLoops />
         <div>
-          <p className="mb-3 text-pretty text-[12px] leading-relaxed text-white/35">
+          <p className="mb-3 text-pretty text-[12px] leading-relaxed text-muted-foreground">
             Vraag één onderbouwde observatie op — alleen wanneer de data die ondersteunt.
           </p>
           <HonestButton />

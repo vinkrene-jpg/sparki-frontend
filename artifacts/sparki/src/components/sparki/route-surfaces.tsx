@@ -46,7 +46,7 @@ const VERDICT_STYLE: Record<SuitabilityVerdict, string> = {
   gedeeltelijk: "border-warning/30 text-warning/85",
   technisch: "border-warning/40 text-warning/95",
   afgeraden: "border-negative/35 text-negative/90",
-  onvoldoende_gegevens: "border-white/20 text-white/55",
+  onvoldoende_gegevens: "border-border text-muted-foreground",
   niet_geverifieerd: "border-warning/35 text-warning/90",
 }
 
@@ -68,7 +68,7 @@ function SuitabilityCard({ s }: { s: BikeSuitability }) {
   return (
     <li className="rounded-xl border border-border bg-surface px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-2 text-[13px] text-white/85">
+        <span className="flex items-center gap-2 text-[13px] text-foreground/80">
           <Bike className="h-4 w-4 text-content-secondary" strokeWidth={1.75} />
           {BIKE_LABELS[s.bike]}
         </span>
@@ -92,8 +92,8 @@ function SuitabilityCard({ s }: { s: BikeSuitability }) {
       {open && (
         <ul className="mt-1.5 space-y-1">
           {s.reasons.map((r) => (
-            <li key={r} className="flex items-start gap-1.5 text-[12px] leading-relaxed text-white/55">
-              <Info className="mt-0.5 h-3 w-3 shrink-0 text-white/35" strokeWidth={2} />
+            <li key={r} className="flex items-start gap-1.5 text-[12px] leading-relaxed text-muted-foreground">
+              <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" strokeWidth={2} />
               {r}
             </li>
           ))}
@@ -115,7 +115,7 @@ function SourceComparisonCard({ c }: { c: SurfaceSourceComparison }) {
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           twee metingen, één beeld
         </span>
         <span
@@ -144,9 +144,9 @@ function SourceComparisonCard({ c }: { c: SurfaceSourceComparison }) {
           {c.uitleg.map((r) => (
             <li
               key={r}
-              className="flex items-start gap-1.5 text-[12px] leading-relaxed text-white/55"
+              className="flex items-start gap-1.5 text-[12px] leading-relaxed text-muted-foreground"
             >
-              <Info className="mt-0.5 h-3 w-3 shrink-0 text-white/35" strokeWidth={2} />
+              <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" strokeWidth={2} />
               {r}
             </li>
           ))}
@@ -197,7 +197,7 @@ export function RouteSurfacesPanel({
           {open ? "− wegtypen & ondergrond" : "+ wegtypen & ondergrond"}
         </button>
         {!isLoading && !isError && surfaces && (
-          <span className="font-mono text-[10px] tracking-[0.1em] text-white/40">
+          <span className="font-mono text-[10px] tracking-[0.1em] text-muted-foreground">
             {fmtKm(surfaces.totalKm)} km
           </span>
         )}
@@ -206,12 +206,12 @@ export function RouteSurfacesPanel({
       {open && (
         <div className="mt-2">
           {isLoading && (
-            <p className="text-[12px] text-white/40">
+            <p className="text-[12px] text-muted-foreground">
               Wegtypen worden bepaald uit de kaartgegevens…
             </p>
           )}
           {!isLoading && !isError && pending && (
-            <p className="text-[12px] text-white/45">
+            <p className="text-[12px] text-muted-foreground">
               De wegdekmeting loopt nog — de kaartbron antwoordt traag. Dit
               scherm probeert het automatisch opnieuw; je kunt de route ook zo
               opnieuw openen.
@@ -226,7 +226,7 @@ export function RouteSurfacesPanel({
           {!isLoading && !isError && data && surfaces && (
             <>
               {/* Verdelingsbalk over de volledige route */}
-              <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-white/10">
+              <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-border">
                 {surfaces.breakdown.map((b) => (
                   <div
                     key={b.kind}
@@ -253,17 +253,17 @@ export function RouteSurfacesPanel({
                         className={`flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left transition ${
                           active
                             ? "border-accent-cyan/40 bg-accent-cyan/[0.06]"
-                            : "border-transparent hover:border-white/10 hover:bg-surface"
+                            : "border-transparent hover:border-border hover:bg-surface"
                         }`}
                       >
-                        <span className="flex items-center gap-2 text-[12.5px] text-white/80">
+                        <span className="flex items-center gap-2 text-[12.5px] text-foreground/80">
                           <span
                             className="h-2.5 w-2.5 shrink-0 rounded-full"
                             style={{ background: SURFACE_COLORS[b.kind] }}
                           />
                           {SURFACE_LABELS[b.kind]}
                         </span>
-                        <span className="font-mono text-[11px] tracking-[0.05em] text-white/50">
+                        <span className="font-mono text-[11px] tracking-[0.05em] text-muted-foreground">
                           {fmtKm(b.km)} km · {fmtPct(b.pct)}%
                         </span>
                       </button>
@@ -272,7 +272,7 @@ export function RouteSurfacesPanel({
                 })}
               </ul>
               {onSelectKind && (
-                <p className="mt-1 text-[10px] text-white/30">
+                <p className="mt-1 text-[10px] text-muted-foreground">
                   Tik op een wegtype om de betreffende routegedeelten op de
                   kaart op te lichten.
                 </p>
@@ -298,7 +298,7 @@ export function RouteSurfacesPanel({
                   : all
                 return (
                   <>
-                    <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
+                    <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                       {primary ? "geschiktheid voor jouw fietstype" : "geschikt voor"}
                     </p>
                     {primary && (
@@ -308,7 +308,7 @@ export function RouteSurfacesPanel({
                     )}
                     {primary ? (
                       rest.length > 0 && (
-                        <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+                        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                           Ter vergelijking:{" "}
                           {rest
                             .map((s) => `${BIKE_LABELS[s.bike].toLowerCase()} ${VERDICT_LABELS[s.verdict].toLowerCase()}`)
@@ -329,7 +329,7 @@ export function RouteSurfacesPanel({
               {/* Eerlijke BGT-bronregel: alleen tonen als de officiële
                   overheidswegenkaart daadwerkelijk is geraadpleegd. */}
               {surfaces.bgt && (
-                <p className="mt-2.5 text-[10px] leading-relaxed text-white/30">
+                <p className="mt-2.5 text-[10px] leading-relaxed text-muted-foreground">
                   Extra controle: de officiële overheidswegenkaart (
                   {surfaces.bgt.source.name}) keek mee bij{" "}
                   {surfaces.bgt.checkedSamples}{" "}
@@ -342,7 +342,7 @@ export function RouteSurfacesPanel({
                 </p>
               )}
 
-              <p className="mt-2.5 text-[10px] leading-relaxed text-white/30">
+              <p className="mt-2.5 text-[10px] leading-relaxed text-muted-foreground">
                 Bron: {data.source.name} — {data.source.license}.{" "}
                 {data.source.note}
               </p>
@@ -352,7 +352,7 @@ export function RouteSurfacesPanel({
               loopt (pending), anders staan er twee tegenstrijdige boodschappen
               tegelijk op het scherm. */}
           {!isLoading && !isError && !pending && data && !surfaces && (
-            <p className="text-[12px] text-white/45">
+            <p className="text-[12px] text-muted-foreground">
               Voor deze route is geen bruikbare geometrie beschikbaar — de
               ondergrond kan niet bepaald worden.
             </p>

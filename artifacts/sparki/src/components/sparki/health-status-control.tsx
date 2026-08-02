@@ -10,11 +10,11 @@ export function HealthStatusControl() {
   const setStatus = useSetHealthStatus()
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#070d16]/[0.6] p-4 backdrop-blur-md">
-      <span className="font-mono text-[10px] tracking-[0.22em] text-white/35">
+    <div className="rounded-xl border border-border bg-card p-4 backdrop-blur-md">
+      <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
         VOEL JE JE NIET FIT?
       </span>
-      <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
         Markeer je status — dan schakelt de begeleiding over naar een rustige
         herstelmodus en blokkeert trainingsdruk.
       </p>
@@ -30,7 +30,7 @@ export function HealthStatusControl() {
             type="button"
             disabled={setStatus.isPending}
             onClick={() => setStatus.mutate(o.value)}
-            className="rounded-full border border-white/[0.12] bg-white/[0.03] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition-colors hover:bg-white/[0.07] disabled:opacity-50"
+            className="rounded-full border border-border bg-muted px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground/60 transition-colors hover:bg-muted disabled:opacity-50"
           >
             {o.label}
           </button>

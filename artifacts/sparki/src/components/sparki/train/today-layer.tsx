@@ -25,7 +25,7 @@ import { useMotionPreference } from "@/hooks/use-motion-preference"
 import { shouldEnableDiepte } from "@/lib/zweefkaart"
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 const zoneColor: Record<number, string> = {
@@ -38,7 +38,7 @@ const zoneColor: Record<number, string> = {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
 
 export function TodayLayer() {
   const { data: workout, isLoading } = useTodayWorkout()
@@ -113,7 +113,7 @@ export function TodayLayer() {
             <h3 className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight">
               {workout.title}
             </h3>
-            <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+            <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
               {workout.targetDurationMin ? `${workout.targetDurationMin}m` : ""}
               {workout.targetDurationMin && workout.targetTSS ? " · " : ""}
               {workout.targetTSS ? `${workout.targetTSS} TSS` : ""}
@@ -141,7 +141,7 @@ export function TodayLayer() {
                           b.zone >= 4 ? "0 0 12px rgba(120,210,230,0.5)" : "none",
                       }}
                     />
-                    <span className="mt-1.5 truncate font-mono text-[7px] tracking-wider text-white/30">
+                    <span className="mt-1.5 truncate font-mono text-[7px] tracking-wider text-muted-foreground">
                       Z{b.zone}
                     </span>
                   </div>
@@ -152,14 +152,14 @@ export function TodayLayer() {
 
           {/* WHY this session today — straight from the plan's own rationale. */}
           {rationale?.whyToday && (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5">
+            <div className="rounded-xl border border-border bg-muted p-3.5">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
-                <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/70">
+                <span className="font-mono text-[10px] tracking-[0.2em] text-accent-cyan">
                   WAAROM VANDAAG
                 </span>
               </div>
-              <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/70">
+              <p className="mt-2 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 {rationale.whyToday}
               </p>
               {(rationale.supportsGoal || rationale.whatToFeel) && (
@@ -167,7 +167,7 @@ export function TodayLayer() {
                   <button
                     type="button"
                     onClick={() => setShowWhy((v) => !v)}
-                    className="mt-2 flex items-center gap-1 font-mono text-[10px] tracking-wide text-white/40 transition-colors hover:text-white/65"
+                    className="mt-2 flex items-center gap-1 font-mono text-[10px] tracking-wide text-muted-foreground transition-colors hover:text-muted-foreground"
                   >
                     Meer uitleg
                     <ChevronDown
@@ -178,14 +178,14 @@ export function TodayLayer() {
                   {showWhy && (
                     <div className="mt-2 flex flex-col gap-2">
                       {rationale.supportsGoal && (
-                        <p className="text-pretty text-[12px] leading-relaxed text-white/50">
-                          <span className="text-white/35">Voor je doel: </span>
+                        <p className="text-pretty text-[12px] leading-relaxed text-muted-foreground">
+                          <span className="text-muted-foreground">Voor je doel: </span>
                           {rationale.supportsGoal}
                         </p>
                       )}
                       {rationale.whatToFeel && (
-                        <p className="text-pretty text-[12px] leading-relaxed text-white/50">
-                          <span className="text-white/35">Hoe het moet voelen: </span>
+                        <p className="text-pretty text-[12px] leading-relaxed text-muted-foreground">
+                          <span className="text-muted-foreground">Hoe het moet voelen: </span>
                           {rationale.whatToFeel}
                         </p>
                       )}
@@ -198,7 +198,7 @@ export function TodayLayer() {
 
           {/* Target zone (folded in from the old static "Doelzones" table). */}
           {targetZone && (
-            <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] px-3.5 py-2.5">
+            <div className="flex items-center gap-3 rounded-xl border border-border px-3.5 py-2.5">
               <span
                 className="h-3 w-1 rounded-full"
                 style={{
@@ -206,13 +206,13 @@ export function TodayLayer() {
                   boxShadow: `0 0 8px ${zoneColor[targetZone.zone] ?? ACCENT}`,
                 }}
               />
-              <span className="font-mono text-[11px] text-white/50">
+              <span className="font-mono text-[11px] text-muted-foreground">
                 Z{targetZone.zone}
               </span>
-              <span className="flex-1 text-[13px] text-white/80">
+              <span className="flex-1 text-[13px] text-foreground/80">
                 {targetZone.label}
               </span>
-              <span className="font-mono text-[11px] tabular-nums text-white/55">
+              <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                 {targetZone.min}–{targetZone.max}W
               </span>
             </div>
@@ -233,19 +233,19 @@ export function TodayLayer() {
                   style={{ color: "rgba(255,180,90,0.95)" }}
                   strokeWidth={2}
                 />
-                <span className="font-sans text-[13px] font-medium text-white/85">
+                <span className="font-sans text-[13px] font-medium text-foreground/90">
                   {conflict.headline}
                 </span>
               </div>
               {conflict.detail && (
-                <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/60">
+                <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
                   {conflict.detail}
                 </p>
               )}
               <button
                 type="button"
                 onClick={() => setDetailOpen(true)}
-                className="mt-2.5 flex items-center gap-1 font-mono text-[11px] tracking-wide text-cyan-300/75 transition-colors hover:text-cyan-300"
+                className="mt-2.5 flex items-center gap-1 font-mono text-[11px] tracking-wide text-accent-cyan transition-colors hover:text-accent-cyan"
               >
                 Pas deze sessie aan
                 <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -253,7 +253,7 @@ export function TodayLayer() {
             </div>
           )}
           {conflict.kind === "ruimte_voor_meer" && (
-            <p className="text-pretty text-[12px] leading-relaxed text-cyan-300/60">
+            <p className="text-pretty text-[12px] leading-relaxed text-accent-cyan">
               {conflict.headline} — {conflict.detail}
             </p>
           )}
@@ -262,7 +262,7 @@ export function TodayLayer() {
           <button
             type="button"
             onClick={() => setDetailOpen(true)}
-            className="group flex w-full items-center gap-5 border-t border-white/[0.07] pt-4 text-left"
+            className="group flex w-full items-center gap-5 border-t border-border pt-4 text-left"
           >
             <Stat label="Type" value={workout.type} />
             {workout.targetDurationMin && (
@@ -277,7 +277,7 @@ export function TodayLayer() {
                 <Stat label="Belasting" value={`${workout.targetTSS} TSS`} accent />
               </>
             )}
-            <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] tracking-[0.15em] text-white/40 transition-colors group-hover:text-cyan-300/70">
+            <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] tracking-[0.15em] text-muted-foreground transition-colors group-hover:text-accent-cyan">
               DETAIL
               <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             </span>
@@ -315,7 +315,7 @@ export function TodayLayer() {
                 type="button"
                 onClick={markSkipped}
                 disabled={updateWorkout.isPending}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] px-5 py-3.5 font-sans text-[13px] font-semibold text-white/50 transition-colors hover:border-white/20 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-border px-5 py-3.5 font-sans text-[13px] font-semibold text-muted-foreground transition-colors hover:border-border disabled:opacity-50"
               >
                 <XCircle className="h-4 w-4" strokeWidth={1.75} />
                 Overslaan
@@ -339,9 +339,9 @@ export function TodayLayer() {
               retry="generate-plan"
             />
           ) : (
-            <p className="text-pretty text-[13px] leading-relaxed text-white/55">
+            <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
               Je profiel is compleet. Zodra je schema er staat — bouw het bij
-              <span className="text-white/75"> “Waar komt je training vandaan” </span>
+              <span className="text-muted-foreground"> “Waar komt je training vandaan” </span>
               hieronder — verschijnt hier je sessie van vandaag.
             </p>
           )}

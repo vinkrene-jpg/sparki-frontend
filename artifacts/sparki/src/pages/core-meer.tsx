@@ -99,7 +99,7 @@ export default function CoreMeerPage() {
               <section key={groep.titel} aria-labelledby={`groep-${groep.titel}`}>
                 <h2
                   id={`groep-${groep.titel}`}
-                  className="type-title-card text-white/90"
+                  className="type-title-card text-foreground/90"
                 >
                   {groep.titel}
                 </h2>
@@ -111,7 +111,7 @@ export default function CoreMeerPage() {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "flex min-h-11 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:border-white/20 hover:bg-surface-strong",
+                          "flex min-h-11 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:border-border hover:bg-surface-strong",
                           FOCUS_RING,
                         )}
                       >
@@ -120,7 +120,7 @@ export default function CoreMeerPage() {
                           aria-hidden="true"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="type-action font-semibold text-white/90">
+                          <p className="type-action font-semibold text-foreground/90">
                             {item.label}
                           </p>
                           <p className="type-body-sm text-content-secondary">
@@ -128,7 +128,7 @@ export default function CoreMeerPage() {
                           </p>
                         </div>
                         <IconChevron
-                          className="h-4 w-4 shrink-0 text-white/40"
+                          className="h-4 w-4 shrink-0 text-muted-foreground"
                           aria-hidden="true"
                         />
                       </Link>

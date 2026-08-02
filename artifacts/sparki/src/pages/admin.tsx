@@ -79,7 +79,7 @@ function OverallBanner({
           {headline}
         </span>
       </div>
-      <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+      <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
         Laatste controle: {formatWhen(lastRunAt)}
       </p>
     </div>
@@ -91,18 +91,18 @@ function CheckRow({ c }: { c: HealthCheck }) {
   return (
     <Link
       href={`/admin/health/${encodeURIComponent(c.checkKey)}`}
-      className="block rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md transition hover:border-white/20"
+      className="block rounded-xl border border-border bg-card p-3.5 backdrop-blur-md transition hover:border-border"
     >
       <>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <StatusDot color={meta.dot} />
-              <span className="truncate text-[13px] font-medium text-white/90">
+              <span className="truncate text-[13px] font-medium text-foreground/90">
                 {c.title}
               </span>
             </div>
-            <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-white/45">
+            <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-muted-foreground">
               {c.errorMessage ?? c.description}
             </p>
           </div>
@@ -113,7 +113,7 @@ function CheckRow({ c }: { c: HealthCheck }) {
             {meta.label}
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-white/25">
+        <div className="mt-2 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
           <span>{c.responsibleModule}</span>
           {c.responseTimeMs != null && <span>· {c.responseTimeMs}ms</span>}
           <span>· {formatWhen(c.lastRunAt)}</span>
@@ -143,28 +143,28 @@ function BatchRow({ b }: { b: HealthBatch }) {
   };
   const automatic = b.triggeredBy === "scheduler";
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.6] p-3 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-3 backdrop-blur-md">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <StatusDot color={meta.dot} />
-          <span className="text-[12px] text-white/80">
+          <span className="text-[12px] text-foreground/80">
             {MODE_LABEL[b.runMode] ?? b.runMode}
           </span>
           <span
             className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
               automatic
-                ? "bg-[oklch(0.82_0.16_200_/_0.14)] text-[oklch(0.82_0.16_200)]"
-                : "bg-white/[0.06] text-white/40"
+                ? "bg-accent-cyan/15 text-accent-cyan"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {automatic ? "Automatisch" : "Handmatig"}
           </span>
         </div>
-        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
           {formatWhen(b.startedAt)}
         </span>
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-white/40">
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
         <span style={{ color: STATUS_META.green.color }}>
           {b.greenCount} werkt
         </span>
@@ -177,7 +177,7 @@ function BatchRow({ b }: { b: HealthBatch }) {
         <span style={{ color: STATUS_META.grey.color }}>
           {b.greyCount} grijs
         </span>
-        <span className="text-white/25">· {b.totalChecks} totaal</span>
+        <span className="text-muted-foreground">· {b.totalChecks} totaal</span>
       </div>
     </div>
   );
@@ -186,16 +186,16 @@ function BatchRow({ b }: { b: HealthBatch }) {
 function ScheduledTaskRow({ t }: { t: ScheduledTask }) {
   const meta = STATUS_META[t.statusColor];
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-3.5 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <StatusDot color={meta.dot} />
-            <span className="truncate text-[13px] font-medium text-white/90">
+            <span className="truncate text-[13px] font-medium text-foreground/90">
               {t.title}
             </span>
           </div>
-          <p className="mt-1 text-[12px] leading-snug text-white/55">
+          <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
             {t.message}
           </p>
         </div>
@@ -210,13 +210,13 @@ function ScheduledTaskRow({ t }: { t: ScheduledTask }) {
               : "Nog opzetten"}
         </span>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
         <span>
           {t.traceLabel}: {formatWhen(t.lastRunAt)}
         </span>
-        <span className="text-white/20">· {t.schedule}</span>
+        <span className="text-muted-foreground">· {t.schedule}</span>
       </div>
-      <code className="mt-2 block truncate rounded-md bg-black/30 px-2 py-1 font-mono text-[10px] text-white/40">
+      <code className="mt-2 block truncate rounded-md bg-foreground/30 px-2 py-1 font-mono text-[10px] text-muted-foreground">
         {t.runCommand}
       </code>
     </div>
@@ -262,10 +262,10 @@ export function ProvenanceSection() {
     : null;
   return (
     <section className="mt-8">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         Gegevensbroncontrole
       </p>
-      <p className="mt-1 text-[12px] leading-snug text-white/40">
+      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
         Controleer per gegevensblok waar de zichtbare informatie vandaan komt:
         brontabel, record-id, berekening, laatste update en de gebruiker
         waaraan de gegevens gebonden zijn. Alleen voor admins/testers.
@@ -278,14 +278,14 @@ export function ProvenanceSection() {
         }}
       >
         <input
-          className="flex-1 rounded-lg border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/85 outline-none backdrop-blur-md placeholder:text-white/25"
+          className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-[13px] text-foreground/85 outline-none backdrop-blur-md placeholder:text-muted-foreground"
           placeholder="clerkId van de gebruiker…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
         <button
           type="submit"
-          className="rounded-lg border border-white/[0.12] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30"
+          className="rounded-lg border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border"
         >
           Controleer
         </button>
@@ -293,19 +293,19 @@ export function ProvenanceSection() {
       {ownClerkId !== "" && (
         <p className="mt-2 text-[12px] leading-snug">
           {isOwnAccount ? (
-            <span className="text-white/50">
+            <span className="text-muted-foreground">
               Dit is jouw huidige account{ownLabel ? `: ${ownLabel}` : ""}.
             </span>
           ) : (
             <>
-              <span className="text-amber-300/80">
+              <span className="text-[color:var(--color-warning)]">
                 Let op: dit is een ánder account dan waarmee je nu bent
                 ingelogd{ownLabel ? ` (${ownLabel})` : ""}.
               </span>{" "}
               <button
                 type="button"
                 onClick={() => setInput(ownClerkId)}
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 underline underline-offset-2 transition hover:text-white/85"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground underline underline-offset-2 transition hover:text-foreground/85"
               >
                 Terug naar eigen account
               </button>
@@ -314,40 +314,40 @@ export function ProvenanceSection() {
         </p>
       )}
       {isFetching && (
-        <p className="mt-3 text-[12px] text-white/30">Bezig met controleren…</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">Bezig met controleren…</p>
       )}
       {isError && target && !isFetching && (
-        <p className="mt-3 text-[12px] text-red-300/70">
+        <p className="mt-3 text-[12px] text-[color:var(--color-negative)]">
           Controle mislukt of gebruiker niet gevonden. Er worden nooit
           vervangende gegevens getoond.
         </p>
       )}
       {data && !isFetching && (
         <div className="mt-3 space-y-2">
-          <p className="text-[12px] text-white/55">
+          <p className="text-[12px] text-muted-foreground">
             {data.gebruiker.naam} · {data.gebruiker.email} ·{" "}
             <span className="font-mono text-[10px]">{data.gebruiker.clerkId}</span>
           </p>
           {data.surfaces.map((s) => (
             <div
               key={s.key}
-              className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3 backdrop-blur-md"
+              className="rounded-xl border border-border bg-card p-3 backdrop-blur-md"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[13px] text-white/85">{s.label}</span>
-                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/40">
+                <span className="text-[13px] text-foreground/85">{s.label}</span>
+                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                   {s.aantalRecords ?? "?"} records
                 </span>
               </div>
-              <p className="mt-1 font-mono text-[10px] text-white/35">
+              <p className="mt-1 font-mono text-[10px] text-muted-foreground">
                 Bron: {s.bron}
                 {s.laatsteRecordId != null && ` · laatste record-id ${s.laatsteRecordId}`}
                 {s.laatsteUpdate && ` · laatste update ${formatWhen(s.laatsteUpdate)}`}
               </p>
-              <p className="mt-1 text-[11px] leading-snug text-white/45">
+              <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
                 {s.berekening}
               </p>
-              <p className="mt-1 text-[11px] text-white/35">
+              <p className="mt-1 text-[11px] text-muted-foreground">
                 Herkomst: {s.herkomst} · gebruiker {s.gebruiker}
               </p>
             </div>
@@ -367,19 +367,19 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
   const num = (v: unknown) => (typeof v === "number" ? v : 0);
   return (
     <section className="mt-8">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         Gegevensvertrouwen
       </p>
-      <p className="mt-1 text-[12px] leading-snug text-white/40">
+      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
         Live overzicht van alle datasets, ontbrekende gegevens, conflicten,
         duplicaten en synchronisatiefouten — rechtstreeks uit de database
         geteld, zonder schattingen.
       </p>
       {isLoading && (
-        <p className="mt-3 text-[12px] text-white/40">Bezig met tellen…</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">Bezig met tellen…</p>
       )}
       {isError && (
-        <p className="mt-3 text-[12px] text-amber-300/80">
+        <p className="mt-3 text-[12px] text-[color:var(--color-warning)]">
           Overzicht kon nu niet worden opgehaald.
         </p>
       )}
@@ -410,18 +410,18 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
             ].map((c) => (
               <div
                 key={c.label}
-                className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3 backdrop-blur-md"
+                className="rounded-xl border border-border bg-card p-3 backdrop-blur-md"
               >
-                <p className="text-[18px] font-light text-white/90">
+                <p className="text-[18px] font-light text-foreground/90">
                   {c.value}
                   {c.total != null && (
-                    <span className="text-[11px] text-white/35">
+                    <span className="text-[11px] text-muted-foreground">
                       {" "}
                       / {c.total}
                     </span>
                   )}
                 </p>
-                <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                   {c.label}
                 </p>
               </div>
@@ -429,11 +429,11 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
           </div>
 
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               Datasets per bron
             </p>
             {data.datasets.length === 0 ? (
-              <p className="mt-1 text-[12px] text-white/40">
+              <p className="mt-1 text-[12px] text-muted-foreground">
                 Nog geen sessies in de database.
               </p>
             ) : (
@@ -441,10 +441,10 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
                 {data.datasets.map((d) => (
                   <div
                     key={d.bron}
-                    className="flex items-center justify-between rounded-lg border border-white/[0.06] px-3 py-1.5"
+                    className="flex items-center justify-between rounded-lg border border-border px-3 py-1.5"
                   >
-                    <span className="text-[12px] text-white/75">{d.bron}</span>
-                    <span className="font-mono text-[11px] text-white/45">
+                    <span className="text-[12px] text-foreground/75">{d.bron}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
                       {d.sessies} sessies
                       {d.zonder_belastingscore > 0
                         ? ` · ${d.zonder_belastingscore} zonder belastingscore`
@@ -457,21 +457,21 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/[0.08] p-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+            <div className="rounded-xl border border-border p-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 Samenvoegingen (mogelijke conflicten)
               </p>
-              <p className="mt-1 text-[12px] text-white/60">
+              <p className="mt-1 text-[12px] text-muted-foreground">
                 {num(data.conflicten?.sessies_met_merge)} sessies met
                 samengevoegde bronnen ·{" "}
                 {num(data.conflicten?.merge_gebeurtenissen)} samenvoegingen
               </p>
             </div>
-            <div className="rounded-xl border border-white/[0.08] p-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+            <div className="rounded-xl border border-border p-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 Synchronisatiefouten
               </p>
-              <p className="mt-1 text-[12px] text-white/60">
+              <p className="mt-1 text-[12px] text-muted-foreground">
                 {num(data.syncfouten.telling?.totaal)} totaal ·{" "}
                 {num(data.syncfouten.telling?.laatste_7_dagen)} in de laatste 7
                 dagen
@@ -490,11 +490,11 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
                     background: STATUS_META.red.bg,
                   }}
                 >
-                  <p className="text-[12px] text-white/75">
+                  <p className="text-[12px] text-foreground/75">
                     {e.provider} · {e.trigger} · {formatWhen(e.started_at)}
                   </p>
                   {e.error && (
-                    <p className="mt-0.5 text-[11px] leading-snug text-white/50">
+                    <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
                       {e.error}
                     </p>
                   )}
@@ -504,7 +504,7 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
           )}
 
           {data.onbekendeBronnen.length > 0 && (
-            <p className="text-[12px] text-amber-300/80">
+            <p className="text-[12px] text-[color:var(--color-warning)]">
               Onbekende bronnen gevonden:{" "}
               {data.onbekendeBronnen
                 .map((b) => `${b.bron} (${b.sessies})`)
@@ -513,11 +513,11 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
           )}
 
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               Geregistreerde berekeningen
             </p>
             {data.berekeningen.length === 0 ? (
-              <p className="mt-1 text-[12px] text-white/40">
+              <p className="mt-1 text-[12px] text-muted-foreground">
                 Nog geen berekeningen geregistreerd.
               </p>
             ) : (
@@ -525,12 +525,12 @@ export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
                 {data.berekeningen.map((b) => (
                   <div
                     key={`${b.type}-${b.engine}`}
-                    className="flex items-center justify-between rounded-lg border border-white/[0.06] px-3 py-1.5"
+                    className="flex items-center justify-between rounded-lg border border-border px-3 py-1.5"
                   >
-                    <span className="text-[12px] text-white/75">
+                    <span className="text-[12px] text-foreground/75">
                       {b.type} · {b.engine}
                     </span>
-                    <span className="font-mono text-[11px] text-white/45">
+                    <span className="font-mono text-[11px] text-muted-foreground">
                       {b.aantal}×
                       {b.laatste ? ` · laatst ${formatWhen(b.laatste)}` : ""}
                     </span>
@@ -573,10 +573,10 @@ export function DataTrustCleanupSection() {
     : null;
   return (
     <section className="mt-8">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         Gegevens-opschoning
       </p>
-      <p className="mt-1 text-[12px] leading-snug text-white/40">
+      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
         Controleer eerst wat er precies gevonden wordt (droogdraai). Pas
         daarna voer je de opschoning uit. Er wordt nooit echte data
         verwijderd: alleen vervuiling wordt opgeruimd en foute automatische
@@ -584,7 +584,7 @@ export function DataTrustCleanupSection() {
       </p>
       <div className="mt-3 flex gap-2">
         <input
-          className="flex-1 rounded-lg border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/85 outline-none backdrop-blur-md placeholder:text-white/25"
+          className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-[13px] text-foreground/85 outline-none backdrop-blur-md placeholder:text-muted-foreground"
           placeholder="clerkId van de gebruiker…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -593,7 +593,7 @@ export function DataTrustCleanupSection() {
           type="button"
           disabled={!target || cleanup.isPending}
           onClick={() => cleanup.mutate({ clerkId: target, apply: false })}
-          className="rounded-lg border border-white/[0.12] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 disabled:opacity-40"
+          className="rounded-lg border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-border disabled:opacity-40"
         >
           Droogdraai
         </button>
@@ -618,19 +618,19 @@ export function DataTrustCleanupSection() {
       {ownClerkId !== "" && (
         <p className="mt-2 text-[12px] leading-snug">
           {isOwnAccount ? (
-            <span className="text-white/50">
+            <span className="text-muted-foreground">
               Dit is jouw huidige account{ownLabel ? `: ${ownLabel}` : ""}.
             </span>
           ) : (
             <>
-              <span className="text-amber-300/80">
+              <span className="text-[color:var(--color-warning)]">
                 Let op: dit is een ánder account dan waarmee je nu bent
                 ingelogd{ownLabel ? ` (${ownLabel})` : ""}.
               </span>{" "}
               <button
                 type="button"
                 onClick={() => setInput(ownClerkId)}
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 underline underline-offset-2 transition hover:text-white/85"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground underline underline-offset-2 transition hover:text-foreground/85"
               >
                 Terug naar eigen account
               </button>
@@ -639,19 +639,19 @@ export function DataTrustCleanupSection() {
         </p>
       )}
       {cleanup.isPending && (
-        <p className="mt-3 text-[12px] text-white/30">Bezig…</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">Bezig…</p>
       )}
       {cleanup.isError && !cleanup.isPending && (
-        <p className="mt-3 text-[12px] text-red-300/70">
+        <p className="mt-3 text-[12px] text-[color:var(--color-negative)]">
           Opschoning mislukt. Er is niets gewijzigd.
         </p>
       )}
       {r && !cleanup.isPending && (
-        <div className="mt-3 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3 backdrop-blur-md">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">
+        <div className="mt-3 rounded-xl border border-border bg-card p-3 backdrop-blur-md">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             {r.modus === "droogdraai" ? "Droogdraai — nog niets gewijzigd" : "Uitgevoerd"}
           </p>
-          <ul className="mt-2 space-y-1 text-[12px] leading-snug text-white/65">
+          <ul className="mt-2 space-y-1 text-[12px] leading-snug text-muted-foreground">
             <li>
               Engelstalige observaties gevonden:{" "}
               {r.kandidaten.engelstaligeObservaties.length}
@@ -745,10 +745,10 @@ export default function AdminPage() {
             omgeving staan al zichtbaar via de ScreenShell-ContextRegel. */}
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate font-sans text-2xl font-extralight text-white/90">
+            <h1 className="truncate font-sans text-2xl font-extralight text-foreground/90">
               Beheer & gezondheid
             </h1>
-            <p className="mt-1 text-[13px] text-white/40">
+            <p className="mt-1 text-[13px] text-muted-foreground">
               Elke status komt uit een echte test. Grijs betekent: nog niet
               gekoppeld.
             </p>
@@ -765,7 +765,7 @@ export default function AdminPage() {
         </header>
 
         {isLoading || !health ? (
-          <p className="text-[13px] text-white/30">Laden…</p>
+          <p className="text-[13px] text-muted-foreground">Laden…</p>
         ) : (
           <>
             {/* Kerninformatie meteen in beeld: de gezondheidsbanner. */}
@@ -786,16 +786,16 @@ export default function AdminPage() {
             {tab === "overzicht" && (
               <div className="flex flex-col gap-5">
                 <section>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     In één oogopslag
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {AGG_LABELS.map(({ key, label }) => (
                       <div
                         key={key}
-                        className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md"
+                        className="rounded-lg border border-border bg-card px-3 py-2.5 backdrop-blur-md"
                       >
-                        <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/35">
+                        <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                           {label}
                         </p>
                         <p
@@ -811,7 +811,7 @@ export default function AdminPage() {
 
                 {health.openErrors.length > 0 && (
                   <section>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                       Aandachtspunten ({health.openErrors.length})
                     </p>
                     <div className="mt-3 space-y-2.5">
@@ -825,7 +825,7 @@ export default function AdminPage() {
                 {scheduledData && scheduledData.tasks.length > 0 && (
                   <section>
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                         Geplande taken
                       </p>
                       {scheduledData.missing > 0 && (
@@ -840,7 +840,7 @@ export default function AdminPage() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-[12px] leading-snug text-white/40">
+                    <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                       Deze taken horen als Scheduled Deployment te draaien. De
                       status komt uit de echte data-sporen die elke taak
                       achterlaat — geen zichtbare run betekent dat de geplande
@@ -856,12 +856,12 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/ops"
-                  className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3.5 py-3 backdrop-blur-md transition hover:border-white/20"
+                  className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 backdrop-blur-md transition hover:border-border"
                 >
-                  <span className="text-[13px] text-white/85">
+                  <span className="text-[13px] text-foreground/85">
                     Operationeel beheer
                   </span>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                     Ops-dashboard →
                   </span>
                 </Link>
@@ -874,10 +874,10 @@ export default function AdminPage() {
               <div className="flex flex-col gap-5">
             {syncDiag && syncDiag.providers.length > 0 && (
               <section>
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                   Automatische datasync
                 </p>
-                <p className="mt-1 text-[12px] leading-snug text-white/40">
+                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                   Echte synchronisaties en webhook-meldingen per platform —
                   alleen wat aantoonbaar gebeurd is.
                 </p>
@@ -885,13 +885,13 @@ export default function AdminPage() {
                   {syncDiag.providers.map((p) => (
                     <div
                       key={p.provider}
-                      className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md"
+                      className="rounded-lg border border-border bg-card px-3 py-2.5 backdrop-blur-md"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <p className="font-sans text-[13px] capitalize text-white/80">
+                        <p className="font-sans text-[13px] capitalize text-foreground/80">
                           {p.provider}
                         </p>
-                        <p className="font-mono text-[10px] tabular-nums text-white/45">
+                        <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
                           {p.totalRuns} runs
                           {p.failedRuns > 0 && (
                             <span className="text-red-400">
@@ -907,7 +907,7 @@ export default function AdminPage() {
                           )}
                         </p>
                       </div>
-                      <p className="mt-0.5 font-mono text-[10px] text-white/35">
+                      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
                         Laatste run: {formatWhen(p.lastRunAt)}
                         {p.lastSuccessAt
                           ? ` · laatst gelukt: ${formatWhen(p.lastSuccessAt)}`
@@ -916,7 +916,7 @@ export default function AdminPage() {
                     </div>
                   ))}
                   {syncDiag.webhooks.length > 0 && (
-                    <p className="px-1 font-mono text-[10px] text-white/40">
+                    <p className="px-1 font-mono text-[10px] text-muted-foreground">
                       Webhooks:{" "}
                       {syncDiag.webhooks
                         .map((w) => `${w.provider} ${w.status}: ${w.count}`)
@@ -933,7 +933,7 @@ export default function AdminPage() {
                         {syncDiag.failedWebhooks.slice(0, 5).map((w) => (
                           <p
                             key={w.id}
-                            className="font-mono text-[10px] leading-snug text-white/45"
+                            className="font-mono text-[10px] leading-snug text-muted-foreground"
                           >
                             {w.provider} · {formatWhen(w.receivedAt)} ·{" "}
                             {w.attempts}x geprobeerd
@@ -949,15 +949,15 @@ export default function AdminPage() {
 
             {aiInsights && (
               <section className="mt-6">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                   Sparki-denkkracht (gateway)
                 </p>
-                <p className="mt-1 text-[12px] leading-snug text-white/40">
+                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                   Iedere modelaanroep loopt via één centrale poort met kill
                   switch, toestemming per doel, redactie en logging — alleen
                   metadata, nooit inhoud.
                 </p>
-                <p className="mt-2 font-mono text-[10px] text-white/45">
+                <p className="mt-2 font-mono text-[10px] text-muted-foreground">
                   Laatste 24 uur: {aiInsights.last24h.calls} aanroepen
                   {aiInsights.last24h.costMicroUsd
                     ? ` · ±$${(Number(aiInsights.last24h.costMicroUsd) / 1_000_000).toFixed(2)} kostenindicatie`
@@ -965,7 +965,7 @@ export default function AdminPage() {
                 </p>
                 <div className="mt-3 space-y-2">
                   {aiInsights.usage.length === 0 && (
-                    <p className="font-mono text-[10px] text-white/35">
+                    <p className="font-mono text-[10px] text-muted-foreground">
                       Nog geen aanroepen geregistreerd.
                     </p>
                   )}
@@ -976,13 +976,13 @@ export default function AdminPage() {
                     return (
                       <div
                         key={u.purpose}
-                        className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md"
+                        className="rounded-lg border border-border bg-card px-3 py-2.5 backdrop-blur-md"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <p className="font-sans text-[13px] text-white/80">
+                          <p className="font-sans text-[13px] text-foreground/80">
                             {cfg?.label ?? u.purpose}
                           </p>
-                          <p className="font-mono text-[10px] tabular-nums text-white/45">
+                          <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
                             {u.totalCalls} aanroepen
                             {u.failedCalls > 0 && (
                               <span className="text-red-400">
@@ -998,7 +998,7 @@ export default function AdminPage() {
                             )}
                           </p>
                         </div>
-                        <p className="mt-0.5 font-mono text-[10px] text-white/35">
+                        <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
                           {cfg
                             ? `${cfg.model} · ${cfg.promptVersion} · toestemming: ${cfg.consent}${cfg.sensitive ? " · gevoelig" : ""}`
                             : "doel niet (meer) in register"}
@@ -1019,7 +1019,7 @@ export default function AdminPage() {
                         {aiInsights.recentProblems.slice(0, 5).map((r) => (
                           <p
                             key={r.id}
-                            className="font-mono text-[10px] leading-snug text-white/45"
+                            className="font-mono text-[10px] leading-snug text-muted-foreground"
                           >
                             {r.purpose} · {r.status}
                             {r.errorCode ? ` (${r.errorCode})` : ""} ·{" "}
@@ -1035,7 +1035,7 @@ export default function AdminPage() {
 
             {grouped.map(([category, checks]) => (
               <section key={category}>
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                   {CATEGORY_LABEL[category] ?? category}
                 </p>
                 <div className="mt-3 space-y-2.5">
@@ -1047,12 +1047,12 @@ export default function AdminPage() {
             ))}
 
             <section>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Testgeschiedenis
               </p>
               <div className="mt-3 space-y-2">
                 {(batchData?.batches ?? []).length === 0 ? (
-                  <p className="text-[12px] text-white/30">
+                  <p className="text-[12px] text-muted-foreground">
                     Nog geen controles uitgevoerd.
                   </p>
                 ) : (
@@ -1064,12 +1064,12 @@ export default function AdminPage() {
             </section>
 
             <section className="mt-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Release-controles
               </p>
               <div className="mt-3 space-y-2">
                 {(batchData?.releaseChecks ?? []).length === 0 ? (
-                  <p className="text-[12px] text-white/30">
+                  <p className="text-[12px] text-muted-foreground">
                     Nog geen release-controles uitgevoerd. Deze draaien vóór een
                     nieuwe versie live gaat.
                   </p>
@@ -1090,19 +1090,19 @@ export default function AdminPage() {
             <FeedbackInbox reports={bugData?.reports ?? []} />
 
             <section>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Feedback van sporters ({feedbackData?.feedback?.length ?? 0})
               </p>
               <div className="mt-3 space-y-2">
                 {(feedbackData?.feedback ?? []).length === 0 ? (
-                  <p className="text-[12px] text-white/30">
+                  <p className="text-[12px] text-muted-foreground">
                     Nog geen feedback ontvangen.
                   </p>
                 ) : (
                   (feedbackData?.feedback ?? []).slice(0, 10).map((f) => (
                     <div
                       key={f.id}
-                      className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.6] p-3 backdrop-blur-md"
+                      className="rounded-xl border border-border bg-card p-3 backdrop-blur-md"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span
@@ -1111,12 +1111,12 @@ export default function AdminPage() {
                         >
                           {FEEDBACK_LABEL[f.feedback_type] ?? f.feedback_type}
                         </span>
-                        <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                        <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                           {f.reporterName ?? "Onbekend"} · {formatWhen(f.createdAt)}
                         </span>
                       </div>
                       {f.note && (
-                        <p className="mt-1.5 text-[13px] leading-snug text-white/75">
+                        <p className="mt-1.5 text-[13px] leading-snug text-foreground/75">
                           {f.note}
                         </p>
                       )}
@@ -1127,12 +1127,12 @@ export default function AdminPage() {
             </section>
 
             <section>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Mislukte imports ({importsData?.imports?.length ?? 0})
               </p>
               <div className="mt-3 space-y-2">
                 {(importsData?.imports ?? []).length === 0 ? (
-                  <p className="text-[12px] text-white/30">
+                  <p className="text-[12px] text-muted-foreground">
                     Geen mislukte imports. Alle uploads zijn goed verwerkt.
                   </p>
                 ) : (
@@ -1146,19 +1146,19 @@ export default function AdminPage() {
                       }}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="truncate text-[13px] text-white/85">
+                        <span className="truncate text-[13px] text-foreground/85">
                           {im.fileName}
                         </span>
-                        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/40">
+                        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                           {im.fileType}
                         </span>
                       </div>
                       {im.errorMessage && (
-                        <p className="mt-1 text-[12px] leading-snug text-white/55">
+                        <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                           {im.errorMessage}
                         </p>
                       )}
-                      <div className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                      <div className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                         {im.reporterName ?? "Onbekend"} ·{" "}
                         {formatWhen(im.uploadedAt)}
                       </div>
@@ -1169,17 +1169,17 @@ export default function AdminPage() {
             </section>
 
             <section>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Kwaliteit van analyses
               </p>
-              <p className="mt-1 text-[12px] leading-snug text-white/40">
+              <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                 Oordelen van sporters en coaches over analyses en adviezen.
                 Feedback wordt alleen geregistreerd — regels veranderen nooit
                 automatisch.
               </p>
               {!quality ||
               Object.keys(quality.totals).length === 0 ? (
-                <p className="mt-3 text-[12px] text-white/30">
+                <p className="mt-3 text-[12px] text-muted-foreground">
                   Nog geen feedback ontvangen.
                 </p>
               ) : (
@@ -1188,12 +1188,12 @@ export default function AdminPage() {
                     {Object.entries(quality.totals).map(([verdict, count]) => (
                       <div
                         key={verdict}
-                        className="rounded-lg border border-white/[0.05] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
+                        className="rounded-lg border border-border bg-card px-3 py-2 backdrop-blur-md"
                       >
-                        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                           {verdict.replace(/_/g, " ")}
                         </p>
-                        <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-white/70">
+                        <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-muted-foreground">
                           {count}
                         </p>
                       </div>
@@ -1204,12 +1204,12 @@ export default function AdminPage() {
                       {quality.byEngine.slice(0, 8).map((e) => (
                         <div
                           key={`${e.engine}-${e.engine_version}`}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.05] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
+                          className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 backdrop-blur-md"
                         >
-                          <span className="truncate font-mono text-[10px] text-white/60">
+                          <span className="truncate font-mono text-[10px] text-muted-foreground">
                             {e.engine} · versie {e.engine_version}
                           </span>
-                          <span className="shrink-0 font-mono text-[10px] tabular-nums text-white/45">
+                          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
                             {e.total} oordelen ·{" "}
                             <span
                               style={{
@@ -1228,7 +1228,7 @@ export default function AdminPage() {
                   )}
                   {quality.recentIncorrect.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
                         Recent als onjuist gemeld
                       </p>
                       {quality.recentIncorrect.slice(0, 6).map((r) => (
@@ -1241,15 +1241,15 @@ export default function AdminPage() {
                           }}
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <span className="font-mono text-[10px] text-white/70">
+                            <span className="font-mono text-[10px] text-muted-foreground">
                               {r.subjectType} · {r.subjectKey}
                             </span>
-                            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/40">
+                            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                               {r.actorRole} · {formatWhen(r.updatedAt)}
                             </span>
                           </div>
                           {(r.reasonText || r.reasonCode) && (
-                            <p className="mt-1 text-[12px] leading-snug text-white/55">
+                            <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                               {r.reasonText ??
                                 (r.reasonCode
                                   ? r.reasonCode.replace(/_/g, " ")
@@ -1257,7 +1257,7 @@ export default function AdminPage() {
                             </p>
                           )}
                           {r.context && (
-                            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                               {String(r.context.engine ?? "onbekend")}
                               {r.context.ruleKey
                                 ? ` · regel ${String(r.context.ruleKey)}`
@@ -1289,10 +1289,10 @@ export default function AdminPage() {
                 {/* Destructieve gegevens-opschoning: nooit inline. Openen als
                     stappenvenster (droogdraai → expliciet bevestigen). */}
                 <section>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     Gegevens-opschoning
                   </p>
-                  <p className="mt-1 text-[12px] leading-snug text-white/40">
+                  <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                     Opruimen van vervuiling (Engelstalige observaties, dubbele
                     import-rijen) en losmaken van foute automatische koppelingen.
                     Echte data blijft altijd staan. Opent in een apart venster
@@ -1317,19 +1317,19 @@ export default function AdminPage() {
                 <KennisbankAdminSection />
 
                 <section>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     Cijfers
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {Object.entries(status).map(([key, value]) => (
                       <div
                         key={key}
-                        className="rounded-lg border border-white/[0.05] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
+                        className="rounded-lg border border-border bg-card px-3 py-2 backdrop-blur-md"
                       >
-                        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
                           {key}
                         </p>
-                        <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-white/70">
+                        <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-muted-foreground">
                           {value}
                         </p>
                       </div>

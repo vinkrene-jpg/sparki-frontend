@@ -4,7 +4,7 @@
 // of seeddata.
 //
 // Tabs: Overzicht · Belasting · Progressie · Doelen · Sessies
-// Visueel: glass cards (bg-[#070d16]/[0.82], border-white/[0.08]) op de
+// Visueel: glass cards (bg-card, border-border) op de
 // cinematic achtergrond van ScreenShell; recharts grafieken met wit/laag-alpha
 // assen en gridlijnen; vaste semantische kleurset (CHART.*) voor alle
 // data-reeksen.
@@ -103,7 +103,7 @@ function UitlegRegel({ k }: { k: string }) {
   const u = UITLEG[k]
   if (!aan || !u) return null
   return (
-    <p className="mb-4 rounded-lg border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs leading-relaxed text-white/70">
+    <p className="mb-4 rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2 text-xs leading-relaxed text-muted-foreground">
       {u.wat} {u.waarom}
     </p>
   )
@@ -161,7 +161,7 @@ function LCard({ children, className = "" }: { children: ReactNode; className?: 
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md",
+        "rounded-2xl border border-border bg-card p-5 backdrop-blur-md",
         className,
       )}
     >
@@ -171,24 +171,24 @@ function LCard({ children, className = "" }: { children: ReactNode; className?: 
 }
 
 function LCardTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <h3 className={cn("text-[15px] font-semibold text-white", className)}>{children}</h3>
+  return <h3 className={cn("text-[15px] font-semibold text-foreground", className)}>{children}</h3>
 }
 
 function LLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="block min-w-0 [overflow-wrap:anywhere] text-[11px] font-semibold uppercase tracking-[0.05em] text-white/50">
+    <span className="block min-w-0 [overflow-wrap:anywhere] text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
       {children}
     </span>
   )
 }
 
 function Skel({ className = "" }: { className?: string }) {
-  return <div aria-hidden="true" className={cn("animate-pulse rounded-2xl bg-white/[0.06]", className)} />
+  return <div aria-hidden="true" className={cn("animate-pulse rounded-2xl bg-muted", className)} />
 }
 
 function LFout({ titel, onOpnieuw }: { titel: string; onOpnieuw?: () => void }) {
   return (
-    <div className="rounded-2xl border border-red-400/20 bg-red-500/[0.08] p-4 text-sm text-red-300">
+    <div className="rounded-2xl border border-red-400/20 bg-red-500/[0.08] p-4 text-sm text-[color:var(--color-negative)]">
       <p className="font-medium">{titel}</p>
       {onOpnieuw && (
         <button type="button" onClick={onOpnieuw}
@@ -206,13 +206,13 @@ function LFout({ titel, onOpnieuw }: { titel: string; onOpnieuw?: () => void }) 
 function LegeGrafiek({ titel }: { titel: string }) {
   const [, navigate] = useLocation()
   return (
-    <div className="rounded-xl border border-dashed border-white/[0.12] bg-white/[0.03] px-4 py-5 text-center">
-      <p className="text-sm text-white/55">{titel}</p>
+    <div className="rounded-xl border border-dashed border-border bg-muted px-4 py-5 text-center">
+      <p className="text-sm text-muted-foreground">{titel}</p>
       <div className="mt-3 flex justify-center gap-2">
         <button
           type="button"
           onClick={() => navigate("/connect")}
-          className="rounded-lg bg-cyan-500/90 px-3 py-1.5 text-xs font-medium text-[#05070e] hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+          className="rounded-lg bg-accent-cyan px-3 py-1.5 text-xs font-medium text-[color:var(--color-on-accent)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           Platform koppelen
         </button>
@@ -222,7 +222,7 @@ function LegeGrafiek({ titel }: { titel: string }) {
           // FIT/GPX/TCX-bestandsimport (ActivityImportPanel) op Sparki Connect,
           // via het bestaande ?focus=-patroon van de Smart Missing Input-flow.
           onClick={() => navigate("/connect?focus=import")}
-          className="rounded-lg border border-white/12 px-3 py-1.5 text-xs text-white/65 hover:border-cyan-300/40 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+          className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-accent-cyan/40 hover:text-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
         >
           Rit importeren
         </button>
@@ -250,15 +250,15 @@ function StatTegel({
         {uitlegKey && <UitlegDot uitlegKey={uitlegKey} label={label} />}
       </div>
       {value == null
-        ? <span className="text-3xl font-light text-white/25">—</span>
+        ? <span className="text-3xl font-light text-muted-foreground">—</span>
         : (
           <div className="flex items-baseline gap-1">
             <span className="num text-3xl font-bold tracking-tight tabular-nums" style={{ color }}>{value}</span>
-            {unit && <span className="text-sm text-white/40">{unit}</span>}
+            {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
           </div>
         )
       }
-      {sub && <span className="text-xs text-white/50">{sub}</span>}
+      {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
     </LCard>
   )
 }
@@ -281,13 +281,13 @@ function CTLATLTooltip({
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
-      <p className="mb-1.5 font-medium text-white/85">{label}</p>
+    <div className="rounded-lg bg-card px-3 py-2 text-xs text-foreground shadow-lg">
+      <p className="mb-1.5 font-medium text-foreground/85">{label}</p>
       {payload
         .filter((p) => typeof p.value === "number" && p.name !== "CTL-vlak")
         .map((p) => (
           <p key={p.name} className="tabular-nums flex justify-between gap-4">
-            <span className="text-white/70">{p.name}</span>
+            <span className="text-muted-foreground">{p.name}</span>
             <strong>{Math.round(p.value)}</strong>
           </p>
         ))}
@@ -305,10 +305,10 @@ function TSBTooltip({
   if (!active || !payload?.length) return null
   const tsb = payload[0]?.value ?? 0
   return (
-    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
-      <p className="mb-1 font-medium text-white/85">{label}</p>
+    <div className="rounded-lg bg-card px-3 py-2 text-xs text-foreground shadow-lg">
+      <p className="mb-1 font-medium text-foreground/85">{label}</p>
       <p className="tabular-nums">
-        <span className="text-white/70">Vorm (TSB)</span>{" "}
+        <span className="text-muted-foreground">Vorm (TSB)</span>{" "}
         <strong>{tsb > 0 ? "+" : ""}{Math.round(tsb)}</strong>
       </p>
     </div>
@@ -339,7 +339,7 @@ function LoadGrafiek({
 
   if (gefilterd.length < 3) {
     return (
-      <p className="text-sm text-white/40 py-6 text-center">
+      <p className="text-sm text-muted-foreground py-6 text-center">
         Nog te weinig belastingsdata voor een grafiek. Log meer trainingen.
       </p>
     )
@@ -398,7 +398,7 @@ function LoadGrafiek({
       <div>
         <div className="flex flex-wrap items-center gap-4 mb-3">
           <LCardTitle>Fitheid &amp; Vermoeidheid</LCardTitle>
-          <div className="flex items-center gap-4 text-xs text-white/55">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.ctl }} />
               CTL (fitheid)
@@ -421,7 +421,7 @@ function LoadGrafiek({
             </button>
             {heeftVorig && (
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-0.5 w-5 rounded bg-white/30" />
+                <span className="inline-block h-0.5 w-5 rounded bg-muted" />
                 Vorige periode (CTL)
               </span>
             )}
@@ -462,7 +462,7 @@ function LoadGrafiek({
               />
             )}
             {heeftVorig && (
-              <Line type="monotone" dataKey="vorigCtl" stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
+              <Line type="monotone" dataKey="vorigCtl" stroke="rgba(20,24,31,0.35)" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
             )}
             {/* Area-fill onder CTL: aflopende gradient (addendum 30 jul) —
                 trend in één oogopslag. ATL krijgt bewust GEEN fill en minder
@@ -513,7 +513,7 @@ function LoadGrafiek({
           </ComposedChart>
         </ResponsiveContainer>
         {onDagKlik && (
-          <p className="mt-1 text-[11px] text-white/40">Klik op een dag om de sessie van die dag te openen.</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">Klik op een dag om de sessie van die dag te openen.</p>
         )}
       </div>
 
@@ -521,7 +521,7 @@ function LoadGrafiek({
       <div>
         <div className="flex flex-wrap items-center gap-4 mb-3">
           <LCardTitle>Vorm (TSB)</LCardTitle>
-          <div className="flex items-center gap-4 text-xs text-white/55">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CHART.tsbPos }} />
               Positief — goed uitgerust
@@ -614,7 +614,7 @@ function OverzichtTab({
           </div>
           <UitlegRegel k="belasting" />
           <LoadGrafiek chartData={load.data.chartData} periode={42} />
-          <div className="mt-2 flex justify-between text-xs text-white/55 tabular-nums">
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
             <span>42 dagen geleden: fitheid {Math.round(load.data.chartData.slice(-42)[0]?.ctl ?? 0)}</span>
             <span className="font-medium" style={{ color: CHART.ctl }}>Nu: {Math.round(load.data.ctl)}</span>
           </div>
@@ -638,9 +638,9 @@ function VolumeTooltip({
   const w = payload[0]?.payload
   if (!w) return null
   return (
-    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
-      <p className="mb-1 font-medium text-white/85">Week van {label}</p>
-      <p className="tabular-nums text-white/90">
+    <div className="rounded-lg bg-card px-3 py-2 text-xs text-foreground shadow-lg">
+      <p className="mb-1 font-medium text-foreground/85">Week van {label}</p>
+      <p className="tabular-nums text-foreground/90">
         {w.uren != null ? `${String(w.uren).replace(".", ",")} u` : "duur onbekend"}
         {w.tss != null && ` · ${w.tss} TSS`} · {w.sessies} {w.sessies === 1 ? "sessie" : "sessies"}
       </p>
@@ -666,7 +666,7 @@ function WeekVolumeCard({
     <LCard className="p-5">
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Trainingsvolume per week</LCardTitle>
-        <span className="text-xs text-white/40">12 weken</span>
+        <span className="text-xs text-muted-foreground">12 weken</span>
         <UitlegDot uitlegKey="trainingsvolume" label="Trainingsvolume" />
       </div>
       <UitlegRegel k="trainingsvolume" />
@@ -714,7 +714,7 @@ function WeekVolumeCard({
               </Bar>
             </ComposedChart>
           </ResponsiveContainer>
-          <p className="mt-1 text-[11px] text-white/40">Uren per week. Klik op een week om de laatste sessie te openen.</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">Uren per week. Klik op een week om de laatste sessie te openen.</p>
         </>
       )}
     </LCard>
@@ -738,7 +738,7 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
     <LCard className="p-5">
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Intensiteitsverdeling</LCardTitle>
-        <span className="text-xs text-white/40">laatste sessies</span>
+        <span className="text-xs text-muted-foreground">laatste sessies</span>
         <UitlegDot uitlegKey="intensiteitsverdeling" label="Intensiteitsverdeling" />
       </div>
       <UitlegRegel k="intensiteitsverdeling" />
@@ -752,7 +752,7 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
               <div key={b.key} style={{ width: `${b.aandeel * 100}%`, background: INTENSITEIT_KLEUR[b.key] }} />
             ))}
           </div>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/55">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {buckets.filter((b) => b.minuten > 0).map((b) => (
               <span key={b.key} className="flex items-center gap-1.5">
                 <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: INTENSITEIT_KLEUR[b.key] }} />
@@ -760,7 +760,7 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-white/40">
+          <p className="mt-2 text-[11px] text-muted-foreground">
             Afgeleid uit werkelijke belastingsscore en duur per sessie
             {bekendMin < totaalMin && " — sessies zonder score tellen als onbekend"}.
           </p>
@@ -784,7 +784,7 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
     <LCard className="p-5">
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Slaap</LCardTitle>
-        <span className="text-xs text-white/40">{periodeLabel(periode)}</span>
+        <span className="text-xs text-muted-foreground">{periodeLabel(periode)}</span>
         <UitlegDot uitlegKey="slaap" label="Slaap" />
       </div>
       <UitlegRegel k="slaap" />
@@ -804,8 +804,8 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
       ) : (
         <>
           <div className="flex items-baseline gap-1 mb-2">
-            <span className="num text-3xl font-bold tracking-tight text-white">{String(laatste.uren).replace(".", ",")}</span>
-            <span className="text-xs text-white/40">u laatst gemeten</span>
+            <span className="num text-3xl font-bold tracking-tight text-foreground">{String(laatste.uren).replace(".", ",")}</span>
+            <span className="text-xs text-muted-foreground">u laatst gemeten</span>
           </div>
           <Sparkline
             data={reeks.map((m) => m.uren)}
@@ -930,32 +930,32 @@ function BelastingTab({
           <LCardTitle>Doelscenario</LCardTitle>
           <UitlegDot uitlegKey="doelscenario" label="Doelscenario" />
           {/* WP-K5: vast label — dit is een verkenning, geen meting of advies. */}
-          <span className="ml-auto rounded-full border border-purple-400/25 bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-purple-300">
+          <span className="ml-auto rounded-full border border-purple-400/25 bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-purple-700">
             Verkenning · simulatie
           </span>
         </div>
-        <p className="text-xs text-white/55 mb-3">
+        <p className="text-xs text-muted-foreground mb-3">
           Kies een voorgenomen verandering van je trainingsvolume. De grafiek toont dan in het paars
           de verwachte ontwikkeling van je fitheid, als band met een boven- en onderwaarde.
         </p>
         <UitlegRegel k="doelscenario" />
         <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Doelscenario trainingsvolume">
           {/* Draaiwieltje: in stappen van 5% van −50% tot +50% */}
-          <div className="inline-flex items-center rounded-xl border border-white/10 overflow-hidden">
+          <div className="inline-flex items-center rounded-xl border border-border overflow-hidden">
             <button
               type="button"
               aria-label="5% minder volume"
               disabled={(scenarioPct ?? 0) <= -50}
               onClick={() => setScenarioPct(Math.max(-50, (scenarioPct ?? 0) - 5) || null)}
-              className="min-h-11 min-w-11 px-3 text-lg text-white/55 hover:bg-white/[0.04] hover:text-white/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+              className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
             >
               −
             </button>
             <span
               aria-live="polite"
               className={cn(
-                "min-w-[5.5rem] border-x border-white/10 px-3 py-2 text-center font-mono text-sm tabular-nums",
-                scenarioPct == null ? "text-white/40" : "font-semibold text-purple-300",
+                "min-w-[5.5rem] border-x border-border px-3 py-2 text-center font-mono text-sm tabular-nums",
+                scenarioPct == null ? "text-muted-foreground" : "font-semibold text-purple-700",
               )}
             >
               {scenarioPct == null ? "0% (uit)" : `${scenarioPct > 0 ? "+" : ""}${scenarioPct}%`}
@@ -965,7 +965,7 @@ function BelastingTab({
               aria-label="5% meer volume"
               disabled={(scenarioPct ?? 0) >= 50}
               onClick={() => setScenarioPct(Math.min(50, (scenarioPct ?? 0) + 5) || null)}
-              className="min-h-11 min-w-11 px-3 text-lg text-white/55 hover:bg-white/[0.04] hover:text-white/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+              className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
             >
               +
             </button>
@@ -974,14 +974,14 @@ function BelastingTab({
             <button
               type="button"
               onClick={() => setScenarioPct(null)}
-              className="min-h-9 rounded-lg border border-white/10 px-3 text-xs text-white/55 hover:text-white/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+              className="min-h-9 rounded-lg border border-border px-3 text-xs text-muted-foreground hover:text-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
             >
               Uit
             </button>
           )}
         </div>
         {scenarioPct != null && urenBasis != null && (
-          <p className="mt-2 text-sm text-white/60 tabular-nums">
+          <p className="mt-2 text-sm text-muted-foreground tabular-nums">
             {scenarioPct > 0 ? "+" : ""}{scenarioPct}% volume ≈{" "}
             <strong>{urenDeltaLabel(urenBasis.uren, scenarioPct)}</strong>{" "}
             ({urenLabel(urenBasis.uren)} → {urenLabel(urenBasis.uren * (1 + scenarioPct / 100))} u/week,{" "}
@@ -989,13 +989,13 @@ function BelastingTab({
           </p>
         )}
         {scenarioPct != null && urenBasis == null && (
-          <p className="mt-2 text-sm text-white/55">
+          <p className="mt-2 text-sm text-muted-foreground">
             Wat dit in uren betekent is nog niet te zeggen: er staan geen uren per week in je plan en er
             zijn geen recente sessies met een duur.
           </p>
         )}
         {scenarioPct != null && projectie && (
-          <p className="mt-3 rounded-lg bg-purple-500/100/10 border border-purple-400/20 px-3 py-2 text-sm text-white/70">
+          <p className="mt-3 rounded-lg bg-purple-500/100/10 border border-purple-400/20 px-3 py-2 text-sm text-muted-foreground">
             Bij <strong>{scenarioPct > 0 ? "+" : ""}{scenarioPct}% trainingsvolume</strong> komt je fitheid over{" "}
             {projectie.dagen} dagen naar verwachting uit tussen{" "}
             <strong className="tabular-nums" style={{ color: CHART.verwacht }}>
@@ -1009,7 +1009,7 @@ function BelastingTab({
           </p>
         )}
         {scenarioPct != null && !projectie && (
-          <p className="mt-3 rounded-lg bg-white/[0.04] border border-white/10 px-3 py-2 text-sm text-white/55">
+          <p className="mt-3 rounded-lg bg-muted border border-border px-3 py-2 text-sm text-muted-foreground">
             Er zijn de afgelopen vier weken geen sessies met een belastingsscore, dus een verwachting
             is nu niet te berekenen. Log trainingen met duur en intensiteit of koppel een platform.
           </p>
@@ -1036,8 +1036,8 @@ function BelastingTab({
                 className={cn(
                   "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
                   grafiekPeriode === p.dagen
-                    ? "border-cyan-400/50 bg-cyan-300/10 text-cyan-300 font-medium"
-                    : "border-white/10 text-white/55 hover:text-white/85",
+                    ? "border-cyan-400/50 bg-accent-cyan/10 text-accent-cyan font-medium"
+                    : "border-border text-muted-foreground hover:text-foreground/85",
                 )}
               >
                 {p.label}
@@ -1050,8 +1050,8 @@ function BelastingTab({
               className={cn(
                 "min-h-8 rounded-lg border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
                 vergelijk
-                  ? "border-white/25 bg-white/[0.08] text-white/70 font-medium"
-                  : "border-white/10 text-white/55 hover:text-white/85",
+                  ? "border-border bg-muted text-muted-foreground font-medium"
+                  : "border-border text-muted-foreground hover:text-foreground/85",
               )}
               title="Vergelijk met de vorige periode van gelijke lengte"
             >
@@ -1107,8 +1107,8 @@ function BelastingTab({
                 className={cn(
                   "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
                   periode === p
-                    ? "border-cyan-400/50 bg-cyan-300/10 text-cyan-300 font-medium"
-                    : "border-white/10 text-white/55 hover:text-white/85",
+                    ? "border-cyan-400/50 bg-accent-cyan/10 text-accent-cyan font-medium"
+                    : "border-border text-muted-foreground hover:text-foreground/85",
                 )}
               >
                 {p}d
@@ -1120,7 +1120,7 @@ function BelastingTab({
         {readReeks.length >= 2 ? (
           <>
             <div className="flex items-baseline justify-between mb-2">
-              <span className="text-xs text-white/55">{periodeLabel(periode)}</span>
+              <span className="text-xs text-muted-foreground">{periodeLabel(periode)}</span>
               <span className="font-mono text-xs tabular-nums" style={{ color: CHART.ctl }}>
                 {readReeks[readReeks.length - 1]} gereedheid
               </span>
@@ -1133,7 +1133,7 @@ function BelastingTab({
               fill="rgba(14,165,233,0.07)"
               className="w-full"
             />
-            <p className="mt-2 text-xs text-white/40">
+            <p className="mt-2 text-xs text-muted-foreground">
               Gebaseerd op dagelijkse check-in scores.
             </p>
           </>
@@ -1151,7 +1151,7 @@ function BelastingTab({
       <LCard className="p-5">
         <div className="flex items-center gap-1.5 mb-4">
           <LCardTitle>HRV-trend</LCardTitle>
-          <span className="text-xs text-white/40">{periodeLabel(periode)}</span>
+          <span className="text-xs text-muted-foreground">{periodeLabel(periode)}</span>
           <UitlegDot uitlegKey="hrvTrend" label="HRV-trend" />
         </div>
         <UitlegRegel k="hrvTrend" />
@@ -1159,8 +1159,8 @@ function BelastingTab({
           <>
             <div className="flex items-end justify-between mb-2">
               <div className="flex items-baseline gap-1">
-                <span className="num text-3xl font-bold tracking-tight text-white">{Math.round(hrvWaarde)}</span>
-                <span className="text-xs text-white/40">ms</span>
+                <span className="num text-3xl font-bold tracking-tight text-foreground">{Math.round(hrvWaarde)}</span>
+                <span className="text-xs text-muted-foreground">ms</span>
               </div>
               {hrvDeltaWaarde != null && (
                 <span className="font-mono text-xs tabular-nums" style={{ color: hrvDeltaWaarde > 0 ? CHART.tsbPos : CHART.tsbNeg }}>
@@ -1203,18 +1203,18 @@ function BelastingTab({
             <BioRadar
               size={220}
               axes={meetbaar}
-              labelColor="rgba(255,255,255,0.55)"
-              gridColor="rgba(255,255,255,0.10)"
+              labelColor="rgba(20,24,31,0.62)"
+              gridColor="rgba(20,24,31,0.10)"
               overlay={radarOverlay}
               overlayAccent="rgba(168,85,247,0.9)"
             />
             {radarSamenv && <p className="sr-only">{radarSamenv}</p>}
-            <p className="text-center text-xs text-white/55 max-w-xs text-pretty">
+            <p className="text-center text-xs text-muted-foreground max-w-xs text-pretty">
               {meetbaar.length} van {assen.length} assen meetbaar.
               Sterkste: {meetbaar.reduce((a, b) => (b.level > a.level ? b : a)).label}.
             </p>
             {radarOverlay && scenarioPct != null && (
-              <p className="text-center text-xs text-purple-300 max-w-xs text-pretty">
+              <p className="text-center text-xs text-purple-700 max-w-xs text-pretty">
                 Paars gestippeld: verwachte stand na {projectie?.dagen ?? 42} dagen met{" "}
                 {scenarioPct > 0 ? `${scenarioPct}% meer` : `${Math.abs(scenarioPct)}% minder`} volume —
                 fitheid, vorm en herstel schuiven mee; vermogen, gevoel en regelmaat volgen niet
@@ -1223,7 +1223,7 @@ function BelastingTab({
             )}
           </div>
         ) : (
-          <p className="text-sm text-white/40 py-4 text-center">
+          <p className="text-sm text-muted-foreground py-4 text-center">
             Nog te weinig gegevens voor een radar. Log sessies en check-ins.
           </p>
         )}
@@ -1256,7 +1256,7 @@ function PowerBestsTable() {
   const hasAny = data && Object.keys(data.allTime).length > 0
   if (!hasAny) {
     return (
-      <p className="text-sm text-white/40 py-4">
+      <p className="text-sm text-muted-foreground py-4">
         Nog geen vermogensrecords. Log ritten met een vermogensmeter om je records op te bouwen.
       </p>
     )
@@ -1267,11 +1267,11 @@ function PowerBestsTable() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 bg-white/[0.04]">
-              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-4">Duur</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-4">All-time</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-4">Laatste 42d</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70">Datum</th>
+            <tr className="border-b border-border bg-muted">
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-4">Duur</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-4">All-time</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-4">Laatste 42d</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Datum</th>
             </tr>
           </thead>
           <tbody>
@@ -1280,9 +1280,9 @@ function PowerBestsTable() {
               const recent = data?.recent[w.key]
               if (!allTime) return null
               return (
-                <tr key={w.key} className="border-b border-white/[0.06] last:border-0">
-                  <td className="py-2.5 pr-4 font-mono text-xs text-white/55">{w.label}</td>
-                  <td className="py-2.5 pr-4 text-right font-mono tabular-nums font-medium text-white">
+                <tr key={w.key} className="border-b border-border last:border-0">
+                  <td className="py-2.5 pr-4 font-mono text-xs text-muted-foreground">{w.label}</td>
+                  <td className="py-2.5 pr-4 text-right font-mono tabular-nums font-medium text-foreground">
                     {allTime.watts}W
                   </td>
                   <td
@@ -1291,7 +1291,7 @@ function PowerBestsTable() {
                   >
                     {recent ? `${recent.watts}W` : "—"}
                   </td>
-                  <td className="py-2.5 text-right font-mono text-xs text-white/40">
+                  <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
                     {allTime.date.slice(0, 10)}
                   </td>
                 </tr>
@@ -1301,7 +1301,7 @@ function PowerBestsTable() {
         </table>
       </div>
       {data && data.sessionsWithBests > 0 && (
-        <p className="mt-2.5 text-[11px] text-white/40">
+        <p className="mt-2.5 text-[11px] text-muted-foreground">
           {data.sessionsWithBests} {data.sessionsWithBests === 1 ? "rit" : "ritten"} met vermogensmeter
         </p>
       )}
@@ -1322,9 +1322,9 @@ function GewichtTooltip({
   const p = payload[0]?.payload
   if (!p) return null
   return (
-    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
-      <p className="mb-1 font-medium text-white/85">{label}</p>
-      <p className="tabular-nums text-white/90">
+    <div className="rounded-lg bg-card px-3 py-2 text-xs text-foreground shadow-lg">
+      <p className="mb-1 font-medium text-foreground/85">{label}</p>
+      <p className="tabular-nums text-foreground/90">
         {String(p.kg).replace(".", ",")} kg
         {p.wkg != null && ` · ${String(p.wkg).replace(".", ",")} W/kg`}
       </p>
@@ -1353,9 +1353,9 @@ function GewichtWkgCard({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4">
         <LCardTitle>Gewicht &amp; W/kg</LCardTitle>
         <UitlegDot uitlegKey="gewichtWkg" label="Gewicht & W/kg" />
-        <div className="flex items-center gap-4 text-xs text-white/55">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-5 rounded bg-white/60" /> Gewicht
+            <span className="inline-block h-0.5 w-5 rounded bg-muted" /> Gewicht
           </span>
           {heeftWkg && (
             <span className="flex items-center gap-1.5">
@@ -1371,7 +1371,7 @@ function GewichtWkgCard({
       </div>
       <UitlegRegel k="gewichtWkg" />
       {overlays.streefGewichtKg != null && doelZin != null && (
-        <p className="mb-3 text-xs text-white/55">{doelZin}</p>
+        <p className="mb-3 text-xs text-muted-foreground">{doelZin}</p>
       )}
       {reeks.length < 2 ? (
         <LegeGrafiek titel="Nog geen gewichtsmetingen om een verloop te tonen." />
@@ -1444,7 +1444,7 @@ function ProgressieTab({
           <LCardTitle>FTP-ontwikkeling</LCardTitle>
           <UitlegDot uitlegKey="ftpOntwikkeling" label="FTP-ontwikkeling" />
           {overlays.streefFtp != null && (
-            <span className="flex items-center gap-1.5 text-xs text-white/55 ml-2">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
               <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.goal, backgroundImage: `repeating-linear-gradient(90deg,${CHART.goal} 0,${CHART.goal} 4px,transparent 4px,transparent 8px)` }} />
               Streef-FTP {overlays.streefFtp} W
             </span>
@@ -1467,7 +1467,7 @@ function ProgressieTab({
                 <span className="num text-3xl font-bold tracking-tight tabular-nums" style={{ color: CHART.ftp }}>
                   {weergave.getoond}
                 </span>
-                <span className="text-xs text-white/40">W{weergave.bronIsProfiel ? " · Sportpaspoort" : ""}</span>
+                <span className="text-xs text-muted-foreground">W{weergave.bronIsProfiel ? " · Sportpaspoort" : ""}</span>
               </div>
               {weergave.gesorteerd.length >= 2 && (
                 <span className="font-mono text-xs tabular-nums"
@@ -1532,7 +1532,7 @@ function ProgressieTab({
 
       {/* Trainingsverloop — donkere glass-variant, passend bij de rest van Analyse */}
       <div>
-        <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-white/55">
+        <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
           Trainingsverloop — 6 weken
         </p>
         <TrainingProgression
@@ -1550,10 +1550,10 @@ function ProgressieTab({
 // ── Doelen-tabblad ────────────────────────────────────────────────────────────
 
 const VERDICT_CONFIG = {
-  op_koers:      { label: "Op koers",       kleur: "text-emerald-300", achtergrond: "bg-emerald-500/10", rand: "border-emerald-400/25" },
-  aandacht:      { label: "Let op",          kleur: "text-amber-300",   achtergrond: "bg-amber-500/10",   rand: "border-amber-400/25"   },
-  risico:        { label: "Risico",          kleur: "text-red-300",     achtergrond: "bg-red-500/10",     rand: "border-red-400/25"     },
-  niet_meetbaar: { label: "Niet meetbaar",   kleur: "text-white/60",   achtergrond: "bg-white/[0.04]",   rand: "border-white/10"   },
+  op_koers:      { label: "Op koers",       kleur: "text-[color:var(--color-positive)]", achtergrond: "bg-emerald-500/10", rand: "border-emerald-400/25" },
+  aandacht:      { label: "Let op",          kleur: "text-[color:var(--color-warning)]",   achtergrond: "bg-amber-500/10",   rand: "border-amber-400/25"   },
+  risico:        { label: "Risico",          kleur: "text-[color:var(--color-negative)]",     achtergrond: "bg-red-500/10",     rand: "border-red-400/25"     },
+  niet_meetbaar: { label: "Niet meetbaar",   kleur: "text-muted-foreground",   achtergrond: "bg-muted",   rand: "border-border"   },
 } as const
 
 function GoalCard({ goal }: { goal: Goal }) {
@@ -1564,9 +1564,9 @@ function GoalCard({ goal }: { goal: Goal }) {
     <div className={cn("border rounded-xl p-4", v.rand, v.achtergrond)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-medium text-white text-sm truncate">{goal.title}</p>
+          <p className="font-medium text-foreground text-sm truncate">{goal.title}</p>
           {goal.progress.reasons[0] && (
-            <p className="text-xs text-white/55 mt-0.5">{goal.progress.reasons[0]}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{goal.progress.reasons[0]}</p>
           )}
         </div>
         <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0", v.kleur, v.rand, v.achtergrond)}>
@@ -1576,15 +1576,15 @@ function GoalCard({ goal }: { goal: Goal }) {
       {(goal.targetDate ?? daysLeft != null) && (
         <div className="flex items-center gap-4 mt-2">
           {goal.targetDate && (
-            <span className="text-xs text-white/55">Doel: {goal.targetDate}</span>
+            <span className="text-xs text-muted-foreground">Doel: {goal.targetDate}</span>
           )}
           {daysLeft != null && (
-            <span className="text-xs text-white/40">{daysLeft} dagen resterend</span>
+            <span className="text-xs text-muted-foreground">{daysLeft} dagen resterend</span>
           )}
         </div>
       )}
       {goal.progress.gaps.length > 0 && (
-        <p className="mt-2 text-xs text-white/55 italic">{goal.progress.gaps[0]}</p>
+        <p className="mt-2 text-xs text-muted-foreground italic">{goal.progress.gaps[0]}</p>
       )}
     </div>
   )
@@ -1601,8 +1601,8 @@ function RaceCard({ race, todayISO }: { race: Race; todayISO: string }) {
     <LCard className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-medium text-white text-sm truncate">{race.name}</p>
-          <p className="text-xs text-white/55 mt-0.5">
+          <p className="font-medium text-foreground text-sm truncate">{race.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {race.raceDate}
             {race.discipline && ` · ${race.discipline}`}
             {race.category && ` · ${race.category}`}
@@ -1637,9 +1637,9 @@ function DoelenTab() {
       {/* Doelen */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-white">Actieve doelen</h2>
+          <h2 className="text-base font-semibold text-foreground">Actieve doelen</h2>
           <button type="button" onClick={() => setDoelenPopup({ autoAdd: false })}
-            className="text-xs text-cyan-300 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+            className="text-xs text-accent-cyan hover:text-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
             Beheer
           </button>
         </div>
@@ -1647,7 +1647,7 @@ function DoelenTab() {
         {goalsLoading && <div className="space-y-3"><Skel className="h-20 w-full" /><Skel className="h-20 w-full" /></div>}
         {goalsError && <LFout titel="Doelen konden niet worden geladen." onOpnieuw={() => void goalsRefetch()} />}
         {!goalsLoading && !goalsError && actieveDoelen.length === 0 && (
-          <p className="text-sm text-white/40 py-2">
+          <p className="text-sm text-muted-foreground py-2">
             Nog geen actieve doelen.{" "}
             <button type="button" onClick={() => setDoelenPopup({ autoAdd: true })}
               className="underline underline-offset-2 hover:no-underline">
@@ -1666,21 +1666,21 @@ function DoelenTab() {
       {/* Wedstrijden */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-white">Aankomende wedstrijden</h2>
+          <h2 className="text-base font-semibold text-foreground">Aankomende wedstrijden</h2>
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setRacePopup(true)}
-              className="text-xs text-cyan-300 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              className="text-xs text-accent-cyan hover:text-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
               + Wedstrijd
             </button>
             <button type="button" onClick={() => navigate("/races")}
-              className="text-xs text-white/40 hover:text-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              className="text-xs text-muted-foreground hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
               Alle races →
             </button>
           </div>
         </div>
 
         {komende.length === 0 ? (
-          <p className="text-sm text-white/40 py-2">
+          <p className="text-sm text-muted-foreground py-2">
             Geen aankomende wedstrijden.{" "}
             <button type="button" onClick={() => setRacePopup(true)}
               className="underline underline-offset-2 hover:no-underline">
@@ -1737,7 +1737,7 @@ function SessiesTab({
   return (
     <div>
       {toestand === "verouderd" && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-xs text-[color:var(--color-warning)]">
           <span>{ANALYSE_COPY.verouderd}</span>
           <button type="button" onClick={() => void sessies.refetch()} className="underline underline-offset-2 hover:no-underline">
             {ANALYSE_COPY.opnieuw}
@@ -1747,11 +1747,11 @@ function SessiesTab({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 bg-white/[0.04]">
-              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-3">Datum</th>
-              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-3">Training</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70 pr-3 hidden sm:table-cell">Duur</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-white/70">
+            <tr className="border-b border-border bg-muted">
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-3">Datum</th>
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-3">Training</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-3 hidden sm:table-cell">Duur</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   TSS
                   <UitlegDot uitlegKey="belasting" label="Belastingsscore (TSS)" />
@@ -1764,18 +1764,18 @@ function SessiesTab({
               <tr
                 key={s.id}
                 onClick={() => onOpen(s)}
-                className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.04] cursor-pointer transition-colors focus-visible:bg-white/[0.04]"
+                className="border-b border-border last:border-0 hover:bg-muted cursor-pointer transition-colors focus-visible:bg-muted"
                 tabIndex={0}
                 onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen(s)}
                 aria-label={`Sessie: ${sessieTitel(s)}`}
               >
-                <td className="py-2.5 pr-3 font-mono text-xs text-white/40 whitespace-nowrap">
+                <td className="py-2.5 pr-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
                   {sessieDatumLabel(s.sessionDate)}
                 </td>
-                <td className="py-2.5 pr-3 text-white max-w-[14rem] truncate">
+                <td className="py-2.5 pr-3 text-foreground max-w-[14rem] truncate">
                   {sessieTitel(s)}
                 </td>
-                <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-white/55 hidden sm:table-cell">
+                <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-muted-foreground hidden sm:table-cell">
                   {sessieDuurLabel(s.durationMin) ?? "—"}
                 </td>
                 <td
@@ -1843,8 +1843,8 @@ function SamenvattingStrip({
   const cel = (label: string, waarde: ReactNode, sub?: string) => (
     <div className="min-w-0">
       <LLabel>{label}</LLabel>
-      <div className="mt-0.5 text-sm text-white">{waarde}</div>
-      {sub && <p className="truncate text-[10px] text-white/40">{sub}</p>}
+      <div className="mt-0.5 text-sm text-foreground">{waarde}</div>
+      {sub && <p className="truncate text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   )
 
@@ -1854,15 +1854,15 @@ function SamenvattingStrip({
         {cel(
           "Belasting",
           kern.ctl != null
-            ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-white/40">CTL</span> <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /></span>
-            : <span className="text-white/25">—</span>,
+            ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-muted-foreground">CTL</span> <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /></span>
+            : <span className="text-muted-foreground">—</span>,
           kern.atl != null ? `vermoeidheid ${kern.atl}` : undefined,
         )}
         {cel(
           "Vorm & herstel",
           kern.tsb != null
             ? <span className="tabular-nums" style={{ color: tsbKleur(kern.tsb) }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb} <UitlegDot uitlegKey="vorm" label="Vorm (TSB)" /></span>
-            : <span className="text-white/25">—</span>,
+            : <span className="text-muted-foreground">—</span>,
           kern.vormLabel ?? undefined,
         )}
         {cel(
@@ -1878,14 +1878,14 @@ function SamenvattingStrip({
                 )}
               </span>
             )
-            : <span className="text-white/25">—</span>,
+            : <span className="text-muted-foreground">—</span>,
           kern.wkg != null ? `${String(kern.wkg).replace(".", ",")} W/kg` : undefined,
         )}
         {cel(
           "Laatste sync",
           sync
             ? <span className="tabular-nums">{synclabel(sync.moment)}</span>
-            : <span className="text-white/40">geen koppeling</span>,
+            : <span className="text-muted-foreground">geen koppeling</span>,
           sync?.bron,
         )}
         {cel(
@@ -1974,11 +1974,11 @@ export default function CoreAnalysePage() {
         <SectionLabel title="Performance-analyse" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="type-display font-light tracking-tight text-white">
+            <h1 className="type-display font-light tracking-tight text-foreground">
               {ANALYSE_COPY.paginaTitel}
             </h1>
             {context && (
-              <p className="mt-0.5 truncate text-xs text-white/55">{context}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{context}</p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -1989,8 +1989,8 @@ export default function CoreAnalysePage() {
               className={cn(
                 "min-h-8 rounded-full border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
                 uitlegAan
-                  ? "border-cyan-400/50 bg-cyan-300/10 font-medium text-cyan-300"
-                  : "border-white/12 text-white/55 hover:border-cyan-300/40 hover:text-cyan-300",
+                  ? "border-cyan-400/50 bg-accent-cyan/10 font-medium text-accent-cyan"
+                  : "border-border text-muted-foreground hover:border-accent-cyan/40 hover:text-accent-cyan",
               )}
               title="Toon bij elk onderdeel een korte uitleg in gewone taal"
             >

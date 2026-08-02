@@ -44,7 +44,7 @@ function Toggle({
       }}
     >
       <span
-        className="absolute top-0.5 h-5 w-5 rounded-full bg-[#05070e] transition-all"
+        className="absolute top-0.5 h-5 w-5 rounded-full bg-card transition-all"
         style={{ left: on ? "calc(100% - 1.375rem)" : "0.125rem" }}
       />
     </button>
@@ -73,11 +73,11 @@ function Row({
           background: "rgba(255,255,255,0.03)",
         }}
       >
-        <Icon className="h-4 w-4 text-white/55" strokeWidth={1.75} />
+        <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
       </span>
       <div className="flex-1">
-        <div className="text-[14px] tracking-tight text-white/85">{title}</div>
-        <div className="mt-0.5 text-[12px] leading-snug text-white/40">{desc}</div>
+        <div className="text-[14px] tracking-tight text-foreground/90">{title}</div>
+        <div className="mt-0.5 text-[12px] leading-snug text-muted-foreground">{desc}</div>
       </div>
       <div className="shrink-0 pt-0.5">{children}</div>
     </div>
@@ -95,11 +95,11 @@ export function ReminderSettingsSection() {
   return (
     <section className="pt-2">
       <SectionLabel n="08" title="Herinneringen" />
-      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+      <div className="mt-3 rounded-2xl border border-border bg-card px-4 backdrop-blur-md">
         {isLoading || !p ? (
           <div className="space-y-3 py-6">
-            <div className="h-10 animate-pulse rounded bg-white/[0.06]" />
-            <div className="h-10 animate-pulse rounded bg-white/[0.06]" />
+            <div className="h-10 animate-pulse rounded bg-muted" />
+            <div className="h-10 animate-pulse rounded bg-muted" />
           </div>
         ) : (
           <div className="divide-y divide-white/[0.06]">
@@ -208,7 +208,7 @@ export function ReminderSettingsSection() {
 
       <PushSettingsRow />
 
-      <p className="mt-2 px-1 text-[11px] leading-snug text-white/30">
+      <p className="mt-2 px-1 text-[11px] leading-snug text-muted-foreground">
         Herinneringen verschijnen altijd in de app. Per e-mail versturen werkt
         zodra het e-mailkanaal volledig is gekoppeld; tot die tijd blijft alles
         netjes in de app staan.
@@ -235,7 +235,7 @@ function ChannelsAndQuietHours({
 
   return (
     <>
-      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+      <div className="mt-3 rounded-2xl border border-border bg-card px-4 backdrop-blur-md">
         <div className="divide-y divide-white/[0.06]">
           <Row
             icon={Smartphone}
@@ -280,24 +280,24 @@ function ChannelsAndQuietHours({
           </Row>
           {quietOn && (
             <div className="flex items-center gap-3 py-3.5 pl-12">
-              <label className="flex items-center gap-2 text-[12px] text-white/50">
+              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 Van
                 <input
                   type="time"
                   value={p.quietHoursStart ?? "22:00"}
                   disabled={busy}
                   onChange={(e) => set({ quietHoursStart: e.target.value })}
-                  className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[13px] text-white/85 [color-scheme:dark]"
+                  className="rounded-lg border border-border bg-muted px-2 py-1 text-[13px] text-foreground/90 [color-scheme:light]"
                 />
               </label>
-              <label className="flex items-center gap-2 text-[12px] text-white/50">
+              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 tot
                 <input
                   type="time"
                   value={p.quietHoursEnd ?? "07:00"}
                   disabled={busy}
                   onChange={(e) => set({ quietHoursEnd: e.target.value })}
-                  className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[13px] text-white/85 [color-scheme:dark]"
+                  className="rounded-lg border border-border bg-muted px-2 py-1 text-[13px] text-foreground/90 [color-scheme:light]"
                 />
               </label>
             </div>
@@ -305,7 +305,7 @@ function ChannelsAndQuietHours({
         </div>
       </div>
 
-      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+      <div className="mt-3 rounded-2xl border border-border bg-card px-4 backdrop-blur-md">
         <div className="divide-y divide-white/[0.06]">
           {(
             [
@@ -326,7 +326,7 @@ function ChannelsAndQuietHours({
           ))}
         </div>
       </div>
-      <p className="mt-2 px-1 text-[11px] leading-snug text-white/30">
+      <p className="mt-2 px-1 text-[11px] leading-snug text-muted-foreground">
         Privacy- en veiligheidsmeldingen kun je niet uitzetten — die zijn te
         belangrijk om te missen.
       </p>
@@ -365,9 +365,9 @@ function contentLabel(c: EngagementRhythm["topContent"][number]): string {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-      <div className="text-[15px] tabular-nums text-white/85">{value}</div>
-      <div className="mt-0.5 text-[11px] text-white/40">{label}</div>
+    <div className="rounded-xl border border-border bg-muted px-3 py-2">
+      <div className="text-[15px] tabular-nums text-foreground/90">{value}</div>
+      <div className="mt-0.5 text-[11px] text-muted-foreground">{label}</div>
     </div>
   )
 }
@@ -378,9 +378,9 @@ function RhythmReadout() {
 
   if (isLoading) {
     return (
-      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-4 backdrop-blur-md">
-        <div className="h-4 w-24 animate-pulse rounded bg-white/[0.06]" />
-        <div className="mt-3 h-8 animate-pulse rounded bg-white/[0.06]" />
+      <div className="mt-3 rounded-2xl border border-border bg-card px-4 py-4 backdrop-blur-md">
+        <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+        <div className="mt-3 h-8 animate-pulse rounded bg-muted" />
       </div>
     )
   }
@@ -392,12 +392,12 @@ function RhythmReadout() {
     : `Je ritme is nog niet goed genoeg bekend, dus een tik komt op een rustig moment in de avond (tussen ${fmtHour(r.receptiveWindow.startHour)} en ${fmtHour(r.receptiveWindow.endHour)}).`
 
   return (
-    <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-4 backdrop-blur-md">
+    <div className="mt-3 rounded-2xl border border-border bg-card px-4 py-4 backdrop-blur-md">
       <div className="flex items-center gap-2">
-        <Clock className="h-4 w-4 text-white/45" strokeWidth={1.75} />
-        <div className="text-[13px] tracking-tight text-white/80">Jouw ritme</div>
+        <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+        <div className="text-[13px] tracking-tight text-foreground/80">Jouw ritme</div>
       </div>
-      <p className="mt-2 text-[12px] leading-snug text-white/50">{windowLine}</p>
+      <p className="mt-2 text-[12px] leading-snug text-muted-foreground">{windowLine}</p>
 
       {r.hasData && (
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -408,14 +408,14 @@ function RhythmReadout() {
 
       {r.topContent.length > 0 && (
         <div className="mt-3">
-          <div className="text-[11px] uppercase tracking-wide text-white/30">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
             Waar je het vaakst kijkt
           </div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {r.topContent.slice(0, 4).map((c) => (
               <span
                 key={`${c.kind}:${c.key}`}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55"
+                className="rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] text-muted-foreground"
               >
                 {contentLabel(c)}
               </span>
@@ -424,7 +424,7 @@ function RhythmReadout() {
         </div>
       )}
 
-      <p className="mt-3 text-[11px] leading-snug text-white/30">
+      <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
         Dit komt van je eigen gebruik van de app en bepaalt alleen het moment van
         een tik — nooit wát je te zien krijgt.
       </p>
@@ -449,10 +449,10 @@ function PushSettingsRow() {
           "Meldingen op je telefoon zijn nu niet beschikbaar. Alles blijft netjes in de app staan."
 
   return (
-    <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+    <div className="mt-3 rounded-2xl border border-border bg-card px-4 backdrop-blur-md">
       <Row icon={Smartphone} title="Meldingen op je telefoon" desc={subtitle}>
         {state === "loading" ? (
-          <div className="h-6 w-11 animate-pulse rounded-full bg-white/[0.06]" />
+          <div className="h-6 w-11 animate-pulse rounded-full bg-muted" />
         ) : canToggle ? (
           <Toggle
             on={on}
@@ -460,7 +460,7 @@ function PushSettingsRow() {
             onClick={() => (on ? void disable() : void enable())}
           />
         ) : (
-          <span className="text-[11px] text-white/30">—</span>
+          <span className="text-[11px] text-muted-foreground">—</span>
         )}
       </Row>
     </div>

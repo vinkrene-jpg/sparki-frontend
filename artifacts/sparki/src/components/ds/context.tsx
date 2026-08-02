@@ -12,7 +12,7 @@ export function DsOmgevingContext() {
   return (
     <span
       data-testid="context-omgeving"
-      className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-amber-200"
+      className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-warning)]"
     >
       <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
       Testomgeving
@@ -24,7 +24,7 @@ export function DsRolContext({ label }: { label: string }) {
   return (
     <span
       data-testid="context-rol"
-      className="inline-flex items-center gap-1 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200/90"
+      className="inline-flex items-center gap-1 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-accent-cyan"
     >
       {label}
     </span>
@@ -44,7 +44,7 @@ export function DsOrganisatieContext({
   return (
     <span
       data-testid="context-organisatie"
-      className="inline-flex max-w-[40vw] items-center gap-1.5 truncate rounded-full border px-2 py-0.5 text-[11px] text-white/75"
+      className="inline-flex max-w-[40vw] items-center gap-1.5 truncate rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground"
       style={{ borderColor: `${color}55`, background: `${color}14` }}
       title={naam}
     >
@@ -60,7 +60,7 @@ export function DsTeamContext({ naam }: { naam: string }) {
   return (
     <span
       data-testid="context-team"
-      className="inline-flex max-w-[32vw] items-center truncate rounded-full border border-white/12 bg-white/[0.06] px-2 py-0.5 text-[11px] text-white/65"
+      className="inline-flex max-w-[32vw] items-center truncate rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
       title={naam}
     >
       <span className="truncate">{naam}</span>

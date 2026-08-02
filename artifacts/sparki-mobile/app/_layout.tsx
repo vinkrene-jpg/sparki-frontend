@@ -84,7 +84,10 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
-                  <StatusBar style="light" />
+                  {/* Eén licht thema (LICHT_THEMA_01): donkere statusbalk-tekst
+                      op de lichte app-achtergrond. De donkere kaart-/navigatie-
+                      HUD-schermen (uitzondering) zetten lokaal weer style="light". */}
+                  <StatusBar style="dark" />
                   <RootLayoutNav />
                   {versionBlock ? (
                     <VersionBlockScreen message={versionBlock} />

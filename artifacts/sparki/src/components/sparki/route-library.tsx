@@ -171,7 +171,7 @@ function RoutePreview({ geometry }: { geometry: [number, number][] | null }) {
 
   return (
     <div
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-border"
       style={{ background: "rgba(120,210,230,0.06)" }}
       aria-hidden
     >
@@ -188,7 +188,7 @@ function RoutePreview({ geometry }: { geometry: [number, number][] | null }) {
           />
         </svg>
       ) : (
-        <span className="px-1 text-center text-[9px] leading-tight text-white/30">
+        <span className="px-1 text-center text-[9px] leading-tight text-muted-foreground">
           Geen kaartlijn
         </span>
       )}
@@ -269,18 +269,18 @@ export function RouteLibrary() {
         {!beheerLocked && (
           <>
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Zoek op naam…"
-                className="w-full rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] py-2 pl-9 pr-3 text-[13px] text-white/85 placeholder:text-white/30 outline-none backdrop-blur-md focus:border-cyan-300/40"
+                className="w-full rounded-xl border border-border bg-card py-2 pl-9 pr-3 text-[13px] text-foreground/90 placeholder:text-muted-foreground outline-none backdrop-blur-md focus:border-accent-cyan"
               />
             </div>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as RouteSort)}
-              className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/75 outline-none backdrop-blur-md"
+              className="rounded-xl border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground outline-none backdrop-blur-md"
               aria-label="Sorteren"
             >
               {SORTS.map((s) => (
@@ -297,8 +297,8 @@ export function RouteLibrary() {
           aria-expanded={zonesOpen}
           className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] transition-colors ${
             zonesOpen
-              ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
-              : "border-white/[0.08] bg-[#070d16]/[0.82] text-white/65 hover:text-white/90"
+              ? "border-accent-cyan bg-accent-cyan text-accent-cyan"
+              : "border-border bg-card text-muted-foreground hover:text-foreground/90"
           }`}
         >
           <Shield className="h-3.5 w-3.5" />
@@ -327,8 +327,8 @@ export function RouteLibrary() {
               onClick={() => setScope(s.key)}
               className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
                 scope === s.key
-                  ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
-                  : "border-white/[0.08] bg-[#070d16]/[0.55] text-white/55 hover:text-white/80"
+                  ? "border-accent-cyan bg-accent-cyan text-accent-cyan"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground/80"
               }`}
             >
               {s.label}
@@ -346,9 +346,9 @@ export function RouteLibrary() {
           items={shared.data?.routes ?? []}
         />
       ) : lib.isLoading ? (
-        <p className="text-[13px] text-white/45">Routes laden…</p>
+        <p className="text-[13px] text-muted-foreground">Routes laden…</p>
       ) : routes.length === 0 ? (
-        <p className="rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.55] p-4 text-[13px] text-white/45 backdrop-blur-md">
+        <p className="rounded-2xl border border-border bg-card p-4 text-[13px] text-muted-foreground backdrop-blur-md">
           {q
             ? "Geen routes gevonden met deze zoekterm."
             : scope === "favoriet"
@@ -383,24 +383,24 @@ export function RouteLibrary() {
                     }
                   }}
                   aria-label={`Open route ${named.display}`}
-                  className="cursor-pointer rounded-2xl border border-white/[0.14] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+                  className="cursor-pointer rounded-2xl border border-border bg-card p-3.5 backdrop-blur-md transition-colors hover:border-accent-cyan"
                 >
                   <div className="flex items-start gap-3">
                     <RoutePreview geometry={r.geometry} />
                     <div className="min-w-0 flex-1">
                       <p
-                        className="line-clamp-2 text-[14px] font-medium leading-snug text-white/90"
+                        className="line-clamp-2 text-[14px] font-medium leading-snug text-foreground/90"
                         title={r.name}
                       >
                         {named.display}
                       </p>
-                      <p className="mt-1 text-[12.5px] tabular-nums text-white/60">
+                      <p className="mt-1 text-[12.5px] tabular-nums text-muted-foreground">
                         {fmtKm(r.distanceKm)}
                         {typeof r.elevationGainM === "number"
                           ? ` · ${Math.round(r.elevationGainM)} hm`
                           : ""}
                       </p>
-                      <p className="mt-0.5 truncate text-[11px] text-white/40">
+                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                         {[
                           !named.cleaned && named.startHint
                             ? `Start: ${named.startHint}`
@@ -412,7 +412,7 @@ export function RouteLibrary() {
                           .join(" · ")}
                       </p>
                       {nietGeverifieerd && (
-                        <p className="mt-1.5 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+                        <p className="mt-1.5 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-warning)]">
                           Niet volledig geverifieerd ·{" "}
                           {verification!.onbekendPct != null
                             ? `${String(verification!.onbekendPct).replace(".", ",")}% wegdek onbekend`
@@ -431,7 +431,7 @@ export function RouteLibrary() {
                         aria-label={
                           fav ? "Verwijder uit favorieten" : "Maak favoriet"
                         }
-                        className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-yellow-200"
+                        className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-yellow-200"
                       >
                         <Star
                           className="h-4 w-4"
@@ -448,7 +448,7 @@ export function RouteLibrary() {
                         }}
                         aria-label="Meer acties"
                         aria-expanded={openMenuId === r.id}
-                        className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-white/85"
+                        className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground/90"
                       >
                         <MoreVertical className="h-4 w-4" />
                       </button>
@@ -463,7 +463,7 @@ export function RouteLibrary() {
                         e.stopPropagation()
                         openRoute(r.id)
                       }}
-                      className="rounded-full bg-cyan-400/90 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300"
+                      className="rounded-full bg-accent-cyan px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] transition hover:brightness-110"
                     >
                       Route bekijken
                     </button>
@@ -474,7 +474,7 @@ export function RouteLibrary() {
                           e.stopPropagation()
                           requestNavigate(r)
                         }}
-                        className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-cyan-300/40 hover:text-cyan-200"
+                        className="flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:border-accent-cyan hover:text-accent-cyan"
                       >
                         <Navigation className="h-3 w-3" strokeWidth={2} />
                         Navigeer
@@ -487,10 +487,10 @@ export function RouteLibrary() {
                       className="mt-3 rounded-2xl border border-amber-300/35 bg-amber-300/[0.05] px-4 py-3.5"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber-200/90">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-warning)]">
                         Niet volledig geverifieerd voor de racefiets
                       </span>
-                      <p className="mt-1.5 text-[12px] leading-relaxed text-white/60">
+                      <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
                         {verification!.onbekendPct != null
                           ? `${String(verification!.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
                           : "Een deel van het wegdek is onbekend"}{" "}
@@ -498,7 +498,7 @@ export function RouteLibrary() {
                         daarom niet aanbevolen als racefietsroute — gebruiken kan
                         alleen als jij daar expliciet voor kiest.
                       </p>
-                      <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-[12px] text-white/75">
+                      <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground">
                         <input
                           type="checkbox"
                           checked={navConfirmAccepted}
@@ -518,14 +518,14 @@ export function RouteLibrary() {
                             setNavConfirmId(null)
                             startNavigate(r.id)
                           }}
-                          className="rounded-full bg-amber-300/90 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-amber-200 disabled:opacity-40"
+                          className="rounded-full bg-amber-300/90 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground transition hover:bg-amber-200 disabled:opacity-40"
                         >
                           Toch navigeren
                         </button>
                         <button
                           type="button"
                           onClick={() => setNavConfirmId(null)}
-                          className="rounded-full border border-white/[0.14] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:text-white/85"
+                          className="rounded-full border border-border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:text-foreground/90"
                         >
                           Annuleren
                         </button>
@@ -779,14 +779,14 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.12] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-1.5 text-[13.5px] font-medium text-white/90">
-            <Shield className="h-4 w-4 text-cyan-200" />
+          <p className="flex items-center gap-1.5 text-[13.5px] font-medium text-foreground/90">
+            <Shield className="h-4 w-4 text-accent-cyan" />
             Privacyzones
           </p>
-          <p className="mt-1 text-[12px] leading-relaxed text-white/55">
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
             Alles binnen een zone wordt weggelaten wanneer een route met
             anderen wordt gedeeld of getoond. De route zelf blijft ongewijzigd
             — alleen wat anderen zien verandert.
@@ -796,17 +796,17 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
           type="button"
           onClick={onClose}
           aria-label="Sluit privacyzones"
-          className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-white/85"
+          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground/90"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
       {zones.isLoading ? (
-        <p className="mt-3 text-[12.5px] text-white/45">Zones laden…</p>
+        <p className="mt-3 text-[12.5px] text-muted-foreground">Zones laden…</p>
       ) : (
         <>
-          <p className="mt-3 text-[12px] text-white/60">
+          <p className="mt-3 text-[12px] text-muted-foreground">
             {zones.data?.thuisBeschermd
               ? `Je thuisadres is altijd beschermd (${Math.round((zones.data?.thuisStraalM ?? 750) / 10) / 100} km rondom).`
               : "Er is nog geen thuisadres bekend. Zonder thuisadres of zone worden bij delen in elk geval start en einde van de route afgeschermd."}
@@ -815,13 +815,13 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
             {(zones.data?.zones ?? []).map((z) => (
               <li
                 key={z.id}
-                className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.08] px-3 py-2"
+                className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] text-white/85">
+                  <p className="truncate text-[13px] text-foreground/90">
                     {z.label}
                   </p>
-                  <p className="text-[11px] text-white/45">
+                  <p className="text-[11px] text-muted-foreground">
                     {ZONE_KINDS.find((k) => k.key === z.kind)?.label ??
                       z.kind}{" "}
                     · {z.radiusM} m rondom
@@ -831,7 +831,7 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
                   type="button"
                   onClick={() => remove.mutate(z.id)}
                   aria-label={`Verwijder zone ${z.label}`}
-                  className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-rose-300"
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-[color:var(--color-negative)]"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -842,7 +842,7 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
       )}
 
       {/* Zone toevoegen: adres zoeken → kandidaat kiezen → opslaan */}
-      <div className="mt-3 border-t border-white/[0.08] pt-3">
+      <div className="mt-3 border-t border-border pt-3">
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={adres}
@@ -851,19 +851,19 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
               if (e.key === "Enter") zoek()
             }}
             placeholder="Zoek adres of plek…"
-            className="min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-[#05070e]/60 px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+            className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-[13px] text-foreground/90 placeholder:text-muted-foreground outline-none focus:border-accent-cyan"
           />
           <button
             type="button"
             onClick={zoek}
             disabled={geocode.isPending || adres.trim().length < 3}
-            className="rounded-xl border border-white/[0.14] px-3 py-2 text-[12px] text-white/75 transition hover:border-cyan-300/40 disabled:opacity-40"
+            className="rounded-xl border border-border px-3 py-2 text-[12px] text-muted-foreground transition hover:border-accent-cyan disabled:opacity-40"
           >
             {geocode.isPending ? "Zoeken…" : "Zoek"}
           </button>
         </div>
         {geocode.isError && (
-          <p className="mt-2 text-[12px] text-rose-300/85">
+          <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
             {geocode.error instanceof Error
               ? geocode.error.message
               : "Kon adres niet zoeken"}
@@ -872,7 +872,7 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
         {geocode.data && !picked && (
           <ul className="mt-2 flex flex-col gap-1">
             {geocode.data.results.length === 0 && (
-              <li className="text-[12px] text-white/45">
+              <li className="text-[12px] text-muted-foreground">
                 Geen plekken gevonden met deze zoekterm.
               </li>
             )}
@@ -883,7 +883,7 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
                   onClick={() =>
                     setPicked({ label: c.label, lat: c.lat, lon: c.lon })
                   }
-                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[12.5px] text-white/75 transition hover:bg-white/[0.06]"
+                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[12.5px] text-muted-foreground transition hover:bg-muted"
                 >
                   {c.label}
                 </button>
@@ -892,8 +892,8 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
           </ul>
         )}
         {picked && (
-          <div className="mt-2.5 rounded-xl border border-cyan-300/25 bg-cyan-300/[0.05] p-3">
-            <p className="text-[12.5px] text-white/85">{picked.label}</p>
+          <div className="mt-2.5 rounded-xl border border-accent-cyan bg-accent-cyan p-3">
+            <p className="text-[12.5px] text-foreground/90">{picked.label}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <select
                 value={kind}
@@ -901,7 +901,7 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
                   setKind(e.target.value as PrivacyZone["kind"])
                 }
                 aria-label="Zonetype"
-                className="rounded-lg border border-white/[0.12] bg-[#05070e]/70 px-2.5 py-1.5 text-[12px] text-white/80 outline-none"
+                className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-[12px] text-foreground/80 outline-none"
               >
                 {ZONE_KINDS.map((k) => (
                   <option key={k.key} value={k.key}>
@@ -913,7 +913,7 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
                 value={radiusM}
                 onChange={(e) => setRadiusM(Number(e.target.value))}
                 aria-label="Straal"
-                className="rounded-lg border border-white/[0.12] bg-[#05070e]/70 px-2.5 py-1.5 text-[12px] text-white/80 outline-none"
+                className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-[12px] text-foreground/80 outline-none"
               >
                 {[500, 750, 1000, 1500, 2000].map((m) => (
                   <option key={m} value={m}>
@@ -925,14 +925,14 @@ function PrivacyZonesPanel({ onClose }: { onClose: () => void }) {
                 type="button"
                 onClick={opslaan}
                 disabled={create.isPending}
-                className="rounded-full bg-cyan-400/90 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300 disabled:opacity-40"
+                className="rounded-full bg-accent-cyan px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] transition hover:brightness-110 disabled:opacity-40"
               >
                 {create.isPending ? "Opslaan…" : "Zone toevoegen"}
               </button>
               <button
                 type="button"
                 onClick={() => setPicked(null)}
-                className="rounded-full border border-white/[0.14] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:text-white/85"
+                className="rounded-full border border-border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:text-foreground/90"
               >
                 Annuleer
               </button>
@@ -978,7 +978,7 @@ function RouteMenu({
     <div
       ref={ref}
       role="menu"
-      className="absolute right-2 top-12 z-[70] w-52 overflow-hidden rounded-xl border border-white/[0.12] bg-[#0a1220] py-1 shadow-xl shadow-black/50"
+      className="absolute right-2 top-12 z-[70] w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-float"
       onClick={(e) => e.stopPropagation()}
     >
       {items.map((it) => (
@@ -992,8 +992,8 @@ function RouteMenu({
           }}
           className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] transition-colors ${
             it.danger
-              ? "text-rose-300/85 hover:bg-rose-400/10"
-              : "text-white/75 hover:bg-white/[0.06] hover:text-white/95"
+              ? "text-[color:var(--color-negative)] hover:bg-rose-400/10"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground/95"
           }`}
         >
           {it.icon}
@@ -1018,10 +1018,10 @@ function SharedList({
     gedeeldVia: string
   }[]
 }) {
-  if (loading) return <p className="text-[13px] text-white/45">Laden…</p>
+  if (loading) return <p className="text-[13px] text-muted-foreground">Laden…</p>
   if (items.length === 0)
     return (
-      <p className="rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.55] p-4 text-[13px] text-white/45 backdrop-blur-md">
+      <p className="rounded-2xl border border-border bg-card p-4 text-[13px] text-muted-foreground backdrop-blur-md">
         Er zijn nog geen routes met jou gedeeld.
       </p>
     )
@@ -1030,14 +1030,14 @@ function SharedList({
       {items.map((r) => (
         <li
           key={r.id}
-          className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md"
+          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 backdrop-blur-md"
         >
           <Users className="h-4 w-4 shrink-0" style={{ color: ACCENT }} />
           <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 text-[14px] font-medium leading-snug text-white/90">
+            <p className="line-clamp-2 text-[14px] font-medium leading-snug text-foreground/90">
               {r.name}
             </p>
-            <p className="mt-0.5 text-[12px] text-white/45">
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
               {fmtKm(r.distanceKm)}
               {typeof r.elevationGainM === "number"
                 ? ` · ${Math.round(r.elevationGainM)} hm`
@@ -1045,7 +1045,7 @@ function SharedList({
               {" · gedeeld via "}
               {AUDIENCE_LABEL[r.gedeeldVia] ?? r.gedeeldVia}
             </p>
-            <p className="mt-0.5 text-[11px] text-white/35">
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
               Start en einde zijn afgeschermd voor de privacy van de maker.
             </p>
           </div>
@@ -1069,14 +1069,14 @@ function SharePanel({
   const has = (aud: string) => existing.some((s) => s.audience === aud)
 
   return (
-    <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="mt-2 rounded-xl border border-border bg-muted p-3">
       <div className="flex items-center justify-between">
-        <p className="text-[12px] font-medium text-white/70">Delen met</p>
+        <p className="text-[12px] font-medium text-muted-foreground">Delen met</p>
         <button
           type="button"
           onClick={onClose}
           aria-label="Sluiten"
-          className="rounded p-1 text-white/40 hover:text-white/80"
+          className="rounded p-1 text-muted-foreground hover:text-foreground/80"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -1090,8 +1090,8 @@ function SharePanel({
             onClick={() => share.mutate({ routeId, audience: aud })}
             className={`rounded-lg border px-2.5 py-1.5 text-[11.5px] transition-colors ${
               has(aud)
-                ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
-                : "border-white/[0.08] text-white/65 hover:border-cyan-300/30"
+                ? "border-accent-cyan bg-accent-cyan text-accent-cyan"
+                : "border-border text-muted-foreground hover:border-accent-cyan"
             }`}
           >
             {AUDIENCE_LABEL[aud]}
@@ -1102,7 +1102,7 @@ function SharePanel({
         ))}
       </div>
       {share.isError && (
-        <p className="mt-2 text-[11.5px] text-rose-300/80">
+        <p className="mt-2 text-[11.5px] text-[color:var(--color-negative)]">
           {(share.error as Error).message}
         </p>
       )}
@@ -1111,7 +1111,7 @@ function SharePanel({
           {existing.map((s) => (
             <li
               key={s.id}
-              className="flex items-center justify-between text-[12px] text-white/55"
+              className="flex items-center justify-between text-[12px] text-muted-foreground"
             >
               <span>
                 Gedeeld met {AUDIENCE_LABEL[s.audience] ?? s.audience}
@@ -1119,7 +1119,7 @@ function SharePanel({
               <button
                 type="button"
                 onClick={() => unshare.mutate({ routeId, shareId: s.id })}
-                className="text-[11.5px] text-white/40 underline-offset-2 hover:text-rose-300 hover:underline"
+                className="text-[11.5px] text-muted-foreground underline-offset-2 hover:text-[color:var(--color-negative)] hover:underline"
               >
                 Stop delen
               </button>
@@ -1127,7 +1127,7 @@ function SharePanel({
           ))}
         </ul>
       )}
-      <p className="mt-2 text-[11px] text-white/35">
+      <p className="mt-2 text-[11px] text-muted-foreground">
         Kijkers zien de route met afgeschermde start en einde — nooit jouw
         exacte vertrekpunt.
       </p>
@@ -1153,22 +1153,22 @@ function ComparePanel({
   )
 
   return (
-    <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="mt-2 rounded-xl border border-border bg-muted p-3">
       <div className="flex items-center justify-between">
-        <p className="text-[12px] font-medium text-white/70">
+        <p className="text-[12px] font-medium text-muted-foreground">
           Vergelijk plan met een gereden rit
         </p>
         <button
           type="button"
           onClick={onClose}
           aria-label="Sluiten"
-          className="rounded p-1 text-white/40 hover:text-white/80"
+          className="rounded p-1 text-muted-foreground hover:text-foreground/80"
         >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
       {options.length === 0 ? (
-        <p className="mt-2 text-[12px] text-white/45">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           Nog geen geïmporteerde activiteiten om mee te vergelijken. Importeer
           eerst een rit (GPX/FIT/TCX) bij Activiteiten.
         </p>
@@ -1189,7 +1189,7 @@ function ComparePanel({
                 },
               )
             }}
-            className="min-w-0 flex-1 rounded-lg border border-white/[0.08] bg-[#070d16]/[0.82] px-2.5 py-1.5 text-[12px] text-white/75 outline-none"
+            className="min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[12px] text-muted-foreground outline-none"
             aria-label="Kies een activiteit"
           >
             <option value="">Kies een activiteit…</option>
@@ -1202,20 +1202,20 @@ function ComparePanel({
         </div>
       )}
       {vergelijk.isPending && (
-        <p className="mt-2 text-[12px] text-white/45">Vergelijken…</p>
+        <p className="mt-2 text-[12px] text-muted-foreground">Vergelijken…</p>
       )}
-      {error && <p className="mt-2 text-[12px] text-rose-300/80">{error}</p>}
+      {error && <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">{error}</p>}
       {result && (
-        <div className="mt-3 grid grid-cols-2 gap-2 text-[12px] text-white/70">
-          <div className="rounded-lg bg-white/[0.04] p-2">
-            <p className="text-white/40">Dekking van het plan</p>
-            <p className="text-[15px] font-semibold text-white/90">
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[12px] text-muted-foreground">
+          <div className="rounded-lg bg-muted p-2">
+            <p className="text-muted-foreground">Dekking van het plan</p>
+            <p className="text-[15px] font-semibold text-foreground/90">
               {result.dekkingPct}%
             </p>
           </div>
-          <div className="rounded-lg bg-white/[0.04] p-2">
-            <p className="text-white/40">Afwijkingen</p>
-            <p className="text-[15px] font-semibold text-white/90">
+          <div className="rounded-lg bg-muted p-2">
+            <p className="text-muted-foreground">Afwijkingen</p>
+            <p className="text-[15px] font-semibold text-foreground/90">
               {result.afwijkingen.length}
               {result.afwijkingen.length > 0
                 ? ` (${result.afwijkingen
@@ -1224,18 +1224,18 @@ function ComparePanel({
                 : ""}
             </p>
           </div>
-          <div className="rounded-lg bg-white/[0.04] p-2">
-            <p className="text-white/40">Afstand plan ↔ gereden</p>
-            <p className="font-medium text-white/85">
+          <div className="rounded-lg bg-muted p-2">
+            <p className="text-muted-foreground">Afstand plan ↔ gereden</p>
+            <p className="font-medium text-foreground/90">
               {fmtKm(result.afstand.planKm)} ↔ {fmtKm(result.afstand.geredenKm)}
               {result.afstand.verschilKm != null
                 ? ` (${result.afstand.verschilKm > 0 ? "+" : ""}${result.afstand.verschilKm} km)`
                 : ""}
             </p>
           </div>
-          <div className="rounded-lg bg-white/[0.04] p-2">
-            <p className="text-white/40">Hoogte plan ↔ gereden</p>
-            <p className="font-medium text-white/85">
+          <div className="rounded-lg bg-muted p-2">
+            <p className="text-muted-foreground">Hoogte plan ↔ gereden</p>
+            <p className="font-medium text-foreground/90">
               {result.hoogte.planM != null ? `${result.hoogte.planM} m` : "—"} ↔{" "}
               {result.hoogte.geredenM != null
                 ? `${result.hoogte.geredenM} m`
@@ -1246,9 +1246,9 @@ function ComparePanel({
             </p>
           </div>
           {result.meetpunten.totaal > 0 && (
-            <div className="col-span-2 rounded-lg bg-white/[0.04] p-2">
-              <p className="text-white/40">Meetpunten</p>
-              <p className="font-medium text-white/85">
+            <div className="col-span-2 rounded-lg bg-muted p-2">
+              <p className="text-muted-foreground">Meetpunten</p>
+              <p className="font-medium text-foreground/90">
                 {result.meetpunten.totaal - result.meetpunten.gemist.length} van{" "}
                 {result.meetpunten.totaal} gehaald
                 {result.meetpunten.gemist.length > 0
@@ -1259,7 +1259,7 @@ function ComparePanel({
               </p>
             </div>
           )}
-          <p className="col-span-2 text-[11px] text-white/35">
+          <p className="col-span-2 text-[11px] text-muted-foreground">
             Vergeleken met routeversie {result.routeVersion}, rechtstreeks uit
             de echte GPS-punten van je rit.
           </p>

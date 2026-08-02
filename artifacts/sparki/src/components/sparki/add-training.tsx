@@ -24,10 +24,10 @@ import {
 } from "@/lib/add-training-flow"
 
 const inputClass =
-  "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+  "w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
 
 const labelClass =
-  "mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-white/35"
+  "mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground"
 
 function todayStr(): string {
   const d = new Date()
@@ -123,13 +123,13 @@ export function LogSessionForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {showHeader && (
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300/70">
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-cyan">
             Uitgevoerde training
           </span>
           <button
             type="button"
             onClick={onDone}
-            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70"
+            className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-muted-foreground"
             aria-label="Sluiten"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
@@ -206,7 +206,7 @@ export function LogSessionForm({
       </div>
 
       <div>
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
           HOE VOELDE HET?
         </label>
         <div className="flex gap-2">
@@ -219,21 +219,21 @@ export function LogSessionForm({
               style={{
                 borderColor:
                   form.feelScore === String(n)
-                    ? "rgba(120,210,230,0.5)"
-                    : "rgba(255,255,255,0.1)",
+                    ? "var(--color-accent-cyan)"
+                    : "var(--color-border)",
                 background:
                   form.feelScore === String(n)
-                    ? "rgba(120,210,230,0.12)"
+                    ? "var(--color-accent)"
                     : "transparent",
                 color:
-                  form.feelScore === String(n) ? ACCENT : "rgba(255,255,255,0.5)",
+                  form.feelScore === String(n) ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {n}
             </button>
           ))}
         </div>
-        <div className="mt-1 flex justify-between px-1 font-mono text-[9px] tracking-[0.15em] text-white/20">
+        <div className="mt-1 flex justify-between px-1 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
           <span>zwaar</span>
           <span>top</span>
         </div>
@@ -247,7 +247,7 @@ export function LogSessionForm({
         onChange={set("notes")}
       />
 
-      <p className="text-[11px] leading-relaxed text-white/40">
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
         Deze training wordt automatisch gekoppeld aan je geplande training van
         dezelfde dag. Heb je een FIT-, GPX- of TCX-bestand of sensordata? Gebruik
         dan &ldquo;Bestand importeren&rdquo; op de Training-pagina — dat geeft
@@ -257,14 +257,14 @@ export function LogSessionForm({
       {logSession.isError && (
         <p
           role="alert"
-          className="rounded-xl border border-red-400/30 bg-red-500/10 px-3.5 py-2.5 text-[12px] leading-snug text-red-300"
+          className="rounded-xl border border-red-400/30 bg-red-500/10 px-3.5 py-2.5 text-[12px] leading-snug text-[color:var(--color-negative)]"
         >
           Opslaan mislukt — controleer je verbinding en probeer het opnieuw.
         </p>
       )}
 
       {saved ? (
-        <div className="flex items-center gap-2.5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3.5 py-3 text-[13px] font-medium text-cyan-200">
+        <div className="flex items-center gap-2.5 rounded-xl border border-accent-cyan/30 bg-accent-cyan/10 px-3.5 py-3 text-[13px] font-medium text-accent-cyan">
           <svg
             viewBox="0 0 16 16"
             fill="none"
@@ -282,14 +282,14 @@ export function LogSessionForm({
             type="submit"
             disabled={logSession.isPending}
             className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-            style={{ background: ACCENT, color: "#040506" }}
+            style={{ background: ACCENT, color: "var(--color-on-accent)" }}
           >
             {logSession.isPending ? "Opslaan…" : "Training opslaan"}
           </button>
           <button
             type="button"
             onClick={onDone}
-            className="rounded-2xl border border-white/[0.1] px-5 py-3.5 font-sans text-[13px] text-white/50"
+            className="rounded-2xl border border-border px-5 py-3.5 font-sans text-[13px] text-muted-foreground"
           >
             Annuleer
           </button>
@@ -540,7 +540,7 @@ function PlanWorkoutForm({
       <button
         type="button"
         onClick={onOpenBuilder}
-        className="text-left text-[11px] leading-relaxed text-white/40 underline decoration-white/20 underline-offset-2 hover:text-white/60"
+        className="text-left text-[11px] leading-relaxed text-muted-foreground underline decoration-white/20 underline-offset-2 hover:text-muted-foreground"
       >
         Wil je een trainingsopbouw met blokken (opwarmen, intervallen,
         uitrijden)? Maak dan een trainingsblok.
@@ -549,14 +549,14 @@ function PlanWorkoutForm({
       {createWorkout.isError && (
         <p
           role="alert"
-          className="rounded-xl border border-red-400/30 bg-red-500/10 px-3.5 py-2.5 text-[12px] leading-snug text-red-300"
+          className="rounded-xl border border-red-400/30 bg-red-500/10 px-3.5 py-2.5 text-[12px] leading-snug text-[color:var(--color-negative)]"
         >
           Opslaan mislukt — controleer je verbinding en probeer het opnieuw.
         </p>
       )}
 
       {saved ? (
-        <div className="flex items-center gap-2.5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3.5 py-3 text-[13px] font-medium text-cyan-200">
+        <div className="flex items-center gap-2.5 rounded-xl border border-accent-cyan/30 bg-accent-cyan/10 px-3.5 py-3 text-[13px] font-medium text-accent-cyan">
           <svg
             viewBox="0 0 16 16"
             fill="none"
@@ -573,7 +573,7 @@ function PlanWorkoutForm({
           type="submit"
           disabled={!canSave || createWorkout.isPending}
           className="block w-full rounded-2xl px-4 py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
-          style={{ background: ACCENT, color: "#040506" }}
+          style={{ background: ACCENT, color: "var(--color-on-accent)" }}
         >
           {createWorkout.isPending ? "Inplannen…" : "Training inplannen"}
         </button>
@@ -619,19 +619,19 @@ export function AddTrainingModal({
     <button
       type="button"
       onClick={() => setMode(m)}
-      className="flex w-full items-center gap-3.5 rounded-2xl border border-white/[0.1] bg-white/[0.03] px-4 py-4 text-left transition-colors hover:border-cyan-300/40"
+      className="flex w-full items-center gap-3.5 rounded-2xl border border-border bg-muted px-4 py-4 text-left transition-colors hover:border-accent-cyan/40"
     >
       <span
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-        style={{ background: "rgba(120,210,230,0.1)", color: ACCENT }}
+        style={{ background: "var(--color-accent)", color: ACCENT }}
       >
         <Icon className="h-5 w-5" strokeWidth={1.75} />
       </span>
       <span className="min-w-0">
-        <span className="block font-sans text-[14px] font-semibold text-white/90">
+        <span className="block font-sans text-[14px] font-semibold text-foreground/90">
           {label}
         </span>
-        <span className="block text-[12px] leading-snug text-white/45">
+        <span className="block text-[12px] leading-snug text-muted-foreground">
           {sub}
         </span>
       </span>
@@ -648,31 +648,31 @@ export function AddTrainingModal({
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-foreground/70 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-white/[0.1] bg-[#070d16]/[0.97] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] backdrop-blur-xl sm:rounded-3xl">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-border bg-card p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] backdrop-blur-xl sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             {mode !== "kies" && (
               <button
                 type="button"
                 onClick={() => setMode("kies")}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/[0.1] text-white/50 transition-colors hover:text-white/80"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground/80"
                 aria-label="Terug naar keuze"
               >
                 <ChevronLeft className="h-4 w-4" strokeWidth={2} />
               </button>
             )}
-            <h2 className="truncate font-sans text-[16px] font-semibold text-white/90">
+            <h2 className="truncate font-sans text-[16px] font-semibold text-foreground/90">
               {titles[mode]}
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70"
+            className="flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-muted-foreground"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -741,8 +741,8 @@ export function AddTrainingButton({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/30 px-4 py-3.5 font-sans text-[14px] font-semibold transition-colors hover:border-cyan-300/50"
-            style={{ background: "rgba(120,210,230,0.1)", color: ACCENT }}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-accent-cyan/30 px-4 py-3.5 font-sans text-[14px] font-semibold transition-colors hover:border-accent-cyan/50"
+            style={{ background: "var(--color-accent)", color: ACCENT }}
           >
             <Plus className="h-4.5 w-4.5" strokeWidth={2.25} />
             Training toevoegen
@@ -752,7 +752,7 @@ export function AddTrainingButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl border border-white/[0.12] px-3.5 py-2 font-sans text-[12px] font-medium text-white/70 transition-colors hover:border-cyan-300/40 hover:text-white/90"
+          className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 font-sans text-[12px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-foreground/90"
         >
           <Plus className="h-4 w-4" strokeWidth={2} />
           Training toevoegen

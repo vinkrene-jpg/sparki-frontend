@@ -58,8 +58,8 @@ function Pill({
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
         active
-          ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-          : "border-white/[0.12] bg-white/[0.03] text-white/60 hover:bg-white/[0.07]"
+          ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+          : "border-border bg-muted text-foreground/60 hover:bg-muted"
       }`}
     >
       {label}
@@ -95,9 +95,9 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] p-4">
-      <p className="text-[13px] font-medium text-white/85">Klacht doorgeven</p>
-      <p className="mt-0.5 text-[11px] leading-relaxed text-white/40">
+    <div className="mt-3 rounded-xl border border-border bg-card p-4">
+      <p className="text-[13px] font-medium text-foreground/85">Klacht doorgeven</p>
+      <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
         Dit is een registratie, geen diagnose. Je begeleiding wordt erop
         aangepast; bij twijfel is een arts of fysiotherapeut de juiste plek.
       </p>
@@ -112,10 +112,10 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
           onChange={(e) => setBodyLocation(e.target.value)}
           placeholder="Waar zit het? (bijv. linkerknie)"
           maxLength={120}
-          className="mt-3 w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+          className="mt-3 w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
         />
       )}
-      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-white/35">
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
         Hoe ernstig voelt het?
       </p>
       <div className="mt-1.5 flex flex-wrap gap-2">
@@ -123,7 +123,7 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
           <Pill key={v} active={severity === v} label={l} onClick={() => setSeverity(v)} />
         ))}
       </div>
-      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-white/35">
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
         Wat betekent dit voor trainen?
       </p>
       <div className="mt-1.5 flex flex-wrap gap-2">
@@ -132,16 +132,16 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
         ))}
       </div>
       <div className="mt-3 flex items-center gap-2">
-        <label className="text-[12px] text-white/55">Sinds</label>
+        <label className="text-[12px] text-foreground/55">Sinds</label>
         <input
           type="date"
           value={startDate}
           max={todayLocal()}
           onChange={(e) => setStartDate(e.target.value)}
-          className="rounded-lg border border-white/[0.12] bg-white/[0.03] px-2 py-1.5 text-[12px] text-white/80 outline-none [color-scheme:dark]"
+          className="rounded-lg border border-border bg-muted px-2 py-1.5 text-[12px] text-foreground/80 outline-none [color-scheme:light]"
         />
       </div>
-      <label className="mt-3 flex items-start gap-2 text-[12px] text-white/60">
+      <label className="mt-3 flex items-start gap-2 text-[12px] text-foreground/60">
         <input
           type="checkbox"
           checked={medical}
@@ -157,7 +157,7 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
           placeholder="Instructie van arts/fysio (wordt letterlijk gevolgd en aan je coach getoond)"
           maxLength={2000}
           rows={2}
-          className="mt-2 w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+          className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
         />
       )}
       <textarea
@@ -166,10 +166,10 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
         placeholder="Toelichting (optioneel)"
         maxLength={2000}
         rows={2}
-        className="mt-2 w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+        className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
       />
       {create.isError && (
-        <p className="mt-2 text-[12px] text-amber-300/90">
+        <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">
           Opslaan lukte niet — controleer de velden en probeer opnieuw.
         </p>
       )}
@@ -178,14 +178,14 @@ function ComplaintForm({ onDone }: { onDone: () => void }) {
           type="button"
           disabled={create.isPending}
           onClick={submit}
-          className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-1.5 text-[12px] font-medium text-cyan-200 transition-colors hover:bg-cyan-300/20 disabled:opacity-50"
+          className="rounded-full border border-accent-cyan/40 bg-accent-cyan/10 px-4 py-1.5 text-[12px] font-medium text-accent-cyan transition-colors hover:bg-accent-cyan/20 disabled:opacity-50"
         >
           {create.isPending ? "Opslaan…" : "Doorgeven"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-full border border-white/[0.12] px-4 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05]"
+          className="rounded-full border border-border px-4 py-1.5 text-[12px] text-foreground/55 hover:bg-muted"
         >
           Annuleren
         </button>
@@ -203,24 +203,24 @@ function ComplaintCard({
   const [note, setNote] = useState("")
 
   return (
-    <div className="mt-3 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] p-4">
+    <div className="mt-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-[13px] font-medium text-white/85">
+          <p className="text-[13px] font-medium text-foreground/85">
             {KIND_LABEL[complaint.kind] ?? complaint.kind}
             {complaint.bodyLocation ? ` — ${complaint.bodyLocation}` : ""}
           </p>
-          <p className="mt-0.5 text-[11px] text-white/40">
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
             Sinds {complaint.startDate} · {SEVERITY_LABEL[complaint.severity]} ·{" "}
             {IMPACT_LABEL[complaint.trainingImpact]}
           </p>
         </div>
-        <span className="rounded-full border border-white/[0.12] px-2.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/55">
+        <span className="rounded-full border border-border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-foreground/55">
           {STATUS_LABEL[complaint.status]}
         </span>
       </div>
       {complaint.professionalInstruction && (
-        <p className="mt-2 rounded-lg border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-[12px] leading-relaxed text-cyan-100/90">
+        <p className="mt-2 rounded-lg border border-accent-cyan/20 bg-accent-cyan/10 px-3 py-2 text-[12px] leading-relaxed text-accent-cyan">
           Instructie arts/fysio: {complaint.professionalInstruction}
         </p>
       )}
@@ -232,7 +232,7 @@ function ComplaintCard({
             onClick={() =>
               update.mutate({ id: complaint.id, status: "herstellende" })
             }
-            className="rounded-full border border-white/[0.12] bg-white/[0.03] px-3 py-1.5 text-[12px] text-white/70 hover:bg-white/[0.07] disabled:opacity-50"
+            className="rounded-full border border-border bg-muted px-3 py-1.5 text-[12px] text-foreground/70 hover:bg-muted disabled:opacity-50"
           >
             Het gaat beter
           </button>
@@ -248,7 +248,7 @@ function ComplaintCard({
                 ...(complaint.status !== "actief" ? { status: "actief" } : {}),
               })
             }
-            className="rounded-full border border-white/[0.12] bg-white/[0.03] px-3 py-1.5 text-[12px] text-white/70 hover:bg-white/[0.07] disabled:opacity-50"
+            className="rounded-full border border-border bg-muted px-3 py-1.5 text-[12px] text-foreground/70 hover:bg-muted disabled:opacity-50"
           >
             Het gaat slechter
           </button>
@@ -260,7 +260,7 @@ function ComplaintCard({
           onChange={(e) => setNote(e.target.value)}
           placeholder="Notitie bij het verloop…"
           maxLength={2000}
-          className="min-w-0 flex-1 rounded-lg border border-white/[0.12] bg-white/[0.03] px-3 py-1.5 text-[12px] text-white/80 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-1.5 text-[12px] text-foreground/80 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
         />
         <button
           type="button"
@@ -271,13 +271,13 @@ function ComplaintCard({
               { onSuccess: () => setNote("") },
             )
           }
-          className="shrink-0 rounded-full border border-white/[0.12] px-3 py-1.5 text-[12px] text-white/60 hover:bg-white/[0.05] disabled:opacity-40"
+          className="shrink-0 rounded-full border border-border px-3 py-1.5 text-[12px] text-foreground/60 hover:bg-muted disabled:opacity-40"
         >
           Bewaar
         </button>
       </div>
       {update.isError && (
-        <p className="mt-2 text-[12px] text-amber-300/90">
+        <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">
           Bijwerken lukte niet — probeer het zo nog eens.
         </p>
       )}
@@ -294,38 +294,38 @@ function HistoryPanel() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] px-4 py-3 text-left"
+        className="flex w-full items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-left"
       >
-        <History className="h-4 w-4 text-white/40" strokeWidth={1.75} />
-        <span className="flex-1 text-[13px] text-white/75">
+        <History className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+        <span className="flex-1 text-[13px] text-foreground/75">
           Eerdere klachten &amp; herstelperiodes
         </span>
         <ChevronRight
-          className={`h-4 w-4 text-white/25 transition-transform ${open ? "rotate-90" : ""}`}
+          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
           strokeWidth={1.75}
         />
       </button>
       {open && (
-        <div className="mt-2 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] p-4">
+        <div className="mt-2 rounded-xl border border-border bg-card p-4">
           {isLoading ? (
-            <p className="text-[12px] text-white/40">Historie laden…</p>
+            <p className="text-[12px] text-muted-foreground">Historie laden…</p>
           ) : !data || data.length === 0 ? (
-            <p className="text-[12px] text-white/40">
+            <p className="text-[12px] text-muted-foreground">
               Nog geen geregistreerde klachten — hier verschijnt later je
               hersteloverzicht.
             </p>
           ) : (
             <ul className="flex flex-col gap-3">
               {data.map((e) => (
-                <li key={e.complaint.id} className="border-b border-white/[0.06] pb-3 last:border-0 last:pb-0">
-                  <p className="text-[13px] text-white/80">
+                <li key={e.complaint.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                  <p className="text-[13px] text-foreground/80">
                     {KIND_LABEL[e.complaint.kind] ?? e.complaint.kind}
                     {e.complaint.bodyLocation ? ` — ${e.complaint.bodyLocation}` : ""}
-                    <span className="ml-2 text-[11px] text-white/40">
+                    <span className="ml-2 text-[11px] text-muted-foreground">
                       {STATUS_LABEL[e.complaint.status]}
                     </span>
                   </p>
-                  <p className="mt-0.5 text-[11px] text-white/45">
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
                     Vanaf {e.complaint.startDate}
                     {e.durationDays != null ? ` · ${e.durationDays} dagen` : " · loopt nog"}
                     {" · "}
@@ -356,20 +356,20 @@ function SafetyInfoEditor() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] px-4 py-3 text-left"
+        className="flex w-full items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-left"
       >
-        <ShieldAlert className="h-4 w-4 text-white/40" strokeWidth={1.75} />
-        <span className="flex-1 text-[13px] text-white/75">
+        <ShieldAlert className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+        <span className="flex-1 text-[13px] text-foreground/75">
           Noodinformatie (zelfgekozen)
         </span>
         <ChevronRight
-          className={`h-4 w-4 text-white/25 transition-transform ${open ? "rotate-90" : ""}`}
+          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
           strokeWidth={1.75}
         />
       </button>
       {open && (
-        <div className="mt-2 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.7] p-4">
-          <p className="text-[11px] leading-relaxed text-white/40">
+        <div className="mt-2 rounded-xl border border-border bg-card p-4">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
             Alleen wat jij hier zelf invult kan bij een val-alarm worden
             meegestuurd — en alléén als je dat hieronder aanzet. Standaard staat
             delen uit.
@@ -380,9 +380,9 @@ function SafetyInfoEditor() {
             placeholder="Bijv. medicijngebruik, allergieën of bloedgroep — alleen wat je zelf kwijt wilt."
             maxLength={2000}
             rows={3}
-            className="mt-2 w-full rounded-lg border border-white/[0.12] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+            className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground outline-none focus:border-accent-cyan/40"
           />
-          <label className="mt-2 flex items-start gap-2 text-[12px] text-white/60">
+          <label className="mt-2 flex items-start gap-2 text-[12px] text-foreground/60">
             <input
               type="checkbox"
               checked={shareWithContacts}
@@ -396,15 +396,15 @@ function SafetyInfoEditor() {
               type="button"
               disabled={save.isPending}
               onClick={() => save.mutate({ infoText, shareWithContacts })}
-              className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-1.5 text-[12px] font-medium text-cyan-200 hover:bg-cyan-300/20 disabled:opacity-50"
+              className="rounded-full border border-accent-cyan/40 bg-accent-cyan/10 px-4 py-1.5 text-[12px] font-medium text-accent-cyan hover:bg-accent-cyan/20 disabled:opacity-50"
             >
               {save.isPending ? "Opslaan…" : "Opslaan"}
             </button>
             {save.isSuccess && (
-              <span className="ml-2 text-[12px] text-white/40">Opgeslagen.</span>
+              <span className="ml-2 text-[12px] text-muted-foreground">Opgeslagen.</span>
             )}
             {save.isError && (
-              <span className="ml-2 text-[12px] text-amber-300/90">
+              <span className="ml-2 text-[12px] text-[color:var(--color-warning)]">
                 Opslaan lukte niet.
               </span>
             )}
@@ -424,22 +424,22 @@ export function HealthFlowSection() {
     overview?.complaints.filter((c) => c.status !== "hersteld") ?? []
 
   return (
-    <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="mt-4 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start gap-3">
         <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border"
           style={{ background: "rgba(120,210,230,0.08)" }}
         >
-          <HeartPulse className="h-5 w-5 text-cyan-300/80" strokeWidth={1.75} />
+          <HeartPulse className="h-5 w-5 text-accent-cyan" strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-medium text-white/90">
+          <p className="text-[14px] font-medium text-foreground/90">
             Gezondheid &amp; herstel
           </p>
           {isLoading ? (
-            <p className="mt-0.5 text-[12px] text-white/40">Laden…</p>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">Laden…</p>
           ) : overview ? (
-            <p className="mt-0.5 text-[12px] leading-relaxed text-white/45">
+            <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
               {overview.healthStatus === "ok"
                 ? activeComplaints.length > 0
                   ? "Er loopt een klacht die je trainen niet blokkeert."
@@ -451,7 +451,7 @@ export function HealthFlowSection() {
           ) : null}
 
           {overview?.resumption.active && overview.resumption.advice && (
-            <p className="mt-2 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[12px] leading-relaxed text-white/65">
+            <p className="mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-[12px] leading-relaxed text-foreground/65">
               Opbouw dag {overview.resumption.day} van{" "}
               {overview.resumption.windowDays}: {overview.resumption.advice}
             </p>
@@ -462,7 +462,7 @@ export function HealthFlowSection() {
             .map((s) => (
               <p
                 key={`${s.source}-${s.at}`}
-                className="mt-2 rounded-lg border border-amber-300/20 bg-amber-300/[0.06] px-3 py-2 text-[12px] leading-relaxed text-amber-100/90"
+                className="mt-2 rounded-lg border border-amber-300/20 bg-amber-300/[0.06] px-3 py-2 text-[12px] leading-relaxed text-[color:var(--color-warning)]"
               >
                 {s.title}: {s.detail}
               </p>
@@ -479,7 +479,7 @@ export function HealthFlowSection() {
               <button
                 type="button"
                 onClick={() => setFormOpen(true)}
-                className="rounded-full border border-white/[0.12] bg-white/[0.03] px-3.5 py-1.5 text-[12px] text-white/70 hover:bg-white/[0.07]"
+                className="rounded-full border border-border bg-muted px-3.5 py-1.5 text-[12px] text-foreground/70 hover:bg-muted"
               >
                 Klacht doorgeven
               </button>
@@ -488,7 +488,7 @@ export function HealthFlowSection() {
                   type="button"
                   disabled={resume.isPending}
                   onClick={() => resume.mutate()}
-                  className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-3.5 py-1.5 text-[12px] font-medium text-cyan-200 hover:bg-cyan-300/20 disabled:opacity-50"
+                  className="rounded-full border border-accent-cyan/40 bg-accent-cyan/10 px-3.5 py-1.5 text-[12px] font-medium text-accent-cyan hover:bg-accent-cyan/20 disabled:opacity-50"
                 >
                   {resume.isPending ? "Bevestigen…" : "Ik ben weer hersteld"}
                 </button>
@@ -496,7 +496,7 @@ export function HealthFlowSection() {
             </div>
           )}
           {resume.isError && (
-            <p className="mt-2 text-[12px] text-amber-300/90">
+            <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">
               {(resume.error as Error)?.message?.includes("409") ||
               (resume.error as Error)?.message?.includes("niet trainen")
                 ? "Er staat nog een actieve klacht met 'niet trainen' open — zet die eerst op 'het gaat beter'."

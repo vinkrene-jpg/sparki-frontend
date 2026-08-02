@@ -25,18 +25,18 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         this.props.fallback ?? (
-          <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 text-center">
+          <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center">
             <Zap className="h-7 w-7 text-accent-cyan" aria-hidden="true" />
-            <p className="font-sans text-base font-semibold text-white/80">
+            <p className="font-sans text-base font-semibold text-foreground/80">
               Er ging iets mis
             </p>
-            <p className="max-w-xs text-sm text-white/40">
+            <p className="max-w-xs text-sm text-muted-foreground">
               {this.state.error.message}
             </p>
             <button
               type="button"
               onClick={() => this.setState({ error: null })}
-              className="mt-2 rounded-full border border-white/10 px-4 py-2 text-xs text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
+              className="mt-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan"
             >
               Probeer opnieuw
             </button>

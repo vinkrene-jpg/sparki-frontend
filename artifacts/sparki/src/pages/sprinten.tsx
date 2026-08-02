@@ -24,8 +24,8 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-      <h2 className="mb-4 font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+    <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+      <h2 className="mb-4 font-mono text-[10px] uppercase tracking-[0.28em] text-accent-cyan">
         {title}
       </h2>
       {children}
@@ -35,9 +35,9 @@ function Card({
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center">
-      <div className="text-2xl font-bold text-white">{value}</div>
-      <div className="mt-0.5 text-[11px] uppercase tracking-wide text-white/50">
+    <div className="rounded-xl border border-border bg-foreground/30 px-4 py-3 text-center">
+      <div className="text-2xl font-bold text-foreground">{value}</div>
+      <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
     </div>
@@ -50,27 +50,27 @@ function BadgeChip({ badge }: { badge: SprintBadge }) {
       className={`rounded-xl border p-3 ${
         badge.achieved
           ? "border-cyan-400/30 bg-cyan-400/10"
-          : "border-white/10 bg-black/20"
+          : "border-border bg-foreground/20"
       }`}
     >
       <div className="flex items-center gap-2">
         {badge.achieved ? (
-          <Trophy className="h-4 w-4 text-cyan-300" />
+          <Trophy className="h-4 w-4 text-accent-cyan" />
         ) : (
-          <Lock className="h-4 w-4 text-white/35" />
+          <Lock className="h-4 w-4 text-muted-foreground" />
         )}
         <span
           className={`text-sm font-semibold ${
-            badge.achieved ? "text-white" : "text-white/60"
+            badge.achieved ? "text-foreground" : "text-muted-foreground"
           }`}
         >
           {badge.label}
         </span>
       </div>
-      <p className="mt-1.5 text-xs text-white/55">{badge.description}</p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{badge.description}</p>
       {!badge.achieved && badge.progress && (
         <div className="mt-2">
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-cyan-400/70"
               style={{
@@ -81,7 +81,7 @@ function BadgeChip({ badge }: { badge: SprintBadge }) {
               }}
             />
           </div>
-          <div className="mt-1 text-right text-[10px] text-white/40">
+          <div className="mt-1 text-right text-[10px] text-muted-foreground">
             {badge.progress.current}/{badge.progress.target}
           </div>
         </div>
@@ -94,10 +94,10 @@ function RecentSprint({ row }: { row: SprintResultRow }) {
   const share = useShareSprint()
   const shared = (row as SprintResultRow & { shared?: string }).shared === "true"
   return (
-    <div className="flex items-center justify-between border-b border-white/[0.06] py-2.5 last:border-0">
+    <div className="flex items-center justify-between border-b border-border py-2.5 last:border-0">
       <div>
-        <div className="text-sm text-white/85">{row.placeName}</div>
-        <div className="text-[11px] text-white/45">
+        <div className="text-sm text-foreground/85">{row.placeName}</div>
+        <div className="text-[11px] text-muted-foreground">
           {row.status === "cancelled"
             ? "afgebroken"
             : `+${row.totalPoints} punten`}
@@ -111,8 +111,8 @@ function RecentSprint({ row }: { row: SprintResultRow }) {
           disabled={share.isPending}
           className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] transition ${
             shared
-              ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
-              : "border-white/12 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]"
+              ? "border-cyan-400/30 bg-cyan-400/10 text-accent-cyan"
+              : "border-border bg-muted text-muted-foreground hover:bg-muted"
           }`}
         >
           {shared ? (
@@ -140,7 +140,7 @@ function Ranking({
   return (
     <Card title="Klassement met vrienden">
       {myRank != null && (
-        <p className="mb-3 text-sm text-white/60">
+        <p className="mb-3 text-sm text-muted-foreground">
           Je staat {myRank}e van {rows.length}.
         </p>
       )}
@@ -148,12 +148,12 @@ function Ranking({
         {rows.map((r, i) => (
           <div
             key={r.clerkId}
-            className={`flex items-center justify-between border-b border-white/[0.06] py-2.5 last:border-0 ${
-              r.isMe ? "text-cyan-200" : "text-white/80"
+            className={`flex items-center justify-between border-b border-border py-2.5 last:border-0 ${
+              r.isMe ? "text-accent-cyan" : "text-foreground/80"
             }`}
           >
             <span className="flex items-center gap-3">
-              <span className="w-5 text-right font-mono text-xs text-white/40">
+              <span className="w-5 text-right font-mono text-xs text-muted-foreground">
                 {i + 1}
               </span>
               <span className="text-sm">{r.name}</span>
@@ -162,7 +162,7 @@ function Ranking({
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[11px] text-white/40">
+      <p className="mt-3 text-[11px] text-muted-foreground">
         Alleen sprints die vrienden zelf hebben gedeeld tellen mee.
       </p>
     </Card>
@@ -179,18 +179,18 @@ export default function SprintenPage() {
         <button
           type="button"
           onClick={() => navigate("/you")}
-          className="flex w-fit items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.06]"
+          className="flex w-fit items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Terug
         </button>
 
         <header>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
-            <Zap className="h-6 w-6 text-cyan-300" />
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+            <Zap className="h-6 w-6 text-accent-cyan" />
             Bordjes sprinten
           </h1>
-          <p className="mt-1.5 text-sm text-white/55">
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Sprint voor elk plaatsnaambord en verzamel punten. Op een route én
             op een vrije rit.
           </p>
@@ -198,7 +198,7 @@ export default function SprintenPage() {
 
         <Card title={`Seizoen ${data?.seasonYear ?? new Date().getFullYear()}`}>
           {isLoading ? (
-            <p className="text-sm text-white/50">Bezig…</p>
+            <p className="text-sm text-muted-foreground">Bezig…</p>
           ) : (
             <div className="grid grid-cols-3 gap-3">
               <Stat label="punten" value={data?.totalPoints ?? 0} />
@@ -226,7 +226,7 @@ export default function SprintenPage() {
 
         <Card title="Laatste sprints">
           {isLoading ? (
-            <p className="text-sm text-white/50">Bezig…</p>
+            <p className="text-sm text-muted-foreground">Bezig…</p>
           ) : data && data.recent.length > 0 ? (
             <div>
               {data.recent.map((r) => (
@@ -234,7 +234,7 @@ export default function SprintenPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-muted-foreground">
               Nog geen sprints. Start een vrije sprintrit of kies een route met
               bordjes om te beginnen.
             </p>

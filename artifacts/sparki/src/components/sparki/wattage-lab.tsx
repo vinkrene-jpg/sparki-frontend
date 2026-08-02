@@ -20,12 +20,12 @@ import { cn } from "@/lib/utils"
 
 // Donkere sheet-achtergrond (BeheerSheet) — dus donkere, contrastrijke tinten.
 const OORDEEL_STIJL: Record<LabOordeel, string> = {
-  geen_basis: "border-white/15 bg-white/[0.05] text-white/75",
-  al_bereikt: "border-emerald-300/30 bg-emerald-300/10 text-emerald-200",
-  binnen_bereik: "border-emerald-300/30 bg-emerald-300/10 text-emerald-200",
-  ambitieus: "border-amber-300/30 bg-amber-300/10 text-amber-200",
-  buiten_bereik: "border-orange-300/30 bg-orange-300/10 text-orange-200",
-  onhaalbaar: "border-red-300/40 bg-red-300/10 text-red-200",
+  geen_basis: "border-border bg-muted text-foreground/75",
+  al_bereikt: "border-emerald-300/30 bg-emerald-300/10 text-[color:var(--color-positive)]",
+  binnen_bereik: "border-emerald-300/30 bg-emerald-300/10 text-[color:var(--color-positive)]",
+  ambitieus: "border-amber-300/30 bg-amber-300/10 text-[color:var(--color-warning)]",
+  buiten_bereik: "border-orange-300/30 bg-orange-300/10 text-[color:var(--color-warning)]",
+  onhaalbaar: "border-red-300/40 bg-red-300/10 text-[color:var(--color-negative)]",
 }
 
 function datumLabel(iso: string): string {
@@ -148,17 +148,17 @@ export function WattageLab({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-2xl border border-cyan-400/25 bg-[#070d16]/[0.82] p-5 text-left backdrop-blur-md transition-colors hover:border-cyan-300/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+        className="w-full rounded-2xl border border-cyan-400/25 bg-card p-5 text-left backdrop-blur-md transition-colors hover:border-accent-cyan/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
       >
         <div className="flex items-center gap-2">
-          <FlaskConical className="h-4 w-4 text-cyan-300" />
-          <span className="text-sm font-semibold text-white/85">Wattage-lab</span>
+          <FlaskConical className="h-4 w-4 text-accent-cyan" />
+          <span className="text-sm font-semibold text-foreground/85">Wattage-lab</span>
           {/* WP-K5: vast label — knutselen is verkennen, geen meting of advies. */}
-          <span className="ml-auto rounded-full border border-cyan-400/25 bg-cyan-300/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-300">
+          <span className="ml-auto rounded-full border border-cyan-400/25 bg-accent-cyan/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-cyan">
             Verkenning · simulatie
           </span>
         </div>
-        <p className="mt-1 text-xs text-white/55">
+        <p className="mt-1 text-xs text-muted-foreground">
           Knutsel met je eigen doelen: wat is er nodig om je FTP, sprint of 5-minutenvermogen te
           verhogen — en wat is voor jou realistisch?
         </p>
@@ -176,8 +176,8 @@ export function WattageLab({
                 className={cn(
                   "min-h-9 rounded-full border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60",
                   d.key === duurKey
-                    ? "border-cyan-300/60 bg-cyan-300/10 font-semibold text-cyan-200"
-                    : "border-white/15 text-white/70 hover:border-white/30",
+                    ? "border-accent-cyan/60 bg-accent-cyan/10 font-semibold text-accent-cyan"
+                    : "border-border text-muted-foreground hover:border-border",
                 )}
               >
                 {d.label}
@@ -187,16 +187,16 @@ export function WattageLab({
 
           {/* Huidige basis */}
           {huidig ? (
-            <p className="text-sm text-white/75 tabular-nums">
+            <p className="text-sm text-foreground/75 tabular-nums">
               Je huidige beste over {duur.label.toLowerCase()}:{" "}
-              <strong className="text-white">{huidig.watts} W</strong>
+              <strong className="text-foreground">{huidig.watts} W</strong>
               {weightKg != null && weightKg > 0 && (
                 <> ({Math.round((huidig.watts / weightKg) * 10) / 10} W/kg)</>
               )}{" "}
               — uit {huidig.bron}.
             </p>
           ) : (
-            <p className="text-sm text-white/55">
+            <p className="text-sm text-muted-foreground">
               {bests.isLoading
                 ? "Beste waarden laden…"
                 : `Nog geen eigen waarde voor ${duur.label.toLowerCase()}.`}
@@ -205,12 +205,12 @@ export function WattageLab({
 
           {/* Doelinstelling */}
           <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Doelwattage">
-            <div className="inline-flex items-center overflow-hidden rounded-xl border border-white/15">
+            <div className="inline-flex items-center overflow-hidden rounded-xl border border-border">
               <button
                 type="button"
                 aria-label="5 watt lager"
                 onClick={() => setDoel(doel - 5)}
-                className="min-h-11 min-w-11 px-3 text-lg text-white/60 hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
+                className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
               >
                 −
               </button>
@@ -226,20 +226,20 @@ export function WattageLab({
                   const v = Number(e.target.value)
                   if (Number.isFinite(v)) setDoel(v)
                 }}
-                className="w-24 border-x border-white/15 bg-transparent px-2 py-2 text-center font-mono text-sm font-semibold tabular-nums text-white focus-visible:outline-none"
+                className="w-24 border-x border-border bg-transparent px-2 py-2 text-center font-mono text-sm font-semibold tabular-nums text-foreground focus-visible:outline-none"
               />
               <button
                 type="button"
                 aria-label="5 watt hoger"
                 onClick={() => setDoel(doel + 5)}
-                className="min-h-11 min-w-11 px-3 text-lg text-white/60 hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
+                className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
               >
                 +
               </button>
             </div>
-            <span className="text-sm text-white/55">watt als doel</span>
+            <span className="text-sm text-muted-foreground">watt als doel</span>
             {resultaat.doelWkg != null && (
-              <span className="text-sm tabular-nums text-white/55">
+              <span className="text-sm tabular-nums text-muted-foreground">
                 = {String(resultaat.doelWkg).replace(".", ",")} W/kg
               </span>
             )}
@@ -264,11 +264,11 @@ export function WattageLab({
           {/* Aanpak */}
           {resultaat.aanpak.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-white">Wat je ervoor moet doen</p>
+              <p className="text-sm font-semibold text-foreground">Wat je ervoor moet doen</p>
               <ul className="mt-2 space-y-2">
                 {resultaat.aanpak.map((stap) => (
-                  <li key={stap} className="flex gap-2 text-sm text-white/75">
-                    <span aria-hidden="true" className="mt-0.5 text-cyan-300">
+                  <li key={stap} className="flex gap-2 text-sm text-foreground/75">
+                    <span aria-hidden="true" className="mt-0.5 text-accent-cyan">
                       •
                     </span>
                     <span>{stap}</span>
@@ -287,8 +287,8 @@ export function WattageLab({
               className={cn(
                 "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60",
                 kanVastleggen && !bezig
-                  ? "border-cyan-300/60 bg-cyan-300/10 text-cyan-200 hover:bg-cyan-300/20"
-                  : "cursor-not-allowed border-white/10 text-white/35",
+                  ? "border-accent-cyan/60 bg-accent-cyan/10 text-accent-cyan hover:bg-accent-cyan/20"
+                  : "cursor-not-allowed border-border text-muted-foreground",
               )}
             >
               <Target className="h-4 w-4" aria-hidden="true" />
@@ -299,7 +299,7 @@ export function WattageLab({
                   : `Leg vast als doel: ${doelTitel(duurKey, duur.label, doel)}`}
             </button>
             {!kanVastleggen && (
-              <p className="text-xs text-white/45">
+              <p className="text-xs text-muted-foreground">
                 {resultaat.oordeel === "al_bereikt"
                   ? "Dit kun je al — kies een hoger doel om het vast te leggen."
                   : resultaat.oordeel === "onhaalbaar"
@@ -308,17 +308,17 @@ export function WattageLab({
               </p>
             )}
             {createGoal.isError && (
-              <p className="text-xs text-red-300">Vastleggen mislukte — probeer het opnieuw.</p>
+              <p className="text-xs text-[color:var(--color-negative)]">Vastleggen mislukte — probeer het opnieuw.</p>
             )}
             {vastgelegd[duurKey] != null && !bezig && (
-              <p className="text-xs text-emerald-200" aria-live="polite">
+              <p className="text-xs text-[color:var(--color-positive)]" aria-live="polite">
                 Vastgelegd als doel ({vastgelegd[duurKey]} W). Het staat nu in je Doelen-werkblad
                 {duurKey === "ftp" ? ", verschijnt als streeflijn op Analyse" : ""} en telt mee bij
                 de eerstvolgende (her)berekening van je trainingsplan.
               </p>
             )}
             {bestaand && vastgelegd[duurKey] == null && (
-              <p className="text-xs text-white/45">
+              <p className="text-xs text-muted-foreground">
                 Je hebt al een doel voor deze duur: “{bestaand.title}”. Vastleggen werkt dat doel
                 bij in plaats van een tweede aan te maken.
               </p>
@@ -326,7 +326,7 @@ export function WattageLab({
           </div>
 
           {/* Eerlijke verantwoording */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs text-white/55">
+          <div className="rounded-xl border border-border bg-muted px-4 py-3 text-xs text-muted-foreground">
             <p>
               Dit lab rekent met vuistregels bovenop je eigen data: je beste waarden per duur
               {duurKey === "ftp" ? " en je profiel-FTP" : ""}, en de bekende fysiologische

@@ -35,7 +35,7 @@ export function MediaPreview({ url, name, kind, size, className }: MediaPreviewP
         aria-label={`Open afbeelding ${name} in een nieuw tabblad`}
         className={
           className ??
-          "block overflow-hidden rounded-xl border border-white/[0.1]"
+          "block overflow-hidden rounded-xl border border-border"
         }
       >
         <img
@@ -56,20 +56,20 @@ export function MediaPreview({ url, name, kind, size, className }: MediaPreviewP
       aria-label={`Download bestand ${name}`}
       className={
         className ??
-        "group flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 transition-colors hover:border-cyan-300/30"
+        "group flex items-center gap-2.5 rounded-xl border border-border bg-muted px-3 py-2.5 transition-colors hover:border-cyan-300/30"
       }
     >
       <Icon className="h-4 w-4 shrink-0" style={{ color: ACCENT }} aria-hidden="true" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[12px] text-white/80">{name}</span>
+        <span className="block truncate text-[12px] text-foreground/80">{name}</span>
         {size != null && (
-          <span className="block font-mono text-[10px] text-white/35">
+          <span className="block font-mono text-[10px] text-muted-foreground">
             {bytesLabel(size)}
           </span>
         )}
       </span>
       <ExternalLink
-        className="h-3 w-3 shrink-0 text-white/25 transition-colors group-hover:text-cyan-300/70"
+        className="h-3 w-3 shrink-0 text-muted-foreground transition-colors group-hover:text-accent-cyan"
         aria-hidden="true"
       />
     </a>

@@ -26,17 +26,17 @@ export function MaterialNudgeCard({
           <Sparkles className="h-4 w-4" strokeWidth={1.75} style={{ color: ACCENT }} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Opgemerkt
           </p>
-          <p className="mt-1.5 text-pretty text-[14px] leading-relaxed text-white/80">
+          <p className="mt-1.5 text-pretty text-[14px] leading-relaxed text-foreground/80">
             {nudge.message}
           </p>
           <div className="mt-3 flex items-center gap-3">
             <button
               type="button"
               onClick={() => navigate(`/dashboard?materiaal=${nudge.category}`)}
-              className="rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition disabled:opacity-50"
+              className="rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] transition disabled:opacity-50"
               style={{ background: ACCENT }}
             >
               Laat zien
@@ -45,7 +45,7 @@ export function MaterialNudgeCard({
               type="button"
               onClick={onDismiss}
               disabled={dismissing}
-              className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70 disabled:opacity-40"
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-muted-foreground disabled:opacity-40"
             >
               Niet nodig
             </button>

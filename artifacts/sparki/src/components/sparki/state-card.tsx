@@ -53,9 +53,9 @@ const BAND_ACCENT: Record<StateBand, string> = {
 }
 
 const TONE_DOT: Record<StateSignal["tone"], string> = {
-  positive: "bg-cyan-300",
+  positive: "bg-accent-cyan",
   concern: "bg-amber-300",
-  neutral: "bg-white/40",
+  neutral: "bg-muted",
 }
 
 const CHECKINS: { value: CheckInAnswer; label: string }[] = [
@@ -66,9 +66,9 @@ const CHECKINS: { value: CheckInAnswer; label: string }[] = [
 
 // Tone → value colour for the glanceable metrics (cyan→warm Sparki language).
 const METRIC_TONE: Record<StateMetric["tone"], string> = {
-  positive: "text-cyan-300",
-  concern: "text-amber-300",
-  neutral: "text-white/90",
+  positive: "text-accent-cyan",
+  concern: "text-[color:var(--color-warning)]",
+  neutral: "text-foreground/90",
 }
 
 // Time-of-day greeting — a small, personal touch so Vandaag opens warm, not as a
@@ -104,14 +104,14 @@ export function StateCard({
 
   if (isError || !state) {
     return (
-      <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-        <p className="text-[14px] text-white/70">
+      <section className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+        <p className="text-[14px] text-muted-foreground">
           Je toestand kon nu niet worden opgehaald.
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="mt-4 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/80 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          className="mt-4 rounded-full border border-border px-4 py-2 text-[13px] text-foreground/80 transition-colors hover:border-accent-cyan hover:text-accent-cyan"
         >
           Opnieuw proberen
         </button>
@@ -127,16 +127,16 @@ export function StateCard({
   const hoistCheckIn = !hideCheckIn && !!checkInFirst && showCheckInButtons
 
   const checkInBlock = (
-    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
       <span className="inline-flex items-center gap-0.5">
-        <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
+        <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
           Check-in van vandaag
         </p>
         <UitlegDot uitlegKey="readiness" label="Check-in van vandaag" />
       </span>
       {showCheckInButtons ? (
         <>
-          <p className="mt-2 text-[14px] leading-relaxed text-white/75">
+          <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
             Hoe voel je je vandaag? Je beeld wordt er direct op aangepast.
           </p>
           <div className="mt-3 flex gap-2">
@@ -150,27 +150,27 @@ export function StateCard({
                     onSuccess: () => setReCheckIn(false),
                   })
                 }
-                className="flex-1 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-[13px] text-white/85 transition-colors hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-50"
+                className="flex-1 rounded-xl border border-border bg-muted px-3 py-2.5 text-[13px] text-foreground/90 transition-colors hover:border-accent-cyan hover:text-accent-cyan disabled:opacity-50"
               >
                 {c.label}
               </button>
             ))}
           </div>
           {checkIn.isError && (
-            <p className="mt-2 text-[12px] text-amber-300/90">
+            <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">
               Opslaan lukte niet. Probeer het zo nog eens.
             </p>
           )}
         </>
       ) : (
         <div className="mt-2 flex items-center justify-between">
-          <p className="text-[14px] text-white/70">
+          <p className="text-[14px] text-muted-foreground">
             Je check-in van vandaag staat genoteerd.
           </p>
           <button
             type="button"
             onClick={() => setReCheckIn(true)}
-            className="text-[13px] text-cyan-300/80 transition-colors hover:text-cyan-300"
+            className="text-[13px] text-accent-cyan transition-colors hover:text-accent-cyan"
           >
             Aanpassen
           </button>
@@ -189,7 +189,7 @@ export function StateCard({
           de conclusie zelf draagt het scherm. ── */}
       <section className="relative flex flex-col items-center pt-2">
         {firstName && (
-          <p className="text-[14px] font-light tracking-tight text-white/70">
+          <p className="text-[14px] font-light tracking-tight text-muted-foreground">
             {greeting()}, {firstName}.
           </p>
         )}
@@ -200,12 +200,12 @@ export function StateCard({
           >
             {buildHerstelPresentatie(state.band, state.confidence, state.why.length).label}
           </span>
-          <span className="text-white/20">·</span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+          <span className="text-muted-foreground">·</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             {state.movement.label}
           </span>
         </div>
-        <h1 className="mt-3 max-w-sm text-balance text-center font-sans text-2xl font-light leading-tight tracking-tight text-white">
+        <h1 className="mt-3 max-w-sm text-balance text-center font-sans text-2xl font-light leading-tight tracking-tight text-foreground">
           {state.status}
         </h1>
       </section>
@@ -216,38 +216,38 @@ export function StateCard({
           <button
             type="button"
             onClick={onShowDetails}
-            className="group w-full rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+            className="group w-full rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan"
           >
             <MetricRow metrics={state.metrics} />
-            <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
-              <span className="text-[13px] text-white/55 transition-colors group-hover:text-cyan-300/80">
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+              <span className="text-[13px] text-muted-foreground transition-colors group-hover:text-accent-cyan">
                 {detailsLabel ?? "Bekijk de volledige analyse"}
               </span>
-              <ChevronRight className="h-4 w-4 text-white/35 transition-colors group-hover:text-cyan-300/70" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-accent-cyan" />
             </div>
           </button>
         ) : (
-          <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+          <section className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
             <MetricRow metrics={state.metrics} />
           </section>
         ))}
 
       {/* ── Level 1: short coach action ────────────────────────────────────── */}
       {state.action && (
-        <section className="rounded-2xl border border-cyan-300/15 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+        <section className="rounded-2xl border border-accent-cyan bg-card p-5 backdrop-blur-md">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-300/15 ring-1 ring-cyan-300/30">
-              <Zap className="h-3.5 w-3.5 text-cyan-300" />
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent-cyan ring-1 ring-ring/30">
+              <Zap className="h-3.5 w-3.5 text-accent-cyan" />
             </span>
-            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
               Advies
             </p>
             <UitlegDot uitlegKey="trainingsadvies" label="Trainingsadvies" />
           </div>
-          <p className="mt-2.5 text-[15px] font-medium leading-snug text-white">
+          <p className="mt-2.5 text-[15px] font-medium leading-snug text-foreground">
             {state.action.label}
           </p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
             {state.action.reason}
           </p>
         </section>
@@ -258,18 +258,18 @@ export function StateCard({
       {!hideCheckIn && !hoistCheckIn && checkInBlock}
 
       {/* ── Level 2: "Waarom?" — the 2–3 signals behind the position ────────── */}
-      <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] backdrop-blur-md">
+      <section className="rounded-2xl border border-border bg-card backdrop-blur-md">
         <button
           type="button"
           onClick={() => setShowWhy((v) => !v)}
           className="flex w-full items-center justify-between px-5 py-4 text-left"
           aria-expanded={showWhy}
         >
-          <span className="text-[14px] font-medium text-white/85">
+          <span className="text-[14px] font-medium text-foreground/90">
             Waarom dit zo is?
           </span>
           <ChevronDown
-            className={`h-4 w-4 text-white/40 transition-transform ${
+            className={`h-4 w-4 text-muted-foreground transition-transform ${
               showWhy ? "rotate-180" : ""
             }`}
           />
@@ -277,7 +277,7 @@ export function StateCard({
         {showWhy && (
           <div className="space-y-3 px-5 pb-5">
             {state.why.length > 0 && (
-              <p className="text-[12px] leading-relaxed text-white/50">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 Dit weegt vandaag mee in je beeld:
               </p>
             )}
@@ -289,8 +289,8 @@ export function StateCard({
                       className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${TONE_DOT[s.tone]}`}
                     />
                     <div>
-                      <p className="text-[13px] text-white/85">{s.label}</p>
-                      <p className="text-[12px] leading-relaxed text-white/55">
+                      <p className="text-[13px] text-foreground/90">{s.label}</p>
+                      <p className="text-[12px] leading-relaxed text-muted-foreground">
                         {s.reading}
                       </p>
                     </div>
@@ -298,12 +298,12 @@ export function StateCard({
                 ))}
               </ul>
             ) : (
-              <p className="text-[13px] text-white/60">
+              <p className="text-[13px] text-muted-foreground">
                 Er is nog te weinig data om je beeld te onderbouwen.
               </p>
             )}
 
-            <div className="border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+            <div className="border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
               Gebaseerd op {state.confidenceLabel} over jou.
               {state.missing.length > 0 && (
                 <>
@@ -325,13 +325,13 @@ export function StateCard({
         <button
           type="button"
           onClick={onShowDetails}
-          className="flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-white/[0.02] px-5 py-4 text-left transition-colors hover:border-cyan-300/30 hover:bg-white/[0.04]"
+          className="flex w-full items-center justify-between rounded-2xl border border-border bg-muted px-5 py-4 text-left transition-colors hover:border-accent-cyan hover:bg-muted"
         >
-          <span className="flex items-center gap-2 text-[14px] text-white/80">
-            <ArrowRight className="h-4 w-4 text-cyan-300/70" />
+          <span className="flex items-center gap-2 text-[14px] text-foreground/80">
+            <ArrowRight className="h-4 w-4 text-accent-cyan" />
             {detailsLabel ?? "Volledige analyse"}
           </span>
-          <ChevronRight className="h-4 w-4 text-white/40" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>
       )}
     </div>
@@ -348,10 +348,10 @@ function MetricRow({ metrics }: { metrics: StateMetric[] }) {
         <div
           key={mtr.key}
           className={`flex-1 px-2 text-center ${
-            i > 0 ? "border-l border-white/[0.07]" : ""
+            i > 0 ? "border-l border-border" : ""
           }`}
         >
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             {mtr.label}
           </p>
           <p
@@ -359,7 +359,7 @@ function MetricRow({ metrics }: { metrics: StateMetric[] }) {
           >
             {mtr.value}
           </p>
-          <p className="mt-1 text-[11px] leading-tight text-white/45">{mtr.hint}</p>
+          <p className="mt-1 text-[11px] leading-tight text-muted-foreground">{mtr.hint}</p>
         </div>
       ))}
     </div>

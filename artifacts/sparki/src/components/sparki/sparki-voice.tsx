@@ -11,12 +11,12 @@ const TONE_HINT: Record<VoiceTone, string> = {
   supportive: "Warm en steunend, altijd voorop bij tegenslag.",
 }
 
-const CARD = "rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.82] backdrop-blur-md"
+const CARD = "rounded-2xl border border-border bg-card backdrop-blur-md"
 
 function TrustMeter({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, Math.round(score * 100)))
   return (
-    <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+    <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
       <div
         className="h-full rounded-full transition-all"
         style={{ width: `${pct}%`, background: ACCENT }}
@@ -39,7 +39,7 @@ export function SparkiVoiceSection() {
 
   if (isError || !data) {
     return (
-      <p className="mt-3 text-[12px] leading-relaxed text-white/35">
+      <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
         Sparki's stem is even niet te laden. Probeer het zo opnieuw.
       </p>
     )
@@ -52,15 +52,15 @@ export function SparkiVoiceSection() {
       {/* TRUST */}
       <div className={`${CARD} p-4`}>
         <div className="flex items-baseline justify-between">
-          <span className="font-sans text-[15px] tracking-tight text-white/85">
+          <span className="font-sans text-[15px] tracking-tight text-foreground/90">
             {trust.tierLabel}
           </span>
-          <span className="font-mono text-[11px] tracking-wide text-white/40">
+          <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
             {Math.round(trust.score * 100)}%
           </span>
         </div>
         <TrustMeter score={trust.score} />
-        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/45">
+        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           {trust.tierBlurb}
         </p>
       </div>
@@ -73,23 +73,23 @@ export function SparkiVoiceSection() {
             className={`${CARD} p-4 ${s.unlocked ? "" : "opacity-50"}`}
           >
             <div className="flex items-center gap-2">
-              <span className="font-sans text-[14px] tracking-tight text-white/85">
+              <span className="font-sans text-[14px] tracking-tight text-foreground/90">
                 {s.label}
               </span>
               {!s.unlocked && (
-                <Lock className="h-3 w-3 text-white/30" strokeWidth={2} />
+                <Lock className="h-3 w-3 text-muted-foreground" strokeWidth={2} />
               )}
             </div>
-            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/30">
+            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
               {TONE_HINT[s.tone]}
             </p>
             {s.line && (
-              <p className="mt-2.5 text-pretty text-[13px] leading-relaxed text-white/70">
+              <p className="mt-2.5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 "{s.line}"
               </p>
             )}
             {!s.unlocked && (
-              <p className="mt-2 text-[11px] leading-relaxed text-white/30">
+              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                 Deze stijl wordt actief naarmate er meer interactie is.
               </p>
             )}
@@ -103,14 +103,14 @@ export function SparkiVoiceSection() {
           {memoryHook && (
             <div className="flex gap-3 pb-3 first:pt-0">
               <MessageCircle
-                className="mt-0.5 h-4 w-4 shrink-0 text-white/40"
+                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
                 strokeWidth={1.75}
               />
               <div>
-                <p className="font-mono text-[10px] tracking-[0.18em] text-white/30">
+                <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                   KOMT EROP TERUG
                 </p>
-                <p className="mt-1 text-pretty text-[13px] leading-relaxed text-white/70">
+                <p className="mt-1 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                   "{memoryHook}"
                 </p>
               </div>
@@ -119,14 +119,14 @@ export function SparkiVoiceSection() {
           {openLoop && (
             <div className="flex gap-3 py-3">
               <Sparkles
-                className="mt-0.5 h-4 w-4 shrink-0 text-white/40"
+                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
                 strokeWidth={1.75}
               />
               <div>
-                <p className="font-mono text-[10px] tracking-[0.18em] text-white/30">
+                <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                   ZIET EEN PATROON
                 </p>
-                <p className="mt-1 text-pretty text-[13px] leading-relaxed text-white/70">
+                <p className="mt-1 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                   "{openLoop}"
                 </p>
               </div>
@@ -135,14 +135,14 @@ export function SparkiVoiceSection() {
           {empathy && (
             <div className="flex gap-3 pt-3 last:pb-0">
               <HeartHandshake
-                className="mt-0.5 h-4 w-4 shrink-0 text-white/40"
+                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
                 strokeWidth={1.75}
               />
               <div>
-                <p className="font-mono text-[10px] tracking-[0.18em] text-white/30">
+                <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
                   EERST JIJ
                 </p>
-                <p className="mt-1 text-pretty text-[13px] leading-relaxed text-white/70">
+                <p className="mt-1 text-pretty text-[13px] leading-relaxed text-muted-foreground">
                   "{empathy}"
                 </p>
               </div>

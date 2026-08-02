@@ -543,7 +543,7 @@ export function RouteMap({
   return (
     <div
       ref={containerRef}
-      className={`w-full overflow-hidden rounded-xl border border-white/[0.08] ${className}`}
+      className={`w-full overflow-hidden rounded-xl border border-border ${className}`}
       style={{ height, background: "#05070e" }}
     />
   )

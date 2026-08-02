@@ -35,7 +35,7 @@ const DISCIPLINE_LABELS: Record<string, string> = {
 }
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+  return <div className={`animate-pulse rounded bg-muted ${className}`} />
 }
 
 function formatDate(iso: string | null): string {
@@ -55,7 +55,7 @@ function CardSkeletons() {
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+          className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md"
         >
           <Skeleton className="h-3 w-24" />
           <Skeleton className="mt-3 h-4 w-full" />
@@ -104,13 +104,13 @@ function VoorJouTab() {
   return (
     <>
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
           SPARKI VOOR JOU
         </p>
         <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
           Slimmer worden op de fiets
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+        <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
           Echte inzichten · afgestemd op jouw profiel
         </p>
       </div>
@@ -124,9 +124,9 @@ function VoorJouTab() {
         className="flex gap-2"
       >
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
-            className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] py-3 pl-10 pr-4 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+            className="w-full rounded-xl border border-border bg-muted py-3 pl-10 pr-4 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
             placeholder="Zoek een onderwerp…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -134,7 +134,7 @@ function VoorJouTab() {
         </div>
         <button
           type="submit"
-          className="rounded-xl px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#040506]"
+          className="rounded-xl px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-on-accent)]"
           style={{ background: ACCENT }}
         >
           Zoek
@@ -152,9 +152,9 @@ function VoorJouTab() {
           className="rounded-full border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors"
           style={{
             borderColor:
-              !kind && !savedOnly ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
+              !kind && !savedOnly ? "rgba(120,210,230,0.5)" : "var(--color-border)",
             background: !kind && !savedOnly ? "rgba(120,210,230,0.1)" : "transparent",
-            color: !kind && !savedOnly ? ACCENT : "rgba(255,255,255,0.45)",
+            color: !kind && !savedOnly ? ACCENT : "var(--color-muted-foreground)",
           }}
         >
           Alles
@@ -171,9 +171,9 @@ function VoorJouTab() {
               }}
               className="rounded-full border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors"
               style={{
-                borderColor: on ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
+                borderColor: on ? "rgba(120,210,230,0.5)" : "var(--color-border)",
                 background: on ? "rgba(120,210,230,0.1)" : "transparent",
-                color: on ? ACCENT : "rgba(255,255,255,0.45)",
+                color: on ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {KIND_SHORT[k]}
@@ -188,9 +188,9 @@ function VoorJouTab() {
           }}
           className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors"
           style={{
-            borderColor: savedOnly ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
+            borderColor: savedOnly ? "rgba(120,210,230,0.5)" : "var(--color-border)",
             background: savedOnly ? "rgba(120,210,230,0.1)" : "transparent",
-            color: savedOnly ? ACCENT : "rgba(255,255,255,0.45)",
+            color: savedOnly ? ACCENT : "var(--color-muted-foreground)",
           }}
         >
           <Bookmark className={`h-3 w-3 ${savedOnly ? "fill-current" : ""}`} />
@@ -205,9 +205,9 @@ function VoorJouTab() {
           onClick={() => setTopic("")}
           className="rounded-full border px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors"
           style={{
-            borderColor: !topic ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.08)",
+            borderColor: !topic ? "rgba(120,210,230,0.5)" : "var(--color-border)",
             background: !topic ? "rgba(120,210,230,0.1)" : "transparent",
-            color: !topic ? ACCENT : "rgba(255,255,255,0.4)",
+            color: !topic ? ACCENT : "var(--color-muted-foreground)",
           }}
         >
           Alle onderwerpen
@@ -221,9 +221,9 @@ function VoorJouTab() {
               onClick={() => setTopic(on ? "" : t)}
               className="rounded-full border px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors"
               style={{
-                borderColor: on ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.08)",
+                borderColor: on ? "rgba(120,210,230,0.5)" : "var(--color-border)",
                 background: on ? "rgba(120,210,230,0.1)" : "transparent",
-                color: on ? ACCENT : "rgba(255,255,255,0.4)",
+                color: on ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {TOPIC_LABEL[t]}
@@ -233,21 +233,21 @@ function VoorJouTab() {
       </div>
 
       {mentaalSpotlight.length > 0 && (
-        <section className="rounded-2xl border border-cyan-300/[0.18] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+        <section className="rounded-2xl border border-accent-cyan/[0.18] bg-card p-4 backdrop-blur-md">
           <div className="flex items-center justify-between">
-            <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/80">
+            <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-accent-cyan">
               <Brain className="h-3.5 w-3.5" style={{ color: ACCENT }} />
               Sterker in je hoofd
             </p>
             <button
               type="button"
               onClick={() => setTopic("mentaal")}
-              className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/45 transition-colors hover:text-cyan-300"
+              className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-accent-cyan"
             >
               Alles over mentaal
             </button>
           </div>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
+          <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
             De benen winnen de koers, het hoofd bepaalt hoe vaak.
           </p>
           <div className="mt-3 flex flex-col gap-3">
@@ -267,7 +267,7 @@ function VoorJouTab() {
 
         {!isLoading && items.length === 0 && (
           <div className="py-12 text-center">
-            <p className="text-[13px] text-white/40">
+            <p className="text-[13px] text-muted-foreground">
               {savedOnly
                 ? "Je hebt nog niets bewaard."
                 : submitted
@@ -284,7 +284,7 @@ function VoorJouTab() {
                   setKind("")
                   setTopic("")
                 }}
-                className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70 hover:text-cyan-300"
+                className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan hover:text-accent-cyan"
               >
                 Bekijk alles
               </button>
@@ -324,13 +324,13 @@ function BibliotheekTab() {
   return (
     <>
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
           SPARKI KENNISBANK
         </p>
         <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
           Wetenschap & nieuws
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+        <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
           Dagelijks gescand · echte bronnen · {meta?.total ?? 0} artikelen
         </p>
       </div>
@@ -343,9 +343,9 @@ function BibliotheekTab() {
         className="flex gap-2"
       >
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
-            className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] py-3 pl-10 pr-4 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+            className="w-full rounded-xl border border-border bg-muted py-3 pl-10 pr-4 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
             placeholder="Zoek op onderwerp, sleutelwoord…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -353,7 +353,7 @@ function BibliotheekTab() {
         </div>
         <button
           type="submit"
-          className="rounded-xl px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#040506]"
+          className="rounded-xl px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-on-accent)]"
           style={{ background: ACCENT }}
         >
           Zoek
@@ -374,9 +374,9 @@ function BibliotheekTab() {
               onClick={() => setType(t.key)}
               className="rounded-full border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors"
               style={{
-                borderColor: on ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
+                borderColor: on ? "rgba(120,210,230,0.5)" : "var(--color-border)",
                 background: on ? "rgba(120,210,230,0.1)" : "transparent",
-                color: on ? ACCENT : "rgba(255,255,255,0.45)",
+                color: on ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {t.label}
@@ -393,9 +393,9 @@ function BibliotheekTab() {
           style={{
             borderColor: !discipline
               ? "rgba(120,210,230,0.5)"
-              : "rgba(255,255,255,0.08)",
+              : "var(--color-border)",
             background: !discipline ? "rgba(120,210,230,0.1)" : "transparent",
-            color: !discipline ? ACCENT : "rgba(255,255,255,0.4)",
+            color: !discipline ? ACCENT : "var(--color-muted-foreground)",
           }}
         >
           Alle disciplines
@@ -411,9 +411,9 @@ function BibliotheekTab() {
               style={{
                 borderColor: on
                   ? "rgba(120,210,230,0.5)"
-                  : "rgba(255,255,255,0.08)",
+                  : "var(--color-border)",
                 background: on ? "rgba(120,210,230,0.1)" : "transparent",
-                color: on ? ACCENT : "rgba(255,255,255,0.4)",
+                color: on ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {DISCIPLINE_LABELS[d] ?? d}
@@ -429,7 +429,7 @@ function BibliotheekTab() {
 
         {!isLoading && items.length === 0 && (
           <div className="py-10 text-center">
-            <p className="text-[12px] text-white/25">
+            <p className="text-[12px] text-muted-foreground">
               Nog geen artikelen gevonden. De dagelijkse scan vult de
               bibliotheek automatisch.
             </p>
@@ -445,23 +445,23 @@ function BibliotheekTab() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+                className="group rounded-2xl border border-border bg-card p-4 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
               >
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-white/45">
+                  <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
                     <Icon className="h-3 w-3" style={{ color: ACCENT }} />
                     {item.type === "news" ? "NIEUWS" : "ONDERZOEK"}
                     {item.source ? ` · ${item.source}` : ""}
                   </span>
-                  <ExternalLink className="h-3.5 w-3.5 text-white/25 transition-colors group-hover:text-cyan-300/70" />
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-accent-cyan" />
                 </div>
 
-                <h3 className="mt-2 text-pretty font-sans text-[15px] font-light leading-snug text-white/90">
+                <h3 className="mt-2 text-pretty font-sans text-[15px] font-light leading-snug text-foreground/90">
                   {item.title}
                 </h3>
 
                 {item.summary && (
-                  <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/50">
+                  <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
                     {item.summary}
                   </p>
                 )}
@@ -470,12 +470,12 @@ function BibliotheekTab() {
                   {item.disciplines.map((d) => (
                     <span
                       key={d}
-                      className="rounded-full border border-white/[0.08] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40"
+                      className="rounded-full border border-border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground"
                     >
                       {DISCIPLINE_LABELS[d] ?? d}
                     </span>
                   ))}
-                  <span className="ml-auto font-mono text-[10px] tracking-wide text-white/30">
+                  <span className="ml-auto font-mono text-[10px] tracking-wide text-muted-foreground">
                     {item.authors.length
                       ? `${item.authors[0]}${item.authors.length > 1 ? " et al." : ""}`
                       : ""}
@@ -488,8 +488,8 @@ function BibliotheekTab() {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 py-2 text-center">
-          <BookOpen className="h-3 w-3 text-white/20" />
-          <p className="font-mono text-[9px] tracking-[0.14em] text-white/20">
+          <BookOpen className="h-3 w-3 text-muted-foreground" />
+          <p className="font-mono text-[9px] tracking-[0.14em] text-muted-foreground">
             ELK ARTIKEL LINKT NAAR DE ECHTE BRON
           </p>
         </div>
@@ -508,7 +508,7 @@ export default function KnowledgePage() {
     return (
       <ScreenShell bg={null} section="Kennisbank">
         <div className="py-16 text-center">
-          <p className="text-[12px] text-white/30">
+          <p className="text-[12px] text-muted-foreground">
             De kennisbank is nog niet ingeschakeld voor jouw account.
           </p>
         </div>
@@ -519,7 +519,7 @@ export default function KnowledgePage() {
   return (
     <ScreenShell bg={null} section="Kennisbank">
       {/* TAB SWITCHER */}
-      <div className="-mt-2 flex gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] p-1">
+      <div className="-mt-2 flex gap-1 rounded-full border border-border bg-muted p-1">
         {([
           { key: "voorjou", label: "Voor jou" },
           { key: "bibliotheek", label: "Bibliotheek" },
@@ -533,7 +533,7 @@ export default function KnowledgePage() {
               className="flex-1 rounded-full px-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors"
               style={{
                 background: on ? "rgba(120,210,230,0.12)" : "transparent",
-                color: on ? ACCENT : "rgba(255,255,255,0.45)",
+                color: on ? ACCENT : "var(--color-muted-foreground)",
               }}
             >
               {t.label}

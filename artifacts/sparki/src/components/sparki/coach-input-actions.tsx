@@ -81,20 +81,20 @@ function ActionModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 px-4 pb-6 backdrop-blur-sm sm:items-center sm:pb-0"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-foreground/70 px-4 pb-6 backdrop-blur-sm sm:items-center sm:pb-0"
       role="dialog"
       aria-modal="true"
       aria-label={meta.title}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl border border-white/[0.1] bg-[#070d16]/95 p-5 shadow-2xl backdrop-blur-md"
+        className="relative w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl backdrop-blur-md"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 text-white/35 transition hover:text-white/70"
+          className="absolute right-3 top-3 text-muted-foreground transition hover:text-muted-foreground"
           aria-label="Sluiten"
           title="Sluiten"
         >
@@ -104,17 +104,17 @@ function ActionModal({
         <div className="flex items-center gap-2">
           <span
             className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
+            style={{ background: ACCENT }}
           />
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/70">
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-cyan">
             Automatisch aangevuld
           </span>
         </div>
 
-        <h3 className="mt-3 font-sans text-lg font-semibold leading-snug text-white">
+        <h3 className="mt-3 font-sans text-lg font-semibold leading-snug text-foreground">
           {meta.title}
         </h3>
-        <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/45">
+        <p className="mt-1 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           {meta.why}
         </p>
 
@@ -128,7 +128,7 @@ function ActionModal({
 
 function FieldLabel({ children }: { children: ReactNode }) {
   return (
-    <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+    <label className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
       {children}
     </label>
   )
@@ -160,7 +160,7 @@ function NumberInput({
       onKeyDown={(e) => {
         if (e.key === "Enter" && onEnter) onEnter()
       }}
-      className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+      className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
     />
   )
 }
@@ -182,7 +182,7 @@ function SaveButton({
         onClick={onClick}
         disabled={pending || disabled}
         className="w-full rounded-2xl px-4 py-3 font-sans text-[13px] font-semibold disabled:opacity-40"
-        style={{ background: ACCENT, color: "#040506" }}
+        style={{ background: ACCENT, color: "var(--color-on-accent)" }}
       >
         {pending ? "Opslaan…" : "Opslaan"}
       </button>
@@ -289,7 +289,7 @@ function GoalForm({ onDone }: { onDone: () => void }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="bijv. Piek voor Gran Fondo juni, opbouwen naar 4 W/kg"
-        className="w-full resize-none rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+        className="w-full resize-none rounded-xl border border-border bg-muted px-3.5 py-3 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
       />
       <ErrorLine show={updateProfile.isError} />
       <SaveButton
@@ -328,16 +328,16 @@ function RatingRow({
             className="flex flex-1 items-center justify-center rounded-lg border py-2 font-sans text-[12px] font-semibold transition-colors"
             style={{
               borderColor:
-                value === n ? "rgba(120,210,230,0.45)" : "rgba(255,255,255,0.1)",
-              background: value === n ? "rgba(120,210,230,0.1)" : "transparent",
-              color: value === n ? ACCENT : "rgba(255,255,255,0.45)",
+                value === n ? "var(--color-accent-cyan)" : "var(--color-border)",
+              background: value === n ? "var(--color-accent)" : "transparent",
+              color: value === n ? ACCENT : "var(--color-muted-foreground)",
             }}
           >
             {n}
           </button>
         ))}
       </div>
-      <div className="flex justify-between px-0.5 font-mono text-[9px] tracking-[0.15em] text-white/20">
+      <div className="flex justify-between px-0.5 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
         <span>{lowLabel}</span>
         <span>{highLabel}</span>
       </div>
@@ -431,7 +431,7 @@ function RaceForm({ onDone }: { onDone: () => void }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="bijv. Omloop van de Kempen"
-          className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+          className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -440,7 +440,7 @@ function RaceForm({ onDone }: { onDone: () => void }) {
           type="date"
           value={raceDate}
           onChange={(e) => setRaceDate(e.target.value)}
-          className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 [color-scheme:dark] focus:border-cyan-300/40 focus:outline-none"
+          className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 [color-scheme:light] focus:border-accent-cyan/40 focus:outline-none"
         />
       </div>
       <ErrorLine show={createRace.isError} />
@@ -494,10 +494,10 @@ export function QuickActionButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
+          className="inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-muted"
           style={{
-            borderColor: "rgba(120,210,230,0.4)",
-            background: "rgba(255,255,255,0.04)",
+            borderColor: "var(--color-accent-cyan)",
+            background: "var(--color-muted)",
             color: ACCENT,
           }}
         >
@@ -507,7 +507,7 @@ export function QuickActionButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="font-mono text-[11px] tracking-wide underline decoration-cyan-300/40 underline-offset-4 transition-colors hover:decoration-cyan-300"
+          className="font-mono text-[11px] tracking-wide underline decoration-accent-cyan/40 underline-offset-4 transition-colors hover:decoration-accent-cyan"
           style={{ color: ACCENT }}
         >
           {text}
@@ -550,17 +550,17 @@ export function CoachInputNeeds() {
   if (missing.length === 0) return null
 
   return (
-    <section className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <section className="rounded-2xl border border-accent-cyan/20 bg-card p-5 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <span
           className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
+          style={{ background: ACCENT }}
         />
-        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/70">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-cyan">
           Er zijn nog gegevens nodig
         </span>
       </div>
-      <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/55">
+      <p className="mt-2 text-pretty text-[13px] leading-relaxed text-muted-foreground">
         Vul dit hier direct aan voor een scherpere daganalyse — je hoeft nergens
         naar te zoeken.
       </p>

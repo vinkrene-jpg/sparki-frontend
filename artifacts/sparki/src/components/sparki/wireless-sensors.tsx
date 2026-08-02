@@ -87,27 +87,27 @@ export function SensorRow({
     sensor.deviceName ||
     SENSOR_KIND_LABEL[sensor.kind]
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+    <div className="rounded-xl border border-border bg-muted p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             <Icon className="h-3 w-3" strokeWidth={1.75} style={{ color: ACCENT }} />
             {SENSOR_KIND_LABEL[sensor.kind] ?? sensor.kind}
-            {bikeName && <span className="text-white/25">· {bikeName}</span>}
+            {bikeName && <span className="text-muted-foreground">· {bikeName}</span>}
           </p>
-          <p className="mt-0.5 text-[13px] font-medium text-white/85">{name}</p>
+          <p className="mt-0.5 text-[13px] font-medium text-foreground/80">{name}</p>
           {sensor.deviceName && (
-            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/35">
+            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
               Bluetooth-naam: {sensor.deviceName}
             </p>
           )}
           {sensor.batteryNote && (
-            <p className="mt-0.5 text-[12px] text-white/45">
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
               Batterij: {sensor.batteryNote}
             </p>
           )}
           {!sensor.pairable && (
-            <p className="mt-1 text-[11px] leading-snug text-white/35">
+            <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
               {sensor.kind === "horloge"
                 ? "Een horloge kan de browser niet live uitlezen — dit is alleen geregistreerd."
                 : "Een elektronische derailleur kan de browser niet live uitlezen — dit is alleen geregistreerd."}
@@ -129,7 +129,7 @@ export function SensorRow({
             <button
               type="button"
               onClick={onDetach}
-              className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30 transition-colors hover:text-white/60"
+              className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-muted-foreground"
             >
               Losmaken
             </button>
@@ -138,7 +138,7 @@ export function SensorRow({
             type="button"
             onClick={onDelete}
             aria-label="Draadloos onderdeel verwijderen"
-            className="text-white/25 transition-colors hover:text-red-300/70"
+            className="text-muted-foreground transition-colors hover:text-[color:var(--color-negative)]"
           >
             <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
           </button>
@@ -154,7 +154,7 @@ export function SensorRow({
                 setChoosingBike(false)
                 onAttach(b.id)
               }}
-              className="rounded-full border border-cyan-400/30 px-3 py-1.5 text-[12px] text-cyan-200 transition hover:bg-cyan-400/10"
+              className="rounded-full border border-cyan-400/30 px-3 py-1.5 text-[12px] text-accent-cyan transition hover:bg-cyan-400/10"
             >
               {b.name}
             </button>
@@ -203,12 +203,12 @@ function AddSensorForm({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3">
+    <div className="space-y-3 rounded-xl border border-border bg-muted p-3">
       <div className="flex items-center justify-between">
-        <p className="text-[13px] font-medium text-white/80">
+        <p className="text-[13px] font-medium text-foreground/80">
           Draadloos onderdeel toevoegen
         </p>
-        <button type="button" onClick={onClose} aria-label="Sluiten" className="text-white/40">
+        <button type="button" onClick={onClose} aria-label="Sluiten" className="text-muted-foreground">
           <X className="h-4 w-4" strokeWidth={1.75} />
         </button>
       </div>
@@ -237,8 +237,8 @@ function AddSensorForm({
         btOk ? (
           <div className="space-y-1.5">
             {deviceName ? (
-              <p className="text-[12px] text-white/60">
-                Gekoppeld apparaat: <span className="text-white/85">{deviceName}</span>
+              <p className="text-[12px] text-muted-foreground">
+                Gekoppeld apparaat: <span className="text-foreground/80">{deviceName}</span>
               </p>
             ) : (
               <button
@@ -256,25 +256,25 @@ function AddSensorForm({
                     )
                     .finally(() => setPairing(false))
                 }}
-                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 px-3 py-1.5 text-[11px] text-cyan-200 transition hover:bg-cyan-400/10 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 px-3 py-1.5 text-[11px] text-accent-cyan transition hover:bg-cyan-400/10 disabled:opacity-50"
               >
                 <Bluetooth className="h-3.5 w-3.5" strokeWidth={1.75} />
                 {pairing ? "Bezig…" : "Koppel via Bluetooth (optioneel)"}
               </button>
             )}
-            <p className="text-[11px] leading-snug text-white/35">
+            <p className="text-[11px] leading-snug text-muted-foreground">
               Koppelen legt de apparaatnaam vast, zodat je hem bij een rit snel
               herkent. Opslaan zonder koppelen kan ook.
             </p>
           </div>
         ) : (
-          <p className="text-[11px] leading-snug text-white/45">
+          <p className="text-[11px] leading-snug text-muted-foreground">
             Deze telefoon of browser ondersteunt geen Bluetooth-koppeling (zoals
             Safari op iPhone). Je kunt het onderdeel wel gewoon registreren.
           </p>
         )
       ) : (
-        <p className="text-[11px] leading-snug text-white/45">
+        <p className="text-[11px] leading-snug text-muted-foreground">
           {kind === "horloge"
             ? "Een horloge kan de browser niet live uitlezen — je registreert het hier alleen (merk, model, eventueel batterijnotitie)."
             : "Een elektronische derailleur kan de browser niet live uitlezen — je registreert hem hier alleen (merk, model, eventueel batterijnotitie)."}
@@ -286,27 +286,27 @@ function AddSensorForm({
           value={brand}
           onChange={(e) => setBrand(e.target.value)}
           placeholder="Merk (bijv. Garmin)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/80 placeholder-white/25 outline-none focus:border-cyan-300/40"
         />
         <input
           value={model}
           onChange={(e) => setModel(e.target.value)}
           placeholder="Model (bijv. Rally RS200)"
-          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+          className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/80 placeholder-white/25 outline-none focus:border-cyan-300/40"
         />
       </div>
       <input
         value={batteryNote}
         onChange={(e) => setBatteryNote(e.target.value)}
         placeholder="Batterijnotitie (optioneel, bijv. CR2032 — vervangen mrt 2026)"
-        className="w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+        className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/80 placeholder-white/25 outline-none focus:border-cyan-300/40"
       />
-      {error && <p className="text-[12px] text-red-300/80">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--color-negative)]">{error}</p>}
       <button
         type="button"
         disabled={add.isPending}
         onClick={save}
-        className="rounded-lg px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black disabled:opacity-50"
+        className="rounded-lg px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-on-accent)] disabled:opacity-50"
         style={{ background: ACCENT }}
       >
         {add.isPending ? "Bezig…" : "Opslaan"}
@@ -332,7 +332,7 @@ export function WirelessSensorsBlock({
 
   return (
     <div className="mt-3">
-      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">
+      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
         <Bluetooth className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: ACCENT }} />
         Draadloze onderdelen
       </p>
@@ -359,7 +359,7 @@ export function WirelessSensorsBlock({
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-[12px] leading-relaxed text-white/40">
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
           {bikeId != null
             ? "Nog geen draadloze onderdelen op deze fiets — bijvoorbeeld een wattagemeter of cadanssensor."
             : "Nog geen losse draadloze onderdelen — bijvoorbeeld een hartslagband of horloge."}
@@ -373,7 +373,7 @@ export function WirelessSensorsBlock({
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/35"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-cyan-300/35"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2} />
           Draadloos onderdeel

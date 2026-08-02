@@ -55,7 +55,7 @@ export default function CoachMessagesPage() {
       <div className="space-y-5">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-[12px] text-white/45 hover:text-white/70"
+          className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-muted-foreground"
         >
           <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
           {backLabel}
@@ -65,7 +65,7 @@ export default function CoachMessagesPage() {
 
         {isParent && (
           <div
-            className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-300/[0.06] px-3.5 py-2.5 text-[12px] text-cyan-100/90"
+            className="flex items-start gap-2 rounded-xl border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3.5 py-2.5 text-[12px] text-accent-cyan"
             data-testid="ouder-meelees-banner"
           >
             <Eye className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
@@ -79,17 +79,17 @@ export default function CoachMessagesPage() {
         {isLoading ? (
           <div className="space-y-2">
             {[0, 1].map((i) => (
-              <div key={i} className="h-16 animate-pulse rounded-xl bg-white/[0.05]" />
+              <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
             ))}
           </div>
         ) : isError ? (
-          <p className="text-[13px] text-white/55">
+          <p className="text-[13px] text-muted-foreground">
             {(error as (Error & { status?: number }) | null)?.status === 403
               ? "Je hebt geen toegang tot dit gesprek."
               : "Het gesprek kon niet geladen worden."}
           </p>
         ) : messages.length === 0 ? (
-          <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
+          <p className="rounded-xl border border-border bg-card px-3.5 py-3 text-[12px] text-muted-foreground">
             Nog geen berichten in dit gesprek.
             {!isParent && " Stuur er hieronder één om te beginnen."}
           </p>

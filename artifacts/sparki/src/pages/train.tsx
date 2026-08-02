@@ -94,23 +94,23 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-accent-cyan/20 bg-card p-4 backdrop-blur-md">
       <div className="flex items-start gap-3">
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-cyan-300/25"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent-cyan/25"
           style={{ background: "rgba(120,210,230,0.08)" }}
         >
           <Sparkles className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-cyan-300/70">
+          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-accent-cyan">
             Nieuwe activiteit binnen
           </p>
-          <p className="mt-1 text-[14px] font-medium text-white/90">
+          <p className="mt-1 text-[14px] font-medium text-foreground/90">
             {session.title ??
               session.type.charAt(0).toUpperCase() + session.type.slice(1)}
           </p>
-          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/40">
+          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Icon className="h-3 w-3" strokeWidth={1.75} />
             {date} · via {sourceLabel(session.source)}
           </p>
@@ -122,7 +122,7 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
           {facts.map((f) => (
             <span
               key={f}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-mono text-[11px] tabular-nums text-white/70"
+              className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted px-2.5 py-1 font-mono text-[11px] tabular-nums text-muted-foreground"
             >
               {f}
               {/* Vaktermen krijgen een uitleg-stipje (Beslisblok 01, fix 4). */}
@@ -140,7 +140,7 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
         </div>
       )}
 
-      <p className="mt-3 text-[12px] leading-relaxed text-white/55">
+      <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
         Dit is al opgehaald — je hoeft niks opnieuw in te vullen. Eén ding
         ontbreekt nog: hoe voelde het?
       </p>
@@ -153,23 +153,23 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
             onClick={() => setFeel(n)}
             className="flex flex-1 items-center justify-center rounded-xl border py-2.5 font-mono text-sm transition-colors"
             style={{
-              borderColor: feel === n ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
+              borderColor: feel === n ? "rgba(120,210,230,0.5)" : "var(--color-border)",
               background: feel === n ? "rgba(120,210,230,0.12)" : "transparent",
-              color: feel === n ? ACCENT : "rgba(255,255,255,0.5)",
+              color: feel === n ? ACCENT : "var(--color-muted-foreground)",
             }}
           >
             {n}
           </button>
         ))}
       </div>
-      <div className="mt-1 flex justify-between px-1 font-mono text-[9px] tracking-[0.15em] text-white/20">
+      <div className="mt-1 flex justify-between px-1 font-mono text-[9px] tracking-[0.15em] text-muted-foreground">
         <span>zwaar</span>
         <span>top</span>
       </div>
 
       {open && (
         <textarea
-          className="mt-3 w-full resize-none rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+          className="mt-3 w-full resize-none rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[14px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           placeholder="Iets wat opviel? (optioneel)"
           rows={2}
           value={notes}
@@ -192,7 +192,7 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70 px-4 sm:flex-none"
+            className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-muted-foreground px-4 sm:flex-none"
           >
             Notitie
           </button>
@@ -258,7 +258,7 @@ export default function TrainPage() {
 
   return (
     <ScreenShell bg="/atmosphere/routes-weg-heuvels-mist.webp" section="Train">
-      <p className="-mt-2 font-mono text-[10px] tracking-[0.28em] text-white/35">
+      <p className="-mt-2 font-mono text-[10px] tracking-[0.28em] text-muted-foreground">
         {dayLabel} · JOUW TRAINING
       </p>
 
@@ -277,7 +277,7 @@ export default function TrainPage() {
       <div
         id="three-week-plan"
         className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
-          planHighlight ? "shadow-[0_0_0_2px_rgba(120,210,230,0.5)]" : ""
+          planHighlight ? "ring-2 ring-ring/60" : ""
         }`}
       >
         <GoalLayer />
@@ -307,7 +307,7 @@ export default function TrainPage() {
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-4 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-4 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan"
           >
             <Plus className="h-4 w-4" strokeWidth={2} />
             Training toevoegen
@@ -317,7 +317,7 @@ export default function TrainPage() {
         {/* Recent sessions */}
         {!sessionsLoading && sessions && sessions.length > 0 && (
           <div className="flex flex-col">
-            <span className="mb-3 font-mono text-[10px] tracking-[0.2em] text-white/35">
+            <span className="mb-3 font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
               RECENTE SESSIES
             </span>
             {sessions.slice(0, 5).map((s) => {
@@ -334,13 +334,13 @@ export default function TrainPage() {
                   type="button"
                   key={s.id}
                   onClick={() => setOpenSession(s)}
-                  className="flex w-full items-center gap-4 border-b border-white/[0.05] py-3.5 text-left transition-colors last:border-0 hover:bg-white/[0.02]"
+                  className="flex w-full items-center gap-4 border-b border-border py-3.5 text-left transition-colors last:border-0 hover:bg-muted"
                 >
                   <span
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
                     style={{
-                      borderColor: "rgba(255,255,255,0.1)",
-                      background: "rgba(255,255,255,0.03)",
+                      borderColor: "var(--color-border)",
+                      background: "var(--color-muted)",
                     }}
                   >
                     <Icon
@@ -350,26 +350,26 @@ export default function TrainPage() {
                     />
                   </span>
                   <div className="flex-1 overflow-hidden">
-                    <p className="truncate text-[13px] font-medium text-white/85">
+                    <p className="truncate text-[13px] font-medium text-foreground/85">
                       {s.title ??
                         s.type.charAt(0).toUpperCase() + s.type.slice(1)}
                     </p>
                     <div className="mt-0.5 flex items-center gap-2">
-                      <span className="font-mono text-[10px] text-white/35">
+                      <span className="font-mono text-[10px] text-muted-foreground">
                         {date}
                       </span>
                       {s.durationMin != null && (
                         <>
-                          <span className="h-1 w-1 rounded-full bg-white/20" />
-                          <span className="font-mono text-[10px] text-white/35">
+                          <span className="h-1 w-1 rounded-full bg-muted" />
+                          <span className="font-mono text-[10px] text-muted-foreground">
                             {s.durationMin}m
                           </span>
                         </>
                       )}
                       {s.tss != null && (
                         <>
-                          <span className="h-1 w-1 rounded-full bg-white/20" />
-                          <span className="font-mono text-[10px] text-white/35">
+                          <span className="h-1 w-1 rounded-full bg-muted" />
+                          <span className="font-mono text-[10px] text-muted-foreground">
                             {s.tss} TSS
                           </span>
                         </>
@@ -383,7 +383,7 @@ export default function TrainPage() {
         )}
 
         <div className="flex flex-col gap-2.5">
-          <p className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+          <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
             UIT EEN PLATFORM
           </p>
           <ActivityImportPanel />
@@ -391,21 +391,21 @@ export default function TrainPage() {
 
         <Link
           href="/activiteiten"
-          className="flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+          className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 backdrop-blur-md transition-colors hover:border-accent-cyan/30"
         >
           <span className="min-w-0">
-            <span className="block text-[14px] font-medium text-white/90">
+            <span className="block text-[14px] font-medium text-foreground/90">
               Al je activiteiten
             </span>
-            <span className="mt-0.5 block text-[12px] text-white/45">
+            <span className="mt-0.5 block text-[12px] text-muted-foreground">
               Bekijk je volledige geschiedenis van ritten en trainingen
             </span>
           </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
         </Link>
 
         <div className="flex flex-col gap-2.5">
-          <p className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+          <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
             UIT EEN DOCUMENT
           </p>
           <DocumentAnalysisPanel />

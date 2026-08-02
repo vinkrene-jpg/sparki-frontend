@@ -22,7 +22,7 @@ const VERDICT_LABEL: Record<GoalVerdict, string> = {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+  "rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
 
 // Langere toelichting ingeklapt achter een link ("Meer uitleg" /
 // "Waarom is dit nodig?") — kort-by-default, details op verzoek.
@@ -34,12 +34,12 @@ function GoalDetail({ label, tekst }: { label: string; tekst: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="text-[12px] text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+        className="text-[12px] text-muted-foreground underline underline-offset-2 transition-colors hover:text-muted-foreground"
       >
         {label}
       </button>
       {open && (
-        <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/55">
+        <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           {tekst}
         </p>
       )}
@@ -74,7 +74,7 @@ export function GoalLayer() {
             {VERDICT_LABEL[fit.verdict].toUpperCase()}
           </span>
         </div>
-        <h3 className="mt-2.5 text-balance font-sans text-[17px] font-light leading-snug text-white/90">
+        <h3 className="mt-2.5 text-balance font-sans text-[17px] font-light leading-snug text-foreground/90">
           {fit.headline}
         </h3>
 
@@ -91,7 +91,7 @@ export function GoalLayer() {
           </button>
         )}
 
-        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/60">
+        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
           {fit.reason}
         </p>
 
@@ -107,7 +107,7 @@ export function GoalLayer() {
             <button
               type="button"
               onClick={() => navigate("/train?focus=logsession")}
-              className="flex items-center gap-1.5 rounded-xl border border-white/[0.12] px-4 py-2.5 font-sans text-[13px] font-medium text-white/75 transition-colors hover:border-cyan-300/30"
+              className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2} />
               Log een training
@@ -115,7 +115,7 @@ export function GoalLayer() {
             <button
               type="button"
               onClick={() => navigate("/you?focus=connections")}
-              className="flex items-center gap-1.5 rounded-xl border border-white/[0.12] px-4 py-2.5 font-sans text-[13px] font-medium text-white/55 transition-colors hover:border-white/20"
+              className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-border"
             >
               <Link2 className="h-3.5 w-3.5" strokeWidth={1.75} />
               Koppel een platform
@@ -127,7 +127,7 @@ export function GoalLayer() {
           <button
             type="button"
             onClick={() => navigate("/races")}
-            className="mt-3 flex items-center gap-1 font-mono text-[11px] tracking-wide text-cyan-300/70 transition-colors hover:text-cyan-300"
+            className="mt-3 flex items-center gap-1 font-mono text-[11px] tracking-wide text-accent-cyan transition-colors hover:text-accent-cyan"
           >
             Bekijk je wedstrijden
             <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />

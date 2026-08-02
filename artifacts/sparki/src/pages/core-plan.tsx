@@ -114,7 +114,7 @@ function VandaagSection({ onOpenAdd }: { onOpenAdd: (iso: string) => void }) {
   return (
     <section className="mb-8" data-testid="vandaag-blok">
       <div className="flex items-baseline justify-between mb-2">
-        <h2 className="type-title-card text-white/90">Vandaag</h2>
+        <h2 className="type-title-card text-foreground/90">Vandaag</h2>
         <span className="type-label text-content-secondary capitalize">{datumLabel}</span>
       </div>
 
@@ -133,7 +133,7 @@ function VandaagSection({ onOpenAdd }: { onOpenAdd: (iso: string) => void }) {
             </div>
             {doel && <p className="type-body text-content-secondary">{doel}</p>}
             {blokken && (
-              <p className="type-body-sm text-white/70">
+              <p className="type-body-sm text-muted-foreground">
                 <span className="type-label text-content-secondary uppercase tracking-wider block mb-0.5">Opbouw</span>
                 {blokken}
               </p>
@@ -186,7 +186,7 @@ function VandaagSection({ onOpenAdd }: { onOpenAdd: (iso: string) => void }) {
           </p>
           {fase === "peak" && (
             <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.06] px-3 py-2.5">
-              <p className="type-body-sm text-amber-300/90">
+              <p className="type-body-sm text-[color:var(--color-warning)]">
                 Let op: dit is een piekfase-week. Een ongepland gat wijkt af van het schema richting je doel.
               </p>
             </div>
@@ -259,22 +259,22 @@ function dagUiterlijk(
   // Geen geplande training — maar wel een sessie (onverwachte activiteit)
   if (!w) {
     if (hasSession && isPast) {
-      return { cel: "border-white/[0.05] bg-transparent", label: "text-white/30", stip: "bg-positive/30" };
+      return { cel: "border-border bg-transparent", label: "text-muted-foreground", stip: "bg-positive/30" };
     }
-    return { cel: "border-white/[0.05] bg-transparent", label: "text-white/25", stip: "" };
+    return { cel: "border-border bg-transparent", label: "text-muted-foreground", stip: "" };
   }
-  if (w.type === "rest") return { cel: "border-white/[0.05] bg-transparent", label: "text-white/25", stip: "" };
-  if (w.status === "skipped") return { cel: "border-white/[0.05] bg-transparent", label: "text-white/25 line-through", stip: "bg-white/15" };
-  if (w.status === "completed") return { cel: "border-white/10 bg-white/[0.02]", label: "text-white/40", stip: "bg-positive/50" };
+  if (w.type === "rest") return { cel: "border-border bg-transparent", label: "text-muted-foreground", stip: "" };
+  if (w.status === "skipped") return { cel: "border-border bg-transparent", label: "text-muted-foreground line-through", stip: "bg-muted" };
+  if (w.status === "completed") return { cel: "border-border bg-muted", label: "text-muted-foreground", stip: "bg-positive/50" };
   // Gemist: gepland of aangepast, datum voorbij, geen bewijs van uitvoering
   if (isPast && (w.status === "planned" || w.status === "modified") && w.sessionId == null) {
-    return { cel: "border-white/[0.05] bg-transparent", label: "text-white/30 line-through", stip: "bg-red-400/40" };
+    return { cel: "border-border bg-transparent", label: "text-muted-foreground line-through", stip: "bg-red-400/40" };
   }
   // Automatisch aangepast — toekomstige training
   if (w.status === "modified") {
-    return { cel: "border-amber-400/20 bg-amber-400/[0.04]", label: "text-amber-300/70", stip: "bg-amber-400/50" };
+    return { cel: "border-amber-400/20 bg-amber-400/[0.04]", label: "text-[color:var(--color-warning)]", stip: "bg-amber-400/50" };
   }
-  return { cel: "border-accent-cyan/20 bg-accent-cyan/[0.04]", label: "text-white/80", stip: "bg-accent-cyan" };
+  return { cel: "border-accent-cyan/20 bg-accent-cyan/[0.04]", label: "text-foreground/80", stip: "bg-accent-cyan" };
 }
 
 function kortTitel(w: PlannedWorkout): string {
@@ -309,14 +309,14 @@ function GeplandVsWerkelijkRij({
   }
 
   return (
-    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2.5 flex flex-col gap-1.5">
+    <div className="rounded-lg border border-border bg-muted px-3 py-2.5 flex flex-col gap-1.5">
       <p className="type-label text-content-secondary uppercase tracking-wider text-[9px]">Gepland vs werkelijk</p>
       {(geplandMin != null || werkelijkMin != null) && (
         <div className="flex items-center gap-2 type-label">
-          <span className="text-white/40 w-16 shrink-0">Duur</span>
-          <span className="num text-white/60">{geplandMin != null ? `${geplandMin} min` : "—"}</span>
-          <span className="text-white/25">→</span>
-          <span className={cn("num font-medium", werkelijkMin != null ? "text-white/80" : "text-white/30")}>
+          <span className="text-muted-foreground w-16 shrink-0">Duur</span>
+          <span className="num text-muted-foreground">{geplandMin != null ? `${geplandMin} min` : "—"}</span>
+          <span className="text-muted-foreground">→</span>
+          <span className={cn("num font-medium", werkelijkMin != null ? "text-foreground/80" : "text-muted-foreground")}>
             {werkelijkMin != null ? `${werkelijkMin} min` : "—"}
           </span>
           {geplandMin != null && werkelijkMin != null && (
@@ -328,10 +328,10 @@ function GeplandVsWerkelijkRij({
       )}
       {(geplandTSS != null || werkelijkTSS != null) && (
         <div className="flex items-center gap-2 type-label">
-          <span className="text-white/40 w-16 shrink-0">TSS</span>
-          <span className="num text-white/60">{geplandTSS != null ? String(geplandTSS) : "—"}</span>
-          <span className="text-white/25">→</span>
-          <span className={cn("num font-medium", werkelijkTSS != null ? "text-white/80" : "text-white/30")}>
+          <span className="text-muted-foreground w-16 shrink-0">TSS</span>
+          <span className="num text-muted-foreground">{geplandTSS != null ? String(geplandTSS) : "—"}</span>
+          <span className="text-muted-foreground">→</span>
+          <span className={cn("num font-medium", werkelijkTSS != null ? "text-foreground/80" : "text-muted-foreground")}>
             {werkelijkTSS != null ? String(werkelijkTSS) : "—"}
           </span>
           {geplandTSS != null && werkelijkTSS != null && (
@@ -465,7 +465,7 @@ function GeselecteerdeDagKaart({
           // Sessies aanwezig zonder geplande training (bijv. onverwachte rit)
           <div className="flex flex-col gap-3">
             {sessiesOpDag.map((s) => (
-              <DsCard key={s.id} variant="standaard" className="flex flex-col gap-2 cursor-pointer hover:border-white/20 transition-colors" onClick={() => onOpenSession(s)}>
+              <DsCard key={s.id} variant="standaard" className="flex flex-col gap-2 cursor-pointer hover:border-border transition-colors" onClick={() => onOpenSession(s)}>
                 <div className="flex items-start justify-between gap-3">
                   <DsCardTitel className="flex-1">{s.title ?? s.type}</DsCardTitel>
                   <DsStatus status="positief">Activiteit</DsStatus>
@@ -516,7 +516,7 @@ function GeselecteerdeDagKaart({
               <p className="type-label text-content-secondary uppercase tracking-wider">Ook gelogd</p>
               {extraSessies.map((s) => (
                 <button key={s.id} type="button" onClick={() => onOpenSession(s)}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-left hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60">
+                  className="rounded-lg border border-border bg-surface px-3 py-2 text-left hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60">
                   <span className="type-action block">{s.title ?? s.type}</span>
                   {s.durationMin != null && (
                     <span className="num type-label text-content-secondary">{s.durationMin} min</span>
@@ -579,7 +579,7 @@ function GeselecteerdeDagKaart({
             <p className="type-body text-content-secondary">{sessieDoelZin(selectedWorkout)}</p>
           )}
           {blokkenZin(selectedWorkout.structure) && (
-            <p className="type-body-sm text-white/70">
+            <p className="type-body-sm text-muted-foreground">
               <span className="type-label text-content-secondary uppercase tracking-wider block mb-0.5">Opbouw</span>
               {blokkenZin(selectedWorkout.structure)}
             </p>
@@ -603,7 +603,7 @@ function GeselecteerdeDagKaart({
 
           {/* ── Snel aanpassen: verkort / verleng / verplaats ── */}
           {kanSnelAanpassen && (
-            <div className="flex flex-col gap-2 pt-2 border-t border-white/[0.06]">
+            <div className="flex flex-col gap-2 pt-2 border-t border-border">
               <p className="type-label text-content-secondary uppercase tracking-wider">Snel aanpassen</p>
               <div className="flex flex-wrap gap-1.5">
                 {([
@@ -619,8 +619,8 @@ function GeselecteerdeDagKaart({
                     className={cn(
                       "rounded-lg border px-2.5 py-1.5 type-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
                       snelleActie === actie
-                        ? "border-accent-cyan/60 bg-accent-cyan/10 text-white"
-                        : "border-border bg-surface text-white/70 hover:bg-white/5",
+                        ? "border-accent-cyan/60 bg-accent-cyan/10 text-foreground"
+                        : "border-border bg-surface text-muted-foreground hover:bg-muted",
                     )}
                   >
                     {label}
@@ -634,7 +634,7 @@ function GeselecteerdeDagKaart({
                   value={verplaatsDatum}
                   onChange={(e) => setVerplaatsDatum(e.target.value)}
                   aria-label="Nieuwe dag voor deze training"
-                  className="rounded-lg border border-border bg-surface px-3 py-2 type-label text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60 [color-scheme:dark]"
+                  className="rounded-lg border border-border bg-surface px-3 py-2 type-label text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60 [color-scheme:light]"
                 />
               )}
               {/* Eén eerlijke consequentiezin vóór het bevestigen (deterministisch) */}
@@ -663,13 +663,13 @@ function GeselecteerdeDagKaart({
 
           {/* Extra sessies op dezelfde dag (niet de gekoppelde — geen duplicaat) */}
           {extraSessies.length > 0 && (
-            <div className="flex flex-col gap-2 pt-1 border-t border-white/[0.06]">
+            <div className="flex flex-col gap-2 pt-1 border-t border-border">
               <p className="type-label text-content-secondary uppercase tracking-wider">
                 {extraSessies.length === 1 ? "Nog een activiteit" : `Nog ${extraSessies.length} activiteiten`}
               </p>
               {extraSessies.map((s) => (
                 <button key={s.id} type="button" onClick={() => onOpenSession(s)}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-left hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60">
+                  className="rounded-lg border border-border bg-surface px-3 py-2 text-left hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60">
                   <span className="type-action block">{s.title ?? s.type}</span>
                   {s.durationMin != null && (
                     <span className="num type-label text-content-secondary">{s.durationMin} min</span>
@@ -715,7 +715,7 @@ function WeekIndicator({
   const intensief = typering.aandeelIntensief ?? 0;
   const balkKleur =
     typering.minuten === 0
-      ? "bg-white/10"
+      ? "bg-muted"
       : intensief >= 0.5
         ? "bg-amber-400/70"
         : intensief > 0
@@ -726,16 +726,16 @@ function WeekIndicator({
     <div className={cn("flex items-center gap-2", compact ? "mt-1.5" : "mb-0.5")}
       aria-label={`Weekbelasting: ${typering.minuten} geplande minuten${faseStart ? `, ${faseLabel(faseStart) ?? faseStart}` : ""}`}
     >
-      <div className="h-1 flex-1 rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1 flex-1 rounded-full bg-muted overflow-hidden">
         <div className={cn("h-full rounded-full transition-all", balkKleur)} style={{ width: `${breedte}%` }} />
       </div>
       {typering.minuten > 0 && (
-        <span className="num text-[9px] font-mono text-white/35 leading-none shrink-0">{typering.minuten}m</span>
+        <span className="num text-[9px] font-mono text-muted-foreground leading-none shrink-0">{typering.minuten}m</span>
       )}
       {faseStart && (
         <span className={cn(
           "text-[9px] uppercase tracking-wider leading-none shrink-0",
-          overgang ? "text-amber-300/90 font-semibold" : "text-white/30",
+          overgang ? "text-[color:var(--color-warning)] font-semibold" : "text-muted-foreground",
         )}>
           {overgang ? `${faseLabel(faseStart)} → ${faseLabel(faseEind)}` : faseLabel(faseStart)}
         </span>
@@ -1025,9 +1025,9 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
                                 ? "border-accent-cyan/35 bg-surface"
                                 : w && w.type !== "rest"
                                   ? cn(stijl.cel)
-                                  : "border-white/[0.05] bg-transparent",
+                                  : "border-border bg-transparent",
                             !inMaand && "opacity-25 cursor-default",
-                            inMaand && "hover:border-white/20",
+                            inMaand && "hover:border-border",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
                           )}
                           aria-label={`${date.getDate()} ${MAANDNAMEN[date.getMonth()]}`}
@@ -1037,8 +1037,8 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
                           <span className={cn(
                             "num text-[11px] font-mono leading-none",
                             isToday && !isSelected ? "text-accent-cyan font-semibold" :
-                            isSelected ? "text-white font-semibold" :
-                            inMaand ? "text-white/65" : "text-white/20",
+                            isSelected ? "text-foreground font-semibold" :
+                            inMaand ? "text-muted-foreground" : "text-muted-foreground",
                           )}>
                             {date.getDate()}
                           </span>
@@ -1048,7 +1048,7 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
                             </span>
                           )}
                           {w?.type === "rest" && (
-                            <span className="text-[10px] text-white/20 leading-tight">rust</span>
+                            <span className="text-[10px] text-muted-foreground leading-tight">rust</span>
                           )}
                           {/* Stipje: geplande training (met kleur per status) OF onverwachte sessie */}
                           <div className="mt-auto flex items-end justify-between gap-0.5 self-end">
@@ -1060,7 +1060,7 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
                             )}
                             {/* Meerdere sessies indicator */}
                             {celSessies.length > 1 && (
-                              <span className="num text-[9px] font-mono text-white/30 leading-none">{celSessies.length}</span>
+                              <span className="num text-[9px] font-mono text-muted-foreground leading-none">{celSessies.length}</span>
                             )}
                           </div>
                         </button>
@@ -1186,7 +1186,7 @@ function DoelkaartSection() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="type-label text-content-secondary uppercase tracking-wider">Jouw doel</p>
-            <p className="type-title-insight text-white/95 mt-0.5">
+            <p className="type-title-insight text-foreground/90 mt-0.5">
               {doelTitel ?? "Nog geen doel gekozen"}
             </p>
             {doelDatum && (
@@ -1206,7 +1206,7 @@ function DoelkaartSection() {
           const positie = faseWeekPositie(race?.daysAway);
           if (!positie) return null;
           return (
-            <p className="type-body-sm text-white/80">
+            <p className="type-body-sm text-foreground/80">
               Week {positie.weekNr} van {positie.totaalWeken} in de {positie.faseLabel.toLowerCase()}fase
               {positie.resterendeWeken > 0 && (
                 <span className="text-content-secondary">
@@ -1222,13 +1222,13 @@ function DoelkaartSection() {
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {fase && (
             <span className="type-label text-content-secondary">
-              Fase: <span className="text-white/80">{fase}</span>
+              Fase: <span className="text-foreground/80">{fase}</span>
             </span>
           )}
           {naleving.pct != null && (
             <span className="type-label text-content-secondary">
               Naleving (28 d): <span className={cn("num", naleving.pct >= 70 ? "text-positive/80" : "text-amber-400/80")}>{naleving.pct}%</span>
-              <span className="text-white/40"> ({naleving.uitgevoerd}/{naleving.gepland})</span>
+              <span className="text-muted-foreground"> ({naleving.uitgevoerd}/{naleving.gepland})</span>
             </span>
           )}
         </div>
@@ -1238,8 +1238,8 @@ function DoelkaartSection() {
         {/* Gedempte doelverschuiving — alleen bij betekenisvolle impact */}
         {verschuiving.tonen && verschuiving.boodschap && (
           <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.06] px-3 py-2.5">
-            <p className="type-label text-amber-300/90 uppercase tracking-wider mb-1">Je doel verschuift</p>
-            <p className="type-body-sm text-white/75">{verschuiving.boodschap}</p>
+            <p className="type-label text-[color:var(--color-warning)] uppercase tracking-wider mb-1">Je doel verschuift</p>
+            <p className="type-body-sm text-muted-foreground">{verschuiving.boodschap}</p>
           </div>
         )}
 
@@ -1251,7 +1251,7 @@ function DoelkaartSection() {
             className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2.5 text-left hover:bg-accent-cyan/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
           >
             <p className="type-label text-accent-cyan uppercase tracking-wider mb-1">Nog even dit</p>
-            <p className="type-body-sm text-white/75">{picture.nextQuestion.question}</p>
+            <p className="type-body-sm text-muted-foreground">{picture.nextQuestion.question}</p>
           </button>
         )}
 
@@ -1288,9 +1288,9 @@ function renderGroupExtended(group: InsightGroup): React.ReactNode | undefined {
           <p className="type-label text-content-secondary uppercase tracking-wider">Waarop dit is gebaseerd</p>
           {signals.map((s, i) => (
             <div key={`${s.kind}-${i}`} className="flex items-start gap-2.5">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
-              <p className="text-white/60">
-                <span className="text-white/80">{s.label}:</span> {s.value}
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted" />
+              <p className="text-muted-foreground">
+                <span className="text-foreground/80">{s.label}:</span> {s.value}
               </p>
             </div>
           ))}
@@ -1300,16 +1300,16 @@ function renderGroupExtended(group: InsightGroup): React.ReactNode | undefined {
         <div className="space-y-2">
           <p className="type-label text-content-secondary uppercase tracking-wider">Ook hierover opgevallen</p>
           {others.map((o) => (
-             <p key={o.id} className="text-white/55">{o.observationText}</p>
+             <p key={o.id} className="text-muted-foreground">{o.observationText}</p>
           ))}
         </div>
       )}
       {alts.length > 0 && (
         <div>
-          <p className="text-white/40">Andere mogelijke verklaringen:</p>
+          <p className="text-muted-foreground">Andere mogelijke verklaringen:</p>
           <ul className="mt-1 flex flex-col gap-1">
             {alts.map((a, i) => (
-              <li key={i} className="text-white/45">• {a}</li>
+              <li key={i} className="text-muted-foreground">• {a}</li>
             ))}
           </ul>
         </div>
@@ -1381,7 +1381,7 @@ function PatronenSection() {
 
   return (
     <section className="mb-8">
-      <h2 className="type-title-card text-white/90 mb-3">Wat over tijd opvalt</h2>
+      <h2 className="type-title-card text-foreground/90 mb-3">Wat over tijd opvalt</h2>
 
       {groups.length > 0 && (
         <div className="flex flex-col gap-3">
@@ -1418,11 +1418,11 @@ function PatronenSection() {
                 (laatste {readiness.data?.windowDays ?? 45} dagen):
               </p>
               {zinnen.map((z) => (
-                <p key={z} className="type-body-sm text-white/70">• {z}</p>
+                <p key={z} className="type-body-sm text-muted-foreground">• {z}</p>
               ))}
             </div>
           ) : readiness.isLoading ? (
-            <div className="h-16 animate-pulse rounded-lg bg-white/5" />
+            <div className="h-16 animate-pulse rounded-lg bg-muted" />
           ) : (
             <DsState
               soort="leeg"
@@ -1452,14 +1452,14 @@ function OntwikkelingSection() {
 
   return (
     <section className="mb-8">
-       <h2 className="type-title-card text-white/90">Je ontwikkeling</h2>
+       <h2 className="type-title-card text-foreground/90">Je ontwikkeling</h2>
        <p className="type-body text-content-secondary mb-3">Niet alleen vandaag — zo ontwikkel je je over meerdere trainingen heen.</p>
        {trend ? (
          <div className={cn(
            "mb-3 rounded-lg border px-3 py-2.5",
-           trend.afwijking ? "border-amber-400/25 bg-amber-400/[0.06]" : "border-white/[0.08] bg-white/[0.02]",
+           trend.afwijking ? "border-amber-400/25 bg-amber-400/[0.06]" : "border-border bg-muted",
          )}>
-           <p className={cn("type-body-sm", trend.afwijking ? "text-amber-300/90" : "text-white/75")}>{trend.zin}</p>
+           <p className={cn("type-body-sm", trend.afwijking ? "text-[color:var(--color-warning)]" : "text-muted-foreground")}>{trend.zin}</p>
          </div>
        ) : !loadLoading && (
          <p className="mb-3 type-body-sm text-content-secondary">
@@ -1499,7 +1499,7 @@ function DsConfirmActivityCard({ session }: { session: TrainingSession }) {
       {facts.length > 0 && (
          <div className="flex flex-wrap gap-1.5 mt-1">
            {facts.map(f => (
-             <span key={f} className="rounded-control border border-border bg-surface px-2 py-1 type-label font-mono text-white/70">
+             <span key={f} className="rounded-control border border-border bg-surface px-2 py-1 type-label font-mono text-muted-foreground">
                {f}
              </span>
            ))}
@@ -1518,14 +1518,14 @@ function DsConfirmActivityCard({ session }: { session: TrainingSession }) {
             onClick={() => setFeel(n)}
             className={cn(
               "flex flex-1 items-center justify-center rounded-control border py-2.5 font-mono text-sm transition-colors",
-              feel === n ? "border-accent-cyan/60 bg-accent-cyan/10 text-accent-cyan" : "border-border bg-surface text-white/50 hover:bg-white/5"
+              feel === n ? "border-accent-cyan/60 bg-accent-cyan/10 text-accent-cyan" : "border-border bg-surface text-muted-foreground hover:bg-muted"
             )}
           >
             {n}
           </button>
         ))}
       </div>
-      <div className="flex justify-between px-1 type-label text-white/30 uppercase tracking-widest text-[9px]">
+      <div className="flex justify-between px-1 type-label text-muted-foreground uppercase tracking-widest text-[9px]">
         <span>zwaar</span>
         <span>top</span>
       </div>
@@ -1562,7 +1562,7 @@ function BevestigenSection() {
 
   return (
     <section className="mb-8">
-      <h2 className="type-title-card text-white/90 mb-3">Trainingen bevestigen</h2>
+      <h2 className="type-title-card text-foreground/90 mb-3">Trainingen bevestigen</h2>
       <div className="flex flex-col gap-3">
         {pending.map(s => <DsConfirmActivityCard key={s.id} session={s} />)}
       </div>
@@ -1581,7 +1581,7 @@ function RecenteSessiesSection() {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="type-title-card text-white/90">Recente sessies</h2>
+        <h2 className="type-title-card text-foreground/90">Recente sessies</h2>
         <Link href="/activiteiten" className="type-label text-accent-cyan uppercase tracking-wider hover:underline">
           Alles bekijken
         </Link>

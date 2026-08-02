@@ -4,7 +4,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function SignUpPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[#040506] px-4">
+    <main className="flex min-h-dvh items-center justify-center bg-background px-4">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}

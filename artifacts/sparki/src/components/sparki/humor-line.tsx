@@ -18,6 +18,6 @@ export function HumorLine({
   const line = useHumorLine(context, seedSalt);
   if (!line) return null;
   return (
-    <p className={cn("text-xs italic text-white/45", className)}>{line}</p>
+    <p className={cn("text-xs italic text-muted-foreground", className)}>{line}</p>
   );
 }

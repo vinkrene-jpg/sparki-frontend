@@ -246,11 +246,11 @@ export function InteractiveElevationProfile({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/80 transition hover:text-cyan-200"
+          className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition hover:text-accent-cyan"
         >
           {open ? "− hoogteprofiel" : "+ hoogteprofiel"}
         </button>
-        <span className="font-mono text-[10px] tracking-[0.1em] text-white/40">
+        <span className="font-mono text-[10px] tracking-[0.1em] text-muted-foreground">
           {fmt(distanceKm)} km · ±{totalGainM(profile)} hoogtemeters (geschat)
         </span>
       </div>
@@ -362,16 +362,16 @@ export function InteractiveElevationProfile({
 
           <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             {pos != null && posEle != null ? (
-              <span className="font-mono text-[11px] tracking-[0.06em] text-white/70">
+              <span className="font-mono text-[11px] tracking-[0.06em] text-muted-foreground">
                 km {fmt(pos)} · {Math.round(posEle)} m
                 {posSlope != null && ` · ${fmt(posSlope)}%`}
               </span>
             ) : (
-              <span className="font-mono text-[10px] tracking-[0.08em] text-white/35">
+              <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground">
                 Sleep over het profiel of gebruik de schuif
               </span>
             )}
-            <span className="flex items-center gap-2 font-mono text-[9px] tracking-[0.08em] text-white/35">
+            <span className="flex items-center gap-2 font-mono text-[9px] tracking-[0.08em] text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span
                   className="flex h-3 w-3 items-center justify-center rounded-full text-[8px] font-semibold"
@@ -397,7 +397,7 @@ export function InteractiveElevationProfile({
             {SLOPE_BANDS.filter((b) => b.min >= -2).map((b) => (
               <span
                 key={b.label}
-                className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.08em] text-white/35"
+                className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.08em] text-muted-foreground"
               >
                 <span className="h-2 w-2 rounded-[2px]" style={{ background: b.color }} />
                 {b.label}
@@ -491,7 +491,7 @@ export function ElevationProfile({
           {SLOPE_BANDS.filter((b) => b.min >= -2).map((b) => (
             <span
               key={b.label}
-              className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.08em] text-white/35"
+              className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.08em] text-muted-foreground"
             >
               <span
                 className="h-2 w-2 rounded-[2px]"

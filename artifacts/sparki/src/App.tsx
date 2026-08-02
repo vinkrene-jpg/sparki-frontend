@@ -8,7 +8,6 @@ import {
   useUser,
 } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
-import { dark } from "@clerk/themes";
 import { nlNL } from "@clerk/localizations";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { Zap } from "lucide-react";
@@ -153,8 +152,12 @@ const clerkLocalization = {
   },
 };
 
+// LICHT_THEMA_01: de Clerk-authschermen volgen het lichte thema — geen
+// baseTheme: dark meer. Kleuren spiegelen de tokens uit index.css (donkere
+// tekst op licht, donkerder cyaan accent, subtiele donkergetinte randen).
+const AUTH_ACCENT = "oklch(0.58 0.13 205)"; // = --accent-cyan (donker voor licht)
+const AUTH_FOREGROUND = "oklch(0.21 0.01 260)";
 const clerkAppearance = {
-  baseTheme: dark,
   cssLayerName: "clerk",
   options: {
     logoPlacement: "inside" as const,
@@ -162,41 +165,41 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: "oklch(0.82 0.16 200)",
-    colorForeground: "oklch(0.98 0 0)",
-    colorMutedForeground: "oklch(0.60 0 0)",
-    colorDanger: "oklch(0.7 0.19 22.2)",
-    colorBackground: "oklch(0.10 0 0)",
-    colorInput: "oklch(0.16 0 0)",
-    colorInputForeground: "oklch(0.98 0 0)",
-    colorNeutral: "oklch(0.98 0 0)",
+    colorPrimary: AUTH_ACCENT,
+    colorForeground: AUTH_FOREGROUND,
+    colorMutedForeground: "oklch(0.44 0.01 260)",
+    colorDanger: "oklch(0.55 0.2 25)",
+    colorBackground: "oklch(1 0 0)",
+    colorInput: "oklch(0.985 0.004 95)",
+    colorInputForeground: AUTH_FOREGROUND,
+    colorNeutral: AUTH_FOREGROUND,
     fontFamily: "'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif",
     borderRadius: "0.625rem",
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "rounded-2xl w-[420px] max-w-full overflow-hidden border border-white/8",
+    cardBox: "rounded-2xl w-[420px] max-w-full overflow-hidden border border-border shadow-card",
     card: "!shadow-none !border-0 !rounded-none",
     footer: "!shadow-none !border-0 !rounded-none",
-    headerTitle: "text-white font-semibold",
-    headerSubtitle: "text-white/50",
-    socialButtonsBlockButtonText: "text-white/80",
-    formFieldLabel: "text-white/70 text-xs",
-    footerActionLink: "text-[oklch(0.82_0.16_200)] hover:opacity-80",
-    footerActionText: "text-white/40",
-    dividerText: "text-white/30",
-    identityPreviewEditButton: "text-[oklch(0.82_0.16_200)]",
-    formFieldSuccessText: "text-[oklch(0.82_0.16_200)]",
-    alertText: "text-white/80",
+    headerTitle: "text-foreground font-semibold",
+    headerSubtitle: "text-muted-foreground",
+    socialButtonsBlockButtonText: "text-foreground/80",
+    formFieldLabel: "text-foreground/70 text-xs",
+    footerActionLink: "text-accent-cyan hover:opacity-80",
+    footerActionText: "text-muted-foreground",
+    dividerText: "text-muted-foreground",
+    identityPreviewEditButton: "text-accent-cyan",
+    formFieldSuccessText: "text-accent-cyan",
+    alertText: "text-foreground/80",
     logoBox: "mb-2",
     logoImage: "h-10 w-10",
-    socialButtonsBlockButton: "border-white/10 bg-white/5 hover:bg-white/10",
-    formButtonPrimary: "bg-[oklch(0.82_0.16_200)] text-[#040506] hover:opacity-90 font-semibold",
-    formFieldInput: "bg-[oklch(0.16_0_0)] border-white/10 text-white placeholder-white/25",
-    footerAction: "border-t border-white/8",
-    dividerLine: "bg-white/10",
-    alert: "border-red-500/20 bg-red-500/10",
-    otpCodeFieldInput: "bg-[oklch(0.16_0_0)] border-white/10 text-white",
+    socialButtonsBlockButton: "border-border bg-muted hover:bg-secondary",
+    formButtonPrimary: "bg-accent-cyan text-[color:var(--color-on-accent)] hover:opacity-90 font-semibold",
+    formFieldInput: "bg-background border-border text-foreground placeholder:text-muted-foreground",
+    footerAction: "border-t border-border",
+    dividerLine: "bg-border",
+    alert: "border-destructive/20 bg-destructive/10",
+    otpCodeFieldInput: "bg-background border-border text-foreground",
     formFieldRow: "gap-3",
     main: "gap-4",
   },
@@ -235,23 +238,23 @@ function AccountNotReady({
   onRetry: () => void;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-[#040506] px-6 text-center">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-background px-6 text-center">
       <div className="max-w-sm">
-        <h1 className="text-lg font-semibold text-white">
+        <h1 className="text-lg font-semibold text-foreground">
           Je account wordt klaargezet
         </h1>
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm text-muted-foreground">
           Het lukte niet om je account te laden. Controleer je verbinding en
           probeer het opnieuw.
         </p>
         {error ? (
-          <p className="mt-3 font-mono text-[11px] text-white/30">{error}</p>
+          <p className="mt-3 font-mono text-[11px] text-muted-foreground">{error}</p>
         ) : null}
       </div>
       <button
         type="button"
         onClick={onRetry}
-        className="rounded-full bg-[oklch(0.82_0.16_200)] px-6 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
+        className="rounded-full bg-accent-cyan px-6 py-2.5 text-sm font-semibold text-[color:var(--color-on-accent)] transition hover:brightness-110"
       >
         Opnieuw proberen
       </button>
@@ -269,7 +272,7 @@ function AccountGate({ children }: { children: React.ReactNode }) {
   const { profile, isLoading, error, refetch } = useUserProfile();
 
   if (isLoading || (!profile && !error)) {
-    return <div className="min-h-dvh bg-[#040506]" />;
+    return <div className="min-h-dvh bg-background" />;
   }
   if (!profile) {
     return <AccountNotReady error={error} onRetry={() => void refetch()} />;
@@ -410,7 +413,7 @@ function SignedInHomeReady() {
   // Account ready (guaranteed by AccountGate) — brief flash while resolving
   // onboarding state.
   if (onboarded === null) {
-    return <div className="min-h-dvh bg-[#040506]" />;
+    return <div className="min-h-dvh bg-background" />;
   }
 
   if (!onboarded) {
@@ -531,7 +534,7 @@ function DashboardPage() {
 // niets in plaats van een dashboard dat straks een verkeerde landing blijkt.
 function DashboardSporter() {
   const { isLoading, pkg } = usePackage();
-  if (isLoading || pkg == null) return <div className="min-h-dvh bg-[#040506]" />;
+  if (isLoading || pkg == null) return <div className="min-h-dvh bg-background" />;
   if (pkg === "gratis") return <Redirect to="/routes" />;
   return <CommercialToday />;
 }
@@ -612,18 +615,18 @@ function HomeRedirect() {
 function PageErrorFallback() {
   return (
     <>
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 pb-28 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 pb-28 text-center">
         <Zap className="h-7 w-7 text-accent-cyan" aria-hidden="true" />
-        <p className="font-sans text-base font-semibold text-white/80">
+        <p className="font-sans text-base font-semibold text-foreground/80">
           Er ging iets mis op deze pagina
         </p>
-        <p className="max-w-xs text-sm text-white/40">
+        <p className="max-w-xs text-sm text-muted-foreground">
           Kies hieronder een ander onderdeel, of probeer het opnieuw.
         </p>
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="mt-2 rounded-full border border-white/10 px-4 py-2 text-xs text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
+          className="mt-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan"
         >
           Probeer opnieuw
         </button>
@@ -709,27 +712,27 @@ function ClerkStartupGate({ children }: { children: React.ReactNode }) {
     <div
       role="status"
       aria-live="polite"
-      className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 text-center"
+      className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center"
     >
       {/* Bij reduced motion draait de ring niet (centrale regel in index.css);
           de statische ring + tekst hieronder blijven de laadstatus dragen. */}
       <div
         aria-hidden="true"
-        className="h-7 w-7 animate-spin motion-reduce:animate-none rounded-full border-[3px] border-cyan-300/25 border-t-cyan-300/90"
+        className="h-7 w-7 animate-spin motion-reduce:animate-none rounded-full border-[3px] border-accent-cyan/25 border-t-accent-cyan/90"
       />
-      <p className="text-sm font-semibold text-white/75">
+      <p className="text-sm font-semibold text-foreground/75">
         Sparki wordt geladen…
       </p>
       {slow && (
         <>
-          <p className="max-w-xs text-sm text-white/40">
+          <p className="max-w-xs text-sm text-muted-foreground">
             Dit duurt langer dan normaal. Controleer je verbinding of laad de
             app opnieuw.
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-1 rounded-full border border-cyan-300/40 px-5 py-2 text-sm font-semibold text-cyan-300/90"
+            className="mt-1 rounded-full border border-accent-cyan/40 px-5 py-2 text-sm font-semibold text-accent-cyan"
           >
             Opnieuw laden
           </button>

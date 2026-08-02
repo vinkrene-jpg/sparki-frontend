@@ -45,14 +45,14 @@ export function TieredExplanation({
 
   return (
     <div className={className}>
-      <div className="text-[13px] leading-relaxed text-white/80">{short}</div>
+      <div className="text-[13px] leading-relaxed text-foreground/80">{short}</div>
 
       {showToggle && expanded && (
-        <div className="mt-3 border-t border-white/[0.07] pt-3">
+        <div className="mt-3 border-t border-border pt-3">
           {extendedLoaded ? (
             extended
           ) : extendedPending ? (
-            <span className="inline-flex items-center gap-2 text-[12px] text-white/45">
+            <span className="inline-flex items-center gap-2 text-[12px] text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Bezig…
             </span>
@@ -64,7 +64,7 @@ export function TieredExplanation({
         <button
           type="button"
           onClick={toggle}
-          className="mt-2.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300"
+          className="mt-2.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition hover:text-accent-cyan"
         >
           <ChevronDown
             className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
@@ -90,7 +90,7 @@ export function PlainTextParagraphs({ text }: { text: string }) {
     .filter(Boolean)
 
   return (
-    <div className="space-y-3 text-[13px] leading-relaxed text-white/75">
+    <div className="space-y-3 text-[13px] leading-relaxed text-muted-foreground">
       {paragraphs.map((p, i) => (
         <p key={i} className="text-pretty">
           {p}

@@ -55,7 +55,7 @@ function ChapterLabel({ n, title }: { n: number; title: string }) {
       >
         {n}
       </span>
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         {title}
       </span>
     </div>
@@ -94,7 +94,7 @@ export function SyncStatusLine({ sync }: { sync: SyncStatus }) {
   const Icon = icon
 
   return (
-    <div className="flex items-start gap-2 text-[12px] leading-relaxed text-white/55">
+    <div className="flex items-start gap-2 text-[12px] leading-relaxed text-muted-foreground">
       <Icon
         className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${sync.status === "bezig" ? "animate-spin" : ""}`}
         style={{ color }}
@@ -112,7 +112,7 @@ function ConsequenceIcon({ status }: { status: RideStory["consequence"]["status"
     return <RefreshCw className="h-4 w-4 shrink-0" style={{ color: "rgba(255,180,90,0.9)" }} strokeWidth={1.75} />
   if (status === "wedstrijd")
     return <Flag className="h-4 w-4 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />
-  return <HelpCircle className="h-4 w-4 shrink-0 text-white/45" strokeWidth={1.75} />
+  return <HelpCircle className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
 }
 
 const CONSEQUENCE_TITLE: Record<RideStory["consequence"]["status"], string> = {
@@ -182,19 +182,19 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <ChapterLabel n={3} title="Wat het betekent voor je schema" />
       <div className="mt-3 flex items-start gap-2.5">
         <ConsequenceIcon status={c.status} />
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-medium text-white/90">
+          <p className="text-[14px] font-medium text-foreground/90">
             {CONSEQUENCE_TITLE[c.status]}
           </p>
-          <p className="mt-1 text-pretty text-[13px] leading-relaxed text-white/60">
+          <p className="mt-1 text-pretty text-[13px] leading-relaxed text-muted-foreground">
             {c.reason}
           </p>
           {c.causeLine && (
-            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-cyan-200/70">
+            <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-accent-cyan">
               {c.causeLine}
             </p>
           )}
@@ -204,7 +204,7 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
       {/* Feedback unlocks the assessment (status onbekend, feedback missing) */}
       {workout && c.missing.includes("feedback") && (
         <div className="mt-3.5">
-          <p className="text-[12px] text-white/45">Hoe was deze training?</p>
+          <p className="text-[12px] text-muted-foreground">Hoe was deze training?</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {FEEDBACK_OPTIONS.map((opt) => (
               <button
@@ -212,7 +212,7 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
                 type="button"
                 disabled={feedback.isPending}
                 onClick={() => void giveFeedback(opt.type)}
-                className="rounded-full border border-white/[0.14] px-3.5 py-1.5 text-[12px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-200 disabled:opacity-40"
+                className="rounded-full border border-border px-3.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan hover:text-accent-cyan disabled:opacity-40"
               >
                 {opt.label}
               </button>
@@ -227,7 +227,7 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
           type="button"
           disabled={adjust.isPending || !negativeType}
           onClick={() => void askProposal()}
-          className="mt-3.5 flex items-center gap-2 rounded-xl border border-cyan-300/30 px-4 py-2.5 text-[13px] font-medium transition-colors hover:border-cyan-300/60 disabled:opacity-40"
+          className="mt-3.5 flex items-center gap-2 rounded-xl border border-accent-cyan px-4 py-2.5 text-[13px] font-medium transition-colors hover:border-accent-cyan disabled:opacity-40"
           style={{ color: ACCENT }}
         >
           {adjust.isPending ? (
@@ -240,9 +240,9 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
       )}
 
       {proposal && !applied && (
-        <div className="mt-3.5 rounded-xl border border-cyan-300/20 bg-white/[0.03] p-3.5">
-          <p className="text-[13px] font-medium text-white/90">{proposal.title}</p>
-          <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/60">
+        <div className="mt-3.5 rounded-xl border border-accent-cyan bg-muted p-3.5">
+          <p className="text-[13px] font-medium text-foreground/90">{proposal.title}</p>
+          <p className="mt-1 text-pretty text-[12px] leading-relaxed text-muted-foreground">
             {proposal.message}
           </p>
           <div className="mt-3 flex gap-2">
@@ -251,7 +251,7 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
                 type="button"
                 disabled={apply.isPending}
                 onClick={() => void applyProposal()}
-                className="rounded-lg px-3.5 py-2 text-[12px] font-medium text-[#040506] disabled:opacity-40"
+                className="rounded-lg px-3.5 py-2 text-[12px] font-medium text-[color:var(--color-on-accent)] disabled:opacity-40"
                 style={{ background: ACCENT }}
               >
                 {apply.isPending ? "Bezig…" : "Pas mijn schema aan"}
@@ -260,7 +260,7 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
             <button
               type="button"
               onClick={() => setProposal(null)}
-              className="rounded-lg border border-white/[0.14] px-3.5 py-2 text-[12px] text-white/70"
+              className="rounded-lg border border-border px-3.5 py-2 text-[12px] text-muted-foreground"
             >
               Laat staan
             </button>
@@ -280,14 +280,14 @@ function ConsequenceChapter({ story }: { story: RideStory }) {
         <button
           type="button"
           onClick={() => navigate("/you?focus=connections")}
-          className="mt-3.5 flex w-full items-center justify-between rounded-xl border border-white/[0.12] px-4 py-3 text-left text-[13px] text-white/80 transition-colors hover:border-cyan-300/40"
+          className="mt-3.5 flex w-full items-center justify-between rounded-xl border border-border px-4 py-3 text-left text-[13px] text-foreground/80 transition-colors hover:border-accent-cyan"
         >
           <span>Koppel je fietscomputer of horloge voor ritgegevens</span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
       )}
 
-      {error && <p className="mt-3 text-[12px] text-rose-300/80">{error}</p>}
+      {error && <p className="mt-3 text-[12px] text-[color:var(--color-negative)]">{error}</p>}
     </div>
   )
 }
@@ -311,17 +311,17 @@ export function RideStoryChapters({ story }: { story: RideStory }) {
   return (
     <div className="flex flex-col gap-3.5">
       {/* 1 — Wat je deed */}
-      <div className="rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
         <ChapterLabel n={1} title="Wat je deed" />
-        <p className="mt-2.5 text-[14px] font-medium text-white/90">
+        <p className="mt-2.5 text-[14px] font-medium text-foreground/90">
           {s.title ?? "Rit"}
           {story.workout ? (
-            <span className="text-white/45"> — gepland als “{story.workout.title}”</span>
+            <span className="text-muted-foreground"> — gepland als “{story.workout.title}”</span>
           ) : (
-            <span className="text-white/45"> — stond niet in je schema</span>
+            <span className="text-muted-foreground"> — stond niet in je schema</span>
           )}
         </p>
-        <p className="mt-1 text-[13px] leading-relaxed text-white/60">
+        <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
           {facts.length > 0
             ? facts.join(" · ")
             : "Voor deze rit zijn geen duur-, vermogens- of hartslaggegevens binnengekomen."}
@@ -329,23 +329,23 @@ export function RideStoryChapters({ story }: { story: RideStory }) {
       </div>
 
       {/* 2 — Hoe het ging */}
-      <div className="rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
         <ChapterLabel n={2} title="Hoe het ging" />
         {analysis && analysis.insights.length > 0 ? (
           <div className="mt-2.5 flex flex-col gap-2.5">
             {analysis.insights.map((ins, i) => (
-              <p key={i} className="text-pretty text-[13px] leading-relaxed text-white/70">
+              <p key={i} className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 {ins.text}
               </p>
             ))}
           </div>
         ) : (
-          <p className="mt-2.5 text-pretty text-[13px] leading-relaxed text-white/50">
+          <p className="mt-2.5 text-pretty text-[13px] leading-relaxed text-muted-foreground">
             {analysis?.missing ??
               "Er zijn te weinig gegevens om iets over deze rit te zeggen."}
           </p>
         )}
-        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-muted-foreground">
           {story.predictionAvailable
             ? "Voor deze training lag vooraf een verwachting klaar — open de training in je schema om verwachting en werkelijkheid naast elkaar te zien."
             : "Voor deze rit lag vooraf geen verwachting klaar, dus is er geen vergelijking met een verwachting."}
@@ -359,18 +359,18 @@ export function RideStoryChapters({ story }: { story: RideStory }) {
       <button
         type="button"
         onClick={() => setChatOpen(true)}
-        className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left backdrop-blur-md transition-colors hover:border-accent-cyan"
       >
         <MessageCircle className="h-5 w-5 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />
         <span className="min-w-0 flex-1">
-          <span className="block text-[14px] font-medium text-white/90">
+          <span className="block text-[14px] font-medium text-foreground/90">
             Vraag door over deze rit
           </span>
-          <span className="mt-0.5 block text-[12px] text-white/45">
+          <span className="mt-0.5 block text-[12px] text-muted-foreground">
             Deze rit gaat als context mee — dat zie je in het gesprek.
           </span>
         </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-white/25" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </button>
 
       <SparkiChatOverlay

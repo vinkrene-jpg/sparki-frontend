@@ -21,7 +21,7 @@ const WINDOWS: Array<{ key: string; label: string }> = [
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`flex h-full flex-col rounded-2xl border border-white/[0.08] bg-map-panel/[0.82] p-5 backdrop-blur-md ${className ?? ""}`}
+      className={`flex h-full flex-col rounded-2xl border border-border bg-map-panel/[0.82] p-5 backdrop-blur-md ${className ?? ""}`}
     >
       {children}
     </div>
@@ -46,12 +46,12 @@ function EmptyChart({
         {GHOST_BARS.map((h, i) => (
           <div
             key={i}
-            className="flex-1 rounded-sm bg-white/[0.05]"
+            className="flex-1 rounded-sm bg-muted"
             style={{ height: `${h}%` }}
           />
         ))}
       </div>
-      <div className="mt-2.5 text-[11px] leading-relaxed text-white/40">
+      <div className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
         {caption}
         {actionLabel && onAction && (
           <>
@@ -72,7 +72,7 @@ function EmptyChart({
 
 function MicroLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+    <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
       {children}
     </span>
   )
@@ -110,14 +110,14 @@ function Stat({
   return (
     <div className="flex-1 text-center">
       <p
-        className={`font-sans text-lg font-light tabular-nums ${accent ? "text-accent-cyan" : "text-white/90"}`}
+        className={`font-sans text-lg font-light tabular-nums ${accent ? "text-accent-cyan" : "text-foreground/90"}`}
       >
         {value}
         {unit && value !== "—" && (
-          <span className="ml-0.5 text-[11px] text-white/40">{unit}</span>
+          <span className="ml-0.5 text-[11px] text-muted-foreground">{unit}</span>
         )}
       </p>
-      <p className="mt-0.5 inline-flex items-center gap-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+      <p className="mt-0.5 inline-flex items-center gap-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
         {label}
         {uitlegKey && <UitlegDot uitlegKey={uitlegKey} label={label} persoonlijk={persoonlijk} />}
       </p>
@@ -199,9 +199,9 @@ export function PerformanceNumbers({
             uitlegKey="ftp"
             persoonlijk={persoonlijk}
           />
-          <div className="border-l border-white/[0.07]" />
+          <div className="border-l border-border" />
           <Stat value={wkg ?? "—"} unit="W/kg" label="Per kilo" />
-          <div className="border-l border-white/[0.07]" />
+          <div className="border-l border-border" />
           <Stat
             value={weight != null ? String(Math.round(weight * 10) / 10) : "—"}
             unit="kg"
@@ -210,7 +210,7 @@ export function PerformanceNumbers({
         </div>
         {(herkomstLabel(profile, "ftp") != null && ftp != null) ||
         (herkomstLabel(profile, "weightKg") != null && weight != null) ? (
-          <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+          <p className="mt-3 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
             {[
               ftp != null && herkomstLabel(profile, "ftp") != null
                 ? `FTP ${ftp} W · ${herkomstLabel(profile, "ftp")}`
@@ -224,12 +224,12 @@ export function PerformanceNumbers({
           </p>
         ) : null}
         {laadt && (ftp == null || weight == null) && (
-          <div className="mt-3 border-t border-white/[0.06] pt-3">
-            <div className="h-3.5 w-2/3 animate-pulse rounded bg-white/[0.06]" />
+          <div className="mt-3 border-t border-border pt-3">
+            <div className="h-3.5 w-2/3 animate-pulse rounded bg-muted" />
           </div>
         )}
         {!laadt && (ftp == null || weight == null) && (
-          <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+          <p className="mt-3 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
             {ftp == null && weight == null
               ? "FTP en gewicht zijn nog niet bekend."
               : ftp == null
@@ -257,7 +257,7 @@ export function PerformanceNumbers({
                   ? "text-positive"
                   : ctlDelta < 0
                     ? "text-warning"
-                    : "text-white/45"
+                    : "text-muted-foreground"
               }`}
             >
               {ctlDelta > 0 ? (
@@ -280,14 +280,14 @@ export function PerformanceNumbers({
               uitlegKey="fitheid"
               persoonlijk={persoonlijk}
             />
-            <div className="border-l border-white/[0.07]" />
+            <div className="border-l border-border" />
             <Stat
               value={String(load.atl)}
               label="Vermoeidheid"
               uitlegKey="vermoeidheid"
               persoonlijk={persoonlijk}
             />
-            <div className="border-l border-white/[0.07]" />
+            <div className="border-l border-border" />
             <Stat
               value={load.tsb > 0 ? `+${load.tsb}` : String(load.tsb)}
               label="Vorm"
@@ -307,21 +307,21 @@ export function PerformanceNumbers({
           <>
             <div className="mt-3 flex items-stretch">
               <Stat value={String(bandbreedte.current)} unit={bandbreedte.unit} label="Nu" />
-              <div className="border-l border-white/[0.07]" />
+              <div className="border-l border-border" />
               <Stat
                 value={String(bandbreedte.expected)}
                 unit={bandbreedte.unit}
                 label="Verwacht"
                 accent
               />
-              <div className="border-l border-white/[0.07]" />
+              <div className="border-l border-border" />
               <Stat
                 value={`${bandbreedte.low}–${bandbreedte.high}`}
                 unit={bandbreedte.unit}
                 label="Bandbreedte"
               />
             </div>
-            <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+            <p className="mt-3 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
               Schatting voor {bandbreedte.horizonLabel}, afgewogen tegen je doel. Een
               realistische bandbreedte, geen belofte.
             </p>
@@ -341,14 +341,14 @@ export function PerformanceNumbers({
           <>
             <table className="mt-3 w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-white/[0.08]">
-                  <th className="pb-2 font-mono text-[9px] font-normal uppercase tracking-[0.14em] text-white/35">
+                <tr className="border-b border-border">
+                  <th className="pb-2 font-mono text-[9px] font-normal uppercase tracking-[0.14em] text-muted-foreground">
                     Duur
                   </th>
-                  <th className="pb-2 text-right font-mono text-[9px] font-normal uppercase tracking-[0.14em] text-white/35">
+                  <th className="pb-2 text-right font-mono text-[9px] font-normal uppercase tracking-[0.14em] text-muted-foreground">
                     Laatste 6 wkn
                   </th>
-                  <th className="pb-2 text-right font-mono text-[9px] font-normal uppercase tracking-[0.14em] text-white/35">
+                  <th className="pb-2 text-right font-mono text-[9px] font-normal uppercase tracking-[0.14em] text-muted-foreground">
                     Beste ooit
                   </th>
                 </tr>
@@ -358,29 +358,29 @@ export function PerformanceNumbers({
                   const all = bests.allTime[w.key]
                   const rec = bests.recent[w.key]
                   return (
-                    <tr key={w.key} className="border-b border-white/[0.05] last:border-b-0">
-                      <td className="py-2 text-[13px] text-white/70">{w.label}</td>
-                      <td className="py-2 text-right text-[14px] tabular-nums text-white/85">
+                    <tr key={w.key} className="border-b border-border last:border-b-0">
+                      <td className="py-2 text-[13px] text-muted-foreground">{w.label}</td>
+                      <td className="py-2 text-right text-[14px] tabular-nums text-foreground/80">
                         {rec ? (
                           <>
                             {rec.watts}
-                            <span className="ml-0.5 text-[10px] text-white/35">W</span>
+                            <span className="ml-0.5 text-[10px] text-muted-foreground">W</span>
                           </>
                         ) : (
-                          <span className="text-white/30">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
                       <td className={`py-2 text-right text-[14px] tabular-nums ${all ? "text-accent-cyan" : ""}`}>
                         {all ? (
                           <>
                             {all.watts}
-                            <span className="ml-0.5 text-[10px] text-white/35">W</span>
-                            <span className="ml-1.5 text-[10px] tabular-nums text-white/30">
+                            <span className="ml-0.5 text-[10px] text-muted-foreground">W</span>
+                            <span className="ml-1.5 text-[10px] tabular-nums text-muted-foreground">
                               {shortDate(all.date)}
                             </span>
                           </>
                         ) : (
-                          <span className="text-white/30">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
                     </tr>
@@ -388,7 +388,7 @@ export function PerformanceNumbers({
                 })}
               </tbody>
             </table>
-            <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+            <p className="mt-3 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
               Uit {bests.sessionsWithBests}{" "}
               {bests.sessionsWithBests === 1 ? "rit" : "ritten"} met vermogensmeting
               per seconde. Ontbreekt een duur? Dan zit daar nog geen echte meting
@@ -414,13 +414,13 @@ export function PerformanceNumbers({
                 const next = ftpRows[i + 1]
                 const delta = next ? entry.ftpWatts - next.ftpWatts : null
                 return (
-                  <tr key={entry.id} className="border-b border-white/[0.05] last:border-b-0">
-                    <td className="py-2 text-[12px] tabular-nums text-white/50">
+                  <tr key={entry.id} className="border-b border-border last:border-b-0">
+                    <td className="py-2 text-[12px] tabular-nums text-muted-foreground">
                       {shortDateYear(entry.measuredAt)}
                     </td>
-                    <td className="py-2 text-right text-[14px] tabular-nums text-white/85">
+                    <td className="py-2 text-right text-[14px] tabular-nums text-foreground/80">
                       {entry.ftpWatts}
-                      <span className="ml-0.5 text-[10px] text-white/35">W</span>
+                      <span className="ml-0.5 text-[10px] text-muted-foreground">W</span>
                     </td>
                     <td className="w-16 py-2 text-right font-mono text-[11px] tabular-nums">
                       {delta != null ? (
@@ -430,13 +430,13 @@ export function PerformanceNumbers({
                               ? "text-positive"
                               : delta < 0
                                 ? "text-warning"
-                                : "text-white/40"
+                                : "text-muted-foreground"
                           }
                         >
                           {delta > 0 ? `+${delta}` : String(delta)}
                         </span>
                       ) : (
-                        <span className="text-white/25">—</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                   </tr>

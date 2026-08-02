@@ -246,14 +246,14 @@ export function BikeScanCapture({
   const allStepsDone = stepIdx >= STEP_PLAN.length
 
   const body = (
-    <div className="fixed inset-0 z-[90] flex flex-col bg-black">
+    <div className="fixed inset-0 z-[90] flex flex-col bg-foreground">
       {/* Kop */}
       <div className="flex items-center justify-between px-4 py-3">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/50">
+          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
             Fietsscan · stap {Math.min(stepIdx + 1, STEP_PLAN.length)} van {STEP_PLAN.length}
           </p>
-          <p className="mt-0.5 text-[14px] font-medium text-white">
+          <p className="mt-0.5 text-[14px] font-medium text-foreground">
             {done ? "Scan afgerond" : allStepsDone ? "Alle stappen gedaan" : plan?.label}
           </p>
         </div>
@@ -261,7 +261,7 @@ export function BikeScanCapture({
           type="button"
           onClick={onClose}
           aria-label="Sluiten"
-          className="rounded-full border border-white/15 p-2 text-white/70 hover:text-white"
+          className="rounded-full border border-border p-2 text-muted-foreground hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
@@ -277,21 +277,21 @@ export function BikeScanCapture({
         />
         {/* Kaderhulp */}
         {!done && !allStepsDone && (
-          <div className="pointer-events-none absolute inset-6 rounded-2xl border-2 border-dashed border-white/30" />
+          <div className="pointer-events-none absolute inset-6 rounded-2xl border-2 border-dashed border-border" />
         )}
         {cameraError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80 px-8 text-center">
-            <p className="text-[13px] leading-relaxed text-white/80">{cameraError}</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-foreground/80 px-8 text-center">
+            <p className="text-[13px] leading-relaxed text-foreground/80">{cameraError}</p>
           </div>
         )}
         {(done || allStepsDone) && !cameraError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 px-8 text-center">
-            <Check className="h-8 w-8 text-cyan-300" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-foreground/70 px-8 text-center">
+            <Check className="h-8 w-8 text-accent-cyan" />
             {done ? (
               <>
-                <p className="text-[15px] font-medium text-white">Je fietsscan staat klaar.</p>
+                <p className="text-[15px] font-medium text-foreground">Je fietsscan staat klaar.</p>
                 {cutoutsFailed > 0 && (
-                  <p className="text-[12px] text-white/60">
+                  <p className="text-[12px] text-muted-foreground">
                     Bij {cutoutsFailed} opname{cutoutsFailed === 1 ? "" : "s"} kon de
                     achtergrond niet worden verwijderd — het origineel is wel bewaard.
                   </p>
@@ -299,21 +299,21 @@ export function BikeScanCapture({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-2 rounded-full border border-cyan-300/40 px-5 py-2 text-[13px] text-cyan-200"
+                  className="mt-2 rounded-full border border-accent-cyan/40 px-5 py-2 text-[13px] text-cyan-200"
                 >
                   Klaar
                 </button>
               </>
             ) : (
               <>
-                <p className="text-[15px] font-medium text-white">
+                <p className="text-[15px] font-medium text-foreground">
                   Alle {STEP_PLAN.length} stappen zijn vastgelegd.
                 </p>
                 <button
                   type="button"
                   onClick={() => void finish()}
                   disabled={completeScan.isPending}
-                  className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 px-5 py-2 text-[13px] text-cyan-200 disabled:opacity-50"
+                  className="mt-2 inline-flex items-center gap-2 rounded-full border border-accent-cyan/40 px-5 py-2 text-[13px] text-cyan-200 disabled:opacity-50"
                 >
                   {completeScan.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   Scan afronden
@@ -327,9 +327,9 @@ export function BikeScanCapture({
       {/* Voet: instructie + kwaliteit + knoppen */}
       {!done && !allStepsDone && (
         <div className="space-y-3 px-4 pb-6 pt-3">
-          <p className="text-[13px] leading-snug text-white/75">{plan?.hint}</p>
+          <p className="text-[13px] leading-snug text-muted-foreground">{plan?.hint}</p>
           {plan && plan.count > 1 && (
-            <p className="text-[11px] text-white/45">
+            <p className="text-[11px] text-muted-foreground">
               Opname {shotInStep + 1} van {plan.count} voor deze stap.
             </p>
           )}
@@ -338,15 +338,15 @@ export function BikeScanCapture({
           ) : verdict && !verdict.ok ? (
             <p className="text-[12px] text-amber-300">{verdict.instruction}</p>
           ) : verdict?.ok ? (
-            <p className="text-[12px] text-cyan-300/90">Beeld is goed — leg vast.</p>
+            <p className="text-[12px] text-accent-cyan">Beeld is goed — leg vast.</p>
           ) : (
-            <p className="text-[12px] text-white/40">Camera wordt gecontroleerd…</p>
+            <p className="text-[12px] text-muted-foreground">Camera wordt gecontroleerd…</p>
           )}
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={advance}
-              className="inline-flex items-center gap-1 rounded-full border border-white/15 px-4 py-2 text-[12px] text-white/60"
+              className="inline-flex items-center gap-1 rounded-full border border-border px-4 py-2 text-[12px] text-muted-foreground"
             >
               Sla over <ChevronRight className="h-3.5 w-3.5" />
             </button>
@@ -355,7 +355,7 @@ export function BikeScanCapture({
               onClick={() => void capture()}
               disabled={!canShoot}
               aria-label="Opname maken"
-              className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-[13px] font-semibold text-black disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-full bg-accent-cyan px-6 py-3 text-[13px] font-semibold text-[color:var(--color-on-accent)] disabled:opacity-40"
             >
               {state.phase === "opslaan" || state.phase === "uitsnijden" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

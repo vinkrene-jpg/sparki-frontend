@@ -63,14 +63,14 @@ function ScoreBar({
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
+        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
           {label}
         </span>
-        <span className="font-sans text-[13px] font-light text-white/85">
+        <span className="font-sans text-[13px] font-light text-foreground/90">
           {hasData ? value : "—"}
         </span>
       </div>
-      <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full transition-all"
           style={{
@@ -94,7 +94,7 @@ function CoverageGrid({ coverage }: { coverage: ScreenCoverage[] }) {
             className="flex items-center justify-between rounded-lg px-2.5 py-1.5"
             style={{ background: st.bg }}
           >
-            <span className="truncate text-[11px] text-white/70">{c.label}</span>
+            <span className="truncate text-[11px] text-muted-foreground">{c.label}</span>
             <span
               className="ml-2 shrink-0 font-mono text-[10px] tabular-nums"
               style={{ color: st.color }}
@@ -118,21 +118,21 @@ function KpiCell({
   sub?: string
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-      <p className="font-sans text-[22px] font-light leading-none text-white/90">
+    <div className="rounded-xl border border-border bg-muted px-3 py-2.5">
+      <p className="font-sans text-[22px] font-light leading-none text-foreground/90">
         {value}
       </p>
-      <p className="mt-1.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-white/40">
+      <p className="mt-1.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </p>
-      {sub && <p className="mt-0.5 text-[10px] text-white/35">{sub}</p>}
+      {sub && <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   )
 }
 
 function SummaryHeader({ summary }: { summary: DashboardSummary }) {
   return (
-    <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="grid grid-cols-3 gap-2">
         <KpiCell
           label="Testers"
@@ -166,16 +166,16 @@ function SummaryHeader({ summary }: { summary: DashboardSummary }) {
       </div>
 
       <div>
-        <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+        <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
           Schermdekking — aandeel testers dat elk scherm opende
         </p>
         <div className="space-y-1.5">
           {summary.coveragePerScreen.map((s) => (
             <div key={s.key} className="flex items-center gap-2">
-              <span className="w-24 shrink-0 truncate text-[11px] text-white/65">
+              <span className="w-24 shrink-0 truncate text-[11px] text-muted-foreground">
                 {s.label}
               </span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -187,7 +187,7 @@ function SummaryHeader({ summary }: { summary: DashboardSummary }) {
                   }}
                 />
               </div>
-              <span className="w-9 shrink-0 text-right font-mono text-[10px] tabular-nums text-white/45">
+              <span className="w-9 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
                 {s.openedPct}%
               </span>
             </div>
@@ -197,7 +197,7 @@ function SummaryHeader({ summary }: { summary: DashboardSummary }) {
 
       {summary.signals.length > 0 && (
         <div className="space-y-1.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
             Signalen
           </p>
           {summary.signals.map((sig, i) => {
@@ -248,13 +248,13 @@ function DashboardTesterCard({
       : null
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-sans text-[15px] font-light text-white/90">
+          <p className="truncate font-sans text-[15px] font-light text-foreground/90">
             {testerLabel(tester)}
           </p>
-          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
+          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             {testerRoleLabel(tester)}
             {number ? ` · ${number}` : ""}
           </p>
@@ -268,12 +268,12 @@ function DashboardTesterCard({
       </div>
 
       {/* Headline testscore + reliability */}
-      <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+      <div className="mt-3 flex items-center gap-3 rounded-xl border border-border bg-muted px-3 py-2.5">
         <div>
-          <p className="font-sans text-[26px] font-light leading-none text-white/90">
+          <p className="font-sans text-[26px] font-light leading-none text-foreground/90">
             {hasData ? tester.scores.testscore : "—"}
           </p>
-          <p className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-white/40">
+          <p className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-muted-foreground">
             Testscore
           </p>
         </div>
@@ -284,14 +284,14 @@ function DashboardTesterCard({
           >
             {RELIABILITY_LABEL[tester.scores.reliability]}
           </p>
-          <p className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-white/40">
+          <p className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-muted-foreground">
             Betrouwbaarheid
           </p>
         </div>
       </div>
 
       {!hasData && (
-        <p className="mt-2 text-[11.5px] leading-relaxed text-white/45">
+        <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
           Nog niet gemeten — deze tester heeft de app nog niet gebruikt sinds
           telemetrie actief is.
         </p>
@@ -300,34 +300,34 @@ function DashboardTesterCard({
       {/* Quick usage strip */}
       <div className="mt-3 grid grid-cols-4 gap-2">
         <div className="text-center">
-          <p className="font-sans text-[16px] font-light text-white/85">
+          <p className="font-sans text-[16px] font-light text-foreground/90">
             {hasData ? tester.usage.sessions : "—"}
           </p>
-          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">
+          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">
             Sessies
           </p>
         </div>
         <div className="text-center">
-          <p className="font-sans text-[16px] font-light text-white/85">
+          <p className="font-sans text-[16px] font-light text-foreground/90">
             {formatDuration(tester.usage.totalSeconds)}
           </p>
-          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">
+          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">
             In app
           </p>
         </div>
         <div className="text-center">
-          <p className="font-sans text-[16px] font-light text-white/85">
+          <p className="font-sans text-[16px] font-light text-foreground/90">
             {hasData ? `${tester.coveragePct}%` : "—"}
           </p>
-          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">
+          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">
             Dekking
           </p>
         </div>
         <div className="text-center">
-          <p className="font-sans text-[16px] font-light text-white/85">
+          <p className="font-sans text-[16px] font-light text-foreground/90">
             {tester.feedback.total}
           </p>
-          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">
+          <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">
             Feedback
           </p>
         </div>
@@ -336,7 +336,7 @@ function DashboardTesterCard({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/55 transition-colors hover:bg-white/[0.05]"
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted"
       >
         {open ? "Minder details" : "Meer details"}
         <ChevronDown
@@ -349,7 +349,7 @@ function DashboardTesterCard({
         <div className="mt-3 space-y-4">
           {/* Scores */}
           <div className="space-y-2.5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
               Scores
             </p>
             <ScoreBar label="Compleetheid" value={tester.scores.compleetheid} hasData={hasData || tester.scores.compleetheid > 0} />
@@ -360,7 +360,7 @@ function DashboardTesterCard({
 
           {/* Coverage */}
           <div className="space-y-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
               Schermdekking
             </p>
             <CoverageGrid coverage={tester.coverage} />
@@ -368,10 +368,10 @@ function DashboardTesterCard({
 
           {/* Onboarding */}
           <div className="space-y-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
               Onboarding
             </p>
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] text-white/65">
+            <div className="rounded-lg border border-border bg-muted px-3 py-2 text-[12px] text-muted-foreground">
               {tester.onboarding == null ? (
                 "Nog niet begonnen"
               ) : tester.onboarding.fullyComplete ? (
@@ -386,19 +386,19 @@ function DashboardTesterCard({
 
           {/* Connectors */}
           <div className="space-y-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
               Koppelingen
             </p>
             {tester.connectors.length === 0 ? (
-              <p className="text-[12px] text-white/45">Nog geen koppelingen.</p>
+              <p className="text-[12px] text-muted-foreground">Nog geen koppelingen.</p>
             ) : (
               <div className="space-y-1.5">
                 {tester.connectors.map((c) => (
                   <div
                     key={c.provider}
-                    className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2"
+                    className="flex items-center justify-between rounded-lg border border-border bg-muted px-3 py-2"
                   >
-                    <span className="text-[12px] capitalize text-white/75">
+                    <span className="text-[12px] capitalize text-muted-foreground">
                       {c.provider}
                     </span>
                     <span
@@ -432,28 +432,28 @@ function DashboardTesterCard({
 
           {/* Feedback breakdown */}
           <div className="space-y-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
               Feedback
             </p>
             {tester.feedback.total === 0 ? (
-              <p className="text-[12px] text-white/45">Nog geen feedback gegeven.</p>
+              <p className="text-[12px] text-muted-foreground">Nog geen feedback gegeven.</p>
             ) : (
               <div className="grid grid-cols-4 gap-2">
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-2 text-center">
-                  <p className="font-sans text-[15px] font-light text-white/85">{tester.feedback.bugs}</p>
-                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">Bugs</p>
+                <div className="rounded-lg border border-border bg-muted px-2 py-2 text-center">
+                  <p className="font-sans text-[15px] font-light text-foreground/90">{tester.feedback.bugs}</p>
+                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">Bugs</p>
                 </div>
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-2 text-center">
-                  <p className="font-sans text-[15px] font-light text-white/85">{tester.feedback.ideas}</p>
-                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">Ideeën</p>
+                <div className="rounded-lg border border-border bg-muted px-2 py-2 text-center">
+                  <p className="font-sans text-[15px] font-light text-foreground/90">{tester.feedback.ideas}</p>
+                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">Ideeën</p>
                 </div>
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-2 text-center">
-                  <p className="font-sans text-[15px] font-light text-white/85">{tester.feedback.openCount}</p>
-                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">Open</p>
+                <div className="rounded-lg border border-border bg-muted px-2 py-2 text-center">
+                  <p className="font-sans text-[15px] font-light text-foreground/90">{tester.feedback.openCount}</p>
+                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">Open</p>
                 </div>
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-2 text-center">
-                  <p className="font-sans text-[15px] font-light text-white/85">{tester.feedback.fixedCount}</p>
-                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-white/40">Opgelost</p>
+                <div className="rounded-lg border border-border bg-muted px-2 py-2 text-center">
+                  <p className="font-sans text-[15px] font-light text-foreground/90">{tester.feedback.fixedCount}</p>
+                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">Opgelost</p>
                 </div>
               </div>
             )}
@@ -462,32 +462,32 @@ function DashboardTesterCard({
           {/* Meta */}
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">Laatst actief</p>
-              <p className="mt-0.5 truncate text-[12px] text-white/70">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Laatst actief</p>
+              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                 {formatLastActivity(tester.usage.lastActivityAt)}
               </p>
             </div>
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">Actieve dagen (30d)</p>
-              <p className="mt-0.5 truncate text-[12px] text-white/70">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Actieve dagen (30d)</p>
+              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                 {hasData ? tester.usage.activeDays30 : "—"}
               </p>
             </div>
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">Gem. sessieduur</p>
-              <p className="mt-0.5 truncate text-[12px] text-white/70">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Gem. sessieduur</p>
+              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                 {formatDuration(tester.usage.avgSeconds)}
               </p>
             </div>
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">App-versie</p>
-              <p className="mt-0.5 truncate text-[12px] text-white/70">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">App-versie</p>
+              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                 {tester.appVersion ?? "—"}
               </p>
             </div>
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">Toestel</p>
-              <p className="mt-0.5 truncate text-[12px] text-white/70">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Toestel</p>
+              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                 {tester.lastPlatform ?? "—"}
               </p>
             </div>
@@ -499,7 +499,7 @@ function DashboardTesterCard({
         type="button"
         onClick={() => onToggleDone(tester.clerkId, !done)}
         disabled={busy}
-        className="mt-3 w-full rounded-lg border border-white/10 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/65 transition-colors hover:bg-white/[0.05] disabled:opacity-50"
+        className="mt-3 w-full rounded-lg border border-border py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
       >
         {done ? "Heropenen" : "Markeer als klaar"}
       </button>
@@ -523,8 +523,8 @@ export function TestDashboardView({
     <div className="space-y-3">
       <SummaryHeader summary={summary} />
       {testers.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-          <p className="text-[13px] leading-relaxed text-white/55">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center backdrop-blur-md">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Nog geen testers. Zodra je iemand uitnodigt en die meedoet, verschijnt
             hier het volledige overzicht.
           </p>

@@ -11,12 +11,12 @@ function GoalsEmptyWaarom() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="text-[11px] text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+        className="text-[11px] text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
       >
         Waarom is dit nodig?
       </button>
       {open && (
-        <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
+        <p className="mt-1.5 text-[12px] leading-relaxed text-foreground/55">
           Er staan nog geen doelen in je profiel en er zijn geen aankomende
           A/B-wedstrijden om een doel uit af te leiden. Met een doel of
           wedstrijd wordt je opbouw gemeten aan waar je naartoe wilt.
@@ -49,10 +49,10 @@ const VERDICT_STYLE: Record<
   GoalProgress["verdict"],
   { label: string; className: string }
 > = {
-  op_koers: { label: "Op koers", className: "text-emerald-300 bg-emerald-300/10 ring-emerald-300/25" },
-  aandacht: { label: "Vraagt aandacht", className: "text-amber-300 bg-amber-300/10 ring-amber-300/25" },
-  risico: { label: "Onder druk", className: "text-rose-300 bg-rose-300/10 ring-rose-300/25" },
-  niet_meetbaar: { label: "Nog niet meetbaar", className: "text-white/50 bg-white/[0.06] ring-white/15" },
+  op_koers: { label: "Op koers", className: "text-[color:var(--color-positive)] bg-emerald-300/10 ring-emerald-300/25" },
+  aandacht: { label: "Vraagt aandacht", className: "text-[color:var(--color-warning)] bg-amber-300/10 ring-amber-300/25" },
+  risico: { label: "Onder druk", className: "text-[color:var(--color-negative)] bg-rose-300/10 ring-rose-300/25" },
+  niet_meetbaar: { label: "Nog niet meetbaar", className: "text-foreground/50 bg-muted ring-ring" },
 }
 
 const HORIZON_LABEL: Record<Goal["horizon"], string> = {
@@ -87,7 +87,7 @@ function ProgressDetails({ progress }: { progress: GoalProgress }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70"
+        className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground/70"
       >
         Waarom
         <ChevronDown
@@ -98,12 +98,12 @@ function ProgressDetails({ progress }: { progress: GoalProgress }) {
       {open && (
         <div className="mt-2 space-y-1.5">
           {progress.reasons.map((r) => (
-            <p key={r} className="text-[12px] leading-relaxed text-white/60">
+            <p key={r} className="text-[12px] leading-relaxed text-foreground/60">
               {r}
             </p>
           ))}
           {progress.gaps.map((g) => (
-            <p key={g} className="text-[12px] leading-relaxed text-white/40">
+            <p key={g} className="text-[12px] leading-relaxed text-muted-foreground">
               Nog niet meetbaar: {g}
             </p>
           ))}
@@ -135,15 +135,15 @@ function EditGoalForm({ goal, onClose }: { goal: Goal; onClose: () => void }) {
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.85] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-accent-cyan/20 bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
           Doel aanpassen
         </span>
         <button
           type="button"
           onClick={onClose}
-          className="text-white/40 transition-colors hover:text-white/70"
+          className="text-muted-foreground transition-colors hover:text-foreground/70"
           aria-label="Sluiten"
         >
           <X className="h-4 w-4" strokeWidth={2} />
@@ -152,34 +152,34 @@ function EditGoalForm({ goal, onClose }: { goal: Goal; onClose: () => void }) {
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+        className="mt-3 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
       />
       <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className="block">
-          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             Streefdatum
           </span>
           <input
             type="date"
             value={targetDate}
             onChange={(e) => setTargetDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white focus:border-cyan-300/40 focus:outline-none [color-scheme:dark]"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground focus:border-accent-cyan/40 focus:outline-none [color-scheme:light]"
           />
         </label>
         <label className="block">
-          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             Waaraan merk je dat het gelukt is?
           </span>
           <input
             value={measure}
             onChange={(e) => setMeasure(e.target.value)}
             placeholder="Bijv. top-10 in de clubcompetitie"
-            className="mt-1 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
         </label>
       </div>
       {update.isError && (
-        <p className="mt-2 text-[12px] text-rose-300">
+        <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
           Opslaan lukte niet. Probeer het opnieuw.
         </p>
       )}
@@ -187,7 +187,7 @@ function EditGoalForm({ goal, onClose }: { goal: Goal; onClose: () => void }) {
         type="button"
         onClick={submit}
         disabled={!title.trim() || update.isPending}
-        className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 transition-colors hover:bg-cyan-300/25 disabled:opacity-40"
+        className="mt-3 rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring transition-colors hover:bg-accent-cyan/25 disabled:opacity-40"
       >
         {update.isPending ? "Bezig…" : "Opslaan"}
       </button>
@@ -199,17 +199,17 @@ function GoalRow({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
   const update = useUpdateGoal()
   const active = goal.status === "active"
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
               {HORIZON_LABEL[goal.horizon]}
             </span>
             {active ? (
               <VerdictBadge progress={goal.progress} />
             ) : (
-              <span className="inline-flex items-center rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/50 ring-1 ring-white/15">
+              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-foreground/50 ring-1 ring-ring">
                 {goal.status === "achieved"
                   ? "Behaald"
                   : goal.status === "paused"
@@ -220,8 +220,8 @@ function GoalRow({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
               </span>
             )}
           </div>
-          <p className="mt-2 text-[15px] font-light tracking-tight text-white">{goal.title}</p>
-          <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+          <p className="mt-2 text-[15px] font-light tracking-tight text-foreground">{goal.title}</p>
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
             {[
               goal.targetDate ? `Streefdatum ${fmtDate(goal.targetDate)}` : null,
               goal.measure ? `Meetlat: ${goal.measure}` : null,
@@ -236,7 +236,7 @@ function GoalRow({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
             <button
               type="button"
               onClick={onEdit}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan transition-colors hover:text-accent-cyan"
             >
               Aanpassen
             </button>
@@ -246,7 +246,7 @@ function GoalRow({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
               onClick={() =>
                 update.mutate({ id: goal.id, input: { status: "achieved" } })
               }
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-300/70 transition-colors hover:text-emerald-300 disabled:opacity-40"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-positive)] transition-colors hover:text-[color:var(--color-positive)] disabled:opacity-40"
             >
               Behaald
             </button>
@@ -259,7 +259,7 @@ function GoalRow({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
                   input: { status: "dropped", statusReason: "Losgelaten door de sporter" },
                 })
               }
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35 transition-colors hover:text-white/60 disabled:opacity-40"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground/60 disabled:opacity-40"
             >
               Laat los
             </button>
@@ -272,9 +272,9 @@ function GoalRow({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
 
 function DerivedRow({ goal }: { goal: DerivedGoal }) {
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.6] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
           {goal.source === "race"
             ? "Uit je wedstrijden"
             : goal.source === "development_goal"
@@ -283,8 +283,8 @@ function DerivedRow({ goal }: { goal: DerivedGoal }) {
         </span>
         <VerdictBadge progress={goal.progress} />
       </div>
-      <p className="mt-2 text-[14px] font-light tracking-tight text-white/90">{goal.title}</p>
-      <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+      <p className="mt-2 text-[14px] font-light tracking-tight text-foreground/90">{goal.title}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
         {[goal.targetDate ? fmtDate(goal.targetDate) : null, goal.detail]
           .filter(Boolean)
           .join(" · ")}
@@ -324,21 +324,21 @@ function SliderGoalForm({
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.85] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-accent-cyan/20 bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
           Waar wil je aan werken?
         </span>
         <button
           type="button"
           onClick={onClose}
-          className="text-white/40 transition-colors hover:text-white/70"
+          className="text-muted-foreground transition-colors hover:text-foreground/70"
           aria-label="Sluiten"
         >
           <X className="h-4 w-4" strokeWidth={2} />
         </button>
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-white/50">{policy.description}</p>
+      <p className="mt-2 text-[12px] leading-relaxed text-foreground/50">{policy.description}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {policy.themes.map((t) => (
           <button
@@ -347,8 +347,8 @@ function SliderGoalForm({
             onClick={() => setTheme(t.key)}
             className={`rounded-full px-3 py-1.5 text-[12px] ring-1 transition-colors ${
               theme === t.key
-                ? "bg-cyan-300/15 text-cyan-300 ring-cyan-300/40"
-                : "text-white/55 ring-white/15 hover:text-white/80"
+                ? "bg-accent-cyan/15 text-accent-cyan ring-ring"
+                : "text-foreground/55 ring-ring hover:text-foreground/80"
             }`}
           >
             {t.label}
@@ -357,7 +357,7 @@ function SliderGoalForm({
       </div>
       {theme && (
         <div className="mt-4">
-          <div className="flex justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+          <div className="flex justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             <span>Klein beetje</span>
             <span>Heel graag</span>
           </div>
@@ -375,13 +375,13 @@ function SliderGoalForm({
         </div>
       )}
       {create.isError && (
-        <p className="mt-2 text-[12px] text-rose-300">Opslaan lukte niet. Probeer het opnieuw.</p>
+        <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">Opslaan lukte niet. Probeer het opnieuw.</p>
       )}
       <button
         type="button"
         onClick={submit}
         disabled={!theme || create.isPending}
-        className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 transition-colors hover:bg-cyan-300/25 disabled:opacity-40"
+        className="mt-3 rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring transition-colors hover:bg-accent-cyan/25 disabled:opacity-40"
       >
         {create.isPending ? "Bezig…" : "Dit wordt mijn doel"}
       </button>
@@ -429,12 +429,12 @@ function TranslateGoalFlow({
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.85] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-accent-cyan/20 bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
           Vertel het in je eigen woorden
         </span>
-        <button type="button" onClick={onClose} className="text-white/40 hover:text-white/70" aria-label="Sluiten">
+        <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground/70" aria-label="Sluiten">
           <X className="h-4 w-4" strokeWidth={2} />
         </button>
       </div>
@@ -445,18 +445,18 @@ function TranslateGoalFlow({
             onChange={(e) => setInput(e.target.value)}
             rows={2}
             placeholder="Bijv. ik wil sterker de bergen over komen"
-            className="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-3 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
           <div className="mt-3 flex items-center gap-3">
             <button
               type="button"
               onClick={() => ask([])}
               disabled={!input.trim() || translate.isPending}
-              className="rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+              className="rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring hover:bg-accent-cyan/25 disabled:opacity-40"
             >
               {translate.isPending ? "Bezig…" : "Maak er een doel van"}
             </button>
-            <button type="button" onClick={onManual} className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 hover:text-white/70">
+            <button type="button" onClick={onManual} className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground/70">
               Liever zelf invullen
             </button>
           </div>
@@ -464,12 +464,12 @@ function TranslateGoalFlow({
       )}
       {result?.status === "question" && (
         <>
-          <p className="mt-3 text-[14px] leading-relaxed text-white/85">{result.question}</p>
+          <p className="mt-3 text-[14px] leading-relaxed text-foreground/85">{result.question}</p>
           <input
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="Je antwoord"
-            className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
           <button
             type="button"
@@ -480,7 +480,7 @@ function TranslateGoalFlow({
               ask(h)
             }}
             disabled={!answer.trim() || translate.isPending}
-            className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+            className="mt-3 rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring hover:bg-accent-cyan/25 disabled:opacity-40"
           >
             {translate.isPending ? "Bezig…" : "Verder"}
           </button>
@@ -488,37 +488,37 @@ function TranslateGoalFlow({
       )}
       {result?.status === "proposal" && (
         <>
-          <p className="mt-3 text-[15px] font-light tracking-tight text-white">{result.goal.title}</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-white/60">
+          <p className="mt-3 text-[15px] font-light tracking-tight text-foreground">{result.goal.title}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-foreground/60">
             {[result.goal.measure, result.goal.targetValue, result.goal.targetDate ? fmtDate(result.goal.targetDate) : null]
               .filter(Boolean)
               .join(" · ") || "Zonder meetlat — die kun je later nog toevoegen."}
           </p>
           {result.fallback && (
-            <p className="mt-1.5 text-[12px] text-white/45">
+            <p className="mt-1.5 text-[12px] text-muted-foreground">
               Je wens was nog niet direct meetbaar; dit is het dichtstbijzijnde doel om mee te starten.
             </p>
           )}
           {create.isError && (
-            <p className="mt-2 text-[12px] text-rose-300">Opslaan lukte niet. Probeer het opnieuw.</p>
+            <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">Opslaan lukte niet. Probeer het opnieuw.</p>
           )}
           <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={confirm}
               disabled={create.isPending}
-              className="rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 hover:bg-cyan-300/25 disabled:opacity-40"
+              className="rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring hover:bg-accent-cyan/25 disabled:opacity-40"
             >
               {create.isPending ? "Bezig…" : "Ja, dit wordt mijn doel"}
             </button>
-            <button type="button" onClick={onManual} className="rounded-xl px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 ring-1 ring-white/15 hover:text-white/70">
+            <button type="button" onClick={onManual} className="rounded-xl px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-ring hover:text-foreground/70">
               Zelf aanpassen
             </button>
           </div>
         </>
       )}
       {translate.isError && !result && (
-        <p className="mt-2 text-[12px] text-rose-300">Vertalen lukte nu niet. Vul je doel anders zelf in.</p>
+        <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">Vertalen lukte nu niet. Vul je doel anders zelf in.</p>
       )}
     </div>
   )
@@ -560,15 +560,15 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.85] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-accent-cyan/20 bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
           Nieuw doel
         </span>
         <button
           type="button"
           onClick={onClose}
-          className="text-white/40 transition-colors hover:text-white/70"
+          className="text-muted-foreground transition-colors hover:text-foreground/70"
           aria-label="Sluiten"
         >
           <X className="h-4 w-4" strokeWidth={2} />
@@ -578,7 +578,7 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Wat wil je bereiken?"
-        className="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+        className="mt-3 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
       />
       <div className="mt-2.5 flex gap-2">
         {(Object.keys(HORIZON_LABEL) as Goal["horizon"][]).map((h) => (
@@ -588,8 +588,8 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
             onClick={() => setHorizon(h)}
             className={`rounded-full px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] ring-1 transition-colors ${
               horizon === h
-                ? "bg-cyan-300/15 text-cyan-300 ring-cyan-300/40"
-                : "text-white/45 ring-white/15 hover:text-white/70"
+                ? "bg-accent-cyan/15 text-accent-cyan ring-ring"
+                : "text-muted-foreground ring-ring hover:text-foreground/70"
             }`}
           >
             {HORIZON_LABEL[h]}
@@ -598,30 +598,30 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
       </div>
       <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className="block">
-          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             Streefdatum (optioneel)
           </span>
           <input
             type="date"
             value={targetDate}
             onChange={(e) => setTargetDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white focus:border-cyan-300/40 focus:outline-none [color-scheme:dark]"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground focus:border-accent-cyan/40 focus:outline-none [color-scheme:light]"
           />
         </label>
         <label className="block">
-          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             Waaraan merk je dat het gelukt is?
           </span>
           <input
             value={measure}
             onChange={(e) => setMeasure(e.target.value)}
             placeholder="Bijv. top-10 in de clubcompetitie"
-            className="mt-1 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
         </label>
       </div>
       {create.isError && (
-        <p className="mt-2 text-[12px] text-rose-300">
+        <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
           Opslaan lukte niet. Probeer het opnieuw.
         </p>
       )}
@@ -629,7 +629,7 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
         type="button"
         onClick={submit}
         disabled={!title.trim() || create.isPending}
-        className="mt-3 rounded-xl bg-cyan-300/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 transition-colors hover:bg-cyan-300/25 disabled:opacity-40"
+        className="mt-3 rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring transition-colors hover:bg-accent-cyan/25 disabled:opacity-40"
       >
         {create.isPending ? "Bezig…" : "Doel vastleggen"}
       </button>
@@ -655,12 +655,12 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
 
   if (isLoading) {
     return (
-      <p className="mt-3 text-[13px] text-white/40">Doelen worden geladen…</p>
+      <p className="mt-3 text-[13px] text-muted-foreground">Doelen worden geladen…</p>
     )
   }
   if (isError || !data) {
     return (
-      <p className="mt-3 text-[13px] text-white/50">
+      <p className="mt-3 text-[13px] text-foreground/50">
         Je doelen konden nu niet geladen worden. Probeer het straks opnieuw.
       </p>
     )
@@ -675,16 +675,16 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
       {data.proposals.map((p) => (
         <div
           key={p.id}
-          className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] p-4 backdrop-blur-md"
+          className="rounded-2xl border border-accent-cyan/20 bg-accent-cyan/10 p-4 backdrop-blur-md"
         >
-          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-cyan-300/80">
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-accent-cyan">
             Voorstel
           </span>
-          <p className="mt-2 text-[15px] font-light tracking-tight text-white">{p.title}</p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{p.reasoning}</p>
+          <p className="mt-2 text-[15px] font-light tracking-tight text-foreground">{p.title}</p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/60">{p.reasoning}</p>
           {/* DOE-35: bij een trainervoorstel is de consequentie vooraf helder. */}
           {p.kind === "goal_new" && (
-            <p className="mt-1.5 text-[12px] leading-relaxed text-cyan-200/70">
+            <p className="mt-1.5 text-[12px] leading-relaxed text-accent-cyan">
               Als je dit accepteert, ziet je trainer je doelen zolang dit doel bestaat.
               Jij houdt de regie: weigeren mag altijd, en je hoofddoel blijft van jou.
             </p>
@@ -694,7 +694,7 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
               type="button"
               disabled={decide.isPending}
               onClick={() => decide.mutate({ id: p.id, decision: "accepted" })}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-300/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/40 transition-colors hover:bg-cyan-300/25 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-accent-cyan/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring transition-colors hover:bg-accent-cyan/25 disabled:opacity-40"
             >
               <Check className="h-3 w-3" strokeWidth={2.5} /> Doorvoeren
             </button>
@@ -702,7 +702,7 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
               type="button"
               disabled={decide.isPending}
               onClick={() => decide.mutate({ id: p.id, decision: "rejected" })}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 ring-1 ring-white/15 transition-colors hover:text-white/70 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-ring transition-colors hover:text-foreground/70 disabled:opacity-40"
             >
               <X className="h-3 w-3" strokeWidth={2.5} /> Niet doen
             </button>
@@ -714,11 +714,11 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
           vraag: gaat hij over een bestaand doel, dan opent die dat doel om
           aan te passen; anders opent hij het formulier voor een nieuw doel. */}
       {data.nextQuestion && !adding && editingId === null && (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+        <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
             Eén vraag
           </span>
-          <p className="mt-2 text-[14px] leading-relaxed text-white/85">
+          <p className="mt-2 text-[14px] leading-relaxed text-foreground/85">
             {data.nextQuestion.question}
           </p>
           {data.nextQuestion.goalId != null &&
@@ -726,7 +726,7 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
             <button
               type="button"
               onClick={() => setEditingId(data.nextQuestion!.goalId)}
-              className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+              className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan transition-colors hover:text-accent-cyan"
             >
               Pas dit doel aan
             </button>
@@ -734,7 +734,7 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+              className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan transition-colors hover:text-accent-cyan"
             >
               <Plus className="h-3 w-3" strokeWidth={2.5} /> Leg je doel vast
             </button>
@@ -757,21 +757,21 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
       ))}
 
       {!hasAnything && !adding && (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+        <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-300/10 ring-1 ring-cyan-300/25">
-              <Target className="h-3.5 w-3.5 text-cyan-300" strokeWidth={2} />
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-cyan/10 ring-1 ring-ring">
+              <Target className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={2} />
             </span>
             <div>
-              <p className="text-[14px] font-medium text-white/90">Voeg je eerstvolgende doel toe</p>
+              <p className="text-[14px] font-medium text-foreground/90">Voeg je eerstvolgende doel toe</p>
               <button
                 type="button"
                 onClick={() => setAdding(true)}
-                className="mt-2.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+                className="mt-2.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan transition-colors hover:text-accent-cyan"
               >
                 <Plus className="h-3 w-3" strokeWidth={2.5} /> Leg je doel vast
               </button>
-              <p className="mt-2 text-[12px] leading-relaxed text-white/55">
+              <p className="mt-2 text-[12px] leading-relaxed text-foreground/55">
                 Dan wordt je training daaraan gemeten.
               </p>
               <GoalsEmptyWaarom />
@@ -784,7 +784,7 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1.5 self-start font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-cyan-300"
+          className="inline-flex items-center gap-1.5 self-start font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-accent-cyan"
         >
           <Plus className="h-3 w-3" strokeWidth={2.5} /> Doel toevoegen
         </button>

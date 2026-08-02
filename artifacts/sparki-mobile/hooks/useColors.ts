@@ -3,16 +3,13 @@ import { useColorScheme } from "react-native";
 import colors from "@/constants/colors";
 
 /**
- * Returns the design tokens for the current color scheme.
+ * Returns the design tokens plus scheme-independent values like `radius`.
  *
- * The returned object contains all color tokens for the active palette
- * plus scheme-independent values like `radius`.
- *
- * Falls back to the light palette when no dark key is defined in
- * constants/colors.ts (the scaffold ships light-only by default).
- * When a sibling web artifact's dark tokens are synced into a `dark`
- * key, this hook will automatically switch palettes based on the
- * device's appearance setting.
+ * Sparki heeft ÉÉN thema, licht (besluit LICHT_THEMA_01 — geen licht/donker-
+ * schakelaar). `colors.light` en `colors.dark` verwijzen daarom naar hetzelfde
+ * lichte palet; het device-schema maakt geen verschil. We laten de
+ * scheme-lookup staan zodat de vorm gelijk blijft, maar beide takken leveren
+ * hetzelfde palet — er is nooit een donkere variant.
  */
 export function useColors() {
   const scheme = useColorScheme();

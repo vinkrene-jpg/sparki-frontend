@@ -60,7 +60,7 @@ export function AnalysisFeedback({
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-[11px] text-white/35">Klopt dit?</span>
+        <span className="mr-1 text-[11px] text-muted-foreground">Klopt dit?</span>
         {verdicts.map((v) => {
           const active = current?.verdict === v
           return (
@@ -73,8 +73,8 @@ export function AnalysisFeedback({
               }
               className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-40 ${
                 active
-                  ? "border-cyan-300/60 text-cyan-200"
-                  : "border-white/12 text-white/60 hover:border-cyan-300/40 hover:text-cyan-200"
+                  ? "border-cyan-300/60 text-accent-cyan"
+                  : "border-border text-muted-foreground hover:border-cyan-300/40 hover:text-accent-cyan"
               }`}
             >
               {VERDICT_LABELS[v]}
@@ -84,7 +84,7 @@ export function AnalysisFeedback({
       </div>
       {pendingIncorrect && (
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <span className="mr-1 text-[11px] text-white/35">
+          <span className="mr-1 text-[11px] text-muted-foreground">
             Wat klopt er niet?
           </span>
           {REASONS.map((r) => (
@@ -93,7 +93,7 @@ export function AnalysisFeedback({
               type="button"
               disabled={give.isPending}
               onClick={() => send("onjuist", r.code)}
-              className="rounded-full border border-rose-300/25 px-2.5 py-1 text-[11px] text-rose-100/70 transition-colors hover:border-rose-300/50 hover:text-rose-100 disabled:opacity-40"
+              className="rounded-full border border-rose-300/25 px-2.5 py-1 text-[11px] text-[color:var(--color-negative)] transition-colors hover:border-rose-300/50 hover:text-[color:var(--color-negative)] disabled:opacity-40"
             >
               {r.label}
             </button>
@@ -101,7 +101,7 @@ export function AnalysisFeedback({
         </div>
       )}
       {current && !pendingIncorrect && (
-        <p className="mt-1 text-[11px] text-white/30">
+        <p className="mt-1 text-[11px] text-muted-foreground">
           Jouw oordeel: {VERDICT_LABELS[current.verdict] ?? current.verdict}
           {current.reasonCode
             ? ` — ${REASONS.find((r) => r.code === current.reasonCode)?.label ?? ""}`
@@ -109,7 +109,7 @@ export function AnalysisFeedback({
         </p>
       )}
       {give.isError && (
-        <p className="mt-1 text-[11px] text-rose-300/80">
+        <p className="mt-1 text-[11px] text-[color:var(--color-negative)]">
           Opslaan lukte niet. Probeer het zo nog eens.
         </p>
       )}

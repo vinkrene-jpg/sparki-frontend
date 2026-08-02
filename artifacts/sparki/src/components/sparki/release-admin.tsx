@@ -99,19 +99,19 @@ const K = {
 };
 
 const cardCls =
-  "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md";
+  "rounded-xl border border-border bg-card p-3.5 backdrop-blur-md";
 const labelCls =
-  "font-mono text-[10px] uppercase tracking-[0.18em] text-white/40";
+  "font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground";
 const inputCls =
-  "rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40";
+  "rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/90 placeholder-white/25 outline-none focus:border-accent-cyan";
 const btnCls =
-  "rounded-lg border border-cyan-300/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300 transition hover:bg-cyan-300/10 disabled:opacity-40";
+  "rounded-lg border border-accent-cyan px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan transition hover:bg-accent-cyan disabled:opacity-40";
 
 function SectionHead({ title, sub }: { title: string; sub?: string }) {
   return (
     <div>
       <p className={labelCls}>{title}</p>
-      {sub && <p className="mt-1 text-[12px] leading-snug text-white/40">{sub}</p>}
+      {sub && <p className="mt-1 text-[12px] leading-snug text-muted-foreground">{sub}</p>}
     </div>
   );
 }
@@ -130,7 +130,7 @@ function GroupPicker({
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-lg border border-white/[0.12] bg-[#0a1220] px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/70 outline-none"
+      className="rounded-lg border border-border bg-card px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground outline-none"
     >
       {RELEASE_GROUPS.map((g) => (
         <option key={g} value={g}>
@@ -149,10 +149,10 @@ function OperationsBoard() {
     staleTime: 30_000,
   });
   if (ops.isLoading)
-    return <p className="text-[12px] text-white/30">Beheerbord laden…</p>;
+    return <p className="text-[12px] text-muted-foreground">Beheerbord laden…</p>;
   if (ops.isError || !ops.data)
     return (
-      <p className="text-[12px] text-red-300/80">
+      <p className="text-[12px] text-[color:var(--color-negative)]">
         Het beheerbord kon niet geladen worden.
       </p>
     );
@@ -163,10 +163,10 @@ function OperationsBoard() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {d.releaseGroupCounts.map((c) => (
           <div key={c.group} className={cardCls}>
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
               {GROUP_LABEL[c.group] ?? c.group}
             </p>
-            <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-white/70">
+            <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-muted-foreground">
               {c.users}
             </p>
           </div>
@@ -174,7 +174,7 @@ function OperationsBoard() {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className={cardCls}>
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
             Kritieke fouten (24 uur)
           </p>
           <p
@@ -185,7 +185,7 @@ function OperationsBoard() {
           </p>
         </div>
         <div className={cardCls}>
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
             Actieve kill switches
           </p>
           <p
@@ -198,16 +198,16 @@ function OperationsBoard() {
       </div>
       {d.recentAudit.length > 0 && (
         <div className={cardCls}>
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
             Recente beheeracties
           </p>
           <div className="mt-2 space-y-1.5">
             {d.recentAudit.slice(0, 8).map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-3">
-                <span className="truncate font-mono text-[10px] text-white/55">
+                <span className="truncate font-mono text-[10px] text-muted-foreground">
                   {a.event.replace(/_/g, " ")}
                 </span>
-                <span className="shrink-0 font-mono text-[9px] text-white/30">
+                <span className="shrink-0 font-mono text-[9px] text-muted-foreground">
                   {formatWhen(a.at)}
                 </span>
               </div>
@@ -237,14 +237,14 @@ function KillSwitches() {
       void qc.invalidateQueries({ queryKey: K.ops });
     },
   });
-  if (list.isLoading) return <p className="text-[12px] text-white/30">Laden…</p>;
+  if (list.isLoading) return <p className="text-[12px] text-muted-foreground">Laden…</p>;
   return (
     <div className="space-y-2">
       {(list.data?.switches ?? []).map((s) => (
         <div key={s.key} className={`${cardCls} flex items-center justify-between gap-3`}>
           <div className="min-w-0">
-            <p className="text-[13px] text-white/85">{s.label}</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+            <p className="text-[13px] text-foreground/90">{s.label}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
               {s.key}
               {s.active && s.reason ? ` · ${s.reason}` : ""}
             </p>
@@ -303,10 +303,10 @@ function Versions() {
     <div className="space-y-2">
       {rows.map(({ platform, current }) => (
         <div key={platform} className={`${cardCls} flex flex-wrap items-center gap-3`}>
-          <span className="w-16 font-mono text-[10px] uppercase tracking-[0.12em] text-white/50">
+          <span className="w-16 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
             {platform}
           </span>
-          <span className="text-[12px] text-white/40">
+          <span className="text-[12px] text-muted-foreground">
             Minimaal: {current?.minVersion ?? "geen eis"}
           </span>
           <input
@@ -328,7 +328,7 @@ function Versions() {
         </div>
       ))}
       {save.isError && (
-        <p className="text-[12px] text-red-300/80">
+        <p className="text-[12px] text-[color:var(--color-negative)]">
           {save.error instanceof Error ? save.error.message : "Opslaan mislukt."}
         </p>
       )}
@@ -383,7 +383,7 @@ function PilotManagement() {
         <select
           value={groupFilter}
           onChange={(e) => setGroupFilter(e.target.value)}
-          className="rounded-lg border border-white/[0.12] bg-[#0a1220] px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/70 outline-none"
+          className="rounded-lg border border-border bg-card px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground outline-none"
         >
           <option value="">Alle groepen</option>
           {RELEASE_GROUPS.map((g) => (
@@ -395,17 +395,17 @@ function PilotManagement() {
       </div>
       <div className="space-y-2">
         {users.isLoading ? (
-          <p className="text-[12px] text-white/30">Gebruikers laden…</p>
+          <p className="text-[12px] text-muted-foreground">Gebruikers laden…</p>
         ) : (users.data?.users ?? []).length === 0 ? (
-          <p className="text-[12px] text-white/30">Geen gebruikers gevonden.</p>
+          <p className="text-[12px] text-muted-foreground">Geen gebruikers gevonden.</p>
         ) : (
           (users.data?.users ?? []).slice(0, 25).map((u) => (
             <div key={u.clerkId} className={`${cardCls} flex items-center justify-between gap-3`}>
               <div className="min-w-0">
-                <p className="truncate text-[13px] text-white/85">
+                <p className="truncate text-[13px] text-foreground/90">
                   {u.displayName ?? u.email ?? u.clerkId}
                 </p>
-                <p className="truncate font-mono text-[9px] text-white/30">
+                <p className="truncate font-mono text-[9px] text-muted-foreground">
                   {u.email ?? ""} · {u.roles.join(", ")}
                 </p>
               </div>
@@ -420,13 +420,13 @@ function PilotManagement() {
       </div>
       {(clubs.data?.clubs ?? []).length > 0 && (
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
             Clubs
           </p>
           <div className="mt-2 space-y-2">
             {(clubs.data?.clubs ?? []).map((c) => (
               <div key={c.id} className={`${cardCls} flex items-center justify-between gap-3`}>
-                <p className="truncate text-[13px] text-white/85">{c.name}</p>
+                <p className="truncate text-[13px] text-foreground/90">{c.name}</p>
                 <GroupPicker
                   value={c.releaseGroup}
                   disabled={setClubGroup.isPending}
@@ -466,10 +466,10 @@ function ErrorGroups() {
       setOpenId(null);
     },
   });
-  if (list.isLoading) return <p className="text-[12px] text-white/30">Laden…</p>;
+  if (list.isLoading) return <p className="text-[12px] text-muted-foreground">Laden…</p>;
   const groups = list.data?.groups ?? [];
   if (groups.length === 0)
-    return <p className="text-[12px] text-white/30">Nog geen fouten geregistreerd.</p>;
+    return <p className="text-[12px] text-muted-foreground">Nog geen fouten geregistreerd.</p>;
   return (
     <div className="space-y-2">
       {groups.slice(0, 20).map((g) => (
@@ -480,7 +480,7 @@ function ErrorGroups() {
             onClick={() => setOpenId(openId === g.id ? null : g.id)}
           >
             <div className="flex items-start justify-between gap-3">
-              <p className="min-w-0 flex-1 truncate text-[13px] text-white/85">
+              <p className="min-w-0 flex-1 truncate text-[13px] text-foreground/90">
                 {g.message}
               </p>
               <span
@@ -496,25 +496,25 @@ function ErrorGroups() {
                 {g.resolvedAt ? "Opgelost" : g.severity}
               </span>
             </div>
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
               {g.count}× · {g.affectedUsers ?? 0} gebruikers · {g.platform ?? "?"} ·{" "}
               {g.screen ?? "onbekend scherm"} · laatst {formatWhen(g.lastSeenAt)}
             </p>
           </button>
           {openId === g.id && (
-            <div className="mt-3 border-t border-white/[0.06] pt-3">
+            <div className="mt-3 border-t border-border pt-3">
               {detail.isLoading ? (
-                <p className="text-[12px] text-white/30">Details laden…</p>
+                <p className="text-[12px] text-muted-foreground">Details laden…</p>
               ) : (
                 <>
                   {(detail.data?.events ?? []).slice(0, 5).map((e) => (
                     <div key={e.id} className="mb-2">
-                      <p className="font-mono text-[9px] text-white/35">
+                      <p className="font-mono text-[9px] text-muted-foreground">
                         {formatWhen(e.at)} · versie {e.appVersion ?? "?"} · groep{" "}
                         {e.releaseGroup ?? "?"}
                       </p>
                       {e.stack && (
-                        <pre className="mt-1 max-h-24 overflow-auto rounded bg-black/40 p-2 font-mono text-[9px] leading-snug text-white/40">
+                        <pre className="mt-1 max-h-24 overflow-auto rounded bg-muted p-2 font-mono text-[9px] leading-snug text-muted-foreground">
                           {e.stack}
                         </pre>
                       )}
@@ -546,11 +546,11 @@ function RolloutGuards() {
     queryKey: K.guards,
     queryFn: () => apiFetch<{ guards: Guard[] }>("/api/release/admin/guards"),
   });
-  if (list.isLoading) return <p className="text-[12px] text-white/30">Laden…</p>;
+  if (list.isLoading) return <p className="text-[12px] text-muted-foreground">Laden…</p>;
   const guards = list.data?.guards ?? [];
   if (guards.length === 0)
     return (
-      <p className="text-[12px] text-white/30">
+      <p className="text-[12px] text-muted-foreground">
         Nog geen uitrolbewaking ingesteld. Een bewaking stopt een uitrol
         automatisch wanneer te veel kritieke fouten binnenkomen.
       </p>
@@ -560,8 +560,8 @@ function RolloutGuards() {
       {guards.map((g) => (
         <div key={g.flagKey} className={`${cardCls} flex items-center justify-between gap-3`}>
           <div className="min-w-0">
-            <p className="text-[13px] text-white/85">{g.flagKey}</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+            <p className="text-[13px] text-foreground/90">{g.flagKey}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
               Stop bij {g.errorThreshold} kritieke fouten in {g.windowMinutes} min
               {g.lastTrippedAt ? ` · laatst gestopt ${formatWhen(g.lastTrippedAt)}` : ""}
             </p>
@@ -628,7 +628,7 @@ function ReleaseNotesAdmin() {
           {create.isPending ? "Bezig…" : "Publiceer bericht"}
         </button>
         {create.isError && (
-          <p className="mt-2 text-[12px] text-red-300/80">
+          <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
             {create.error instanceof Error ? create.error.message : "Mislukt."}
           </p>
         )}
@@ -636,8 +636,8 @@ function ReleaseNotesAdmin() {
       {(list.data?.notes ?? []).slice(0, 8).map((n) => (
         <div key={n.id} className={`${cardCls} flex items-start justify-between gap-3`}>
           <div className="min-w-0">
-            <p className="truncate text-[13px] text-white/85">{n.title}</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+            <p className="truncate text-[13px] text-foreground/90">{n.title}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
               {n.publishedAt ? `Gepubliceerd ${formatWhen(n.publishedAt)}` : "Concept"}
             </p>
           </div>
@@ -675,7 +675,7 @@ function RollbackLog() {
   });
   return (
     <div className={cardCls}>
-      <p className="text-[12px] leading-snug text-white/40">
+      <p className="text-[12px] leading-snug text-muted-foreground">
         Terugdraaien gebeurt door het vorige, werkende checkpoint opnieuw te
         publiceren. Leg het besluit hier vast zodat de geschiedenis klopt.
       </p>
@@ -695,7 +695,7 @@ function RollbackLog() {
       </button>
       {saved && <p className="mt-2 text-[12px]" style={{ color: ACCENT }}>Vastgelegd.</p>}
       {record.isError && (
-        <p className="mt-2 text-[12px] text-red-300/80">
+        <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
           {record.error instanceof Error ? record.error.message : "Mislukt."}
         </p>
       )}

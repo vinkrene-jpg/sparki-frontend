@@ -38,17 +38,17 @@ export function GoalContextLine() {
     <button
       type="button"
       onClick={() => navigate("/you?focus=doelen")}
-      className="group mt-3 flex w-full items-center gap-2 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-2.5 text-left backdrop-blur-md transition-colors hover:border-white/[0.16]"
+      className="group mt-3 flex w-full items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-left backdrop-blur-md transition-colors hover:border-border"
     >
       <Target className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />
-      <span className="min-w-0 flex-1 truncate text-[12px] leading-relaxed text-white/70">
+      <span className="min-w-0 flex-1 truncate text-[12px] leading-relaxed text-foreground/70">
         Deze training werkt toe naar:{" "}
-        <span className="text-white/90">{goal.title}</span>
+        <span className="text-foreground/90">{goal.title}</span>
         {daysLabel ? (
-          <span className="text-white/45">, {daysLabel}</span>
+          <span className="text-muted-foreground">, {daysLabel}</span>
         ) : null}
       </span>
-      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/30 transition-transform group-hover:translate-x-0.5" />
+      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </button>
   )
 }

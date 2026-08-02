@@ -63,15 +63,15 @@ type Detail = {
 };
 
 const cardCls =
-  "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md";
+  "rounded-xl border border-border bg-card p-3.5 backdrop-blur-md";
 const labelCls =
-  "font-mono text-[10px] uppercase tracking-[0.18em] text-white/40";
+  "font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground";
 const inputCls =
-  "rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40";
+  "rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground/85 placeholder-white/25 outline-none focus:border-accent-cyan/40";
 const btnCls =
-  "rounded-lg border border-cyan-300/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300 transition hover:bg-cyan-300/10 disabled:opacity-40";
+  "rounded-lg border border-accent-cyan/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan transition hover:bg-accent-cyan/10 disabled:opacity-40";
 const selectCls =
-  "rounded-lg border border-white/[0.1] bg-[#070d16] px-2 py-1.5 text-[12px] text-white/85 outline-none focus:border-cyan-300/40";
+  "rounded-lg border border-border bg-card px-2 py-1.5 text-[12px] text-foreground/85 outline-none focus:border-accent-cyan/40";
 
 export function EntitlementsAdminSection() {
   const qc = useQueryClient();
@@ -168,7 +168,7 @@ export function EntitlementsAdminSection() {
   return (
     <div className={cardCls} id="rechtenbeheer" ref={rootRef}>
       <p className={labelCls}>Rechtenbeheer (abonnementsfundament)</p>
-      <p className="mt-1 text-[12px] leading-snug text-white/40">
+      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
         Commerciële rechten staan los van de operationele functieschakelaars.
         Bestaande gebruikers houden hun huidige toegang; de abonnementsmodus is
         pas bruikbaar zodra varianten bewust gevuld worden.
@@ -184,14 +184,14 @@ export function EntitlementsAdminSection() {
       </div>
 
       {usersQ.isLoading && (
-        <p className="mt-2 flex items-center gap-2 text-[12px] text-white/40">
+        <p className="mt-2 flex items-center gap-2 text-[12px] text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> Bezig…
         </p>
       )}
       {usersQ.data && (
         <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">
           {usersQ.data.users.length === 0 && (
-            <p className="text-[12px] text-white/40">Geen gebruikers gevonden.</p>
+            <p className="text-[12px] text-muted-foreground">Geen gebruikers gevonden.</p>
           )}
           {usersQ.data.users.map((u) => (
             <button
@@ -199,14 +199,14 @@ export function EntitlementsAdminSection() {
               onClick={() => selectUser(u)}
               className={`block w-full rounded-lg border px-3 py-2 text-left text-[12px] transition ${
                 selected === u.clerk_id
-                  ? "border-cyan-300/40 bg-cyan-300/10 text-white/90"
-                  : "border-white/[0.06] text-white/60 hover:bg-white/[0.04]"
+                  ? "border-accent-cyan/40 bg-accent-cyan/10 text-foreground/90"
+                  : "border-border text-muted-foreground hover:bg-muted"
               }`}
             >
               <span className="font-medium">
                 {u.display_name || u.email || u.clerk_id}
               </span>{" "}
-              <span className="text-white/35">
+              <span className="text-muted-foreground">
                 — {MODE_LABEL[u.entitlement_mode] ?? u.entitlement_mode}
                 {u.product_variant
                   ? ` · ${VARIANT_LABEL[u.product_variant] ?? u.product_variant}`
@@ -218,7 +218,7 @@ export function EntitlementsAdminSection() {
       )}
 
       {selected && (
-        <div className="mt-4 space-y-4 border-t border-white/[0.08] pt-3">
+        <div className="mt-4 space-y-4 border-t border-border pt-3">
           <div>
             <p className={labelCls}>Modus en variant</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -311,12 +311,12 @@ export function EntitlementsAdminSection() {
           <div>
             <p className={labelCls}>Toegekende rechten</p>
             {detailQ.isLoading && (
-              <p className="mt-2 flex items-center gap-2 text-[12px] text-white/40">
+              <p className="mt-2 flex items-center gap-2 text-[12px] text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" /> Bezig…
               </p>
             )}
             {detailQ.data && detailQ.data.entitlements.length === 0 && (
-              <p className="mt-2 text-[12px] text-white/40">
+              <p className="mt-2 text-[12px] text-muted-foreground">
                 Nog geen persoonlijke rechten.
               </p>
             )}
@@ -325,11 +325,11 @@ export function EntitlementsAdminSection() {
                 {detailQ.data.entitlements.map((e) => (
                   <div
                     key={e.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] px-3 py-2 text-[12px]"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-[12px]"
                   >
-                    <span className="text-white/70">
+                    <span className="text-muted-foreground">
                       {e.entitlementKey}{" "}
-                      <span className="text-white/35">
+                      <span className="text-muted-foreground">
                         · {TYPE_LABEL[e.entitlementType] ?? e.entitlementType} ·{" "}
                         {e.status === "active"
                           ? e.endsAt && new Date(e.endsAt) <= new Date()
@@ -365,7 +365,7 @@ export function EntitlementsAdminSection() {
           </div>
 
           {message && (
-            <p className="text-[12px] text-cyan-300/80">{message}</p>
+            <p className="text-[12px] text-accent-cyan">{message}</p>
           )}
         </div>
       )}

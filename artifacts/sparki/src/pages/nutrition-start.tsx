@@ -17,12 +17,12 @@ export default function NutritionSpecialistHome() {
     <ScreenShell section="Voeding" terug={false}>
       <div className="space-y-4" data-testid="nutrition-start">
         <SectionLabel title="Jouw sporters" />
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-          <p className="text-sm text-white/75">{start.leeg!.ontbreekt}</p>
-          <p className="mt-2 text-sm text-white/45">{start.leeg!.wieLostOp}</p>
+        <div className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
+          <p className="text-sm text-foreground/75">{start.leeg!.ontbreekt}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{start.leeg!.wieLostOp}</p>
           <Link
             href={start.leeg!.vervolgstap.href}
-            className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-300/90 hover:text-cyan-200"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm text-accent-cyan hover:text-accent-cyan"
             data-testid="nutrition-vervolgstap"
           >
             {start.leeg!.vervolgstap.label}

@@ -40,7 +40,7 @@ export default function MeerPage() {
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
 
         <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Meer</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Meer</h1>
           <p className="mt-1 type-body text-content-secondary">
             Alle overige onderdelen van Sparki.
           </p>
@@ -53,7 +53,7 @@ export default function MeerPage() {
         <section className="mb-6">
           <div className="mb-3 flex items-center gap-2">
             <Settings className="h-4 w-4 text-content-secondary" strokeWidth={1.75} />
-            <h2 className="type-title-card text-white/80">Instellingen</h2>
+            <h2 className="type-title-card text-foreground/80">Instellingen</h2>
           </div>
           <div className="flex flex-wrap gap-2.5">
             <button

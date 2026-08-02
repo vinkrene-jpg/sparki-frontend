@@ -164,19 +164,19 @@ export function ShareRidePanel({
   }
 
   const btn =
-    "inline-flex items-center gap-1.5 rounded-full border border-white/[0.14] px-3.5 py-2 font-mono text-[11px] tracking-wide text-white/80 transition-colors hover:border-white/30 hover:text-white disabled:opacity-40"
+    "inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 font-mono text-[11px] tracking-wide text-foreground/80 transition-colors hover:border-border hover:text-foreground disabled:opacity-40"
 
   return (
-    <div className="mt-6 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-4">
-      <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+    <div className="mt-6 rounded-xl border border-border bg-muted px-4 py-4">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
         DEEL DEZE RIT
       </span>
 
       {isLoading && (
-        <p className="mt-3 text-[13px] text-white/45">Deeltekst wordt opgesteld…</p>
+        <p className="mt-3 text-[13px] text-muted-foreground">Deeltekst wordt opgesteld…</p>
       )}
       {isError && (
-        <p className="mt-3 text-[13px] text-white/60">
+        <p className="mt-3 text-[13px] text-muted-foreground">
           De deeltekst kon nu niet worden opgesteld. Probeer het later opnieuw.
         </p>
       )}
@@ -187,7 +187,7 @@ export function ShareRidePanel({
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
-            className="mt-3 w-full resize-none rounded-lg border border-white/[0.1] bg-black/30 px-3 py-2.5 text-[13px] leading-relaxed text-white/90 outline-none focus:border-cyan-300/40"
+            className="mt-3 w-full resize-none rounded-lg border border-border bg-muted px-3 py-2.5 text-[13px] leading-relaxed text-foreground/90 outline-none focus:border-accent-cyan"
             aria-label="Deeltekst"
           />
 
@@ -213,7 +213,7 @@ export function ShareRidePanel({
           </div>
 
           {/* Strava — officiële upload of eerlijke reden waarom niet */}
-          <div className="mt-4 border-t border-white/[0.06] pt-3.5">
+          <div className="mt-4 border-t border-border pt-3.5">
             {info.capabilities.strava.canUpload ? (
               strava.isSuccess ? (
                 <a
@@ -240,12 +240,12 @@ export function ShareRidePanel({
                 </button>
               )
             ) : (
-              <p className="text-[12px] leading-relaxed text-white/45">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
                 {info.capabilities.strava.reason}
               </p>
             )}
             {strava.isError && (
-              <p className="mt-2 text-[12px] text-amber-300/80">
+              <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">
                 {strava.error instanceof Error
                   ? strava.error.message
                   : "Uploaden naar Strava is niet gelukt."}
@@ -253,11 +253,11 @@ export function ShareRidePanel({
             )}
           </div>
 
-          <p className="mt-3 text-[11px] leading-relaxed text-white/35">
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
             {info.capabilities.platformNote}
           </p>
           {shareError && (
-            <p className="mt-2 text-[12px] text-amber-300/80">{shareError}</p>
+            <p className="mt-2 text-[12px] text-[color:var(--color-warning)]">{shareError}</p>
           )}
         </>
       )}

@@ -12,12 +12,12 @@ export function TeamMeetingPlanner({ race }: { race: Race }) {
   if (!plan) return null
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground">
           TEAM MEETING PLANNER
         </span>
-        <span className="font-mono text-[8px] tracking-[0.18em] text-white/30">
+        <span className="font-mono text-[8px] tracking-[0.18em] text-muted-foreground">
           GESCHATTE TIJDEN
         </span>
       </div>
@@ -29,18 +29,18 @@ export function TeamMeetingPlanner({ race }: { race: Race }) {
       </div>
 
       <div className="mt-4 space-y-2">
-        <span className="font-mono text-[9px] tracking-[0.2em] text-white/35">
+        <span className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
           PER RENNER
         </span>
         {plan.riders.map((r) => (
           <div
             key={r.id}
-            className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.015] px-3 py-2.5"
+            className="flex items-center justify-between rounded-xl border border-border bg-muted px-3 py-2.5"
           >
             <div className="min-w-0">
-              <p className="truncate text-[13px] text-white/80">{r.name}</p>
+              <p className="truncate text-[13px] text-foreground/80">{r.name}</p>
               {r.startLocation && (
-                <p className="truncate text-[11px] text-white/35">{r.startLocation}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{r.startLocation}</p>
               )}
             </div>
             <div className="flex items-center gap-2 pl-3">
@@ -71,8 +71,8 @@ function Tile({
   mono?: boolean
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-2.5 text-center">
-      <span className="block font-mono text-[8px] tracking-[0.14em] text-white/35">
+    <div className="rounded-xl border border-border bg-muted p-2.5 text-center">
+      <span className="block font-mono text-[8px] tracking-[0.14em] text-muted-foreground">
         {label.toUpperCase()}
       </span>
       <span

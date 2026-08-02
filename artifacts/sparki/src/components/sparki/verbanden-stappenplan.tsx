@@ -24,11 +24,11 @@ export function VerbandenStappenplan({ accent = "#22d3ee" }: { accent?: string }
   const [, navigate] = useLocation()
 
   if (readiness.isLoading) {
-    return <div className="h-24 animate-pulse rounded-xl bg-white/5" />
+    return <div className="h-24 animate-pulse rounded-xl bg-muted" />
   }
   if (!readiness.data) {
     return (
-      <p className="text-[13px] text-white/55">
+      <p className="text-[13px] text-muted-foreground">
         De datastatus kon niet worden geladen. Probeer het zo nog eens.
       </p>
     )
@@ -39,7 +39,7 @@ export function VerbandenStappenplan({ accent = "#22d3ee" }: { accent?: string }
 
   return (
     <div className="space-y-3">
-      <p className="text-pretty text-[13px] leading-relaxed text-white/60">
+      <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
         {analyseMogelijk
           ? "Er is genoeg data om te zoeken. Een verband is niet gegarandeerd — hoe meer van de stappen hieronder compleet zijn, hoe meer er te vergelijken valt."
           : `Er zijn nog geen patronen omdat er te weinig data is om te vergelijken. Dit is er nodig (laatste ${windowDays} dagen):`}
@@ -55,7 +55,7 @@ export function VerbandenStappenplan({ accent = "#22d3ee" }: { accent?: string }
                   "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold tabular-nums",
                   s.klaar
                     ? "border-transparent text-[#040506]"
-                    : "border-white/25 text-white/60",
+                    : "border-border text-muted-foreground",
                 )}
                 style={s.klaar ? { background: accent } : undefined}
                 aria-hidden
@@ -63,19 +63,19 @@ export function VerbandenStappenplan({ accent = "#22d3ee" }: { accent?: string }
                 {s.klaar ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-white/85">
+                <p className="text-[13px] font-medium text-foreground/80">
                   {s.titel}{" "}
-                  <span className={cn("tabular-nums", s.klaar ? "text-white/45" : "text-white/70")}>
+                  <span className={cn("tabular-nums", s.klaar ? "text-muted-foreground" : "text-muted-foreground")}>
                     — {Math.min(s.heb, s.nodig)} van {s.nodig}
                     {s.heb > s.nodig ? " ✓" : ""}
                   </span>
                 </p>
-                <p className="text-pretty text-xs leading-relaxed text-white/50">{s.uitleg}</p>
+                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">{s.uitleg}</p>
                 {!s.klaar && eersteOpen?.id === s.id && (
                   <button
                     type="button"
                     onClick={() => navigate(actie.route)}
-                    className="mt-1.5 rounded-lg border border-white/20 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:border-white/40 hover:text-white"
+                    className="mt-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground/80 transition-colors hover:border-border hover:text-foreground"
                   >
                     {actie.label}
                   </button>
@@ -103,7 +103,7 @@ export function VerbandenStappenplan({ accent = "#22d3ee" }: { accent?: string }
         </button>
       )}
       {runConnections.isSuccess && runConnections.data.derived === 0 && (
-        <p className="text-xs leading-relaxed text-white/50">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           De analyse is uitgevoerd, maar er kwam nog geen betrouwbaar verband uit
           je data. Met meer van de stappen hierboven groeit de kans dat er wél
           iets zichtbaar wordt.

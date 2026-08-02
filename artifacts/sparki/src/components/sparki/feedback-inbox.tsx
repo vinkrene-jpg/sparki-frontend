@@ -37,8 +37,8 @@ function FilterPill({
       onClick={onClick}
       className="rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition"
       style={{
-        borderColor: active ? ACCENT : "rgba(255,255,255,0.1)",
-        color: active ? ACCENT : "rgba(255,255,255,0.45)",
+        borderColor: active ? ACCENT : "var(--color-border)",
+        color: active ? ACCENT : "var(--color-muted-foreground)",
         background: active ? "rgba(120,210,230,0.08)" : "transparent",
       }}
     >
@@ -55,7 +55,7 @@ function ReportCard({ r }: { r: BugReport }) {
   const meta = STATUS_META[status];
 
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.6] p-3 backdrop-blur-md">
+    <div className="rounded-xl border border-border bg-card p-3 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-1.5">
           <span
@@ -71,20 +71,20 @@ function ReportCard({ r }: { r: BugReport }) {
             {meta.label}
           </span>
         </div>
-        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
           {formatWhen(r.createdAt)}
         </span>
       </div>
 
-      <p className="mt-2 text-[13px] leading-snug text-white/85">
+      <p className="mt-2 text-[13px] leading-snug text-foreground/85">
         {r.description}
       </p>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
         <span>{r.reporterName ?? "Onbekend"}</span>
         {r.userRole && <span>· {r.userRole}</span>}
         {r.pageUrl && (
-          <span className="normal-case tracking-normal text-white/25">
+          <span className="normal-case tracking-normal text-muted-foreground">
             · {r.pageUrl}
           </span>
         )}
@@ -100,13 +100,13 @@ function ReportCard({ r }: { r: BugReport }) {
           <img
             src={r.screenshotUrl}
             alt="Schermafbeelding bij melding"
-            className="max-h-32 rounded-lg border border-white/10 object-cover"
+            className="max-h-32 rounded-lg border border-border object-cover"
           />
         </a>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
           Status:
         </span>
         {STATUS_ORDER.map((s) => {
@@ -120,8 +120,8 @@ function ReportCard({ r }: { r: BugReport }) {
               onClick={() => update.mutate({ id: r.id, status: s })}
               className="rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition disabled:cursor-default disabled:opacity-100"
               style={{
-                borderColor: isCurrent ? sm.color : "rgba(255,255,255,0.1)",
-                color: isCurrent ? sm.color : "rgba(255,255,255,0.5)",
+                borderColor: isCurrent ? sm.color : "var(--color-border)",
+                color: isCurrent ? sm.color : "var(--color-muted-foreground)",
                 background: isCurrent ? sm.bg : "transparent",
                 opacity: update.isPending && !isCurrent ? 0.4 : undefined,
               }}
@@ -140,7 +140,7 @@ function ReportCard({ r }: { r: BugReport }) {
       <button
         type="button"
         onClick={() => setThreadOpen((v) => !v)}
-        className="mt-3 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/40 transition hover:text-cyan-300"
+        className="mt-3 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:text-accent-cyan"
       >
         <MessagesSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
         {threadOpen ? "Gesprek sluiten" : "Reageren / vraag stellen"}
@@ -185,16 +185,16 @@ export function FeedbackInbox({ reports }: { reports: BugReport[] }) {
 
   return (
     <section className="mt-6">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         Feedback van testers ({reports.length})
       </p>
-      <p className="mt-1 text-[12px] text-white/35">
+      <p className="mt-1 text-[12px] text-muted-foreground">
         Bugs, ideeën en opmerkingen op één plek. Filter en zet elke melding op
         de juiste status.
       </p>
 
       {reports.length === 0 ? (
-        <p className="mt-3 text-[12px] text-white/30">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           Nog geen feedback ontvangen.
         </p>
       ) : (
@@ -237,7 +237,7 @@ export function FeedbackInbox({ reports }: { reports: BugReport[] }) {
 
           <div className="mt-3 space-y-2">
             {filtered.length === 0 ? (
-              <p className="text-[12px] text-white/30">
+              <p className="text-[12px] text-muted-foreground">
                 Geen meldingen met deze filters.
               </p>
             ) : (

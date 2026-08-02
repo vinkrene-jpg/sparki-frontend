@@ -58,9 +58,9 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })
 }
 
-const CARD = "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3.5 py-3 backdrop-blur-md"
-const EMPTY = "rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45"
-const H2 = "mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-white/40"
+const CARD = "rounded-xl border border-border bg-card px-3.5 py-3 backdrop-blur-md"
+const EMPTY = "rounded-xl border border-border bg-card px-3.5 py-3 text-[12px] text-muted-foreground"
+const H2 = "mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground"
 
 const CONSENT_SCOPES: { key: string; label: string }[] = [
   { key: "training_summary", label: "Samenvatting" },
@@ -97,14 +97,14 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
     <div className={CARD}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-[13px] text-white/85">{t.title}</p>
-          <p className="text-[11px] text-white/40">
+          <p className="truncate text-[13px] text-foreground/85">{t.title}</p>
+          <p className="text-[11px] text-muted-foreground">
             {formatDate(t.trainingDate)}
             {t.startTime ? ` · ${t.startTime}` : ""}
             {t.location ? ` · ${t.location}` : ""}
             {t.durationMin ? ` · ${t.durationMin} min` : ""}
           </p>
-          <p className="mt-0.5 text-[11px] text-white/35">
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
             {t.counts.aangemeld} aangemeld
             {t.counts.misschien > 0 ? ` · ${t.counts.misschien} misschien` : ""}
             {t.counts.reserve > 0 ? ` · ${t.counts.reserve} reserve` : ""}
@@ -114,22 +114,22 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           {mine?.status === "aangemeld" && (
-            <span className="flex items-center gap-1 text-[11px] text-emerald-300/85">
+            <span className="flex items-center gap-1 text-[11px] text-[color:var(--color-positive)]">
               <CheckCircle2 className="h-3.5 w-3.5" /> Aangemeld
             </span>
           )}
           {mine?.status === "reserve" && (
-            <span className="flex items-center gap-1 text-[11px] text-amber-300/85">
+            <span className="flex items-center gap-1 text-[11px] text-[color:var(--color-warning)]">
               <AlertTriangle className="h-3.5 w-3.5" /> Reserve
             </span>
           )}
           {mine?.status === "afgemeld" && (
-            <span className="flex items-center gap-1 text-[11px] text-white/40">
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <XCircle className="h-3.5 w-3.5" /> Afgemeld
             </span>
           )}
           {mine?.status === "misschien" && (
-            <span className="flex items-center gap-1 text-[11px] text-sky-300/85">
+            <span className="flex items-center gap-1 text-[11px] text-sky-700">
               <AlertTriangle className="h-3.5 w-3.5" /> Misschien
             </span>
           )}
@@ -137,7 +137,7 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
             <button
               onClick={() => doSignup("afgemeld")}
               disabled={signup.isPending}
-              className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] text-white/70 hover:border-white/30"
+              className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:border-border"
             >
               Afmelden
             </button>
@@ -146,14 +146,14 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
               <button
                 onClick={() => doSignup("misschien")}
                 disabled={signup.isPending || mine?.status === "misschien"}
-                className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] text-white/70 hover:border-white/30 disabled:opacity-40"
+                className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:border-border disabled:opacity-40"
               >
                 Misschien
               </button>
               <button
                 onClick={() => doSignup("aangemeld")}
                 disabled={signup.isPending}
-                className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-1 text-[11px] text-cyan-200 hover:border-cyan-300/60"
+                className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-2.5 py-1 text-[11px] text-accent-cyan hover:border-accent-cyan/60"
               >
                 Aanmelden
               </button>
@@ -161,17 +161,17 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
           )}
         </div>
       </div>
-      {t.goal && <p className="mt-1.5 text-[12px] text-white/55">{t.goal}</p>}
+      {t.goal && <p className="mt-1.5 text-[12px] text-muted-foreground">{t.goal}</p>}
       {t.materialInfo && (
-        <p className="mt-1.5 text-[11px] text-white/50">Materiaal: {t.materialInfo}</p>
+        <p className="mt-1.5 text-[11px] text-muted-foreground">Materiaal: {t.materialInfo}</p>
       )}
       {t.safetyInfo && (
-        <p className="mt-1 text-[11px] text-amber-200/80">Veiligheid: {t.safetyInfo}</p>
+        <p className="mt-1 text-[11px] text-[color:var(--color-warning)]">Veiligheid: {t.safetyInfo}</p>
       )}
-      {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      {error && <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
       {mine?.status === "aangemeld" && conflicts.length > 0 && (
         <div className="mt-2 rounded-lg border border-amber-300/25 bg-amber-300/[0.06] px-3 py-2">
-          <p className="text-[11px] text-amber-200/90">
+          <p className="text-[11px] text-[color:var(--color-warning)]">
             Op deze dag staat al een training in je schema:{" "}
             {conflicts.map((c) => c.title).join(", ")}.
             {conflicts.some((c) => c.source === "coach")
@@ -184,13 +184,13 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
         <button
           onClick={() => link.mutate({ trainingId: t.id, mode: "toevoegen" })}
           disabled={link.isPending}
-          className="mt-2 text-[11px] text-cyan-300/80 hover:text-cyan-300"
+          className="mt-2 text-[11px] text-accent-cyan hover:text-accent-cyan"
         >
           + Zet in mijn schema
         </button>
       )}
       {mine?.plannedWorkoutId != null && (
-        <p className="mt-2 text-[11px] text-white/40">Staat in je schema.</p>
+        <p className="mt-2 text-[11px] text-muted-foreground">Staat in je schema.</p>
       )}
     </div>
   )
@@ -207,12 +207,12 @@ function RolStartBlock({ clubId }: { clubId: number }) {
   return (
     <section
       aria-label="Jouw start"
-      className="rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-3.5"
+      className="rounded-2xl border border-border bg-muted px-4 py-3.5"
     >
-      <p className="text-[11px] uppercase tracking-wide text-white/40">
-        Jouw rol: <span className="text-white/70">{start.rolLabel}</span>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        Jouw rol: <span className="text-muted-foreground">{start.rolLabel}</span>
       </p>
-      <p className="mt-1 text-[13px] text-white/75">{start.werkgebied}</p>
+      <p className="mt-1 text-[13px] text-foreground/75">{start.werkgebied}</p>
       {start.eersteActie ? (
         <button
           onClick={() => {
@@ -224,19 +224,19 @@ function RolStartBlock({ clubId }: { clubId: number }) {
               navigate("/club/beheer")
             }
           }}
-          className="mt-2.5 flex w-full items-center justify-between rounded-xl border border-cyan-300/25 bg-cyan-300/[0.08] px-3.5 py-2.5 text-left"
+          className="mt-2.5 flex w-full items-center justify-between rounded-xl border border-accent-cyan/25 bg-accent-cyan/[0.08] px-3.5 py-2.5 text-left"
         >
           <span>
-            <span className="block text-[13px] font-semibold text-cyan-100">{start.eersteActie.label}</span>
-            <span className="block text-[12px] text-white/60">{start.eersteActie.uitleg}</span>
+            <span className="block text-[13px] font-semibold text-accent-cyan">{start.eersteActie.label}</span>
+            <span className="block text-[12px] text-muted-foreground">{start.eersteActie.uitleg}</span>
           </span>
         </button>
       ) : start.legeToestand ? (
-        <div className="mt-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-[12px] leading-relaxed text-white/65">
-          <p className="font-medium text-white/80">{start.legeToestand.watOntbreekt}</p>
+        <div className="mt-2.5 rounded-xl border border-border bg-muted px-3.5 py-2.5 text-[12px] leading-relaxed text-muted-foreground">
+          <p className="font-medium text-foreground/80">{start.legeToestand.watOntbreekt}</p>
           <p>{start.legeToestand.waarom}</p>
-          <p className="text-white/50">Wie kan dit oplossen: {start.legeToestand.wie}</p>
-          <p className="mt-1 text-white/75">{start.legeToestand.vervolgstap}</p>
+          <p className="text-muted-foreground">Wie kan dit oplossen: {start.legeToestand.wie}</p>
+          <p className="mt-1 text-foreground/75">{start.legeToestand.vervolgstap}</p>
         </div>
       ) : null}
     </section>
@@ -262,20 +262,20 @@ function RaceCard({
   const r = race
   return (
     <div className={CARD}>
-      <p className="text-[13px] text-white/85">{r.name}</p>
-      <p className="text-[11px] text-white/40">
+      <p className="text-[13px] text-foreground/85">{r.name}</p>
+      <p className="text-[11px] text-muted-foreground">
         {formatDate(r.raceDate)}
         {r.location ? ` · ${r.location}` : ""}
         {r.meetTime ? ` · verzamelen ${r.meetTime}` : ""}
         {r.meetPoint ? ` bij ${r.meetPoint}` : ""}
       </p>
       {r.mySelection && (
-        <p className="mt-1 text-[11px] text-cyan-200/85">
+        <p className="mt-1 text-[11px] text-accent-cyan">
           Je staat in de selectie als {r.mySelection.role}.
         </p>
       )}
       <div className="mt-2 flex items-center gap-2">
-        <span className="text-[11px] text-white/45">Beschikbaarheid:</span>
+        <span className="text-[11px] text-muted-foreground">Beschikbaarheid:</span>
         {(["beschikbaar", "niet_beschikbaar"] as const).map((a) => (
           <button
             key={a}
@@ -283,8 +283,8 @@ function RaceCard({
             disabled={availability.isPending}
             className={`rounded-lg border px-2 py-0.5 text-[11px] ${
               r.mySelection?.availability === a
-                ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-                : "border-white/15 text-white/60 hover:border-white/30"
+                ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                : "border-border text-muted-foreground hover:border-border"
             }`}
           >
             {a === "beschikbaar" ? "Beschikbaar" : "Niet beschikbaar"}
@@ -302,7 +302,7 @@ function ConsentSection({ clubId }: { clubId: number }) {
   return (
     <div className={CARD}>
       {consent?.isMinor ? (
-        <p className="text-[12px] text-white/55">
+        <p className="text-[12px] text-muted-foreground">
           Voor jeugdleden kan alleen een gekoppelde ouder of verzorger
           toestemming geven om trainingssamenvattingen met clubtrainers te
           delen. {consent?.consent?.status === "granted"
@@ -311,7 +311,7 @@ function ConsentSection({ clubId }: { clubId: number }) {
         </p>
       ) : (
         <>
-          <p className="text-[12px] text-white/55">
+          <p className="text-[12px] text-muted-foreground">
             Kies per onderdeel wat je toegewezen clubtrainers mogen zien.
             Zonder toestemming zien trainers níéts van je trainingsgegevens.
           </p>
@@ -327,8 +327,8 @@ function ConsentSection({ clubId }: { clubId: number }) {
                   disabled={setConsent.isPending}
                   className={`rounded-lg border px-2.5 py-1 text-[11px] ${
                     granted
-                      ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-                      : "border-white/15 text-white/60 hover:border-white/30"
+                      ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                      : "border-border text-muted-foreground hover:border-border"
                   }`}
                 >
                   {granted && (
@@ -384,7 +384,7 @@ function RealClubView({ clubId }: { clubId: number }) {
   const color = dash?.club.primaryColor ?? "rgba(120,210,230,1)"
   const rootMessages = (messages ?? []).filter((m) => m.parentId == null).slice(0, 12)
 
-  if (!dash) return <p className="text-sm text-white/50">Club wordt geladen…</p>
+  if (!dash) return <p className="text-sm text-muted-foreground">Club wordt geladen…</p>
 
   const TABS: { id: ClubLidTab; label: string }[] = [
     { id: "vandaag", label: "Vandaag" },
@@ -407,8 +407,8 @@ function RealClubView({ clubId }: { clubId: number }) {
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-white">{dash.club.name}</h1>
-          <p className="text-[12px] text-white/50">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">{dash.club.name}</h1>
+          <p className="text-[12px] text-muted-foreground">
             {dash.memberCounts.members} leden
             {dash.club.location ? ` · ${dash.club.location}` : ""}
           </p>
@@ -416,7 +416,7 @@ function RealClubView({ clubId }: { clubId: number }) {
         {canManage && (
           <button
             onClick={() => navigate("/club/beheer")}
-            className="flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[12px] text-white/75 hover:border-white/30"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] text-foreground/75 hover:border-border"
           >
             <Settings className="h-3.5 w-3.5" /> Beheer
           </button>
@@ -440,7 +440,7 @@ function RealClubView({ clubId }: { clubId: number }) {
           {canManage && (dash.signals?.length ?? 0) > 0 && (
             <section aria-label="Signalen" className="space-y-1.5">
               {dash.signals!.map((s, i) => (
-                <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
+                <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-[color:var(--color-warning)]">
                   {s}
                 </p>
               ))}
@@ -468,7 +468,7 @@ function RealClubView({ clubId }: { clubId: number }) {
           {canPost && (
             <button
               onClick={() => setSheet("bericht")}
-              className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100"
+              className="flex items-center justify-center gap-2 rounded-xl border border-accent-cyan/45 bg-accent-cyan/10 px-4 py-3 text-[14px] font-medium text-accent-cyan"
             >
               <MessageCircle className="h-4 w-4" /> Bericht sturen
             </button>
@@ -499,7 +499,7 @@ function RealClubView({ clubId }: { clubId: number }) {
                         onSeen={() => markRead.mutate(m.id)}
                       />
                       {isMededeling && (
-                        <p className="pl-1 text-[11px] text-white/35">
+                        <p className="pl-1 text-[11px] text-muted-foreground">
                           Mededeling — hierop kun je niet reageren.
                         </p>
                       )}
@@ -525,27 +525,27 @@ function RealClubView({ clubId }: { clubId: number }) {
         <div className="flex flex-col gap-5">
           {isHoofdtrainer && hoofdOverview && hoofdOverview.trainers.length > 0 && (
             <section aria-label="Hoofdtraineroverzicht">
-              <h2 className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-white/80">
+              <h2 className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-foreground/80">
                 <Users className="h-3 w-3" /> Trainers in jouw organisatie
               </h2>
               <div className="space-y-1.5">
                 {hoofdOverview.trainers.map((t) => (
-                  <div key={t.clerkId} className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+                  <div key={t.clerkId} className="rounded-xl border border-border bg-muted px-3.5 py-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-[13px] text-white/85">{t.displayName ?? "Trainer"}</p>
-                      <p className="shrink-0 text-[11px] text-white/45">
+                      <p className="truncate text-[13px] text-foreground/85">{t.displayName ?? "Trainer"}</p>
+                      <p className="shrink-0 text-[11px] text-muted-foreground">
                         {t.assignedAthleteCount} sporters · {t.trainingsLast30Days} trainingen (30 d)
                       </p>
                     </div>
                     {t.assignments.length > 0 && (
-                      <p className="mt-0.5 truncate text-[11px] text-white/45">
+                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                         {t.assignments.map((a) => a.team ?? a.group).filter(Boolean).join(" · ")}
                       </p>
                     )}
                   </div>
                 ))}
               </div>
-              <p className="mt-1.5 text-[11px] text-white/35">
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
                 Organisatorisch overzicht — gezondheids- of privégegevens staan hier bewust niet in.
               </p>
             </section>
@@ -567,11 +567,11 @@ function RealClubView({ clubId }: { clubId: number }) {
           <section aria-label="Toestemming">
             <h2 className={H2}><Shield className="h-3 w-3" /> Delen met trainers</h2>
             <div className={CARD}>
-              <p className="text-[12px] text-white/60">
+              <p className="text-[12px] text-muted-foreground">
                 Kies wat je toegewezen clubtrainers van je trainingsgegevens mogen zien.
                 De keuzes openen als stappenvenster.
               </p>
-              <button onClick={() => setSheet("toestemming")} className="mt-2 rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-[12px] text-cyan-200">
+              <button onClick={() => setSheet("toestemming")} className="mt-2 rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-1.5 text-[12px] text-accent-cyan">
                 <Shield className="mr-1 inline h-3 w-3" /> Delen instellen
               </button>
             </div>
@@ -622,10 +622,10 @@ function LegacyCoachView() {
           </span>
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-white">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">
             {team?.clubName || "Jouw club"}
           </h1>
-          {team?.teamName && <p className="text-[12px] text-white/50">{team.teamName}</p>}
+          {team?.teamName && <p className="text-[12px] text-muted-foreground">{team.teamName}</p>}
         </div>
       </header>
 
@@ -634,10 +634,10 @@ function LegacyCoachView() {
         <div className="space-y-1.5">
           {coaches.map((c) => (
             <div key={c.clerkId} className={`${CARD} flex items-center gap-3`}>
-              <Users className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />
+              <Users className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
               <div className="min-w-0">
-                <p className="truncate text-[13px] text-white/85">{c.displayName || c.email}</p>
-                <p className="text-[11px] text-white/40">Gekoppeld sinds {formatDate(c.createdAt.slice(0, 10))}</p>
+                <p className="truncate text-[13px] text-foreground/85">{c.displayName || c.email}</p>
+                <p className="text-[11px] text-muted-foreground">Gekoppeld sinds {formatDate(c.createdAt.slice(0, 10))}</p>
               </div>
             </div>
           ))}
@@ -651,10 +651,10 @@ function LegacyCoachView() {
         ) : (
           <div className="space-y-1.5">
             {coachWorkouts.map((w) => (
-              <Link key={w.id} href="/train" className={`${CARD} flex items-center justify-between gap-3 transition-colors hover:border-cyan-300/25`}>
+              <Link key={w.id} href="/train" className={`${CARD} flex items-center justify-between gap-3 transition-colors hover:border-accent-cyan/25`}>
                 <span className="min-w-0">
-                  <span className="block truncate text-[13px] text-white/85">{w.title}</span>
-                  <span className="text-[11px] text-white/40">
+                  <span className="block truncate text-[13px] text-foreground/85">{w.title}</span>
+                  <span className="text-[11px] text-muted-foreground">
                     {formatDate(w.scheduledDate)}
                     {w.targetDurationMin ? ` · ${w.targetDurationMin} min` : ""}
                   </span>
@@ -670,15 +670,15 @@ function LegacyCoachView() {
         {upcomingRaces.length === 0 ? (
           <p className={EMPTY}>
             Geen aankomende wedstrijden in je kalender.{" "}
-            <Link href="/races" className="text-cyan-300/80 hover:text-cyan-300">Naar Wedstrijd</Link>
+            <Link href="/races" className="text-accent-cyan hover:text-accent-cyan">Naar Wedstrijd</Link>
           </p>
         ) : (
           <div className="space-y-1.5">
             {upcomingRaces.map((r) => (
-              <Link key={r.id} href="/races" className={`${CARD} flex items-center justify-between gap-3 transition-colors hover:border-cyan-300/25`}>
+              <Link key={r.id} href="/races" className={`${CARD} flex items-center justify-between gap-3 transition-colors hover:border-accent-cyan/25`}>
                 <span className="min-w-0">
-                  <span className="block truncate text-[13px] text-white/85">{r.name}</span>
-                  <span className="text-[11px] text-white/40">
+                  <span className="block truncate text-[13px] text-foreground/85">{r.name}</span>
+                  <span className="text-[11px] text-muted-foreground">
                     {formatDate(r.raceDate)}
                     {r.location ? ` · ${r.location}` : ""}
                     {r.teamName ? ` · ${r.teamName}` : ""}
@@ -696,17 +696,17 @@ function LegacyCoachView() {
           <p className={EMPTY}>
             Nog geen activiteit van teamgenoten om te tonen. Berichten, aanwezigheid en gedeelde media
             verschijnen hier zodra je kring iets deelt via{" "}
-            <Link href="/samen" className="text-cyan-300/80 hover:text-cyan-300">Samen</Link>.
+            <Link href="/samen" className="text-accent-cyan hover:text-accent-cyan">Samen</Link>.
           </p>
         ) : (
           <div className="space-y-1.5">
             {clubFeed.map((i) => (
               <div key={i.id} className={CARD}>
-                <p className="text-[13px] text-white/85">{i.title}</p>
-                {i.detail && <p className="mt-0.5 text-[11px] leading-snug text-white/45">{i.detail}</p>}
+                <p className="text-[13px] text-foreground/85">{i.title}</p>
+                {i.detail && <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{i.detail}</p>}
               </div>
             ))}
-            <Link href="/samen" className="block pt-1 text-[12px] text-cyan-300/80 hover:text-cyan-300">
+            <Link href="/samen" className="block pt-1 text-[12px] text-accent-cyan hover:text-accent-cyan">
               Alles in Samen →
             </Link>
           </div>
@@ -728,8 +728,8 @@ function StartClubCard() {
 
   return (
     <div className={CARD}>
-      <p className="text-[13px] text-white/85">Start een club- of teamomgeving</p>
-      <p className="mt-0.5 text-[12px] text-white/50">
+      <p className="text-[13px] text-foreground/85">Start een club- of teamomgeving</p>
+      <p className="mt-0.5 text-[12px] text-muted-foreground">
         Een club beheert leden, teams, clubtrainingen en communicatie. Een zelfstandig
         team is een wedstrijdploeg met selecties en vaste seizoensstaf. Je start met een
         gratis proefperiode van 30 dagen (tot 15 leden).
@@ -737,7 +737,7 @@ function StartClubCard() {
       {!open ? (
         <button
           onClick={() => setOpen(true)}
-          className="mt-2 flex items-center gap-1.5 rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-[12px] text-cyan-200"
+          className="mt-2 flex items-center gap-1.5 rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-1.5 text-[12px] text-accent-cyan"
         >
           <Plus className="h-3.5 w-3.5" /> Aanmaken
         </button>
@@ -772,7 +772,7 @@ function StartClubCard() {
                 role="radio"
                 aria-checked={orgType === val}
                 onClick={() => setOrgType(val)}
-                className={`rounded-lg border px-3 py-1.5 text-[12px] ${orgType === val ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60"}`}
+                className={`rounded-lg border px-3 py-1.5 text-[12px] ${orgType === val ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan" : "border-border text-muted-foreground"}`}
               >
                 {label}
               </button>
@@ -782,27 +782,27 @@ function StartClubCard() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={orgType === "TEAM" ? "Teamnaam" : "Clubnaam"}
-            className="w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
           <input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Plaats (optioneel)"
-            className="w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] text-white/85 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-[13px] text-foreground/85 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
           />
-          {error && <p className="text-[11px] text-rose-300/85">{error}</p>}
+          {error && <p className="text-[11px] text-[color:var(--color-negative)]">{error}</p>}
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={create.isPending}
-              className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-[12px] text-cyan-200 disabled:opacity-40"
+              className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
             >
               {create.isPending ? "Bezig…" : "Aanmaken"}
             </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-lg border border-white/15 px-3 py-1.5 text-[12px] text-white/60"
+              className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground"
             >
               Annuleren
             </button>
@@ -821,8 +821,8 @@ function JoinClubCard() {
 
   return (
     <div className={CARD}>
-      <p className="text-[13px] text-white/85">Lid worden met een clubcode</p>
-      <p className="mt-0.5 text-[12px] text-white/50">
+      <p className="text-[13px] text-foreground/85">Lid worden met een clubcode</p>
+      <p className="mt-0.5 text-[12px] text-muted-foreground">
         Heb je van je club een code (of QR-code) gekregen? Vul die hier in om lid te worden.
       </p>
       <form
@@ -840,17 +840,17 @@ function JoinClubCard() {
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Clubcode"
-          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] uppercase tracking-wider text-white/85 placeholder:normal-case placeholder:tracking-normal placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-[13px] uppercase tracking-wider text-foreground/85 placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
         />
         <button
           type="submit"
           disabled={join.isPending || !code.trim()}
-          className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40"
+          className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-2 text-[12px] text-accent-cyan disabled:opacity-40"
         >
           {join.isPending ? "Bezig…" : "Lid worden"}
         </button>
       </form>
-      {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      {error && <p className="mt-1.5 text-[11px] text-[color:var(--color-negative)]">{error}</p>}
     </div>
   )
 }
@@ -869,7 +869,7 @@ export default function ClubPage() {
   if (clubsLoading || legacy.isLoading) {
     return (
       <ScreenShell bg="/atmosphere/samen-groepsrit-winter.webp" section="club">
-        <p className="text-sm text-white/50">Club wordt geladen…</p>
+        <p className="text-sm text-muted-foreground">Club wordt geladen…</p>
       </ScreenShell>
     )
   }
@@ -885,8 +885,8 @@ export default function ClubPage() {
                 onClick={() => setChosenClubId(r.membership.clubId)}
                 className={`rounded-lg border px-2.5 py-1 text-[11px] ${
                   r.membership.clubId === activeClubId
-                    ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
-                    : "border-white/15 text-white/60 hover:border-white/30"
+                    ? "border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan"
+                    : "border-border text-muted-foreground hover:border-border"
                 }`}
               >
                 {r.club?.name ?? `Club ${r.membership.clubId}`}

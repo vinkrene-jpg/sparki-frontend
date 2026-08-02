@@ -48,7 +48,7 @@ function TopBar({ onBack, canBack }: { onBack: () => void; canBack: boolean }) {
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-sans text-sm text-white/55 transition-colors hover:text-white/90"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-sans text-sm text-foreground/55 transition-colors hover:text-foreground/90"
         >
           <ArrowLeft className="h-4 w-4" />
           Terug
@@ -56,7 +56,7 @@ function TopBar({ onBack, canBack }: { onBack: () => void; canBack: boolean }) {
       ) : (
         <div className="flex items-center gap-2 px-1">
           <Zap className="h-4 w-4" style={{ color: ACCENT }} />
-          <span className="font-sans text-[10px] font-medium tracking-[0.25em] text-white/40">
+          <span className="font-sans text-[10px] font-medium tracking-[0.25em] text-muted-foreground">
             SPARKI
           </span>
         </div>
@@ -81,7 +81,7 @@ function PrimaryBtn({
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl font-sans text-sm font-semibold tracking-wide text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-40"
+      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl font-sans text-sm font-semibold tracking-wide text-[color:var(--color-on-accent)] transition-opacity hover:opacity-90 disabled:opacity-40"
       style={{ background: ACCENT }}
     >
       {loading ? (
@@ -105,7 +105,7 @@ function NarrativeScreen({ lines, children }: { lines: Line[]; children: React.R
           <p
             key={i}
             className="font-sans text-[1.7rem] font-bold leading-tight tracking-tight"
-            style={{ color: line.dim ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.96)" }}
+            style={{ color: line.dim ? "var(--color-muted-foreground)" : "var(--color-foreground)" }}
           >
             {line.text}
           </p>
@@ -194,7 +194,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
   }, [onComplete])
 
   return (
-    <div className="relative min-h-dvh bg-[#05070e]">
+    <div className="relative min-h-dvh bg-card">
       {/* Subtle cinematic glow, matching the app's blue-black language. */}
       <div
         className="pointer-events-none fixed inset-x-0 top-0 h-[40vh]"
@@ -217,7 +217,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
               onClick={() => void startAsParent()}
               disabled={saving}
               data-testid="onboarding-parent-start"
-              className="mt-3 w-full text-center font-sans text-[13px] text-white/45 underline-offset-4 transition-colors hover:text-white/75 hover:underline disabled:opacity-40"
+              className="mt-3 w-full text-center font-sans text-[13px] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground/75 hover:underline disabled:opacity-40"
             >
               Ik ben ouder of verzorger — ik sport hier niet zelf
             </button>
@@ -251,7 +251,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
         {step === 3 && (
           <div className="flex flex-1 flex-col">
             <div className="flex flex-col gap-2 pb-8 pt-6">
-              <h2 className="font-sans text-[1.7rem] font-bold leading-tight tracking-tight text-white">
+              <h2 className="font-sans text-[1.7rem] font-bold leading-tight tracking-tight text-foreground">
                 Wat voor sporter denk jij dat je bent?
               </h2>
             </div>
@@ -267,7 +267,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
                     style={
                       active
                         ? { borderColor: "rgba(120,210,230,0.4)", background: ACCENT_DIM }
-                        : { borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.025)" }
+                        : { borderColor: "var(--color-border)", background: "var(--color-muted)" }
                     }
                   >
                     {active && (
@@ -278,7 +278,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
                     )}
                     <span
                       className="pl-2 font-sans text-base font-semibold"
-                      style={{ color: active ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.78)" }}
+                      style={{ color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
                     >
                       {opt.label}
                     </span>
@@ -324,10 +324,10 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
         {step === 6 && (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex flex-col gap-1.5 pt-2">
-              <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-white">
+              <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-foreground">
                 Koppel je sport- en gezondheidsapps
               </h2>
-              <p className="text-pretty text-[13px] leading-relaxed text-white/45">
+              <p className="text-pretty text-[13px] leading-relaxed text-muted-foreground">
                 Wat je koppelt, lees ik automatisch uit. Je kunt dit later in
                 Instellingen aanpassen.
               </p>

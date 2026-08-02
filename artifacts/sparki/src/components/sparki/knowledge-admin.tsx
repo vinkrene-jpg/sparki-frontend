@@ -47,10 +47,10 @@ const STATUS_LABEL: Record<string, string> = {
   ingetrokken: "Ingetrokken",
 };
 const STATUS_COLOR: Record<string, string> = {
-  concept: "text-white/50",
-  actief: "text-emerald-300",
-  verouderd: "text-amber-300",
-  ingetrokken: "text-red-300",
+  concept: "text-foreground/50",
+  actief: "text-[color:var(--color-positive)]",
+  verouderd: "text-[color:var(--color-warning)]",
+  ingetrokken: "text-[color:var(--color-negative)]",
 };
 
 const EMPTY_FORM = {
@@ -133,15 +133,15 @@ export function KennisbankAdminSection() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-[#070d16]/[0.82] px-4 py-3 text-left backdrop-blur-md"
+        className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left backdrop-blur-md"
       >
         <div>
-          <h2 className="text-[15px] font-light text-white/90">Kennisbank</h2>
-          <p className="mt-0.5 text-[12px] text-white/40">
+          <h2 className="text-[15px] font-light text-foreground/90">Kennisbank</h2>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
             Beheerde vakkennis: bronnen, versies, status en gebruik
           </p>
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           {open ? "Sluiten" : `${data?.items.length ?? 0} items${openFeedback.length > 0 ? ` · ${openFeedback.length} melding(en)` : ""}`}
         </span>
       </button>
@@ -149,16 +149,16 @@ export function KennisbankAdminSection() {
       {open && (
         <div className="mt-3 space-y-4">
           {error && (
-            <p className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-200">
+            <p className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-[12px] text-[color:var(--color-negative)]">
               {error}
             </p>
           )}
 
           {(data?.conflicts.length ?? 0) > 0 && (
             <div className="rounded-xl border border-amber-400/25 bg-amber-500/[0.06] px-4 py-3">
-              <p className="text-[12px] font-medium text-amber-200">Conflicterende bronnen</p>
+              <p className="text-[12px] font-medium text-[color:var(--color-warning)]">Conflicterende bronnen</p>
               {data!.conflicts.map((c) => (
-                <p key={`${c.domain}-${c.topic}`} className="mt-1 text-[12px] text-white/60">
+                <p key={`${c.domain}-${c.topic}`} className="mt-1 text-[12px] text-foreground/60">
                   „{c.topic}" ({c.domain}): {c.items.map((i) => `#${i.id} ${i.sourceName} (${i.reliability})`).join(" ↔ ")}
                 </p>
               ))}
@@ -166,29 +166,29 @@ export function KennisbankAdminSection() {
           )}
 
           {(data?.stale.length ?? 0) > 0 && (
-            <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] px-4 py-3">
-              <p className="text-[12px] font-medium text-white/70">Langer dan een jaar niet gecontroleerd</p>
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
+              <p className="text-[12px] font-medium text-foreground/70">Langer dan een jaar niet gecontroleerd</p>
               {data!.stale.map((s) => (
-                <p key={s.id} className="mt-1 text-[12px] text-white/50">
+                <p key={s.id} className="mt-1 text-[12px] text-foreground/50">
                   #{s.id} {s.topic} — {s.daysSinceReview == null ? "controledatum onbekend" : `${s.daysSinceReview} dagen geleden`}
                 </p>
               ))}
             </div>
           )}
 
-          <div className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] px-4 py-3">
-            <p className="text-[12px] font-medium text-white/70">
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <p className="text-[12px] font-medium text-foreground/70">
               {editId == null ? "Nieuw kennisitem (start als concept)" : `Kennisitem #${editId} wijzigen (gaat terug naar concept)`}
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <input
-                className="col-span-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="col-span-2 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Onderwerp"
                 value={form.topic}
                 onChange={(e) => setForm({ ...form, topic: e.target.value })}
               />
               <select
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/80"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
                 value={form.domain}
                 onChange={(e) => setForm({ ...form, domain: e.target.value })}
               >
@@ -197,7 +197,7 @@ export function KennisbankAdminSection() {
                 ))}
               </select>
               <select
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/80"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
                 value={form.audience}
                 onChange={(e) => setForm({ ...form, audience: e.target.value })}
               >
@@ -206,13 +206,13 @@ export function KennisbankAdminSection() {
                 ))}
               </select>
               <input
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Discipline (leeg = alle)"
                 value={form.discipline}
                 onChange={(e) => setForm({ ...form, discipline: e.target.value })}
               />
               <select
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/80"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
                 value={form.reliability}
                 onChange={(e) => setForm({ ...form, reliability: e.target.value })}
               >
@@ -221,43 +221,43 @@ export function KennisbankAdminSection() {
                 ))}
               </select>
               <textarea
-                className="col-span-2 min-h-24 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="col-span-2 min-h-24 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Inhoud (de gecontroleerde vaktekst zelf)"
                 value={form.body}
                 onChange={(e) => setForm({ ...form, body: e.target.value })}
               />
               <input
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Bronnaam (verplicht)"
                 value={form.sourceName}
                 onChange={(e) => setForm({ ...form, sourceName: e.target.value })}
               />
               <input
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Bron-URL (optioneel)"
                 value={form.sourceUrl}
                 onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })}
               />
               <input
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Publicatiedatum JJJJ-MM-DD"
                 value={form.publishedAt}
                 onChange={(e) => setForm({ ...form, publishedAt: e.target.value })}
               />
               <input
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Controledatum JJJJ-MM-DD"
                 value={form.reviewedAt}
                 onChange={(e) => setForm({ ...form, reviewedAt: e.target.value })}
               />
               <input
-                className="col-span-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="col-span-2 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Beperkingen / geldigheid (optioneel)"
                 value={form.limitations}
                 onChange={(e) => setForm({ ...form, limitations: e.target.value })}
               />
               <input
-                className="col-span-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25"
+                className="col-span-2 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground"
                 placeholder="Wanneer professionele controle nodig is (optioneel)"
                 value={form.professionalCheck}
                 onChange={(e) => setForm({ ...form, professionalCheck: e.target.value })}
@@ -280,7 +280,7 @@ export function KennisbankAdminSection() {
                     setEditId(null);
                     setForm({ ...EMPTY_FORM });
                   }}
-                  className="rounded-full border border-white/15 px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/50"
+                  className="rounded-full border border-border px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground/50"
                 >
                   Annuleren
                 </button>
@@ -293,31 +293,31 @@ export function KennisbankAdminSection() {
               const uses = (data?.usage ?? []).filter((u) => u.itemId === item.id);
               const fb = openFeedback.filter((f) => f.itemId === item.id);
               return (
-                <div key={item.id} className="rounded-xl border border-white/10 bg-[#070d16]/[0.82] px-4 py-3">
+                <div key={item.id} className="rounded-xl border border-border bg-card px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[13px] text-white/90">
+                      <p className="text-[13px] text-foreground/90">
                         #{item.id} {item.topic}
-                        <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-white/35">
+                        <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                           {item.domain}{item.discipline ? ` · ${item.discipline}` : ""} · v{item.version} · {item.reliability}
                         </span>
                       </p>
-                      <p className="mt-1 line-clamp-2 text-[12px] text-white/45">{item.body}</p>
-                      <p className="mt-1 text-[11px] text-white/35">
+                      <p className="mt-1 line-clamp-2 text-[12px] text-muted-foreground">{item.body}</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
                         Bron: {item.sourceName}
                         {item.publishedAt ? ` · publicatie ${item.publishedAt}` : ""}
                         {item.reviewedAt ? ` · gecontroleerd ${item.reviewedAt}` : ""}
                       </p>
                       {item.statusReason && (
-                        <p className="mt-1 text-[11px] text-amber-200/70">Reden: {item.statusReason}</p>
+                        <p className="mt-1 text-[11px] text-[color:var(--color-warning)]">Reden: {item.statusReason}</p>
                       )}
                       {uses.length > 0 && (
-                        <p className="mt-1 text-[11px] text-white/35">
+                        <p className="mt-1 text-[11px] text-muted-foreground">
                           Gebruik: {uses.map((u) => `${u.engine} (${u.uses}×)`).join(", ")}
                         </p>
                       )}
                       {fb.map((f) => (
-                        <p key={f.id} className="mt-1 text-[11px] text-red-200/80">
+                        <p key={f.id} className="mt-1 text-[11px] text-[color:var(--color-negative)]">
                           Melding: {f.message}{" "}
                           <button
                             type="button"
@@ -329,7 +329,7 @@ export function KennisbankAdminSection() {
                         </p>
                       ))}
                     </div>
-                    <span className={`shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] ${STATUS_COLOR[item.status] ?? "text-white/50"}`}>
+                    <span className={`shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] ${STATUS_COLOR[item.status] ?? "text-foreground/50"}`}>
                       {STATUS_LABEL[item.status] ?? item.status}
                     </span>
                   </div>
@@ -354,7 +354,7 @@ export function KennisbankAdminSection() {
                             reliability: item.reliability,
                           });
                         }}
-                        className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/50"
+                        className="rounded-full border border-border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground/50"
                       >
                         Wijzig
                       </button>
@@ -373,7 +373,7 @@ export function KennisbankAdminSection() {
                       <button
                         type="button"
                         onClick={() => setStatus.mutate({ id: item.id, status: "verouderd", reason: "Gemarkeerd als verouderd door beheerder" })}
-                        className="rounded-full border border-amber-400/40 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-amber-200"
+                        className="rounded-full border border-amber-400/40 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-warning)]"
                       >
                         Verouderd
                       </button>
@@ -382,7 +382,7 @@ export function KennisbankAdminSection() {
                       <button
                         type="button"
                         onClick={() => setStatus.mutate({ id: item.id, status: "ingetrokken", reason: "Ingetrokken door beheerder" })}
-                        className="rounded-full border border-red-400/40 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-red-200"
+                        className="rounded-full border border-red-400/40 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-negative)]"
                       >
                         Intrekken
                       </button>
@@ -392,7 +392,7 @@ export function KennisbankAdminSection() {
               );
             })}
             {data && data.items.length === 0 && (
-              <p className="text-[12px] text-white/35">
+              <p className="text-[12px] text-muted-foreground">
                 Nog geen beheerde kennisitems. Voeg hierboven het eerste item toe.
               </p>
             )}
