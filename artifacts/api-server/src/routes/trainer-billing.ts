@@ -421,15 +421,32 @@ router.post("/invoices/draft", requireAuth, async (req, res) => {
   }
 });
 
+function amsterdamToday(): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date());
+}
+
+// F9 "te laat": afgeleide leesstatus — verzonden + vervaldatum verstreken +
+// niet volledig betaald. Nooit een mutatie: de DB-status blijft "verzonden".
+function withOverdue<T extends { status: string; dueDate: string | null; paidCents: number | null; amountInclCents: number }>(
+  inv: T,
+  today: string,
+): T & { isOverdue: boolean } {
+  const isOverdue =
+    inv.status === "verzonden" &&
+    Boolean(inv.dueDate && inv.dueDate < today) &&
+    (inv.paidCents ?? 0) < inv.amountInclCents;
+  return { ...inv, isOverdue };
+}
+
 router.get("/invoices", requireAuth, async (req, res) => {
   const trainerClerkId = getClerkUserId(req)!;
-  res.json(
-    await db
-      .select()
-      .from(trainerInvoicesTable)
-      .where(eq(trainerInvoicesTable.trainerClerkId, trainerClerkId))
-      .orderBy(desc(trainerInvoicesTable.createdAt)),
-  );
+  const today = amsterdamToday();
+  const rows = await db
+    .select()
+    .from(trainerInvoicesTable)
+    .where(eq(trainerInvoicesTable.trainerClerkId, trainerClerkId))
+    .orderBy(desc(trainerInvoicesTable.createdAt));
+  res.json(rows.map((r) => withOverdue(r, today)));
 });
 
 // LET OP: vóór /invoices/:id gedeclareerd, anders vangt :id "export" weg.
@@ -490,7 +507,8 @@ router.get("/invoices/:id", requireAuth, async (req, res) => {
     .select()
     .from(trainerInvoiceLinesTable)
     .where(eq(trainerInvoiceLinesTable.invoiceId, inv.id));
-  res.json({ ...inv, lines });
+  const invWithOverdue = withOverdue(inv, amsterdamToday());
+  res.json({ ...invWithOverdue, lines });
 });
 
 // ── F8: verzending, nummering, statussen, creditnota (BB-64/BB-68) ──────────

@@ -31,7 +31,7 @@ import {
   userProfilesTable,
   athleteProfilesTable,
 } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
 
@@ -314,6 +314,22 @@ async function main() {
     assert(p1.json.status === "verzonden" && p1.json.paidCents === 5000, "deelbetaling geregistreerd");
     const p2 = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/mark-paid`, { amountCents: 7100 });
     assert(p2.json.status === "betaald" && p2.json.paidAt, "volledig betaald");
+  });
+
+  await scenario("F9: 'te laat' is een afgeleide leesstatus, nooit een mutatie", async () => {
+    // Verzonden factuur met verstreken vervaldatum forceren (test-only DB-write).
+    const list = await api(T1, "GET", "/api/trainer/billing/invoices");
+    const inv = list.json.find((i: any) => i.invoiceNumber === "CC-2026-118");
+    await db
+      .update(trainerInvoicesTable)
+      .set({ dueDate: "2026-07-01" })
+      .where(eq(trainerInvoicesTable.id, inv.id));
+    const det = await api(T1, "GET", `/api/trainer/billing/invoices/${inv.id}`);
+    assert(det.json.isOverdue === true, "te laat afgeleid");
+    assert(det.json.status === "verzonden", "DB-status blijft verzonden (geen mutatie)");
+    const list2 = await api(T1, "GET", "/api/trainer/billing/invoices");
+    const row = list2.json.find((i: any) => i.id === inv.id);
+    assert(row.isOverdue === true, "ook in de lijst afgeleid");
   });
 
   await scenario("F8: gedeeltelijke creditnota uit dezelfde reeks", async () => {
