@@ -45,6 +45,10 @@ export default function SignInScreen() {
   >("none");
   const [resetCode, setResetCode] = React.useState("");
   const [newPassword, setNewPassword] = React.useState("");
+  // "Client trust": Clerk vraagt bij inloggen op een nieuw apparaat om een
+  // extra e-mailcode. trustStep toont het codescherm daarvoor.
+  const [trustStep, setTrustStep] = React.useState(false);
+  const [trustCode, setTrustCode] = React.useState("");
   const busy = fetchStatus === "fetching";
 
   const finalizeSignIn = async () => {
@@ -129,6 +133,37 @@ export default function SignInScreen() {
           }
         },
       });
+    } else if (signIn.status === "needs_client_trust") {
+      // Clerk beveiligt inloggen met wachtwoord op een nieuw apparaat met een
+      // extra e-mailcode ("client trust"). Zonder deze afhandeling bleef de
+      // knop eindeloos draaien zonder foutmelding.
+      const { error: sendError } = await signIn.mfa.sendEmailCode();
+      if (sendError) {
+        setGeneralError(clerkErrorMessage(sendError));
+        return;
+      }
+      setTrustCode("");
+      setTrustStep(true);
+    } else {
+      setGeneralError(
+        "Inloggen is niet afgerond. Probeer het opnieuw of gebruik 'Wachtwoord vergeten?'.",
+      );
+    }
+  };
+
+  const handleVerifyTrustCode = async () => {
+    setGeneralError(null);
+    const { error } = await signIn.mfa.verifyEmailCode({ code: trustCode.trim() });
+    if (error) {
+      setGeneralError(clerkErrorMessage(error));
+      return;
+    }
+    if (signIn.status === "complete") {
+      await finalizeSignIn();
+    } else {
+      setGeneralError(
+        "De code is geaccepteerd, maar inloggen is nog niet afgerond. Probeer het opnieuw.",
+      );
     }
   };
 
@@ -156,7 +191,57 @@ export default function SignInScreen() {
               : "Meld je aan om je routes te navigeren."}
         </Text>
 
-        {resetStep === "code" ? (
+        {trustStep ? (
+          <>
+            <Text style={[styles.label, { color: c.mutedForeground }]}>
+              Bevestigingscode
+            </Text>
+            <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
+              Je logt in op een nieuw apparaat. We stuurden een code naar je
+              e-mailadres — vul die hier in.
+            </Text>
+            <TextInput
+              style={[styles.input, { color: c.foreground, borderColor: c.input, backgroundColor: c.card }]}
+              keyboardType="numeric"
+              value={trustCode}
+              placeholder="123456"
+              placeholderTextColor={c.mutedForeground}
+              onChangeText={setTrustCode}
+            />
+            {generalError && (
+              <Text style={[styles.error, { color: c.destructive }]}>{generalError}</Text>
+            )}
+            <PrimaryButton
+              label="Code bevestigen"
+              onPress={handleVerifyTrustCode}
+              loading={busy}
+              disabled={!trustCode}
+              style={{ marginTop: 20 }}
+            />
+            <PrimaryButton
+              label="Nieuwe code sturen"
+              variant="secondary"
+              onPress={async () => {
+                setGeneralError(null);
+                const { error } = await signIn.mfa.sendEmailCode();
+                if (error) setGeneralError(clerkErrorMessage(error));
+              }}
+              style={{ marginTop: 12 }}
+            />
+            <Pressable
+              onPress={() => {
+                setTrustStep(false);
+                setGeneralError(null);
+              }}
+              style={{ marginTop: 20, alignSelf: "center" }}
+              hitSlop={8}
+            >
+              <Text style={{ color: c.mutedForeground, fontFamily: "Inter_500Medium" }}>
+                Terug naar aanmelden
+              </Text>
+            </Pressable>
+          </>
+        ) : resetStep === "code" ? (
           <>
             <Text style={[styles.label, { color: c.mutedForeground }]}>Herstelcode</Text>
             <TextInput
