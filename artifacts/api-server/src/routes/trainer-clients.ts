@@ -16,11 +16,13 @@ import {
   clientAthleteLinksTable,
   billingPartiesTable,
   userProfilesTable,
+  athleteProfilesTable,
   TRAINER_CLIENT_TYPES,
   CLIENT_ATHLETE_RELATIONS,
   TRAINER_CLIENT_STATUSES,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { computeAge } from "../lib/age";
 
 const router = Router();
 
@@ -164,7 +166,28 @@ router.get("/:id/athletes", requireAuth, async (req, res) => {
     .select()
     .from(clientAthleteLinksTable)
     .where(eq(clientAthleteLinksTable.clientId, client.id));
-  res.json(links);
+  // F12 — overgang naar meerderjarigheid: afgeleide waarheid, geen opgeslagen
+  // vlag. Bij relatie "ouder" en een nu-volwassen sporter blijft de klant
+  // gewoon betaler (BB-62), maar valt data-inzage terug op de consentlaag
+  // van de sporter zelf (fail-closed; zie ouderomgeving). adultNow is null
+  // wanneer de geboortedatum onbekend is — eerlijk onbekend, nooit gegokt.
+  const out = await Promise.all(
+    links.map(async (link) => {
+      const [athlete] = await db
+        .select({
+          birthDate: athleteProfilesTable.birthDate,
+          birthYear: athleteProfilesTable.birthYear,
+        })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, link.athleteClerkId));
+      const age = athlete ? computeAge(athlete.birthDate, athlete.birthYear) : null;
+      return {
+        ...link,
+        athleteAdultNow: age === null ? null : age >= 18,
+      };
+    }),
+  );
+  res.json(out);
 });
 
 router.post("/:id/athletes", requireAuth, async (req, res) => {
