@@ -402,6 +402,45 @@ router.get("/invoices", requireAuth, async (req, res) => {
   );
 });
 
+// LET OP: vóór /invoices/:id gedeclareerd, anders vangt :id "export" weg.
+router.get("/invoices/export", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const from = str(req.query.from);
+    const to = str(req.query.to);
+    const format = str(req.query.format) ?? "csv";
+    if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      res.status(400).json({ error: "from en to (JJJJ-MM-DD) zijn verplicht." });
+      return;
+    }
+    const rows = await buildExportRows(trainerClerkId, from, to);
+    if (format === "xlsx") {
+      const ExcelJS = (await import("exceljs")).default;
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Facturen");
+      ws.addRow([...EXPORT_COLUMNS]);
+      for (const r of rows) ws.addRow(r);
+      res.setHeader(
+        "content-type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("content-disposition", `attachment; filename="facturen_${from}_${to}.xlsx"`);
+      res.end(Buffer.from(await wb.xlsx.writeBuffer()));
+      return;
+    }
+    const csv = [
+      EXPORT_COLUMNS.join(";"),
+      ...rows.map((r) => r.map(csvEscape).join(";")),
+    ].join("\n");
+    res.setHeader("content-type", "text/csv; charset=utf-8");
+    res.setHeader("content-disposition", `attachment; filename="facturen_${from}_${to}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    req.log.error({ err }, "invoice export failed");
+    res.status(500).json({ error: "Export is niet gelukt." });
+  }
+});
+
 router.get("/invoices/:id", requireAuth, async (req, res) => {
   const trainerClerkId = getClerkUserId(req)!;
   const [inv] = await db
@@ -654,6 +693,118 @@ router.post("/invoices/:id/credit", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Creditnota aanmaken is niet gelukt." });
   }
 });
+
+// ── F10: export naar de boekhouder ──────────────────────────────────────────
+// GET /invoices/export?from=JJJJ-MM-DD&to=JJJJ-MM-DD&format=csv|xlsx
+// Vaste kolommen (F10); alleen verzonden/afgehandelde facturen (concepten
+// zijn geen boekhouding); creditnota's als eigen regels met negatief bedrag
+// en creditreferentie. Lege periode = eerlijk lege export met kopregel.
+const EXPORT_COLUMNS = [
+  "factuurnummer",
+  "factuurdatum",
+  "vervaldatum",
+  "klant",
+  "klantnummer",
+  "omschrijving",
+  "periode_of_uitvoerdatum",
+  "exclusief_btw",
+  "btw_percentage",
+  "btw_bedrag",
+  "inclusief_btw",
+  "status",
+  "betaaldatum",
+  "creditreferentie",
+  "bedrijfsnaam",
+  "valuta",
+] as const;
+
+function csvEscape(v: unknown): string {
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function euro(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+async function buildExportRows(trainerClerkId: string, from: string, to: string) {
+  const [biz] = await db
+    .select()
+    .from(trainerBusinessTable)
+    .where(eq(trainerBusinessTable.clerkId, trainerClerkId));
+  const companyName = biz?.companyName ?? "";
+  const invoices = await db
+    .select()
+    .from(trainerInvoicesTable)
+    .where(eq(trainerInvoicesTable.trainerClerkId, trainerClerkId));
+  const clients = await db
+    .select()
+    .from(trainerClientsTable)
+    .where(eq(trainerClientsTable.trainerClerkId, trainerClerkId));
+  const clientById = new Map(clients.map((c) => [c.id, c]));
+  const credits = await db
+    .select()
+    .from(creditNotesTable)
+    .where(eq(creditNotesTable.trainerClerkId, trainerClerkId));
+  const invoiceById = new Map(invoices.map((i) => [i.id, i]));
+
+  const rows: (string | number)[][] = [];
+  for (const inv of invoices) {
+    if (!inv.invoiceNumber || !inv.invoiceDate) continue; // concepten niet
+    if (inv.invoiceDate < from || inv.invoiceDate > to) continue;
+    const client = clientById.get(inv.clientId);
+    const vatTotal = inv.amountInclCents - inv.amountExclCents;
+    const vatPct = inv.korApplied
+      ? "KOR"
+      : inv.amountExclCents > 0
+        ? ((vatTotal / inv.amountExclCents) * 100).toFixed(0)
+        : "0";
+    const credit = credits.find((c) => c.invoiceId === inv.id);
+    rows.push([
+      inv.invoiceNumber,
+      inv.invoiceDate,
+      inv.dueDate ?? "",
+      client?.name ?? "",
+      client?.clientNumber ?? "",
+      inv.description,
+      inv.periodStart ? `${inv.periodStart} t/m ${inv.periodEnd}` : (inv.serviceDate ?? ""),
+      euro(inv.amountExclCents),
+      vatPct,
+      euro(vatTotal),
+      euro(inv.amountInclCents),
+      inv.status,
+      inv.paidAt ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(inv.paidAt) : "",
+      credit?.creditNumber ?? "",
+      companyName,
+      inv.currency,
+    ]);
+  }
+  for (const cn of credits) {
+    const cnDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(cn.createdAt);
+    if (cnDate < from || cnDate > to) continue;
+    const inv = invoiceById.get(cn.invoiceId);
+    const client = inv ? clientById.get(inv.clientId) : undefined;
+    rows.push([
+      cn.creditNumber,
+      cnDate,
+      "",
+      client?.name ?? "",
+      client?.clientNumber ?? "",
+      `Creditnota: ${cn.reason}`,
+      "",
+      euro(-cn.amountInclCents),
+      inv?.korApplied ? "KOR" : "",
+      euro(0),
+      euro(-cn.amountInclCents),
+      cn.status,
+      "",
+      inv?.invoiceNumber ?? "",
+      companyName,
+      inv?.currency ?? "EUR",
+    ]);
+  }
+  rows.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  return rows;
+}
 
 // ── Signalen (3c.4) — altijd voorstel, nooit actie ───────────────────────────
 router.get("/signals", requireAuth, async (req, res) => {

@@ -330,6 +330,38 @@ async function main() {
     assert(p.status === 200, `betaling na creditnota: ${p.status}`);
   });
 
+  await scenario("F10: kwartaalexport CSV met creditnota's; lege periode eerlijk leeg", async () => {
+    const res = await fetch(
+      `${base}/api/trainer/billing/invoices/export?from=2026-07-01&to=2026-09-30`,
+      { headers: { "x-dev-clerk-id": T1 } },
+    );
+    assert(res.status === 200, `export: ${res.status}`);
+    const csv = await res.text();
+    const lines = csv.trim().split("\n");
+    assert(lines[0]!.startsWith("factuurnummer;factuurdatum"), "vaste kolomkop");
+    // Twee verzonden facturen + één creditnota in dit kwartaal.
+    assert(csv.includes("CC-2026-118") && csv.includes("CC-2026-119"), "facturen in export");
+    // Op de eerste kolom matchen: de factuurrij van CC-2026-118 draagt de
+    // creditreferentie CC-2026-120 óók in een latere kolom.
+    const creditLine = lines.find((l) => l.startsWith("CC-2026-120"));
+    assert(creditLine && creditLine.includes("-60.50") && creditLine.includes("CC-2026-118"), "creditnota negatief + referentie");
+    assert(!csv.includes("concept;"), "concepten niet in boekhoudexport");
+    // xlsx-variant levert een echt Excel-bestand.
+    const xl = await fetch(
+      `${base}/api/trainer/billing/invoices/export?from=2026-07-01&to=2026-09-30&format=xlsx`,
+      { headers: { "x-dev-clerk-id": T1 } },
+    );
+    const buf = Buffer.from(await xl.arrayBuffer());
+    assert(xl.status === 200 && buf.subarray(0, 2).toString() === "PK", "xlsx is een echt bestand");
+    // Lege periode: alleen de kopregel, geen verzonnen rijen.
+    const empty = await fetch(
+      `${base}/api/trainer/billing/invoices/export?from=2020-01-01&to=2020-12-31`,
+      { headers: { "x-dev-clerk-id": T1 } },
+    );
+    const emptyCsv = (await empty.text()).trim();
+    assert(emptyCsv.split("\n").length === 1, "lege periode = alleen kopregel");
+  });
+
   await scenario("cross-account fail-closed", async () => {
     const r = await api(T2, "POST", "/api/trainer/billing/recurring-billing", {
       clientId,
