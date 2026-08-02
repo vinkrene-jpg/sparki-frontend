@@ -41,6 +41,8 @@ import {
   connectorConnectionsTable,
   connectorActivitiesTable,
   trainingSessionsTable,
+  routesTable,
+  routeUsageRegistrationsTable,
 } from "@workspace/db";
 import { and, eq, like, inArray, isNull, sql } from "drizzle-orm";
 
@@ -70,6 +72,7 @@ type Persona = {
   entitlementMode: "legacy_unrestricted" | "subscription";
   productVariant?: string | null;
   tierTrial?: "GO" | "COMPLETE"; // Sparki-beheerde trial als tier-context
+  commercialTier?: "GO" | "COMPLETE"; // nieuwe commerciële laag (profiel.commercial_tier)
   clubRole?: string; // rol in de fixture-club
   isHeadTester?: boolean; // WP-R0: tester-identiteit (productiemechanisme: is_head_tester)
 };
@@ -103,11 +106,29 @@ export const PERSONAS: Persona[] = [
   { key: "outsider", name: "TESTFIXTURE Buitenstaander", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription" },
 
   // ── Mirror-accountstanden A t/m E (02-08-2026) ─────────────────────────────
-  // A/B/C: VERS — nooit gekoppeld (geen club, geen links, geen activiteit).
-  // Gratis = subscription zonder enig recht (fail-closed), Go/Compleet via trial.
+  // Mapping naar de A–H-tabel uit SPARKI_HERSTEL_EN_AANVULLING_01 (HA-11):
+  //   fixture_a_gratis  → stand A: vers Gratis-account, nooit gekoppeld
+  //   fixture_b_go      → stand B: vers Go-account (tier GO), idem
+  //   fixture_c_compleet→ stand C: vers Compleet-account (tier COMPLETE), idem
+  // (De sleutels heten historisch stand-a/b/c; ze zijn ondubbelzinnig en botsen
+  //  NIET met eerdere generieke "standen A–E" elders — dit zijn accountstanden.)
+  //
+  // A/B/C: VERS — nooit gekoppeld (geen club, geen links, geen activiteit,
+  // geen routes en geen routegebruik; zie resetVerseStanden dat dit bij ELKE
+  // create-run afdwingt). KERN (HA-11 + F5): stand A moet AANTOONBAAR
+  // isGratisBeperkt=true opleveren — dus GEEN legacy_unrestricted, GEEN
+  // productVariant, GEEN commercialTier en GEEN tier-trial. Dan geldt in
+  // lib/route-limits.ts: entitlementMode !== "legacy_unrestricted" én
+  // productVariant == null ⇒ true, waardoor de gratis limieten (8/maand,
+  // 3 bewaard, 30 dagen — F5) op dit account eindelijk toetsbaar zijn.
+  //   Go/Compleet: de tier is authoritatief via profiel.commercial_tier (nieuwe
+  //   commerciële laag) én er komt een Sparki-beheerde trial mee, zodat de
+  //   feature-projectie werkt zodra de flag `commercial_tiers` aan staat. Deze
+  //   twee zijn per definitie NIET isGratisBeperkt (productVariant blijft null,
+  //   maar de tier maakt ze betaald in de resolver/labels).
   { key: "stand-a-gratis", name: "TESTFIXTURE Stand A Gratis Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1992-03-15", entitlementMode: "subscription" },
-  { key: "stand-b-go", name: "TESTFIXTURE Stand B Go Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1988-07-22", entitlementMode: "subscription", tierTrial: "GO" },
-  { key: "stand-c-compleet", name: "TESTFIXTURE Stand C Compleet Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1985-11-02", entitlementMode: "subscription", tierTrial: "COMPLETE" },
+  { key: "stand-b-go", name: "TESTFIXTURE Stand B Go Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1988-07-22", entitlementMode: "subscription", commercialTier: "GO", tierTrial: "GO" },
+  { key: "stand-c-compleet", name: "TESTFIXTURE Stand C Compleet Vers", roles: ["athlete"], activeRole: "athlete", birthDate: "1985-11-02", entitlementMode: "subscription", commercialTier: "COMPLETE", tierTrial: "COMPLETE" },
   // D: account met via de providertabellen geïmporteerde activiteiten (zie
   //    seedProviderStanden — connector_connections + connector_activities +
   //    training_sessions met source "strava", duidelijk TESTFIXTURE-gemarkeerd).
@@ -162,6 +183,7 @@ async function createFixturesInner() {
         activeRole: p.activeRole,
         entitlementMode: p.entitlementMode,
         productVariant: p.productVariant ?? null,
+        commercialTier: p.commercialTier ?? null,
         releaseGroup: "test",
         isHeadTester: p.isHeadTester === true,
       })
@@ -174,6 +196,7 @@ async function createFixturesInner() {
           activeRole: p.activeRole,
           entitlementMode: p.entitlementMode,
           productVariant: p.productVariant ?? null,
+          commercialTier: p.commercialTier ?? null,
           releaseGroup: "test",
           isHeadTester: p.isHeadTester === true,
         },
@@ -355,6 +378,12 @@ async function resetVerseStanden() {
   await db.delete(clubMembersTable).where(inArray(clubMembersTable.clerkId, vers));
   await db.delete(coachAthleteLinksTable).where(inArray(coachAthleteLinksTable.athleteClerkId, vers));
   await db.delete(parentAthleteLinksTable).where(inArray(parentAthleteLinksTable.athleteClerkId, vers));
+  // F5 (HA-15): een verse stand is AANTOONBAAR leeg. Wis ook opgeslagen routes
+  // en het routegebruik-register van deze vaste fixture-accounts, zodat de
+  // gratis limieten (8/maand, 3 bewaard) op stand A telkens vanaf nul toetsbaar
+  // zijn en er nooit toetsresten in de gedeelde ontwikkeldatabase achterblijven.
+  await db.delete(routeUsageRegistrationsTable).where(inArray(routeUsageRegistrationsTable.clerkId, vers));
+  await db.delete(routesTable).where(inArray(routesTable.clerkId, vers));
 }
 
 // Stand D: werkende Strava-koppeling met twee via de echte providertabellen

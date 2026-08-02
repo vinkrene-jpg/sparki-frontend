@@ -59,6 +59,13 @@ export interface ActiveEntitlement {
 export interface ResolvedEntitlements {
   entitlementMode: EntitlementMode;
   productVariant: ProductVariant | null;
+  /**
+   * Actieve commerciële tier uit het nieuwe stelsel (profiel.commercial_tier),
+   * uitsluitend gezet bij mode=subscription met een geldige tierwaarde. NULL
+   * voor legacy en voor Gratis. Alleen informatief voor labels/statuspaden —
+   * de feature-projectie loopt onverkort via commercialFeatures.
+   */
+  commercialTier: CommercialTier | null;
   /** Actieve persoonlijke rechten (status active, binnen geldigheidsperiode). */
   activeEntitlements: ActiveEntitlement[];
   /** Rechten die door ends_at verlopen zijn (informatief, geen toegang). */
@@ -169,6 +176,7 @@ export async function resolveEntitlements(
     return {
       entitlementMode: "subscription",
       productVariant: null,
+      commercialTier: null,
       activeEntitlements: [],
       expiredEntitlements: [],
       commercialFeatures: {},
@@ -182,6 +190,14 @@ export async function resolveEntitlements(
   const variant: ProductVariant | null = isValidVariant(profile.productVariant)
     ? profile.productVariant
     : null; // onbekende variant ⇒ geen variantrechten
+  // Geldige tier uit het nieuwe stelsel (alleen bij subscription); onbekend/
+  // corrupt ⇒ null (nooit betaald aannemen). Informatief voor labels/status.
+  const resolvedTier: CommercialTier | null =
+    mode === "subscription" &&
+    typeof profile.commercialTier === "string" &&
+    (COMMERCIAL_TIERS as readonly string[]).includes(profile.commercialTier)
+      ? (profile.commercialTier as CommercialTier)
+      : null;
 
   const now = new Date();
   let rows: UserEntitlement[] = [];
@@ -240,11 +256,7 @@ export async function resolveEntitlements(
   // bestaand subscription-gedrag blijven dan byte-identiek. Onbekende of
   // corrupte tierwaarde ⇒ als FREE-zonder-rechten behandeld, nooit betaald.
   if (mode === "subscription") {
-    const validTier: CommercialTier | null =
-      typeof profile.commercialTier === "string" &&
-      (COMMERCIAL_TIERS as readonly string[]).includes(profile.commercialTier)
-        ? (profile.commercialTier as CommercialTier)
-        : null;
+    const validTier: CommercialTier | null = resolvedTier;
     const trialTiers = active
       .filter((e) => e.entitlementType === "trial")
       .map((e) => ({ tier: tierFromTrialKey(e.entitlementKey), entitlement: e }))
@@ -318,6 +330,7 @@ export async function resolveEntitlements(
   return {
     entitlementMode: mode,
     productVariant: variant,
+    commercialTier: resolvedTier,
     activeEntitlements: active,
     expiredEntitlements: expired,
     commercialFeatures,
@@ -426,6 +439,16 @@ export function customerProductLabel(resolved: ResolvedEntitlements): string {
     case "sparki_go":
       return "Sparki Go";
     case "sparki_pro":
+      return "Sparki Compleet";
+  }
+  // Nieuwe commerciële laag: is er geen (oude) productVariant maar wél een
+  // geldige commercial_tier, dan bepaalt die het klantlabel. Zo tonen de
+  // fixture-standen B (tier GO) en C (tier COMPLETE) hun echte pakket, ook
+  // wanneer productVariant bewust leeg blijft.
+  switch (resolved.commercialTier) {
+    case "GO":
+      return "Sparki Go";
+    case "COMPLETE":
       return "Sparki Compleet";
     default:
       return "Gratis";

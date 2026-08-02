@@ -122,6 +122,7 @@
 - [Sparki Data Origin framework](sparki-data-origin.md) — herkomst/explain-laag; sync-ID alleen bij bewijsbare run-koppeling (nooit "nieuwste run"); drizzle ALL(${array})-trap.
 - [Sparki Foundation engines](sparki-foundation-engines.md) — 7 deterministic engines + routing orchestrator behind ai_foundation flag; nullsNotDistinct evidence upsert; flag rows must be seeded for override FK.
 - [Expo build port + Metro watch traps](sparki-mobile-build-port.md) — probe Metro port (busy port = silent interactive-prompt hang); blockList volatile dist dirs or fs.watch ENOENT kills expo.
+- Bewijs-eerlijkheid accounts: nooit "bewezen" claimen op een account met legacy_unrestricted of pakketvariant — benoem altijd het accounttype; gratis pad (isGratisBeperkt) eist lege productVariant zónder carve-out (fixture A).
 - [Sparki entitlement-fundament](sparki-entitlements.md) — commercial rights layer AND flags (never OR); legacy_unrestricted is the deliberate degraded-read carve-out; empty variant grants = sales-start switch.
 - [Sparki app-brede zoek + auto-Terug](sparki-app-search-terug.md) — ScreenShell auto-Terug on non-nav-root pages; pages with an OWN back MUST pass terug={false} (grep all pages, 8 were missed first pass).
 - [Sparki aandacht-rotatie](sparki-attention-rotation.md) — ignored non-critical ride-alongs pause after 3 shown days (never critical, never forever); consumers must fail-open on query ERROR, not only on success.
