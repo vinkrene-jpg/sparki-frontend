@@ -373,6 +373,13 @@ const ROLE_VIEW_LABELS: Partial<Record<TodayRole, string>> = {
   trainer: "Trainer",
   hoofdtrainer: "Hoofdtrainer",
   clubbeheer: "Clubbeheer",
+  // Begeleidende clubrollen (02-08): wie naast trainer óók zo'n rol heeft,
+  // kan die rolweergave hier echt kiezen — de server bevestigt de opties.
+  ploegleider: "Ploegleider",
+  teammanager: "Teammanager",
+  soigneur: "Soigneur",
+  medical_staff: "Medische staf",
+  vrijwilliger: "Vrijwilliger",
 }
 
 export function CoachHome() {

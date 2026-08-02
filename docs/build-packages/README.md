@@ -27,6 +27,9 @@ hem bepaalde volgorde, en met inachtneming van de MIRROR_PROVEN-voorwaarden
 per pakket. Opgeleverd (BUILD_DELIVERED, wachten op Mirror): ROUTE_PAKKET-reeks,
 DATA_TRUST_01, ABONNEMENT_01. RELEASE_01 is het slotpakket.
 
+**MIRROR-SYNC 01-08-2026 — aanvulling na statuscontrole:** TEAM_ONBOARDING_01 (24_) is eveneens BUILD_DELIVERED — het eigen pakket-README meldde dit nog niet, maar commit c337fd3 bevat de volledige implementatie (API, migratie, frontend, e2e 16/16 groen). MEDIA_UITLEG_01 claimt "niets gebouwd"; dat klopt voor F3/CMP-41, maar F4-code (media-status.ts) bestaat al, ongebruikt door de frontend — zie statuscorrectie in dat pakket-README. Beide afwijkingen zijn gevonden via onafhankelijke Mirror-controle, niet via de pakket-documentatie zelf.
+
+
 ## Nog niet ontvangen pakketten (wel genoemd als afhankelijkheid)
 CLUB_LEDEN_01 · JEUGD_OUDER_01 · TRAINER_KOPPELING_01 · COACH_ADAPTIEF_01 ·
 WEDSTRIJD_01 · VOEDING_01 · EBIKE_01 · ANALYSE_01 · WANDELEN_01 ·

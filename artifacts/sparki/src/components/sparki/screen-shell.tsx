@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
+import { DEV_PREVIEW } from "@/lib/dev"
 import {
   Shield,
   ChevronLeft,
@@ -256,7 +257,9 @@ function ContextRegel() {
   // rol niet tonen (geen context uit niet-actieve rollen).
   const { data } = useTeamIdentity()
   const team = rol === "athlete" ? data?.team : null
-  const rolLabel = ROLE_LABELS[rol] ?? "Sporter"
+  // Eerlijk label: een onbekende rolwaarde toont zichzelf — nooit doen alsof
+  // het een sporter is.
+  const rolLabel = ROLE_LABELS[rol] ?? String(rol)
   return (
     <DsContextRegel
       rolLabel={rolLabel}
@@ -264,6 +267,7 @@ function ContextRegel() {
       teamNaam={team?.teamName ?? null}
       clubKleur={team?.primaryColor ?? null}
       clubLogoUrl={team?.logoUrl ?? null}
+      testomgeving={DEV_PREVIEW}
     />
   )
 }

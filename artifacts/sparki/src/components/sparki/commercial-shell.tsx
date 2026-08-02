@@ -20,6 +20,7 @@
 
 import { useState, type ReactNode } from "react"
 import { Link, useLocation } from "wouter"
+import { DEV_PREVIEW } from "@/lib/dev"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useSparkiState } from "@/hooks/use-sparki-state"
 import { useRaces } from "@/hooks/use-races"
@@ -327,7 +328,9 @@ function ShellContextRegel() {
   // rol tonen we haar NIET — anders lekt context uit een niet-actieve rol.
   const { data } = useTeamIdentity()
   const team = rol === "athlete" ? data?.team : null
-  const rolLabel = ROLE_LABELS[rol] ?? "Sporter"
+  // Eerlijk label: een onbekende rolwaarde toont zichzelf — nooit doen alsof
+  // het een sporter is.
+  const rolLabel = ROLE_LABELS[rol] ?? String(rol)
   return (
     <DsContextRegel
       rolLabel={rolLabel}
@@ -335,6 +338,7 @@ function ShellContextRegel() {
       teamNaam={team?.teamName ?? null}
       clubKleur={team?.primaryColor ?? null}
       clubLogoUrl={team?.logoUrl ?? null}
+      testomgeving={DEV_PREVIEW}
     />
   )
 }

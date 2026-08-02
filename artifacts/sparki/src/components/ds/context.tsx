@@ -5,6 +5,21 @@
 // bewust géén aantallen of informatie uit niet-actieve contexten — alleen de
 // naam van de context die nú actief is.
 
+// Onmiskenbare omgevingsmarkering: in elke niet-productieomgeving permanent
+// zichtbaar naast de rol. Bewust amber en luid — een tester mag nooit hoeven
+// twijfelen of hij naar echte of naar testgegevens kijkt.
+export function DsOmgevingContext() {
+  return (
+    <span
+      data-testid="context-omgeving"
+      className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-amber-200"
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+      Testomgeving
+    </span>
+  )
+}
+
 export function DsRolContext({ label }: { label: string }) {
   return (
     <span
@@ -61,18 +76,22 @@ export function DsContextRegel({
   teamNaam,
   clubKleur,
   clubLogoUrl,
+  testomgeving,
 }: {
   rolLabel: string
   clubNaam?: string | null
   teamNaam?: string | null
   clubKleur?: string | null
   clubLogoUrl?: string | null
+  /** True in elke niet-productieomgeving — toont de permanente markering. */
+  testomgeving?: boolean
 }) {
   return (
     <span
       data-testid="context-regel"
       className="flex flex-wrap items-center gap-1.5"
     >
+      {testomgeving ? <DsOmgevingContext /> : null}
       <DsRolContext label={rolLabel} />
       {clubNaam ? (
         <DsOrganisatieContext naam={clubNaam} kleur={clubKleur} logoUrl={clubLogoUrl} />
