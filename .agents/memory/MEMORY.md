@@ -58,8 +58,9 @@
 - [AI-reviewgovernance v3 + ontwikkelstraat 31-07](sparki-ai-review-governance.md) — reviewketen; nieuwe statussen: Replit meldt alleen BUILD_DELIVERED, GitHub-first (alles pushen), alleen René geeft vrij.
 - [Product Proof Doctrine](sparki-product-proof-doctrine.md) — GOVERNING: beloftegedreven bouwen, "gereed" = belofte objectief bewezen ≥9,0; geen uitbreiding op module <9; onafhankelijke proof.
 - [GitHub Actions CI-env](github-actions-ci-env.md) — connector mist workflow-scope (webeditor als uitweg); kale CI eist dummy Clerk/AI-vars + geseede dev-user of alles 500t.
+- [Praktijktest eerst zelf reproduceren](praktijktest-eerst-zelf-reproduceren.md) — bij "werkt niet" NOOIT starten met gebruikersinstructies; eerst zelf naspelen (Playwright+testaccount), dan pas stappen mét controlepunt.
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided. 02-08: NOOIT meer taken/concepten voorstellen — één bouwplan via GitHub-bouwdocumenten.
-- [48-uurs afbouwsprint](sparki-48h-sprint.md) — BINDEND 31-07: groene Mirror = automatisch door (geen per-stap-vrijgave); #10/#12/#13 geparkeerd; alleen MIRROR_PROVEN telt; statusregister in docs/.
+- [48-uurs afbouwsprint](sparki-48h-sprint.md) — BINDEND: groen = automatisch door; 01-08 BREDE VRIJGAVE (vier bouwpakketten + Mobile UX + Wandelen), ook richting productie; Publish-klik blijft bij René.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
@@ -154,7 +155,6 @@
 - [Merknaam-lint UI-copy](sparki-brand-copy-lint.md) — UI spreekt direct, nooit "Sparki <werkwoord>"; check-brand-copy.mjs in typecheck-api, uitzonderingen zin-exact in allowlist.
 - [TEAM-onboarding & organogram-kaarten](sparki-team-onboarding.md) — TEAM = kolom op clubs; kaarten additief+idempotent (advisory lock), TEAM-gate server-side, medisch telt per functietype; e2e-valkuilen.
 - [Sparki Team-abonnement](sparki-team-abonnement.md) — tier TEAM: tier-verbreding raakt álle persoonlijke paden; terminale routes sluiten club; rolmapping definitief: ploegleider aparte rol, medic→medical_staff.
-- [48-uurs afbouwsprint](sparki-48h-sprint.md) update 01-08: BREDE VRIJGAVE René — vier bouwpakketten + Mobile UX + Wandelen/Hiken volledig vrij; groene automatische controles volstaan, ook richting productie (Publish-klik blijft bij René).
 - [Club-wedstrijdlaag BUILD_03](sparki-club-race-build03.md) — één-wedstrijd-sync (targetWhere-trap), vervanger zonder spoor, noodinfo-inzagelog, availabilityNote-afscherming, app-only dagmodus.
 - [Routefamilies & voet-geschiktheid](sparki-route-families-foot.md) — isRouteSportActive is de enige poort (geen vrijgaveflags); te voet: trap/fietsverbod ok, access=private/locked=yes hard; sport server-side via kandidaat-store.
 - [Shell pipe exitcode-trap](shell-pipe-exitcode-trap.md) — `check | tail && commit` commit ook bij rode check; poortchecks kaal draaien of pipefail.
