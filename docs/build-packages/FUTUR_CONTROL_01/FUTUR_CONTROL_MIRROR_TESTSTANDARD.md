@@ -1,5 +1,19 @@
 # FUTUR_CONTROL_MIRROR_TESTSTANDARD
 
+> **Vast contextblok (02-08-2026 — geldt voor elke Mirror-toets)**
+> Lees vóór het toetsen eerst `docs/besluiten/BESLUITEN_VOOR_REPLIT_2026-08-02.md` en
+> `docs/besluiten/BOUWSTRAAT_2026-08-02.md`. Daarin staat wat als productbesluit vastligt
+> en waar het te toetsen onderdeel in de bouwvolgorde zit.
+>
+> **Deze stukken zijn context, geen bewijs.** Ze vertellen wat de bedoeling en de prioriteit
+> is — ze zeggen niets over wat er werkelijk gebouwd is. Wat Mirror toetst, stelt Mirror
+> zelf vast op een vaste SHA. Wijkt de werkelijkheid af van een besluit, dan is dat een
+> **bevinding**, geen aanleiding om het besluit aan te passen.
+>
+> Komt Mirror iets tegen dat buiten de opdracht valt maar wél een besluit raakt, dan meldt
+> Mirror dat apart onder **"Signalen buiten scope"** — Mirror lost het niet zelf op.
+
+
 **Regelcodes:** `FCM-01..` · **Status:** `OPEN` · **Datum:** 1 augustus 2026
 Onafhankelijke toetsing van Futur Control. Infrastructuur wordt getoetst met `FUTUR_CONTROL_INFRASTRUCTURE_MIRROR_TESTSTANDARD.md`.
 
