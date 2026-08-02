@@ -1,5 +1,10 @@
 # SPARKI — MIRROR MOBILE TESTSTANDAARD v1.0
 
+> **Vaste werkinstructie:** `docs/product/MIRROR_WERKWIJZE_01.md` (MW-01 t/m MW-20) geldt
+> automatisch mee bij elke Mirror-opdracht: rapporteer herstelpunten aan Replit,
+> samenhangvragen aan Claude, René krijgt per pakket één regel in gewone taal;
+> nooit stilstaan, niets zelf oplossen.
+>
 > **Vast contextblok (02-08-2026 — geldt voor elke Mirror-toets)**
 > Lees vóór het toetsen eerst `docs/besluiten/BESLUITEN_VOOR_REPLIT_2026-08-02.md` en
 > `docs/besluiten/BOUWSTRAAT_2026-08-02.md`. Daarin staat wat als productbesluit vastligt
