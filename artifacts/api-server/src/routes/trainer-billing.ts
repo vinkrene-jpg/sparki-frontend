@@ -33,6 +33,8 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { sendEmail } from "../lib/email";
+import { renderDocument } from "../lib/documents/generator";
+import { bouwFactuur } from "../lib/documents/templates";
 
 const router = Router();
 
@@ -531,6 +533,47 @@ router.get("/invoices/:id", requireAuth, async (req, res) => {
     .where(eq(trainerInvoiceLinesTable.invoiceId, inv.id));
   const invWithOverdue = withOverdue(inv, amsterdamToday());
   res.json({ ...invWithOverdue, lines });
+});
+
+// BUILD_04-restpunt: PDF-uitdraai van een factuur via de ÉNE F4-documentgenerator
+// (HA-18/HA-43 — geen tweede PDF-engine). Zelfde eigenaarschapscheck als de
+// detailroute; het sjabloon rekent niets zelf uit.
+router.get("/invoices/:id/pdf", requireAuth, async (req, res) => {
+  const trainerClerkId = getClerkUserId(req)!;
+  const [inv] = await db
+    .select()
+    .from(trainerInvoicesTable)
+    .where(
+      and(
+        eq(trainerInvoicesTable.id, Number(req.params.id)),
+        eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+      ),
+    );
+  if (!inv) {
+    res.status(404).json({ error: "Factuur niet gevonden." });
+    return;
+  }
+  try {
+    const lines = await db
+      .select()
+      .from(trainerInvoiceLinesTable)
+      .where(eq(trainerInvoiceLinesTable.invoiceId, inv.id));
+    const { kop, blokken } = bouwFactuur({
+      invoice: inv,
+      lines,
+      datum: amsterdamToday(),
+    });
+    const buf = await renderDocument(kop, blokken);
+    const naam = inv.invoiceNumber
+      ? `factuur-${inv.invoiceNumber.replace(/[^A-Za-z0-9_-]+/g, "_")}.pdf`
+      : `conceptfactuur-${inv.id}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${naam}"`);
+    res.send(buf);
+  } catch (err) {
+    req.log.error({ err }, "invoice pdf failed");
+    res.status(500).json({ error: "Factuur-PDF maken is niet gelukt." });
+  }
 });
 
 // ── F8: verzending, nummering, statussen, creditnota (BB-64/BB-68) ──────────

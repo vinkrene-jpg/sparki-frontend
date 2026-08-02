@@ -224,3 +224,125 @@ function rolLabel(role: string): string {
   };
   return labels[role] ?? role;
 }
+
+// ── RT-15: factuur (trainer) ─────────────────────────────────────────────────
+// BUILD_04-restpunt, opgelost via de ÉNE F4-generator (HA-18/HA-43: geen
+// tweede PDF-engine). Alle bedragen komen 1-op-1 uit de factuurrij en de
+// regels — dit sjabloon rekent NIETS zelf uit en de AI komt er niet aan te
+// pas. Concepten dragen zichtbaar het woord CONCEPT (nummer volgt pas bij
+// verzending); ontbrekende gegevens worden benoemd, nooit gladgestreken.
+export type FactuurInput = {
+  invoice: {
+    invoiceNumber: string | null;
+    invoiceDate: string | null;
+    dueDate: string | null;
+    periodStart: string | null;
+    periodEnd: string | null;
+    serviceDate: string | null;
+    description: string;
+    amountExclCents: number;
+    amountInclCents: number;
+    vatBreakdown: Record<string, number> | null;
+    korApplied: boolean;
+    currency: string;
+    status: string;
+    businessSnapshot: Record<string, unknown> | null;
+    clientSnapshot: Record<string, unknown> | null;
+    templateVersion: number | null;
+  };
+  lines: {
+    description: string;
+    quantity: number;
+    unitPriceCents: number;
+    vatRateBps: number;
+    amountCents: number;
+  }[];
+  datum: string;
+};
+
+function euro(cents: number, currency: string): string {
+  const v = (cents / 100).toFixed(2).replace(".", ",");
+  return currency === "EUR" ? `€ ${v}` : `${currency} ${v}`;
+}
+
+function snapshotRegels(kop: string, snap: Record<string, unknown> | null): DocBlok {
+  if (!snap || Object.keys(snap).length === 0) {
+    return { soort: "ontbreekt", tekst: `${kop.toLowerCase()} zijn niet vastgelegd op deze factuur.` };
+  }
+  const items = Object.entries(snap)
+    .filter(([, v]) => typeof v === "string" && v.trim() !== "")
+    .map(([k, v]) => `${k}: ${String(v)}`);
+  return items.length > 0
+    ? { soort: "lijst", kop, items }
+    : { soort: "ontbreekt", tekst: `${kop.toLowerCase()} zijn niet vastgelegd op deze factuur.` };
+}
+
+export function bouwFactuur(inp: FactuurInput): { kop: DocKop; blokken: DocBlok[] } {
+  const inv = inp.invoice;
+  const isConcept = inv.status === "concept";
+  const kop: DocKop = {
+    code: "RT-15",
+    titel: isConcept ? "CONCEPTFACTUUR" : inv.status === "credited" ? "Factuur (gecrediteerd)" : "Factuur",
+    onderwerp: inv.invoiceNumber
+      ? `Factuurnummer ${inv.invoiceNumber}`
+      : "Nog geen factuurnummer — wordt bij verzending toegekend",
+    datum: inv.invoiceDate ?? inp.datum,
+    versie: inv.templateVersion ?? 1,
+    classificatie: "vertrouwelijk",
+    opgesteldDoor: "Trainer",
+  };
+  const blokken: DocBlok[] = [
+    snapshotRegels("Onderneming", inv.businessSnapshot),
+    snapshotRegels("Klant", inv.clientSnapshot),
+  ];
+  const periode =
+    inv.periodStart && inv.periodEnd
+      ? `Periode: ${inv.periodStart} t/m ${inv.periodEnd}`
+      : inv.serviceDate
+        ? `Dienstdatum: ${inv.serviceDate}`
+        : null;
+  const meta: string[] = [];
+  if (periode) meta.push(periode);
+  if (inv.dueDate) meta.push(`Vervaldatum: ${inv.dueDate}`);
+  if (inv.description.trim() !== "") meta.push(inv.description.trim());
+  if (meta.length > 0) blokken.push({ soort: "lijst", kop: "Gegevens", items: meta });
+
+  if (inp.lines.length > 0) {
+    blokken.push({
+      soort: "tabel",
+      tabel: {
+        kop: "Factuurregels",
+        kolommen: ["Omschrijving", "Aantal", "Stukprijs", "Btw", "Bedrag"],
+        breedtes: [4, 1, 1.5, 1, 1.5],
+        rijen: inp.lines.map((l) => [
+          l.description,
+          String(l.quantity),
+          euro(l.unitPriceCents, inv.currency),
+          inv.korApplied ? "KOR" : `${(l.vatRateBps / 100).toFixed(0)}%`,
+          euro(l.amountCents, inv.currency),
+        ]),
+      },
+    });
+  } else {
+    blokken.push({ soort: "ontbreekt", tekst: "deze factuur heeft geen regels." });
+  }
+
+  const totaal: string[] = [`Totaal exclusief btw: ${euro(inv.amountExclCents, inv.currency)}`];
+  if (inv.korApplied) {
+    totaal.push("Btw: vrijgesteld van btw op grond van de kleineondernemersregeling (KOR).");
+  } else if (inv.vatBreakdown && Object.keys(inv.vatBreakdown).length > 0) {
+    for (const [bps, cents] of Object.entries(inv.vatBreakdown)) {
+      totaal.push(`Btw ${(Number(bps) / 100).toFixed(0)}%: ${euro(cents, inv.currency)}`);
+    }
+  }
+  totaal.push(`Totaal inclusief btw: ${euro(inv.amountInclCents, inv.currency)}`);
+  blokken.push({ soort: "lijst", kop: "Totalen", items: totaal });
+  if (isConcept) {
+    blokken.push({
+      soort: "tekst",
+      kop: "Status",
+      tekst: "Dit is een concept. Deze uitdraai is geen verzonden factuur en draagt daarom nog geen factuurnummer.",
+    });
+  }
+  return { kop, blokken };
+}
