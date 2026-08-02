@@ -61,12 +61,14 @@ import {
   type DsNavItem,
   type LucideIcon,
 } from "@/components/ds"
+import { usePackage } from "@/hooks/use-package"
 import {
   COMMERCIAL_ACCOUNT_NAV,
   COMMERCIAL_COPY,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
   withClubNav,
+  withoutDashboardNav,
   SEASON_PHASES,
   bandLabel,
   bandStatusSoort,
@@ -75,6 +77,7 @@ import {
   buildHerstelPresentatie,
   buildSeasonView,
   buildWeekDays,
+  dashboardLaag3Zichtbaar,
   derivePresentationState,
   formatDayHeader,
   localISODate,
@@ -139,6 +142,7 @@ const ROLE_NAV_ICONS: Record<string, LucideIcon> = {
 function shellNavForRole(
   role: string | null | undefined,
   hasClubRole = false,
+  hideDashboard = false,
 ): {
   desktop: { href: string; label: string }[]
   mobiel: DsNavItem[]
@@ -155,9 +159,16 @@ function shellNavForRole(
     // Besluitenpatch 2026-08-01 (hoofdstuk B): actieve clubrol ⇒ "Club"
     // vervangt de Analyse-positie (alleen in de sporterweergave; coach/ouder/
     // voedingsdeskundige houden hun eigen vijf posities).
+    // DASHBOARD_01 Fase C (DSH-14): Gratis heeft geen dashboard-item.
+    const desktopBron = hideDashboard
+      ? withoutDashboardNav(COMMERCIAL_DESKTOP_NAV)
+      : COMMERCIAL_DESKTOP_NAV
+    const mobielBron = hideDashboard
+      ? withoutDashboardNav(COMMERCIAL_MOBILE_NAV)
+      : COMMERCIAL_MOBILE_NAV
     return {
-      desktop: withClubNav(COMMERCIAL_DESKTOP_NAV, hasClubRole),
-      mobiel: withClubNav(COMMERCIAL_MOBILE_NAV, hasClubRole).map((item) => ({
+      desktop: withClubNav(desktopBron, hasClubRole),
+      mobiel: withClubNav(mobielBron, hasClubRole).map((item) => ({
         href: item.href,
         label: item.label,
         icon: item.href === "/club" ? Building2 : (MOBILE_NAV_ICONS[item.href] ?? IconMenu),
@@ -215,7 +226,13 @@ export function CommercialShell({
   // laden geldt de standaardnav — nav mag nooit op de query wachten.
   const clubsQuery = useMyClubs()
   const hasClubRole = (clubsQuery.data ?? []).length > 0
-  const shellNav = shellNavForRole(profile?.activeRole, hasClubRole)
+  // DASHBOARD_01 Fase C (DSH-14): Gratis krijgt geen dashboard-item. Alleen bij
+  // een POSITIEF bekend "gratis"-pakket verbergen we het (fail-open: zolang het
+  // pakket laadt of onleesbaar is, blijft het item staan — het dashboard zelf
+  // verwijst Gratis dan alsnog netjes door, DSH-22).
+  const { pkg } = usePackage()
+  const hideDashboard = pkg === "gratis"
+  const shellNav = shellNavForRole(profile?.activeRole, hasClubRole, hideDashboard)
   // Prefix-match zodat ook diepere paden (/train/…, /routes/…) het juiste
   // nav-item actief markeren — zelfde gedrag op desktop en mobiel.
   const isActive = (href: string) =>
@@ -469,7 +486,11 @@ function WeekSection() {
       : []
 
   return (
-    <section className="mt-8" aria-label={COMMERCIAL_COPY.weekTitle}>
+    <section
+      className="mt-8"
+      aria-label={COMMERCIAL_COPY.weekTitle}
+      data-testid="laag3-weekstrook"
+    >
       <h2 className="type-title-card text-white/90">
         {COMMERCIAL_COPY.weekTitle}
       </h2>
@@ -870,7 +891,11 @@ function SeasonBand() {
   // en één actie naar de bestaande wedstrijd-/doelenflow.
   if (view.kind === "empty") {
     return (
-      <section className="mt-8" aria-label={COMMERCIAL_COPY.seasonTitle}>
+      <section
+        className="mt-8"
+        aria-label={COMMERCIAL_COPY.seasonTitle}
+        data-testid="laag3-seizoensband"
+      >
         <h2 className="type-title-card text-white/90">
           {COMMERCIAL_COPY.seasonTitle}
         </h2>
@@ -888,7 +913,11 @@ function SeasonBand() {
   }
 
   return (
-    <section className="mt-8" aria-label={COMMERCIAL_COPY.seasonTitle}>
+    <section
+      className="mt-8"
+      aria-label={COMMERCIAL_COPY.seasonTitle}
+      data-testid="laag3-seizoensband"
+    >
       <h2 className="type-title-card text-white/90">
         {COMMERCIAL_COPY.seasonTitle}
       </h2>
@@ -1042,6 +1071,16 @@ export function CommercialToday() {
   const state = useSparkiState()
   const dash = useAthleteDashboard()
   const races = useRaces()
+  // DASHBOARD_01 Fase C (DSH-15): meerweekse risico's en kansen (laag 3) horen
+  // bij Compleet. Bij Go blijft laag 3 beperkt tot één dag terug en één dag
+  // vooruit — élk meerweeks onderdeel vervalt dan: zowel de volledige
+  // weekstrook ("Deze week", 7 dagen) als de "Seizoen in beeld"-band (hoofddoel,
+  // fase over meerdere weken). GEEN nieuwe rechtenlaag (DSH-09): dit leest het
+  // bestaande pakket. Zolang het pakket laadt tonen we niets meerweeks (veilige
+  // default: nooit meer laten zien dan het pakket toestaat). Lege laag 3 bij Go
+  // ⇒ de sectie valt weg zónder mededeling (DSH-08/21).
+  const { pkg, isCompleet } = usePackage()
+  const laag3 = dashboardLaag3Zichtbaar(pkg)
 
   // Fouteerlijkheid: react-query kan isError combineren met eerder gecachete
   // data. Bij een fout in een bron mag ook geen oude (stale) waarde van die
@@ -1104,6 +1143,9 @@ export function CommercialToday() {
 
   return (
     <CommercialShell actief="/dashboard">
+      {/* DASHBOARD_01: markering voor het schermbewijs — dit is het drie-lagen
+          sporter-dashboard (één gedaante, DSH-24). */}
+      <div data-testid="sporter-dashboard" data-compleet={isCompleet ? "1" : "0"}>
       <HeroVandaag presentation={presentation} planWeek={planWeek} />
       <TodayOrchestratorSection />
       {/* Paginaspecifieke kolomindeling: op desktop twee kolommen (2:1),
@@ -1112,23 +1154,29 @@ export function CommercialToday() {
       <div className="mx-auto w-full max-w-screen-xl px-5 lg:px-10">
         <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
           <div>
+            {/* DSH-15: de volledige weekstrook ("Deze week") heeft een
+                meerweekse horizon en hoort bij Compleet. Bij Go valt hij weg —
+                geen mededeling (DSH-08/21). Wat overblijft is vandaag: de
+                training. */}
             {simpleFirst ? (
               <>
                 {!hideTraining && <TrainingSection />}
-                <WeekSection />
+                {laag3.weekstrook && <WeekSection />}
               </>
             ) : (
               <>
-                <WeekSection />
+                {laag3.weekstrook && <WeekSection />}
                 {!hideTraining && <TrainingSection />}
               </>
             )}
           </div>
           <div>
             <HerstelSection />
-            <SeasonBand />
+            {/* DSH-15: meerweekse laag 3 (Seizoen in beeld) alleen bij Compleet. */}
+            {laag3.seizoensband && <SeasonBand />}
           </div>
         </div>
+      </div>
       </div>
     </CommercialShell>
   )

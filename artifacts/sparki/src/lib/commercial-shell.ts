@@ -40,6 +40,50 @@ export function withClubNav(
   )
 }
 
+// DASHBOARD_01 Fase C (DSH-14): Gratis heeft GEEN dashboard-item. Laag 1 en 3
+// van het dashboard vragen gegevens die een gratis gebruiker niet heeft, dus
+// het item hoort niet in zijn navigatie (en /dashboard verwijst voor Gratis
+// netjes door naar de kaart — DSH-22). Voor Go en Compleet blijft Dashboard op
+// positie 1 staan. Pure functie zodat de nav-regressietest dit dekt.
+export function withoutDashboardNav(
+  items: CommercialNavItem[],
+): CommercialNavItem[] {
+  return items.filter((i) => i.href !== "/dashboard")
+}
+
+// DASHBOARD_01 Fase C (DSH-15): welke laag-3-onderdelen mag dit pakket zien op
+// het sporterdashboard? Compleet ziet de volledige laag 3 met een meerweekse
+// horizon (trend-/risico-observaties over weken, seizoensdoel-framing,
+// meerweekse opbouwsignalen). Go blijft beperkt tot "gisteren/vandaag/morgen":
+// alle meerweekse onderdelen vervallen — dus zowel de volledige weekstrook
+// ("Deze week") als de seizoensband ("Seizoen in beeld"). Wat overblijft is
+// hooguit vandaag (training) en herstel na gisteren.
+//
+// Pure functie, React-vrij, direct testbaar. GEEN nieuwe rechtenlaag (DSH-09):
+// de aanroeper geeft simpelweg het bestaande pakket door (usePackage()). Bij een
+// onbekend pakket (`null`, pakket nog niet geladen) tonen we niets meerweeks —
+// veilige default: nooit meer laten zien dan het pakket toestaat.
+//
+// Lege laag na dit filter ⇒ de aanroeper laat de sectie wég (DSH-08/21), zonder
+// mededeling: er is bewust géén "niet in jouw pakket"-tekst.
+export type DashboardPakket = "gratis" | "go" | "compleet"
+
+export type Laag3Zichtbaar = {
+  /** De volledige weekstrook ("Deze week", 7 dagen — meerweekse horizon). */
+  weekstrook: boolean
+  /** De seizoensband ("Seizoen in beeld" — hoofddoel/fase over weken). */
+  seizoensband: boolean
+}
+
+export function dashboardLaag3Zichtbaar(
+  pkg: DashboardPakket | null,
+): Laag3Zichtbaar {
+  const isCompleet = pkg === "compleet"
+  // Alle meerweekse onderdelen zijn Compleet-only. Go (en Gratis, dat hier niet
+  // eens landt) krijgt geen enkel meerweeks laag-3-onderdeel te zien.
+  return { weekstrook: isCompleet, seizoensband: isCompleet }
+}
+
 // Beslisblok 01 (RENE_APPROVED_PATTERN, apparaat-eigen navigatie met
 // gegarandeerde kernset): Wedstrijd hoort ook op desktop logisch bereikbaar
 // te zijn, en desktop krijgt een duidelijk Meer-equivalent (zelfde inhoud als

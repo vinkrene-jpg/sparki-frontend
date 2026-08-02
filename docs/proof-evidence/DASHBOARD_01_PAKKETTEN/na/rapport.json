@@ -1,0 +1,139 @@
+[
+  {
+    "identiteit": "governor-fixture-stand-a-gratis",
+    "pakket": "Gratis",
+    "landing": "kaart",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "identiteit governor-fixture-stand-a-gratis rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "entitlements → 200 · product_label=\"Gratis\" mode=subscription (verwacht pakket: Gratis)"
+      },
+      {
+        "status": "OK",
+        "detail": "billing/status → 200 · status=free tier=?"
+      },
+      {
+        "status": "OK",
+        "detail": "startscherm-fold / (bewijs: /home/runner/workspace/docs/proof-evidence/DASHBOARD_01_PAKKETTEN/na/pakket-stand-a-gratis-mobiel-01-start-fold.png)"
+      },
+      {
+        "status": "INFO",
+        "detail": "onderblad=1 (pakket=gratis) · sporter-dashboard=0"
+      },
+      {
+        "status": "OK",
+        "detail": "onderblad-kop \"Wat wil je vandaag rijden?\" zichtbaar=true"
+      },
+      {
+        "status": "INFO",
+        "detail": "nav bevat \"Dashboard\"=false (dashboard-links=0)"
+      },
+      {
+        "status": "INFO",
+        "detail": "paginahoogte=874px venster=874px schermen=1.0"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/billing/status → 200"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/entitlements → 200"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-stand-b-go",
+    "pakket": "Go",
+    "landing": "kaart",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "identiteit governor-fixture-stand-b-go rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "entitlements → 200 · product_label=\"Sparki Go\" mode=subscription (verwacht pakket: Go)"
+      },
+      {
+        "status": "OK",
+        "detail": "billing/status → 200 · status=expired tier=FREE"
+      },
+      {
+        "status": "OK",
+        "detail": "startscherm-fold / (bewijs: /home/runner/workspace/docs/proof-evidence/DASHBOARD_01_PAKKETTEN/na/pakket-stand-b-go-mobiel-01-start-fold.png)"
+      },
+      {
+        "status": "INFO",
+        "detail": "onderblad=1 (pakket=go) · sporter-dashboard=0"
+      },
+      {
+        "status": "INFO",
+        "detail": "/dashboard meerweekse laag 3 → weekstrook=0 seizoensband=0"
+      },
+      {
+        "status": "OK",
+        "detail": "onderblad-kop \"Jouw rit van vandaag\" zichtbaar=true"
+      },
+      {
+        "status": "INFO",
+        "detail": "nav bevat \"Dashboard\"=true (dashboard-links=1)"
+      },
+      {
+        "status": "INFO",
+        "detail": "paginahoogte=874px venster=874px schermen=1.0"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/billing/status → 200"
+      }
+    ]
+  },
+  {
+    "identiteit": "governor-fixture-stand-c-compleet",
+    "pakket": "Compleet",
+    "landing": "dashboard",
+    "regels": [
+      {
+        "status": "OK",
+        "detail": "identiteit governor-fixture-stand-c-compleet rol athlete"
+      },
+      {
+        "status": "OK",
+        "detail": "entitlements → 200 · product_label=\"Sparki Compleet\" mode=subscription (verwacht pakket: Compleet)"
+      },
+      {
+        "status": "OK",
+        "detail": "billing/status → 200 · status=expired tier=FREE"
+      },
+      {
+        "status": "OK",
+        "detail": "startscherm-fold / (bewijs: /home/runner/workspace/docs/proof-evidence/DASHBOARD_01_PAKKETTEN/na/pakket-stand-c-compleet-mobiel-01-start-fold.png)"
+      },
+      {
+        "status": "INFO",
+        "detail": "onderblad=0 (pakket=-) · sporter-dashboard=1"
+      },
+      {
+        "status": "INFO",
+        "detail": "/dashboard meerweekse laag 3 → weekstrook=1 seizoensband=1"
+      },
+      {
+        "status": "INFO",
+        "detail": "nav bevat \"Dashboard\"=true (dashboard-links=1)"
+      },
+      {
+        "status": "INFO",
+        "detail": "paginahoogte=1526px venster=874px schermen=1.7"
+      },
+      {
+        "status": "OK",
+        "detail": "/api/billing/status → 200"
+      }
+    ]
+  }
+]

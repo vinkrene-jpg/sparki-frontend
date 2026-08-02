@@ -15,6 +15,7 @@ import { Zap } from "lucide-react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { DayHome, DashboardAnalyse } from "@/components/sparki/day-home";
 import { CommercialToday } from "@/components/sparki/commercial-shell";
+import { KaartLanding } from "@/components/sparki/kaart-landing";
 import { CoachHome } from "@/components/sparki/coach-home";
 // DASHBOARD_01 Fase B — rol-dashboards (drie-lagen skelet) als eerste scherm.
 import { CoachDashboard } from "@/components/sparki/role-dashboards/coach-dashboard";
@@ -83,6 +84,7 @@ import { useMyClubs } from "@/hooks/use-club";
 import { clubStartRole } from "@/lib/role-start";
 import { FeatureFlagProvider, useFeatureFlags } from "@/contexts/FeatureFlagContext";
 import { GoGateSwitch } from "@/components/sparki/go-gate";
+import { usePackage } from "@/hooks/use-package";
 import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import { DevPreview } from "@/components/sparki/dev-preview";
 import { MotionPreferenceSync } from "@/hooks/use-motion-preference";
@@ -478,8 +480,22 @@ function RoleHome() {
     return <NutritionSpecialistHome />;
   if (clubStart === "loading") return null;
   if (clubStart) return <Redirect to={clubStart} />;
-  if (flagsLoading || flags.commercial_shell) return <CommercialToday />;
+  // DASHBOARD_01 Fase C: het sporter-startscherm volgt het pakket (DSH-10/12).
+  if (flagsLoading || flags.commercial_shell) return <SporterLanding />;
   return <StartPage />;
+}
+
+// DASHBOARD_01 Fase C (DSH-10/11/12, DSH-24): de sporter-landing onder de
+// commerciële schil volgt het pakket. Compleet landt op het drie-lagen
+// dashboard (CommercialToday — hergebruik van de Fase A-opbouw binnen de
+// commerciële schil-chrome, GEEN tweede gedaante). Go en Gratis landen op de
+// kaart met het onderblad (alleen laag 2). Zolang het pakket nog niet bekend
+// is (billing laadt of onleesbaar) kiezen we bewust de kaart — die werkt voor
+// élk pakket en vraagt geen data die Gratis niet heeft (DSH-09/22).
+function SporterLanding() {
+  const { pkg } = usePackage();
+  if (pkg === "compleet") return <CommercialToday />;
+  return <KaartLanding pkg={pkg === "go" ? "go" : "gratis"} />;
 }
 
 // Dashboard — the athlete home (DASHBOARD_01). Athletes get the single
@@ -503,8 +519,21 @@ function DashboardPage() {
     return <NutritionSpecialistHome />;
   if (clubStart === "loading") return null;
   if (clubStart) return <Redirect to={clubStart} />;
-  if (flagsLoading || commercialShell) return <CommercialToday />;
+  if (flagsLoading || commercialShell) return <DashboardSporter />;
   return <DayHome />;
+}
+
+// DASHBOARD_01 Fase C (DSH-13/14/22): het sporter-dashboard hoort bij Go en
+// Compleet. Gratis heeft GEEN dashboard — laag 1 en 3 vragen gegevens die een
+// gratis gebruiker niet heeft. Vraagt Gratis toch /dashboard aan (oude link,
+// bladwijzer, melding), dan volgt een NETTE doorverwijzing naar de kaart, nooit
+// een doodlopende link (DSH-22). Zolang het pakket nog laadt tonen we bewust
+// niets in plaats van een dashboard dat straks een verkeerde landing blijkt.
+function DashboardSporter() {
+  const { isLoading, pkg } = usePackage();
+  if (isLoading || pkg == null) return <div className="min-h-dvh bg-[#040506]" />;
+  if (pkg === "gratis") return <Redirect to="/routes" />;
+  return <CommercialToday />;
 }
 
 // Dashboard → diepere dagtype-analyse (DSH-07): een doorklik vanaf het

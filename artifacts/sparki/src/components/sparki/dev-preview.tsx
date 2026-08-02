@@ -4,6 +4,11 @@ import { apiFetch } from "@/lib/api"
 import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
 import { DashboardAnalyse, type DevCoachOverride } from "@/components/sparki/day-home"
 import { CommercialToday } from "@/components/sparki/commercial-shell"
+// DASHBOARD_01 Fase C: de kaart-landing voor Gratis/Go, ook in de dev-preview
+// zodat de toetsomgeving exact de pakketgestuurde landing toont (DSH-25: geen
+// app/browser-verschil).
+import { KaartLanding } from "@/components/sparki/kaart-landing"
+import { usePackage } from "@/hooks/use-package"
 import { CoachHome } from "@/components/sparki/coach-home"
 // DASHBOARD_01 Fase B (DSH-13a/DSH-24): het drie-lagen dashboard is het eerste
 // scherm van coach/ouder — óók in de dev-preview-router, zodat de toetsomgeving
@@ -444,6 +449,16 @@ function DevPanel({
   )
 }
 
+// DASHBOARD_01 Fase C (DSH-10/12/24/25): de sporter-landing volgt het pakket,
+// exact zoals productie-SporterLanding. Compleet → drie-lagen dashboard
+// (CommercialToday, één gedaante); Go/Gratis → de kaart met onderblad. Bij een
+// onbekend pakket de kaart (veilige default die voor élk pakket werkt).
+function SporterLandingPreview() {
+  const { pkg } = usePackage()
+  if (pkg === "compleet") return <CommercialToday />
+  return <KaartLanding pkg={pkg === "go" ? "go" : "gratis"} />
+}
+
 // Development Preview Mode shell. Rendered only in the Vite dev server. Bypasses
 // authentication and onboarding and renders the exact production components,
 // driven by the wouter location so the BottomNav works too. Production uses the
@@ -515,7 +530,9 @@ export function DevPreview() {
       // stille terugval op de sporterweergave.
       page = <NutritionSpecialistHome />
     } else {
-      page = <CommercialToday />
+      // DASHBOARD_01 Fase C: /dashboard volgt het pakket (Compleet: dashboard;
+      // Go: dashboard met beperkte laag 3; Gratis: nette landing op de kaart).
+      page = <SporterLandingPreview />
       showNav = false
     }
   } else if (location.startsWith("/rol-start")) {
@@ -639,7 +656,8 @@ export function DevPreview() {
       // F3 (BB-14): spiegelt RoleHome — eigen startscherm, geen terugval.
       page = <NutritionSpecialistHome />
     } else {
-      page = <CommercialToday />
+      // DASHBOARD_01 Fase C (DSH-10/12/24): sporter-landing volgt het pakket.
+      page = <SporterLandingPreview />
       showNav = false
     }
   } else {

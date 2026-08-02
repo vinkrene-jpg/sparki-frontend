@@ -15,6 +15,8 @@ import {
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
   withClubNav,
+  withoutDashboardNav,
+  dashboardLaag3Zichtbaar,
   PRESENTATION_STATES,
   SEASON_PHASES,
   bandLabel,
@@ -693,6 +695,40 @@ scenario("withClubNav: zonder clubrol blijft de navigatie exact ongewijzigd", ()
     JSON.stringify(withClubNav(COMMERCIAL_DESKTOP_NAV, false)) === JSON.stringify(COMMERCIAL_DESKTOP_NAV),
     "desktop ongewijzigd",
   )
+})
+
+scenario("DSH-14: withoutDashboardNav verwijdert het dashboard-item (Gratis)", () => {
+  const mobiel = withoutDashboardNav(COMMERCIAL_MOBILE_NAV)
+  assert(!mobiel.some((i) => i.href === "/dashboard"), "geen dashboard mobiel")
+  assert(mobiel.length === COMMERCIAL_MOBILE_NAV.length - 1, "precies één positie minder")
+  const desktop = withoutDashboardNav(COMMERCIAL_DESKTOP_NAV)
+  assert(!desktop.some((i) => i.href === "/dashboard"), "geen dashboard desktop")
+})
+
+scenario("DSH-13: Go/Compleet houden Dashboard op positie 1", () => {
+  // Ongefilterd (Go/Compleet): Dashboard is het eerste navigatie-item.
+  assert(COMMERCIAL_MOBILE_NAV[0]?.href === "/dashboard", "mobiel positie 1")
+  assert(COMMERCIAL_DESKTOP_NAV[0]?.href === "/dashboard", "desktop positie 1")
+})
+
+scenario("DSH-15: Compleet ziet de volledige meerweekse laag 3", () => {
+  const z = dashboardLaag3Zichtbaar("compleet")
+  assert(z.weekstrook === true, "Compleet: weekstrook zichtbaar")
+  assert(z.seizoensband === true, "Compleet: seizoensband zichtbaar")
+})
+
+scenario("DSH-15: Go toont GEEN meerweekse laag-3-onderdelen", () => {
+  const z = dashboardLaag3Zichtbaar("go")
+  assert(z.weekstrook === false, "Go: geen volledige weekstrook (meerweeks)")
+  assert(z.seizoensband === false, "Go: geen seizoensband (meerweeks)")
+})
+
+scenario("DSH-15: onbekend/gratis pakket toont niets meerweeks (veilige default)", () => {
+  for (const pkg of [null, "gratis"] as const) {
+    const z = dashboardLaag3Zichtbaar(pkg)
+    assert(z.weekstrook === false, `${pkg}: geen weekstrook`)
+    assert(z.seizoensband === false, `${pkg}: geen seizoensband`)
+  }
 })
 
 // ── Rapportage ───────────────────────────────────────────────────────────────
