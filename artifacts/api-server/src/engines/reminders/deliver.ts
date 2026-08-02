@@ -81,7 +81,10 @@ function emailText(item: ReminderItem, displayName: string | null): string {
   return [
     greeting(displayName),
     "",
-    item.body,
+    // NOT-03: de e-mail-body is NEUTRAAL (geen trainings-/wedstrijdinhoud,
+    // bestandsnamen of gezondheids-/prestatiegetallen). De app achter de link
+    // toont de specifieke inhoud in de juiste context.
+    item.emailBody,
     "",
     "Open Sparki om verder te gaan.",
     "",
@@ -214,8 +217,12 @@ export async function deliverReminders(
           const r = await sendPush(
             { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
             {
-              title: item.title,
-              body: item.body,
+              // NOT-03: NEUTRALE pushtekst — geen trainings-/wedstrijdinhoud,
+              // bestandsnamen of gezondheids-/prestatiegetallen. De in-app rij
+              // (hierboven aangemaakt) mag wél specifiek zijn; de actionUrl
+              // brengt de gebruiker in de juiste context.
+              title: item.pushTitle,
+              body: item.pushBody,
               url: item.actionUrl,
               tag: item.dedupeKey,
             },

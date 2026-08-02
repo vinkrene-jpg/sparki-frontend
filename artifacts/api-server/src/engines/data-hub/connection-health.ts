@@ -74,14 +74,37 @@ export function linkResolutionKey(provider: string): string {
 
 // ── Push (best-effort, voorkeuren-bewust, nooit dubbel) ─────────────────────
 
+// NOT-03 (reviewfix): de push-payload voor koppelingsmeldingen. Pure functie —
+// gebruikt ALLEEN de expliciete neutrale velden, met een veilige neutrale
+// default, en NOOIT de (specifieke) in-app title/body. Zo is per test te
+// bewijzen dat er geen providernaam/status/getallen in de push lekken.
+export function neutralLinkPushPayload(input: {
+  pushTitle?: string;
+  pushBody?: string;
+}): { title: string; body: string } {
+  return {
+    title: input.pushTitle ?? "Er is iets met een koppeling",
+    body: input.pushBody ?? "Er is iets met je synchronisatie — open de app.",
+  };
+}
+
 /**
  * Maak de in-app melding en stuur — alleen wanneer de rij ÉCHT nieuw is — een
  * push naar de apparaten van de sporter. Respecteert meldingsvoorkeuren
  * (kanaal per categorie + stille uren). Best-effort: gooit nooit.
  * Geeft terug of er een nieuwe in-app melding is aangemaakt.
+ *
+ * NOT-03 (reviewfix): de PUSH-tekst is NEUTRAAL — geen providernaam of status.
+ * De in-app rij (`input.title`/`input.body`) mag wél specifiek blijven; de
+ * pushtekst komt uit `pushTitle`/`pushBody` (met een veilige, neutrale default)
+ * en `actionUrl` brengt de gebruiker naar de juiste context.
  */
 export async function notifyWithPush(
-  input: CreateNotificationInput & { actionUrl: string },
+  input: CreateNotificationInput & {
+    actionUrl: string;
+    pushTitle?: string;
+    pushBody?: string;
+  },
   now: Date = new Date(),
 ): Promise<boolean> {
   const created = await createNotification(input);
@@ -93,6 +116,9 @@ export async function notifyWithPush(
       input.category ?? TYPE_CATEGORY[input.type] ?? "systeem";
     const prefs = await getPrefs(input.clerkId);
     if (!channelAllowed(prefs, "push", category, now)) return created;
+
+    // Neutrale pushtekst: nooit providernaam/status/getallen in de push.
+    const { title: pushTitle, body: pushBody } = neutralLinkPushPayload(input);
 
     const subs = await db
       .select({
@@ -107,8 +133,8 @@ export async function notifyWithPush(
       const r = await sendPush(
         { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
         {
-          title: input.title,
-          body: input.body ?? "",
+          title: pushTitle,
+          body: pushBody,
           url: input.actionUrl,
           tag: input.dedupeKey ?? input.resolutionKey ?? undefined,
         },
@@ -134,7 +160,7 @@ export interface ConnectionHealthSummary {
   notified: number;
 }
 
-function brokenLinkCopy(
+export function brokenLinkCopy(
   reason: BrokenLinkReason,
   displayName: string,
 ): { title: string; body: string } {
@@ -180,6 +206,7 @@ export async function runConnectionHealthCheck(opts: {
         {
           clerkId: row.clerkId,
           type: "sync_error",
+          // In-app: specifiek (providernaam + status mag hier).
           title: copy.title,
           body: copy.body,
           priority: "high",
@@ -187,6 +214,9 @@ export async function runConnectionHealthCheck(opts: {
           source: "data-hub",
           audience: "athlete",
           resolutionKey: linkResolutionKey(row.provider),
+          // NOT-03: NEUTRALE pushtekst — geen providernaam/status.
+          pushTitle: "Er is iets met een koppeling",
+          pushBody: "Je synchronisatie heeft aandacht nodig — open de app.",
         },
         now,
       );

@@ -9,8 +9,10 @@ import {
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   activeNotificationFilter,
+  audienceFilter,
   getUnreadDayCount,
   groupNotificationsByDay,
+  visibleAudiences,
 } from "../lib/notifications";
 import { getPrefs, updatePrefs, type PrefsPatch } from "../engines/reminders";
 import { pushChannelStatus, isValidPushEndpoint } from "../lib/push";
@@ -174,6 +176,9 @@ router.get("/", requireAuth, async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 30, 100);
   const unreadOnly = String(req.query.unread) === "true";
   try {
+    // F12 (NOT-05): audience-afdwinging. Alleen meldingen voor een rol die de
+    // gebruiker NÚ heeft (of audience-loos) komen door. Fail-closed.
+    const audiences = await visibleAudiences(clerkId);
     // Read-path hygiene (Golf 24): expired and resolved notifications never
     // reach the bell — a notification disappears when its situation is fixed
     // or its validity window has passed.
@@ -182,10 +187,12 @@ router.get("/", requireAuth, async (req, res) => {
           eq(notificationsTable.clerkId, clerkId),
           isNull(notificationsTable.readAt),
           activeNotificationFilter(),
+          audienceFilter(audiences),
         )
       : and(
           eq(notificationsTable.clerkId, clerkId),
           activeNotificationFilter(),
+          audienceFilter(audiences),
         );
     const notifications = await db
       .select()
@@ -196,7 +203,7 @@ router.get("/", requireAuth, async (req, res) => {
     // Fold the rows into at-most-one entry per calendar day for the bell. The
     // unread badge counts *days* with unread notifications, not the raw total.
     const groups = groupNotificationsByDay(notifications);
-    const unreadCount = await getUnreadDayCount(clerkId);
+    const unreadCount = await getUnreadDayCount(clerkId, audiences);
     res.json({ groups, unreadCount });
   } catch (err) {
     req.log.error({ err }, "notifications.list failed");
@@ -213,7 +220,10 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
     return;
   }
   try {
-    await db
+    // F12 (NOT-05): audience-afdwinging óók op het schrijfpad. Een melding voor
+    // een ingetrokken rol is niet afhandelbaar — geen match ⇒ 404, geen 403-lek.
+    const audiences = await visibleAudiences(clerkId);
+    const updated = await db
       .update(notificationsTable)
       .set({ readAt: new Date() })
       .where(
@@ -221,8 +231,30 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
           eq(notificationsTable.id, id),
           eq(notificationsTable.clerkId, clerkId),
           isNull(notificationsTable.readAt),
+          audienceFilter(audiences),
         ),
-      );
+      )
+      .returning({ id: notificationsTable.id });
+    if (updated.length === 0) {
+      // Bestaat de rij überhaupt (voor deze eigenaar), los van audience/read?
+      // Zo ja én de audience matcht niet ⇒ 404 (onzichtbaar = niet afhandelbaar).
+      const [exists] = await db
+        .select({ id: notificationsTable.id })
+        .from(notificationsTable)
+        .where(
+          and(
+            eq(notificationsTable.id, id),
+            eq(notificationsTable.clerkId, clerkId),
+            audienceFilter(audiences),
+          ),
+        )
+        .limit(1);
+      if (!exists) {
+        res.status(404).json({ error: "Melding niet gevonden" });
+        return;
+      }
+      // Rij zichtbaar maar al gelezen: idempotent ok.
+    }
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "notifications.read failed");
@@ -246,6 +278,9 @@ router.post("/read-batch", requireAuth, async (req, res) => {
     return;
   }
   try {
+    // F12 (NOT-05): batch respecteert de audience — rijen voor een ingetrokken
+    // rol worden stil overgeslagen (niet afhandelbaar).
+    const audiences = await visibleAudiences(clerkId);
     await db
       .update(notificationsTable)
       .set({ readAt: new Date() })
@@ -254,6 +289,7 @@ router.post("/read-batch", requireAuth, async (req, res) => {
           eq(notificationsTable.clerkId, clerkId),
           inArray(notificationsTable.id, ids),
           isNull(notificationsTable.readAt),
+          audienceFilter(audiences),
         ),
       );
     res.json({ ok: true });
@@ -267,6 +303,8 @@ router.post("/read-batch", requireAuth, async (req, res) => {
 router.post("/read-all", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
+    // F12 (NOT-05): "alles gelezen" markeert alleen wat de gebruiker nú mag zien.
+    const audiences = await visibleAudiences(clerkId);
     await db
       .update(notificationsTable)
       .set({ readAt: new Date() })
@@ -274,6 +312,7 @@ router.post("/read-all", requireAuth, async (req, res) => {
         and(
           eq(notificationsTable.clerkId, clerkId),
           isNull(notificationsTable.readAt),
+          audienceFilter(audiences),
         ),
       );
     res.json({ ok: true });

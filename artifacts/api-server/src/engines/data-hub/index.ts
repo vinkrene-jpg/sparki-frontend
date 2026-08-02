@@ -442,6 +442,7 @@ export async function runSync(
     await notifyWithPush({
       clerkId,
       type: "sync_error",
+      // In-app: specifiek (providernaam mag hier).
       title: `Synchronisatie met ${def.displayName} lukt niet`,
       body: "De laatste synchronisatie is mislukt. Controleer de koppeling in de Data Hub of probeer het later opnieuw.",
       priority: "normal",
@@ -450,6 +451,9 @@ export async function runSync(
       audience: "athlete",
       resolutionKey: `sync:${providerId}`,
       expiresAt: new Date(now.getTime() + 7 * 86_400_000),
+      // NOT-03: NEUTRALE pushtekst — geen providernaam.
+      pushTitle: "Er is iets met een koppeling",
+      pushBody: "Je synchronisatie heeft aandacht nodig — open de app.",
     });
     throw new HubError("sync_failed", message);
   }

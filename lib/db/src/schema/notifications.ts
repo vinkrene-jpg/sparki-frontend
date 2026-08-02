@@ -1,6 +1,7 @@
 import {
   pgTable,
   serial,
+  integer,
   text,
   timestamp,
   index,
@@ -117,6 +118,15 @@ export const notificationsTable = pgTable(
     // Sleutel waarop een oplossing meldingen wegneemt, bijv.
     // "sync:<connectionId>" of "consent:<linkId>". NULL = niet oplosbaar.
     resolutionKey: text("resolution_key"),
+    // ── F12: bundeling (NOT-01) ──────────────────────────────────────────────
+    // Bundelsleutel: identificeert HETZELFDE logische object (bijv.
+    // "wedstrijd:coach:/races/42"). Meerdere meldingen binnen het bundelvenster
+    // met dezelfde sleutel groeien uit tot ÉÉN bundel-rij i.p.v. losse rijen.
+    // NULL = niet bundelbaar (kritieke categorieën, of geen object-referentie).
+    bundleKey: text("bundle_key"),
+    // Aantal onderliggende gebeurtenissen dat deze rij vertegenwoordigt. 1 voor
+    // gewone rijen; ≥ drempel voor een bundel-rij die is meegegroeid.
+    bundleCount: integer("bundle_count").notNull().default(1),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -132,6 +142,12 @@ export const notificationsTable = pgTable(
     uniqueIndex("notif_clerk_open_resolution_idx")
       .on(t.clerkId, t.resolutionKey)
       .where(sql`${t.resolutionKey} IS NOT NULL AND ${t.resolvedAt} IS NULL`),
+    // F12 (NOT-01): snel de open bundel voor een logisch object vinden. Nieuw
+    // binnenkomende meldingen zoeken de laatste actieve bundel/losse rij met
+    // dezelfde bundelsleutel binnen het tijdvenster.
+    index("notif_clerk_bundle_idx")
+      .on(t.clerkId, t.bundleKey, t.createdAt)
+      .where(sql`${t.bundleKey} IS NOT NULL AND ${t.resolvedAt} IS NULL`),
   ],
 );
 

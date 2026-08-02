@@ -30,10 +30,19 @@ export type ReminderItem = {
   kind: ReminderKind;
   type: NotificationType;
   dedupeKey: string;
+  // In-app title/body — MOGEN specifiek blijven (staan alleen in de app achter
+  // de eigen sessie van de gebruiker).
   title: string;
-  // In-app + email body. Plain Dutch, no "AI" wording.
   body: string;
+  // F12 (NOT-03): NEUTRALE push/e-mail-payload. Geen trainings-title/description,
+  // geen wedstrijdnaam/locatie, geen item-titels, geen bestandsnamen,
+  // gezondheids-/prestatiegetallen of naam van een minderjarige. De actionUrl
+  // brengt de gebruiker in de juiste context waar de details wél staan.
+  pushTitle: string;
+  pushBody: string;
   emailSubject: string;
+  // Neutrale e-mail-body (zelfde inhoudsregel als de push).
+  emailBody: string;
   actionUrl: string;
 };
 
@@ -82,7 +91,11 @@ async function checkInItem(
     dedupeKey: `reminder:checkin:${today}`,
     title: "Hoe voel je je vandaag?",
     body: "Je avond-check-in ontbreekt nog. Een korte check-in (fris / oké / vermoeid) helpt je advies voor morgen scherp te krijgen.",
-    emailSubject: "Sparki: hoe voel je je vandaag?",
+    // Neutraal: geen gezondheids-/gemoedsinhoud in de push.
+    pushTitle: "Hoe voel je je vandaag?",
+    pushBody: "Je avond-check-in staat klaar — open de app om 'm in te vullen.",
+    emailSubject: "Hoe voel je je vandaag?",
+    emailBody: "Je avond-check-in staat klaar — open de app om 'm in te vullen.",
     actionUrl: "/",
   };
 }
@@ -106,7 +119,11 @@ async function followUpItem(clerkId: string): Promise<ReminderItem | null> {
     dedupeKey: `reminder:followup:${analysisDate}`,
     title: open === 1 ? "Er staat een vraag voor je open" : "Er staan een paar vragen open",
     body: `Er ${open === 1 ? "staat" : "staan"} ${plural} open om je advies preciezer te maken. Beantwoord ${open === 1 ? "die" : "ze"} kort in de app.`,
+    // Neutraal: geen aantal of inhoud van de vragen in de push.
+    pushTitle: "Er staat een vraag voor je open",
+    pushBody: "Open de app om je openstaande vraag te beantwoorden.",
     emailSubject: "Er staat een vraag voor je open",
+    emailBody: "Open de app om je openstaande vraag te beantwoorden.",
     actionUrl: "/",
   };
 }
@@ -136,11 +153,16 @@ async function trainingItems(
     kind: "training" as const,
     type: "training_reminder" as NotificationType,
     dedupeKey: `reminder:training:${r.id}`,
+    // In-app mag de titel/omschrijving wél tonen.
     title: `Morgen op het programma: ${r.title}`,
     body: r.description
       ? `Morgen staat "${r.title}" gepland. ${r.description}`
       : `Morgen staat "${r.title}" gepland. Bekijk de details in de app.`,
-    emailSubject: `Sparki: morgen traint je — ${r.title}`,
+    // NOT-03: geen trainings-titel/omschrijving in push/e-mail.
+    pushTitle: "Je training van vandaag staat klaar",
+    pushBody: "Bekijk je programma in de app.",
+    emailSubject: "Je training staat klaar",
+    emailBody: "Bekijk je programma voor morgen in de app.",
     actionUrl: "/train",
   }));
 }
@@ -172,9 +194,14 @@ async function raceItems(clerkId: string, now: Date): Promise<ReminderItem[]> {
       kind: "races" as const,
       type: "race_reminder" as NotificationType,
       dedupeKey: `reminder:race:${r.id}`,
+      // In-app mag naam/locatie/datum wél tonen.
       title: `Binnenkort: ${r.name}`,
       body: `Je wedstrijd "${r.name}"${where} is op ${dutchDate(r.raceDate)}. In de app vind je hulp bij de voorbereiding.`,
-      emailSubject: `Sparki: ${r.name} komt eraan`,
+      // NOT-03: geen wedstrijdnaam/locatie in push/e-mail.
+      pushTitle: "Je hebt binnenkort een wedstrijd",
+      pushBody: "Bekijk je voorbereiding in de app.",
+      emailSubject: "Je hebt binnenkort een wedstrijd",
+      emailBody: "Bekijk je voorbereiding in de app.",
       actionUrl: "/races",
     };
   });
@@ -289,7 +316,11 @@ async function profileItem(
     dedupeKey: `reminder:profile:${field.id}:${isoWeek(now)}`,
     title: field.title,
     body: field.body,
-    emailSubject: `Sparki: ${field.title}`,
+    // Neutraal: geen specifieke profielvraag/waarde in push/e-mail.
+    pushTitle: "Maak je profiel compleet",
+    pushBody: "Er ontbreekt nog iets in je profiel — vul het aan in de app.",
+    emailSubject: "Maak je profiel compleet",
+    emailBody: "Er ontbreekt nog iets in je profiel — vul het aan in de app.",
     actionUrl: field.actionUrl,
   };
 }
@@ -349,7 +380,11 @@ async function whatsNewItem(
     dedupeKey: `reminder:whatsnew:${amsterdamYmd(now)}`,
     title: "Er is iets nieuws voor je",
     body,
-    emailSubject: "Sparki: er is iets nieuws voor je",
+    // NOT-03: geen item-titels in push/e-mail.
+    pushTitle: "Er is iets nieuws voor je",
+    pushBody: "Open de app om te kijken wat er voor je klaarstaat.",
+    emailSubject: "Er is iets nieuws voor je",
+    emailBody: "Open de app om te kijken wat er voor je klaarstaat.",
     actionUrl: whatsNew.lead.actionUrl,
   };
 }

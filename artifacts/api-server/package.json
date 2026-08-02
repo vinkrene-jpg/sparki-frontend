@@ -138,6 +138,7 @@
     "test:today-roles": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-roles",
     "test:today-matrix": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-matrix",
     "test:mental": "node ./scripts/run-test.mjs mental",
+    "test:f12-inbox": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs f12-inbox --dev-auth",
     "test:parent-age-transition": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs parent-age-transition",
     "test:trainer-billing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-billing",
     "test:trainer-parent-minor": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-parent-minor",
