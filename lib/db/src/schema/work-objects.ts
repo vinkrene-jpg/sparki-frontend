@@ -26,9 +26,17 @@ export const workObjectStatuses = ["concept", "gedeeld", "afgerond"] as const;
 
 export const workObjectsTable = pgTable("work_objects", {
   id: serial("id").primaryKey(),
-  clubId: integer("club_id")
-    .notNull()
-    .references(() => clubsTable.id, { onDelete: "cascade" }),
+  // SPARKI_BUILD_04 F4: de laag draagt óók documenten van de zelfstandige
+  // trainer (zonder club). Precies één scope is gezet: clubId ÓF
+  // ownerTrainerClerkId (DB-CHECK work_objects_scope_ck). Clubroutes filteren
+  // op clubId en zien trainerdocumenten dus nooit, en omgekeerd.
+  clubId: integer("club_id").references(() => clubsTable.id, {
+    onDelete: "cascade",
+  }),
+  ownerTrainerClerkId: text("owner_trainer_clerk_id").references(
+    () => userProfilesTable.clerkId,
+    { onDelete: "cascade", onUpdate: "cascade" },
+  ),
   // Optionele koppeling aan een clubwedstrijd (koersplan). Andere typen
   // (trainingsweek, materiaalplan, ouderbriefing) laten dit leeg.
   eventId: integer("event_id").references(() => clubRaceEventsTable.id, {
