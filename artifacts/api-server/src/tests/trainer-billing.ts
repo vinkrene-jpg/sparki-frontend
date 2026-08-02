@@ -23,6 +23,9 @@ import {
   clientAthleteLinksTable,
   billingPartiesTable,
   trainerBusinessTable,
+  workObjectsTable,
+  workObjectSectionsTable,
+  workObjectHistoryTable,
   userProfilesTable,
   athleteProfilesTable,
 } from "@workspace/db";
@@ -68,6 +71,16 @@ async function api(clerkId: string, method: string, path: string, body?: unknown
 }
 
 async function cleanup() {
+  const objs = await db
+    .select({ id: workObjectsTable.id })
+    .from(workObjectsTable)
+    .where(inArray(workObjectsTable.ownerTrainerClerkId, ALL));
+  const objIds = objs.map((o) => o.id);
+  if (objIds.length) {
+    await db.delete(workObjectHistoryTable).where(inArray(workObjectHistoryTable.objectId, objIds));
+    await db.delete(workObjectSectionsTable).where(inArray(workObjectSectionsTable.objectId, objIds));
+    await db.delete(workObjectsTable).where(inArray(workObjectsTable.id, objIds));
+  }
   const clients = await db
     .select({ id: trainerClientsTable.id })
     .from(trainerClientsTable)
@@ -183,6 +196,64 @@ async function main() {
     assert(klant && klant.message.includes("Klant A"), "klant-signaal met verantwoordelijke");
     assert(zelf && zelf.message.includes("jijzelf"), "eigen-btw-signaal met verantwoordelijke");
     assert(sig.json.filter((s: any) => s.kind === "concept_klaar").length === 5, "concept-signalen");
+  });
+
+  await scenario("F6: losse factuur met meerdere regels + bewijs-koppeling", async () => {
+    // Dienst uit de catalogus + testverslag als bewijs.
+    const svc = await api(T1, "POST", "/api/trainer/billing/services", {
+      name: "FTP-test",
+      priceCents: 7500,
+      unit: "losse_sessie",
+    });
+    assert(svc.status === 201, `dienst: ${svc.status}`);
+    const doc = await api(T1, "POST", "/api/trainer/documents", {
+      objectType: "testverslag",
+      title: "FTP-test 12 maart",
+    });
+    await api(T1, "POST", `/api/trainer/documents/${doc.json.id}/status`, { status: "afgerond" });
+
+    // Vóór facturatie: signaal "test niet gefactureerd".
+    const sig1 = await api(T1, "GET", "/api/trainer/billing/signals");
+    assert(
+      sig1.json.some((s: any) => s.kind === "test_niet_gefactureerd" && s.message.includes("12 maart")),
+      "signaal uitgevoerde-test-niet-gefactureerd",
+    );
+
+    const draft = await api(T1, "POST", "/api/trainer/billing/invoices/draft", {
+      clientId,
+      serviceDate: "2026-03-12",
+      lines: [
+        { serviceId: svc.json.id, evidenceWorkObjectId: doc.json.id },
+        { description: "Adviesgesprek na test", quantity: 2, unitPriceCents: 2500 },
+      ],
+    });
+    assert(draft.status === 201 && draft.json.status === "concept", `draft: ${draft.status}`);
+    assert(draft.json.amountExclCents === 12500, `excl: ${draft.json.amountExclCents}`);
+    assert(draft.json.amountInclCents === 15125, `incl: ${draft.json.amountInclCents}`);
+    const det = await api(T1, "GET", `/api/trainer/billing/invoices/${draft.json.id}`);
+    assert(det.json.lines.length === 2, "twee regels");
+    assert(
+      det.json.lines.some((l: any) => l.evidenceWorkObjectId === doc.json.id),
+      "bewijs-koppeling aanwezig op de gefactureerde test",
+    );
+
+    // Ná facturatie verdwijnt het signaal — combinatie met lopende cyclus
+    // blijft gewoon bestaan (aparte concepten).
+    const sig2 = await api(T1, "GET", "/api/trainer/billing/signals");
+    assert(
+      !sig2.json.some((s: any) => s.kind === "test_niet_gefactureerd"),
+      "signaal weg na facturatie",
+    );
+  });
+
+  await scenario("F6: KOR-factuur zonder btw", async () => {
+    const draft = await api(T1, "POST", "/api/trainer/billing/invoices/draft", {
+      clientId,
+      korApplied: true,
+      lines: [{ description: "Bikefit", unitPriceCents: 9900 }],
+    });
+    assert(draft.status === 201, `draft: ${draft.status}`);
+    assert(draft.json.amountInclCents === 9900 && draft.json.korApplied === true, "KOR: geen btw");
   });
 
   await scenario("cross-account fail-closed", async () => {

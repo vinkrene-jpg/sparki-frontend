@@ -23,6 +23,7 @@ import {
   trainerInvoiceLinesTable,
   trainerClientsTable,
   trainerBusinessTable,
+  workObjectsTable,
   SERVICE_UNITS,
   BILLING_CYCLES,
 } from "@workspace/db";
@@ -257,6 +258,171 @@ router.post("/recurring-billing/run-drafts", requireAuth, async (req, res) => {
   }
 });
 
+// ── F6: losse dienst factureren — conceptfactuur met regels ─────────────────
+// POST /invoices/draft { clientId, serviceDate?, lines: [{ serviceId? |
+// description, quantity, unitPriceCents?, vatRateBps?, evidenceWorkObjectId?,
+// note? }], korApplied? }
+// Bindend: bij een gefactureerde uitgevoerde test hoort een bewijs- of
+// rapportkoppeling (evidenceWorkObjectId) — navolgbaar wat is gefactureerd.
+// Combinatie met een lopende cyclus is gewoon een extra losse factuur.
+router.post("/invoices/draft", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const clientId = int(req.body?.clientId);
+    const lines = Array.isArray(req.body?.lines) ? req.body.lines : [];
+    if (!clientId || lines.length === 0) {
+      res.status(400).json({ error: "clientId en minimaal één regel zijn verplicht." });
+      return;
+    }
+    if (!(await ownedClient(clientId, trainerClerkId))) {
+      res.status(404).json({ error: "Klant niet gevonden." });
+      return;
+    }
+    const korApplied = req.body?.korApplied === true;
+    const serviceDate = str(req.body?.serviceDate);
+    if (serviceDate && !/^\d{4}-\d{2}-\d{2}$/.test(serviceDate)) {
+      res.status(400).json({ error: "serviceDate moet JJJJ-MM-DD zijn." });
+      return;
+    }
+
+    // Regels valideren en waarderen: dienst uit de eigen catalogus of vrije
+    // omschrijving met eigen prijs.
+    const resolved: {
+      serviceId: number | null;
+      description: string;
+      quantity: number;
+      unitPriceCents: number;
+      vatRateBps: number;
+      evidenceWorkObjectId: number | null;
+    }[] = [];
+    for (const raw of lines) {
+      const quantity = int(raw?.quantity) ?? 1;
+      if (quantity < 1) {
+        res.status(400).json({ error: "quantity moet minimaal 1 zijn." });
+        return;
+      }
+      const serviceId = int(raw?.serviceId);
+      if (serviceId) {
+        const [svc] = await db
+          .select()
+          .from(trainerServicesTable)
+          .where(
+            and(
+              eq(trainerServicesTable.id, serviceId),
+              eq(trainerServicesTable.trainerClerkId, trainerClerkId),
+            ),
+          );
+        if (!svc) {
+          res.status(404).json({ error: "Dienst niet gevonden." });
+          return;
+        }
+        resolved.push({
+          serviceId: svc.id,
+          description: str(raw?.description) ?? svc.name,
+          quantity,
+          unitPriceCents: int(raw?.unitPriceCents) ?? svc.priceCents,
+          vatRateBps: korApplied ? 0 : (int(raw?.vatRateBps) ?? svc.vatRateBps),
+          evidenceWorkObjectId: int(raw?.evidenceWorkObjectId),
+        });
+      } else {
+        const description = str(raw?.description);
+        const unitPriceCents = int(raw?.unitPriceCents);
+        if (!description || unitPriceCents === null || unitPriceCents < 0) {
+          res.status(400).json({
+            error: "Vrije regel vereist description en unitPriceCents (≥0).",
+          });
+          return;
+        }
+        resolved.push({
+          serviceId: null,
+          description,
+          quantity,
+          unitPriceCents,
+          vatRateBps: korApplied ? 0 : (int(raw?.vatRateBps) ?? 2100),
+          evidenceWorkObjectId: int(raw?.evidenceWorkObjectId),
+        });
+      }
+    }
+
+    const excl = resolved.reduce((s, l) => s + l.unitPriceCents * l.quantity, 0);
+    const vatBreakdown: Record<string, number> = {};
+    let vatTotal = 0;
+    for (const l of resolved) {
+      const vat = korApplied ? 0 : Math.round((l.unitPriceCents * l.quantity * l.vatRateBps) / 10000);
+      vatTotal += vat;
+      const key = korApplied ? "kor" : String(l.vatRateBps);
+      vatBreakdown[key] = (vatBreakdown[key] ?? 0) + vat;
+    }
+
+    const invoice = await db.transaction(async (tx) => {
+      const [inv] = await tx
+        .insert(trainerInvoicesTable)
+        .values({
+          trainerClerkId,
+          clientId,
+          serviceDate,
+          description: resolved.map((l) => l.description).join(" · "),
+          amountExclCents: excl,
+          vatBreakdown,
+          amountInclCents: excl + vatTotal,
+          korApplied,
+          status: "concept",
+        })
+        .returning();
+      await tx.insert(trainerInvoiceLinesTable).values(
+        resolved.map((l) => ({
+          invoiceId: inv!.id,
+          serviceId: l.serviceId,
+          description: l.description,
+          quantity: l.quantity,
+          unitPriceCents: l.unitPriceCents,
+          vatRateBps: l.vatRateBps,
+          amountCents: l.unitPriceCents * l.quantity,
+          evidenceWorkObjectId: l.evidenceWorkObjectId,
+        })),
+      );
+      return inv!;
+    });
+    res.status(201).json(invoice);
+  } catch (err) {
+    req.log.error({ err }, "invoice draft failed");
+    res.status(500).json({ error: "Conceptfactuur aanmaken is niet gelukt." });
+  }
+});
+
+router.get("/invoices", requireAuth, async (req, res) => {
+  const trainerClerkId = getClerkUserId(req)!;
+  res.json(
+    await db
+      .select()
+      .from(trainerInvoicesTable)
+      .where(eq(trainerInvoicesTable.trainerClerkId, trainerClerkId))
+      .orderBy(desc(trainerInvoicesTable.createdAt)),
+  );
+});
+
+router.get("/invoices/:id", requireAuth, async (req, res) => {
+  const trainerClerkId = getClerkUserId(req)!;
+  const [inv] = await db
+    .select()
+    .from(trainerInvoicesTable)
+    .where(
+      and(
+        eq(trainerInvoicesTable.id, Number(req.params.id)),
+        eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+      ),
+    );
+  if (!inv) {
+    res.status(404).json({ error: "Factuur niet gevonden." });
+    return;
+  }
+  const lines = await db
+    .select()
+    .from(trainerInvoiceLinesTable)
+    .where(eq(trainerInvoiceLinesTable.invoiceId, inv.id));
+  res.json({ ...inv, lines });
+});
+
 // ── Signalen (3c.4) — altijd voorstel, nooit actie ───────────────────────────
 router.get("/signals", requireAuth, async (req, res) => {
   try {
@@ -286,6 +452,39 @@ router.get("/signals", requireAuth, async (req, res) => {
           invoiceId: inv.id,
           clientId: inv.clientId,
         });
+      }
+    }
+
+    // "Deze test is uitgevoerd maar nog niet gefactureerd": afgeronde
+    // testverslag-werkobjecten van de trainer zonder factuurregel die er via
+    // de bewijs-koppeling naar verwijst.
+    const testDocs = await db
+      .select({ id: workObjectsTable.id, title: workObjectsTable.title })
+      .from(workObjectsTable)
+      .where(
+        and(
+          eq(workObjectsTable.ownerTrainerClerkId, trainerClerkId),
+          eq(workObjectsTable.objectType, "testverslag"),
+          eq(workObjectsTable.status, "afgerond"),
+        ),
+      );
+    if (testDocs.length) {
+      const billedRows = await db
+        .select({ evidenceWorkObjectId: trainerInvoiceLinesTable.evidenceWorkObjectId })
+        .from(trainerInvoiceLinesTable)
+        .innerJoin(
+          trainerInvoicesTable,
+          eq(trainerInvoiceLinesTable.invoiceId, trainerInvoicesTable.id),
+        )
+        .where(eq(trainerInvoicesTable.trainerClerkId, trainerClerkId));
+      const billed = new Set(billedRows.map((r) => r.evidenceWorkObjectId).filter(Boolean));
+      for (const doc of testDocs) {
+        if (!billed.has(doc.id)) {
+          signals.push({
+            kind: "test_niet_gefactureerd",
+            message: `Test “${doc.title}” is uitgevoerd maar nog niet gefactureerd.`,
+          });
+        }
       }
     }
 
