@@ -11,8 +11,10 @@
 // UNIQUE), en relaties worden per (from,to,type) actief-uniek ontdubbeld.
 //
 // Gebruik:
-//   pnpm --filter @workspace/api-server run f10:migrate -- --dry-run
-//   pnpm --filter @workspace/api-server run f10:migrate            (echte run)
+//   pnpm --filter @workspace/api-server run f10:migrate                 (proefdraai, STANDAARD — wijzigt niets)
+//   pnpm --filter @workspace/api-server run f10:migrate -- --execute --bevestig=SAMENVOEGEN-<sha7>
+//     (echte run; vereist een proefdraairapport van exact dezelfde SHA in
+//      docs/F10_MIGRATIE_PROEFDRAAI.json en de expliciete bevestigingswaarde)
 
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
@@ -47,7 +49,62 @@ import {
   normalizeEmail,
 } from "../lib/contacts";
 
-const DRY = process.argv.includes("--dry-run");
+// VEILIGE STANDAARD: proefdraai. De echte samenvoeging vereist een expliciete
+// --execute ÉN een bevestigingswaarde die de huidige commit benoemt, én een
+// proefdraairapport van exact dezelfde SHA. Wie een vlag vergeet, krijgt de
+// proefdraai — nooit een onomkeerbare samenvoeging.
+import { execSync } from "node:child_process";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+
+const EXECUTE = process.argv.includes("--execute");
+const DRY = !EXECUTE;
+const REPO_ROOT = resolve(import.meta.dirname ?? __dirname, "../../../..");
+const PROEFDRAAI_RAPPORT = resolve(REPO_ROOT, "docs/F10_MIGRATIE_PROEFDRAAI.json");
+
+function currentSha(): string | null {
+  try {
+    return execSync("git rev-parse HEAD", { cwd: REPO_ROOT, encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function guardExecute(): void {
+  if (!EXECUTE) return;
+  const sha = currentSha();
+  const inProduction = process.env.NODE_ENV === "production" || !!process.env.REPLIT_DEPLOYMENT;
+  const bevestig = process.argv.find((a) => a.startsWith("--bevestig="))?.slice("--bevestig=".length);
+
+  if (!sha) {
+    console.error("GEWEIGERD: kan de huidige commit-SHA niet bepalen — de echte run vereist een controleerbare SHA.");
+    process.exit(1);
+  }
+  const verwacht = `SAMENVOEGEN-${sha.slice(0, 7)}`;
+  if (!bevestig) {
+    const waar = inProduction ? " (productieomgeving: bevestiging is hier hard verplicht)" : "";
+    console.error(`GEWEIGERD: echte run zonder bevestigingswaarde${waar}. Geef --bevestig=${verwacht} mee, na een proefdraai op dezelfde SHA.`);
+    process.exit(1);
+  }
+  if (bevestig !== verwacht) {
+    console.error(`GEWEIGERD: bevestigingswaarde "${bevestig}" hoort niet bij deze commit. Verwacht: --bevestig=${verwacht}.`);
+    process.exit(1);
+  }
+  let rapport: { sha?: string } | null = null;
+  try {
+    rapport = JSON.parse(readFileSync(PROEFDRAAI_RAPPORT, "utf8"));
+  } catch {
+    rapport = null;
+  }
+  if (!rapport?.sha) {
+    console.error(`GEWEIGERD: geen proefdraairapport gevonden (${PROEFDRAAI_RAPPORT}). Draai eerst de proefdraai (standaardmodus) op deze SHA.`);
+    process.exit(1);
+  }
+  if (rapport.sha !== sha) {
+    console.error(`GEWEIGERD: proefdraairapport is van SHA ${rapport.sha.slice(0, 7)}, maar de werkkopie staat op ${sha.slice(0, 7)}. Draai de proefdraai opnieuw op deze SHA.`);
+    process.exit(1);
+  }
+}
 
 type Report = Record<
   string,
@@ -136,6 +193,7 @@ const CLUB_STAFF_ROLES = new Set([
 ]);
 
 async function main(): Promise<void> {
+  guardExecute();
   const report: Report = {};
 
   // Wrap alles in één transactie bij een echte run, zodat een fout niets half
@@ -721,6 +779,24 @@ async function main(): Promise<void> {
   });
 
   printReport(report);
+
+  if (DRY) {
+    // Proefdraairapport met SHA vastleggen: de echte run eist dit rapport van
+    // exact dezelfde commit.
+    const sha = currentSha();
+    if (sha) {
+      mkdirSync(dirname(PROEFDRAAI_RAPPORT), { recursive: true });
+      writeFileSync(
+        PROEFDRAAI_RAPPORT,
+        JSON.stringify({ sha, at: new Date().toISOString(), report }, null, 2) + "\n",
+      );
+      console.log(`Proefdraairapport geschreven: ${PROEFDRAAI_RAPPORT} (SHA ${sha.slice(0, 7)})`);
+      console.log(`Echte run: f10:migrate -- --execute --bevestig=SAMENVOEGEN-${sha.slice(0, 7)}`);
+    } else {
+      console.log("Let op: geen git-SHA beschikbaar — er is geen proefdraairapport geschreven; de echte run blijft geweigerd tot dat er is.");
+    }
+  }
+
   await pool.end();
   process.exit(0);
 }
@@ -740,7 +816,7 @@ async function addKinds(tx: Tx, contactId: number, kinds: ContactKind[]) {
 }
 
 function printReport(report: Report) {
-  const mode = DRY ? "DRY-RUN (geen wijzigingen bewaard)" : "ECHTE RUN";
+  const mode = DRY ? "PROEFDRAAI (standaard — geen wijzigingen bewaard)" : "ECHTE RUN";
   console.log(`\n=== F10 contactmigratie — ${mode} ===\n`);
   let totalIdentities = 0;
   let totalContacts = 0;
