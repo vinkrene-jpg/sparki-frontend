@@ -31,6 +31,8 @@ import {
   clubTrainerAssignmentsTable,
   clubTrainingsTable,
   todayDisplayHistoryTable,
+  clubRoles,
+  type ClubRole,
 } from "@workspace/db";
 import {
   and,
@@ -57,32 +59,35 @@ import { activeAssignmentWindow } from "../../lib/club-permissions";
 
 // ── Rolmodel ─────────────────────────────────────────────────────────────────
 
+// HERSTEL_EN_AANVULLING_01 F1 (HA-03): de rollenlijst wordt AFGELEID uit de
+// rolwaarden die de rechtenlaag kent (clubRoles + validRoles), niet
+// overgetypt — een nieuwe server-side rolwaarde komt zo vanzelf mee (de
+// compiler dwingt dan een label/KAN-tekst af).
+//
+// Clubrollen met een eigen, rijke weergave; alle overige clubrollen krijgen
+// de gedeelde begeleider-Vandaag. `member` en `parent` zijn hier bewust geen
+// eigen weergave: member = accountrol athlete (atleet-Vandaag) en clubrol
+// parent loopt via accountrol parent (ouder-Vandaag).
+const RIJKE_CLUBROLLEN = ["owner", "admin", "hoofdtrainer", "trainer", "member", "parent"] as const;
+const BEGELEIDER_ROLLEN = clubRoles.filter(
+  (r): r is Exclude<ClubRole, (typeof RIJKE_CLUBROLLEN)[number]> =>
+    !(RIJKE_CLUBROLLEN as readonly string[]).includes(r),
+);
+type BegeleiderRol = (typeof BEGELEIDER_ROLLEN)[number];
+
 export const todayRoles = [
   "atleet",
   "trainer",
   "ouder",
   "clubbeheer",
   "hoofdtrainer",
-  // Begeleidende clubrollen (besluit 01-08, naar voren gehaald 02-08): elke
-  // server-side bestaande rolwaarde krijgt een eigen, eerlijke Vandaag —
-  // NOOIT terugval op de atleetweergave.
-  "ploegleider",
-  "teammanager",
-  "soigneur",
-  "medical_staff",
-  "vrijwilliger",
+  // Accountrol nutrition_specialist (BB-14) — eigen eerlijke weergave.
+  "voedingsspecialist",
+  // Elke overige server-side clubrol: eigen, eerlijke Vandaag — NOOIT
+  // terugval op de atleetweergave (HA-39).
+  ...BEGELEIDER_ROLLEN,
 ] as const;
 export type TodayRole = (typeof todayRoles)[number];
-
-// Begeleidende rollen delen één eerlijke, deterministische Vandaag-vorm.
-const BEGELEIDER_ROLLEN = [
-  "ploegleider",
-  "teammanager",
-  "soigneur",
-  "medical_staff",
-  "vrijwilliger",
-] as const;
-type BegeleiderRol = (typeof BEGELEIDER_ROLLEN)[number];
 
 const BEGELEIDER_LABEL: Record<BegeleiderRol, string> = {
   ploegleider: "Ploegleider",
@@ -90,6 +95,9 @@ const BEGELEIDER_LABEL: Record<BegeleiderRol, string> = {
   soigneur: "Soigneur",
   medical_staff: "Medische staf",
   vrijwilliger: "Vrijwilliger",
+  assistent: "Assistent",
+  mechanieker: "Mechanieker",
+  alleen_lezen: "Gast (alleen-lezen)",
 };
 
 // Wat deze rol vandaag KAN (echte, bestaande functies) en wat er (nog)
@@ -114,6 +122,18 @@ const BEGELEIDER_KAN: Record<BegeleiderRol, { kan: string; ontbreekt: string }> 
   vrijwilliger: {
     kan: "Je leest de kalender en berichten van je club.",
     ontbreekt: "Meer functies horen bewust niet bij deze rol.",
+  },
+  assistent: {
+    kan: "Je ziet de kalender en berichten van je club en helpt bij trainingen.",
+    ontbreekt: "Sportdata-inzage hoort bewust niet bij deze rol.",
+  },
+  mechanieker: {
+    kan: "Je werkt materiaalvelden bij en leest de kalender en berichten van je club.",
+    ontbreekt: "Een eigen werkplaatsoverzicht is er nog niet.",
+  },
+  alleen_lezen: {
+    kan: "Je leest de kalender en berichten van je club.",
+    ontbreekt: "Deze rol is bewust strikt alleen-lezen.",
   },
 };
 
@@ -146,6 +166,7 @@ export async function availableTodayRoles(clerkId: string): Promise<TodayRole[]>
   if (userRoles.includes("athlete")) roles.push("atleet");
   if (userRoles.includes("coach")) roles.push("trainer");
   if (userRoles.includes("parent")) roles.push("ouder");
+  if (userRoles.includes("nutrition_specialist")) roles.push("voedingsspecialist");
   if (memberships.some((m) => m.role === "owner" || m.role === "admin"))
     roles.push("clubbeheer");
   if (memberships.some((m) => m.role === "hoofdtrainer")) roles.push("hoofdtrainer");
@@ -161,17 +182,20 @@ export async function availableTodayRoles(clerkId: string): Promise<TodayRole[]>
   return roles;
 }
 
-/** Standaard-rolweergave vanuit de accountbrede actieve rol. */
-export function defaultTodayRole(activeRole: string, available: TodayRole[]): TodayRole {
+/** Standaard-rolweergave vanuit de accountbrede actieve rol; null = geen
+ *  enkele rolweergave (eerlijke lege toestand, HA-04). */
+export function defaultTodayRole(activeRole: string, available: TodayRole[]): TodayRole | null {
+  if (activeRole === "nutrition_specialist" && available.includes("voedingsspecialist"))
+    return "voedingsspecialist";
   if (activeRole === "coach" && available.includes("trainer")) return "trainer";
   if (activeRole === "parent" && available.includes("ouder")) return "ouder";
   // Contractgarantie: de impliciete default is ALTIJD een beschikbare rol —
   // anders zou dezelfde weergave impliciet wél en expliciet (?rol=) 403 geven.
   if (available.includes("atleet")) return "atleet";
-  // Géén verzonnen atleet-terugval meer: elke beschikbare rol heeft een eigen
-  // weergave. Alleen een account zonder énige rol (hoort niet te bestaan —
-  // user_profiles.roles bevat minimaal één waarde) valt terug op atleet.
-  return available[0] ?? "atleet";
+  // HA-04: géén stilzwijgende atleet-terugval. Elke beschikbare rol heeft een
+  // eigen weergave; heeft dit account géén enkele rolweergave, dan geeft de
+  // aanroeper een eerlijke lege toestand terug (null), nooit het atleetscherm.
+  return available[0] ?? null;
 }
 
 // ── Gedeelde rotatie-/historielaag (zelfde regels als atleten-Vandaag) ───────
@@ -1126,6 +1150,71 @@ export async function orchestrateBegeleiderToday(
   };
 }
 
+// ── Voedingsspecialist (BB-14) ───────────────────────────────────────────────
+// Eigen eerlijke Vandaag: context (rol + gekoppelde sporters via directe
+// links), eerste prioriteit Voeding. Geen sportersdata zonder deelniveau.
+export async function orchestrateVoedingsspecialistToday(
+  clerkId: string,
+): Promise<RoleTodayResult> {
+  const today = amsterdamToday();
+  const passedOver: { key: string; reason: string }[] = [];
+  const [links, available] = await Promise.all([
+    db
+      .select({ athleteClerkId: coachAthleteLinksTable.athleteClerkId })
+      .from(coachAthleteLinksTable)
+      .where(
+        and(
+          eq(coachAthleteLinksTable.coachClerkId, clerkId),
+          eq(coachAthleteLinksTable.status, "accepted"),
+          isNull(coachAthleteLinksTable.endedAt),
+        ),
+      ),
+    availableTodayRoles(clerkId),
+  ]);
+
+  const lead: TodayItem =
+    links.length === 0
+      ? {
+          key: "voedingsspecialist:lead:no_athletes",
+          slot: "lead",
+          title: "Je bent hier als voedingsspecialist",
+          body: "Er is nog geen sporter aan je gekoppeld. Een koppeling ontstaat alleen via een uitnodiging die de sporter accepteert.",
+          actions: [{ id: "invite", label: "Sporter uitnodigen", href: "/invitations" }],
+          source: "coach_athlete_links",
+          confidence: null,
+          urgent: false,
+        }
+      : {
+          key: `voedingsspecialist:lead:context:${links.length}`,
+          slot: "lead",
+          title: "Je bent hier als voedingsspecialist",
+          body: `${links.length === 1 ? "Eén sporter is" : `${links.length} sporters zijn`} aan je gekoppeld. Wat je ziet volgt het deelniveau dat de sporter zelf instelt.`,
+          actions: [{ id: "rolstart", label: "Open je rolomgeving", href: "/rol-start/nutrition_specialist" }],
+          source: "coach_athlete_links (accepted, niet beëindigd)",
+          confidence: null,
+          urgent: false,
+        };
+
+  passedOver.push(
+    { key: "voedingsspecialist:support", reason: "geen eigen dagsignalen zonder gedeelde voedingsdata — slot blijft eerlijk leeg" },
+    { key: "voedingsspecialist:insight", reason: "geen sportersdata zonder deelniveau — geen inzicht zonder recht" },
+  );
+
+  const rotating = await pickRotatingAndRecord(clerkId, today, [], [lead, null, null], passedOver);
+
+  return {
+    date: today,
+    role: "voedingsspecialist",
+    availableRoles: available,
+    profile: baseProfile("nutrition_specialist"),
+    lead,
+    support: null,
+    insight: null,
+    rotating,
+    passedOver,
+  };
+}
+
 /** Centrale dispatch: gevraagde/afgeleide rol → juiste orchestrator. */
 export async function orchestrateTodayForRole(
   clerkId: string,
@@ -1140,6 +1229,8 @@ export async function orchestrateTodayForRole(
       return orchestrateClubbeheerToday(clerkId);
     case "hoofdtrainer":
       return orchestrateHoofdtrainerToday(clerkId);
+    case "voedingsspecialist":
+      return orchestrateVoedingsspecialistToday(clerkId);
     default:
       return orchestrateBegeleiderToday(clerkId, role);
   }

@@ -95,7 +95,15 @@ const solo = `${RUN}_solo`; // alleen atleet
 const clubOwner = `${RUN}_owner`;
 const hoofd = `${RUN}_hoofd`;
 const coachEmpty = `${RUN}_coachEmpty`;
-const ALL = [coachA, athleteA, coachB, athleteB, multi, child, solo, clubOwner, hoofd, coachEmpty];
+// HERSTEL_EN_AANVULLING_01 F1: afgeleide rolweergaven + lege toestand.
+const mech = `${RUN}_mech`; // clubrol mechanieker (accountrol athlete blijft)
+const gast = `${RUN}_gast`; // clubrol alleen_lezen
+const voeding = `${RUN}_voeding`; // accountrol nutrition_specialist
+const geenRol = `${RUN}_geenrol`; // account zonder énige rolweergave
+const ALL = [
+  coachA, athleteA, coachB, athleteB, multi, child, solo, clubOwner, hoofd, coachEmpty,
+  mech, gast, voeding, geenRol,
+];
 
 const MARK_B = `MARK_ATHB_${RUN}`; // displayName van sporter B (isolatie)
 const MARK_PLAN = `MARK_PLAN_${RUN}`; // workout-titel van het kind (ouderrechten)
@@ -178,7 +186,15 @@ async function seed() {
   await db.insert(clubMembersTable).values([
     { clubId, clerkId: clubOwner, role: "owner" },
     { clubId, clerkId: hoofd, role: "hoofdtrainer" },
+    { clubId, clerkId: mech, role: "mechanieker" },
+    { clubId, clerkId: gast, role: "alleen_lezen" },
   ]);
+  // Voedingsspecialist: accountrol zonder atleet; geenRol: helemaal niets.
+  await setRoles(voeding, ["nutrition_specialist"], "nutrition_specialist");
+  await db
+    .update(userProfilesTable)
+    .set({ roles: [], activeRole: "athlete" })
+    .where(eq(userProfilesTable.clerkId, geenRol));
   await db.insert(clubTeamsTable).values({ clubId, name: `Team-${RUN}` });
 }
 
@@ -291,6 +307,37 @@ async function main() {
     const k1 = (r1.json?.rotating as Record<string, unknown> | null)?.key ?? null;
     const k2 = (r2.json?.rotating as Record<string, unknown> | null)?.key ?? null;
     assert(k1 === k2, `rotating flikkert: ${k1} vs ${k2}`);
+  });
+
+  // HERSTEL_EN_AANVULLING_01 F1 (HA-03/04/05): afgeleide rolweergaven.
+  await scenario("mechanieker landt op eigen weergave, niet op atleet", async () => {
+    const r = await req("/api/today?rol=mechanieker", mech);
+    assert(r.status === 200 && r.json?.role === "mechanieker", `status ${r.status} role=${r.json?.role}`);
+    const lead = r.json?.lead as { title?: string } | null;
+    assert(lead?.title?.toLowerCase().includes("mechanieker"), `lead=${lead?.title}`);
+  });
+
+  await scenario("alleen_lezen (gast) heeft een eigen, eerlijke weergave", async () => {
+    const r = await req("/api/today?rol=alleen_lezen", gast);
+    assert(r.status === 200 && r.json?.role === "alleen_lezen", `status ${r.status} role=${r.json?.role}`);
+  });
+
+  await scenario("voedingsspecialist zonder atleetrol landt op eigen weergave (impliciet)", async () => {
+    const r = await req("/api/today", voeding);
+    assert(r.status === 200 && r.json?.role === "voedingsspecialist", `status ${r.status} role=${r.json?.role}`);
+  });
+
+  await scenario("account zonder énige rol: eerlijke lege toestand, geen atleetscherm", async () => {
+    const r = await req("/api/today", geenRol);
+    assert(r.status === 200, `status ${r.status}`);
+    assert(r.json?.role === null, `role=${r.json?.role}`);
+    const empty = r.json?.emptyState as { title?: string } | undefined;
+    assert(empty?.title && !r.json?.lead, "emptyState aanwezig, geen lead");
+  });
+
+  await scenario("rol zonder recht blijft 403 (gast vraagt mechanieker)", async () => {
+    const r = await req("/api/today?rol=mechanieker", gast);
+    assert(r.status === 403, `status ${r.status}`);
   });
 
   await scenario("atleet-weergave blijft werken en draagt role-veld", async () => {

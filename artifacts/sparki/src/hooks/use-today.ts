@@ -41,7 +41,13 @@ export type TodayRole =
   | "teammanager"
   | "soigneur"
   | "medical_staff"
-  | "vrijwilliger";
+  | "vrijwilliger"
+  // HERSTEL_EN_AANVULLING_01 F1: elke server-side rolwaarde heeft een eigen
+  // weergave — ook deze drie clubrollen en de voedingsspecialist.
+  | "assistent"
+  | "mechanieker"
+  | "alleen_lezen"
+  | "voedingsspecialist";
 
 // Eén bron van waarheid voor het zichtbare label per rolweergave.
 export const TODAY_ROLE_LABELS: Record<TodayRole, string> = {
@@ -55,6 +61,10 @@ export const TODAY_ROLE_LABELS: Record<TodayRole, string> = {
   soigneur: "Soigneur",
   medical_staff: "Medische staf",
   vrijwilliger: "Vrijwilliger",
+  assistent: "Assistent",
+  mechanieker: "Mechanieker",
+  alleen_lezen: "Gast (alleen-lezen)",
+  voedingsspecialist: "Voedingsspecialist",
 };
 
 export type TodayResult = {
@@ -69,9 +79,16 @@ export type TodayResult = {
   support: TodayItem | null;
   insight: TodayItem | null;
   rotating: TodayItem | null;
-  /** WP-T2: welke rolweergave dit is + waar dit account recht op heeft. */
-  role: TodayRole;
+  /** WP-T2: welke rolweergave dit is + waar dit account recht op heeft.
+   *  HERSTEL_EN_AANVULLING_01 F1 (HA-04): null = geen enkele rolweergave —
+   *  de server stuurt dan een eerlijke `emptyState`, nooit het atleetscherm. */
+  role: TodayRole | null;
   availableRoles: TodayRole[];
+  emptyState?: {
+    title: string;
+    body: string;
+    action: { label: string; href: string };
+  };
   /** WP-T3: mag deze gebruiker de onderbouwing zien? (strikte serverpoort). */
   debugAllowed?: boolean;
   /** WP-T3: onderbouwing — alleen aanwezig voor admin/Hoofdtester met ?debug=1. */

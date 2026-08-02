@@ -130,7 +130,23 @@ router.get("/", requireAuth, async (req, res) => {
         .from(userProfilesTable)
         .where(eq(userProfilesTable.clerkId, clerkId))
         .limit(1);
-      rol = defaultTodayRole(user?.activeRole ?? "athlete", available);
+      const derived = defaultTodayRole(user?.activeRole ?? "athlete", available);
+      if (derived === null) {
+        // HA-04: geen enkele rolweergave — eerlijke lege toestand, nooit het
+        // atleetscherm. Benoem wat er is, wat ontbreekt en wie het oplost.
+        res.json({
+          date: null,
+          role: null,
+          availableRoles: [],
+          emptyState: {
+            title: "Aan dit account is nog geen rol gekoppeld",
+            body: "Je account bestaat, maar er is geen rolweergave beschikbaar: geen sporterprofiel, geen trainers-, ouder- of clubrol. Een rol ontstaat via een uitnodiging of via je clubbeheerder.",
+            action: { label: "Bekijk je uitnodigingen", href: "/invitations" },
+          },
+        });
+        return;
+      }
+      rol = derived;
     }
     const result =
       rol === "atleet"
