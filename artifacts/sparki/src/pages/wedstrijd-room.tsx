@@ -18,6 +18,8 @@ import {
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
+import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
+import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import { useRaces } from "@/hooks/use-races"
 import {
   useRaceRooms,
@@ -100,6 +102,8 @@ function RoomList({
   onBack: () => void
 }) {
   const { data, isLoading } = useRaceRooms()
+  // Room aanmaken is een stappenvenster over het scherm heen (TUX-25):
+  // geen inline formulier waar je doorheen scrolt.
   const [showCreate, setShowCreate] = useState(false)
   const rooms = data?.rooms ?? []
 
@@ -109,7 +113,7 @@ function RoomList({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={showCreate ? () => setShowCreate(false) : onBack}
+            onClick={onBack}
             className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
           >
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
@@ -120,35 +124,26 @@ function RoomList({
               WEDSTRIJD-ROOM
             </span>
             <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
-              {showCreate ? "Nieuwe room" : "Mijn rooms"}
+              Mijn rooms
             </h1>
           </div>
         </div>
-        {!showCreate && (
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
-            style={{
-              borderColor: ACCENT,
-              color: ACCENT,
-              background: "rgba(255,255,255,0.04)",
-            }}
-          >
-            + Room
-          </button>
-        )}
+        {/* Precies één primaire actie op dit scherm (TUX-24). */}
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
+          style={{
+            borderColor: ACCENT,
+            color: ACCENT,
+            background: "rgba(255,255,255,0.04)",
+          }}
+        >
+          + Room
+        </button>
       </header>
 
-      {showCreate ? (
-        <CreateRoomForm
-          onCancel={() => setShowCreate(false)}
-          onCreated={(id) => {
-            setShowCreate(false)
-            onOpen(id)
-          }}
-        />
-      ) : isLoading ? (
+      {isLoading ? (
         <div className="space-y-3">
           {[0, 1].map((i) => (
             <Skeleton key={i} className="h-20 w-full rounded-2xl" />
@@ -181,22 +176,28 @@ function RoomList({
           <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
             Maak een room aan om per wedstrijddag je foto's, korte clips en
             updates te verzamelen. Daarna maak je er met één druk een
-            dagcompilatie van.
+            dagcompilatie van. Gebruik de knop <span className="text-cyan-200/80">+ Room</span> bovenaan.
           </p>
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="mt-3 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
-            style={{
-              borderColor: ACCENT,
-              color: ACCENT,
-              background: "rgba(255,255,255,0.04)",
-            }}
-          >
-            + Room maken
-          </button>
         </div>
       )}
+
+      {/* Stappenvenster (BeheerSheet-patroon): venster over het scherm heen,
+          met sluiten (X) en Escape als uitweg — nooit doodlopend. */}
+      <BeheerSheet
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        titel="Nieuwe room"
+      >
+        {showCreate && (
+          <CreateRoomForm
+            onCancel={() => setShowCreate(false)}
+            onCreated={(id) => {
+              setShowCreate(false)
+              onOpen(id)
+            }}
+          />
+        )}
+      </BeheerSheet>
     </>
   )
 }
@@ -256,7 +257,7 @@ function CreateRoomForm({
     "mt-1.5 w-full rounded-xl border border-white/12 bg-[#040912]/70 px-3 py-2.5 text-[14px] text-white/90 outline-none transition-colors focus:border-cyan-300/40"
 
   return (
-    <div className={`${cardClass} space-y-4`}>
+    <div className="space-y-4">
       {races && races.length > 0 && (
         <div>
           <label className={labelClass}>Koppel aan wedstrijd (optioneel)</label>
@@ -354,6 +355,9 @@ function RoomDetail({
   const [, setLocation] = useLocation()
   // Day indices are 1-based to match the backend (Dag 1..room.days).
   const [dayIndex, setDayIndex] = useState(1)
+  // Onderdeel-tabs binnen de room (2-4 échte tabs, TUX geen lege tabs): media
+  // verzamelen, updates schrijven, en de dagcompilatie maken/downloaden.
+  const [onderdeel, setOnderdeel] = useState<RoomTab>("media")
 
   if (isLoading || !data) {
     return (
@@ -436,18 +440,39 @@ function RoomDetail({
         {formatDate(dayDate)}
       </p>
 
-      <DayMedia roomId={roomId} dayIndex={dayIndex} media={dayMedia} />
-      <DayUpdates roomId={roomId} dayIndex={dayIndex} updates={dayUpdates} />
-      <CompilePanel
-        roomId={roomId}
-        dayIndex={dayIndex}
-        roomTitle={room.title}
-        mediaCount={dayMedia.length}
-        compilation={dayCompilation}
+      <HoofdstukTabs<RoomTab>
+        tabs={ROOM_TABS}
+        actief={onderdeel}
+        onKies={setOnderdeel}
+        ariaLabel="Roomonderdelen"
       />
+
+      {onderdeel === "media" && (
+        <DayMedia roomId={roomId} dayIndex={dayIndex} media={dayMedia} />
+      )}
+      {onderdeel === "updates" && (
+        <DayUpdates roomId={roomId} dayIndex={dayIndex} updates={dayUpdates} />
+      )}
+      {onderdeel === "compilatie" && (
+        <CompilePanel
+          roomId={roomId}
+          dayIndex={dayIndex}
+          roomTitle={room.title}
+          mediaCount={dayMedia.length}
+          compilation={dayCompilation}
+        />
+      )}
     </>
   )
 }
+
+type RoomTab = "media" | "updates" | "compilatie"
+
+const ROOM_TABS: ReadonlyArray<{ id: RoomTab; label: string }> = [
+  { id: "media", label: "Media" },
+  { id: "updates", label: "Updates" },
+  { id: "compilatie", label: "Compilatie" },
+]
 
 function DetailHeader({
   title,

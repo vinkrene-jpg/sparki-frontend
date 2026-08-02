@@ -119,10 +119,13 @@ export const CLUB_ROLE_STARTS: RoleStart[] = [
   {
     role: "ploegleider",
     label: "Ploegleider",
-    functies: [{ href: "/club", label: "Selecties & kalender" }],
+    functies: [
+      { href: "/club", label: "Selecties & kalender" },
+      { href: "/wedstrijd-room", label: "Wedstrijd-room (koersdag vastleggen)" },
+    ],
     leeg: {
       ontbreekt: "Een eigen koersdag-werkblad (volgauto, rijderslijst) zit nog niet in de clubomgeving.",
-      wieLostOp: "Dit staat op de bouwlijst van Sparki; selecties en kalender werken al.",
+      wieLostOp: "Dit staat op de bouwlijst van Sparki; selecties, kalender en de wedstrijd-room werken al.",
       vervolgstap: { href: "/club", label: "Open selecties & kalender" },
     },
   },

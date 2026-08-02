@@ -18,6 +18,8 @@ import {
   Send,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
+import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useCoachAthleteDetail } from "@/hooks/use-coach"
@@ -277,13 +279,20 @@ function WorkoutForm({
   )
 }
 
-function PlanningSection({ athleteId }: { athleteId: string }) {
+function PlanningSection({
+  athleteId,
+  adding,
+  onAddingChange,
+}: {
+  athleteId: string
+  adding: boolean
+  onAddingChange: (open: boolean) => void
+}) {
   const { data, isLoading } = useCoachWorkouts(athleteId, todayLocal(), todayLocal(28))
   const create = useCreateCoachWorkout(athleteId)
   const update = useUpdateCoachWorkout(athleteId)
   const repeat = useRepeatCoachWorkout(athleteId)
-  const [adding, setAdding] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingWorkout, setEditingWorkout] = useState<CoachWorkout | null>(null)
   const [repeatId, setRepeatId] = useState<number | null>(null)
   const [repeatDate, setRepeatDate] = useState(todayLocal(7))
 
@@ -326,7 +335,7 @@ function PlanningSection({ athleteId }: { athleteId: string }) {
               <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
                 <button
                   type="button"
-                  onClick={() => setEditingId(editingId === w.id ? null : w.id)}
+                  onClick={() => setEditingWorkout(w)}
                   className="rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05]"
                 >
                   Wijzigen
@@ -346,18 +355,6 @@ function PlanningSection({ athleteId }: { athleteId: string }) {
                 >
                   Annuleren
                 </button>
-              </div>
-            )}
-            {editingId === w.id && (
-              <div className="mt-3">
-                <WorkoutForm
-                  initial={w}
-                  busy={update.isPending}
-                  onCancel={() => setEditingId(null)}
-                  onSubmit={(v) =>
-                    update.mutate({ id: w.id, ...v }, { onSuccess: () => setEditingId(null) })
-                  }
-                />
               </div>
             )}
             {repeatId === w.id && (
@@ -387,21 +384,43 @@ function PlanningSection({ athleteId }: { athleteId: string }) {
         ))
       )}
 
-      {adding ? (
-        <WorkoutForm
-          busy={create.isPending}
-          onCancel={() => setAdding(false)}
-          onSubmit={(v) => create.mutate(v, { onSuccess: () => setAdding(false) })}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 hover:bg-cyan-300/[0.12]"
-        >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2.25} /> Training toevoegen
-        </button>
-      )}
+      {/* Stappenvenster: nieuwe training toevoegen (TUX-27..30). De primaire
+          knop staat bovenaan de tab; dit venster opent eroverheen met een
+          eigen uitweg (annuleren/sluiten). */}
+      <BeheerSheet
+        open={adding}
+        onOpenChange={(o) => !o && onAddingChange(false)}
+        titel="Training toevoegen"
+      >
+        {adding && (
+          <WorkoutForm
+            busy={create.isPending}
+            onCancel={() => onAddingChange(false)}
+            onSubmit={(v) => create.mutate(v, { onSuccess: () => onAddingChange(false) })}
+          />
+        )}
+      </BeheerSheet>
+
+      {/* Stappenvenster: bestaande training wijzigen. */}
+      <BeheerSheet
+        open={editingWorkout != null}
+        onOpenChange={(o) => !o && setEditingWorkout(null)}
+        titel="Training wijzigen"
+      >
+        {editingWorkout && (
+          <WorkoutForm
+            initial={editingWorkout}
+            busy={update.isPending}
+            onCancel={() => setEditingWorkout(null)}
+            onSubmit={(v) =>
+              update.mutate(
+                { id: editingWorkout.id, ...v },
+                { onSuccess: () => setEditingWorkout(null) },
+              )
+            }
+          />
+        )}
+      </BeheerSheet>
     </div>
   )
 }
@@ -1043,6 +1062,15 @@ function GoalsSection({ athleteId, name }: { athleteId: string; name: string }) 
   )
 }
 
+type CockpitTab = "sporter" | "plannen" | "berichten" | "meer"
+
+const COCKPIT_TABS: { id: CockpitTab; label: string }[] = [
+  { id: "sporter", label: "Sporter" },
+  { id: "plannen", label: "Plannen" },
+  { id: "berichten", label: "Berichten" },
+  { id: "meer", label: "Meer" },
+]
+
 function CockpitBody({
   athleteId,
   name,
@@ -1062,9 +1090,13 @@ function CockpitBody({
   decidedProposals: CoachProposal[]
   reviewed: ReturnType<typeof useMarkReviewed>
 }) {
+  const [tab, setTab] = useState<CockpitTab>("sporter")
+  const [addingWorkout, setAddingWorkout] = useState(false)
+
   return (
     <ScreenShell section="Coach" terug={false} bg="/atmosphere/wedstrijd-renster-bergen.webp">
-      <div className="space-y-6">
+      <div className="flex flex-col gap-5">
+        {/* Kop + eigen terugknop (ScreenShell heeft er dan géén). */}
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/"
@@ -1073,90 +1105,147 @@ function CockpitBody({
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Terug naar je sporters
           </Link>
+        </div>
+
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-semibold tracking-tight text-white">{name}</h1>
+          <p className="text-[11px] text-white/50">Coach-werkblad</p>
+        </div>
+
+        {/* Eén primaire actie in beeld bij openen (TUX-24/26). Per tab wisselt
+            de hoofdhandeling; alle overige acties zijn secundair. */}
+        {tab === "sporter" && (
           <button
             type="button"
             disabled={reviewed.isPending}
             onClick={() => reviewed.mutate()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-[11px] text-white/55 hover:bg-white/[0.05] disabled:opacity-40"
+            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100 disabled:opacity-40"
           >
-            <Check className="h-3.5 w-3.5" /> Markeer als beoordeeld
+            <Check className="h-4 w-4" /> Markeer als beoordeeld
           </button>
-        </div>
-
-        <div>
-          <SectionLabel n="01" title={`Wat vraagt aandacht bij ${name}`} />
-          <p className="mt-2 text-[13px] text-white/45">
-            Alleen signalen met echte onderbouwing. Bij elk signaal beslis jij:
-            overnemen, aanpassen, afwijzen of parkeren.
-          </p>
-        </div>
-        {signalsLoading ? (
-          <div className="space-y-3">
-            {[0, 1].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-2xl bg-white/[0.05]" />
-            ))}
-          </div>
-        ) : signalsError ? (
-          <p className="text-[13px] text-white/50">
-            Kon de signalen niet ophalen — mogelijk deelt {name} geen data met jou.
-          </p>
-        ) : signals.length === 0 ? (
-          <div className={`${CARD} text-center`}>
-            <Check className="mx-auto mb-2 h-6 w-6 text-white/30" strokeWidth={1.5} />
-            <p className="text-[14px] text-white/60">Niets dat nu aandacht vraagt.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {signals.map((s) => (
-              <SignalCard key={s.key} signal={s} athleteId={athleteId} />
-            ))}
-          </div>
+        )}
+        {tab === "plannen" && (
+          <button
+            type="button"
+            onClick={() => setAddingWorkout(true)}
+            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 py-3 text-[14px] font-medium text-cyan-100"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.25} /> Training toevoegen
+          </button>
+        )}
+        {tab === "berichten" && (
+          <CoachLinkMessagesLink athleteId={athleteId} name={name} />
         )}
 
-        {(proposals.length > 0 || decidedProposals.length > 0) && (
-          <>
-            <SectionLabel n="02" title="Voorstellen van Sparki" />
-            <p className="-mt-3 text-[13px] text-white/45">
-              Jouw trainingen worden nooit automatisch aangepast — jij beslist.
-            </p>
-            <div className="space-y-3">
-              {proposals.map((p) => (
-                <ProposalCard key={p.id} proposal={p} athleteId={athleteId} />
-              ))}
-              {decidedProposals.slice(0, 3).map((p) => (
-                <ProposalCard key={p.id} proposal={p} athleteId={athleteId} />
-              ))}
+        <HoofdstukTabs<CockpitTab>
+          tabs={COCKPIT_TABS}
+          actief={tab}
+          onKies={(id) => setTab(id)}
+          ariaLabel="Coach-cockpit onderdelen"
+        />
+
+        {/* ── Sporter: signalen met besluit + Sparki-voorstellen. ─────────── */}
+        {tab === "sporter" && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <SectionLabel n="01" title={`Wat vraagt aandacht bij ${name}`} />
+              <p className="mt-2 text-[13px] text-white/45">
+                Alleen signalen met echte onderbouwing. Bij elk signaal beslis jij:
+                overnemen, aanpassen, afwijzen of parkeren.
+              </p>
             </div>
-          </>
+            {signalsLoading ? (
+              <div className="space-y-3">
+                {[0, 1].map((i) => (
+                  <div key={i} className="h-24 animate-pulse rounded-2xl bg-white/[0.05]" />
+                ))}
+              </div>
+            ) : signalsError ? (
+              <p className="text-[13px] text-white/50">
+                Kon de signalen niet ophalen — mogelijk deelt {name} geen data met jou.
+              </p>
+            ) : signals.length === 0 ? (
+              <div className={`${CARD} text-center`}>
+                <Check className="mx-auto mb-2 h-6 w-6 text-white/30" strokeWidth={1.5} />
+                <p className="text-[14px] text-white/60">Niets dat nu aandacht vraagt.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {signals.map((s) => (
+                  <SignalCard key={s.key} signal={s} athleteId={athleteId} />
+                ))}
+              </div>
+            )}
+
+            {(proposals.length > 0 || decidedProposals.length > 0) && (
+              <div className="flex flex-col gap-3">
+                <SectionLabel n="02" title="Voorstellen van Sparki" />
+                <p className="-mt-3 text-[13px] text-white/45">
+                  Jouw trainingen worden nooit automatisch aangepast — jij beslist.
+                </p>
+                {proposals.map((p) => (
+                  <ProposalCard key={p.id} proposal={p} athleteId={athleteId} />
+                ))}
+                {decidedProposals.slice(0, 3).map((p) => (
+                  <ProposalCard key={p.id} proposal={p} athleteId={athleteId} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
-        <SectionLabel n="03" title="Planning" />
-        <p className="-mt-3 text-[13px] text-white/45">
-          Jouw trainingen voor {name}, komende vier weken. Sparki-onderdelen zijn
-          zichtbaar maar alleen jouw eigen trainingen zijn aanpasbaar.
-        </p>
-        <PlanningSection athleteId={athleteId} />
+        {/* ── Plannen: coachtrainingen; toevoegen/wijzigen als stappenvenster. */}
+        {tab === "plannen" && (
+          <div className="flex flex-col gap-3">
+            <p className="text-[13px] text-white/45">
+              Jouw trainingen voor {name}, komende vier weken. Sparki-onderdelen zijn
+              zichtbaar maar alleen jouw eigen trainingen zijn aanpasbaar.
+            </p>
+            <PlanningSection
+              athleteId={athleteId}
+              adding={addingWorkout}
+              onAddingChange={setAddingWorkout}
+            />
+          </div>
+        )}
 
-        <SectionLabel n="04" title="Berichten" />
-        <MessagesSection athleteId={athleteId} name={name} />
-        <CoachLinkMessagesLink athleteId={athleteId} name={name} />
+        {/* ── Berichten: cockpitberichten + F7-berichtenlijn met bijlagen. ── */}
+        {tab === "berichten" && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <SectionLabel n="03" title="Berichten" />
+              <MessagesSection athleteId={athleteId} name={name} />
+            </div>
+          </div>
+        )}
 
-        <SectionLabel n="05" title="Afspraken & context" />
-        <ContextSection athleteId={athleteId} />
+        {/* ── Meer: afspraken/context, doelen, privénotities, adviesschema. ── */}
+        {tab === "meer" && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <SectionLabel n="04" title="Afspraken & context" />
+              <ContextSection athleteId={athleteId} />
+            </div>
 
-        <SectionLabel n="06" title="Doelen" />
-        <GoalsSection athleteId={athleteId} name={name} />
+            <div>
+              <SectionLabel n="05" title="Doelen" />
+              <GoalsSection athleteId={athleteId} name={name} />
+            </div>
 
-        <SectionLabel n="07" title="Privénotities" />
-        <PrivateNotesSection athleteId={athleteId} />
+            <div>
+              <SectionLabel n="06" title="Privénotities" />
+              <PrivateNotesSection athleteId={athleteId} />
+            </div>
 
-        <Link
-          href={`/coach/athletes/${athleteId}/plan`}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3 text-[13px] text-white/55 hover:border-white/15 hover:text-white/75"
-        >
-          <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
-          Bekijk het adviesschema
-        </Link>
+            <Link
+              href={`/coach/athletes/${athleteId}/plan`}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3 text-[13px] text-white/55 hover:border-white/15 hover:text-white/75"
+            >
+              <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
+              Bekijk het adviesschema
+            </Link>
+          </div>
+        )}
       </div>
     </ScreenShell>
   )
