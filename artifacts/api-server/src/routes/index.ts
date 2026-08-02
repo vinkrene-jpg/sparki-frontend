@@ -71,6 +71,7 @@ import clubRouter from "./club";
 import workObjectsRouter from "./work-objects";
 import clubRaceLogisticsRouter from "./club-race-logistics";
 import clubRaceDocumentsRouter from "./club-race-documents";
+import clubDocumentsRouter from "./club-documents";
 import clubRaceDayRouter, { raceGuestPublicRouter } from "./club-race-day";
 import rideStoryRouter from "./ride-story";
 import sprintsRouter from "./sprints";
@@ -232,6 +233,12 @@ router.use(
   "/clubs/:clubId/races/:eventId",
   killSwitchGuard("club_features"),
   clubRaceLogisticsRouter,
+);
+// HERSTEL_EN_AANVULLING_01 F6: clubdocumenten (gedragscode, reglement, …).
+router.use(
+  "/clubs/:clubId/documents",
+  killSwitchGuard("club_features"),
+  clubDocumentsRouter,
 );
 // HERSTEL_EN_AANVULLING_01 F4: documentuitdraai (RT-12/13/14) per wedstrijd.
 router.use(

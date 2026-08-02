@@ -880,6 +880,29 @@ export const organisationStaffSlotsTable = pgTable(
 export const insertClubSchema = createInsertSchema(clubsTable).omit({ id: true });
 export const selectClubSchema = createSelectSchema(clubsTable);
 
+// HERSTEL_EN_AANVULLING_01 F6 (HA-26/HA-27): clubdocumenten — gedragscode,
+// ouderafspraken, reglement. Alleen opslaan en tonen; documenten hangen aan de
+// club, niet aan een persoon. Bestanden staan in de bestaande object-storage-
+// laag (objectPath), nooit bytes in de DB. Alleen clubbeheer plaatst.
+export const clubDocumentsTable = pgTable(
+  "club_documents",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    category: text("category").notNull().default("overig"), // gedragscode | ouderafspraken | reglement | overig
+    objectPath: text("object_path").notNull(),
+    mediaType: text("media_type").notNull(),
+    sizeBytes: integer("size_bytes"),
+    uploadedByClerkId: text("uploaded_by_clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_documents_club_idx").on(t.clubId)],
+);
+export type ClubDocument = typeof clubDocumentsTable.$inferSelect;
+
 // HERSTEL_EN_AANVULLING_01 F4: uitgifteregister van documentuitdraaien per
 // evenement — het versienummer op een PDF is het aantal eerdere uitgiftes van
 // dat type + 1, atomair bepaald bij het aanmaken van de rij (geen SELECT-dan-
