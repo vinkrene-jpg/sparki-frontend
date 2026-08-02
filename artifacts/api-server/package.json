@@ -131,6 +131,7 @@
     "test:trainer-billing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-billing",
     "test:trainer-parent-minor": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-parent-minor",
     "test:trainer-ai-drafts": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-ai-drafts",
+    "test:trainer-followup": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-followup",
     "test:trainer-documents": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-documents",
     "test:trainer-groups": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-groups",
     "test:trainer-clients": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs trainer-clients",

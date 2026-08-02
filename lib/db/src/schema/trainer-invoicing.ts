@@ -106,6 +106,9 @@ export const INVOICE_STATUSES = [
   "te_laat",
   "gecrediteerd",
   "ingetrokken",
+  // F14 (3b-E): deelbetaling en oninbaar-met-reden als volwaardige statussen.
+  "deels_betaald",
+  "oninbaar",
 ] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
@@ -148,6 +151,11 @@ export const trainerInvoicesTable = pgTable(
     paidAt: timestamp("paid_at", { withTimezone: true }),
     paidCents: integer("paid_cents").notNull().default(0),
     creditNoteId: integer("credit_note_id"),
+    // F14 (3b-E) opvolging: betaalafspraak is een feit (datum + afspraak),
+    // oninbaar mag alleen MET reden. Geen score, geen automatische aanmaning.
+    paymentAgreementDate: date("payment_agreement_date"),
+    paymentAgreementNote: text("payment_agreement_note"),
+    uncollectibleReason: text("uncollectible_reason"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -249,3 +257,53 @@ export const trainerLetterheadsTable = pgTable(
 );
 
 export type TrainerLetterhead = typeof trainerLetterheadsTable.$inferSelect;
+
+// F14 (3b-E/3b-H) — klanthistorie rond facturatie. Elke opvolgstap en elke
+// communicatie (herinnering, verzending, betaling, betaalafspraak, notitie,
+// oninbaar, creditnota) is hier terugvindbaar per klant. Dit is een
+// feitenlogboek, geen tweede mailsysteem: e-mail loopt via de centrale laag
+// en wordt hier alleen geregistreerd.
+export const CLIENT_EVENT_KINDS = [
+  "notitie",
+  "herinnering",
+  "betaalafspraak",
+  "betaling",
+  "deelbetaling",
+  "oninbaar",
+  "verzending",
+  "creditnota",
+  "intrekking",
+] as const;
+export type ClientEventKind = (typeof CLIENT_EVENT_KINDS)[number];
+
+export const trainerClientEventsTable = pgTable(
+  "trainer_client_events",
+  {
+    id: serial("id").primaryKey(),
+    trainerClerkId: text("trainer_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    clientId: integer("client_id")
+      .notNull()
+      .references(() => trainerClientsTable.id, { onDelete: "cascade" }),
+    invoiceId: integer("invoice_id").references(() => trainerInvoicesTable.id, {
+      onDelete: "set null",
+    }),
+    kind: text("kind").notNull(),
+    body: text("body").notNull().default(""),
+    // Eerlijk over kanaal: "geregistreerd" (alleen logboek) of "e-mail".
+    channel: text("channel").notNull().default("geregistreerd"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("trainer_client_events_client_idx").on(t.clientId),
+    index("trainer_client_events_trainer_idx").on(t.trainerClerkId),
+  ],
+);
+
+export type TrainerClientEvent = typeof trainerClientEventsTable.$inferSelect;

@@ -311,7 +311,8 @@ async function main() {
     const list = await api(T1, "GET", "/api/trainer/billing/invoices");
     const inv = list.json.find((i: any) => i.invoiceNumber === "CC-2026-119");
     const p1 = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/mark-paid`, { amountCents: 5000 });
-    assert(p1.json.status === "verzonden" && p1.json.paidCents === 5000, "deelbetaling geregistreerd");
+    // F14 (3b-E): deelbetaling is sindsdien een eigen eerlijke status.
+    assert(p1.json.status === "deels_betaald" && p1.json.paidCents === 5000, "deelbetaling geregistreerd");
     const p2 = await api(T1, "POST", `/api/trainer/billing/invoices/${inv.id}/mark-paid`, { amountCents: 7100 });
     assert(p2.json.status === "betaald" && p2.json.paidAt, "volledig betaald");
   });

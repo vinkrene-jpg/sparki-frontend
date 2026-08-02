@@ -14,9 +14,10 @@
 // klaar", "vervalt over drie dagen", "btw-nummer ontbreekt bij KLANT/JOU".
 
 import { Router } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, lte, inArray } from "drizzle-orm";
 import {
   db,
+  trainerClientEventsTable,
   trainerServicesTable,
   recurringBillingTable,
   trainerInvoicesTable,
@@ -31,8 +32,29 @@ import {
   BILLING_CYCLES,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { sendEmail } from "../lib/email";
 
 const router = Router();
+
+// F14 (3b-H) — klanthistorie: elk opvolg- en communicatiefeit registreren.
+// Bewust in dezelfde request (geen fire-and-forget): historie is een feit.
+async function logClientEvent(input: {
+  trainerClerkId: string;
+  clientId: number;
+  invoiceId?: number | null;
+  kind: string;
+  body: string;
+  channel?: string;
+}): Promise<void> {
+  await db.insert(trainerClientEventsTable).values({
+    trainerClerkId: input.trainerClerkId,
+    clientId: input.clientId,
+    invoiceId: input.invoiceId ?? null,
+    kind: input.kind,
+    body: input.body,
+    channel: input.channel ?? "geregistreerd",
+  });
+}
 
 function str(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
@@ -610,6 +632,13 @@ router.post("/invoices/:id/send", requireAuth, async (req, res) => {
       res.status(result.error!).json({ error: msg });
       return;
     }
+    await logClientEvent({
+      trainerClerkId: getClerkUserId(req)!,
+      clientId: result.row.clientId,
+      invoiceId: result.row.id,
+      kind: "verzending",
+      body: `Factuur ${result.row.invoiceNumber} verzonden.`,
+    });
     res.json(result.row);
   } catch (err) {
     req.log.error({ err }, "invoice send failed");
@@ -647,6 +676,13 @@ router.post("/invoices/:id/withdraw", requireAuth, async (req, res) => {
       .set({ status: "ingetrokken", updatedAt: new Date() })
       .where(eq(trainerInvoicesTable.id, inv.id))
       .returning();
+    await logClientEvent({
+      trainerClerkId,
+      clientId: inv.clientId,
+      invoiceId: inv.id,
+      kind: "intrekking",
+      body: "Conceptfactuur ingetrokken vóór verzending.",
+    });
     res.json(row);
   } catch (err) {
     req.log.error({ err }, "invoice withdraw failed");
@@ -677,7 +713,7 @@ router.post("/invoices/:id/mark-paid", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Factuur niet gevonden." });
       return;
     }
-    if (!["verzonden", "te_laat", "gecrediteerd"].includes(inv.status)) {
+    if (!["verzonden", "te_laat", "gecrediteerd", "deels_betaald"].includes(inv.status)) {
       res.status(409).json({ error: "Alleen een verzonden factuur kan betaald worden gemarkeerd." });
       return;
     }
@@ -688,11 +724,26 @@ router.post("/invoices/:id/mark-paid", requireAuth, async (req, res) => {
       .set({
         paidCents,
         paidAt: fullyPaid ? new Date() : inv.paidAt,
-        status: fullyPaid ? "betaald" : inv.status,
+        // F14 (3b-E): deelbetaling is een eigen, eerlijke status — behalve op
+        // een gecrediteerde factuur (die status blijft leidend).
+        status: fullyPaid
+          ? "betaald"
+          : inv.status === "gecrediteerd"
+            ? inv.status
+            : "deels_betaald",
         updatedAt: new Date(),
       })
       .where(eq(trainerInvoicesTable.id, inv.id))
       .returning();
+    await logClientEvent({
+      trainerClerkId,
+      clientId: inv.clientId,
+      invoiceId: inv.id,
+      kind: fullyPaid ? "betaling" : "deelbetaling",
+      body: fullyPaid
+        ? `Factuur ${inv.invoiceNumber ?? inv.id} volledig betaald.`
+        : `Deelbetaling van ${(amountCents / 100).toFixed(2)} EUR op factuur ${inv.invoiceNumber ?? inv.id}.`,
+    });
     res.json(row);
   } catch (err) {
     req.log.error({ err }, "invoice mark-paid failed");
@@ -749,12 +800,19 @@ router.post("/invoices/:id/credit", requireAuth, async (req, res) => {
         .update(trainerInvoicesTable)
         .set({ status: "gecrediteerd", creditNoteId: note!.id, updatedAt: new Date() })
         .where(eq(trainerInvoicesTable.id, inv.id));
-      return { note };
+      return { note, clientId: inv.clientId, invoiceNumber: inv.invoiceNumber };
     });
     if ("error" in result) {
       res.status(result.error!).json({ error: result.msg });
       return;
     }
+    await logClientEvent({
+      trainerClerkId,
+      clientId: result.clientId!,
+      invoiceId: result.note!.invoiceId,
+      kind: "creditnota",
+      body: `Creditnota ${result.note!.creditNumber} (${(result.note!.amountInclCents / 100).toFixed(2)} EUR) op factuur ${result.invoiceNumber}. Reden: ${result.note!.reason}`,
+    });
     res.status(201).json(result.note);
   } catch (err) {
     req.log.error({ err }, "credit note failed");
@@ -1010,6 +1068,449 @@ router.get("/signals", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "billing signals failed");
     res.status(500).json({ error: "Signalen ophalen is niet gelukt." });
+  }
+});
+
+// ── F14 (3b-E) — opvolging: herinnering · notitie · betaalafspraak · oninbaar.
+// Geen automatisch incassotraject, geen automatische aanmaning: elk van deze
+// routes bestaat alleen als expliciete trainer-actie.
+
+async function ownedInvoice(id: number, trainerClerkId: string) {
+  const [inv] = await db
+    .select()
+    .from(trainerInvoicesTable)
+    .where(
+      and(
+        eq(trainerInvoicesTable.id, id),
+        eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+      ),
+    );
+  return inv ?? null;
+}
+
+// Herinnering: via de centrale e-maillaag als de klant een e-mailadres heeft
+// en het kanaal werkt; anders eerlijk alleen geregistreerd. Nooit automatisch.
+router.post("/invoices/:id/reminder", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const inv = await ownedInvoice(Number(req.params.id), trainerClerkId);
+    if (!inv) {
+      res.status(404).json({ error: "Factuur niet gevonden." });
+      return;
+    }
+    if (!["verzonden", "te_laat", "deels_betaald"].includes(inv.status)) {
+      res.status(409).json({ error: "Alleen bij een openstaande verzonden factuur kun je herinneren." });
+      return;
+    }
+    const client = await ownedClient(inv.clientId, trainerClerkId);
+    let channel = "geregistreerd";
+    let emailOk = false;
+    if (client?.email) {
+      const sent = await sendEmail({
+        to: client.email,
+        subject: `Betaalherinnering factuur ${inv.invoiceNumber ?? ""}`.trim(),
+        text: `Beste ${client.name},\n\nDit is een herinnering voor factuur ${inv.invoiceNumber ?? ""} van ${(inv.amountInclCents / 100).toFixed(2)} EUR${inv.dueDate ? `, vervallen op ${inv.dueDate}` : ""}. Al betaald? Dan kun je dit bericht negeren.\n\nMet sportieve groet`,
+      });
+      emailOk = sent.ok;
+      channel = sent.ok ? "e-mail" : "geregistreerd";
+    }
+    await logClientEvent({
+      trainerClerkId,
+      clientId: inv.clientId,
+      invoiceId: inv.id,
+      kind: "herinnering",
+      body: emailOk
+        ? `Herinnering per e-mail verstuurd voor factuur ${inv.invoiceNumber ?? inv.id}.`
+        : `Herinnering geregistreerd voor factuur ${inv.invoiceNumber ?? inv.id} (geen e-mail verstuurd${client?.email ? " — kanaal niet beschikbaar" : " — klant heeft geen e-mailadres"}).`,
+      channel,
+    });
+    res.json({ ok: true, channel, emailSent: emailOk });
+  } catch (err) {
+    req.log.error({ err }, "invoice reminder failed");
+    res.status(500).json({ error: "Herinnering versturen is niet gelukt." });
+  }
+});
+
+// Notitie op een factuur (komt in de klanthistorie).
+router.post("/invoices/:id/note", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const body = str(req.body?.body);
+    if (!body) {
+      res.status(400).json({ error: "body is verplicht." });
+      return;
+    }
+    const inv = await ownedInvoice(Number(req.params.id), trainerClerkId);
+    if (!inv) {
+      res.status(404).json({ error: "Factuur niet gevonden." });
+      return;
+    }
+    await logClientEvent({
+      trainerClerkId,
+      clientId: inv.clientId,
+      invoiceId: inv.id,
+      kind: "notitie",
+      body,
+    });
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "invoice note failed");
+    res.status(500).json({ error: "Notitie plaatsen is niet gelukt." });
+  }
+});
+
+// Betaalafspraak: een feit (datum + afspraak), geen incasso.
+router.post("/invoices/:id/payment-agreement", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const date = str(req.body?.date);
+    const note = str(req.body?.note);
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      res.status(400).json({ error: "date (YYYY-MM-DD) is verplicht." });
+      return;
+    }
+    const inv = await ownedInvoice(Number(req.params.id), trainerClerkId);
+    if (!inv) {
+      res.status(404).json({ error: "Factuur niet gevonden." });
+      return;
+    }
+    if (!["verzonden", "te_laat", "deels_betaald"].includes(inv.status)) {
+      res.status(409).json({ error: "Een betaalafspraak hoort bij een openstaande verzonden factuur." });
+      return;
+    }
+    const [row] = await db
+      .update(trainerInvoicesTable)
+      .set({ paymentAgreementDate: date, paymentAgreementNote: note, updatedAt: new Date() })
+      .where(eq(trainerInvoicesTable.id, inv.id))
+      .returning();
+    await logClientEvent({
+      trainerClerkId,
+      clientId: inv.clientId,
+      invoiceId: inv.id,
+      kind: "betaalafspraak",
+      body: `Betaalafspraak: uiterlijk ${date}${note ? ` — ${note}` : ""}.`,
+    });
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "payment agreement failed");
+    res.status(500).json({ error: "Betaalafspraak vastleggen is niet gelukt." });
+  }
+});
+
+// Oninbaar — alleen MET reden (3b-E), en alleen op een openstaande factuur.
+router.post("/invoices/:id/uncollectible", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const reason = str(req.body?.reason);
+    if (!reason) {
+      res.status(400).json({ error: "reason is verplicht: oninbaar markeren kan alleen met reden." });
+      return;
+    }
+    const inv = await ownedInvoice(Number(req.params.id), trainerClerkId);
+    if (!inv) {
+      res.status(404).json({ error: "Factuur niet gevonden." });
+      return;
+    }
+    if (!["verzonden", "te_laat", "deels_betaald"].includes(inv.status)) {
+      res.status(409).json({ error: "Alleen een openstaande verzonden factuur kan oninbaar zijn." });
+      return;
+    }
+    const [row] = await db
+      .update(trainerInvoicesTable)
+      .set({ status: "oninbaar", uncollectibleReason: reason, updatedAt: new Date() })
+      .where(eq(trainerInvoicesTable.id, inv.id))
+      .returning();
+    await logClientEvent({
+      trainerClerkId,
+      clientId: inv.clientId,
+      invoiceId: inv.id,
+      kind: "oninbaar",
+      body: `Factuur ${inv.invoiceNumber ?? inv.id} oninbaar gemarkeerd. Reden: ${reason}`,
+    });
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "uncollectible failed");
+    res.status(500).json({ error: "Oninbaar markeren is niet gelukt." });
+  }
+});
+
+// ── F14 (3b-B/3b-H) — klanthistorie + betaalgedrag (feiten, geen oordeel) ────
+router.get("/clients/:id/history", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const client = await ownedClient(Number(req.params.id), trainerClerkId);
+    if (!client) {
+      res.status(404).json({ error: "Klant niet gevonden." });
+      return;
+    }
+    const events = await db
+      .select()
+      .from(trainerClientEventsTable)
+      .where(eq(trainerClientEventsTable.clientId, client.id))
+      .orderBy(desc(trainerClientEventsTable.createdAt));
+    const today = amsterdamToday();
+    const invoices = (
+      await db
+        .select()
+        .from(trainerInvoicesTable)
+        .where(
+          and(
+            eq(trainerInvoicesTable.clientId, client.id),
+            eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+          ),
+        )
+        .orderBy(desc(trainerInvoicesTable.id))
+    ).map((r) => withOverdue(r, today));
+
+    // Betaalgedrag = feiten: gemiddelde betaaltermijn en aantal keer te laat.
+    // Geen score, geen kleurcode (3b-B).
+    const paidWithDates = invoices.filter((i) => i.paidAt && i.sentAt);
+    const avgPaymentDays = paidWithDates.length
+      ? Math.round(
+          paidWithDates.reduce(
+            (sum, i) =>
+              sum + (i.paidAt!.getTime() - i.sentAt!.getTime()) / 86_400_000,
+            0,
+          ) / paidWithDates.length,
+        )
+      : null;
+    // "Keer te laat" is een feit over de vervaldatum, ongeacht de eindstatus:
+    // ook een factuur die later betaald of oninbaar werd, wás te laat.
+    const timesLate = invoices.filter(
+      (i) =>
+        i.dueDate &&
+        !["concept", "ingetrokken"].includes(i.status) &&
+        ((i.paidAt && i.paidAt.toISOString().slice(0, 10) > i.dueDate) ||
+          (!i.paidAt && i.dueDate < today)),
+    ).length;
+    res.json({
+      client: { id: client.id, name: client.name },
+      events,
+      invoices,
+      paymentBehavior: {
+        avgPaymentDays,
+        timesLate,
+        note: "Feiten, geen oordeel: gemiddelde betaaltermijn in dagen en aantal keer te laat.",
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "client history failed");
+    res.status(500).json({ error: "Klanthistorie ophalen is niet gelukt." });
+  }
+});
+
+// ── F14 (3b-A) — startscherm: twaalf blokken in vaste volgorde + één primaire
+// actie (de eerstvolgende factuur afhandelen). De volgorde is een contract.
+router.get("/dashboard", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const today = amsterdamToday();
+    const monthStart = `${today.slice(0, 7)}-01`;
+    const invoices = (
+      await db
+        .select()
+        .from(trainerInvoicesTable)
+        .where(eq(trainerInvoicesTable.trainerClerkId, trainerClerkId))
+    ).map((r) => withOverdue(r, today));
+    const clients = await db
+      .select()
+      .from(trainerClientsTable)
+      .where(eq(trainerClientsTable.trainerClerkId, trainerClerkId));
+    const recurring = await db
+      .select()
+      .from(recurringBillingTable)
+      .where(
+        and(
+          eq(recurringBillingTable.trainerClerkId, trainerClerkId),
+          eq(recurringBillingTable.active, true),
+        ),
+      );
+    const [biz] = await db
+      .select()
+      .from(trainerBusinessTable)
+      .where(eq(trainerBusinessTable.clerkId, trainerClerkId));
+    const events = await db
+      .select()
+      .from(trainerClientEventsTable)
+      .where(eq(trainerClientEventsTable.trainerClerkId, trainerClerkId))
+      .orderBy(desc(trainerClientEventsTable.createdAt))
+      .limit(5);
+
+    const open = invoices.filter((i) =>
+      ["verzonden", "te_laat", "deels_betaald"].includes(i.status),
+    );
+    const openAmountCents = open.reduce(
+      (s, i) => s + Math.max(0, i.amountInclCents - i.paidCents),
+      0,
+    );
+    const overdue = open.filter((i) => i.isOverdue);
+    const sentThisMonth = invoices.filter(
+      (i) => i.invoiceDate && i.invoiceDate >= monthStart && i.invoiceDate <= today,
+    );
+    const concepts = invoices.filter((i) => i.status === "concept");
+    // Eerstvolgend facturatiemoment uit de actieve afspraken.
+    const nextMoments = recurring
+      .map((r) => (r.billedThrough ? addDays(r.billedThrough, 1) : r.startDate))
+      .filter((d) => d != null)
+      .sort();
+    const clientIdsWithRecurring = new Set(recurring.map((r) => r.clientId));
+    const clientsWithoutAgreement = clients.filter(
+      (c) => c.status === "actief" && !clientIdsWithRecurring.has(c.id),
+    );
+    const missing: string[] = [];
+    if (!biz) missing.push("bedrijfsgegevens ontbreken");
+    else {
+      if (!biz.korActive && !biz.vatNumber) missing.push("eigen btw-nummer ontbreekt");
+      if (!biz.iban) missing.push("IBAN ontbreekt");
+    }
+    for (const c of clients) {
+      if (c.companyName && !c.vatNumber) missing.push(`btw-nummer klant ${c.name} ontbreekt`);
+      if (!c.email) missing.push(`e-mailadres klant ${c.name} ontbreekt`);
+    }
+
+    // Eén primaire actie: de eerstvolgende factuur afhandelen — oudste
+    // concept eerst, anders de oudste te-late factuur.
+    const nextConcept = [...concepts].sort((a, b) => a.id - b.id)[0];
+    const nextOverdue = [...overdue].sort((a, b) =>
+      (a.dueDate ?? "").localeCompare(b.dueDate ?? ""),
+    )[0];
+    const primaryAction = nextConcept
+      ? {
+          kind: "concept_afhandelen",
+          invoiceId: nextConcept.id,
+          label: "Controleer en verzend de eerstvolgende conceptfactuur.",
+        }
+      : nextOverdue
+        ? {
+            kind: "te_laat_opvolgen",
+            invoiceId: nextOverdue.id,
+            label: "Volg de oudste te-late factuur op.",
+          }
+        : null;
+
+    // Vaste volgorde (3b-A) — twaalf blokken, exact dit contract.
+    res.json({
+      primaryAction,
+      blocks: [
+        { key: "openstaand_bedrag", amountCents: openAmountCents, count: open.length },
+        { key: "te_laat", count: overdue.length },
+        {
+          key: "deze_maand_gefactureerd",
+          count: sentThisMonth.length,
+          amountCents: sentThisMonth.reduce((s, i) => s + i.amountInclCents, 0),
+        },
+        { key: "concepten", count: concepts.length },
+        { key: "verstuurd", count: invoices.filter((i) => i.status === "verzonden").length },
+        { key: "betaald", count: invoices.filter((i) => i.status === "betaald").length },
+        { key: "gecrediteerd", count: invoices.filter((i) => i.status === "gecrediteerd").length },
+        { key: "eerstvolgend_facturatiemoment", date: nextMoments[0] ?? null },
+        {
+          key: "klanten_zonder_actieve_afspraak",
+          count: clientsWithoutAgreement.length,
+          clients: clientsWithoutAgreement.map((c) => ({ id: c.id, name: c.name })),
+        },
+        { key: "ontbrekende_gegevens", items: missing },
+        {
+          key: "exportstatus",
+          note: "Export in CSV en Excel beschikbaar via /invoices/export.",
+        },
+        {
+          key: "laatste_wijzigingen",
+          events: events.map((e) => ({ kind: e.kind, body: e.body, createdAt: e.createdAt })),
+        },
+      ],
+    });
+  } catch (err) {
+    req.log.error({ err }, "billing dashboard failed");
+    res.status(500).json({ error: "Startscherm ophalen is niet gelukt." });
+  }
+});
+
+// ── F14 (3b-F) — rapportage: feiten voor de trainer. Btw-overzicht is een
+// informatief overzicht, geen aangifte.
+router.get("/reports", requireAuth, async (req, res) => {
+  try {
+    const trainerClerkId = getClerkUserId(req)!;
+    const year = String(req.query.year ?? amsterdamToday().slice(0, 4));
+    if (!/^\d{4}$/.test(year)) {
+      res.status(400).json({ error: "year (JJJJ) is ongeldig." });
+      return;
+    }
+    const sent = await db
+      .select()
+      .from(trainerInvoicesTable)
+      .where(
+        and(
+          eq(trainerInvoicesTable.trainerClerkId, trainerClerkId),
+          gte(trainerInvoicesTable.invoiceDate, `${year}-01-01`),
+          lte(trainerInvoicesTable.invoiceDate, `${year}-12-31`),
+          inArray(trainerInvoicesTable.status, [
+            "verzonden",
+            "te_laat",
+            "deels_betaald",
+            "betaald",
+            "gecrediteerd",
+            "oninbaar",
+          ]),
+        ),
+      );
+    const credits = await db
+      .select()
+      .from(creditNotesTable)
+      .where(eq(creditNotesTable.trainerClerkId, trainerClerkId));
+    const creditByInvoice = new Map<number, number>();
+    for (const c of credits) {
+      creditByInvoice.set(c.invoiceId, (creditByInvoice.get(c.invoiceId) ?? 0) + c.amountInclCents);
+    }
+    const netOf = (inv: (typeof sent)[number]) =>
+      inv.amountInclCents - (creditByInvoice.get(inv.id) ?? 0);
+
+    const perMonth: Record<string, number> = {};
+    const perQuarter: Record<string, number> = {};
+    const perClient: Record<string, number> = {};
+    let vatCents = 0;
+    let korCents = 0;
+    for (const inv of sent) {
+      const month = inv.invoiceDate!.slice(0, 7);
+      const q = `K${Math.ceil(Number(inv.invoiceDate!.slice(5, 7)) / 3)}`;
+      const net = netOf(inv);
+      perMonth[month] = (perMonth[month] ?? 0) + net;
+      perQuarter[q] = (perQuarter[q] ?? 0) + net;
+      perClient[String(inv.clientId)] = (perClient[String(inv.clientId)] ?? 0) + net;
+      if (inv.korApplied) korCents += net;
+      else if (inv.vatBreakdown)
+        vatCents += Object.values(inv.vatBreakdown).reduce((s, v) => s + v, 0);
+    }
+    const open = sent.filter((i) =>
+      ["verzonden", "te_laat", "deels_betaald"].includes(i.status),
+    );
+    const paidWithDates = sent.filter((i) => i.paidAt && i.sentAt);
+    res.json({
+      year,
+      totalCents: sent.reduce((s, i) => s + netOf(i), 0),
+      perMonth,
+      perQuarter,
+      perClient,
+      openAmountCents: open.reduce((s, i) => s + Math.max(0, i.amountInclCents - i.paidCents), 0),
+      avgPaymentDays: paidWithDates.length
+        ? Math.round(
+            paidWithDates.reduce(
+              (s, i) => s + (i.paidAt!.getTime() - i.sentAt!.getTime()) / 86_400_000,
+              0,
+            ) / paidWithDates.length,
+          )
+        : null,
+      activeClients: new Set(sent.map((i) => i.clientId)).size,
+      invoiceCount: sent.length,
+      vatOverview: {
+        note: "Informatief overzicht, geen btw-aangifte.",
+        vatCents,
+        korExemptCents: korCents,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "billing reports failed");
+    res.status(500).json({ error: "Rapportage ophalen is niet gelukt." });
   }
 });
 
