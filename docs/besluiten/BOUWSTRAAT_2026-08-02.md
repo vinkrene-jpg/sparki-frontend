@@ -71,7 +71,7 @@ Alleen de fasen die op niets buiten het pakket wachten: inventarisatie, gedeelde
 
 **2.1 `DATA_TRUST_01`** — afmaken en bewijzen. Dit is de bodem onder analyse, doelen en de intelligentielaag: brontypes, geldigheidsduur per brontype, verouderde meting met waarschuwing, voorkeursbron bij eerste koppeling, stille verwerking van afwijkingen, dubbele ritten onbeperkt bewaren.
 
-**2.2 `ABONNEMENT_01` + `ABONNEE_ADMIN_01`** — inclusief de clubafname en de scheiding **betaler ≠ gebruiker**, die vandaag helemaal niet bestaat in de billing. Zonder die scheiding kan een club niet voor haar leden betalen en kan een ouder niet voor een jeugdlid betalen.
+**2.2 `ABONNEMENT_01` + `ABONNEE_ADMIN_02`** — inclusief de clubafname en de scheiding **betaler ≠ gebruiker**, die vandaag helemaal niet bestaat in de billing. Zonder die scheiding kan een club niet voor haar leden betalen en kan een ouder niet voor een jeugdlid betalen. *(02-08: `ABONNEE_ADMIN_01`/taak #537 is INGETROKKEN en vervangen door `docs/build-packages/ABONNEE_ADMIN_02/ABONNEE_ADMIN_02.md` — ABA-01 t/m ABA-52; volgorde ná `ABONNEMENT_01` is een technische afhankelijkheid, geen vrijgavepoort.)*
 
 **2.3 Bewaartermijnen** — toetsvoorstel: de zeven besloten termijnen naast de zes lege configuratiewaarden. Daarna invullen. Dit is de laatste juridische blokkade op een betaalde publieke release.
 
