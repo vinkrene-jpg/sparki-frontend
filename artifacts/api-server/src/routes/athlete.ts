@@ -148,6 +148,8 @@ router.put("/profile", requireAuth, async (req, res) => {
     homeLon,
     homeLabel,
     plannerView,
+    restingHr,
+    maxHr,
   } = req.body as {
     ftp?: number;
     ftpEstimated?: boolean;
@@ -170,7 +172,24 @@ router.put("/profile", requireAuth, async (req, res) => {
     homeLon?: number | string | null;
     homeLabel?: string | null;
     plannerView?: string | null;
+    restingHr?: number | string | null;
+    maxHr?: number | string | null;
   };
+
+  // F3: rust- en maximale hartslag — integers binnen een plausibel menselijk
+  // bereik; expliciete null wist, onzin wordt genegeerd (nooit vertrouwd).
+  const cleanHrField = (
+    v: number | string | null | undefined,
+    lo: number,
+    hi: number,
+  ): number | null | undefined => {
+    if (v === null) return null;
+    if (v === undefined || v === "") return undefined;
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) && n >= lo && n <= hi ? n : undefined;
+  };
+  const cleanRestingHr = cleanHrField(restingHr, 25, 110);
+  const cleanMaxHr = cleanHrField(maxHr, 120, 230);
 
   // Whitelisted enum values for the planning inputs (never trust raw input).
   const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -325,6 +344,8 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(cleanPlannerView !== undefined && {
           plannerView: cleanPlannerView,
         }),
+        ...(cleanRestingHr !== undefined && { restingHr: cleanRestingHr }),
+        ...(cleanMaxHr !== undefined && { maxHr: cleanMaxHr }),
         ...(homeLat !== undefined &&
           homeLon !== undefined && {
             homeLat: homeValid ? String(latNum) : null,

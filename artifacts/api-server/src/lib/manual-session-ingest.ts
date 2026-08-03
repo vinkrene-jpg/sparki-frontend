@@ -23,6 +23,7 @@ import {
 } from "../engines/data-hub/dedupe";
 import { deriveTss, ftpAtDate, type FtpEntry } from "./derived-load";
 import { deriveSessionSignals } from "./measurement-level";
+import { deriveHrLoad } from "./hr-load";
 import { recordComputation } from "../engines/data-origin";
 import { athleteProfilesTable, ftpHistoryTable } from "@workspace/db";
 
@@ -50,11 +51,15 @@ export interface ManualIngestResult {
 async function loadFtp(clerkId: string): Promise<{
   profileFtp: number | null;
   history: FtpEntry[];
+  restingHr: number | null;
+  maxHr: number | null;
 }> {
   const [profile] = await db
     .select({
       ftp: athleteProfilesTable.ftp,
       estimated: athleteProfilesTable.ftpEstimated,
+      restingHr: athleteProfilesTable.restingHr,
+      maxHr: athleteProfilesTable.maxHr,
     })
     .from(athleteProfilesTable)
     .where(eq(athleteProfilesTable.clerkId, clerkId))
@@ -70,7 +75,12 @@ async function loadFtp(clerkId: string): Promise<{
   // belastingscore afgeleid van een schatting zou een verzonnen getal zijn.
   const profileFtp =
     profile && profile.estimated !== true ? (profile.ftp ?? null) : null;
-  return { profileFtp, history };
+  return {
+    profileFtp,
+    history,
+    restingHr: profile?.restingHr ?? null,
+    maxHr: profile?.maxHr ?? null,
+  };
 }
 
 /**
@@ -87,6 +97,8 @@ export async function ingestManualSession(
   let tss = input.tss ?? null;
   let intensityFactor = input.intensityFactor ?? null;
   let derivedTssParams: Record<string, unknown> | null = null;
+  // F3: aparte hartslagbelasting voor sessies zonder vermogensbelasting.
+  let hrLoad: number | null = null;
   if (tss == null) {
     const ftpCtx = await loadFtp(clerkId);
     const ftpUsed = ftpAtDate(
@@ -109,6 +121,14 @@ export async function ingestManualSession(
         normalizedPower: input.normalizedPower ?? null,
         avgPower: input.avgPower ?? null,
       };
+    }
+    if (tss == null) {
+      hrLoad = deriveHrLoad({
+        durationMin: input.durationMin ?? null,
+        avgHR: input.avgHR ?? null,
+        restingHr: ftpCtx.restingHr,
+        maxHr: ftpCtx.maxHr,
+      });
     }
   }
 
@@ -219,6 +239,7 @@ export async function ingestManualSession(
       avgHR: input.avgHR ?? null,
       tss,
       intensityFactor,
+      hrLoad,
       notes: input.notes ?? null,
       feelScore: input.feelScore ?? null,
       // F2: feitelijke signalen op het ingest-moment.

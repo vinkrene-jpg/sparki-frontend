@@ -49,6 +49,10 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   avgHR: integer("avg_hr"),
   tss: integer("tss"),
   intensityFactor: numeric("intensity_factor", { precision: 4, scale: 3 }),
+  // TRAINEN_DOELEN_SEIZOEN_01 F3: belasting op hartslag voor sessies ZONDER
+  // vermogen — apart herkenbaar van de vermogensbelasting (tss), nooit
+  // opgeteld. Null = geen hartslag/duur of geen rust+max bekend (eerlijk leeg).
+  hrLoad: integer("hr_load"),
   // TRAINEN_DOELEN_SEIZOEN_01 F2: welke signalen er bij deze sessie feitelijk
   // binnenkwamen (vermogen/hartslag/duur). Vastgelegd op het ingest-moment —
   // nooit achteraf geraden; null = rij van vóór F2 (eerlijk onbekend).

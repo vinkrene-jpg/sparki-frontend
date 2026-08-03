@@ -27,6 +27,7 @@ import {
 import { cleanActivity, cleanDailyMetric, cleanFtp } from "./validation";
 import { autoLinkSession } from "../../lib/workout-execution";
 import { deriveSessionSignals } from "../../lib/measurement-level";
+import { deriveHrLoad } from "../../lib/hr-load";
 
 export interface IngestOptions {
   /** Data types the user has NOT revoked for this provider (default-grant). */
@@ -79,11 +80,15 @@ function numStr(v: number | null | undefined): string | null {
 async function loadFtpContext(clerkId: string): Promise<{
   profileFtp: number | null;
   history: FtpEntry[];
+  restingHr: number | null;
+  maxHr: number | null;
 }> {
   const [profile] = await db
     .select({
       ftp: athleteProfilesTable.ftp,
       estimated: athleteProfilesTable.ftpEstimated,
+      restingHr: athleteProfilesTable.restingHr,
+      maxHr: athleteProfilesTable.maxHr,
     })
     .from(athleteProfilesTable)
     .where(eq(athleteProfilesTable.clerkId, clerkId))
@@ -99,7 +104,12 @@ async function loadFtpContext(clerkId: string): Promise<{
   // afgeleide belastingscore — dan liever eerlijk geen score.
   const profileFtp =
     profile && profile.estimated !== true ? (profile.ftp ?? null) : null;
-  return { profileFtp, history };
+  return {
+    profileFtp,
+    history,
+    restingHr: profile?.restingHr ?? null,
+    maxHr: profile?.maxHr ?? null,
+  };
 }
 
 async function ingestActivities(
@@ -159,6 +169,18 @@ async function persistOneActivity(
         intensityFactor = derived.intensityFactor;
       }
     }
+    // F3: sessies zonder vermogensbelasting krijgen — als hartslag, duur én
+    // rust/max bekend zijn — een APARTE hartslagbelasting. Nooit optellen bij
+    // tss; ontbreekt een ingrediënt, dan blijft dit eerlijk null.
+    const hrLoad =
+      tss == null
+        ? deriveHrLoad({
+            durationMin: a.durationMin,
+            avgHR: a.avgHR,
+            restingHr: ftpCtx.restingHr,
+            maxHr: ftpCtx.maxHr,
+          })
+        : null;
     const dedupeKey = computeActivityDedupeKey({
       sport: a.sport,
       startedAt: a.startedAt,
@@ -348,6 +370,7 @@ async function persistOneActivity(
           powerBests: a.powerBests ?? null,
           tss,
           intensityFactor: numStr(intensityFactor),
+          hrLoad,
           // F2: welke signalen deze import feitelijk droeg — op ingest-moment.
           signals: deriveSessionSignals({
             avgPower: a.avgPower,

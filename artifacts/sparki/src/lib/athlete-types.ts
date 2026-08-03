@@ -187,6 +187,8 @@ export type TrainingSession = {
   avgHR: number | null;
   avgSpeedKph: string | null;
   tss: number | null;
+  // F3: belasting op hartslag — apart herkenbaar van de vermogensbelasting.
+  hrLoad?: number | null;
   intensityFactor: string | null;
   notes: string | null;
   feelScore: number | null;

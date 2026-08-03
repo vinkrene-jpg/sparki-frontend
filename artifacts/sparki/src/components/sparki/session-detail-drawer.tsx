@@ -568,6 +568,15 @@ export function SessionDetailDrawer({
         uitlegKey: "belasting",
         bron: bronVoor("tss"),
       })
+    // F3: hartslagbelasting — bewust een eigen label zodat altijd zichtbaar is
+    // welke bron eronder ligt; nooit vermengd met de vermogensbelasting.
+    if (session.tss == null && session.hrLoad != null)
+      metrics.push({
+        icon: Activity,
+        label: "Belasting (hartslag)",
+        value: `${session.hrLoad}`,
+        bron: "hartslag",
+      })
     if (session.intensityFactor != null && session.intensityFactor !== "")
       metrics.push({
         icon: Gauge,

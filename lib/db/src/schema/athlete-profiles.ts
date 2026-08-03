@@ -67,6 +67,11 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   measurementLevel: text("measurement_level").$type<
     "pro" | "hartslag" | "tijd_gevoel" | "aanwezigheid"
   >(),
+  // TRAINEN_DOELEN_SEIZOEN_01 F3: hartslagzones uit rust- en maximale hartslag
+  // voor de hartslagbelasting van sessies zonder vermogen. Sporter-ingevuld,
+  // nullable — zonder deze waarden blijft zo'n sessie eerlijk zonder belasting.
+  restingHr: integer("resting_hr"),
+  maxHr: integer("max_hr"),
 
   // ── Autonomous-coaching planning inputs (task #17) ─────────────────────────
   // Structured fields Sparki needs to build a real training plan when the
