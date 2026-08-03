@@ -18,6 +18,7 @@ import { requireCommercialFeature } from "../lib/entitlements";
 import {
   gatherInputs,
   checkCompleteness,
+  buildSkeleton,
   generatePlan,
   adaptPlan,
   maybeRollForward,
@@ -153,6 +154,91 @@ async function handleGenerate(
     res.status(500).json({ error: "Kon trainingsschema niet genereren" });
   }
 }
+
+// F5 (TRAINEN_DOELEN_SEIZOEN_01): bevestigingsscherm "wat verandert er".
+// Berekent het nieuwe schema deterministisch ZONDER iets op te slaan en zet het
+// naast wat er nu op de kalender staat, zodat de sporter bevestigt vóór er ook
+// maar één sessie wordt weggeschreven.
+router.get(
+  "/preview",
+  requireAuth,
+  requireCommercialFeature("autonomous_training"),
+  async (req, res) => {
+    const clerkId = getClerkUserId(req)!;
+    try {
+      const inputs = await gatherInputs(clerkId);
+      const completeness = checkCompleteness(inputs);
+      if (!completeness.ready) {
+        res.status(400).json({
+          error: "Profiel onvolledig voor planning",
+          missing: completeness.missing,
+        });
+        return;
+      }
+      const start = new Date().toLocaleDateString("sv-SE", {
+        timeZone: "Europe/Amsterdam",
+      });
+      const skeleton = buildSkeleton(inputs, start);
+
+      // Nieuw plan, samengevat per week — fase + begindatum + wat er gevraagd wordt.
+      const weeks = [0, 1, 2].map((w) => {
+        const days = skeleton.filter((d) => d.weekIndex === w);
+        const sessions = days.filter((d) => !d.isRest);
+        const minutes = sessions.reduce((s, d) => s + (d.estDurationMin ?? 0), 0);
+        const heaviest = sessions.reduce(
+          (best, d) =>
+            (d.estDurationMin ?? 0) > (best?.estDurationMin ?? 0) ? d : best,
+          null as (typeof days)[number] | null,
+        );
+        return {
+          weekIndex: w,
+          startDate: days[0]?.date ?? null,
+          sessions: sessions.length,
+          hours: Math.round((minutes / 60) * 10) / 10,
+          heaviestDay: heaviest
+            ? { date: heaviest.date, focus: heaviest.focus, durationMin: heaviest.estDurationMin }
+            : null,
+        };
+      });
+
+      // Huidige kalender over dezelfde horizon, per week — het eerlijke verschil.
+      const horizonEnd = skeleton[skeleton.length - 1]?.date ?? start;
+      const current = await db
+        .select({
+          scheduledDate: plannedWorkoutsTable.scheduledDate,
+          durationMin: plannedWorkoutsTable.targetDurationMin,
+          status: plannedWorkoutsTable.status,
+        })
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+            eq(plannedWorkoutsTable.status, "planned"),
+            gte(plannedWorkoutsTable.scheduledDate, start),
+          ),
+        );
+      const currentWeeks = [0, 1, 2].map((w) => {
+        const from = skeleton.find((d) => d.weekIndex === w)?.date ?? start;
+        const to = skeleton.filter((d) => d.weekIndex === w).at(-1)?.date ?? horizonEnd;
+        const rows = current.filter((r) => r.scheduledDate >= from && r.scheduledDate <= to);
+        const minutes = rows.reduce((s, r) => s + (r.durationMin ?? 0), 0);
+        return { weekIndex: w, sessions: rows.length, hours: Math.round((minutes / 60) * 10) / 10 };
+      });
+
+      res.json({
+        phase: inputs.phase,
+        startDate: start,
+        weeks,
+        currentWeeks,
+        weeklyHourTarget: inputs.weeklyHourTarget,
+        nextRace: inputs.nextRace,
+      });
+    } catch (err) {
+      req.log.error({ err }, "training-plan.preview failed");
+      res.status(500).json({ error: "Kon voorbeeld niet berekenen" });
+    }
+  },
+);
 
 router.post("/generate", requireAuth, requireCommercialFeature("autonomous_training"), handleGenerate);
 router.post("/regenerate", requireAuth, requireCommercialFeature("autonomous_training"), handleGenerate);

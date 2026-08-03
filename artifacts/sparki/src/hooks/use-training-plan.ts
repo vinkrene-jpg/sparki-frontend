@@ -438,6 +438,29 @@ export function useTrainingPlan(enabled = true) {
   });
 }
 
+// F5 (TRAINEN_DOELEN_SEIZOEN_01): "wat verandert er"-voorbeeld — deterministisch
+// berekend op de server, zonder dat er iets wordt opgeslagen.
+export type PlanPreview = {
+  phase: "base" | "build" | "peak" | "taper";
+  startDate: string;
+  weeks: {
+    weekIndex: number;
+    startDate: string | null;
+    sessions: number;
+    hours: number;
+    heaviestDay: { date: string; focus: string; durationMin: number | null } | null;
+  }[];
+  currentWeeks: { weekIndex: number; sessions: number; hours: number }[];
+  weeklyHourTarget: number | null;
+  nextRace: unknown;
+};
+
+export function usePlanPreview() {
+  return useMutation({
+    mutationFn: () => apiFetch<PlanPreview>("/api/training-plan/preview"),
+  });
+}
+
 export function useGenerateTrainingPlan() {
   const qc = useQueryClient();
   return useMutation({

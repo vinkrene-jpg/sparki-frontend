@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { HumorLine } from "@/components/sparki/humor-line"
-import { usePlanWindow, useGeneratePlan } from "@/hooks/use-training-plan"
+import { usePlanWindow, useGeneratePlan, usePlanPreview, type PlanPreview } from "@/hooks/use-training-plan"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { DayDetailDrawer } from "@/components/sparki/day-detail-drawer"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
@@ -29,6 +29,87 @@ function mondayIndex(dateStr: string): number {
   return (day + 6) % 7
 }
 
+// F5 (TRAINEN_DOELEN_SEIZOEN_01): bevestigingsscherm "wat verandert er" — het
+// nieuwe schema komt pas op de kalender nadat de sporter dit heeft gezien en
+// bevestigd: fasen met begindatums, het verschil met de huidige weken en wat
+// er per week gevraagd wordt.
+const PHASE_NL: Record<PlanPreview["phase"], string> = {
+  base: "Basis — rustig opbouwen",
+  build: "Opbouw — gericht zwaarder",
+  peak: "Piek — scherpte richting je doel",
+  taper: "Taper — vers aan de start",
+}
+
+function fmtDayShort(iso: string | null): string {
+  if (!iso) return "—"
+  const [y, m, d] = iso.split("-").map(Number)
+  return new Date(y!, m! - 1, d!, 12).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })
+}
+
+function PlanPreviewConfirm({
+  preview,
+  onConfirm,
+  onCancel,
+  confirming,
+}: {
+  preview: PlanPreview
+  onConfirm: () => void
+  onCancel: () => void
+  confirming: boolean
+}) {
+  return (
+    <div className="mt-4 rounded-2xl border border-accent-cyan/25 bg-card p-4 backdrop-blur-md">
+      <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+        Wat verandert er
+      </span>
+      <p className="mt-2 text-[14px] font-light tracking-tight text-foreground">
+        Fase: {PHASE_NL[preview.phase]}
+      </p>
+      <div className="mt-3 space-y-2">
+        {preview.weeks.map((w) => {
+          const cur = preview.currentWeeks.find((c) => c.weekIndex === w.weekIndex)
+          const diff = cur ? Math.round((w.hours - cur.hours) * 10) / 10 : null
+          return (
+            <div key={w.weekIndex} className="rounded-xl border border-border bg-muted px-3 py-2">
+              <p className="text-[12px] text-foreground/85">
+                Week {w.weekIndex + 1} · vanaf {fmtDayShort(w.startDate)} — {w.sessions}{" "}
+                {w.sessions === 1 ? "sessie" : "sessies"}, ±{w.hours} u
+                {w.heaviestDay && (
+                  <> · zwaarste dag: {w.heaviestDay.focus.toLowerCase()} op {fmtDayShort(w.heaviestDay.date)}</>
+                )}
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                {cur && cur.sessions > 0
+                  ? diff === 0
+                    ? "Evenveel uren als er nu gepland staan."
+                    : `Nu gepland: ${cur.hours} u — dat wordt ${diff! > 0 ? `${diff} u meer` : `${Math.abs(diff!)} u minder`}.`
+                  : "Er staat nu niets gepland in deze week."}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={confirming}
+          className="rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring hover:bg-accent-cyan/25 disabled:opacity-40"
+        >
+          {confirming ? "Bezig…" : "Zet op mijn kalender"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-xl px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-ring hover:text-foreground/70"
+        >
+          Toch niet
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function zoneDot(zone: number): string {
   if (zone >= 5) return "rgba(255,140,80,0.9)"
   if (zone === 4) return "rgba(120,210,230,0.95)"
@@ -49,6 +130,8 @@ export function ThreeWeekPlan({
   const { data: plan, isLoading } = usePlanWindow(3)
   const { data: profile } = useAthleteExtendedProfile()
   const generate = useGeneratePlan()
+  const preview = usePlanPreview()
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const [dayOpen, setDayOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -140,12 +223,34 @@ export function ThreeWeekPlan({
                 : []
             }
             primary={{
-              label: generate.isPending ? "Plan opbouwen…" : "Bouw mijn plan",
-              onClick: () => generate.mutate(undefined),
-              loading: generate.isPending,
-              disabled: !canBuild || generate.isPending,
+              label: generate.isPending
+                ? "Plan opbouwen…"
+                : preview.isPending
+                  ? "Voorbeeld berekenen…"
+                  : "Bouw mijn plan",
+              // F5: eerst laten zien wat er verandert; pas na bevestiging
+              // komt er iets op de kalender.
+              onClick: () =>
+                preview.mutate(undefined, { onSuccess: () => setPreviewOpen(true) }),
+              loading: generate.isPending || preview.isPending,
+              disabled: !canBuild || generate.isPending || preview.isPending,
             }}
           />
+          {previewOpen && preview.data && (
+            <PlanPreviewConfirm
+              preview={preview.data}
+              confirming={generate.isPending}
+              onConfirm={() =>
+                generate.mutate(undefined, { onSuccess: () => setPreviewOpen(false) })
+              }
+              onCancel={() => setPreviewOpen(false)}
+            />
+          )}
+          {preview.isError && (
+            <p className="mt-3 text-center text-[12px] text-[color:var(--color-negative)]">
+              Het voorbeeld berekenen lukte niet. Probeer het opnieuw.
+            </p>
+          )}
           {generate.isError && (
             <p className="mt-3 text-center text-[12px] text-[color:var(--color-negative)]">
               {generate.error instanceof Error &&
