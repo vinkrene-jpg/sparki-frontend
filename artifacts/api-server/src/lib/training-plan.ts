@@ -363,6 +363,22 @@ const KIND_ROUTE_NEEDED: Record<DayKind, boolean> = {
   wedstrijd: false,
 };
 
+// TRAINEN_DOELEN_SEIZOEN_01 F1: de gestructureerde zone die de generator zelf
+// al kent per DayKind. Dit is wegschrijven van bestaande kennis, géén raden:
+// rust en wedstrijd hebben geen trainingszone en blijven null.
+const KIND_ZONE: Record<
+  DayKind,
+  "endurance" | "tempo" | "sweetspot" | "threshold" | "vo2" | "anaeroob" | "sprint" | "herstel" | null
+> = {
+  rest: null,
+  duur: "endurance",
+  long: "endurance",
+  herstel: "herstel",
+  tempo: "tempo",
+  interval: "vo2",
+  wedstrijd: null,
+};
+
 // Relative volume weight per kind, used to split the weekly minute budget.
 const KIND_WEIGHT: Record<DayKind, number> = {
   rest: 0,
@@ -925,6 +941,7 @@ export async function generatePlan(
             title: aiContent.titles.get(d.offset) ?? d.focus,
             description: aiContent.descriptions.get(d.offset) ?? null,
             targetDurationMin: d.estDurationMin,
+            zone: KIND_ZONE[d.kind],
             status: "planned",
             source: "sparki",
             planId: newPlanId,

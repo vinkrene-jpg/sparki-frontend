@@ -49,6 +49,19 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   avgHR: integer("avg_hr"),
   tss: integer("tss"),
   intensityFactor: numeric("intensity_factor", { precision: 4, scale: 3 }),
+  // TRAINEN_DOELEN_SEIZOEN_01 F1 (uitvoeringskant): zone van de uitgevoerde
+  // sessie — alleen gevuld als hij bekend is (bv. overgenomen van de gekoppelde
+  // geplande training). Bestaande rijen blijven null; nooit achteraf geraden.
+  zone: text("zone").$type<
+    | "endurance"
+    | "tempo"
+    | "sweetspot"
+    | "threshold"
+    | "vo2"
+    | "anaeroob"
+    | "sprint"
+    | "herstel"
+  >(),
   notes: text("notes"),
   feelScore: integer("feel_score"),
   // Canonical Sparki sport family (see engines/data-hub/sports.ts). Lets one
@@ -171,6 +184,20 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
   targetDurationMin: integer("target_duration_min"),
   targetTSS: integer("target_tss"),
   structure: jsonb("structure"),
+  // TRAINEN_DOELEN_SEIZOEN_01 F1: gestructureerde trainingszone. De generator
+  // schrijft de zone die hij zelf al kent (dayKindFor); bestaande rijen blijven
+  // null en een zone wordt NOOIT achteraf geraden. Waarden: endurance · tempo ·
+  // sweetspot · threshold · vo2 · anaeroob · sprint · herstel.
+  zone: text("zone").$type<
+    | "endurance"
+    | "tempo"
+    | "sweetspot"
+    | "threshold"
+    | "vo2"
+    | "anaeroob"
+    | "sprint"
+    | "herstel"
+  >(),
   status: text("status").notNull().default("planned"),
   source: text("source").notNull().default("sparki"),
   // Bij source="coach": welke coach deze training heeft aangemaakt. Alleen die
@@ -410,9 +437,27 @@ export const insertTrainingSessionSchema = createInsertSchema(
 ).omit({ id: true });
 export const selectTrainingSessionSchema =
   createSelectSchema(trainingSessionsTable);
+// F1: zone als strikte enum — de zod-inferentie van een text-kolom zou anders
+// `string` opleveren en de union op de tabel-kolom breken.
+const zoneEnum = z
+  .enum([
+    "endurance",
+    "tempo",
+    "sweetspot",
+    "threshold",
+    "vo2",
+    "anaeroob",
+    "sprint",
+    "herstel",
+  ])
+  .nullable()
+  .optional();
+
 export const insertPlannedWorkoutSchema = createInsertSchema(
   plannedWorkoutsTable,
-).omit({ id: true });
+)
+  .omit({ id: true })
+  .extend({ zone: zoneEnum });
 export const selectPlannedWorkoutSchema =
   createSelectSchema(plannedWorkoutsTable);
 
