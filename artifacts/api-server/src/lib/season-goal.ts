@@ -6,7 +6,7 @@
 //   - computeSeasonSteering: het eerlijke, deterministische stuurgetal
 //     (max 0,5 kg per week, nooit crashdiëten);
 //   - loadSeasonGoalSteering: de leesbare doorvoering per sporter, incl.
-//     leeftijdspoort (RED-S: onder de 17 GEEN gewichtssturing, ook niet als
+//     leeftijdspoort (RED-S: onder de 18 GEEN gewichtssturing, ook niet als
 //     er per ongeluk een doelrij bestaat);
 //   - buildSeasonGoalLine: de vaste Nederlandse zin waarmee engines het doel
 //     BENOEMEN in hun uitleg — één formulering, overal herkenbaar.
@@ -22,7 +22,10 @@ import {
 import { eq } from "drizzle-orm";
 import { computeAge } from "./age";
 
-export const SEASON_GOAL_MIN_AGE = 17;
+// JEUGD_EN_PLOEGLEIDER_HERSTEL_01 (deel 3): gewichtssturing vanaf 18 —
+// voedingsbegeleiding (fueling/richtwaarden) heeft een eigen grens en zit
+// NIET aan deze constante vast.
+export const SEASON_GOAL_MIN_AGE = 18;
 export const SAFE_KG_PER_WEEK = 0.5;
 
 export type SeasonSteering = {
@@ -119,7 +122,7 @@ export function seasonGoalIneligible(
       eligible: false,
       reason: "birth_year_missing",
       message:
-        "Je geboortejaar is nog niet ingevuld. Sturen op gewicht is er alleen voor renners van 17 jaar en ouder — vul eerst je geboortejaar in bij je profiel.",
+        "Je geboortejaar is nog niet ingevuld. Sturen op gewicht is er alleen voor renners van 18 jaar en ouder — vul eerst je geboortejaar in bij je profiel.",
     };
   }
   if (age < SEASON_GOAL_MIN_AGE) {
@@ -127,7 +130,7 @@ export function seasonGoalIneligible(
       eligible: false,
       reason: "too_young",
       message:
-        "Onder de 17 wordt er bewust niet op gewicht gestuurd. Op jouw leeftijd geldt: genoeg en gevarieerd eten, op tijd rond je trainingen — je lichaam is nog volop in ontwikkeling.",
+        "Onder de 18 wordt er bewust niet op gewicht gestuurd. Op jouw leeftijd geldt: genoeg en gevarieerd eten, op tijd rond je trainingen — je lichaam is nog volop in ontwikkeling.",
     };
   }
   return null;
@@ -209,7 +212,7 @@ export async function loadSeasonGoalSteering(
       .where(eq(nutritionSeasonGoalsTable.clerkId, clerkId)),
   ]);
   if (!goal || goal.targetWeightKg == null) return null;
-  // RED-S-poort: zonder bekend geboortejaar of onder de 17 wordt het doel
+  // RED-S-poort: zonder bekend geboortejaar of onder de 18 wordt het doel
   // nergens doorgevoerd — fail-closed, ook als de rij tóch bestaat.
   const age = computeAge(athlete?.birthDate, athlete?.birthYear);
   if (seasonGoalIneligible(age)) return null;

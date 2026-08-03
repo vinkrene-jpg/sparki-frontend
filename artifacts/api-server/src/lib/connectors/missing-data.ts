@@ -14,7 +14,7 @@ import { getSubdisciplines } from "@workspace/feature-flags";
 export interface RequiredFieldSpec {
   key: string;
   label: string;
-  type: "text" | "number" | "select" | "multiselect";
+  type: "text" | "number" | "date" | "select" | "multiselect";
   unit?: string;
   options?: { value: string; label: string }[];
 }
@@ -47,6 +47,10 @@ const REQUIRED_FIELDS: RequiredFieldSpec[] = [
     type: "select",
     options: DISCIPLINE_OPTIONS,
   },
+  // JEUGD_EN_PLOEGLEIDER_HERSTEL_01 (deel 1): geboortedatum is verplicht —
+  // de leeftijdspoorten (gewichtssturing, gevoelige AI-doelen) zijn fail-closed
+  // zonder leeftijd, dus dit veld hoort net zo verplicht te zijn als gewicht.
+  { key: "birthDate", label: "Geboortedatum", type: "date" },
   { key: "weightKg", label: "Gewicht", type: "number", unit: "kg" },
   { key: "ftp", label: "FTP", type: "number", unit: "watt" },
   {
@@ -111,6 +115,10 @@ export async function getMissingOnboardingData(
 
   if (hasText(user?.displayName)) present.add("displayName");
   if (hasText(profile?.discipline)) present.add("discipline");
+  // Een bestaand geboortejaar telt ook: dat gegeven is er al en wordt niet
+  // opnieuw uitgevraagd (leeftijdspoorten werken op datum óf jaar).
+  if (hasText(profile?.birthDate) || hasNumber(profile?.birthYear))
+    present.add("birthDate");
   if (hasNumber(profile?.weightKg) || hasNumber(latestWeight?.weightKg))
     present.add("weightKg");
   if (hasNumber(profile?.ftp) || hasNumber(latestFtp?.ftpWatts))

@@ -2825,9 +2825,13 @@ router.delete("/:clubId/races/:eventId/selection/:memberId", requireAuth, async 
       res.status(404).json({ error: "Deze persoon staat niet in de selectie." });
       return;
     }
-    if (existing.overruledAt != null && ctx.membership.role === "ploegleider") {
+    // JEUGD_EN_PLOEGLEIDER_HERSTEL_01 (deel 4): niet op letterlijke rolnaam
+    // toetsen — iedereen die dit evenement beheert via canManageRaceEvent
+    // (dus óók de vervanger op deputyClerkId, ongeacht clubrol) valt onder
+    // de blokkade; alleen de teammanager zelf mag zijn overrule terugdraaien.
+    if (existing.overruledAt != null && ctx.membership.role !== "teammanager") {
       res.status(403).json({
-        error: "Deze selectie is door de teammanager vastgezet en kan door de ploegleider niet worden teruggedraaid.",
+        error: "Deze selectie is door de teammanager vastgezet en kan alleen door de teammanager worden teruggedraaid.",
       });
       return;
     }

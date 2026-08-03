@@ -14,7 +14,7 @@ import { apiFetch } from "@/lib/api"
 const ACCENT = "rgba(120,210,230,1)"
 const ACCENT_DIM = "rgba(120,210,230,0.12)"
 
-type FieldType = "text" | "number" | "select" | "multiselect"
+type FieldType = "text" | "number" | "date" | "select" | "multiselect"
 
 interface RequiredFieldSpec {
   key: string
@@ -227,7 +227,7 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
             ) : (
               <div className="flex items-center gap-3">
                 <input
-                  type={field.type === "number" ? "number" : "text"}
+                  type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
                   value={typeof values[field.key] === "string" ? (values[field.key] as string) : ""}
                   onChange={(e) => setText(field.key, e.target.value)}
                   className="h-11 flex-1 rounded-xl border border-border bg-muted px-3 font-sans text-sm text-foreground/90 placeholder:text-muted-foreground focus:border-border focus:outline-none"

@@ -84,6 +84,27 @@ router.post("/missing-data", requireAuth, async (req, res) => {
     athletePatch.discipline = disc;
   }
 
+  // JEUGD_EN_PLOEGLEIDER_HERSTEL_01 (deel 1): geboortedatum — alleen een door
+  // de sporter ingevoerde, geldige kalenderdatum wordt bewaard. Nooit geraden,
+  // afgeleid of standaard ingevuld; ongeldig wordt genegeerd (blijft ontbreken).
+  if (typeof raw("birthDate") === "string" && filled(raw("birthDate"))) {
+    const s = (raw("birthDate") as string).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const d = new Date(`${s}T12:00:00Z`);
+      const year = Number(s.slice(0, 4));
+      const nowYear = new Date().getFullYear();
+      if (
+        !Number.isNaN(d.getTime()) &&
+        d.toISOString().slice(0, 10) === s &&
+        year >= 1900 &&
+        year <= nowYear
+      ) {
+        athletePatch.birthDate = s;
+        athletePatch.birthYear = year;
+      }
+    }
+  }
+
   if (filled(raw("weightKg"))) {
     const n = Number(raw("weightKg"));
     if (Number.isFinite(n) && n >= 30 && n <= 250) {

@@ -244,8 +244,9 @@ export const AI_PURPOSES = {
     inputCategories: ["gebruikersfoto (upload)"],
     consent: "ai_vision",
     sensitive: true, // voeding/gezondheid — valt onder aiSensitiveAnalysisEnabled
-    // Niet jeugd-geblokkeerd: de prompts zijn al leeftijdsgestuurd (RED-S-veilig).
-    minorBlocked: false,
+    // JEUGD_EN_PLOEGLEIDER_HERSTEL_01 (deel 2): gevoelig doel — hard
+    // geblokkeerd voor minderjarigen en onbekende leeftijd (fail-closed).
+    minorBlocked: true,
     timeoutMs: 90_000,
     maxRetries: 1,
   },
@@ -257,8 +258,9 @@ export const AI_PURPOSES = {
     inputCategories: ["deterministische richtwaarden", "voedingslog"],
     consent: "ai_health",
     sensitive: true, // voeding/gezondheid — valt onder aiSensitiveAnalysisEnabled
-    // Niet jeugd-geblokkeerd: de rekenkern is al leeftijdsgestuurd (RED-S-veilig).
-    minorBlocked: false,
+    // JEUGD_EN_PLOEGLEIDER_HERSTEL_01 (deel 2): gevoelig doel — hard
+    // geblokkeerd voor minderjarigen en onbekende leeftijd (fail-closed).
+    minorBlocked: true,
     timeoutMs: 60_000,
     maxRetries: 1,
   },
@@ -547,7 +549,9 @@ function estimateCostMicroUsd(
 // ── Jeugdcheck ───────────────────────────────────────────────────────────────
 // Strengere standaardbeperking: gevoelige doelen zijn geblokkeerd voor
 // minderjarigen; onbekende leeftijd telt als minderjarig (fail-closed).
-async function isMinorOrUnknown(clerkId: string): Promise<boolean> {
+async function minorGateStatus(
+  clerkId: string,
+): Promise<"adult" | "minor" | "unknown"> {
   try {
     const [row] = await db
       .select({
@@ -557,9 +561,10 @@ async function isMinorOrUnknown(clerkId: string): Promise<boolean> {
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, clerkId));
     const age = row ? computeAge(row.birthDate, row.birthYear) : null;
-    return age == null || age < 18;
+    if (age == null) return "unknown";
+    return age < 18 ? "minor" : "adult";
   } catch {
-    return true; // fail-closed
+    return "unknown"; // fail-closed
   }
 }
 
@@ -710,12 +715,17 @@ async function enforceGates(
       consent = "granted";
 
       // 3. Strengere jeugdbegrenzing: hard geblokkeerde doelen (fail-closed).
-      if (config.minorBlocked && (await isMinorOrUnknown(clerkId))) {
-        await logCall({ clerkId, purpose, config, consent, status: "blocked_minor" });
-        throw new AiBlockedError(
-          "minor",
-          "Deze analyse is niet beschikbaar. Voor jonge sporters is hier bewust terughoudendheid.",
-        );
+      if (config.minorBlocked) {
+        const status = await minorGateStatus(clerkId);
+        if (status !== "adult") {
+          await logCall({ clerkId, purpose, config, consent, status: "blocked_minor" });
+          throw new AiBlockedError(
+            "minor",
+            status === "unknown"
+              ? "Deze analyse is niet beschikbaar zolang je leeftijd onbekend is. Vul eerst je geboortedatum in bij je profiel."
+              : "Deze analyse is niet beschikbaar. Voor jonge sporters is hier bewust terughoudendheid.",
+          );
+        }
       }
     }
   }
