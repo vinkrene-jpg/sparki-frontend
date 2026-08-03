@@ -377,9 +377,17 @@ function SkeletonCard({ label }: { label: string }) {
 function HeroVandaag({
   presentation,
   planWeek,
+  toonFoto,
 }: {
   presentation: PresentationState
   planWeek: number | null
+  /**
+   * SPARKI_TELEFOON_UX_01 v1.1: de sfeerfoto is puur decoratief en mag alleen
+   * verschijnen zodra er échte informatie onder staat (training, weekbelasting
+   * of signalen). Zonder informatie geen foto — laag 1 is dan één visueel
+   * element (de coachboodschap) met de actie er direct onder.
+   */
+  toonFoto: boolean
 }) {
   return (
     <header className="relative overflow-hidden bg-app">
@@ -387,20 +395,24 @@ function HeroVandaag({
           WebP primair (~85–120 kB), PNG-fallback. Puur decoratief: alt="" + aria-hidden.
           Lokale gradient: alleen onderaan faden naar bg-app voor pagina-overgang.
           Bovenkant beeld blijft onbedekt — foto toont warm en helder. */}
-      <picture>
-        <source srcSet={HERO_FOTO_WEBP} type="image/webp" />
-        <img
-          src={HERO_FOTO}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover object-[50%_40%]"
-        />
-      </picture>
-      {/* Lokale contrastlaag: alleen onderste helft, beeldhelderheid boven behouden. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-transparent via-app/20 to-app"
-      />
+      {toonFoto && (
+        <>
+          <picture>
+            <source srcSet={HERO_FOTO_WEBP} type="image/webp" />
+            <img
+              src={HERO_FOTO}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover object-[50%_40%]"
+            />
+          </picture>
+          {/* Lokale contrastlaag: alleen onderste helft, beeldhelderheid boven behouden. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-app/20 to-app"
+          />
+        </>
+      )}
       <div className="relative mx-auto w-full max-w-2xl px-5 pb-8 pt-6 lg:max-w-3xl lg:px-10 lg:pt-10">
         <p className="type-wordmark lg:hidden">SPARKI</p>
         <h1 className="type-display mt-8 lg:mt-2">Dashboard</h1>
@@ -1066,6 +1078,61 @@ function TodayOrchestratorSection() {
   )
 }
 
+// ── Samengevoegde lege staat (SPARKI_TELEFOON_UX_01 v1.1) ────────────────────
+// Zonder informatie geen drie losse lege-staat-kaarten (week · training ·
+// seizoen), maar één kaart met hooguit twee acties direct onder de
+// coachboodschap. Wat hier later komt te staan zit achter een uitklap.
+function DashboardLegeStaat() {
+  const [, navigate] = useLocation()
+  return (
+    <section
+      aria-label="Aan de slag"
+      data-testid="dashboard-lege-staat"
+      className="mx-auto w-full max-w-screen-xl px-5 pt-2 lg:max-w-3xl lg:px-10"
+    >
+      <DsCard>
+        <DsCardTitel>Begin met je eerste training</DsCardTitel>
+        <p className="type-body mt-2 text-content-secondary">
+          Er staat nog niets in je week. Voeg een training toe of laat een
+          schema opbouwen — daarna vult dit scherm zich met echte gegevens.
+        </p>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row ds-actiebalk">
+          <DsButton
+            variant="primair"
+            onClick={() => navigate("/train?focus=logsession")}
+          >
+            Training toevoegen
+          </DsButton>
+          <DsButton variant="tekst" onClick={() => navigate("/train")}>
+            Schema laten opbouwen
+          </DsButton>
+        </div>
+        {/* Uitleg achter een uitklap — nooit standaard zichtbaar. */}
+        <details className="group mt-3">
+          <summary
+            className={cn(
+              "flex min-h-11 cursor-pointer list-none items-center gap-1.5 type-action text-accent-cyan [&::-webkit-details-marker]:hidden",
+              FOCUS_RING,
+            )}
+          >
+            <IconChevron
+              className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
+              aria-hidden="true"
+            />
+            Wat komt hier te staan?
+          </summary>
+          <p className="type-body mt-2 text-content-secondary">
+            Zodra je traint, zie je hier je weekbelasting, de training van
+            vandaag, je herstel &amp; gereedheid en — met een doel — je seizoen
+            in beeld. Alles op basis van echte gegevens; er wordt niets
+            verzonnen.
+          </p>
+        </details>
+      </DsCard>
+    </section>
+  )
+}
+
 // ── Vandaag in de commerciële schil ──────────────────────────────────────────
 export function CommercialToday() {
   const state = useSparkiState()
@@ -1141,16 +1208,42 @@ export function CommercialToday() {
     )
   }
 
+  // SPARKI_TELEFOON_UX_01 v1.1 + DASHBOARD_01: zonder échte informatie (geen
+  // training vandaag én geen weekbelasting) is het dashboard leeg. Dan geen
+  // herofoto en géén drie losse lege-staat-kaarten, maar laag 1 als één visueel
+  // element (de coachboodschap) met direct daaronder één samengevoegde kaart
+  // met hooguit twee acties; uitleg achter een uitklap.
+  // NB: weekTSS bevat ook nul-dagen — alleen dagen met échte belasting tellen
+  // als informatie.
+  const heeftInformatie =
+    dashTrusted != null &&
+    (dashTrusted.todayWorkout != null ||
+      dashTrusted.weekTSS.some((d) => d.tss > 0))
+  const legeStaat = !dash.isLoading && dashTrusted != null && !heeftInformatie
+
   return (
     <CommercialShell actief="/dashboard">
       {/* DASHBOARD_01: markering voor het schermbewijs — dit is het drie-lagen
           sporter-dashboard (één gedaante, DSH-24). */}
       <div data-testid="sporter-dashboard" data-compleet={isCompleet ? "1" : "0"}>
-      <HeroVandaag presentation={presentation} planWeek={planWeek} />
-      <TodayOrchestratorSection />
-      {/* Paginaspecifieke kolomindeling: op desktop twee kolommen (2:1),
+      <HeroVandaag
+        presentation={presentation}
+        planWeek={planWeek}
+        toonFoto={heeftInformatie}
+      />
+      {/* In de samengevoegde lege staat draagt de orchestrator alleen extra
+          losse kaarten aan (training voorstellen · route) — die acties zitten
+          al in de ene kaart. Laag 1 = één visueel element + actie eronder. */}
+      {!legeStaat && <TodayOrchestratorSection />}
+      {legeStaat ? (
+        /* Eén samengevoegde kaart in plaats van drie losse lege-staat-kaarten
+           (week leeg · geen training · seizoen leeg). Hooguit twee acties,
+           uitleg achter een uitklap. */
+        <DashboardLegeStaat />
+      ) : (
+      /* Paginaspecifieke kolomindeling: op desktop twee kolommen (2:1),
           op mobiel ongewijzigd gestapeld. De CommercialShell-schil zelf
-          blijft generiek — de kolomindeling leeft alleen in Vandaag. */}
+          blijft generiek — de kolomindeling leeft alleen in Vandaag. */
       <div className="mx-auto w-full max-w-screen-xl px-5 lg:px-10">
         <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
           <div>
@@ -1177,6 +1270,7 @@ export function CommercialToday() {
           </div>
         </div>
       </div>
+      )}
       </div>
     </CommercialShell>
   )

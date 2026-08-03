@@ -4,6 +4,14 @@ import { useFixParams } from "@/hooks/use-missing-input"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ACCENT } from "@/components/sparki/ui"
 import { useSessions, useUpdateSessionFeel } from "@/hooks/use-sessions"
+import { useTodayWorkout } from "@/hooks/use-today-workout"
+import {
+  useTrainingPlan,
+  usePlanWindow,
+  useGeneratePlan,
+} from "@/hooks/use-training-plan"
+import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
+import { isTargetSet } from "@/lib/missing-input"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-panel"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
@@ -16,7 +24,7 @@ import {
   AddTrainingButton,
   AddTrainingModal,
 } from "@/components/sparki/add-training"
-import { Plus, Sparkles, Check, ChevronRight } from "lucide-react"
+import { Plus, Sparkles, Check, ChevronRight, ChevronDown, Loader2, Hammer } from "lucide-react"
 import { workoutIcon } from "@/lib/workout-visual"
 import type { TrainingSession } from "@/lib/athlete-types"
 import { UitlegDot } from "@/components/viz/uitleg"
@@ -206,6 +214,96 @@ function typeIcon(type: string, title?: string | null) {
   return workoutIcon(type, title)
 }
 
+// SPARKI_TELEFOON_UX_01 v1.1 — samengevoegde lege staat voor Trainen: zonder
+// training vandaag, zonder schema/bron en zonder doel toont het scherm één
+// kaart met de hoofdhandeling direct in beeld (hooguit twee acties). De uitleg
+// over de lagen zit achter een uitklap, niet standaard zichtbaar.
+function TrainLegeStaat({ onAdd }: { onAdd: () => void }) {
+  const [, navigate] = useLocation()
+  const { data: profile } = useAthleteExtendedProfile()
+  const generate = useGeneratePlan()
+  const [uitlegOpen, setUitlegOpen] = useState(false)
+
+  const canBuild =
+    isTargetSet("ftp", profile) && isTargetSet("weeklyHours", profile)
+
+  return (
+    <div
+      data-testid="train-lege-staat"
+      className="rounded-2xl border border-border bg-card p-5 backdrop-blur-md"
+    >
+      <h2 className="font-sans text-[17px] font-medium text-foreground/90">
+        Begin met trainen
+      </h2>
+      <p className="mt-2 text-pretty text-[13px] leading-relaxed text-muted-foreground">
+        Er staat nog niets: geen training voor vandaag, geen schema en geen
+        doel. Voeg je eerste training toe of laat een schema opbouwen.
+      </p>
+
+      <div className="ds-actiebalk mt-4 flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-sans text-[14px] font-semibold"
+          style={{ background: ACCENT, color: "#040506" }}
+        >
+          <Plus className="h-4.5 w-4.5" strokeWidth={2.25} />
+          Training toevoegen
+        </button>
+        {canBuild ? (
+          <button
+            type="button"
+            onClick={() => generate.mutate(undefined)}
+            disabled={generate.isPending}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3.5 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan/40 disabled:opacity-50"
+          >
+            {generate.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Hammer className="h-4 w-4" strokeWidth={1.75} />
+            )}
+            Schema laten opbouwen
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => navigate("/you")}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3.5 font-sans text-[13px] font-medium text-muted-foreground transition-colors hover:border-accent-cyan/40"
+          >
+            Vul FTP &amp; uren aan voor een schema
+          </button>
+        )}
+      </div>
+      {generate.isError && (
+        <p className="mt-2.5 text-[12px] text-[color:var(--color-negative)]">
+          Het opbouwen lukte niet. Probeer het opnieuw.
+        </p>
+      )}
+
+      {/* Uitleg achter een uitklap — niet standaard zichtbaar. */}
+      <button
+        type="button"
+        onClick={() => setUitlegOpen((v) => !v)}
+        aria-expanded={uitlegOpen}
+        className="mt-4 flex min-h-11 items-center gap-1.5 text-[12px] text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground/80"
+      >
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform ${uitlegOpen ? "rotate-180" : ""}`}
+          strokeWidth={1.75}
+        />
+        Hoe werkt dit scherm?
+      </button>
+      {uitlegOpen && (
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
+          Zodra je traint, zie je hier je sessie van vandaag met uitleg, waar je
+          schema vandaan komt, je doel als maatlat en je patronen over tijd.
+          Alles op basis van je echte gegevens — er wordt niets verzonnen.
+        </p>
+      )}
+    </div>
+  )
+}
+
 /**
  * Training — Sparki's four-layer intelligence spine. Each layer is a real engine
  * surface (where the schedule comes from · the goal as a yardstick · what to do
@@ -215,6 +313,34 @@ function typeIcon(type: string, title?: string | null) {
  */
 export default function TrainPage() {
   const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
+  // SPARKI_TELEFOON_UX_01 v1.1: zonder training vandaag, zonder schema/bron en
+  // zonder doel zouden de vier lagen elk hun eigen lege-staat-kaart tonen en
+  // zakt de hoofdhandeling onder de vouw. Dan geldt één samengevoegde
+  // lege-staat-kaart met hooguit twee acties; de lagen blijven weg tot er
+  // echte inhoud is.
+  const todayQ = useTodayWorkout()
+  const planQ = useTrainingPlan()
+  const windowQ = usePlanWindow(3)
+  // Conservatief: pas leeg zodra alle queries geladen zijn zonder fout én
+  // werkelijk niets opleveren (ook geen sessies). Fouten of onbekende data
+  // zijn nooit "leeg" — dan blijven de normale lagen staan.
+  const legeStaat =
+    !todayQ.isLoading &&
+    !planQ.isLoading &&
+    !windowQ.isLoading &&
+    !sessionsLoading &&
+    !todayQ.isError &&
+    !planQ.isError &&
+    !windowQ.isError &&
+    planQ.data != null &&
+    windowQ.data != null &&
+    sessions != null &&
+    todayQ.data == null &&
+    !planQ.data.plan &&
+    !planQ.data.hasCoach &&
+    windowQ.data.length === 0 &&
+    !planQ.data.inputs?.nextRace &&
+    sessions.length === 0
   const [addOpen, setAddOpen] = useState(false)
   const [openSession, setOpenSession] = useState<TrainingSession | null>(null)
   const [planHighlight, setPlanHighlight] = useState(false)
@@ -262,29 +388,37 @@ export default function TrainPage() {
         {dayLabel} · JOUW TRAINING
       </p>
 
-      {/* Prominent, always-visible entry point so adding a training is never
-          hidden: log a done session or plan a new one, from anywhere. */}
-      <AddTrainingButton variant="prominent" />
+      {legeStaat ? (
+        /* Eén samengevoegde lege-staat-kaart met de hoofdhandeling bovenaan in
+           beeld — in plaats van drie opeenvolgende lege-staat-kaarten. */
+        <TrainLegeStaat onAdd={() => setAddOpen(true)} />
+      ) : (
+        <>
+          {/* Prominent, always-visible entry point so adding a training is never
+              hidden: log a done session or plan a new one, from anywhere. */}
+          <AddTrainingButton variant="prominent" />
 
-      {/* Today's proposed training leads the page — what to do today, and why
-          precisely this. */}
-      <TodayLayer />
+          {/* Today's proposed training leads the page — what to do today, and why
+              precisely this. */}
+          <TodayLayer />
 
-      {/* Where the schedule comes from. */}
-      <SourceLayer />
+          {/* Where the schedule comes from. */}
+          <SourceLayer />
 
-      {/* The goal as a yardstick (+ concrete 3-week plan). */}
-      <div
-        id="three-week-plan"
-        className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
-          planHighlight ? "ring-2 ring-ring/60" : ""
-        }`}
-      >
-        <GoalLayer />
-      </div>
+          {/* The goal as a yardstick (+ concrete 3-week plan). */}
+          <div
+            id="three-week-plan"
+            className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
+              planHighlight ? "ring-2 ring-ring/60" : ""
+            }`}
+          >
+            <GoalLayer />
+          </div>
 
-      {/* The patterns over time. */}
-      <PatternsLayer />
+          {/* The patterns over time. */}
+          <PatternsLayer />
+        </>
+      )}
 
       {/* Voed Sparki — every input here sharpens the advice above. */}
       <section id="log-session" className="scroll-mt-4 flex flex-col gap-4">

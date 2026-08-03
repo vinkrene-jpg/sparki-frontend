@@ -1626,12 +1626,91 @@ function GegevensToevoegenSection() {
 
 // --- Hoofdpagina -------------------------------------------------------------
 
+// SPARKI_TELEFOON_UX_01 v1.1 — samengevoegde lege staat: zonder schema, zonder
+// geplande trainingen, zonder doel en zonder sessies zouden meerdere secties
+// elk een eigen lege-staat-kaart tonen en zakt de hoofdhandeling onder de
+// vouw. Dan geldt één kaart met hooguit twee acties; uitleg achter een uitklap.
+function CorePlanLegeStaat({ onAdd }: { onAdd: () => void }) {
+  const { data: plan } = useTrainingPlan();
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  return (
+    <section aria-label="Aan de slag" data-testid="train-lege-staat">
+      <DsCard>
+        <DsCardTitel>Begin met trainen</DsCardTitel>
+        <p className="type-body mt-2 text-content-secondary">
+          Er staat nog niets: geen training, geen schema en geen doel. Voeg je
+          eerste training toe of laat een schema opbouwen.
+        </p>
+        <div className="ds-actiebalk mt-4 flex flex-col gap-2 sm:flex-row">
+          <DsButton variant="primair" onClick={onAdd}>
+            Training toevoegen
+          </DsButton>
+          {!wizardOpen && (
+            <DsButton variant="secundair" onClick={() => setWizardOpen(true)}>
+              Schema laten opbouwen
+            </DsButton>
+          )}
+        </div>
+        {/* Uitleg achter een uitklap — niet standaard zichtbaar. */}
+        <details className="group mt-3">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 type-action text-accent-cyan [&::-webkit-details-marker]:hidden">
+            <IconChevron
+              className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
+              aria-hidden="true"
+            />
+            Hoe werkt dit scherm?
+          </summary>
+          <p className="type-body mt-2 text-content-secondary">
+            Zodra je traint, zie je hier je training van vandaag, je kalender
+            met fase-opbouw, je doel als maatlat en je ontwikkeling over tijd.
+            Alles op basis van je echte gegevens — er wordt niets verzonnen.
+          </p>
+        </details>
+      </DsCard>
+      {wizardOpen && (
+        <div className="mt-4">
+          <PlanWizard missing={plan?.missing ?? []} />
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function CorePlanPage() {
   const { focus } = useFixParams();
   const [, navigate] = useLocation();
   const [highlightWeek, setHighlightWeek] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addDateContext, setAddDateContext] = useState<string | undefined>(undefined);
+
+  const planQ = useTrainingPlan();
+  const windowQ = usePlanWindow(3);
+  const doelQ = useGoalPicture();
+  const { data: sessies, isLoading: sessiesLoading } = useSessions(5);
+  // Conservatief: pas leeg zodra ALLE relevante queries geladen zijn zonder
+  // fout én werkelijk niets opleveren (ook zelfstandige/afgeleide doelen uit
+  // de doelen-engine tellen als inhoud). Fouten of onbekende data zijn nooit
+  // "leeg" — dan blijven de normale lagen staan.
+  const legeStaat =
+    !planQ.isLoading &&
+    !windowQ.isLoading &&
+    !doelQ.isLoading &&
+    !sessiesLoading &&
+    !planQ.isError &&
+    !windowQ.isError &&
+    !doelQ.isError &&
+    planQ.data != null &&
+    windowQ.data != null &&
+    doelQ.data != null &&
+    sessies != null &&
+    !planQ.data.plan &&
+    !planQ.data.hasCoach &&
+    windowQ.data.length === 0 &&
+    !planQ.data.inputs?.nextRace &&
+    !doelQ.data.goals.some((g) => g.status === "active") &&
+    (doelQ.data.derived?.length ?? 0) === 0 &&
+    sessies.length === 0;
 
   useEffect(() => {
     if (focus === "plan") {
@@ -1653,29 +1732,42 @@ export default function CorePlanPage() {
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <PlanHeader />
 
-        {/* Indeling "Vandaag eerst" (besluit René 30-07-2026): bovenaan de
-            dagstaat van vandaag, daaronder de kalender met fase-opbouw,
-            onderaan verbanden en ontwikkeling — mobiel en desktop identiek. */}
-        <VandaagSection onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }} />
+        {legeStaat ? (
+          /* Eén samengevoegde lege-staat-kaart met de hoofdhandeling direct in
+             beeld — in plaats van meerdere opeenvolgende lege-staat-kaarten. */
+          <CorePlanLegeStaat
+            onAdd={() => {
+              setAddDateContext(undefined);
+              setAddOpen(true);
+            }}
+          />
+        ) : (
+          <>
+            {/* Indeling "Vandaag eerst" (besluit René 30-07-2026): bovenaan de
+                dagstaat van vandaag, daaronder de kalender met fase-opbouw,
+                onderaan verbanden en ontwikkeling — mobiel en desktop identiek. */}
+            <VandaagSection onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }} />
 
-        <DoelkaartSection />
-        
-        <KalenderSection
-          highlightWeek={highlightWeek}
-          onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }}
-        />
-        
-        <PlanActieSection />
-        
-        <PatronenSection />
-        
-        <OntwikkelingSection />
-        
-        <BevestigenSection />
-        
-        <RecenteSessiesSection />
-        
-        <GegevensToevoegenSection />
+            <DoelkaartSection />
+
+            <KalenderSection
+              highlightWeek={highlightWeek}
+              onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }}
+            />
+
+            <PlanActieSection />
+
+            <PatronenSection />
+
+            <OntwikkelingSection />
+
+            <BevestigenSection />
+
+            <RecenteSessiesSection />
+
+            <GegevensToevoegenSection />
+          </>
+        )}
       </div>
 
       {addOpen && (
