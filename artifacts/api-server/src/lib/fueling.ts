@@ -47,6 +47,10 @@ export type SessionFuelInput = {
   /** Vaste zin die het actieve seizoensdoel (afval-/aankomdoel) benoemt;
    *  null = geen actief doel. Wordt bij jeugd ALTIJD genegeerd (RED-S). */
   seasonGoalLine?: string | null;
+  /** F12 (TRAINEN_DOELEN_SEIZOEN_01): trainingsfase van de dag. Moduleren van
+   *  de TOON en accenten — nooit een tweede voedingsmodel; de richtwaarden
+   *  zelf blijven uit duur/intensiteit/gewicht komen. null = fase onbekend. */
+  phase?: "base" | "build" | "peak" | "taper" | "vorm" | "onderhoud" | "verlenging" | null;
 };
 
 export type SessionFuelTargets = {
@@ -169,6 +173,24 @@ export function computeSessionFuelTargets(input: SessionFuelInput): SessionFuelT
   } else {
     gaps.push("Je gewicht is onbekend, dus richtwaarden vooraf en voor herstel (per kg lichaamsgewicht) zijn niet te berekenen.");
     items.push({ kind: "ontbreekt", text: "Zonder gewicht kunnen de richtwaarden vooraf en voor herstel niet per kg worden berekend. Vul je gewicht in bij je profiel." });
+  }
+
+  // F12: de trainingsfase werkt door in de accenten — deterministische
+  // regels, geen aanpassing van de richtwaarden zelf.
+  const PHASE_LINES: Record<string, string> = {
+    build:
+      "Opbouwblok: je traint zwaarder dan je gewend bent. Herstelvoeding na elke stevige sessie is nu het verschil tussen opbouwen en oplopen — sla die niet over.",
+    peak: "Vormperiode: eet vertrouwd en volwaardig, test niets nieuws en houd de koolhydraatinname rond zware dagen aan de bovenkant van de bandbreedte.",
+    taper:
+      "Vormperiode: eet vertrouwd en volwaardig, test niets nieuws en houd de koolhydraatinname rond zware dagen aan de bovenkant van de bandbreedte.",
+    vorm: "Vormperiode: eet vertrouwd en volwaardig, test niets nieuws en houd de koolhydraatinname rond zware dagen aan de bovenkant van de bandbreedte.",
+    onderhoud:
+      "Onderhoudsblok: het volume is lager, dus gewone maaltijden dekken meestal de behoefte. Extra sportvoeding is alleen nodig bij de langere ritten.",
+    verlenging:
+      "Verlengingsweken op rustig niveau: gewone maaltijden volstaan; bewaar gels en repen voor de echt lange ritten.",
+  };
+  if (input.phase && PHASE_LINES[input.phase]) {
+    items.push({ kind: "richtwaarde", text: PHASE_LINES[input.phase]! });
   }
 
   // Herstelstatus: sterk vermoeid ⇒ herstelnadruk (geen calorietekort).

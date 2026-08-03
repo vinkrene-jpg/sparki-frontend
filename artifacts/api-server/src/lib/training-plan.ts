@@ -137,6 +137,48 @@ function derivePhase(daysAway: number | null): PlanInputs["phase"] {
   return "base";
 }
 
+// F12 (TRAINEN_DOELEN_SEIZOEN_01): lichte fase-resolver voor andere lagen
+// (voeding). Leest het seizoensblok voor de datum; zonder blok valt hij terug
+// op het hoofddoel-anker. GEEN tweede model — dezelfde bronnen als het plan.
+export async function resolvePhaseForDate(
+  clerkId: string,
+  date: string,
+): Promise<"base" | "build" | "peak" | "taper" | "vorm" | "onderhoud" | "verlenging" | null> {
+  try {
+    const { seasonBlocksTable, athleteGoalsTable } = await import("@workspace/db");
+    const blocks = await db
+      .select({
+        startDate: seasonBlocksTable.startDate,
+        endDate: seasonBlocksTable.endDate,
+        phase: seasonBlocksTable.phase,
+      })
+      .from(seasonBlocksTable)
+      .where(eq(seasonBlocksTable.clerkId, clerkId));
+    const blk = blocks.find((b) => b.startDate <= date && date <= b.endDate);
+    if (blk) return blk.phase as "base" | "build" | "vorm" | "onderhoud";
+    const [goal] = await db
+      .select({ targetDate: athleteGoalsTable.targetDate })
+      .from(athleteGoalsTable)
+      .where(
+        and(
+          eq(athleteGoalsTable.clerkId, clerkId),
+          eq(athleteGoalsTable.priority, 1),
+          eq(athleteGoalsTable.status, "active"),
+          isNotNull(athleteGoalsTable.targetDate),
+          gte(athleteGoalsTable.targetDate, date),
+        ),
+      )
+      .orderBy(asc(athleteGoalsTable.targetDate))
+      .limit(1);
+    if (goal?.targetDate) {
+      return derivePhase(daysBetween(date, goal.targetDate));
+    }
+    return null;
+  } catch {
+    return null; // eerlijk: fase onbekend, geen fase-regel
+  }
+}
+
 export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
   const today = todayStr();
   const [

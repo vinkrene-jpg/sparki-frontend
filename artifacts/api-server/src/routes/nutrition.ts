@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import {
   db,
   nutritionHydrationLogsTable,
@@ -32,6 +32,7 @@ import {
   type SessionFuelTargets,
 } from "../lib/fueling";
 import { analyzeNutritionLog } from "../lib/nutrition-rules";
+import { resolvePhaseForDate } from "../lib/training-plan";
 import { persistObservation } from "../engines/coaching";
 import { buildAthleteContext, systemPrompt } from "../lib/athlete-context";
 import {
@@ -123,6 +124,33 @@ function summarizeDayEffort(
   };
 }
 
+// F12b: komende seizoensblokken (max ~3 maanden vooruit) voor het weekbeeld in
+// de voedings-doorklik. Leesbare fase-labels; leeg = geen seizoenslaag.
+async function loadUpcomingSeasonBlocks(clerkId: string, fromDate: string) {
+  try {
+    const { seasonBlocksTable } = await import("@workspace/db");
+    const rows = await db
+      .select({
+        startDate: seasonBlocksTable.startDate,
+        endDate: seasonBlocksTable.endDate,
+        phase: seasonBlocksTable.phase,
+        label: seasonBlocksTable.label,
+      })
+      .from(seasonBlocksTable)
+      .where(
+        and(
+          eq(seasonBlocksTable.clerkId, clerkId),
+          gte(seasonBlocksTable.endDate, fromDate),
+        ),
+      )
+      .orderBy(asc(seasonBlocksTable.startDate))
+      .limit(4);
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
 async function buildDayFuelTargets(
   clerkId: string,
   date: string,
@@ -160,6 +188,10 @@ async function buildDayFuelTargets(
       loadNutritionPrefs(clerkId),
       nutritionCoachInstructions(clerkId, date),
     ]);
+
+  // F12: de trainingsfase van deze dag werkt door in de voedingsaccenten.
+  // Fail-safe: onbekende fase betekent gewoon geen fase-regel.
+  const phase = await resolvePhaseForDate(clerkId, date).catch(() => null);
 
   // Actief seizoensdoel (afval-/aankomdoel) — wordt in het voedingsplan
   // benoemd. Fail-safe: zonder doel of bij twijfel gewoon geen regel.
@@ -201,6 +233,7 @@ async function buildDayFuelTargets(
     gutExperiences: consented ? (prefs?.gutExperiences ?? null) : null,
     coachInstructions,
     seasonGoalLine,
+    phase,
   });
 }
 
@@ -1572,6 +1605,11 @@ Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen En
         raceCount: dayRaces.length,
         workoutCount: openPlanned.length,
         richtwaarden,
+        // F12b: het weekbeeld — de trainingsfase van deze dag plus de komende
+        // seizoensblokken, zodat de doorklik laat zien wat een opbouwblok,
+        // piek of dip voor de voeding betekent. null = eerlijk onbekend.
+        fase: await resolvePhaseForDate(clerkId, date).catch(() => null),
+        vormblokken: await loadUpcomingSeasonBlocks(clerkId, date),
         bronnen: buildSourceCitations(managedItems),
       },
     });
