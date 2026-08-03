@@ -61,6 +61,7 @@ export * from "./trainer-groups";
 export * from "./trainer-invoicing";
 export * from "./retention";
 export * from "./work-objects";
+export * from "./training-forms";
 export * from "./release";
 export * from "./route-shares";
 export * from "./route-usage-registrations";
