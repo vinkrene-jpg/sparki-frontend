@@ -4,13 +4,13 @@ import { usePageMeta } from '@/hooks/use-page-meta';
 export function FAQ() {
   usePageMeta({
     title: 'Veelgestelde Vragen',
-    description: 'Antwoorden op de meest gestelde vragen over Sparki, voor zowel sporters als professionals.'
+    description: 'Antwoorden op de meest gestelde vragen, voor zowel sporters als professionals.'
   });
 
   const sportersFaq = [
     {
       q: "Hoe weet de routeplanner wat ik nodig heb?",
-      a: "Sparki kijkt naar je trainingsplan voor vandaag, of naar wat je invoert. Wil je 2 uur in D1 (rustig) fietsen? Dan vermijdt de planner drukke stoplichten en steile klimmen, zodat je je hartslag laag kunt houden."
+      a: "De planner kijkt naar je trainingsplan voor vandaag, of naar wat je invoert. Wil je 2 uur in D1 (rustig) fietsen? Dan vermijdt de planner drukke stoplichten en steile klimmen, zodat je je hartslag laag kunt houden."
     },
     {
       q: "Kan ik de routes naar mijn Garmin of Wahoo sturen?",

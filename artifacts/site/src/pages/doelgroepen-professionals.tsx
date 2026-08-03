@@ -10,7 +10,7 @@ export function Trainer() {
       benefits={[
         {
           title: "Stop met knippen en plakken",
-          description: "Geen drie verschillende abonnementen meer. Alles wat je nodig hebt om je sporters te begeleiden zit in Sparki."
+          description: "Geen drie verschillende abonnementen meer. Alles wat je nodig hebt om je sporters te begeleiden zit in één app."
         },
         {
           title: "Snel schakelen met specialisten",
@@ -70,7 +70,7 @@ export function Clubtrainer() {
         },
         {
           title: "Spot de overbelasting",
-          description: "Sparki markeert wie te veel doet of rust nodig heeft, nog voordat ze zelf klagen."
+          description: "Je ziet gemarkeerd wie te veel doet of rust nodig heeft, nog voordat ze zelf klagen."
         },
         {
           title: "Deel makkelijk in",
@@ -79,7 +79,7 @@ export function Clubtrainer() {
       ]}
       ctaType="share"
       ctaText="Stuur dit naar je club"
-      shareMessage="Dit is Sparki. Ideaal om onze groepen en jeugd in te beheren."
+      shareMessage="Deze app is ideaal om onze groepen en jeugd in te beheren."
     />
   );
 }
@@ -166,7 +166,7 @@ export function Staf() {
       ]}
       ctaType="share"
       ctaText="Stuur dit naar je ploegleider"
-      shareMessage="Kijk eens naar Sparki, dan hebben we als staf het complete draaiboek offline op onze telefoon."
+      shareMessage="Kijk eens naar deze app, dan hebben we als staf het complete draaiboek offline op onze telefoon."
     />
   );
 }
@@ -195,7 +195,7 @@ export function Specialist() {
       ]}
       ctaType="share"
       ctaText="Stuur dit naar de ploeg of club"
-      shareMessage="Dit is Sparki. Handig voor onze samenwerking, want hiermee kan ik veilig mijn dossiers bijhouden naast de trainer."
+      shareMessage="Deze app is handig voor onze samenwerking, want hiermee kan ik veilig mijn dossiers bijhouden naast de trainer."
     />
   );
 }

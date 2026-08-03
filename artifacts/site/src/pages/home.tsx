@@ -25,7 +25,7 @@ export function Home() {
           </h1>
           
           <p className="type-title-card text-muted-foreground max-w-2xl mx-auto font-normal">
-            Sparki brengt routes, training, analyse en je club samen in één app. Gebouwd op eerlijkheid: we verzinnen geen data, we leggen uit waarom, en we weten wat voor rit je vandaag nodig hebt.
+            Routes, training, analyse en je club samen in één app. Gebouwd op eerlijkheid: we verzinnen geen data, we leggen uit waarom, en we weten wat voor rit je vandaag nodig hebt.
           </p>
           
           <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto mt-16 pt-8">
@@ -63,7 +63,7 @@ export function Home() {
           <div>
             <h2 className="type-display mb-6">Niets te schreeuwen.</h2>
             <p className="type-body text-muted-foreground max-w-md">
-              Grote beloftes sneuvelen in de eerste tegenwind. Sparki gebruikt geen magische algoritmes of valse urgentie. Wat je ziet, is gemeten. Wat we adviseren, kun je herleiden.
+              Grote beloftes sneuvelen in de eerste tegenwind. Hier geen magische algoritmes of valse urgentie. Wat je ziet, is gemeten. Wat we adviseren, kun je herleiden.
             </p>
           </div>
           <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-card">

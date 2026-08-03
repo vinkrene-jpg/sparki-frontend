@@ -10,7 +10,7 @@ export function Renner() {
       benefits={[
         {
           title: "Jouw tijd, jouw afstand",
-          description: "Zeg hoeveel uur je hebt. Sparki tekent de perfecte lus vanaf je voordeur."
+          description: "Zeg hoeveel uur je hebt en je krijgt de perfecte lus vanaf je voordeur."
         },
         {
           title: "Geen verrassingen op de weg",
@@ -46,7 +46,7 @@ export function RennerMetPlan() {
         },
         {
           title: "De waarheid in je analyse",
-          description: "Zonder filter. Sparki zegt je precies of je de training goed hebt uitgevoerd of niet."
+          description: "Zonder filter. Je hoort precies of je de training goed hebt uitgevoerd of niet."
         }
       ]}
       ctaType="buy"
@@ -79,7 +79,7 @@ export function Ouder() {
       ]}
       ctaType="share"
       ctaText="Stuur dit naar je club"
-      shareMessage="Kijk eens naar Sparki, misschien is dit iets voor onze club om het jeugdbeheer makkelijker te maken."
+      shareMessage="Kijk eens naar deze app, misschien is dit iets voor onze club om het jeugdbeheer makkelijker te maken."
     />
   );
 }

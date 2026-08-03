@@ -18,7 +18,7 @@ export function Sporters() {
             Een routeplanner die snapt wat je vandaag nodig hebt.
           </h1>
           <p className="type-title-card text-muted-foreground font-normal mb-10 max-w-lg">
-            Vertel Sparki hoe lang je wilt fietsen en wat je wilt trainen. Sparki tekent de route die daar exact bij past.
+            Vertel hoe lang je wilt fietsen en wat je wilt trainen. Je krijgt direct de route getekend die daar exact bij past.
           </p>
           <Link href="/prijzen/sporters" className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors shadow-float">
             Bekijk de prijzen
@@ -32,7 +32,7 @@ export function Sporters() {
             </div>
             <img 
               src={asset('/screens/mobiel/route.png')} 
-              alt="Sparki routeplanner die direct een route tekent" 
+              alt="Routeplanner die direct een route tekent" 
               className="w-full h-auto min-h-[600px] object-cover bg-secondary block" 
               width={390} height={844}
             />
@@ -54,7 +54,7 @@ export function Sporters() {
           <div className="flex-1">
             <h2 className="type-display text-foreground mb-6">Je ritten terugzien, zonder de ruis.</h2>
             <p className="type-body text-muted-foreground max-w-md">
-              Geen tabellen met honderd datapunten die je zelf moet ontcijferen. Sparki vertaalt je hartslag en vermogen naar gewone taal: wat was goed, wat kon beter.
+              Geen tabellen met honderd datapunten die je zelf moet ontcijferen. Je hartslag en vermogen worden vertaald naar gewone taal: wat was goed, wat kon beter.
             </p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function Sporters() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-16 text-center max-w-2xl mx-auto">
             <h2 className="type-display mb-4">Wie ben jij?</h2>
-            <p className="text-muted-foreground">Kies hoe jij fietst en ontdek wat Sparki precies voor je doet.</p>
+            <p className="text-muted-foreground">Kies hoe jij fietst en ontdek wat de app precies voor je doet.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">

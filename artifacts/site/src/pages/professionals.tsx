@@ -75,7 +75,7 @@ export function Professionals() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-16 text-center max-w-2xl mx-auto">
             <h2 className="type-display mb-4">Jouw rol in de koers.</h2>
-            <p className="text-muted-foreground">Kies je functie en zie hoe Sparki je werk makkelijker maakt.</p>
+            <p className="text-muted-foreground">Kies je functie en zie hoe de app je werk makkelijker maakt.</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
