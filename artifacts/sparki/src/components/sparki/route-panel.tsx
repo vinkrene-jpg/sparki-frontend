@@ -2891,7 +2891,9 @@ export function RouteGenerator({
           <div className="flex items-center justify-between">
             <span className="font-sans text-[13px] font-medium text-foreground/90">
               {step === 1
-                ? "Waar rijd je?"
+                ? (sport === "walking" || sport === "hiking")
+                  ? "Waar ga je op pad?"
+                  : "Waar rijd je?"
                 : step === 2
                   ? (sport === "walking" || sport === "hiking")
                   ? "Sport & training"
@@ -2966,7 +2968,9 @@ export function RouteGenerator({
           ))}
           <span className="ml-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             {step === 1
-              ? "Waar rijd je?"
+              ? (sport === "walking" || sport === "hiking")
+                ? "Waar ga je op pad?"
+                : "Waar rijd je?"
               : step === 2
                 ? (sport === "walking" || sport === "hiking")
                   ? "Sport & training"
@@ -3686,7 +3690,9 @@ export function RouteGenerator({
       {/* Samen rijden? — de plek waar je je maten kiest. (Bordjes-sprint is
           gestopt — veiligheidsrisico op openbare weg, besluit 31-07-2026.) */}
       <div className="mt-4 border-t border-border pt-4">
-        <span className="label-xs text-muted-foreground">SAMEN RIJDEN?</span>
+        <span className="label-xs text-muted-foreground">
+          {sport === "walking" || sport === "hiking" ? "SAMEN OP PAD?" : "SAMEN RIJDEN?"}
+        </span>
         <div className="mt-2 flex items-center gap-1.5">
           <button
             type="button"
@@ -3841,12 +3847,14 @@ export function RouteGenerator({
             <p>
               <span className="text-muted-foreground">Gezelschap: </span>
               {withOthers
-                ? `je rijdt met anderen${
+                ? `${sport === "walking" || sport === "hiking" ? "je gaat met anderen op pad" : "je rijdt met anderen"}${
                     buddyIds.length > 0
                       ? ` (${buddyIds.length} maat${buddyIds.length === 1 ? "" : "jes"})`
                       : ""
                   }`
-                : "je rijdt alleen"}
+                : sport === "walking" || sport === "hiking"
+                  ? "je gaat alleen op pad"
+                  : "je rijdt alleen"}
             </p>
           </div>
         </div>
