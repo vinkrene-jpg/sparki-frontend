@@ -176,7 +176,9 @@ router.put("/profile", requireAuth, async (req, res) => {
     restingHr?: number | string | null;
     maxHr?: number | string | null;
     goalForm?: string | null;
+    rhythmProxies?: string[] | null;
   };
+  const { rhythmProxies } = req.body as { rhythmProxies?: string[] | null };
 
   // F4: doelvorm — vaste enum; expliciete null wist, onbekende waarden worden
   // genegeerd (nooit vertrouwd).
@@ -186,6 +188,38 @@ router.put("/profile", requireAuth, async (req, res) => {
     cleanGoalForm = null;
   } else if (goalForm != null && GOAL_FORMS.includes(goalForm)) {
     cleanGoalForm = goalForm;
+  }
+
+  // F10: ritme-proxy's — vaste catalogus, maximaal twee. Bewust géén streaks,
+  // gemiste dagen, gewicht of calorieën in de catalogus (TD-16). Ongeldige
+  // invoer is een harde 400 (de sporter koos bewust; stil negeren zou liegen).
+  const RHYTHM_PROXIES = [
+    // Plezier
+    "samen_rijden",
+    "buiten",
+    "nieuwe_plekken",
+    "leuk_tik",
+    // Fit blijven
+    "ritme_weken",
+    "actieve_dagen",
+    "testrit",
+  ];
+  let cleanRhythmProxies: string[] | null | undefined;
+  if (rhythmProxies === null) {
+    cleanRhythmProxies = null;
+  } else if (rhythmProxies !== undefined) {
+    if (
+      !Array.isArray(rhythmProxies) ||
+      rhythmProxies.length > 2 ||
+      rhythmProxies.some((p) => !RHYTHM_PROXIES.includes(p))
+    ) {
+      res.status(400).json({
+        error: "Kies maximaal twee ritme-proxy's uit de vaste lijst",
+        allowed: RHYTHM_PROXIES,
+      });
+      return;
+    }
+    cleanRhythmProxies = [...new Set(rhythmProxies)];
   }
 
   // F3: rust- en maximale hartslag — integers binnen een plausibel menselijk
@@ -361,6 +395,7 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(cleanGoalForm !== undefined && {
           goalForm: cleanGoalForm as "programma" | "seizoen" | "ritme" | null,
         }),
+        ...(cleanRhythmProxies !== undefined && { rhythmProxies: cleanRhythmProxies }),
         ...(homeLat !== undefined &&
           homeLon !== undefined && {
             homeLat: homeValid ? String(latNum) : null,

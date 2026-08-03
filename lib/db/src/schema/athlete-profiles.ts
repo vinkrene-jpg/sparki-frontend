@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, numeric, boolean, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, numeric, boolean, timestamp, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -76,6 +76,11 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   // zijn doel wil trainen. Voorgesteld uit de doorvraagladder, altijd door de
   // sporter bevestigd. Null = nog niet gekozen.
   goalForm: text("goal_form").$type<"programma" | "seizoen" | "ritme">(),
+  // TRAINEN_DOELEN_SEIZOEN_01 F10 — doelvorm Ritme: maximaal TWEE gekozen
+  // proxy's uit de vaste catalogus (plezier: samen_rijden · buiten ·
+  // nieuwe_plekken · leuk_tik; fit: ritme_weken · actieve_dagen · testrit).
+  // Bewust GEEN streaks, gemiste dagen, gewicht of calorieën (TD-16).
+  rhythmProxies: jsonb("rhythm_proxies").$type<string[]>(),
 
   // ── Autonomous-coaching planning inputs (task #17) ─────────────────────────
   // Structured fields Sparki needs to build a real training plan when the
