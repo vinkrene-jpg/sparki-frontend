@@ -39,6 +39,14 @@ import { getForecastByDate } from "./weather/open-meteo";
 import { assessTraining, type WeatherSeverity } from "./weather/assess";
 
 const HORIZON_DAYS = 21; // concrete 7-day week + ~2 provisional preview weeks
+// F11 (TRAINEN_DOELEN_SEIZOEN_01 / TD-12): loopt een programma of seizoen af
+// zonder actie van de sporter, dan verlengt Sparki op 80% belasting met de
+// intensiteit op duurniveau — maximaal dit aantal weken. De 4 is een
+// vastgelegd besluit (configureerbaar, 4 als ingevulde standaard).
+export const PLAN_EXTENSION_WEEKS = Math.max(
+  1,
+  Number(process.env.SPARKI_PLAN_EXTENSION_WEEKS ?? 4) || 4,
+);
 const COMMIT_DAYS = 7; // first week is committed (also written as planned_workouts)
 
 // JS getUTCDay(): 0=Sun .. 6=Sat → our weekday keys.
@@ -90,7 +98,7 @@ export type PlanInputs = {
     priority: string;
     daysAway: number;
   } | null;
-  phase: "base" | "build" | "peak" | "taper" | "onderhoud";
+  phase: "base" | "build" | "peak" | "taper" | "onderhoud" | "verlenging";
   // F6 (TRAINEN_DOELEN_SEIZOEN_01): waar de fase aan is opgehangen — het
   // hoofddoel als dat er is, anders de eerstvolgende wedstrijd, anders ritme.
   phaseAnchor: {
@@ -243,6 +251,62 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
       ? { kind: "wedstrijd", title: next.name, date: next.raceDate, daysAway }
       : { kind: "ritme", title: null, date: null, daysAway: null };
 
+  // F11 (TD-12): geen enkel toekomstig anker? Kijk dan of er RECENT een
+  // hoofddoel of seizoen is afgelopen. Binnen PLAN_EXTENSION_WEEKS weken na
+  // die einddatum verlengt Sparki op 80% met intensiteit op duurniveau; daarna
+  // volgt een actieve melding om een nieuw hoofddoel te kiezen en stopt de
+  // verlenging (ritmegedrag).
+  let extensionPhase: "verlenging" | null = null;
+  if (!mainGoal && !next) {
+    try {
+      const { athleteGoalsTable, seasonBlocksTable } = await import("@workspace/db");
+      const [lastGoal] = await db
+        .select({ targetDate: athleteGoalsTable.targetDate })
+        .from(athleteGoalsTable)
+        .where(
+          and(
+            eq(athleteGoalsTable.clerkId, clerkId),
+            eq(athleteGoalsTable.priority, 1),
+            eq(athleteGoalsTable.status, "active"),
+            isNotNull(athleteGoalsTable.targetDate),
+          ),
+        )
+        .orderBy(desc(athleteGoalsTable.targetDate))
+        .limit(1);
+      const [lastBlock] = await db
+        .select({ endDate: seasonBlocksTable.endDate })
+        .from(seasonBlocksTable)
+        .where(eq(seasonBlocksTable.clerkId, clerkId))
+        .orderBy(desc(seasonBlocksTable.endDate))
+        .limit(1);
+      const ends = [lastGoal?.targetDate, lastBlock?.endDate].filter(
+        (d): d is string => d != null && d < today,
+      );
+      if (ends.length > 0) {
+        const lastEnd = ends.sort().at(-1)!;
+        const daysSince = daysBetween(lastEnd, today);
+        if (daysSince <= PLAN_EXTENSION_WEEKS * 7) {
+          extensionPhase = "verlenging";
+        } else {
+          // Verlenging voorbij: één actieve melding (idempotent), geen
+          // stilzwijgende voortzetting.
+          const { createNotification } = await import("./notifications");
+          await createNotification({
+            clerkId,
+            type: "profile_nudge",
+            title: "Tijd voor een nieuw hoofddoel",
+            body: "Je programma of seizoen is afgelopen en de verlenging van vier weken zit erop. Kies een nieuw hoofddoel, dan bouwt je plan weer ergens naartoe.",
+            actionUrl: "/train",
+            source: "training-plan",
+            dedupeKey: `plan-extension-over:${lastEnd}`,
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      // Honest degradation: detectie faalt → gewoon ritmegedrag, geen melding.
+    }
+  }
+
   // F7: seizoenslaag. Als de sporter vormblokken heeft en vandaag in een blok
   // valt, wint de blokfase: een vormblok telt af naar zijn EIGEN anker (niet
   // per losse wedstrijd taperen), een dipblok geeft "onderhoud" — nooit een
@@ -361,7 +425,7 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
           daysAway: daysAway!,
         }
       : null,
-    phase: seasonPhase ?? derivePhase(anchorDaysAway),
+    phase: seasonPhase ?? extensionPhase ?? derivePhase(anchorDaysAway),
     phaseAnchor,
     racesByDate,
     weatherByDate,
@@ -503,6 +567,8 @@ function qualityDaysFor(experience: string | null, phase: PlanInputs["phase"]) {
   if (phase === "base") q = Math.min(q, experience === "beginner" ? 1 : 2);
   // F7: onderhoud = vorm vasthouden — één prikkel per week, geen opbouwdruk.
   if (phase === "onderhoud") q = 1;
+  // F11: verlenging = alleen duurniveau — géén kwaliteitsdagen, geen piek.
+  if (phase === "verlenging") q = 0;
   return q;
 }
 
@@ -535,6 +601,11 @@ function weekFactor(
   if (i.phase === "onderhoud") {
     factor = 0.8;
     note = "onderhoudsweek: vorm vasthouden op verlaagd volume";
+  }
+  // F11 (TD-12): verlenging na afloop — 80% belasting, rustig doorfietsen.
+  if (i.phase === "verlenging") {
+    factor = 0.8;
+    note = "verlenging na je programma/seizoen: 80% volume op duurniveau";
   }
   if (i.phase === "taper") {
     factor = 0.6;
@@ -772,7 +843,9 @@ function templateSummary(i: PlanInputs, skeleton: DaySkeleton[]): string {
           ? "opbouwfase"
           : i.phase === "onderhoud"
             ? "onderhoudsfase (vorm vasthouden)"
-            : "basisfase";
+            : i.phase === "verlenging"
+              ? "verlenging na je afgelopen programma (rustig doorrijden)"
+              : "basisfase";
   const raceLine = i.nextRace
     ? ` Je volgende wedstrijd (${i.nextRace.name}) is over ${i.nextRace.daysAway} dagen, dus we zitten in de ${phaseNl}.`
     : ` Er staat geen wedstrijd gepland, dus we werken aan algemene conditie in de ${phaseNl}.`;
