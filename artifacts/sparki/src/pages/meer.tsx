@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Shield, LifeBuoy, Link2, Settings } from "lucide-react"
 import { dagSfeer } from "@/lib/sfeer"
 import { APP_VERSION, BUILD_SHA, IS_PRODUCTION_BUILD } from "@/lib/version"
@@ -25,6 +26,24 @@ export default function MeerPage() {
   const { isMember } = useClubMembership()
   const { data: adminWho } = useAdminWhoami()
   const isAdmin = adminWho?.isAdmin === true
+
+  // MUX_375 onderdeel B — toestelbreedte aflezen op de gepubliceerde site:
+  // werkelijke binnenmaat + pixeldichtheid, live bijgewerkt bij draaien/resizen.
+  const [maat, setMaat] = useState(() => ({
+    w: window.innerWidth,
+    h: window.innerHeight,
+    dpr: window.devicePixelRatio,
+  }))
+  useEffect(() => {
+    const meet = () =>
+      setMaat({ w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio })
+    window.addEventListener("resize", meet)
+    window.addEventListener("orientationchange", meet)
+    return () => {
+      window.removeEventListener("resize", meet)
+      window.removeEventListener("orientationchange", meet)
+    }
+  }, [])
 
   // Coach en ouder houden hun eigen (kortere) navigatie; als zij hier toch
   // belanden via een directe URL tonen we gewoon hun bestaande hoofdstukken.
@@ -118,7 +137,8 @@ export default function MeerPage() {
             draait — PWA en mobiele browser moeten hetzelfde tonen. */}
         <p className="pt-1 type-body-sm text-content-secondary/70">
           Versie {APP_VERSION} · build {BUILD_SHA} ·{" "}
-          {IS_PRODUCTION_BUILD ? "productie" : "ontwikkelomgeving"}
+          {IS_PRODUCTION_BUILD ? "productie" : "ontwikkelomgeving"} · scherm{" "}
+          {maat.w}×{maat.h} · pixeldichtheid {maat.dpr}
         </p>
       </div>
     </CommercialShell>

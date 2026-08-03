@@ -141,6 +141,13 @@ export const PERSONAS: Persona[] = [
   { key: "voedingsdeskundige", name: "TESTFIXTURE Voedingsdeskundige", roles: ["nutrition_specialist"], activeRole: "nutrition_specialist", entitlementMode: "subscription" },
   // Medische staf: clubrol (least privilege; sportdata alleen via consent).
   { key: "medical-staff", name: "TESTFIXTURE Medische Staf", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "medical_staff" },
+
+  // ── MUX_375 (03-08-2026): ontbrekende rol-fixtures voor schermafdrukbewijs ──
+  // Teammanager: clubrol met eigen dashboard (DSH-13a) — bestond nog niet als
+  // vaste testidentiteit; zonder fixture is die rol niet meetbaar.
+  { key: "teammanager", name: "TESTFIXTURE Teammanager", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "teammanager" },
+  // Soigneur: clubrol met alleen kalender/berichten (least privilege).
+  { key: "soigneur", name: "TESTFIXTURE Soigneur", roles: ["athlete"], activeRole: "athlete", entitlementMode: "subscription", clubRole: "soigneur" },
 ];
 
 export const clerkIdFor = (key: string) => `${GOVERNOR_FIXTURE_PREFIX}${key}`;

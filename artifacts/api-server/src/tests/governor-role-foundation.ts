@@ -75,7 +75,7 @@ async function main() {
     const second = await createFixtures();
     const after = await verifyFixtures();
     assert(second.clubId === clubId, "tweede run maakte een NIEUWE club");
-    assert(before.userCount === after.userCount && after.userCount === 23, `verwacht 23 gebruikers, kreeg ${after.userCount}`);
+    assert(before.userCount === after.userCount && after.userCount === 25, `verwacht 25 gebruikers, kreeg ${after.userCount}`);
     assert(after.clubCount === 1, `verwacht 1 club, kreeg ${after.clubCount}`);
     const teams = await db.select({ id: clubTeamsTable.id }).from(clubTeamsTable).where(eq(clubTeamsTable.clubId, clubId));
     assert(teams.length === 2, `verwacht 2 teams, kreeg ${teams.length}`);
