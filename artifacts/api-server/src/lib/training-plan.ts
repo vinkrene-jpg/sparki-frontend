@@ -91,6 +91,14 @@ export type PlanInputs = {
     daysAway: number;
   } | null;
   phase: "base" | "build" | "peak" | "taper";
+  // F6 (TRAINEN_DOELEN_SEIZOEN_01): waar de fase aan is opgehangen — het
+  // hoofddoel als dat er is, anders de eerstvolgende wedstrijd, anders ritme.
+  phaseAnchor: {
+    kind: "hoofddoel" | "wedstrijd" | "ritme";
+    title: string | null;
+    date: string | null;
+    daysAway: number | null;
+  };
   racesByDate: Map<string, { name: string; priority: string }>;
   // Per-date weather severity for a representative long outdoor ride, over the
   // committed week only (empty when no home coords / forecast). Used solely by
@@ -198,6 +206,43 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
   const next = aRace ?? upcomingRaces[0] ?? null;
   const daysAway = next ? daysBetween(today, next.raceDate) : null;
 
+  // F6 (TRAINEN_DOELEN_SEIZOEN_01): de fase hangt aan het HOOFDDOEL van de
+  // sporter (priority 1, actief, met datum in de toekomst). Alleen zonder
+  // hoofddoel valt het anker terug op de eerstvolgende wedstrijd; zonder
+  // beide is er geen aftellen — ritmegedrag (base).
+  let mainGoal: { title: string; targetDate: string } | null = null;
+  try {
+    const { athleteGoalsTable } = await import("@workspace/db");
+    const [g] = await db
+      .select({
+        title: athleteGoalsTable.title,
+        targetDate: athleteGoalsTable.targetDate,
+      })
+      .from(athleteGoalsTable)
+      .where(
+        and(
+          eq(athleteGoalsTable.clerkId, clerkId),
+          eq(athleteGoalsTable.priority, 1),
+          eq(athleteGoalsTable.status, "active"),
+        ),
+      )
+      .orderBy(desc(athleteGoalsTable.updatedAt))
+      .limit(1);
+    if (g?.targetDate && daysBetween(today, g.targetDate) >= 0) {
+      mainGoal = { title: g.title, targetDate: g.targetDate };
+    }
+  } catch {
+    // Honest degradation: goals unreadable → anchor falls back to races.
+  }
+  const anchorDaysAway = mainGoal
+    ? daysBetween(today, mainGoal.targetDate)
+    : daysAway;
+  const phaseAnchor: PlanInputs["phaseAnchor"] = mainGoal
+    ? { kind: "hoofddoel", title: mainGoal.title, date: mainGoal.targetDate, daysAway: anchorDaysAway }
+    : next
+      ? { kind: "wedstrijd", title: next.name, date: next.raceDate, daysAway }
+      : { kind: "ritme", title: null, date: null, daysAway: null };
+
   const racesByDate = new Map<string, { name: string; priority: string }>();
   for (const r of upcomingRaces) {
     if (daysBetween(today, r.raceDate) <= HORIZON_DAYS) {
@@ -285,7 +330,8 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
           daysAway: daysAway!,
         }
       : null,
-    phase: derivePhase(daysAway),
+    phase: derivePhase(anchorDaysAway),
+    phaseAnchor,
     racesByDate,
     weatherByDate,
   };
