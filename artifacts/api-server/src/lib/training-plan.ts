@@ -179,7 +179,13 @@ export async function resolvePhaseForDate(
   }
 }
 
-export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
+// Reviewfix F5: gatherInputs is standaard side-effectvrij (preview mag NIETS
+// schrijven). Alleen expliciete plan-mutatiepaden geven notify:true mee, zodat
+// de "verlenging voorbij"-melding daar (idempotent) kan worden aangemaakt.
+export async function gatherInputs(
+  clerkId: string,
+  opts?: { notify?: boolean },
+): Promise<PlanInputs> {
   const today = todayStr();
   const [
     [user],
@@ -329,9 +335,10 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
         const daysSince = daysBetween(lastEnd, today);
         if (daysSince <= PLAN_EXTENSION_WEEKS * 7) {
           extensionPhase = "verlenging";
-        } else {
+        } else if (opts?.notify) {
           // Verlenging voorbij: één actieve melding (idempotent), geen
-          // stilzwijgende voortzetting.
+          // stilzwijgende voortzetting. Alleen op mutatiepaden — nooit
+          // vanuit een read-only preview (F5).
           const { createNotification } = await import("./notifications");
           await createNotification({
             clerkId,
@@ -1059,7 +1066,7 @@ export async function generatePlan(
   clerkId: string,
   mode: "autonomous" | "advisory",
 ): Promise<GenerateResult> {
-  const inputs = await gatherInputs(clerkId);
+  const inputs = await gatherInputs(clerkId, { notify: true });
   const start = todayStr();
   const skeleton = buildSkeleton(inputs, start);
   const aiContent = await buildAiContent(inputs, skeleton);
@@ -1387,7 +1394,7 @@ export async function adaptPlan(clerkId: string): Promise<AdaptResult> {
     .limit(1);
   if (!plan) return { adapted: false, changes: 0, note: "Geen actief schema." };
 
-  const inputs = await gatherInputs(clerkId);
+  const inputs = await gatherInputs(clerkId, { notify: true });
   // Rebuild the skeleton on the SAME anchor date so dates line up with stored
   // plan_days; only provisional days will be rewritten.
   const skeleton = buildSkeleton(inputs, plan.weekStartDate);
@@ -1521,7 +1528,7 @@ export async function maybeRollForward(
   if (elapsed < COMMIT_DAYS)
     return { rolled: false, reason: "committed-week-active" };
 
-  const inputs = await gatherInputs(clerkId);
+  const inputs = await gatherInputs(clerkId, { notify: true });
   const completeness = checkCompleteness(inputs);
   if (!completeness.ready) return { rolled: false, reason: "incomplete-inputs" };
 

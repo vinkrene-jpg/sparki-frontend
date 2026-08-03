@@ -119,7 +119,16 @@ async function main() {
       .where(eq(athleteGoalsTable.id, goal!.id));
     const p = await preview();
     assert(p.phase !== "verlenging", `verlenging gestopt, kreeg ${p.phase}`);
-    await preview(); // tweede aanvraag → mag géén tweede melding maken
+    // Reviewfix F5: een read-only preview schrijft NIETS — dus ook geen melding.
+    const afterPreview = await db
+      .select({ id: notificationsTable.id })
+      .from(notificationsTable)
+      .where(eq(notificationsTable.clerkId, USER));
+    assert(afterPreview.length === 0, "preview maakt geen melding aan (side-effectvrij)");
+    // De melding komt van de mutatiepaden (notify:true) — idempotent.
+    const { gatherInputs } = await import("../lib/training-plan");
+    await gatherInputs(USER, { notify: true });
+    await gatherInputs(USER, { notify: true }); // tweede keer → geen tweede rij
     const notes = await db
       .select({ id: notificationsTable.id, title: notificationsTable.title })
       .from(notificationsTable)

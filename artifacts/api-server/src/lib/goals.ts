@@ -523,6 +523,23 @@ export async function loadGoalPicture(clerkId: string): Promise<GoalPicture> {
     });
   }
 
+  // Reviewfix F9: zolang de uitslag ontbreekt is het doel expliciet
+  // ONBEOORDEELD — ook de voortgangsbeoordeling zelf, niet alleen de vraag.
+  // Anders telt een samenvatting het doel stilzwijgend als beoordeeld.
+  for (const p of pendingRaceResults) {
+    const g = goals.find((x) => x.id === p.goalId);
+    if (g) {
+      g.progress = {
+        verdict: "niet_meetbaar",
+        reasons: [
+          `De wedstrijd "${p.raceName}" is gereden maar de uitslag is nog niet ingevuld — dit doel blijft onbeoordeeld.`,
+        ],
+        gaps: ["uitslag"],
+        daysToTarget: g.progress.daysToTarget,
+      };
+    }
+  }
+
   return {
     goals,
     derived,

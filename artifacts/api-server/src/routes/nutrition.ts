@@ -320,7 +320,7 @@ async function buildMealContext(
   ]);
 
   const age = computeAge(athlete?.birthDate, athlete?.birthYear);
-  const youth = age != null && age < YOUTH_AGE_CUTOFF;
+  const youth = age == null || age < YOUTH_AGE_CUTOFF; // onbekende leeftijd ⇒ fail-closed jeugd
 
   // Describe the day's training in plain Dutch. Done sessions win (that is what
   // actually happened); otherwise fall back to the planned workout.
@@ -871,7 +871,7 @@ router.get("/day-analysis", requireAuth, async (req, res) => {
     }
 
     const age = computeAge(athlete?.birthDate, athlete?.birthYear);
-    const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
+    const isYouth = age == null || age < YOUTH_AGE_CUTOFF; // onbekende leeftijd ⇒ fail-closed jeugd
 
     const seasonBlock = await seasonGoalPromptBlock(
       clerkId,
@@ -1433,7 +1433,7 @@ router.get("/fueling-plan", requireAuth, async (req, res) => {
     }
 
     const age = computeAge(athlete?.birthDate, athlete?.birthYear);
-    const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
+    const isYouth = age == null || age < YOUTH_AGE_CUTOFF; // onbekende leeftijd ⇒ fail-closed jeugd
 
     // Deterministische rekenkern: richtwaarden uit duur/intensiteit/gewicht/
     // temperatuur/vormbalans + voorkeuren (mét toestemming) + letterlijke
@@ -1744,7 +1744,7 @@ router.get("/session-targets", requireAuth, async (req, res) => {
       return;
     }
     const age = computeAge(athlete?.birthDate, athlete?.birthYear);
-    const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
+    const isYouth = age == null || age < YOUTH_AGE_CUTOFF; // onbekende leeftijd ⇒ fail-closed jeugd
     const targets = await buildDayFuelTargets(
       clerkId,
       date,
@@ -1784,7 +1784,7 @@ router.get("/guidance", requireAuth, async (req, res) => {
       .where(eq(athleteProfilesTable.clerkId, clerkId));
 
     const age = computeAge(athlete?.birthDate, athlete?.birthYear);
-    const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
+    const isYouth = age == null || age < YOUTH_AGE_CUTOFF; // onbekende leeftijd ⇒ fail-closed jeugd
     const level: "youth" | "adult" = isYouth ? "youth" : "adult";
 
     const [context, system] = await Promise.all([

@@ -86,7 +86,9 @@ router.get("/", requireAuth, async (req, res) => {
     let rows = await loadBlocks(clerkId);
     const hasUserEdits = rows.some((r) => r.source === "sporter");
 
-    if (rows.length === 0 || (refresh && !hasUserEdits)) {
+    // Reviewfix F7: refresh vernieuwt ALTIJD uitsluitend de afgeleide rijen;
+    // sporter-blokken blijven onaangetast (ook als ze bestaan).
+    if (rows.length === 0 || refresh) {
       const anchors = await deriveAnchors(clerkId);
       const derived = buildSeasonBlocks(todayAms(), anchors);
       await db.transaction(async (tx) => {
