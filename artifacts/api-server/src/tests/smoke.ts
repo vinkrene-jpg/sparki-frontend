@@ -474,6 +474,8 @@ async function main() {
     const base: Race = {
       id: 42,
       clerkId: "user_test",
+      teamImportance: null,
+      ownRole: null,
       name: "Omloop van het Houtland",
       raceDate: "2026-06-08", // 7 days out
       startTime: "13:00",
@@ -602,6 +604,8 @@ async function main() {
     const base: Race = {
       id: 7,
       clerkId: "user_test",
+      teamImportance: null,
+      ownRole: null,
       name: "Ronde van Vlaanderen Cyclo",
       raceDate: "2026-06-08", // 7 days out (within weather horizon)
       startTime: "13:00",
@@ -759,6 +763,8 @@ async function main() {
     const base: Race = {
       id: 9,
       clerkId: "user_test",
+      teamImportance: null,
+      ownRole: null,
       name: "Omloop van het Houtland",
       raceDate: "2026-05-20", // already in the past
       startTime: "13:00",

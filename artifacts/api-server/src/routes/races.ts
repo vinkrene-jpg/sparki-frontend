@@ -76,7 +76,25 @@ type RaceBody = {
   // Wedstrijd Intelligence — lokale ronden + persoonlijke opdracht.
   localLaps?: number | null;
   assignment?: string | null;
+  // F8 (TRAINEN_DOELEN_SEIZOEN_01) — twee gescheiden labels naast priority.
+  teamImportance?: string | null;
+  ownRole?: string | null;
 };
+
+// F8: ploegbelang en eigen rol zijn gescheiden velden. Ploegbelang wordt door
+// de sporter/ploeg gezet en NOOIT door Sparki of het plan aangepast.
+const TEAM_IMPORTANCE = ["laag", "normaal", "hoog"] as const;
+const OWN_ROLES = ["kopman", "helper", "vrije_rol", "leren"] as const;
+function normalizeTeamImportance(v: unknown): "laag" | "normaal" | "hoog" | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  return TEAM_IMPORTANCE.includes(v as never) ? (v as never) : undefined;
+}
+function normalizeOwnRole(v: unknown): (typeof OWN_ROLES)[number] | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  return OWN_ROLES.includes(v as never) ? (v as never) : undefined;
+}
 
 const RACE_STATUSES = ["gepland", "geannuleerd"] as const;
 const REGISTRATION_STATUSES = [
@@ -604,6 +622,8 @@ router.post("/", requireAuth, async (req, res) => {
           ? body.assignment.trim().slice(0, 2000)
           : null,
         status: normalizeStatus(body.status) ?? "gepland",
+        teamImportance: normalizeTeamImportance(body.teamImportance) ?? null,
+        ownRole: normalizeOwnRole(body.ownRole) ?? null,
       })
       .returning();
     // Golf 19 — leg vast WELKE routeversie aan deze wedstrijd is gekoppeld.
@@ -721,6 +741,14 @@ router.put("/:id", requireAuth, async (req, res) => {
         ...(registration !== undefined && { registrationStatus: registration }),
         ...(body.goal !== undefined && { goal: body.goal }),
         ...(status !== undefined && { status }),
+        // F8: gescheiden labels. Alleen expliciete sporter-invoer komt hier —
+        // Sparki/het plan schrijft deze velden nergens.
+        ...(normalizeTeamImportance(body.teamImportance) !== undefined && {
+          teamImportance: normalizeTeamImportance(body.teamImportance),
+        }),
+        ...(normalizeOwnRole(body.ownRole) !== undefined && {
+          ownRole: normalizeOwnRole(body.ownRole),
+        }),
         updatedAt: new Date(),
       })
       .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)))
@@ -769,6 +797,49 @@ router.put("/:id", requireAuth, async (req, res) => {
 // ── PUT /api/races/:id/checklist ─────────────────────────────────────────────
 // Dedicated endpoint so the Day-Before checklist can persist its checked state
 // per race without sending the whole race object on every toggle.
+// ── POST /api/races/:id/promote — F8 (TD-10/TD-11) ──────────────────────────
+// Promotie van het prioriteitslabel: ALLEEN omhoog (C→B→A), en alleen het
+// label — het trainingsschema wordt hier bewust NIET aangeraakt. De
+// schemawijziging loopt daarna via de gewone planflow met bevestiging (F5).
+// Degraderen kan uitsluitend via de gewone PUT (expliciete sporterskeuze);
+// ploegbelang/eigen rol worden hier nooit gewijzigd.
+const PRIORITY_RANK: Record<string, number> = { C: 0, B: 1, A: 2 };
+router.post("/:id/promote", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  const target = normalizePriority((req.body as { priority?: string }).priority);
+  if (isNaN(id) || !target) {
+    res.status(400).json({ error: "Geef een geldig race-id en priority (A/B/C)" });
+    return;
+  }
+  try {
+    const [existing] = await db
+      .select({ id: racesTable.id, priority: racesTable.priority })
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+    if (!existing) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+    if ((PRIORITY_RANK[target] ?? -1) <= (PRIORITY_RANK[existing.priority] ?? 99)) {
+      res.status(400).json({
+        error: `Promotie gaat alleen omhoog (huidig ${existing.priority}). Verlagen doe je bewust via bewerken.`,
+      });
+      return;
+    }
+    const [updated] = await db
+      .update(racesTable)
+      .set({ priority: target, updatedAt: new Date() })
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)))
+      .returning();
+    // Bewust GEEN triggerPlanRefresh: TD-11 — schema pas na bevestiging.
+    res.json({ race: updated, scheduleUnchanged: true });
+  } catch (err) {
+    req.log.error({ err }, "races promote failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.put("/:id/checklist", requireAuth, requireCommercialFeature("race_intel"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = parseInt(String(req.params["id"]), 10);

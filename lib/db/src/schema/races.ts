@@ -86,6 +86,12 @@ export const racesTable = pgTable("races", {
   localLaps: integer("local_laps"),
   assignment: text("assignment"),
 
+  // TRAINEN_DOELEN_SEIZOEN_01 F8 — twee GESCHEIDEN labels naast priority:
+  // ploegbelang (van de ploeg/ploegleider; wordt nooit door Sparki of het
+  // persoonlijke plan overschreven) en de eigen rol in die wedstrijd.
+  teamImportance: text("team_importance").$type<"laag" | "normaal" | "hoog">(),
+  ownRole: text("own_role").$type<"kopman" | "helper" | "vrije_rol" | "leren">(),
+
   // Structured, integration-ready sub-objects
   logistics: jsonb("logistics"), // RaceLogisticsInput
   checklist: jsonb("checklist"), // Record<string, boolean> — persisted per race
