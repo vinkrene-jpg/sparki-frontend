@@ -34,6 +34,7 @@ import navSettingsRouter from "./nav-settings";
 import uiPreferencesRouter from "./ui-preferences";
 import mediaStatusRouter from "./media-status";
 import trainingPlanRouter from "./training-plan";
+import workoutSeriesRouter from "./workout-series";
 import bugReportsRouter from "./bug-reports";
 import supportRouter from "./support";
 import knowledgeRouter from "./knowledge";
@@ -125,6 +126,8 @@ router.use("/athlete", blockParentSporterWrites);
 router.use("/races", blockParentSporterWrites);
 router.use("/goals", blockParentSporterWrites);
 router.use("/training-plan", blockParentSporterWrites);
+// F5: herhalende trainingen zijn óók sporter-schrijfroutes.
+router.use("/workout-series", blockParentSporterWrites);
 // Ritten komen óók binnen via bestandsimports — zelfde blokkade, anders is
 // "geen rit aanmaken als ouder" via een upload alsnog te omzeilen.
 router.use("/activity-imports", blockParentSporterWrites);
@@ -185,6 +188,7 @@ router.use("/nav-settings", navSettingsRouter);
 router.use("/ui-preferences", uiPreferencesRouter);
 router.use("/media-status", mediaStatusRouter);
 router.use("/training-plan", trainingPlanRouter);
+router.use("/workout-series", workoutSeriesRouter);
 router.use("/bug-reports", bugReportsRouter);
 router.use("/support", supportRouter);
 router.use("/knowledge", knowledgeRouter);

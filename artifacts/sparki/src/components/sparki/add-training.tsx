@@ -2,7 +2,10 @@ import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { ACCENT } from "@/components/sparki/ui"
 import { useLogSession } from "@/hooks/use-sessions"
-import { useCreateWorkout } from "@/hooks/use-today-workout"
+import {
+  useCreateWorkout,
+  useCreateWorkoutSeries,
+} from "@/hooks/use-today-workout"
 import { useRoutes } from "@/hooks/use-routes"
 import { useGarage } from "@/hooks/use-garage"
 import {
@@ -313,7 +316,9 @@ function PlanWorkoutForm({
   initialDate?: string
 }) {
   const createWorkout = useCreateWorkout()
+  const createSeries = useCreateWorkoutSeries()
   const [saved, setSaved] = useState(false)
+  const [savedCount, setSavedCount] = useState<number | null>(null)
   const { data: routesData } = useRoutes()
   const { data: garage } = useGarage()
   const routes = routesData?.routes ?? []
@@ -348,6 +353,15 @@ function PlanWorkoutForm({
     description: "",
   })
 
+  // F5 — herhaling: standaard "geen"; bij een herhaling maakt de server een
+  // reeks zelfstandige trainingen aan (geen parallel agendaschema).
+  const [repeat, setRepeat] = useState<
+    "none" | "daily" | "weekly" | "weekdays" | "interval"
+  >("none")
+  const [repeatWeekdays, setRepeatWeekdays] = useState<number[]>([])
+  const [repeatInterval, setRepeatInterval] = useState("3")
+  const [repeatEnd, setRepeatEnd] = useState("")
+
   const set =
     (k: keyof typeof form) =>
     (
@@ -370,6 +384,35 @@ function PlanWorkoutForm({
     if (isRide && form.bikeId) planDetails["bikeId"] = parseInt(form.bikeId)
     if (form.nutritionNote.trim())
       planDetails["nutritionNote"] = form.nutritionNote.trim()
+
+    if (repeat !== "none") {
+      createSeries.mutate(
+        {
+          title: form.title,
+          type: form.type,
+          description: form.description || undefined,
+          targetDurationMin: form.targetDurationMin
+            ? parseInt(form.targetDurationMin)
+            : undefined,
+          ...(Object.keys(planDetails).length > 0 ? { planDetails } : {}),
+          frequency: repeat,
+          ...(repeat === "weekdays" ? { weekdays: repeatWeekdays } : {}),
+          ...(repeat === "interval"
+            ? { intervalDays: parseInt(repeatInterval) }
+            : {}),
+          startDate: form.scheduledDate,
+          endDate: repeatEnd,
+        },
+        {
+          onSuccess: (r) => {
+            setSavedCount(r.createdCount)
+            setSaved(true)
+            setTimeout(onDone, 1600)
+          },
+        },
+      )
+      return
+    }
 
     createWorkout.mutate(
       {
@@ -394,7 +437,16 @@ function PlanWorkoutForm({
     )
   }
 
-  const canSave = form.title.trim().length > 0 && !!form.scheduledDate
+  const repeatValid =
+    repeat === "none" ||
+    (!!repeatEnd &&
+      repeatEnd >= form.scheduledDate &&
+      (repeat !== "weekdays" || repeatWeekdays.length > 0) &&
+      (repeat !== "interval" ||
+        (parseInt(repeatInterval) >= 2 && parseInt(repeatInterval) <= 90)))
+
+  const canSave =
+    form.title.trim().length > 0 && !!form.scheduledDate && repeatValid
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -442,6 +494,77 @@ function PlanWorkoutForm({
                 </option>
               ))}
             </select>
+          </div>
+        )}
+        <div className="col-span-2">
+          <label className={labelClass}>HERHALEN?</label>
+          <select
+            className={inputClass}
+            value={repeat}
+            onChange={(e) => setRepeat(e.target.value as typeof repeat)}
+          >
+            <option value="none">Niet herhalen</option>
+            <option value="daily">Elke dag</option>
+            <option value="weekly">Elke week (zelfde weekdag)</option>
+            <option value="weekdays">Vaste weekdagen</option>
+            <option value="interval">Om de zoveel dagen</option>
+          </select>
+        </div>
+        {repeat === "weekdays" && (
+          <div className="col-span-2 flex flex-wrap gap-2">
+            {(
+              [
+                [1, "ma"],
+                [2, "di"],
+                [3, "wo"],
+                [4, "do"],
+                [5, "vr"],
+                [6, "za"],
+                [7, "zo"],
+              ] as const
+            ).map(([n, label]) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() =>
+                  setRepeatWeekdays((p) =>
+                    p.includes(n) ? p.filter((x) => x !== n) : [...p, n],
+                  )
+                }
+                className={`rounded-xl border px-3 py-2 font-sans text-[13px] ${
+                  repeatWeekdays.includes(n)
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {repeat === "interval" && (
+          <div className="col-span-2">
+            <label className={labelClass}>OM DE HOEVEEL DAGEN?</label>
+            <input
+              className={inputClass}
+              type="number"
+              min={2}
+              max={90}
+              value={repeatInterval}
+              onChange={(e) => setRepeatInterval(e.target.value)}
+            />
+          </div>
+        )}
+        {repeat !== "none" && (
+          <div className="col-span-2">
+            <label className={labelClass}>HERHALEN TOT EN MET</label>
+            <input
+              className={inputClass}
+              type="date"
+              value={repeatEnd}
+              min={form.scheduledDate}
+              onChange={(e) => setRepeatEnd(e.target.value)}
+            />
           </div>
         )}
         <div className="col-span-2">
@@ -566,12 +689,14 @@ function PlanWorkoutForm({
           >
             <path d="M3 8.5l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Training ingepland voor {formatDateNL(form.scheduledDate)}
+          {savedCount != null
+            ? `${savedCount} trainingen ingepland vanaf ${formatDateNL(form.scheduledDate)}`
+            : `Training ingepland voor ${formatDateNL(form.scheduledDate)}`}
         </div>
       ) : (
         <button
           type="submit"
-          disabled={!canSave || createWorkout.isPending}
+          disabled={!canSave || createWorkout.isPending || createSeries.isPending}
           className="block w-full rounded-2xl px-4 py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
           style={{ background: ACCENT, color: "var(--color-on-accent)" }}
         >

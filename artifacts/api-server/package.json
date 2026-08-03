@@ -99,6 +99,7 @@
     "test:scheduled-tasks-route": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs scheduled-tasks-route",
     "test:race-wizard-proposal": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs race-wizard-proposal",
     "test:sessions-contract": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs sessions-contract",
+    "test:workout-series": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs workout-series",
     "test:race-wizard": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs race-wizard",
     "test:athlete-load": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs athlete-load",
     "test:garage-sensors": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs garage-sensors",

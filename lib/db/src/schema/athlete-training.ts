@@ -118,6 +118,47 @@ export const trainingSessionsTable = pgTable("training_sessions", {
     .defaultNow(),
 });
 
+// ── Herhalende trainingen (SPARKI_BUILD_01 F5) ──────────────────────────────
+// Een reeks genereert zelfstandig bruikbare planned_workouts-rijen; er is GEEN
+// parallel agendaschema. Datums zijn kalenderdatums (date-only) in de tijdzone
+// van de reeks — generatie rekent met pure y/m/d-stappen, nooit via UTC
+// (zomertijdovergang mag nooit een dag laten dubbelen of verdwijnen).
+// Bestaande losse trainingen worden nooit stil in een reeks veranderd.
+export const workoutSeriesTable = pgTable("workout_series", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+  // daily | weekly | weekdays | interval
+  frequency: text("frequency").notNull(),
+  // Bij frequency="weekdays": ISO-weekdagen 1(ma)–7(zo).
+  weekdays: jsonb("weekdays").$type<number[]>(),
+  // Bij frequency="interval": elke N dagen (N ≥ 2).
+  intervalDays: integer("interval_days"),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  // Uitzonderingsdatums (ISO yyyy-mm-dd): op deze dagen wordt niets gepland.
+  exceptions: jsonb("exceptions").$type<string[]>().notNull().default([]),
+  // active | ended | cancelled — historie blijft altijd staan.
+  status: text("status").notNull().default("active"),
+  timezone: text("timezone").notNull().default("Europe/Amsterdam"),
+  // Sjabloon voor gegenereerde trainingen (zelfde vorm als planned_workouts).
+  type: text("type").notNull().default("ride"),
+  title: text("title").notNull(),
+  description: text("description"),
+  targetDurationMin: integer("target_duration_min"),
+  targetTSS: integer("target_tss"),
+  planDetails: jsonb("plan_details"),
+  source: text("source").notNull().default("sparki"),
+  coachClerkId: text("coach_clerk_id"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const plannedWorkoutsTable = pgTable("planned_workouts", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
@@ -158,6 +199,11 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
     bikeId?: number;
     nutritionNote?: string;
   }>(),
+  // F5: uit welke reeks deze training is gegenereerd. set null bij verwijderen
+  // van de reeks — de training blijft zelfstandig bruikbaar (historie behouden).
+  seriesId: integer("series_id").references(() => workoutSeriesTable.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

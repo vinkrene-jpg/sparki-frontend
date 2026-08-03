@@ -86,6 +86,39 @@ export function useCreateWorkout() {
   });
 }
 
+// F5 — Herhalende trainingen: reeks aanmaken. De server genereert direct alle
+// zelfstandig bruikbare trainingen; wij verversen dezelfde lijsten als bij een
+// losse training.
+export type WorkoutSeriesInput = {
+  title: string;
+  type?: string;
+  description?: string;
+  targetDurationMin?: number;
+  planDetails?: unknown;
+  frequency: "daily" | "weekly" | "weekdays" | "interval";
+  weekdays?: number[];
+  intervalDays?: number;
+  startDate: string;
+  endDate: string;
+};
+
+export function useCreateWorkoutSeries() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: WorkoutSeriesInput) =>
+      apiFetch<{ series: { id: number }; createdCount: number }>(
+        "/api/workout-series",
+        { method: "POST", body: JSON.stringify(data) },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.dashboard() });
+      void qc.invalidateQueries({ queryKey: WORKOUTS_LIST_KEY });
+    },
+  });
+}
+
 export function useUpdateWorkout() {
   const qc = useQueryClient();
 
