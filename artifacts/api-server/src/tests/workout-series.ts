@@ -289,3 +289,84 @@ test("andermans reeks is onbereikbaar (404, geen lek)", async () => {
   const other = await api("PUT", `/api/workout-series/${mine.body.series.id}`, { scope: "all", title: "gekaapt" }, "test_workout_series_other");
   assert.equal(other.status, 404);
 });
+
+test("scope=following splitst de reeks: oud eindigt vóór de grens, nieuw draagt het gewijzigde sjabloon", async () => {
+  const { and, eq } = await import("drizzle-orm");
+  const created = await api("POST", "/api/workout-series", {
+    title: "Weekduurrit",
+    frequency: "weekly",
+    startDate: "2027-02-02", // dinsdag
+    endDate: "2027-03-02",
+  });
+  assert.equal(created.status, 201);
+  const sid = created.body.series.id;
+  assert.equal(created.body.createdCount, 5); // 2, 9, 16, 23 feb + 2 mrt
+
+  const resp = await api("PUT", `/api/workout-series/${sid}`, {
+    scope: "following",
+    fromDate: "2027-02-16",
+    title: "Weekduurrit lang",
+  });
+  assert.equal(resp.status, 200, JSON.stringify(resp.body));
+  assert.equal(resp.body.updated, 3); // 16, 23 feb + 2 mrt
+  const newSid = resp.body.newSeries.id;
+  assert.notEqual(newSid, sid);
+
+  // Oorspronkelijke reeks eindigt vóór de grens; nieuwe start op de grensdag
+  // met dezelfde weekdag en het nieuwe sjabloon.
+  const [oldRow] = await db.select().from(schema.workoutSeriesTable).where(eq(schema.workoutSeriesTable.id, sid));
+  assert.equal(oldRow!.endDate, "2027-02-15");
+  assert.equal(oldRow!.title, "Weekduurrit");
+  const [newRow] = await db.select().from(schema.workoutSeriesTable).where(eq(schema.workoutSeriesTable.id, newSid));
+  assert.equal(newRow!.startDate, "2027-02-16");
+  assert.equal(newRow!.endDate, "2027-03-02");
+  assert.equal(newRow!.title, "Weekduurrit lang");
+
+  // Rijen vóór de grens onaangeroerd bij de oude reeks; erna bij de nieuwe.
+  const oldRows = await db
+    .select()
+    .from(schema.plannedWorkoutsTable)
+    .where(and(eq(schema.plannedWorkoutsTable.clerkId, TEST_CLERK_ID), eq(schema.plannedWorkoutsTable.seriesId, sid)));
+  assert.deepEqual(oldRows.map((r) => r.scheduledDate).sort(), ["2027-02-02", "2027-02-09"]);
+  assert.ok(oldRows.every((r) => r.title === "Weekduurrit"));
+  const newRows = await db
+    .select()
+    .from(schema.plannedWorkoutsTable)
+    .where(and(eq(schema.plannedWorkoutsTable.clerkId, TEST_CLERK_ID), eq(schema.plannedWorkoutsTable.seriesId, newSid)));
+  assert.deepEqual(newRows.map((r) => r.scheduledDate).sort(), ["2027-02-16", "2027-02-23", "2027-03-02"]);
+  assert.ok(newRows.every((r) => r.title === "Weekduurrit lang"));
+});
+
+test("mutaties op een beëindigde/geannuleerde reeks geven 409", async () => {
+  const created = await api("POST", "/api/workout-series", {
+    title: "Stopreeks",
+    frequency: "daily",
+    startDate: "2027-04-01",
+    endDate: "2027-04-03",
+  });
+  const sid = created.body.series.id;
+  const del = await api("DELETE", `/api/workout-series/${sid}`);
+  assert.equal(del.status, 200);
+  assert.equal((await api("PUT", `/api/workout-series/${sid}`, { scope: "all", title: "x" })).status, 409);
+  assert.equal((await api("POST", `/api/workout-series/${sid}/skip`, { date: "2027-04-02" })).status, 409);
+  assert.equal((await api("POST", `/api/workout-series/${sid}/end`)).status, 409);
+});
+
+test("parallelle skips verliezen geen uitzonderingen (row lock)", async () => {
+  const { eq } = await import("drizzle-orm");
+  const created = await api("POST", "/api/workout-series", {
+    title: "Racereeks",
+    frequency: "daily",
+    startDate: "2027-05-01",
+    endDate: "2027-05-05",
+  });
+  const sid = created.body.series.id;
+  const [a, b] = await Promise.all([
+    api("POST", `/api/workout-series/${sid}/skip`, { date: "2027-05-02" }),
+    api("POST", `/api/workout-series/${sid}/skip`, { date: "2027-05-04" }),
+  ]);
+  assert.equal(a.status, 200);
+  assert.equal(b.status, 200);
+  const [row] = await db.select().from(schema.workoutSeriesTable).where(eq(schema.workoutSeriesTable.id, sid));
+  assert.deepEqual([...(row!.exceptions ?? [])].sort(), ["2027-05-02", "2027-05-04"]);
+});

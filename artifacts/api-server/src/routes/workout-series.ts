@@ -2,12 +2,18 @@
 //
 // Een reeks materialiseert direct zelfstandig bruikbare planned_workouts-rijen
 // (geen parallel agendaschema). Wijzigen kan met scope: één training, deze en
-// volgende, of de hele reeks. Annuleren/beëindigen verwijdert alleen nog niet
-// uitgevoerde toekomstige geplande rijen — historie blijft altijd staan.
-// Notificaties: precies één bevestiging per reeks-actie, nooit per gegenereerde
-// training.
+// volgende (= reeks splitsen), of de hele reeks. Annuleren/beëindigen
+// verwijdert alleen nog niet uitgevoerde geplande rijen — historie blijft.
+//
+// Concurrency: elke mutatie laadt de reeks BINNEN de transactie met
+// SELECT … FOR UPDATE (eigenaarfilter + status-check), zodat parallelle
+// skip/one-acties geen uitzonderingen verliezen en end/cancel/edit elkaar
+// nooit stil overschrijven.
+//
+// Notificaties: precies één bevestiging per reeks-actie, nooit per
+// gegenereerde training.
 import { Router, type IRouter } from "express";
-import { and, eq, gte, inArray } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import { db, plannedWorkoutsTable, workoutSeriesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { sanitizePlanDetails } from "../lib/plan-details";
@@ -16,10 +22,14 @@ import {
   seriesDates,
   isValidDateOnly,
   compareDates,
+  previousDay,
   type SeriesRule,
 } from "../lib/workout-series";
 
 const router: IRouter = Router();
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type SeriesRow = typeof workoutSeriesTable.$inferSelect;
 
 function amsterdamToday(): string {
   // Lokale Amsterdamse kalenderdag (memory: local-date UTC-trap).
@@ -42,6 +52,34 @@ function ruleFrom(body: Record<string, unknown>): SeriesRule {
     endDate: String(body["endDate"] ?? ""),
     exceptions: (body["exceptions"] as string[] | undefined) ?? [],
   };
+}
+
+function ruleOf(series: SeriesRow): SeriesRule {
+  return {
+    frequency: series.frequency as SeriesRule["frequency"],
+    weekdays: series.weekdays ?? null,
+    intervalDays: series.intervalDays ?? null,
+    startDate: series.startDate,
+    endDate: series.endDate,
+    exceptions: series.exceptions ?? [],
+  };
+}
+
+/** Reeks van deze eigenaar row-locken binnen de lopende transactie. */
+async function lockOwnedSeries(
+  tx: Tx,
+  clerkId: string,
+  idRaw: string,
+): Promise<SeriesRow | null> {
+  const id = parseInt(String(idRaw), 10);
+  if (isNaN(id)) return null;
+  const [series] = await tx
+    .select()
+    .from(workoutSeriesTable)
+    .where(and(eq(workoutSeriesTable.id, id), eq(workoutSeriesTable.clerkId, clerkId)))
+    .limit(1)
+    .for("update");
+  return series ?? null;
 }
 
 // ── POST /api/workout-series — reeks aanmaken + trainingen genereren ─────────
@@ -135,27 +173,16 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-async function loadOwnedSeries(clerkId: string, idRaw: string) {
-  const id = parseInt(String(idRaw), 10);
-  if (isNaN(id)) return null;
-  const [series] = await db
-    .select()
-    .from(workoutSeriesTable)
-    .where(and(eq(workoutSeriesTable.id, id), eq(workoutSeriesTable.clerkId, clerkId)))
-    .limit(1);
-  return series ?? null;
-}
-
 // ── PUT /api/workout-series/:id — wijzigen met scope ─────────────────────────
-// scope: "one" (alleen fromDate; wordt losgekoppeld + exception),
-//        "following" (deze en volgende), "all" (hele reeks).
+// scope: "one"       — alleen fromDate; training wordt losgekoppeld + exception.
+//        "following" — reeks wordt GESPLITST: de oorspronkelijke reeks eindigt
+//                      de dag vóór fromDate, een nieuwe reeks (met het
+//                      gewijzigde sjabloon en dezelfde herhaalregel) neemt de
+//                      rijen vanaf fromDate over. Zo blijft de oorspronkelijke
+//                      helft ook bij latere her-generatie intact.
+//        "all"       — sjabloon + alle nog geplande rijen.
 router.put("/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const series = await loadOwnedSeries(clerkId, String(req.params["id"]));
-  if (!series) {
-    res.status(404).json({ error: "Reeks niet gevonden" });
-    return;
-  }
   const body = (req.body ?? {}) as Record<string, unknown>;
   const scope = String(body["scope"] ?? "all");
   const fromDate = typeof body["fromDate"] === "string" ? (body["fromDate"] as string) : null;
@@ -170,15 +197,13 @@ router.put("/:id", requireAuth, async (req, res) => {
   for (const k of ["targetDurationMin", "targetTSS"] as const) {
     if (typeof body[k] === "number" || body[k] === null) patch[k] = body[k];
   }
-  let details: unknown;
   if (body["planDetails"] !== undefined) {
     const sanitized = sanitizePlanDetails(body["planDetails"]);
     if (!sanitized.ok) {
       res.status(400).json({ error: sanitized.error });
       return;
     }
-    details = sanitized.details;
-    patch["planDetails"] = details;
+    patch["planDetails"] = sanitized.details;
   }
   if (Object.keys(patch).length === 0) {
     res.status(400).json({ error: "Geen wijzigbare velden meegegeven" });
@@ -186,10 +211,16 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 
   try {
-    if (scope === "one") {
-      // Eén training: koppel los van de reeks (blijft zelfstandig) + pas aan,
-      // en registreer de dag als uitzondering zodat her-generatie hem overslaat.
-      const updated = await db.transaction(async (tx) => {
+    const outcome = await db.transaction(async (tx) => {
+      const series = await lockOwnedSeries(tx, clerkId, String(req.params["id"]));
+      if (!series) return { status: 404 as const };
+      if (series.status !== "active") {
+        return { status: 409 as const, error: "Deze reeks is beëindigd of geannuleerd" };
+      }
+
+      if (scope === "one") {
+        // Eén training: loskoppelen (blijft zelfstandig) + aanpassen, en de
+        // dag als uitzondering registreren zodat her-generatie hem overslaat.
         const rows = await tx
           .update(plannedWorkoutsTable)
           .set({ ...(patch as object), seriesId: null, updatedAt: new Date() })
@@ -201,70 +232,135 @@ router.put("/:id", requireAuth, async (req, res) => {
             ),
           )
           .returning({ id: plannedWorkoutsTable.id });
+        if (rows.length === 0) {
+          return { status: 404 as const, error: "Geen geplande training van deze reeks op die datum" };
+        }
         const exceptions = Array.from(new Set([...(series.exceptions ?? []), fromDate!]));
         await tx
           .update(workoutSeriesTable)
           .set({ exceptions, updatedAt: new Date() })
           .where(eq(workoutSeriesTable.id, series.id));
-        return rows.length;
-      });
-      if (updated === 0) {
-        res.status(404).json({ error: "Geen geplande training van deze reeks op die datum" });
-        return;
+        return { status: 200 as const, body: { scope, updated: rows.length } };
       }
-      res.json({ scope, updated });
-      return;
-    }
 
-    // "following" of "all": sjabloon bijwerken + nog niet uitgevoerde
-    // (status=planned) trainingen vanaf de grens mee-updaten.
-    const boundary = scope === "following" ? fromDate! : null;
-    const updated = await db.transaction(async (tx) => {
-      await tx
-        .update(workoutSeriesTable)
-        .set({ ...(patch as object), updatedAt: new Date() })
-        .where(eq(workoutSeriesTable.id, series.id));
-      const where = boundary
-        ? and(
-            eq(plannedWorkoutsTable.clerkId, clerkId),
-            eq(plannedWorkoutsTable.seriesId, series.id),
-            eq(plannedWorkoutsTable.status, "planned"),
-            gte(plannedWorkoutsTable.scheduledDate, boundary),
+      if (scope === "following") {
+        if (compareDates(fromDate!, series.startDate) <= 0) {
+          // Grens vóór of op de start: dit is gewoon "hele reeks".
+          return applyAll(tx, clerkId, series, patch);
+        }
+        if (compareDates(fromDate!, series.endDate) > 0) {
+          return { status: 400 as const, error: "fromDate ligt na het einde van de reeks" };
+        }
+        // Split: oorspronkelijke reeks eindigt de dag vóór de grens en houdt
+        // alleen uitzonderingen vóór de grens; de nieuwe reeks draagt het
+        // gewijzigde sjabloon, dezelfde herhaalregel en de rest.
+        const boundary = fromDate!;
+        const oldEnd = previousDay(boundary);
+        const beforeExceptions = (series.exceptions ?? []).filter((e) => compareDates(e, boundary) < 0);
+        const afterExceptions = (series.exceptions ?? []).filter((e) => compareDates(e, boundary) >= 0);
+        // Weekly: de nieuwe reeks moet dezelfde weekdag houden; de startdatum
+        // van de nieuwe reeks is de eerste reeksdag op/na de grens volgens de
+        // ORIGINELE regel (anders verschuift "weekly" naar de grens-weekdag).
+        const upcoming = seriesDates(ruleOf(series), boundary);
+        const newStart = upcoming[0] ?? boundary;
+        await tx
+          .update(workoutSeriesTable)
+          .set({ endDate: oldEnd, exceptions: beforeExceptions, updatedAt: new Date() })
+          .where(eq(workoutSeriesTable.id, series.id));
+        const [next] = await tx
+          .insert(workoutSeriesTable)
+          .values({
+            clerkId,
+            frequency: series.frequency,
+            weekdays: series.weekdays ?? null,
+            intervalDays: series.intervalDays ?? null,
+            startDate: newStart,
+            endDate: series.endDate,
+            exceptions: afterExceptions,
+            type: (patch["type"] as string) ?? series.type,
+            title: (patch["title"] as string) ?? series.title,
+            description:
+              patch["description"] !== undefined ? (patch["description"] as string | null) : series.description,
+            targetDurationMin:
+              patch["targetDurationMin"] !== undefined
+                ? (patch["targetDurationMin"] as number | null)
+                : series.targetDurationMin,
+            targetTSS: patch["targetTSS"] !== undefined ? (patch["targetTSS"] as number | null) : series.targetTSS,
+            planDetails: patch["planDetails"] !== undefined ? patch["planDetails"] : series.planDetails,
+            source: series.source,
+            coachClerkId: series.coachClerkId,
+          })
+          .returning();
+        // Geplande rijen vanaf de grens verhuizen naar de nieuwe reeks en
+        // krijgen het nieuwe sjabloon; uitgevoerde historie blijft bij de oude.
+        const rows = await tx
+          .update(plannedWorkoutsTable)
+          .set({ ...(patch as object), seriesId: next!.id, updatedAt: new Date() })
+          .where(
+            and(
+              eq(plannedWorkoutsTable.clerkId, clerkId),
+              eq(plannedWorkoutsTable.seriesId, series.id),
+              eq(plannedWorkoutsTable.status, "planned"),
+              gte(plannedWorkoutsTable.scheduledDate, boundary),
+            ),
           )
-        : and(
-            eq(plannedWorkoutsTable.clerkId, clerkId),
-            eq(plannedWorkoutsTable.seriesId, series.id),
-            eq(plannedWorkoutsTable.status, "planned"),
-          );
-      const rows = await tx
-        .update(plannedWorkoutsTable)
-        .set({ ...(patch as object), updatedAt: new Date() })
-        .where(where)
-        .returning({ id: plannedWorkoutsTable.id });
-      return rows.length;
+          .returning({ id: plannedWorkoutsTable.id });
+        return {
+          status: 200 as const,
+          body: { scope, updated: rows.length, series: { id: series.id }, newSeries: { id: next!.id } },
+        };
+      }
+
+      return applyAll(tx, clerkId, series, patch);
     });
-    res.json({ scope, updated });
+
+    if (outcome.status === 200) res.json(outcome.body);
+    else res.status(outcome.status).json({ error: outcome.error ?? "Reeks niet gevonden" });
   } catch (err) {
     req.log.error({ err }, "workout-series PUT failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
+async function applyAll(
+  tx: Tx,
+  clerkId: string,
+  series: SeriesRow,
+  patch: Record<string, unknown>,
+): Promise<{ status: 200; body: unknown } | { status: 404 | 409 | 400; error?: string }> {
+  await tx
+    .update(workoutSeriesTable)
+    .set({ ...(patch as object), updatedAt: new Date() })
+    .where(eq(workoutSeriesTable.id, series.id));
+  const rows = await tx
+    .update(plannedWorkoutsTable)
+    .set({ ...(patch as object), updatedAt: new Date() })
+    .where(
+      and(
+        eq(plannedWorkoutsTable.clerkId, clerkId),
+        eq(plannedWorkoutsTable.seriesId, series.id),
+        eq(plannedWorkoutsTable.status, "planned"),
+      ),
+    )
+    .returning({ id: plannedWorkoutsTable.id });
+  return { status: 200, body: { scope: "all", updated: rows.length } };
+}
+
 // ── POST /api/workout-series/:id/skip — één datum overslaan ─────────────────
 router.post("/:id/skip", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const series = await loadOwnedSeries(clerkId, String(req.params["id"]));
-  if (!series) {
-    res.status(404).json({ error: "Reeks niet gevonden" });
-    return;
-  }
-  const date = String((req.body ?? {})["date"] ?? "");
+  const date = String(((req.body ?? {}) as Record<string, unknown>)["date"] ?? "");
   if (!isValidDateOnly(date)) {
     res.status(400).json({ error: "Ongeldige datum (yyyy-mm-dd)" });
     return;
   }
   try {
-    const removed = await db.transaction(async (tx) => {
+    const outcome = await db.transaction(async (tx) => {
+      const series = await lockOwnedSeries(tx, clerkId, String(req.params["id"]));
+      if (!series) return { status: 404 as const };
+      if (series.status !== "active") {
+        return { status: 409 as const, error: "Deze reeks is beëindigd of geannuleerd" };
+      }
       const rows = await tx
         .delete(plannedWorkoutsTable)
         .where(
@@ -281,9 +377,10 @@ router.post("/:id/skip", requireAuth, async (req, res) => {
         .update(workoutSeriesTable)
         .set({ exceptions, updatedAt: new Date() })
         .where(eq(workoutSeriesTable.id, series.id));
-      return rows.length;
+      return { status: 200 as const, body: { removed: rows.length } };
     });
-    res.json({ removed });
+    if (outcome.status === 200) res.json(outcome.body);
+    else res.status(outcome.status).json({ error: outcome.error ?? "Reeks niet gevonden" });
   } catch (err) {
     req.log.error({ err }, "workout-series skip failed");
     res.status(500).json({ error: "Internal server error" });
@@ -295,14 +392,14 @@ router.post("/:id/skip", requireAuth, async (req, res) => {
 // trainingen blijven (historie behouden).
 router.post("/:id/end", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const series = await loadOwnedSeries(clerkId, String(req.params["id"]));
-  if (!series) {
-    res.status(404).json({ error: "Reeks niet gevonden" });
-    return;
-  }
   const today = amsterdamToday();
   try {
-    const removed = await db.transaction(async (tx) => {
+    const outcome = await db.transaction(async (tx) => {
+      const series = await lockOwnedSeries(tx, clerkId, String(req.params["id"]));
+      if (!series) return { status: 404 as const };
+      if (series.status !== "active") {
+        return { status: 409 as const, error: "Deze reeks is al beëindigd of geannuleerd" };
+      }
       const rows = await tx
         .delete(plannedWorkoutsTable)
         .where(
@@ -319,9 +416,10 @@ router.post("/:id/end", requireAuth, async (req, res) => {
         .update(workoutSeriesTable)
         .set({ status: "ended", endDate, updatedAt: new Date() })
         .where(eq(workoutSeriesTable.id, series.id));
-      return rows.length;
+      return { status: 200 as const, body: { status: "ended", removed: rows.length } };
     });
-    res.json({ status: "ended", removed });
+    if (outcome.status === 200) res.json(outcome.body);
+    else res.status(outcome.status).json({ error: outcome.error ?? "Reeks niet gevonden" });
   } catch (err) {
     req.log.error({ err }, "workout-series end failed");
     res.status(500).json({ error: "Internal server error" });
@@ -330,18 +428,17 @@ router.post("/:id/end", requireAuth, async (req, res) => {
 
 // ── DELETE /api/workout-series/:id — reeks annuleren ────────────────────────
 // Alle nog geplande (niet uitgevoerde) trainingen van de reeks verdwijnen,
-// óók in het verleden; uitgevoerde trainingen blijven staan (series_id wordt
-// door de FK op SET NULL losgekoppeld als de reeksrij ooit echt verwijderd
-// wordt — hier zetten we status="cancelled" en behouden we de historie).
+// óók in het verleden; uitgevoerde trainingen blijven staan en worden
+// losgekoppeld (zelfstandige historie).
 router.delete("/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const series = await loadOwnedSeries(clerkId, String(req.params["id"]));
-  if (!series) {
-    res.status(404).json({ error: "Reeks niet gevonden" });
-    return;
-  }
   try {
-    const removed = await db.transaction(async (tx) => {
+    const outcome = await db.transaction(async (tx) => {
+      const series = await lockOwnedSeries(tx, clerkId, String(req.params["id"]));
+      if (!series) return { status: 404 as const };
+      if (series.status === "cancelled") {
+        return { status: 200 as const, body: { status: "cancelled", removed: 0 } };
+      }
       const rows = await tx
         .delete(plannedWorkoutsTable)
         .where(
@@ -352,8 +449,6 @@ router.delete("/:id", requireAuth, async (req, res) => {
           ),
         )
         .returning({ id: plannedWorkoutsTable.id });
-      // Niet-geplande (bijv. voltooide) trainingen loskoppelen zodat de
-      // historie zelfstandig blijft bestaan.
       await tx
         .update(plannedWorkoutsTable)
         .set({ seriesId: null, updatedAt: new Date() })
@@ -362,9 +457,10 @@ router.delete("/:id", requireAuth, async (req, res) => {
         .update(workoutSeriesTable)
         .set({ status: "cancelled", updatedAt: new Date() })
         .where(eq(workoutSeriesTable.id, series.id));
-      return rows.length;
+      return { status: 200 as const, body: { status: "cancelled", removed: rows.length } };
     });
-    res.json({ status: "cancelled", removed });
+    if (outcome.status === 200) res.json(outcome.body);
+    else res.status(outcome.status).json({ error: "Reeks niet gevonden" });
   } catch (err) {
     req.log.error({ err }, "workout-series DELETE failed");
     res.status(500).json({ error: "Internal server error" });

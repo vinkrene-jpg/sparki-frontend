@@ -46,6 +46,21 @@ export function nextDay(s: string): string {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
+/** Vorige kalenderdag, puur y/m/d — geen Date, geen tijdzone. */
+export function previousDay(s: string): string {
+  let [y, m, d] = s.split("-").map(Number) as [number, number, number];
+  d -= 1;
+  if (d < 1) {
+    m -= 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+    d = daysInMonth(y, m);
+  }
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 /** ISO-weekdag 1(ma)–7(zo) van een kalenderdatum (Zeller-vrij: epoch-teldag). */
 export function isoWeekday(s: string): number {
   const [y, m, d] = s.split("-").map(Number) as [number, number, number];
