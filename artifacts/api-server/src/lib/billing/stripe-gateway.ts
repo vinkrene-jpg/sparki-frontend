@@ -6,38 +6,21 @@
 
 import Stripe from "stripe";
 import type { BillingInterval, CommercialTier } from "@workspace/db";
+import { TIER_PRICING } from "@workspace/pricing";
 
-export const TIER_PRICING: Record<
+// MKT-04: prijzen komen uit ÉÉN gedeelde bron (lib/pricing) die ook de app-UI
+// en de marketingsite lezen. Her-export voor bestaande consumenten.
+export { TIER_PRICING };
+// Compile-time-bewaking: de gedeelde prijzenbron moet exact de betaalde tiers
+// dekken die de facturatielaag kent.
+type _PricingCoversAllPaidTiers = Record<
   Exclude<CommercialTier, "FREE">,
-  { month: number; year: number; trialDays: number; productName: string }
-> = {
-  GO: { month: 299, year: 2990, trialDays: 7, productName: "sparki_go_tier" },
-  COMPLETE: {
-    month: 999,
-    year: 9990,
-    trialDays: 14,
-    productName: "sparki_complete_tier",
-  },
-  // TEAM_ABONNEMENT_01: Sparki Team — €149/maand of €1.490/jaar, centrale
-  // facturatie voor een teamorganisatie (prijzen in eurocenten).
-  TEAM: {
-    month: 14900,
-    year: 149000,
-    trialDays: 14,
-    productName: "sparki_team_tier",
-  },
-  // SPARKI_BUILD_04 / besluitenpatch 01-08-2026 hoofdstuk E: Sparki Trainer
-  // basistier €99 p/mnd · €990 p/jr tot 25 sporters. De tweede staffel
-  // (€179/€1.790 tot 50) en €9,90 per sporter vanaf nr. 51 zijn afhankelijk
-  // van het aantal actieve koppelingen en horen bij de facturatie-/
-  // koppelingslaag (F3/F9), niet bij deze vaste prijsconfiguratie.
-  TRAINER: {
-    month: 9900,
-    year: 99000,
-    trialDays: 14,
-    productName: "sparki_trainer_tier",
-  },
-};
+  (typeof TIER_PRICING)[keyof typeof TIER_PRICING]
+> extends typeof TIER_PRICING
+  ? true
+  : never;
+const _pricingCheck: _PricingCoversAllPaidTiers = true;
+void _pricingCheck;
 
 export interface SubscriptionState {
   id: string;

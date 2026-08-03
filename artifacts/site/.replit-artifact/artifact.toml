@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/site/"
+title = "Sparki marketingsite"
+description = "De openbare marketingsite van Sparki: statisch gegenereerde pagina's met twee ingangen (voor sporters en voor professionals), een eigen pagina per doelgroep, prijzen uit één gedeelde bron, en echte productschermen. Los van de app, zonder inloggen, snel en leesbaar zonder JavaScript."
+version = "1.0.0"
+id = "artifacts/site"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/site/" ]
+localPort = 21238
+
+[services.development]
+run = "pnpm --filter @workspace/site run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/site", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/site/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21238"
+BASE_PATH = "/site/"

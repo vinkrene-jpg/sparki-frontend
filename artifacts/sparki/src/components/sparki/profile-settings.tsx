@@ -1,4 +1,5 @@
 import { localISODate } from "@/lib/commercial-shell"
+import { TIER_PRICING, formatEuro } from "@workspace/pricing"
 // ── Sparki profile settings ───────────────────────────────────────────────────
 // Everything the athlete can *edit* about themselves lives here, relocated out of
 // the Profiel page. The Profiel page itself is now the living Sparki Core (what
@@ -1332,7 +1333,7 @@ function BillingSection() {
                 disabled={startCheckout.isPending}
                 onClick={() => startCheckout.mutate({ tier: "GO", interval: "month" })}
               >
-                Sparki GO — €2,99/mnd
+                Sparki GO — {formatEuro(TIER_PRICING.GO.month)}/mnd
               </button>
               <button
                 className={btn}
@@ -1341,7 +1342,7 @@ function BillingSection() {
                   startCheckout.mutate({ tier: "COMPLETE", interval: "month" })
                 }
               >
-                Sparki COMPLETE — €9,99/mnd
+                Sparki COMPLETE — {formatEuro(TIER_PRICING.COMPLETE.month)}/mnd
               </button>
             </>
           )}
