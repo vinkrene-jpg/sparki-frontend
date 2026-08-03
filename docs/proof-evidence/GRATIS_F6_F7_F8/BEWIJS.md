@@ -112,3 +112,21 @@ Specbron: `/tmp/files2/GRATIS_F8_INSTELLINGEN_EN_VERWIJDEREN.md`, §Acceptatie +
    De code die dit gedrag draagt (sport-agnostische telling) is op SHA `1c4b1d34`
    identiek; server-zijdige telregels bevestigd door `test:route-usage` 28/28
    (`logs/api-server_test-route-usage.log`).
+
+---
+
+## Addendum 03-08-2026 — schermbewijzen na web-rebuild (licht thema)
+
+René heeft op 03-08 alle stops opgeheven; de webapp is opnieuw gebouwd (licht
+thema, verse `vite build` zonder acceptatiemodus) en de web-workflow herstart.
+Schermafdrukken in `screens/` (browser 1280×720 en telefoonformaat 402×874):
+
+| Bestand | Dekt |
+|---|---|
+| `screens/rijden-browser.jpg` + `screens/rijden-telefoon.jpg` | F6-A6 (hoofdhandeling "route plannen/starten" zonder scrollen in beeld, beide formaten), F6-A8/F7-A8/F8-A9 gedeeltelijk (zelfde scherm, zelfde opbouw browser/telefoonformaat) |
+| `screens/you-instellingen-browser.jpg` + `screens/you-instellingen-telefoon.jpg` | F8-A1 (profiel bereikbaar; instellingen via tandwiel rechtsboven), licht thema app-breed |
+
+Eerlijke afbakening: dit zijn webschermen in twee formaten (browser + telefoon-
+viewport). Schermen uit de geïnstalleerde Android-app zelf en een volledige
+klik-doorloop L→M→N op de telefoon staan nog open; die horen bij de
+praktijktest-APK-route. F8-A3 (taal) blijft bewust ongebouwd (zie Open punt 1).
