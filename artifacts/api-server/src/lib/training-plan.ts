@@ -90,7 +90,7 @@ export type PlanInputs = {
     priority: string;
     daysAway: number;
   } | null;
-  phase: "base" | "build" | "peak" | "taper";
+  phase: "base" | "build" | "peak" | "taper" | "onderhoud";
   // F6 (TRAINEN_DOELEN_SEIZOEN_01): waar de fase aan is opgehangen — het
   // hoofddoel als dat er is, anders de eerstvolgende wedstrijd, anders ritme.
   phaseAnchor: {
@@ -243,6 +243,37 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
       ? { kind: "wedstrijd", title: next.name, date: next.raceDate, daysAway }
       : { kind: "ritme", title: null, date: null, daysAway: null };
 
+  // F7: seizoenslaag. Als de sporter vormblokken heeft en vandaag in een blok
+  // valt, wint de blokfase: een vormblok telt af naar zijn EIGEN anker (niet
+  // per losse wedstrijd taperen), een dipblok geeft "onderhoud" — nooit een
+  // stille terugval naar base tussen twee pieken.
+  let seasonPhase: PlanInputs["phase"] | null = null;
+  try {
+    const { seasonBlocksTable } = await import("@workspace/db");
+    const [blk] = await db
+      .select({
+        phase: seasonBlocksTable.phase,
+        anchorDate: seasonBlocksTable.anchorDate,
+      })
+      .from(seasonBlocksTable)
+      .where(
+        and(
+          eq(seasonBlocksTable.clerkId, clerkId),
+          lte(seasonBlocksTable.startDate, today),
+          gte(seasonBlocksTable.endDate, today),
+        ),
+      )
+      .limit(1);
+    if (blk) {
+      seasonPhase =
+        blk.phase === "vorm"
+          ? derivePhase(blk.anchorDate ? daysBetween(today, blk.anchorDate) : anchorDaysAway)
+          : blk.phase;
+    }
+  } catch {
+    // Honest degradation: geen seizoenslaag leesbaar → gewone fase-afleiding.
+  }
+
   const racesByDate = new Map<string, { name: string; priority: string }>();
   for (const r of upcomingRaces) {
     if (daysBetween(today, r.raceDate) <= HORIZON_DAYS) {
@@ -330,7 +361,7 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
           daysAway: daysAway!,
         }
       : null,
-    phase: derivePhase(anchorDaysAway),
+    phase: seasonPhase ?? derivePhase(anchorDaysAway),
     phaseAnchor,
     racesByDate,
     weatherByDate,
@@ -470,6 +501,8 @@ function qualityDaysFor(experience: string | null, phase: PlanInputs["phase"]) {
   let q = experience === "beginner" ? 1 : experience === "elite" ? 3 : 2;
   if (phase === "taper") q = Math.max(1, q - 1);
   if (phase === "base") q = Math.min(q, experience === "beginner" ? 1 : 2);
+  // F7: onderhoud = vorm vasthouden — één prikkel per week, geen opbouwdruk.
+  if (phase === "onderhoud") q = 1;
   return q;
 }
 
@@ -498,6 +531,11 @@ function weekFactor(
   let factor = 1.0;
   let note: string | null = null;
   if (i.phase === "base") factor = 0.95;
+  // F7: onderhoud houdt vorm vast op verlaagd volume — nooit progressie.
+  if (i.phase === "onderhoud") {
+    factor = 0.8;
+    note = "onderhoudsweek: vorm vasthouden op verlaagd volume";
+  }
   if (i.phase === "taper") {
     factor = 0.6;
     note = "tapervolume verlaagd richting je wedstrijd";
@@ -732,7 +770,9 @@ function templateSummary(i: PlanInputs, skeleton: DaySkeleton[]): string {
         ? "scherpstelfase"
         : i.phase === "build"
           ? "opbouwfase"
-          : "basisfase";
+          : i.phase === "onderhoud"
+            ? "onderhoudsfase (vorm vasthouden)"
+            : "basisfase";
   const raceLine = i.nextRace
     ? ` Je volgende wedstrijd (${i.nextRace.name}) is over ${i.nextRace.daysAway} dagen, dus we zitten in de ${phaseNl}.`
     : ` Er staat geen wedstrijd gepland, dus we werken aan algemene conditie in de ${phaseNl}.`;

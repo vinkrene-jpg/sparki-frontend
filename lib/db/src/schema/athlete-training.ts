@@ -184,6 +184,30 @@ export const workoutSeriesTable = pgTable("workout_series", {
     .defaultNow(),
 });
 
+// TRAINEN_DOELEN_SEIZOEN_01 F7: seizoenslaag — vormblokken over de hele
+// seizoenslengte, als tweede resolutie boven de 21-daagse dagmotor. Afgeleid
+// uit hoofddoel + wedstrijdkalender, en daarna door de sporter versleepbaar
+// (source "sporter"). phase kent naast base/build/vorm ook "onderhoud": vorm
+// vasthouden tussen twee dichte pieken in plaats van terugbouwen (TD-08).
+export const seasonBlocksTable = pgTable("season_blocks", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  phase: text("phase")
+    .$type<"base" | "build" | "vorm" | "onderhoud">()
+    .notNull(),
+  label: text("label").notNull(),
+  // Het anker (doel-/wedstrijddatum) waar een vormblok naartoe aftelt.
+  anchorDate: date("anchor_date"),
+  anchorTitle: text("anchor_title"),
+  source: text("source").$type<"afgeleid" | "sporter">().notNull().default("afgeleid"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const plannedWorkoutsTable = pgTable("planned_workouts", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
