@@ -345,6 +345,10 @@ export function nextGoalQuestion(
   goals: GoalWithProgress[],
   derived: DerivedGoal[],
   healthStatus: string,
+  // F9 (TRAINEN_DOELEN_SEIZOEN_01): hoofddoelen waarvan de wedstrijddag
+  // voorbij is maar de uitslag nog leeg is. Sparki vraagt dan om uitslag +
+  // kort verslag — en het doel blijft eerlijk ONBEOORDEELD (nooit "gehaald").
+  pendingRaceResults: { goalId: number; raceName: string }[] = [],
 ): GoalQuestion | null {
   const active = goals.filter((g) => g.status === "active");
 
@@ -404,9 +408,29 @@ export function nextGoalQuestion(
     };
   }
 
+  // 4b. F9 — hoofddoelwedstrijd gereden maar uitslag leeg: eerst om uitslag en
+  // een kort verslag vragen. Zolang die ontbreken blijft het doel onbeoordeeld;
+  // er wordt nooit aangenomen dat het gehaald of gemist is (TD-toets F9).
+  const pendingIds = new Set(pendingRaceResults.map((p) => p.goalId));
+  const pending = pendingRaceResults.find((p) =>
+    active.some((g) => g.id === p.goalId),
+  );
+  if (pending) {
+    return {
+      key: `ask_race_result:${pending.goalId}`,
+      question: `Je hebt "${pending.raceName}" gereden. Hoe ging het — wat was je uitslag, en hoe kijk je er in een paar zinnen op terug? Zonder uitslag blijft dit doel gewoon onbeoordeeld.`,
+      goalId: pending.goalId,
+    };
+  }
+
   // 5. Passed target date but still active → achieved or adjust?
   const overdue = active.find(
-    (g) => g.progress.daysToTarget != null && g.progress.daysToTarget < 0,
+    (g) =>
+      g.progress.daysToTarget != null &&
+      g.progress.daysToTarget < 0 &&
+      // F9: geen "is het gelukt?"-druk zolang de uitslag van de
+      // hoofddoelwedstrijd ontbreekt — dat doel blijft onbeoordeeld.
+      !pendingIds.has(g.id),
   );
   if (overdue) {
     return {
@@ -464,11 +488,46 @@ export async function loadGoalPicture(clerkId: string): Promise<GoalPicture> {
           },
   }));
 
+  // F9: hoofddoel waarvan de wedstrijddag (targetDate) voorbij is, met een
+  // eigen niet-geannuleerde wedstrijd op die datum ZONDER ingevulde uitslag.
+  // Sparki vraagt dan om uitslag + kort verslag; tot die er zijn blijft het
+  // doel eerlijk onbeoordeeld — nergens wordt "gehaald" aangenomen.
+  const mainsOver = goals.filter(
+    (g) =>
+      g.status === "active" &&
+      g.priority === 1 &&
+      g.targetDate != null &&
+      g.targetDate < ctx.todayIso,
+  );
+  let pendingRaceResults: { goalId: number; raceName: string }[] = [];
+  if (mainsOver.length > 0) {
+    const races = await db
+      .select({
+        raceDate: racesTable.raceDate,
+        name: racesTable.name,
+        result: racesTable.result,
+      })
+      .from(racesTable)
+      .where(
+        and(
+          eq(racesTable.clerkId, clerkId),
+          ne(racesTable.status, "geannuleerd"),
+          inArray(racesTable.raceDate, mainsOver.map((g) => g.targetDate!)),
+        ),
+      );
+    pendingRaceResults = mainsOver.flatMap((g) => {
+      const race = races.find((r) => r.raceDate === g.targetDate);
+      return race && race.result == null
+        ? [{ goalId: g.id, raceName: race.name }]
+        : [];
+    });
+  }
+
   return {
     goals,
     derived,
     proposals,
-    nextQuestion: nextGoalQuestion(goals, derived, ctx.healthStatus),
+    nextQuestion: nextGoalQuestion(goals, derived, ctx.healthStatus, pendingRaceResults),
   };
 }
 
