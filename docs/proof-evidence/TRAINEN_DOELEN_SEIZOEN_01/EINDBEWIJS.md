@@ -50,5 +50,5 @@ Eerste oordeel: **FAIL** met vier bevindingen. Alle vier hersteld in commit
 ## Toets-SHA
 
 De SHA-256 van dit document (exclusief deze regel) is vastgelegd in
-`TOETS-SHA.txt` naast dit bestand; eindcommit-SHA van het pakket: zie
+`TOETS-SHA.txt` naast dit bestand; eindcommit-SHA van het pakket: 030da6dc, zie ook
 `TOETS-SHA.txt`.
