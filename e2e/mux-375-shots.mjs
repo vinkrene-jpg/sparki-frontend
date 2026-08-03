@@ -126,6 +126,13 @@ try {
         throw new Error(
           "TESTCONTEXT-regel niet zichtbaar — is de acceptatiebuild (SPARKI_ACCEPT_MODE=true) gebouwd? Zonder contextregel is de afdruk geen geldig bewijs.",
         );
+      // Review-aanscherping: de contextregel moet de ACTIEVE rol van deze
+      // fixture noemen — anders bewijst de afdruk niet dat de juiste
+      // rolcontext stond (dev-fallback-valkuil).
+      if (!banner.toLowerCase().includes(wie.rolWoord))
+        throw new Error(
+          `contextregel mist rol "${wie.rolWoord}" voor ${wie.fixture}: "${banner}"`,
+        );
 
       for (const [module, route] of Object.entries(wie.modules)) {
         const dir = path.join(OUT, wie.rol, module);

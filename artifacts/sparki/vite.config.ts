@@ -127,7 +127,18 @@ export default defineConfig(({ command }) => {
       // toetsomgeving met SPARKI_ACCEPT_MODE=true is gemaakt; de publicatiebuild
       // heeft die variabele niet en bakt dus false in.
       __SPARKI_ACCEPT_MODE__: JSON.stringify(
-        process.env.SPARKI_ACCEPT_MODE === "true",
+        (() => {
+          const accept = process.env.SPARKI_ACCEPT_MODE === "true";
+          // Harde guard (MUX_375-review): een acceptatiebuild mag nooit als
+          // publicatiebuild dienen — die zou TESTCONTEXT/dev-preview publiek
+          // tonen. In een deployment-buildomgeving breekt de build dan af.
+          if (accept && process.env.REPLIT_DEPLOYMENT) {
+            throw new Error(
+              "SPARKI_ACCEPT_MODE=true is verboden in een publicatiebuild (REPLIT_DEPLOYMENT gezet).",
+            );
+          }
+          return accept;
+        })(),
       ),
     },
     plugins: [
