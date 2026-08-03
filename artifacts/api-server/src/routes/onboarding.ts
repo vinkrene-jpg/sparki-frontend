@@ -93,11 +93,15 @@ router.post("/missing-data", requireAuth, async (req, res) => {
       const d = new Date(`${s}T12:00:00Z`);
       const year = Number(s.slice(0, 4));
       const nowYear = new Date().getFullYear();
+      // Lokale kalenderdag (geen UTC-shift): een geboortedatum ligt nooit in
+      // de toekomst, ook niet "later dit jaar".
+      const t = new Date();
+      const todayLocal = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
       if (
         !Number.isNaN(d.getTime()) &&
         d.toISOString().slice(0, 10) === s &&
         year >= 1900 &&
-        year <= nowYear
+        s <= todayLocal
       ) {
         athletePatch.birthDate = s;
         athletePatch.birthYear = year;

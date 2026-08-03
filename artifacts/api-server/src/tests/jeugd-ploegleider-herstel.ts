@@ -157,6 +157,38 @@ async function main() {
     assert(!r.missing.some((f) => f.key === "birthDate"), "veld blijft in missing");
   });
 
+  await scenario("1d. schrijfpad weigert toekomst-/onzin-datum, accepteert echte", async () => {
+    await seedUser(U.yearOnly); // reset: helemaal leeg
+    const post = (birthDate: string) =>
+      fetch(`${API}/api/onboarding/missing-data`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-dev-clerk-id": U.yearOnly },
+        body: JSON.stringify({ values: { birthDate } }),
+      });
+    const future = `${nowYear + 1}-01-15`;
+    for (const bad of [future, "2001-02-30", "geen-datum", "1850-01-01"]) {
+      const r = await post(bad);
+      assert(r.ok, `POST met ongeldige datum gaf ${r.status}`);
+      const [row] = await db
+        .select({ birthDate: athleteProfilesTable.birthDate })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, U.yearOnly));
+      assert(row?.birthDate == null, `ongeldige datum "${bad}" werd tóch opgeslagen`);
+    }
+    const good = `${nowYear - 30}-05-15`;
+    const r = await post(good);
+    assert(r.ok, `POST met geldige datum gaf ${r.status}`);
+    const [row] = await db
+      .select({
+        birthDate: athleteProfilesTable.birthDate,
+        birthYear: athleteProfilesTable.birthYear,
+      })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, U.yearOnly));
+    assert(row?.birthDate === good, "geldige datum niet opgeslagen");
+    assert(row?.birthYear === nowYear - 30, "birthYear niet afgeleid uit de datum");
+  });
+
   // ── Deel 2: jeugdblokkade op de twee gevoelige AI-doelen ──────────────────
   __setAiTransportForTests(async () => ({ text: "testantwoord" }) as never);
 
