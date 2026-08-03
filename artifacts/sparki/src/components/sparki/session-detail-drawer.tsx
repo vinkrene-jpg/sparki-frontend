@@ -712,6 +712,19 @@ export function SessionDetailDrawer({
               detail.sourceConflicts.length > 0 && (
                 <BronConflicten conflicts={detail.sourceConflicts} />
               )}
+
+            {/* F2/TD-17: rit kwam onder het gekozen meetniveau binnen — dat
+                wordt eerlijk gezegd, nooit stil gedegradeerd. */}
+            {detail?.measurementNote != null && (
+              <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-amber-600">
+                  Meetniveau
+                </span>
+                <p className="mt-1 text-[13px] leading-relaxed text-foreground/90">
+                  {detail.measurementNote}
+                </p>
+              </div>
+            )}
           
 
             {session.source !== "manual" && (

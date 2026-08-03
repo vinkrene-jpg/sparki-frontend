@@ -7,6 +7,7 @@ import { PerformanceNumbers } from "@/components/sparki/performance-numbers"
 import { SportPassport } from "@/components/sparki/sport-passport"
 import { ProfileSettings } from "@/components/sparki/profile-settings"
 import { useMotionPreference } from "@/hooks/use-motion-preference"
+import { useMeasurementLevel, useSetMeasurementLevel } from "@/hooks/use-measurement-level"
 import { HoofdstukTabs, type HoofdstukTab } from "@/components/sparki/hoofdstuk-tabs"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useClearPhotoDecor } from "@/hooks/use-photo-style"
@@ -1240,6 +1241,7 @@ export default function YouPage() {
                 Open
               </span>
             </button>
+            <MeetniveauInstelling />
             <VerminderBewegingInstelling />
             <ProfileSettings focus={focus} onCompleteFix={onCompleteFix} />
           </div>
@@ -1254,6 +1256,67 @@ export default function YouPage() {
 // instellingen (uit de flag-gate gehaald): alles blijft volledig bruikbaar met
 // beweging uit. Werkt onafhankelijk van de systeeminstelling: staat één van
 // beide aan, dan is beweging uit.
+// TRAINEN_DOELEN_SEIZOEN_01 F2 — meetniveau kiezen, met uitleg wat elk niveau
+// oplevert. De keuze is een voorwaarde, geen status: een rit zonder de
+// bijbehorende meting valt eerlijk terug en dat wordt bij de rit gemeld.
+function MeetniveauInstelling() {
+  const { data, isLoading } = useMeasurementLevel()
+  const setLevel = useSetMeasurementLevel()
+  const order: Array<"pro" | "hartslag" | "tijd_gevoel" | "aanwezigheid"> = [
+    "pro",
+    "hartslag",
+    "tijd_gevoel",
+    "aanwezigheid",
+  ]
+  return (
+    <div className="mb-6 rounded-2xl border border-border bg-card px-4 py-3.5 backdrop-blur-md">
+      <span className="block text-sm font-medium text-foreground">Meetniveau</span>
+      <span className="mt-0.5 block text-xs text-muted-foreground">
+        Wat komt er bij jou binnen? Kies het niveau dat bij je meters past. Rijd
+        je een keer zonder, dan telt die rit eerlijk op het niveau dat er wél
+        was — dat zie je bij de rit terug.
+      </span>
+      {isLoading ? (
+        <span className="mt-3 block text-xs text-muted-foreground">Laden…</span>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {order.map((lvl) => {
+            const info = data?.levels?.[lvl]
+            const active = data?.measurementLevel === lvl
+            return (
+              <button
+                key={lvl}
+                type="button"
+                disabled={setLevel.isPending}
+                onClick={() => setLevel.mutate(lvl)}
+                className={`flex w-full items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
+                  active
+                    ? "border-accent-cyan/60 bg-accent-cyan/10"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                <span>
+                  <span className="block text-[13px] font-medium text-foreground">
+                    {info?.label ?? lvl}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {info?.uitleg ?? ""}
+                  </span>
+                </span>
+                {active && (
+                  <span className="mt-0.5 shrink-0 font-mono text-[9px] uppercase tracking-[0.16em] text-accent-cyan">
+                    Actief
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function VerminderBewegingInstelling() {
   const { sparkiReduced, sparkiReducedLoaded, setSparkiReduced, saving, systemReduced } =
     useMotionPreference()

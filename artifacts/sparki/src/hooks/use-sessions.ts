@@ -82,6 +82,9 @@ export type SessionDetail = {
   // Bronconflicten: twee bronnen gaven voor hetzelfde veld andere getallen;
   // Sparki koos stil, het verschil blijft bij de rit terugvindbaar.
   sourceConflicts?: SourceConflict[] | null;
+  // F2/TD-17: eerlijke melding wanneer deze rit onder het gekozen meetniveau
+  // binnenkwam (bv. Pro gekozen, maar geen vermogen gemeten). Null = niets mis.
+  measurementNote?: string | null;
 };
 
 export function useSessionDetail(id: number | null) {

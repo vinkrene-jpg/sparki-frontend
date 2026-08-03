@@ -26,6 +26,7 @@ import {
 } from "./dedupe";
 import { cleanActivity, cleanDailyMetric, cleanFtp } from "./validation";
 import { autoLinkSession } from "../../lib/workout-execution";
+import { deriveSessionSignals } from "../../lib/measurement-level";
 
 export interface IngestOptions {
   /** Data types the user has NOT revoked for this provider (default-grant). */
@@ -303,6 +304,16 @@ async function persistOneActivity(
           sources,
           fieldSources,
           mergeLog,
+          // F2: signalen groeien mee met wat de merge feitelijk aanvulde.
+          signals: deriveSessionSignals({
+            ...(existing as { avgPower?: number | null; normalizedPower?: number | null; avgHR?: number | null; durationMin?: number | null }),
+            ...(patch as Record<string, unknown>),
+          } as {
+            avgPower?: number | null;
+            normalizedPower?: number | null;
+            avgHR?: number | null;
+            durationMin?: number | null;
+          }),
           // Een handmatige rij krijgt nu een echte starttijd-fingerprint en
           // sport van de import, zodat volgende imports haar wél via de
           // dedupeKey vinden.
@@ -337,6 +348,13 @@ async function persistOneActivity(
           powerBests: a.powerBests ?? null,
           tss,
           intensityFactor: numStr(intensityFactor),
+          // F2: welke signalen deze import feitelijk droeg — op ingest-moment.
+          signals: deriveSessionSignals({
+            avgPower: a.avgPower,
+            normalizedPower: a.normalizedPower,
+            avgHR: a.avgHR,
+            durationMin: a.durationMin,
+          }),
           source: provider,
           externalRef: `${provider}:${a.externalId}`,
           dedupeKey,

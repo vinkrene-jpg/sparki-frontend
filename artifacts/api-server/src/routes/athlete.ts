@@ -32,6 +32,11 @@ import {
 } from "../engines/profile";
 import { computeLoad } from "../engines/recovery-load";
 import { computeLoadSeries } from "../lib/recovery-load";
+import {
+  MEASUREMENT_LEVEL_INFO,
+  isMeasurementLevel,
+  measurementGapNote,
+} from "../lib/measurement-level";
 import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
 import { sessionOrigin, findSessionSyncRun } from "../engines/data-origin";
@@ -385,6 +390,54 @@ router.put("/profile", requireAuth, async (req, res) => {
     res.json({ ...updated, zones, wkg });
   } catch (err) {
     req.log.error({ err }, "athlete.profile PUT failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET/PUT /api/athlete/measurement-level ───────────────────────────────────
+// TRAINEN_DOELEN_SEIZOEN_01 F2: meetniveau (as 2 — wat komt er binnen). Zelf
+// te kiezen, met uitleg wat elk niveau oplevert. De keuze is een voorwaarde,
+// geen status: een rit zonder de bijbehorende signalen valt eerlijk terug.
+router.get("/measurement-level", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const [row] = await db
+      .select({ measurementLevel: athleteProfilesTable.measurementLevel })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    res.json({
+      measurementLevel: row?.measurementLevel ?? null,
+      levels: MEASUREMENT_LEVEL_INFO,
+    });
+  } catch (err) {
+    req.log.error({ err }, "athlete.measurementLevel.get failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/measurement-level", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const { measurementLevel } = req.body as { measurementLevel?: unknown };
+  if (!isMeasurementLevel(measurementLevel)) {
+    res.status(400).json({
+      error:
+        "measurementLevel must be one of: pro, hartslag, tijd_gevoel, aanwezigheid",
+    });
+    return;
+  }
+  try {
+    const [row] = await db
+      .update(athleteProfilesTable)
+      .set({ measurementLevel, updatedAt: new Date() })
+      .where(eq(athleteProfilesTable.clerkId, clerkId))
+      .returning({ measurementLevel: athleteProfilesTable.measurementLevel });
+    if (!row) {
+      res.status(404).json({ error: "Profile not found" });
+      return;
+    }
+    res.json({ measurementLevel: row.measurementLevel });
+  } catch (err) {
+    req.log.error({ err }, "athlete.measurementLevel.put failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -1720,8 +1773,20 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
     // ritten zonder stream tonen dus geen max snelheid, nooit een 0).
     const maxSpeedKph = maxSpeedFromStreams(streams);
 
+    // F2/TD-17: eerlijke melding wanneer deze rit onder het gekozen meetniveau
+    // binnenkwam. Signalen van vóór F2 zijn null → dan geen (geraden) melding.
+    const [profRow] = await db
+      .select({ measurementLevel: athleteProfilesTable.measurementLevel })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    const measurementNote =
+      session.signals != null
+        ? measurementGapNote(profRow?.measurementLevel ?? null, session.signals)
+        : null;
+
     res.json({
       session,
+      measurementNote,
       track: outTrack,
       profile: outProfile,
       climbs,

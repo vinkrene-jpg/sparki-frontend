@@ -49,6 +49,14 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   avgHR: integer("avg_hr"),
   tss: integer("tss"),
   intensityFactor: numeric("intensity_factor", { precision: 4, scale: 3 }),
+  // TRAINEN_DOELEN_SEIZOEN_01 F2: welke signalen er bij deze sessie feitelijk
+  // binnenkwamen (vermogen/hartslag/duur). Vastgelegd op het ingest-moment —
+  // nooit achteraf geraden; null = rij van vóór F2 (eerlijk onbekend).
+  signals: jsonb("signals").$type<{
+    power: boolean;
+    hr: boolean;
+    duration: boolean;
+  }>(),
   // TRAINEN_DOELEN_SEIZOEN_01 F1 (uitvoeringskant): zone van de uitgevoerde
   // sessie — alleen gevuld als hij bekend is (bv. overgenomen van de gekoppelde
   // geplande training). Bestaande rijen blijven null; nooit achteraf geraden.

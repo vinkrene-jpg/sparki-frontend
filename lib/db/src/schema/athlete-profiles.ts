@@ -59,6 +59,15 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   // blocks training pressure. "ok" (default) is the normal training state.
   healthStatus: text("health_status").notNull().default("ok"),
 
+  // TRAINEN_DOELEN_SEIZOEN_01 F2: meetniveau — wat komt er binnen. Zelf te
+  // kiezen; null = nog niet gekozen (dan geldt het feitelijke niveau per rit).
+  // De keuze "pro" is een voorwaarde, geen status: een rit zonder meter valt
+  // eerlijk terug op het feitelijke niveau, met melding (TD-17).
+  // pro | hartslag | tijd_gevoel | aanwezigheid
+  measurementLevel: text("measurement_level").$type<
+    "pro" | "hartslag" | "tijd_gevoel" | "aanwezigheid"
+  >(),
+
   // ── Autonomous-coaching planning inputs (task #17) ─────────────────────────
   // Structured fields Sparki needs to build a real training plan when the
   // athlete has no human coach. All nullable — the Train setup form fills them.
@@ -95,7 +104,16 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
     .defaultNow(),
 });
 
-export const insertAthleteProfileSchema = createInsertSchema(athleteProfilesTable).omit({ id: true });
+export const insertAthleteProfileSchema = createInsertSchema(athleteProfilesTable)
+  .omit({ id: true })
+  // F2: strikte enum — zod-inferentie van een text-kolom zou `string` geven en
+  // de union op de tabelkolom breken.
+  .extend({
+    measurementLevel: z
+      .enum(["pro", "hartslag", "tijd_gevoel", "aanwezigheid"])
+      .nullable()
+      .optional(),
+  });
 export const selectAthleteProfileSchema = createSelectSchema(athleteProfilesTable);
 
 export type InsertAthleteProfile = z.infer<typeof insertAthleteProfileSchema>;

@@ -22,6 +22,7 @@ import {
   mergeSources,
 } from "../engines/data-hub/dedupe";
 import { deriveTss, ftpAtDate, type FtpEntry } from "./derived-load";
+import { deriveSessionSignals } from "./measurement-level";
 import { recordComputation } from "../engines/data-origin";
 import { athleteProfilesTable, ftpHistoryTable } from "@workspace/db";
 
@@ -185,9 +186,19 @@ export async function ingestManualSession(
       (patch as Record<string, unknown>)["feelScore"] = input.feelScore;
     }
     const sources = mergeSources(existing.sources ?? null, "manual");
+    const mergedForSignals = {
+      ...(existing as { avgPower?: number | null; normalizedPower?: number | null; avgHR?: number | null; durationMin?: number | null }),
+      ...(patch as Record<string, unknown>),
+    } as { avgPower?: number | null; normalizedPower?: number | null; avgHR?: number | null; durationMin?: number | null };
     const [updated] = await db
       .update(trainingSessionsTable)
-      .set({ ...patch, sources, updatedAt: new Date() })
+      .set({
+        ...patch,
+        sources,
+        // F2: signalen volgen de samengevoegde feitelijke velden.
+        signals: deriveSessionSignals(mergedForSignals),
+        updatedAt: new Date(),
+      })
       .where(eq(trainingSessionsTable.id, existing.id))
       .returning();
     return { session: updated!, merged: true };
@@ -210,6 +221,13 @@ export async function ingestManualSession(
       intensityFactor,
       notes: input.notes ?? null,
       feelScore: input.feelScore ?? null,
+      // F2: feitelijke signalen op het ingest-moment.
+      signals: deriveSessionSignals({
+        avgPower: input.avgPower ?? null,
+        normalizedPower: input.normalizedPower ?? null,
+        avgHR: input.avgHR ?? null,
+        durationMin: input.durationMin ?? null,
+      }),
       source: "manual",
       sources: ["manual"],
     })
