@@ -1247,7 +1247,7 @@ function DoelkaartSection() {
         {picture?.nextQuestion && (
           <button
             type="button"
-            onClick={() => navigate("/you?focus=doelen")}
+            onClick={() => navigate("/train")}
             className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2.5 text-left hover:bg-accent-cyan/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
           >
             <p className="type-label text-accent-cyan uppercase tracking-wider mb-1">Nog even dit</p>
@@ -1256,7 +1256,7 @@ function DoelkaartSection() {
         )}
 
         <div className="ds-actiebalk flex gap-2">
-          <DsButton variant="secundair" onClick={() => navigate("/you?focus=doelen")}>
+          <DsButton variant="secundair" onClick={() => navigate("/train")}>
             {noGoal && doelTitel == null ? "Voeg een doel toe" : "Doel aanpassen"}
           </DsButton>
         </div>

@@ -72,6 +72,10 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   // nullable — zonder deze waarden blijft zo'n sessie eerlijk zonder belasting.
   restingHr: integer("resting_hr"),
   maxHr: integer("max_hr"),
+  // TRAINEN_DOELEN_SEIZOEN_01 F4: doelvorm (as 1) — hoe de sporter richting
+  // zijn doel wil trainen. Voorgesteld uit de doorvraagladder, altijd door de
+  // sporter bevestigd. Null = nog niet gekozen.
+  goalForm: text("goal_form").$type<"programma" | "seizoen" | "ritme">(),
 
   // ── Autonomous-coaching planning inputs (task #17) ─────────────────────────
   // Structured fields Sparki needs to build a real training plan when the
@@ -118,6 +122,8 @@ export const insertAthleteProfileSchema = createInsertSchema(athleteProfilesTabl
       .enum(["pro", "hartslag", "tijd_gevoel", "aanwezigheid"])
       .nullable()
       .optional(),
+    // F4: zelfde zod-trap — strikte enum voor de doelvorm.
+    goalForm: z.enum(["programma", "seizoen", "ritme"]).nullable().optional(),
   });
 export const selectAthleteProfileSchema = createSelectSchema(athleteProfilesTable);
 

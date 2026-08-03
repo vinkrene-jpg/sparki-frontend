@@ -129,6 +129,55 @@ router.post("/", requireAuth, async (req, res) => {
     return;
   }
 
+  // ── TRAINEN_DOELEN_SEIZOEN_01 F4 (TD-03) ─────────────────────────────────
+  // Eén hoofddoel, datum verplicht — en bij een nieuw hoofddoel een
+  // VERPLICHTE keuze over het oude. Zonder antwoord wordt er niets
+  // opgeslagen. Onder-14 (schuifbalkvorm) valt hierbuiten: daar bestaan geen
+  // datums of hoofddoel-wissels in deze vorm.
+  const isSliderBand = bandConfig(band).form === "slider";
+  const PREV_DECISIONS = [
+    "behaald",
+    "niet_meer_relevant",
+    "wordt_nevendoel",
+    "blijft_hoofddoel",
+  ] as const;
+  type PrevDecision = (typeof PREV_DECISIONS)[number];
+  let prevDecision: PrevDecision | null = null;
+  let existingMainGoalId: number | null = null;
+  if (priority === 1 && !isSliderBand) {
+    if (targetDate == null) {
+      res.status(400).json({
+        error: "Een hoofddoel heeft een datum nodig — wanneer moet het er staan?",
+      });
+      return;
+    }
+    const [existingMain] = await db
+      .select({ id: athleteGoalsTable.id })
+      .from(athleteGoalsTable)
+      .where(
+        and(
+          eq(athleteGoalsTable.clerkId, clerkId),
+          eq(athleteGoalsTable.status, "active"),
+          eq(athleteGoalsTable.priority, 1),
+        ),
+      )
+      .limit(1);
+    if (existingMain) {
+      const d = body.previousGoalDecision;
+      if (typeof d !== "string" || !PREV_DECISIONS.includes(d as PrevDecision)) {
+        res.status(400).json({
+          error:
+            "Je hebt al een hoofddoel. Kies eerst wat daarmee gebeurt: behaald, niet meer relevant, wordt nevendoel, of het blijft je hoofddoel (dan wordt het nieuwe een nevendoel).",
+          requiresPreviousGoalDecision: true,
+          previousGoalId: existingMain.id,
+        });
+        return;
+      }
+      prevDecision = d as PrevDecision;
+      existingMainGoalId = existingMain.id;
+    }
+  }
+
   let parentGoalId: number | null = null;
   if (body.parentGoalId != null) {
     const pid = Number(body.parentGoalId);
@@ -212,9 +261,51 @@ router.post("/", requireAuth, async (req, res) => {
           return { goal: row!, updated: true };
         }
       }
+      // F4: nieuw hoofddoel + verplichte keuze over het oude — in ÉÉN
+      // transactie, zodat er nooit twee hoofddoelen tegelijk actief zijn of
+      // een oud doel stil blijft hangen.
+      if (prevDecision && existingMainGoalId != null) {
+        if (prevDecision === "blijft_hoofddoel") {
+          // Het nieuwe doel wordt nevendoel onder het bestaande hoofddoel.
+          values.priority = 2;
+          values.parentGoalId = existingMainGoalId;
+        } else if (prevDecision === "behaald") {
+          await tx
+            .update(athleteGoalsTable)
+            .set({ status: "achieved", statusReason: "Behaald — vervangen door nieuw hoofddoel", updatedAt: new Date() })
+            .where(eq(athleteGoalsTable.id, existingMainGoalId));
+        } else if (prevDecision === "niet_meer_relevant") {
+          await tx
+            .update(athleteGoalsTable)
+            .set({ status: "dropped", statusReason: "Niet meer relevant — vervangen door nieuw hoofddoel", updatedAt: new Date() })
+            .where(eq(athleteGoalsTable.id, existingMainGoalId));
+        }
+      }
       const [row] = await tx.insert(athleteGoalsTable).values(values).returning();
+      if (prevDecision === "wordt_nevendoel" && existingMainGoalId != null) {
+        await tx
+          .update(athleteGoalsTable)
+          .set({ priority: 2, parentGoalId: row!.id, updatedAt: new Date() })
+          .where(eq(athleteGoalsTable.id, existingMainGoalId));
+      }
       return { goal: row!, updated: false };
     });
+
+    // Herleidbaarheid: de keuze over het oude hoofddoel krijgt een eigen event.
+    if (prevDecision && existingMainGoalId != null) {
+      const eventType =
+        prevDecision === "behaald"
+          ? ("achieved" as const)
+          : prevDecision === "niet_meer_relevant"
+            ? ("dropped" as const)
+            : ("adjusted" as const);
+      await recordGoalEvent({
+        clerkId,
+        goalId: existingMainGoalId,
+        eventType,
+        note: `Keuze bij nieuw hoofddoel: ${prevDecision.replace(/_/g, " ")}`,
+      });
+    }
 
     await recordGoalEvent({
       clerkId,

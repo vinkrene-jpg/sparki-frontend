@@ -150,6 +150,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     plannerView,
     restingHr,
     maxHr,
+    goalForm,
   } = req.body as {
     ftp?: number;
     ftpEstimated?: boolean;
@@ -174,7 +175,18 @@ router.put("/profile", requireAuth, async (req, res) => {
     plannerView?: string | null;
     restingHr?: number | string | null;
     maxHr?: number | string | null;
+    goalForm?: string | null;
   };
+
+  // F4: doelvorm — vaste enum; expliciete null wist, onbekende waarden worden
+  // genegeerd (nooit vertrouwd).
+  const GOAL_FORMS = ["programma", "seizoen", "ritme"];
+  let cleanGoalForm: string | null | undefined;
+  if (goalForm === null) {
+    cleanGoalForm = null;
+  } else if (goalForm != null && GOAL_FORMS.includes(goalForm)) {
+    cleanGoalForm = goalForm;
+  }
 
   // F3: rust- en maximale hartslag — integers binnen een plausibel menselijk
   // bereik; expliciete null wist, onzin wordt genegeerd (nooit vertrouwd).
@@ -346,6 +358,9 @@ router.put("/profile", requireAuth, async (req, res) => {
         }),
         ...(cleanRestingHr !== undefined && { restingHr: cleanRestingHr }),
         ...(cleanMaxHr !== undefined && { maxHr: cleanMaxHr }),
+        ...(cleanGoalForm !== undefined && {
+          goalForm: cleanGoalForm as "programma" | "seizoen" | "ritme" | null,
+        }),
         ...(homeLat !== undefined &&
           homeLon !== undefined && {
             homeLat: homeValid ? String(latNum) : null,

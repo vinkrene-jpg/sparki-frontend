@@ -19,7 +19,6 @@ import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useSparkiState } from "@/hooks/use-sparki-state"
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
-import { GoalsWorksheet } from "@/components/sparki/goals-worksheet"
 import {
   groupObservations,
   dedupeObservationsByText,
@@ -333,7 +332,6 @@ export default function YouPage() {
   // Deep-link naar een sectie op de Kompas-tab (Ontwikkelkompas, Doelen). Schakel
   // eerst naar de juiste tab, dan scroll naar de sectie. Asynchroon geladen content
   // duikt de sectie steeds weg — blijf ~2s re-scrollen tot de layout stabiel is.
-  const [goalsAutoAdd, setGoalsAutoAdd] = useState(false)
   useEffect(() => {
     if (focus !== "ontwikkelkompas" && focus !== "doelen") return undefined
     // Switch to the Kompas tab first.
@@ -342,7 +340,6 @@ export default function YouPage() {
     url.searchParams.set("tab", "kompas")
     window.history.replaceState(null, "", url.pathname + url.search)
 
-    if (focus === "doelen") setGoalsAutoAdd(true)
     let lastTop: number | null = null
     let stableTicks = 0
     const started = Date.now()
@@ -1142,13 +1139,19 @@ export default function YouPage() {
           </div>
         </section>
 
-        {/* DOELEN */}
+        {/* DOELEN — F4: het werkblad woont op Trainen; hier alleen de wegwijzer. */}
         <section id="doelen" className="scroll-mt-24">
           <SectionLabel n="11" title="Je doelen" />
           <p className="mt-2 text-pretty text-[12px] leading-relaxed text-muted-foreground">
-            Waar je naartoe werkt — dit seizoen en verder — en hoe je ervoor staat
+            Je doelen en je hoofddoel beheer je op Trainen, waar je schema eraan
+            wordt afgemeten.
           </p>
-          <GoalsWorksheet autoAdd={goalsAutoAdd} />
+          <Link
+            href="/train"
+            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan hover:text-accent-cyan"
+          >
+            Naar je doelen op Trainen
+          </Link>
         </section>
 
         {/* SFEERBEELD */}

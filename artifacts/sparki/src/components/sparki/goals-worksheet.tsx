@@ -38,6 +38,84 @@ import {
   type GoalPolicy,
   type GoalInput,
 } from "@/hooks/use-goals"
+import { useUpdateAthleteProfile } from "@/hooks/use-athlete-extended-profile"
+
+// ── TRAINEN_DOELEN_SEIZOEN_01 F4 ────────────────────────────────────────────
+// Verplichte keuze over het bestaande hoofddoel bij een nieuw hoofddoel —
+// zonder antwoord wordt er niets opgeslagen (server dwingt dit ook af).
+const PREV_DECISION_OPTIONS = [
+  { value: "behaald", label: "Behaald", uitleg: "Het oude doel is gelukt en gaat de boeken in." },
+  { value: "niet_meer_relevant", label: "Niet meer relevant", uitleg: "Het oude doel vervalt zonder oordeel." },
+  { value: "wordt_nevendoel", label: "Wordt nevendoel", uitleg: "Het oude doel blijft bestaan, onder je nieuwe hoofddoel." },
+  { value: "blijft_hoofddoel", label: "Blijft mijn hoofddoel", uitleg: "Het nieuwe doel wordt een nevendoel eronder." },
+] as const
+type PrevDecision = (typeof PREV_DECISION_OPTIONS)[number]["value"]
+
+function PrevGoalDecision({
+  activeMain,
+  value,
+  onChange,
+}: {
+  activeMain: Goal
+  value: PrevDecision | null
+  onChange: (v: PrevDecision) => void
+}) {
+  return (
+    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+      <p className="text-[13px] font-medium text-foreground/90">
+        Je hoofddoel is nu &ldquo;{activeMain.title}&rdquo;. Wat gebeurt daarmee?
+      </p>
+      <div className="mt-2 space-y-1.5">
+        {PREV_DECISION_OPTIONS.map((o) => (
+          <label key={o.value} className="flex cursor-pointer items-start gap-2">
+            <input
+              type="radio"
+              name="prev-goal-decision"
+              checked={value === o.value}
+              onChange={() => onChange(o.value)}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="block text-[13px] text-foreground/90">{o.label}</span>
+              <span className="block text-[11px] text-muted-foreground">{o.uitleg}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Doorvraagladder + doelvormvoorstel (F4). Deterministisch: uit de ladder en
+// de datum volgt een voorstel met uitleg; de sporter bevestigt altijd zelf.
+function proposeGoalForm(input: {
+  targetDate: string
+  horizon: Goal["horizon"]
+  kind: string | null
+}): { form: "programma" | "seizoen" | "ritme"; uitleg: string } {
+  if (input.kind === "gedrag") {
+    return {
+      form: "ritme",
+      uitleg:
+        "Je doel gaat over wat je wekelijks wilt volhouden, niet over één dag. Een weekritme met dagvoorstellen past daar beter bij dan een aftelschema.",
+    }
+  }
+  const days = Math.round(
+    (new Date(`${input.targetDate}T00:00:00`).getTime() - Date.now()) / 86400000,
+  )
+  if (days > 150 || input.horizon !== "season") {
+    return {
+      form: "seizoen",
+      uitleg:
+        "Je doel ligt ver genoeg weg om in vormperioden te denken: opbouw, vormpiek en bewust gas terug. Zo hoef je niet maandenlang op één piek te leven.",
+    }
+  }
+  return {
+    form: "programma",
+    uitleg:
+      "Je doel heeft een duidelijke datum binnen een paar maanden. Een programma dat daar naartoe aftelt — opbouw, piek, taper — past daar het best bij.",
+  }
+}
 
 // Doelen-werkblad (/you). Sparki gathers the goal picture first: manual doelen
 // plus doelen afgeleid uit wat er al is (A/B-wedstrijden, langetermijndoel,
@@ -395,28 +473,41 @@ function SliderGoalForm({
 function TranslateGoalFlow({
   onClose,
   onManual,
+  activeMain,
 }: {
   onClose: () => void
   onManual: () => void
+  activeMain: Goal | null
 }) {
   const translate = useTranslateGoal()
   const create = useCreateGoal()
   const [input, setInput] = useState("")
   const [answer, setAnswer] = useState("")
   const [history, setHistory] = useState<{ question: string; answer: string }[]>([])
+  // F4: hoofddoel eist een datum en — bij een bestaand hoofddoel — een keuze.
+  const [dateOverride, setDateOverride] = useState("")
+  const [prevDecision, setPrevDecision] = useState<PrevDecision | null>(null)
   const result = translate.data
 
   const ask = (h: { question: string; answer: string }[]) => {
     translate.mutate({ input: input.trim(), history: h })
   }
 
+  const proposalDate =
+    result?.status === "proposal" ? (result.goal.targetDate ?? null) : null
+  const effectiveDate = proposalDate ?? (dateOverride || null)
+  const needsDecision = activeMain != null && prevDecision == null
+
   const confirm = () => {
     if (!result || result.status !== "proposal") return
+    if (effectiveDate == null || needsDecision) return
     create.mutate(
       {
         ...result.goal,
+        targetDate: effectiveDate,
         kind: result.goal.kind,
         priority: 1,
+        ...(prevDecision ? { previousGoalDecision: prevDecision } : {}),
         translation: {
           originalInput: input.trim(),
           followUpCount: result.followUpCount,
@@ -499,14 +590,36 @@ function TranslateGoalFlow({
               Je wens was nog niet direct meetbaar; dit is het dichtstbijzijnde doel om mee te starten.
             </p>
           )}
+          {proposalDate == null && (
+            <label className="mt-3 block">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+                Wanneer moet het er staan? (verplicht voor een hoofddoel)
+              </span>
+              <input
+                type="date"
+                value={dateOverride}
+                onChange={(e) => setDateOverride(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border bg-muted px-3 py-2 text-[13px] text-foreground focus:border-accent-cyan/40 focus:outline-none [color-scheme:light]"
+              />
+            </label>
+          )}
+          {activeMain != null && (
+            <PrevGoalDecision
+              activeMain={activeMain}
+              value={prevDecision}
+              onChange={setPrevDecision}
+            />
+          )}
           {create.isError && (
-            <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">Opslaan lukte niet. Probeer het opnieuw.</p>
+            <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
+              {create.error instanceof Error ? create.error.message : "Opslaan lukte niet. Probeer het opnieuw."}
+            </p>
           )}
           <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={confirm}
-              disabled={create.isPending}
+              disabled={create.isPending || effectiveDate == null || needsDecision}
               className="rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring hover:bg-accent-cyan/25 disabled:opacity-40"
             >
               {create.isPending ? "Bezig…" : "Ja, dit wordt mijn doel"}
@@ -524,8 +637,15 @@ function TranslateGoalFlow({
   )
 }
 
-function AddGoalForm({ onClose }: { onClose: () => void }) {
+function AddGoalForm({
+  onClose,
+  activeMain,
+}: {
+  onClose: () => void
+  activeMain: Goal | null
+}) {
   const create = useCreateGoal()
+  const updateProfile = useUpdateAthleteProfile()
   const { data: policy } = useGoalPolicy()
   const [title, setTitle] = useState("")
   const [horizon, setHorizon] = useState<Goal["horizon"]>("season")
@@ -533,6 +653,10 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
   const [measure, setMeasure] = useState("")
   const [kind, setKind] = useState<string | null>(null)
   const [mode, setMode] = useState<"translate" | "manual">("translate")
+  // F4: verplichte keuze over het oude hoofddoel + doorvraagladder + doelvorm.
+  const [prevDecision, setPrevDecision] = useState<PrevDecision | null>(null)
+  const [step, setStep] = useState<"invullen" | "ladder" | "doelvorm">("invullen")
+  const [ladderAnswer, setLadderAnswer] = useState("")
 
   // Onder 14: uitsluitend de schuifbalkvorm (server dwingt dit ook af).
   if (policy?.form === "slider") {
@@ -541,21 +665,125 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
 
   // Standaard eerst de vrije invoer (DOE-18); zelf invullen blijft altijd kunnen.
   if (mode === "translate") {
-    return <TranslateGoalFlow onClose={onClose} onManual={() => setMode("manual")} />
+    return (
+      <TranslateGoalFlow
+        onClose={onClose}
+        onManual={() => setMode("manual")}
+        activeMain={activeMain}
+      />
+    )
   }
 
+  // Ladderrichting: is er al een meetlat (uitkomstdoel), dan vragen we omlaag
+  // ("wat moet daarvoor waar zijn?"); anders omhoog ("waarvóór wil je dat?").
+  const ladderDown = measure.trim() !== ""
+  const ladderQuestion = ladderDown
+    ? "Wat moet daarvoor waar zijn? (bijv. wat je in training moet kunnen)"
+    : "Waarvóór wil je dat? Wat is het grotere doel erachter?"
+
+  const canContinue = title.trim() !== "" && targetDate !== "" &&
+    (activeMain == null || prevDecision != null)
+
+  const formProposal = targetDate
+    ? proposeGoalForm({ targetDate, horizon, kind })
+    : null
+
   const submit = () => {
-    if (!title.trim()) return
+    if (!canContinue || !formProposal) return
+    const ladderNote = ladderAnswer.trim()
+      ? `${ladderDown ? "Daarvoor moet waar zijn" : "Groter doel erachter"}: ${ladderAnswer.trim()}`
+      : null
     create.mutate(
       {
         title: title.trim(),
+        description: ladderNote,
         horizon,
-        targetDate: targetDate || null,
+        targetDate,
         measure: measure.trim() || null,
         priority: 1,
         ...(kind ? { kind: kind as NonNullable<GoalInput["kind"]> } : {}),
+        ...(prevDecision ? { previousGoalDecision: prevDecision } : {}),
       },
-      { onSuccess: onClose },
+      {
+        onSuccess: () => {
+          // Doelvorm pas ná expliciete bevestiging in deze stap.
+          updateProfile.mutate({ goalForm: formProposal.form } as never)
+          onClose()
+        },
+      },
+    )
+  }
+
+  if (step === "ladder") {
+    return (
+      <div className="rounded-2xl border border-accent-cyan/20 bg-card p-4 backdrop-blur-md">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+          Eén vraag verder
+        </span>
+        <p className="mt-3 text-[14px] leading-relaxed text-foreground/85">{ladderQuestion}</p>
+        <input
+          value={ladderAnswer}
+          onChange={(e) => setLadderAnswer(e.target.value)}
+          placeholder="Je antwoord (mag ook leeg blijven)"
+          className="mt-2 w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
+        />
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setStep("doelvorm")}
+            className="rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring hover:bg-accent-cyan/25"
+          >
+            Verder
+          </button>
+          <button
+            type="button"
+            onClick={() => setStep("invullen")}
+            className="rounded-xl px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-ring hover:text-foreground/70"
+          >
+            Terug
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === "doelvorm" && formProposal) {
+    return (
+      <div className="rounded-2xl border border-accent-cyan/20 bg-card p-4 backdrop-blur-md">
+        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+          Voorstel doelvorm
+        </span>
+        <p className="mt-3 text-[15px] font-light tracking-tight text-foreground">
+          {formProposal.form === "programma"
+            ? "Programma — toewerken naar je datum"
+            : formProposal.form === "seizoen"
+              ? "Seizoen — denken in vormperioden"
+              : "Ritme — een weekritme volhouden"}
+        </p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/60">{formProposal.uitleg}</p>
+        {create.isError && (
+          <p className="mt-2 text-[12px] text-[color:var(--color-negative)]">
+            {create.error instanceof Error ? create.error.message : "Opslaan lukte niet."}
+          </p>
+        )}
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={create.isPending}
+            className="rounded-xl bg-accent-cyan/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-cyan ring-1 ring-ring hover:bg-accent-cyan/25 disabled:opacity-40"
+          >
+            {create.isPending ? "Bezig…" : "Klopt, leg vast"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setStep("invullen")}
+            className="rounded-xl px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-ring hover:text-foreground/70"
+          >
+            Terug
+          </button>
+        </div>
+      </div>
     )
   }
 
@@ -668,6 +896,10 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
 
   const manual = data.goals
   const hasAnything = manual.length > 0 || data.derived.length > 0
+  // F4: het huidige hoofddoel — bij een nieuw hoofddoel is de keuze over dit
+  // doel verplicht (de server dwingt dat ook af).
+  const activeMain =
+    manual.find((g) => g.priority === 1 && g.status === "active") ?? null
 
   return (
     <div className="mt-3 flex flex-col gap-2.5">
@@ -742,7 +974,7 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
         </div>
       )}
 
-      {adding && <AddGoalForm onClose={() => setAdding(false)} />}
+      {adding && <AddGoalForm onClose={() => setAdding(false)} activeMain={activeMain} />}
 
       {manual.map((g) =>
         editingId === g.id ? (

@@ -76,6 +76,12 @@ export type GoalInput = {
   // Atomaire update-of-aanmaak op titelprefix (server-side, race-vrij) —
   // gebruikt door het Wattage-lab zodat dubbelkliks nooit duplicaten maken.
   dedupeTitlePrefix?: string;
+  // F4: verplichte keuze over het bestaande hoofddoel bij een nieuw hoofddoel.
+  previousGoalDecision?:
+    | "behaald"
+    | "niet_meer_relevant"
+    | "wordt_nevendoel"
+    | "blijft_hoofddoel";
   // DOELEN_01: doelsoort en (bij schuifbalkdoelen) thema + stand.
   kind?: "event" | "prestatie" | "gedrag" | "slider";
   theme?: string | null;

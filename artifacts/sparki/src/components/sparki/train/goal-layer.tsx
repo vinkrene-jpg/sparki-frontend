@@ -5,6 +5,7 @@ import { useLoad } from "@/hooks/use-load"
 import { judgeGoalFit, type GoalVerdict } from "@/lib/train-intelligence"
 import { ThreeWeekPlan } from "@/components/sparki/three-week-plan"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
+import { GoalsWorksheet } from "@/components/sparki/goals-worksheet"
 import { Target, ChevronRight, Plus, Link2 } from "lucide-react"
 
 const VERDICT_COLOR: Record<GoalVerdict, string> = {
@@ -51,6 +52,8 @@ export function GoalLayer() {
   const [, navigate] = useLocation()
   const { data: plan } = useTrainingPlan()
   const { data: load } = useLoad()
+  // F4: het doelenwerkblad woont hier op Trainen (niet meer op /you).
+  const [goalAutoAdd, setGoalAutoAdd] = useState(false)
 
   const fit = judgeGoalFit({ inputs: plan?.inputs, load })
   const color = VERDICT_COLOR[fit.verdict]
@@ -82,7 +85,7 @@ export function GoalLayer() {
         {noGoal && (
           <button
             type="button"
-            onClick={() => navigate("/you?focus=doelen")}
+            onClick={() => setGoalAutoAdd(true)}
             className="mt-3.5 flex items-center gap-1.5 rounded-xl px-4 py-2.5 font-sans text-[13px] font-semibold transition-opacity"
             style={{ background: "rgba(120,210,230,0.9)", color: "#040506" }}
           >
@@ -134,6 +137,9 @@ export function GoalLayer() {
           </button>
         )}
       </div>
+
+      {/* F4: het doelenwerkblad zelf — hoofddoel, nevendoelen, voorstellen. */}
+      <GoalsWorksheet autoAdd={goalAutoAdd} />
 
       {/* Concrete plan toward the goal (read-only here; building lives above). */}
       <ThreeWeekPlan hideLabel hideEmptyCta hideRegenerate />
