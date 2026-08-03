@@ -142,6 +142,8 @@ export const clubMembersTable = pgTable(
     vogIssuedOn: date("vog_issued_on"),
     vogRecordedAt: timestamp("vog_recorded_at", { withTimezone: true }),
     vogRecordedByClerkId: text("vog_recorded_by_clerk_id"),
+    // F6: bewijsreferentie (kenmerk/justis-nummer) — nooit het document zelf.
+    vogReference: text("vog_reference"),
     joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
     endedReason: text("ended_reason"),

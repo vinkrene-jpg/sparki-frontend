@@ -1025,6 +1025,8 @@ router.put("/:clubId/members/:memberId/vog", requireAuth, async (req, res) => {
       return;
     }
     const toelichting = str(req.body?.toelichting);
+    // F6: bewijsreferentie (kenmerk/Justis-nummer) — nooit het document zelf.
+    const vogReference = str(req.body?.reference);
     // F6 (memory-les Sportpaspoort): de wijziging én het auditrecord staan in
     // DEZELFDE transactie. Faalt de audit, dan rolt de wijziging terug — geen
     // best-effort, geen fire-and-forget. Precies één auditrecord per wijziging.
@@ -1033,11 +1035,18 @@ router.put("/:clubId/members/:memberId/vog", requireAuth, async (req, res) => {
         .update(clubMembersTable)
         .set(
           issuedOn == null
-            ? { vogIssuedOn: null, vogRecordedAt: null, vogRecordedByClerkId: null, updatedAt: new Date() }
+            ? {
+                vogIssuedOn: null,
+                vogRecordedAt: null,
+                vogRecordedByClerkId: null,
+                vogReference: null,
+                updatedAt: new Date(),
+              }
             : {
                 vogIssuedOn: issuedOn,
                 vogRecordedAt: new Date(),
                 vogRecordedByClerkId: ctx.membership.clerkId,
+                vogReference: vogReference ?? null,
                 updatedAt: new Date(),
               },
         )
@@ -1873,6 +1882,95 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club trainer assignment failed");
     res.status(500).json({ error: "Trainer toewijzen is niet gelukt." });
+  }
+});
+
+// F6 — VOG-inventarisatie (spec: bestaande koppelingen inventariseren; een
+// koppeling zonder verplichte status wordt GEMARKEERD en GEMELD, nooit stil
+// verbroken — verbreken is een besluit van de organisatie). Alleen clubbeheer.
+router.get("/:clubId/vog-overzicht", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen het clubbeheer ziet het VOG-overzicht." });
+      return;
+    }
+    const assignments = await db
+      .select()
+      .from(clubTrainerAssignmentsTable)
+      .where(
+        and(
+          eq(clubTrainerAssignmentsTable.clubId, ctx.club.id),
+          activeAssignmentWindow(),
+        ),
+      );
+    const trainerIds = Array.from(new Set(assignments.map((a) => a.trainerClerkId)));
+    const memberships = trainerIds.length
+      ? await db
+          .select()
+          .from(clubMembersTable)
+          .where(
+            and(
+              eq(clubMembersTable.clubId, ctx.club.id),
+              inArray(clubMembersTable.clerkId, trainerIds),
+              isNull(clubMembersTable.endedAt),
+            ),
+          )
+      : [];
+    const memberByClerk = new Map(memberships.map((m) => [m.clerkId, m]));
+    const teams = await db
+      .select()
+      .from(clubTeamsTable)
+      .where(eq(clubTeamsTable.clubId, ctx.club.id));
+    const teamById = new Map(teams.map((t) => [t.id, t]));
+    const profiles = await profilesByIds(trainerIds);
+
+    const items: unknown[] = [];
+    let gemarkeerd = 0;
+    for (const a of assignments) {
+      const member = memberByClerk.get(a.trainerClerkId);
+      // Jeugd-bepaling: groepen via groupIsYouth (level + minderjarige leden);
+      // teams via de categorie/level-tekst.
+      let jeugd = false;
+      if (a.groupId != null) jeugd = await groupIsYouth(a.groupId);
+      else if (a.teamId != null) {
+        const team = teamById.get(a.teamId);
+        jeugd = levelSuggestsYouth(team?.category) || levelSuggestsYouth(team?.level);
+      }
+      const vogIssuedOn = member?.vogIssuedOn ?? null;
+      const status =
+        vogIssuedOn == null ? "ontbreekt" : vogIsExpired(vogIssuedOn) ? "verlopen" : "geldig";
+      const markering = jeugd && status !== "geldig";
+      if (markering) gemarkeerd += 1;
+      const profile = profiles.get(a.trainerClerkId);
+      items.push({
+        assignmentId: a.id,
+        trainerClerkId: a.trainerClerkId,
+        trainerNaam: profile?.displayName ?? profile?.email ?? a.trainerClerkId,
+        teamId: a.teamId,
+        groupId: a.groupId,
+        jeugd,
+        vogStatus: status,
+        vogIssuedOn,
+        vogReference: member?.vogReference ?? null,
+        // Markering = jeugdkoppeling zonder geldige VOG. Wij verbreken niets;
+        // dat besluit ligt bij de organisatie.
+        gemarkeerd: markering,
+        ...(markering
+          ? {
+              melding:
+                status === "ontbreekt"
+                  ? "Jeugdkoppeling zonder geregistreerde VOG — registreer een VOG of beëindig de koppeling."
+                  : "Jeugdkoppeling met een VOG ouder dan 3 jaar — vraag om hercontrole.",
+            }
+          : {}),
+      });
+    }
+    res.json({ koppelingen: items, gemarkeerd });
+  } catch (err) {
+    req.log.error({ err }, "club vog overview failed");
+    res.status(500).json({ error: "VOG-overzicht ophalen is niet gelukt." });
   }
 });
 
