@@ -820,6 +820,63 @@ export function useDiscoverRoutes() {
   });
 }
 
+// Kaart-eerst routevoorstellen (taak #560): alle échte routes uit het eigen
+// corpus rond een punt — eigen bewaard/plan, gereden kandidaten, gedeeld en
+// openbaar (die laatste twee al privacy-afgeschermd door de server). Geen
+// generatie; dun gebied = eerlijk weinig rijen. Filteren gebeurt client-side
+// op deze lijst (live teller zonder server-bursts); de server ondersteunt
+// dezelfde filters ook als queryparameters.
+export type NearbyRoute = {
+  key: string;
+  soort: "route" | "kandidaat";
+  id: number;
+  bron: "bewaard" | "plan" | "gereden" | "gedeeld" | "openbaar";
+  bronLabel: string;
+  naam: string;
+  sport: string | null;
+  distanceKm: number | null;
+  elevationGainM: number | null;
+  durationSec: number | null;
+  surface: string;
+  isLus: boolean;
+  moeilijkheid: "makkelijk" | "gemiddeld" | "zwaar" | null;
+  startAfstandKm: number;
+  geometry: [number, number][];
+  verificatie: "controle_bij_gebruik";
+};
+
+export type NearbyRoutesResponse = {
+  sport: string;
+  radiusKm: number;
+  total: number;
+  corpusNote: string;
+  verificatieNote: string;
+  routes: NearbyRoute[];
+};
+
+export function useNearbyRoutes(
+  center: { lat: number; lon: number } | null,
+  sport: string,
+  radiusKm = 25,
+) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: [
+      "routes",
+      "nearby",
+      center ? `${center.lat.toFixed(3)},${center.lon.toFixed(3)}` : "geen",
+      sport,
+      radiusKm,
+    ],
+    queryFn: () =>
+      apiFetch<NearbyRoutesResponse>(
+        `/api/routes/nearby?lat=${center!.lat}&lon=${center!.lon}&sport=${encodeURIComponent(sport)}&radiusKm=${radiusKm}`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && center != null,
+    staleTime: 60_000,
+  });
+}
+
 export type SharedRouteListItem = {
   id: number;
   name: string;

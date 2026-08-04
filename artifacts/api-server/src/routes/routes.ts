@@ -3,6 +3,7 @@ import {
   and,
   asc,
   desc,
+  gt,
   eq,
   gte,
   ilike,
@@ -17,6 +18,7 @@ import {
 import {
   db,
   routesTable,
+  routeCandidatesTable,
   trainingSessionsTable,
   activityImportsTable,
   plannedWorkoutsTable,
@@ -158,6 +160,13 @@ import {
   type StraalCentrum,
 } from "../lib/route-library-straal";
 import { maybeReplacePoorRoute } from "../lib/route-improvement";
+import {
+  parseNearbyFilters,
+  toNearbyRoute,
+  sortNearby,
+  nearbyOphaalBbox,
+  type NearbyInput,
+} from "../lib/routes-nearby";
 import { getRoutePois } from "../lib/route-pois";
 import {
   getRouteRemarks,
@@ -1402,6 +1411,339 @@ router.get("/ontdek", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "routes.discover failed");
     res.status(500).json({ error: "Kon openbare routes niet laden" });
+  }
+});
+
+// GET /api/routes/nearby — kaart-eerst routevoorstellen (taak #560, Komoot-
+// opzet): alle ECHTE routes uit het eigen corpus rond een punt, zonder
+// generatie. Bronnen: eigen bewaarde routes (incl. planroutes), eigen
+// routekandidaten uit de ritgeschiedenis, met de aanvrager gedeelde routes en
+// openbare gereden routes van anderen (beide altijd in de veilige,
+// privacy-getransformeerde kijkersweergave; minderjarige eigenaren nooit).
+// Filters: sport, straal, afstand, hoogtemeters, ondergrond, lus/heen-en-terug,
+// moeilijkheid. Elke rij draagt bron + eerlijkheidsveld
+// `verificatie: "controle_bij_gebruik"` — deze bladerlaag draait de
+// blokkadepoort niet per kaartbeweging; die blijft verplicht op elk
+// gebruikspad (opslaan/navigeren/overnemen). Gedeclareerd vóór "/:id".
+router.get("/nearby", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const filters = parseNearbyFilters(req.query as Record<string, unknown>);
+  if (filters == null) {
+    res.status(400).json({
+      error:
+        "Ongeldige zoekvraag: lat/lon zijn verplicht en straal/filters moeten geldig zijn.",
+    });
+    return;
+  }
+  // Sportfamilie-poort: alleen actieve routesporten, nooit stil doorlaten.
+  if (!isRouteSportActive(filters.sport)) {
+    res.status(400).json({
+      error: "Deze sport is (nog) niet beschikbaar voor routes.",
+      code: "sport_inactive",
+    });
+    return;
+  }
+  try {
+    const inputs: NearbyInput[] = [];
+
+    // Databank-voorselectie: bestaat er ÉÉN punt van de routegeometrie binnen
+    // de bbox rond het centrum (straal + segmentmarge)? Bewust over de HELE
+    // geometrie — een route die ver weg start maar door het zoekgebied loopt,
+    // mag nooit al in SQL wegvallen. De beslissende afstandscheck (over de
+    // hele lijn) volgt in toNearbyRoute.
+    const bbox = nearbyOphaalBbox(filters.center, filters.radiusKm);
+    const routeRaaktBbox = sql`EXISTS (
+      SELECT 1 FROM jsonb_array_elements(${routesTable.geometry}) AS pt
+      WHERE (pt->>0)::float BETWEEN ${bbox.minLat} AND ${bbox.maxLat}
+        AND (pt->>1)::float BETWEEN ${bbox.minLon} AND ${bbox.maxLon}
+    )`;
+    const kandidaatRaaktBbox = sql`EXISTS (
+      SELECT 1 FROM jsonb_array_elements(${routeCandidatesTable.geometry}) AS pt
+      WHERE (pt->>0)::float BETWEEN ${bbox.minLat} AND ${bbox.maxLat}
+        AND (pt->>1)::float BETWEEN ${bbox.minLon} AND ${bbox.maxLon}
+    )`;
+
+    // Volledig doorbladeren (geen afkap vóór de afstandsranking): elke bron
+    // wordt per id-pagina uitgelezen tot hij leeg is. Limieten gelden pas NA
+    // het sorteren op afstand, zodat een oude route dichtbij nooit stil
+    // verdrongen wordt door nieuwe routes ver weg.
+    const PAGE = 500;
+    async function paginateAll<T>(
+      fetchPage: (afterId: number) => Promise<T[]>,
+      idOf: (row: T) => number,
+    ): Promise<T[]> {
+      const all: T[] = [];
+      let afterId = 0;
+      for (;;) {
+        const page = await fetchPage(afterId);
+        all.push(...page);
+        if (page.length < PAGE) return all;
+        afterId = idOf(page[page.length - 1]!);
+      }
+    }
+
+    // 1) Eigen routes (bewaard/plan/gereden) — ruwe geometrie mag, het is de
+    //    eigen data van de aanvrager.
+    const own = await paginateAll(
+      (afterId) =>
+        db
+          .select()
+          .from(routesTable)
+          .where(
+            and(
+              eq(routesTable.clerkId, clerkId),
+              isNull(routesTable.deletedAt),
+              ne(routesTable.status, "archived"),
+              isNotNull(routesTable.geometry),
+              routeRaaktBbox,
+              gt(routesTable.id, afterId),
+            ),
+          )
+          .orderBy(asc(routesTable.id))
+          .limit(PAGE),
+      (r) => r.id,
+    );
+    const ownSavedIds = new Set(own.map((r) => r.id));
+    for (const r of own) {
+      inputs.push({
+        soort: "route",
+        id: r.id,
+        bron:
+          r.source === "ridden"
+            ? "gereden"
+            : r.linkedPlannedWorkoutId != null
+              ? "plan"
+              : "bewaard",
+        naam: r.name,
+        sport: r.sport,
+        distanceKm: r.distanceKm,
+        elevationGainM: r.elevationGainM,
+        durationSec: r.durationSec,
+        surface: r.surface,
+        geometry: Array.isArray(r.geometry)
+          ? (r.geometry as RoutePathPoint[])
+          : null,
+      });
+    }
+
+    // 2) Eigen routekandidaten uit de ritgeschiedenis. Kandidaten die al als
+    //    route zijn opgeslagen of door de gebruiker zijn uitgesloten doen niet
+    //    mee (geen dubbele rijen op de kaart).
+    const candidates = await paginateAll(
+      (afterId) =>
+        db
+          .select()
+          .from(routeCandidatesTable)
+          .where(
+            and(
+              eq(routeCandidatesTable.clerkId, clerkId),
+              eq(routeCandidatesTable.excluded, false),
+              kandidaatRaaktBbox,
+              gt(routeCandidatesTable.id, afterId),
+            ),
+          )
+          .orderBy(asc(routeCandidatesTable.id))
+          .limit(PAGE),
+      (c) => c.id,
+    );
+    for (const c of candidates) {
+      if (c.savedRouteId != null && ownSavedIds.has(c.savedRouteId)) continue;
+      const labels =
+        Array.isArray(c.userLabels) && c.userLabels.length > 0
+          ? c.userLabels
+          : c.autoLabels;
+      inputs.push({
+        soort: "kandidaat",
+        id: c.id,
+        bron: "gereden",
+        naam:
+          labels.length > 0
+            ? labels[0]!
+            : `Gereden route van ${Math.round(c.distanceKm)} km`,
+        sport: c.sport,
+        distanceKm: c.distanceKm,
+        elevationGainM: c.elevationM,
+        durationSec: null,
+        surface: "unknown",
+        geometry: Array.isArray(c.geometry)
+          ? (c.geometry as RoutePathPoint[])
+          : null,
+      });
+    }
+
+    // 3) Gedeeld met mij + 4) openbaar — beide van andere eigenaren, altijd de
+    //    veilige kijkersweergave (privacyzones + start/einde afgeschermd,
+    //    fail-closed zonder bekend huisadres) en nooit van minderjarigen.
+    const [shares, publicRows] = await Promise.all([
+      paginateAll(
+        (afterId) =>
+          db
+            .select({ share: routeSharesTable, route: routesTable })
+            .from(routeSharesTable)
+            .innerJoin(routesTable, eq(routeSharesTable.routeId, routesTable.id))
+            .where(
+              and(
+                isNull(routesTable.deletedAt),
+                ne(routesTable.clerkId, clerkId),
+                isNotNull(routesTable.geometry),
+                routeRaaktBbox,
+                gt(routeSharesTable.id, afterId),
+              ),
+            )
+            .orderBy(asc(routeSharesTable.id))
+            .limit(PAGE),
+        (r) => r.share.id,
+      ),
+      paginateAll(
+        (afterId) =>
+          db
+            .select()
+            .from(routesTable)
+            .where(
+              and(
+                eq(routesTable.visibility, "public"),
+                ne(routesTable.clerkId, clerkId),
+                isNull(routesTable.deletedAt),
+                ne(routesTable.status, "archived"),
+                isNotNull(routesTable.geometry),
+                routeRaaktBbox,
+                gt(routesTable.id, afterId),
+              ),
+            )
+            .orderBy(asc(routesTable.id))
+            .limit(PAGE),
+        (r) => r.id,
+      ),
+    ]);
+
+    // Zichtbaarheid van gedeelde routes: zelfde regels als GET /gedeeld.
+    const [coachOf, myClubs] = await Promise.all([
+      db
+        .select({ athleteClerkId: coachAthleteLinksTable.athleteClerkId })
+        .from(coachAthleteLinksTable)
+        .where(
+          and(
+            eq(coachAthleteLinksTable.coachClerkId, clerkId),
+            eq(coachAthleteLinksTable.status, "accepted"),
+            isNull(coachAthleteLinksTable.endedAt),
+          ),
+        ),
+      activeClubIds(clerkId),
+    ]);
+    const coachedIds = new Set(coachOf.map((r) => r.athleteClerkId));
+    const shareOwnerIds = [...new Set(shares.map((s) => s.route.clerkId))];
+    const clubmates = new Set<string>();
+    if (myClubs.length > 0 && shareOwnerIds.length > 0) {
+      const rows = await db
+        .select({ clerkId: clubMembersTable.clerkId })
+        .from(clubMembersTable)
+        .where(
+          and(
+            inArray(clubMembersTable.clubId, myClubs),
+            inArray(clubMembersTable.clerkId, shareOwnerIds),
+            isNull(clubMembersTable.endedAt),
+          ),
+        );
+      for (const r of rows) clubmates.add(r.clerkId);
+    }
+    const seenShared = new Set<number>();
+    const visibleShared = shares.filter(({ share, route }) => {
+      if (seenShared.has(route.id)) return false;
+      const visible =
+        (share.audience === "persoon" && share.targetClerkId === clerkId) ||
+        (share.audience === "coach" && coachedIds.has(route.clerkId)) ||
+        ((share.audience === "club" || share.audience === "team") &&
+          clubmates.has(route.clerkId));
+      if (visible) seenShared.add(route.id);
+      return visible;
+    });
+
+    // Openbaar alleen als aantoonbaar gereden (zelfde regel als /ontdek).
+    const publicIds = publicRows.map((r) => r.id);
+    const usages =
+      publicIds.length > 0
+        ? await db
+            .select({ routeId: routeVersionUsagesTable.routeId })
+            .from(routeVersionUsagesTable)
+            .where(inArray(routeVersionUsagesTable.routeId, publicIds))
+        : [];
+    const usedIds = new Set(usages.map((u) => u.routeId));
+    const publicRidden = publicRows.filter(
+      (r) =>
+        (r.source === "ridden" || usedIds.has(r.id)) && !seenShared.has(r.id),
+    );
+
+    const otherOwners = [
+      ...new Set([
+        ...visibleShared.map((s) => s.route.clerkId),
+        ...publicRidden.map((r) => r.clerkId),
+      ]),
+    ];
+    const minorByOwner = new Map<string, boolean>();
+    const zonesByOwner = new Map<string, PrivacyZoneCircle[]>();
+    const homeByOwner = new Map<string, { lat: number; lon: number } | null>();
+    await Promise.all(
+      otherOwners.map(async (owner) => {
+        const [minor, zones, home] = await Promise.all([
+          isMinorAthlete(owner),
+          ownerPrivacyZones(owner),
+          ownerHome(owner),
+        ]);
+        minorByOwner.set(owner, minor);
+        zonesByOwner.set(owner, zones);
+        homeByOwner.set(owner, home);
+      }),
+    );
+    const pushMasked = (route: RouteRow, bron: "gedeeld" | "openbaar") => {
+      if (minorByOwner.get(route.clerkId) === true) return;
+      // Fail-closed: zonder bekend huisadres van de eigenaar is er geen
+      // gegarandeerd veilige kijkersgeometrie ⇒ rij doet niet mee.
+      if (homeByOwner.get(route.clerkId) == null) return;
+      const view = viewerRouteView(route, zonesByOwner.get(route.clerkId) ?? []);
+      if (!Array.isArray(view.geometry)) return;
+      inputs.push({
+        soort: "route",
+        id: route.id,
+        bron,
+        naam: route.name,
+        sport: route.sport,
+        distanceKm: route.distanceKm,
+        elevationGainM: route.elevationGainM,
+        durationSec: route.durationSec,
+        surface: route.surface,
+        geometry: view.geometry as RoutePathPoint[],
+      });
+    };
+    for (const { route } of visibleShared) pushMasked(route, "gedeeld");
+    for (const r of publicRidden) pushMasked(r, "openbaar");
+
+    // Filteren + sorteren (pure laag, deterministisch). Pas NA de ranking op
+    // afstand mag er afgekapt worden (payload-plafond): de dichtstbijzijnde
+    // routes gaan altijd voor, ongeacht ouderdom — en het afkappen wordt
+    // eerlijk gemeld via `afgekapt`.
+    const alleMatches = sortNearby(
+      inputs
+        .map((row) => toNearbyRoute(row, filters))
+        .filter((r): r is NonNullable<typeof r> => r != null),
+    );
+    const MAX_GELEVERD = 250;
+    const routes = alleMatches.slice(0, MAX_GELEVERD);
+    res.json({
+      sport: filters.sport,
+      radiusKm: filters.radiusKm,
+      total: alleMatches.length,
+      afgekapt: alleMatches.length > routes.length,
+      // Eerlijkheid over het corpus: dit zijn alleen routes die Sparki al
+      // kent (eigen, gedeeld, openbaar) — er is geen community-corpus.
+      corpusNote:
+        "Voorstellen komen uit je eigen routes, je ritgeschiedenis en routes die met jou gedeeld of openbaar gemaakt zijn.",
+      verificatieNote:
+        "Routes worden vóór opslaan of navigeren opnieuw op blokkades gecontroleerd.",
+      routes,
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.nearby failed");
+    res.status(500).json({ error: "Kon routes in de buurt niet laden" });
   }
 });
 

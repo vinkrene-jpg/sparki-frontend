@@ -33,3 +33,7 @@ description: Productbesluit René (30/31-07-2026) over routeplanner-niveaus, abo
 - /routes?view=bewaard: RouteLibrary is dé (ingeklapte) lijst; de grote RouteCard rendert alleen voor de route in `?route=`/`?nav=`/`?ritopties=`, lijst dan tijdelijk verborgen, terugknop "← Alle routes".
 - Terugknop wist alléén `route`+`ritopties`, nooit `nav` (nav = veiligheidsherstel na herlaad midden in rit) en is verborgen zolang `?nav=` actief is.
 - routes-tabs.test.tsx bewaakt dit contract (lijst verborgen bij selectie, zichtbaar zonder).
+
+## Kaart-eerst startweergave (Komoot-opzet, 04-08-2026)
+- Routes opent standaard kaart-eerst met voorstellen uit het eigen corpus; wizard blijft via "Zelf plannen". De nearby-bladerlaag draait de blokkadepoort NIET per kaartbeweging (Overpass-burst/koude-cache) — elke rij zegt eerlijk "controle bij gebruik" en elk gebruikspad checkt fail-closed.
+- **Why:** volledigheid is de kernbelofte: ophalen mag nooit vóór de afstandsranking afkappen (bbox-voorselectie + volledige paginering), anders verdringt nieuw-ver stil oud-dichtbij; gedeeld/openbaar altijd kijkersweergave, fail-closed zonder bekend huisadres.

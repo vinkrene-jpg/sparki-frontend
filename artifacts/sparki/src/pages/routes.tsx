@@ -10,12 +10,17 @@ import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { RouteCandidatesSection } from "@/components/sparki/route-candidates-section"
 import { RouteDowngradeBanner } from "@/components/sparki/route-downgrade-banner"
+import { RouteKaartStart } from "@/components/sparki/route-kaart-start"
 
-type RoutesView = "maken" | "gpx" | "bewaard" | "ontdek" | "instellingen"
+type RoutesView = "kaart" | "maken" | "gpx" | "bewaard" | "ontdek" | "instellingen"
 
 // Hoofdstuk-tabbalk (Strava-stijl, gekozen 28-7-2026) — vervangt de oude
 // keuzelijst. Korte labels; de volgorde volgt de oude keuzevolgorde.
+// "Kaart" (taak #560, Komoot-opzet) is de nieuwe startweergave: kaart rond je
+// locatie met directe routevoorstellen; "Maken" blijft de wizard
+// ("Zelf plannen").
 const TABS: ReadonlyArray<HoofdstukTab<RoutesView>> = [
+  { id: "kaart", label: "Kaart" },
   { id: "maken", label: "Maken" },
   { id: "gpx", label: "GPX" },
   { id: "bewaard", label: "Bewaard" },
@@ -24,6 +29,7 @@ const TABS: ReadonlyArray<HoofdstukTab<RoutesView>> = [
 ]
 
 const TAB_INTRO: Record<RoutesView, string> = {
+  kaart: "Routes rond je locatie, direct op de kaart.",
   maken: "Plan je route direct op de kaart, in vier stappen.",
   gpx: "Upload een GPX-bestand met echt hoogteprofiel.",
   bewaard: "Navigeren, delen, downloaden en aanpassen.",
@@ -34,8 +40,9 @@ const TAB_INTRO: Record<RoutesView, string> = {
 // Rijden-hoofdscherm met tabbladen. Elke tab blijft deep-linkbaar via
 // ?view=…; deep-links (?nav=, ?ritopties=, ?route=) zonder view landen
 // automatisch op "Bewaard", waar de routekaarten leven. Zonder parameters
-// opent "Maken" (besluit René 31-07-2026): wie het hoofdstuk Rijden opent,
-// begint bij het plannen van een route.
+// opent "Kaart" (taak #560, Komoot-opzet, vervangt het besluit van
+// 31-07-2026): wie het hoofdstuk Rijden opent, ziet direct de kaart rond de
+// eigen locatie met routevoorstellen; "Zelf plannen" leidt naar "Maken".
 export default function RoutesPage() {
   const routePlannerEnabled = useFeatureFlag("route_planner")
   const search = useSearch()
@@ -46,7 +53,7 @@ export default function RoutesPage() {
     ? (rawView as RoutesView)
     : params.has("route") || params.has("nav") || params.has("ritopties")
       ? "bewaard"
-      : "maken"
+      : "kaart"
 
   // Tab-wissel schrijft alleen ?view= — oude deep-linkparameters (?route=…)
   // horen bij de vorige weergave en gaan niet mee.
@@ -107,7 +114,9 @@ export default function RoutesPage() {
         role="tabpanel"
         aria-labelledby={`tabknop-${view}`}
       >
-        {view === "instellingen" ? (
+        {view === "kaart" ? (
+          routePlannerEnabled ? <RouteKaartStart /> : plannerUit
+        ) : view === "instellingen" ? (
           <NavSettingsPanel />
         ) : view === "ontdek" ? (
           <>
