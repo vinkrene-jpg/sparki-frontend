@@ -26,6 +26,8 @@ import {
   trainingFormsTable,
 } from "@workspace/db";
 import { seedTrainingForms } from "../lib/training-forms-seed";
+import { computeLoad } from "../lib/recovery-load";
+import { projecteerBalans } from "../lib/training/plaatsing";
 
 const API = process.env.API_BASE ?? `http://localhost:${process.env.PORT ?? "8080"}/api`;
 
@@ -185,6 +187,62 @@ async function main() {
   // 6. Vreemde krijgt 403 op andermans schema.
   const r6 = await api("/plan/voorschouw", VREEMDE, { sporterId: SPORTER, datum: DATUM, formId: pctVorm.id });
   check("vreemde trainer 403", r6.status === 403);
+
+  // 7. slotId van een ANDERE sporter → 404, nooit andermans plek toetsen.
+  const [vreemdSlot] = await db
+    .insert(planSlotsTable)
+    .values({ clerkId: VREEMDE, datum: DATUM, bedoeling: "x", herkomst: "sporter", status: "leeg" })
+    .returning();
+  const r7 = await api("/plan/voorschouw", SPORTER, {
+    datum: DATUM,
+    formId: pctVorm.id,
+    slotId: vreemdSlot!.id,
+    duurMinuten: 120,
+    intensiteit: 70,
+  });
+  check("slotId van andere sporter → 404", r7.status === 404);
+
+  // 8. Gisteren duurafhankelijke soort ZONDER duur → onbekend mét reden, geen gok.
+  await db
+    .update(plannedWorkoutsTable)
+    .set({ targetDurationMin: null })
+    .where(eq(plannedWorkoutsTable.clerkId, SPORTER));
+  const r8 = await api("/plan/voorschouw", SPORTER, { datum: DATUM, formId: pctVorm.id, duurMinuten: 120, intensiteit: 70 });
+  const g8 = r8.body?.voorschouw?.gisteren;
+  check(
+    "gisteren zonder duur → restkost onbekend mét reden",
+    Array.isArray(g8) && g8.length === 1 && g8[0].restkostVandaag === null && g8[0].reden === "Duur onbekend",
+    JSON.stringify(g8),
+  );
+
+  // 9. Leeftijdsgate fail-closed: vorm met minimumleeftijd + onbekende leeftijd → 403.
+  const leeftijdsVorm = vormen.find((v) => v.eigenaarType === "sparki" && v.minimumLeeftijd != null && !v.vereistAfspraak);
+  if (leeftijdsVorm) {
+    await db.update(athleteProfilesTable).set({ birthDate: null }).where(eq(athleteProfilesTable.clerkId, SPORTER));
+    const r9 = await api("/plan/voorschouw", SPORTER, { datum: DATUM, formId: leeftijdsVorm.id });
+    check("leeftijdsgate fail-closed in voorschouw (403)", r9.status === 403, `status ${r9.status}`);
+  } else {
+    check("vorm met minimumleeftijd beschikbaar (overgeslagen: geen in seed)", true);
+  }
+
+  // 10. EWMA-venstergelijkheid: projectie op peildatum 'vandaag' zonder extra
+  //     sessie geeft exact dezelfde CTL/TSB als het gedeelde recovery-load-model.
+  {
+    const vandaag = new Date().toISOString().slice(0, 10);
+    const gister = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const sessies10 = [
+      { sessionDate: gister, tss: 80 },
+      { sessionDate: vandaag, tss: 120 },
+    ];
+    const referentie = computeLoad(sessies10);
+    const map = new Map<string, number>(sessies10.map((s) => [s.sessionDate, s.tss]));
+    const proj = projecteerBalans(map, gister, 0); // morgen = vandaag
+    check(
+      "projectie identiek aan computeLoad op dezelfde peildatum",
+      proj.met.ctl === referentie.ctl && proj.met.tsb === referentie.tsb,
+      `proj ${JSON.stringify(proj.met)} vs ref ctl=${referentie.ctl},tsb=${referentie.tsb}`,
+    );
+  }
 
   await cleanup();
   console.log(failures === 0 ? "\nALLE CHECKS GESLAAGD" : `\n${failures} CHECK(S) GEFAALD`);

@@ -426,6 +426,20 @@ router.post("/voorschouw", requireAuth, async (req, res) => {
         error: "Deze vorm vereist een afspraak (baan/derny/motor) en is niet als losse training plaatsbaar",
       });
     }
+    // Jeugd fail-closed, zelfde regel als plaatsen (TRV-69/85): een vorm die
+    // de sporter niet mag plaatsen, is ook niet voor te schouwen.
+    if (form.minimumLeeftijd != null) {
+      const [athlete] = await db
+        .select({ birthDate: athleteProfilesTable.birthDate })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, sporterId))
+        .limit(1);
+      const age = athlete?.birthDate ? computeAge(String(athlete.birthDate), null) : null;
+      if (age == null || age < form.minimumLeeftijd) {
+        return res.status(403).json({ error: "Deze vorm is niet geschikt voor deze leeftijd" });
+      }
+    }
+
     const [params] = await db
       .select()
       .from(trainingFormParametersTable)
@@ -535,11 +549,17 @@ router.post("/voorschouw", requireAuth, async (req, res) => {
         and(eq(plannedWorkoutsTable.clerkId, sporterId), eq(plannedWorkoutsTable.scheduledDate, gisterDatum)),
       );
     const relevant = gisterenRows.filter((g) => g.status === "planned" || g.status === "completed");
+    const DUURAFHANKELIJK = new Set<Belastingssoort>(["aeroob_duur", "aeroob_hoog"]);
     const gisteren = relevant.map((g) => {
       if (!g.soort) {
         return { titel: g.title, soort: null, restkostVandaag: null, reden: "Belastingssoort onbekend" };
       }
       const gs = g.soort as Belastingssoort;
+      if (g.duur == null && DUURAFHANKELIJK.has(gs)) {
+        // Zonder duur is de startkost van deze soort niet bepaalbaar — dan
+        // is hij onbekend, geen laagste-bandbreedte-gok (TRV-37).
+        return { titel: g.title, soort: gs, restkostVandaag: null, reden: "Duur onbekend" };
+      }
       const rest = restkostX10(startkostX10(gs, g.duur), gs, gisterDatum, datum) / 10;
       return { titel: g.title, soort: gs, restkostVandaag: rest };
     });
@@ -549,7 +569,13 @@ router.post("/voorschouw", requireAuth, async (req, res) => {
       voorschouw: {
         datum,
         vorm: { id: form.id, naam: form.naam, belastingssoort: soort },
-        parameters: { duurMinuten: duur, intensiteit, intensiteitsmaat: maat },
+        parameters: {
+          duurMinuten: duur,
+          duurBekend: duur != null,
+          intensiteit,
+          intensiteitBekend: intensiteit != null,
+          intensiteitsmaat: maat,
+        },
         belastingBekend: belasting != null,
         geschatteBelasting: belasting,
         balansMorgen,

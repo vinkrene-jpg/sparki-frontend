@@ -105,8 +105,9 @@ export function projecteerBalans(
   const run = (extra: number) => {
     let ctl = 0;
     let atl = 0;
-    // 90 dagen aanloop vóór de doeldatum, dan doeldatum en morgen.
-    for (let i = -90; i <= 1; i++) {
+    // Zelfde venstersemantiek als lib/recovery-load: precies 91 iteraties
+    // (peildatum−90 t/m peildatum), hier met peildatum = morgen.
+    for (let i = -89; i <= 1; i++) {
       const d = dag(i);
       let tss = tssByDate.get(d) ?? 0;
       if (i === 0) tss += extra;
