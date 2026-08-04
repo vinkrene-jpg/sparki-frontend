@@ -153,6 +153,93 @@ export const freshnessCostsTable = pgTable(
   ],
 );
 
+// ── F3: schemaplekken en bandbreedte (TRV-32/33/34/35) ───────────────────────
+// Het schema bevat geen vaste sessies maar PLEKKEN met een bedoeling en een
+// bandbreedte (TRV-07). Binnen de bandbreedte gebeurt er niets bijzonders;
+// eroverheen → status "afgeweken", zichtbaar maar nooit geblokkeerd (TRV-41).
+export const planSlotStatussen = ["leeg", "vervuld", "afgeweken"] as const;
+export const planSlotHerkomsten = ["trainer", "ai", "sporter"] as const;
+
+export const planSlotsTable = pgTable(
+  "plan_slots",
+  {
+    id: serial("id").primaryKey(),
+    clerkId: text("clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+    datum: text("datum").notNull(), // YYYY-MM-DD
+    bedoeling: text("bedoeling").notNull(), // bv. "aerobe basis onderhouden"
+    belastingssoort: text("belastingssoort"), // belastingssoorten; null = niet vastgelegd
+    duurMinMinuten: integer("duur_min"),
+    duurMaxMinuten: integer("duur_max"),
+    intensiteitsmaat: text("intensiteitsmaat"), // pct_ftp | zone | rpe | kg | herhalingen
+    intensiteitMin: integer("intensiteit_min"),
+    intensiteitMax: integer("intensiteit_max"),
+    // Vormen uit dezelfde vervangcategorie vervullen de plek ook (TRV-41).
+    vervangcategorie: text("vervangcategorie"),
+    herkomst: text("herkomst").notNull(), // planSlotHerkomsten
+    status: text("status").notNull().default("leeg"), // planSlotStatussen
+    // Bij "afgeweken": wat er is losgelaten (TRV-41). Nooit stil aanpassen.
+    afwijkingstoelichting: text("afwijkingstoelichting"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("plan_slots_clerk_datum_idx").on(t.clerkId, t.datum)],
+);
+
+// Een geplaatste sessie op een plek. De echte training blijft een
+// planned_workouts-rij (één trainingsobject, TRV-22); deze tabel is de
+// koppelling plek ↔ vorm ↔ training plus de gekozen parameters.
+export const plannedSessionsTable = pgTable(
+  "planned_sessions",
+  {
+    id: serial("id").primaryKey(),
+    slotId: integer("slot_id")
+      .notNull()
+      .references(() => planSlotsTable.id, { onDelete: "cascade" }),
+    formId: integer("form_id")
+      .notNull()
+      .references(() => trainingFormsTable.id, { onDelete: "restrict" }),
+    // De training zelf (planned_workouts). set null: verwijdert iemand de
+    // training buiten de plek om, dan blijft de plaatsing zichtbaar en kan de
+    // plekstatus eerlijk hersteld worden.
+    plannedWorkoutId: integer("planned_workout_id"),
+    gekozenParameters: jsonb("gekozen_parameters").$type<{
+      duurMinuten?: number;
+      intensiteit?: number;
+      intensiteitsmaat?: string;
+      herhalingen?: number;
+    }>(),
+    geschatteBelasting: integer("geschatte_belasting"), // TSS-achtig; null = onbekend
+    // TRV-62: false is een geldige toestand → UI toont "onbekend", nooit 0.
+    belastingBekend: boolean("belasting_bekend").notNull().default(false),
+    frisheidskostPerSoort: jsonb("frisheidskost_per_soort").$type<Record<string, number>>(),
+    keuzebron: text("keuzebron").notNull(), // sporter | trainer | ai
+    adviesDossierId: integer("advies_dossier_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("planned_sessions_slot_uq").on(t.slotId)],
+);
+
+// Ruimte-instelling per trainer×sporter (TRV-33): strak · normaal · vrij.
+// De AI vult binnen die ruimte het concrete bereik per plek in.
+export const trainerSlotDefaultsTable = pgTable(
+  "trainer_slot_defaults",
+  {
+    id: serial("id").primaryKey(),
+    trainerClerkId: text("trainer_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+    sporterClerkId: text("sporter_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+    ruimte: text("ruimte").notNull(), // strak | normaal | vrij
+    geldigVanaf: timestamp("geldig_vanaf", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("trainer_slot_defaults_uq").on(t.trainerClerkId, t.sporterClerkId)],
+);
+
 // Bronnen per vorm (TRV-61). Bronnen worden nooit verzonnen (TRV-27):
 // zonder echte bron blijft deze tabel voor die vorm leeg en zegt de
 // toelichting eerlijk "nog niet ingeschaald".
