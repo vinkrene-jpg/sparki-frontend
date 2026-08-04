@@ -81,6 +81,61 @@ export const POWER_ZONES: Array<{
   { zone: "Z6", label: "Anaeroob", lo: 1.2, hi: null },
 ];
 
+// MEETNIVEAU_EN_UITLEG_01 §3.1 SPOOR_H — hartslagzones op %maxHR. Vijf zones
+// (klassieke indeling), MOET dezelfde tabel blijven als wat de frontend bij
+// een hartslag-zonekaart toont. Alleen bruikbaar met een echte maxHR
+// (profiel) of een expliciet als schatting gelabelde leeftijdsformule.
+export const HR_ZONES: Array<{
+  zone: string;
+  label: string;
+  lo: number;
+  hi: number | null;
+}> = [
+  { zone: "Z1", label: "Herstel", lo: 0, hi: 0.6 },
+  { zone: "Z2", label: "Duur", lo: 0.6, hi: 0.7 },
+  { zone: "Z3", label: "Tempo", lo: 0.7, hi: 0.8 },
+  { zone: "Z4", label: "Drempel", lo: 0.8, hi: 0.9 },
+  { zone: "Z5", label: "Maximaal", lo: 0.9, hi: null },
+];
+
+/**
+ * Seconds per hartslagzone from stored (downsampled) streams against maxHR.
+ * Null when there is no usable heart-rate channel or maxHR — never a
+ * fabricated distribution. Same bucket-duration rule as the power variant.
+ */
+export function hrZoneSecondsFromStreams(
+  streams: unknown,
+  maxHr: number | null,
+): number[] | null {
+  if (!maxHr || maxHr < 120 || maxHr > 230) return null;
+  const s = streams as { t?: unknown; heartRate?: unknown } | null;
+  if (!s || !Array.isArray(s.t) || !Array.isArray(s.heartRate)) return null;
+  const t = s.t.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (t.length < 2 || t.length !== s.t.length) return null;
+
+  const dts: number[] = [];
+  for (let i = 1; i < t.length; i++) dts.push(t[i]! - t[i - 1]!);
+  const medianDt = dts.length
+    ? [...dts].sort((a, b) => a - b)[Math.floor(dts.length / 2)]!
+    : 1;
+
+  const seconds = HR_ZONES.map(() => 0);
+  let any = false;
+  for (let i = 0; i < t.length && i < s.heartRate.length; i++) {
+    const v = (s.heartRate as unknown[])[i];
+    if (typeof v !== "number" || !Number.isFinite(v) || v < 40 || v > 230) continue;
+    const ratio = v / maxHr;
+    let idx = HR_ZONES.findIndex(
+      (z) => ratio >= z.lo && (z.hi == null || ratio < z.hi),
+    );
+    if (idx < 0) idx = ratio < 0 ? 0 : HR_ZONES.length - 1;
+    seconds[idx]! += medianDt;
+    any = true;
+  }
+  if (!any) return null;
+  return seconds.map((v) => Math.round(v));
+}
+
 /**
  * Seconds per Coggan zone from stored (downsampled) streams against FTP.
  * Null when there is no usable power channel or FTP — never a fabricated

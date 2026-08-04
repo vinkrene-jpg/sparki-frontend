@@ -34,6 +34,10 @@ import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
 import { WattageLab } from "@/components/sparki/wattage-lab"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { PakketPoortNotice, DataPoortNotice } from "@/components/sparki/meet-poorten"
+import { bepaalPoort } from "@/lib/poorten"
+import { useMeetniveau } from "@/hooks/use-meetniveau"
+import { useFeatureAccess } from "@/hooks/use-feature-access"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import { UitlegDot } from "@/components/viz/uitleg"
@@ -820,34 +824,55 @@ function WeekZonesTooltip({
 function WeekZonesCard() {
   const { data, isLoading, isError, refetch } = useWeeklyZones()
 
+  // SPOOR_H (§3.1): vermogen en hartslag staan NAAST elkaar. Met vermogensdata
+  // tonen we vermogenszones; heeft de renner alleen een hartslagband, dan
+  // draait exact dezelfde kaart op de hartslagzones — nooit een lege
+  // vermogenskaart als er wél een echt hartslagsignaal is. Bases mengen nooit
+  // binnen één grafiek.
+  const heeftVermogen = data != null && data.ftp != null && data.sessionsWithPower > 0
+  const heeftHartslag = !heeftVermogen && (data?.sessionsWithHr ?? 0) > 0 && (data?.hrZones?.length ?? 0) > 0
+  const basis: "vermogen" | "hartslag" = heeftHartslag ? "hartslag" : "vermogen"
+  const zones = (basis === "hartslag" ? data?.hrZones : data?.zones) ?? []
+
   const reeks = (data?.weeks ?? []).map((w) => {
     const rij: Record<string, number | string> = {
       label: weekLabelKort(w.weekStart),
       weekStart: w.weekStart,
       rides: w.rides,
-      ridesWithPower: w.ridesWithPower,
+      ridesWithPower: basis === "hartslag" ? (w.ridesWithHr ?? 0) : w.ridesWithPower,
     }
-    for (let i = 0; i < (data?.zones.length ?? 0); i++) {
-      rij[data!.zones[i]!.zone] = Math.round(((w.zoneSeconds[i] ?? 0) / 3600) * 10) / 10
+    const secs = basis === "hartslag" ? (w.hrZoneSeconds ?? []) : w.zoneSeconds
+    for (let i = 0; i < zones.length; i++) {
+      rij[zones[i]!.zone] = Math.round(((secs[i] ?? 0) / 3600) * 10) / 10
     }
     return rij
   })
-  const heeftData = (data?.sessionsWithPower ?? 0) > 0
-  const wekenZonderPower = (data?.weeks ?? []).filter((w) => w.rides > 0 && w.ridesWithPower < w.rides).length
+  const heeftData = heeftVermogen || heeftHartslag
+  const wekenZonderPower = (data?.weeks ?? []).filter((w) =>
+    w.rides > 0 && (basis === "hartslag" ? (w.ridesWithHr ?? 0) : w.ridesWithPower) < w.rides,
+  ).length
 
   return (
     <LCard className="p-5">
       <div className="flex flex-wrap items-center gap-1.5 mb-1">
         <LCardTitle>Zoneverdeling per week</LCardTitle>
         <UitlegDot uitlegKey="weekzoneverdeling" label="Zoneverdeling per week" />
-        <span className="text-xs text-muted-foreground ml-2">laatste 6 weken</span>
+        <span className="text-xs text-muted-foreground ml-2">
+          laatste 6 weken{basis === "hartslag" ? " · op hartslag" : ""}
+        </span>
       </div>
       <UitlegRegel k="weekzoneverdeling" />
       {isLoading ? (
         <Skel className="h-56 w-full" />
       ) : isError ? (
         <LFout titel="Zoneverdeling kon niet worden geladen." onOpnieuw={() => void refetch()} />
-      ) : data?.ftp == null ? (
+      ) : !heeftData && (data?.sessionsWithAvgHr ?? 0) > 0 ? (
+        // Eerlijk onderscheid (vóór de FTP-melding): hartslag is wél gemeten
+        // (gemiddelden per rit), maar zonder samplereeksen valt er geen
+        // tijd-in-zone te berekenen — dat is geen "geen signaal" en zeker
+        // geen FTP-probleem.
+        <LegeGrafiek titel="Je hartslag is gemeten, maar van deze ritten zijn geen volledige hartslagreeksen beschikbaar — alleen gemiddelden. Een zoneverdeling vraagt de volledige reeks; die komt binnen via bestand-import (FIT/TCX) of een koppeling die reeksen meestuurt." />
+      ) : !heeftData && data?.ftp == null && (data?.sessionsWithHr ?? 0) === 0 ? (
         <MissingInputNotice compact showOrb={false} tone="dark"
           title="Geen FTP bekend"
           description="Zonder FTP kunnen je vermogenszones niet worden berekend. Stel je FTP in om deze verdeling te zien."
@@ -855,7 +880,7 @@ function WeekZonesCard() {
           returnTo="/analyse"
         />
       ) : !heeftData ? (
-        <LegeGrafiek titel="Geen ritten met vermogensdata in de laatste 6 weken — zonder echt vermogenssignaal is er geen zoneverdeling." />
+        <LegeGrafiek titel="Geen ritten met vermogens- of hartslagdata in de laatste 6 weken — zonder echt sensorsignaal is er geen zoneverdeling." />
       ) : (
         <>
           <ResponsiveContainer width="100%" height={220}>
@@ -867,7 +892,7 @@ function WeekZonesCard() {
                 label={{ value: "uren", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
               />
               <Tooltip content={(props) => <WeekZonesTooltip {...(props as Parameters<typeof WeekZonesTooltip>[0])} />} />
-              {(data?.zones ?? []).map((z, i, all) => (
+              {zones.map((z, i, all) => (
                 <Bar
                   key={z.zone}
                   dataKey={z.zone}
@@ -881,7 +906,7 @@ function WeekZonesCard() {
             </ComposedChart>
           </ResponsiveContainer>
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            {(data?.zones ?? []).map((z) => (
+            {zones.map((z) => (
               <span key={z.zone} className="inline-flex items-center gap-1">
                 <span className="inline-block h-2 w-2 rounded-sm" style={{ background: WEEKZONE_KLEUR[z.zone] ?? CHART.missing }} />
                 {z.zone} {z.label}
@@ -889,11 +914,18 @@ function WeekZonesCard() {
             ))}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Je ziet per week hoeveel uur je in elke vermogenszone reed. Veel Z1–Z2 met gerichte harde tijd is een gezonde mix; groeit Z3 zonder plan, maak je rustige ritten dan weer écht rustig.
+            {basis === "hartslag"
+              ? "Je ziet per week hoeveel uur je in elke hartslagzone reed. Veel Z1–Z2 met gerichte harde tijd is een gezonde mix."
+              : "Je ziet per week hoeveel uur je in elke vermogenszone reed. Veel Z1–Z2 met gerichte harde tijd is een gezonde mix; groeit Z3 zonder plan, maak je rustige ritten dan weer écht rustig."}
           </p>
+          {basis === "hartslag" && data?.maxHrBron === "schatting" && (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Zonegrenzen op een geschatte maximale hartslag (leeftijdsformule) — vul je echte maximum in bij je profiel voor scherpere zones.
+            </p>
+          )}
           {wekenZonderPower > 0 && (
             <p className="mt-1 text-[11px]" style={{ color: CHART.missing }}>
-              In {wekenZonderPower} {wekenZonderPower === 1 ? "week" : "weken"} reed je ook ritten zonder vermogensdata — die tellen hier niet mee, de werkelijke trainingstijd ligt daar dus hoger.
+              In {wekenZonderPower} {wekenZonderPower === 1 ? "week" : "weken"} reed je ook ritten zonder {basis === "hartslag" ? "hartslagdata" : "vermogensdata"} — die tellen hier niet mee, de werkelijke trainingstijd ligt daar dus hoger.
             </p>
           )}
         </>
@@ -913,7 +945,7 @@ const INTENSITEIT_KLEUR: Record<string, string> = {
 
 function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
   const { buckets, totaalMin, bekendMin } = intensiteitsVerdeling(
-    sessies.map((s) => ({ id: s.id, sessionDate: s.sessionDate, durationMin: s.durationMin, tss: s.tss })),
+    sessies.map((s) => ({ id: s.id, sessionDate: s.sessionDate, durationMin: s.durationMin, tss: s.tss, hrLoad: s.hrLoad ?? null })),
   )
   return (
     <LCard className="p-5">
@@ -1040,6 +1072,32 @@ function BelastingTab({
   const [grafiekPeriode, setGrafiekPeriode] = useState<number>(90)
   const [vergelijk, setVergelijk] = useState(false)
 
+  // MEETNIVEAU_EN_UITLEG_01 §4 — twee gescheiden poorten. De pakketpoort
+  // (Compleet/Trainer) gaat vóór de datapoort (sensoren): er kan nooit een
+  // gemengde of dubbele melding ontstaan. UI faalt open bij onbekend antwoord;
+  // de server blijft de echte poort.
+  const pakket = useFeatureAccess("performance_lab")
+  const meetniveau = useMeetniveau()
+  // SPOOR_V en SPOOR_H staan NAAST elkaar (§3.1): de belastingsanalyse als
+  // geheel is te onderbouwen zodra er een echt ritsensorspoor is — vermogen
+  // óf hartslag. Alleen zonder beide vervangt de sensormelding de analyse.
+  const vermogenActief = meetniveau.data?.vermogen ?? true
+  const hartslagActief = meetniveau.data?.hartslag ?? true
+  const poort = bepaalPoort({
+    pakketOk: pakket.entitled,
+    pakketBekend: pakket.known,
+    dataOk: vermogenActief || hartslagActief,
+    dataBekend: meetniveau.data != null,
+  })
+  // Onafhankelijke datapoorten per spoor: ritsensoren (vermogen/hartslag) en
+  // herstel (draagbare) hebben elk hun eigen kaartgrens — de melding VERVANGT
+  // de analyse die zonder dat spoor niet te onderbouwen is, en vermengt nooit
+  // met de pakketpoort hierboven. Puur vermogensgebonden kaarten (doelscenario,
+  // Wattage-lab) houden hun eigen vermogenspoort, óók wanneer hartslag actief is.
+  const ritsensorOntbreekt = poort === "data"
+  const vermogenOntbreekt = meetniveau.data != null && !vermogenActief
+  const herstelOntbreekt = meetniveau.data != null && !meetniveau.data.herstel
+
   // Doelscenario: volumeverandering in % (null = uit). Deterministische
   // projectie uit de gedeelde engine; zonder echte belastingsscores geen band.
   const [scenarioPct, setScenarioPct] = useState<number | null>(null)
@@ -1063,7 +1121,7 @@ function BelastingTab({
     scenarioPct != null && load.data
       ? belastingProjectie({
           chartData: load.data.chartData,
-          sessies: (sessies.data ?? []).map((s) => ({ sessionDate: s.sessionDate, tss: s.tss })),
+          sessies: (sessies.data ?? []).map((s) => ({ sessionDate: s.sessionDate, tss: s.tss, hrLoad: s.hrLoad ?? null })),
           pctVolume: scenarioPct,
         })
       : null
@@ -1105,8 +1163,44 @@ function BelastingTab({
   const hrvDeltaWaarde = hrvDelta(metrics.data ?? [])
   const hrvReeksData = hrvReeks(metrics.data ?? [])
 
+  // §4 pakketpoort — pas ná alle hooks (Rules of Hooks: de hook-volgorde mag
+  // niet veranderen wanneer het rechten-antwoord binnenkomt).
+  if (poort === "pakket") {
+    return (
+      <div className="space-y-4">
+        <PakketPoortNotice onderdeel="De diepe belastingsanalyse" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
+      {/* §4 datapoort ritsensoren: zonder vermogens- ÉN hartslagspoor is de
+          belastingsanalyse niet te onderbouwen — de melding VERVANGT dan het
+          doelscenario, de belastingsgrafiek en de zonekaarten.
+          Duur-/check-in-kaarten hieronder blijven gewoon bruikbaar. */}
+      {ritsensorOntbreekt && (
+        <LCard className="p-5">
+          <LCardTitle>Belasting & doelscenario</LCardTitle>
+          <div className="mt-3">
+            <DataPoortNotice sensor="vermogensmeter" />
+          </div>
+        </LCard>
+      )}
+      {!ritsensorOntbreekt && (<>
+      {/* SPOOR_H: met alleen een hartslagband blijven de vermogensgebonden
+          simulaties (doelscenario, Wattage-lab) eerlijk achter hun eigen
+          vermogenspoort — de belastingsgrafiek en zonekaarten hieronder
+          draaien dan op de hartslagreeks. */}
+      {vermogenOntbreekt && (
+        <LCard className="p-5">
+          <LCardTitle>Doelscenario & Wattage-lab</LCardTitle>
+          <div className="mt-3">
+            <DataPoortNotice sensor="vermogensmeter" />
+          </div>
+        </LCard>
+      )}
+      {!vermogenOntbreekt && (<>
       {/* Doelscenario — centraal veld boven de grafiek */}
       <LCard className="p-5 border-2 border-purple-400/25">
         <div className="flex items-center gap-1.5 mb-1">
@@ -1201,6 +1295,7 @@ function BelastingTab({
 
       {/* Wattage-lab — knutselen met eigen vermogensdoelen (eerlijke vuistregels) */}
       <WattageLab ftp={profiel?.ftp ?? null} weightKg={profiel?.weightKg ?? null} />
+      </>)}
 
       {/* Load grafiek — volle breedte */}
       <LCard className="p-5">
@@ -1244,6 +1339,19 @@ function BelastingTab({
         </div>
 
         <UitlegRegel k="belastingsverloop" />
+        {/* SPOOR_H reeksbreuk-eerlijkheid: de grafiek staat op precies één
+            reeks (vermogen óf hartslag) — nooit stilzwijgend gemengd. Op de
+            hartslagreeks staat dat er expliciet bij. */}
+        {load.data?.basis === "hartslag" && (
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            Deze grafiek draait op je interne belasting uit hartslag. Komt er later een vermogensmeter bij, dan start de reeks opnieuw op vermogensbasis — de lijnen worden nooit gemengd.
+          </p>
+        )}
+        {load.data?.basis === "vermogen" && (load.data.basisDetail?.buitenBasis ?? 0) > 0 && (
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            {load.data.basisDetail!.buitenBasis} {load.data.basisDetail!.buitenBasis === 1 ? "sessie telt" : "sessies tellen"} hier niet mee: alleen op hartslag gemeten, en hartslag- en vermogensbelasting worden nooit in één reeks gemengd.
+          </p>
+        )}
         {loadToestand === "laden" && <Skel className="h-64 w-full" />}
         {loadToestand === "fout" && <LFout titel="Belastingsgrafiek kon niet worden geladen." onOpnieuw={() => void load.refetch()} />}
         {(loadToestand === "ok" || loadToestand === "verouderd") && load.data && (
@@ -1261,6 +1369,7 @@ function BelastingTab({
           )
         )}
       </LCard>
+      </>)}
 
       {/* Grid: volume + intensiteit + herstel — desktop naast elkaar */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -1270,8 +1379,10 @@ function BelastingTab({
         onWeekKlik={onWeekKlik}
         doelUren={scenarioPct != null && urenBasis != null ? urenBasis.uren * (1 + scenarioPct / 100) : null}
       />
-      <IntensiteitCard sessies={sessies.data ?? []} />
-      <WeekZonesCard />
+      {/* Intensiteit en weekzones draaien op vermogen óf hartslag — achter
+          dezelfde ritsensorpoort als de belastingsgrafiek (melding bovenaan). */}
+      {!ritsensorOntbreekt && <IntensiteitCard sessies={sessies.data ?? []} />}
+      {!ritsensorOntbreekt && <WeekZonesCard />}
 
       {/* Readiness-trend */}
       <LCard className="p-5">
@@ -1341,7 +1452,11 @@ function BelastingTab({
           <UitlegDot uitlegKey="hrvTrend" label="HRV-trend" />
         </div>
         <UitlegRegel k="hrvTrend" />
-        {hrvWaarde != null ? (
+        {/* §4 datapoort herstel: te weinig recente rusthartslag-/HRV-metingen
+            (het herstelspoor) ⇒ geen trend tonen maar de sensormelding. */}
+        {herstelOntbreekt ? (
+          <DataPoortNotice sensor="draagbare" />
+        ) : hrvWaarde != null ? (
           <>
             <div className="flex items-end justify-between mb-2">
               <div className="flex items-baseline gap-1">
@@ -1457,7 +1572,13 @@ function PowerCurveTooltip({
 }
 
 function PowerCurveCard() {
-  const { data, isLoading, isError, refetch } = usePowerBests()
+  // §4 datapoort in de kaart zelf: zonder waargenomen vermogensspoor wordt de
+  // query niet eens gestart en vervangt de sensormelding de curve — nooit een
+  // generieke foutkaart op de server-weigering.
+  const meetniveau = useMeetniveau()
+  const vermogenActief = meetniveau.data == null || meetniveau.data.vermogen
+  const vermogenOntbreekt = meetniveau.data != null && !meetniveau.data.vermogen
+  const { data, isLoading, isError, refetch } = usePowerBests({ enabled: vermogenActief })
 
   const reeks = POWER_WINDOWS.map((w) => ({
     label: w.label,
@@ -1476,7 +1597,9 @@ function PowerCurveCard() {
         <span className="text-xs text-muted-foreground ml-2">laatste 42 dagen vs 42 dagen ervoor</span>
       </div>
       <UitlegRegel k="powercurve" />
-      {isLoading ? (
+      {vermogenOntbreekt ? (
+        <DataPoortNotice sensor="vermogensmeter" />
+      ) : isLoading ? (
         <Skel className="h-56 w-full" />
       ) : isError ? (
         <LFout titel="Powercurve kon niet worden geladen." onOpnieuw={() => void refetch()} />
@@ -1531,13 +1654,34 @@ function PowerCurveCard() {
 }
 
 function PowerBestsTable() {
-  const { data, isLoading, isError, refetch } = usePowerBests()
+  const meetniveau = useMeetniveau()
+  const { data, isLoading, isError, refetch } = usePowerBests({
+    enabled: meetniveau.data == null || meetniveau.data.vermogen,
+  })
+  // §4: ook op de records eerst de pakketvraag, dan pas de sensorvraag —
+  // dezelfde beslislaag als op de Belasting-tab, nooit gemengd.
+  const pakket = useFeatureAccess("performance_lab")
+  const poort = bepaalPoort({
+    pakketOk: pakket.entitled,
+    pakketBekend: pakket.known,
+    dataOk: meetniveau.data?.vermogen ?? true,
+    dataBekend: meetniveau.data != null,
+  })
+  if (poort === "pakket") {
+    return <PakketPoortNotice onderdeel="Je vermogensrecords" />
+  }
 
   if (isLoading) return <Skel className="h-40 w-full" />
   if (isError) return <LFout titel="Persoonlijke records konden niet worden geladen." onOpnieuw={() => void refetch()} />
 
   const hasAny = data && Object.keys(data.allTime).length > 0
   if (!hasAny) {
+    // §4 datapoort: geen records omdat de apparatuur geen vermogen levert ⇒
+    // benoem de sensor, nooit het pakket. Zolang de waarneming nog niet
+    // binnen is, blijft de neutrale lege staat staan.
+    if (meetniveau?.data && !meetniveau.data.vermogen) {
+      return <DataPoortNotice sensor="vermogensmeter" />
+    }
     return (
       <p className="text-sm text-muted-foreground py-4">
         Nog geen vermogensrecords. Log ritten met een vermogensmeter om je records op te bouwen.
@@ -1717,6 +1861,13 @@ function ProgressieTab({
 }) {
   const weergave = ftp.data ? ftpWeergave(ftp.data, profiel?.ftp ?? null) : null
   const [, navigate] = useLocation()
+  // §4 datapoort vermogen: powercurve en vermogensrecords zijn puur
+  // vermogensanalyse — zonder waargenomen vermogensspoor (SPOOR_H-renner)
+  // vervangt één sensormelding beide kaarten en wordt er niets opgehaald.
+  // FTP-ontwikkeling/gewicht blijven staan: dat zijn Sportpaspoort-waarden,
+  // geen sensorstreams. De server bewaakt dezelfde grens op /power-bests.
+  const meetniveau = useMeetniveau()
+  const vermogenOntbreekt = meetniveau.data != null && !meetniveau.data.vermogen
 
   return (
     <div className="space-y-6">
@@ -1802,18 +1953,30 @@ function ProgressieTab({
         doelZin={doelZin}
       />
 
-      {/* Powercurve met periodevergelijking */}
-      <PowerCurveCard />
+      {/* Powercurve + records: alleen met waargenomen vermogensspoor. */}
+      {vermogenOntbreekt ? (
+        <LCard className="p-5 lg:col-span-2">
+          <LCardTitle>Powercurve & vermogensrecords</LCardTitle>
+          <div className="mt-3">
+            <DataPoortNotice sensor="vermogensmeter" />
+          </div>
+        </LCard>
+      ) : (
+        <>
+          {/* Powercurve met periodevergelijking */}
+          <PowerCurveCard />
 
-      {/* Persoonlijke records (vermogen) */}
-      <LCard className="p-5 lg:col-span-2">
-        <div className="flex items-center gap-1.5 mb-4">
-          <LCardTitle>Persoonlijke vermogensrecords</LCardTitle>
-          <UitlegDot uitlegKey="records" label="Beste vermogens" />
-        </div>
-        <UitlegRegel k="records" />
-        <PowerBestsTable />
-      </LCard>
+          {/* Persoonlijke records (vermogen) */}
+          <LCard className="p-5 lg:col-span-2">
+            <div className="flex items-center gap-1.5 mb-4">
+              <LCardTitle>Persoonlijke vermogensrecords</LCardTitle>
+              <UitlegDot uitlegKey="records" label="Beste vermogens" />
+            </div>
+            <UitlegRegel k="records" />
+            <PowerBestsTable />
+          </LCard>
+        </>
+      )}
       </div>
 
       {/* Trainingsverloop — donkere glass-variant, passend bij de rest van Analyse */}
@@ -2136,7 +2299,7 @@ function SamenvattingStrip({
     (connectors.data ?? []).map((c) => ({ displayName: c.displayName, status: c.status, lastSyncAt: c.lastSyncAt })),
   )
   const kwaliteit = dataBetrouwbaarheid(
-    sessies.map((s) => ({ id: s.id, sessionDate: s.sessionDate, durationMin: s.durationMin, tss: s.tss })),
+    sessies.map((s) => ({ id: s.id, sessionDate: s.sessionDate, durationMin: s.durationMin, tss: s.tss, hrLoad: s.hrLoad ?? null })),
     todayIso,
   )
 

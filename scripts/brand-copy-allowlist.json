@@ -147,5 +147,10 @@
     "file": "artifacts/api-server/src/lib/health/checks.ts",
     "contains": "door Sparki gebouwde onderdelen",
     "reason": "Admin-healthcheck: systeem als geheel."
+  },
+  {
+    "file": "artifacts/api-server/src/engines/meetniveau/compute.ts",
+    "contains": "Sparki ziet van jou",
+    "reason": "Profielregel MEETNIVEAU_EN_UITLEG_01 §7: voorgeschreven vorm 'Sparki ziet van jou ...' — beschrijft wat Sparki waarneemt, geen coachadvies."
   }
 ]

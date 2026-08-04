@@ -8,6 +8,7 @@ import {
   doelOverlays,
   vergelijkReeks,
   dataBetrouwbaarheid,
+  belastingProjectie,
   laatsteSync,
   analyseSamenvatting,
 } from "./analyse-dashboard";
@@ -222,4 +223,46 @@ test("analyseSamenvatting: zonder data alles null, geen schattingen", () => {
   assert.equal(s.ftp, null);
   assert.equal(s.wkg, null);
   assert.equal(s.vormLabel, null);
+});
+
+// ── SPOOR_H: basisbewuste betrouwbaarheid en projectie ───────────────────────
+
+test("dataBetrouwbaarheid: HR-only renner wordt op de hartslagreeks beoordeeld, nooit gemengd", () => {
+  const hrOnly = Array.from({ length: 10 }, (_, i) => ({
+    id: i,
+    sessionDate: `2026-07-${String(10 + i).padStart(2, "0")}`,
+    durationMin: 90,
+    tss: null,
+    hrLoad: 70,
+  }));
+  const b = dataBetrouwbaarheid(hrOnly, "2026-07-28");
+  assert.equal(b.label, "hoog");
+  assert.ok(b.reden.includes("hartslag"), "reden benoemt de hartslagbasis: " + b.reden);
+  // Zodra er vermogen in het venster staat telt alleen vermogen (geen mengen).
+  const gemengd = [...hrOnly, { id: 99, sessionDate: "2026-07-27", durationMin: 60, tss: 60, hrLoad: null }];
+  const b2 = dataBetrouwbaarheid(gemengd, "2026-07-28");
+  assert.ok(!b2.reden.includes("hartslag"), "vermogensbasis benoemt geen hartslag: " + b2.reden);
+  assert.ok(b2.reden.includes("1 "), "alleen de vermogenssessie telt als score: " + b2.reden);
+});
+
+test("belastingProjectie: draait op hrLoad wanneer het venster geen tss heeft", () => {
+  const chartData = Array.from({ length: 28 }, (_, i) => ({
+    date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+    ctl: 40,
+    atl: 40,
+  }));
+  const sessies = Array.from({ length: 8 }, (_, i) => ({
+    sessionDate: `2026-07-${String(10 + i * 2).padStart(2, "0")}`,
+    tss: null,
+    hrLoad: 70,
+  }));
+  const p = belastingProjectie({ chartData, sessies, pctVolume: 20 });
+  assert.ok(p != null, "projectie moet er zijn op hartslagbasis");
+  // Met een tss-sessie in het venster telt alleen tss (basiswissel, geen mengen).
+  const p2 = belastingProjectie({
+    chartData,
+    sessies: [...sessies, { sessionDate: "2026-07-27", tss: 60, hrLoad: null }],
+    pctVolume: 20,
+  });
+  assert.ok(p2 != null);
 });

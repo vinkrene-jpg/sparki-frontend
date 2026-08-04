@@ -142,6 +142,7 @@
     "test:today-roles": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-roles",
     "test:today-matrix": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-matrix",
     "test:mental": "node ./scripts/run-test.mjs mental",
+    "test:meetniveau-sporen": "node ./scripts/run-test.mjs meetniveau-sporen --dev-auth",
     "test:trv-f2-freshness": "node ./scripts/run-test.mjs trv-f2-freshness --dev-auth",
     "test:trv-f3-plan-slots": "node ./scripts/run-test.mjs trv-f3-plan-slots --dev-auth",
     "test:basisprofiel": "node ./scripts/run-test.mjs basisprofiel",

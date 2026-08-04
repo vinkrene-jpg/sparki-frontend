@@ -17,6 +17,8 @@ export type SessieInput = {
   sessionDate: string // YYYY-MM-DD
   durationMin?: number | null
   tss?: number | null
+  /** Hartslagbelasting (SPOOR_H) — aparte maat, nooit optellen bij tss. */
+  hrLoad?: number | null
 }
 
 export type MetricInput = {
@@ -154,11 +156,16 @@ export function intensiteitsVerdeling(sessies: SessieInput[]): {
   for (const s of sessies) {
     const dur = s.durationMin != null && s.durationMin > 0 ? s.durationMin : null
     if (dur == null) continue // zonder duur geen minuten om te verdelen
-    if (s.tss == null || s.tss <= 0) {
+    // SPOOR_H: sessies zonder vermogensscore maar mét hartslagbelasting
+    // (hrLoad, apart gedefinieerd op dezelfde 0..1-intensiteitsschaal) krijgen
+    // hun intensiteit uit die maat — per sessie geldt precies één basis,
+    // scores worden nooit vermengd of opgeteld.
+    const score = s.tss != null && s.tss > 0 ? s.tss : s.hrLoad != null && s.hrLoad > 0 ? s.hrLoad : null
+    if (score == null) {
       onbekend += dur
       continue
     }
-    const ifWaarde = Math.sqrt(s.tss / ((dur / 60) * 100))
+    const ifWaarde = Math.sqrt(score / ((dur / 60) * 100))
     if (ifWaarde < 0.75) rustig += dur
     else if (ifWaarde < 0.88) stevig += dur
     else hard += dur
@@ -316,15 +323,24 @@ export function dataBetrouwbaarheid(
   if (recent.length === 0) {
     return { label: "geen", reden: `Geen sessies in de laatste ${dagen} dagen.` }
   }
+  // SPOOR_H basisbewust: één gekozen reeks, nooit mengen — dezelfde regel als
+  // het belastingsmodel. Staat er vermogen (tss) in het venster, dan telt
+  // alleen vermogen; anders beoordeelt de betrouwbaarheid de hartslagreeks
+  // (hrLoad), zodat een HR-only renner niet onterecht "laag" ziet terwijl de
+  // belastingsgrafiek diezelfde sessies wél als geldige score gebruikt.
   const metTss = recent.filter((s) => s.tss != null && s.tss > 0).length
-  const dekking = metTss / recent.length
+  const metHr = recent.filter((s) => s.hrLoad != null && s.hrLoad > 0).length
+  const basisHr = metTss === 0 && metHr > 0
+  const metScore = basisHr ? metHr : metTss
+  const scoreLabel = basisHr ? "belastingsscore op hartslag" : "belastingsscore"
+  const dekking = metScore / recent.length
   if (recent.length >= 8 && dekking >= 0.8) {
-    return { label: "hoog", reden: `${recent.length} sessies, ${metTss} met belastingsscore.` }
+    return { label: "hoog", reden: `${recent.length} sessies, ${metScore} met ${scoreLabel}.` }
   }
   if (dekking >= 0.5) {
-    return { label: "beperkt", reden: `${metTss} van ${recent.length} sessies met belastingsscore.` }
+    return { label: "beperkt", reden: `${metScore} van ${recent.length} sessies met ${scoreLabel}.` }
   }
-  return { label: "laag", reden: `Slechts ${metTss} van ${recent.length} sessies met belastingsscore.` }
+  return { label: "laag", reden: `Slechts ${metScore} van ${recent.length} sessies met ${scoreLabel}.` }
 }
 
 export type SyncInfo = { moment: string; bron: string } | null
@@ -366,7 +382,7 @@ export type BelastingProjectie = {
 
 export function belastingProjectie(input: {
   chartData: Array<{ date: string; ctl: number; atl: number }>
-  sessies: Array<{ sessionDate: string; tss?: number | string | null }>
+  sessies: Array<{ sessionDate: string; tss?: number | string | null; hrLoad?: number | string | null }>
   /** Volumeverandering in procenten, bv. 20 voor "20% meer". */
   pctVolume: number
   dagen?: number
@@ -381,14 +397,21 @@ export function belastingProjectie(input: {
   const start = new Date(`${eind}T12:00:00`)
   start.setDate(start.getDate() - 27)
   const startIso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`
+  // SPOOR_H basisbewust: exact dezelfde reekskeuze als het belastingsmodel —
+  // vermogen (tss) zodra aanwezig in het venster, anders de hartslagreeks
+  // (hrLoad). Nooit mengen; anders wijkt de projectie af van de grafiek
+  // waarop hij voortbouwt.
+  const inVenster = input.sessies.filter((s) => {
+    const datum = s.sessionDate.slice(0, 10)
+    return datum >= startIso && datum <= eind
+  })
+  const heeftTss = inVenster.some((s) => (alsGetal(s.tss) ?? 0) > 0)
   let somTss = 0
   let metScore = 0
-  for (const s of input.sessies) {
-    const datum = s.sessionDate.slice(0, 10)
-    if (datum < startIso || datum > eind) continue
-    const tss = alsGetal(s.tss)
-    if (tss == null || tss <= 0) continue
-    somTss += tss
+  for (const s of inVenster) {
+    const score = heeftTss ? alsGetal(s.tss) : alsGetal(s.hrLoad)
+    if (score == null || score <= 0) continue
+    somTss += score
     metScore++
   }
   if (metScore === 0 || somTss <= 0) return null

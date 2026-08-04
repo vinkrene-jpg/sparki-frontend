@@ -17,9 +17,12 @@ import {
 } from "@workspace/db";
 import type { BusyDay } from "../lib/training/plan-generator";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { computeAge } from "../lib/age";
 import {
   POWER_ZONES,
+  HR_ZONES,
   powerZoneSecondsFromStreams,
+  hrZoneSecondsFromStreams,
 } from "../lib/activity-streams";
 import {
   localDateStr,
@@ -47,6 +50,7 @@ import {
   isMeasurementLevel,
   measurementGapNote,
 } from "../lib/measurement-level";
+import { refreshMeetniveau, observeSporen } from "../engines/meetniveau";
 import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
 import { sessionOrigin, findSessionSyncRun } from "../engines/data-origin";
@@ -492,6 +496,34 @@ router.get("/measurement-level", requireAuth, async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "athlete.measurementLevel.get failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/athlete/meetniveau ──────────────────────────────────────────────
+// MEETNIVEAU_EN_UITLEG_01 §3+§7: het WAARGENOMEN meetniveau — geen instelling.
+// Levend: elke uitlezing kijkt opnieuw naar de laatste 10 activiteiten en de
+// laatste 7 dagen herstelmetingen (en verwerkt onderweg een eventuele
+// wegval-melding, precies één per episode). Interne codes verlaten de server
+// nooit (B4): de respons bevat alleen betekenisvolle booleans en de
+// profielregel in gewone taal.
+// Bewust ZONDER pakketpoort: dit is de profielwaarneming (§7-profielregel +
+// welke sporen er binnenkomen) — geen diepe-analysedata. De analyse-endpoints
+// zelf (power-bests, weekly-zones, …) dragen wél requireCommercialFeature.
+router.get("/meetniveau", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const { waarneming, profielregel } = await refreshMeetniveau(clerkId);
+    res.json({
+      vermogen: waarneming.vermogen,
+      hartslag: waarneming.hartslag,
+      herstel: waarneming.herstel,
+      activiteitenBekeken: waarneming.activiteitenBekeken,
+      hersteldagen: waarneming.hersteldagen,
+      profielregel,
+    });
+  } catch (err) {
+    req.log.error({ err }, "athlete.meetniveau.get failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -2455,6 +2487,7 @@ router.get("/load", requireAuth, async (req, res) => {
       .select({
         sessionDate: trainingSessionsTable.sessionDate,
         tss: trainingSessionsTable.tss,
+        hrLoad: trainingSessionsTable.hrLoad,
       })
       .from(trainingSessionsTable)
       .where(
@@ -2466,15 +2499,38 @@ router.get("/load", requireAuth, async (req, res) => {
         ),
       );
 
-    const series = computeLoadSeries(sessions, chartDays);
+    // SPOOR_H (§3.1) — één reeks, één basis, nooit mengen. Vermogensbelasting
+    // (tss) en hartslagbelasting (hrLoad) zijn apart gedefinieerd en mogen
+    // nooit in dezelfde reeks worden opgeteld (zie lib/hr-load.ts). Zolang er
+    // vermogensscores in het venster staan is dat de basis; anders — voor de
+    // renner met alleen een hartslagband — draait exact hetzelfde model op de
+    // hartslagbelasting. De basis staat expliciet in het antwoord, zodat de
+    // grafiek eerlijk laat zien op welke reeks hij staat (reeksbreuk bij
+    // wisselen in plaats van stilzwijgend doorgetekende lijnen).
+    const metVermogen = sessions.filter((s) => s.tss != null).length;
+    const metHartslag = sessions.filter((s) => s.hrLoad != null).length;
+    const basis: "vermogen" | "hartslag" =
+      metVermogen > 0 || metHartslag === 0 ? "vermogen" : "hartslag";
+    const reeks =
+      basis === "vermogen"
+        ? sessions.map((s) => ({ sessionDate: s.sessionDate, tss: s.tss }))
+        : sessions.map((s) => ({ sessionDate: s.sessionDate, tss: s.hrLoad }));
+    const buitenBasis = basis === "vermogen" ? metHartslag : 0;
+
+    const series = computeLoadSeries(reeks, chartDays);
     // Herkomst-metadata (additief): welke engine, parameters en brondata.
     res.json({
       ...series,
+      basis,
+      basisDetail: { metVermogen, metHartslag, buitenBasis },
       herkomst: {
         engine: "computeLoadSeries",
-        versie: "1",
-        parameters: { chartDays, modelDays: chartDays + 90 },
-        bron: "training_sessions.tss (gemeten of afgeleid)",
+        versie: "2",
+        parameters: { chartDays, modelDays: chartDays + 90, basis },
+        bron:
+          basis === "vermogen"
+            ? "training_sessions.tss (gemeten of afgeleid)"
+            : "training_sessions.hr_load (interne belasting op hartslag)",
         aantalSessies: sessions.length,
         betrouwbaarheid: sessions.length > 0 ? "afgeleid" : "onvoldoende",
         melding:
@@ -2492,9 +2548,24 @@ router.get("/load", requireAuth, async (req, res) => {
 // over all sessions that carry REAL per-sample power bests (computed at
 // FIT/TCX file ingest). Windows without any real data are simply absent —
 // never estimated from session averages.
-router.get("/power-bests", requireAuth, async (req, res) => {
+router.get("/power-bests", requireAuth, requireCommercialFeature("performance_lab"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
+    // §4 datapoort server-side: powercurve/records zijn puur vermogensanalyse.
+    // Zonder waargenomen vermogensspoor (laatste 10 activiteiten, ≥6 met
+    // vermogen) is de UI-melding niet de enige grens — ook een renner met
+    // oudere vermogenshistorie krijgt hier eerlijk "sensor ontbreekt", nooit
+    // upgradetaal (dat is de pakketpoort hierboven, strikt gescheiden).
+    const sporen = await observeSporen(clerkId);
+    if (!sporen.vermogen) {
+      res.status(403).json({
+        error: "sensor_data_required",
+        sensor: "vermogensmeter",
+        message:
+          "Hiervoor is vermogen nodig. Koppel een vermogensmeter om deze analyse te zien.",
+      });
+      return;
+    }
     const rows = await db
       .select({
         sessionDate: trainingSessionsTable.sessionDate,
@@ -2548,16 +2619,29 @@ router.get("/power-bests", requireAuth, async (req, res) => {
 // streams of the last 6 weeks. Honest by construction: rides without a power
 // stream count as ride but contribute no zone time; without FTP or without any
 // power data the response says so instead of guessing.
-router.get("/weekly-zones", requireAuth, async (req, res) => {
+router.get("/weekly-zones", requireAuth, requireCommercialFeature("performance_lab"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const WEEKS = 6;
   try {
     const [athlete] = await db
-      .select({ ftp: athleteProfilesTable.ftp })
+      .select({
+        ftp: athleteProfilesTable.ftp,
+        maxHr: athleteProfilesTable.maxHr,
+        birthDate: athleteProfilesTable.birthDate,
+        birthYear: athleteProfilesTable.birthYear,
+      })
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, clerkId))
       .limit(1);
     let ftp = athlete?.ftp ?? null;
+    // SPOOR_H — hartslagzones naast (niet onder) de vermogenszones. maxHR uit
+    // het profiel; anders de leeftijdsformule (Tanaka), expliciet gelabeld als
+    // schatting. Zonder beide blijft de hartslagverdeling eerlijk afwezig.
+    const leeftijd = computeAge(athlete?.birthDate ?? null, athlete?.birthYear ?? null);
+    const maxHrGebruikt =
+      athlete?.maxHr ?? (leeftijd != null ? Math.round(208 - 0.7 * leeftijd) : null);
+    const maxHrBron: "profiel" | "schatting" | null =
+      athlete?.maxHr != null ? "profiel" : maxHrGebruikt != null ? "schatting" : null;
     if (ftp == null) {
       // Zelfde bron als de FTP-ontwikkeling op de pagina: de meest recente
       // geldige FTP-meting. Achterhaalde afgeleide rijen tellen niet mee
@@ -2591,6 +2675,7 @@ router.get("/weekly-zones", requireAuth, async (req, res) => {
       .select({
         id: trainingSessionsTable.id,
         sessionDate: trainingSessionsTable.sessionDate,
+        avgHR: trainingSessionsTable.avgHR,
       })
       .from(trainingSessionsTable)
       .where(
@@ -2602,18 +2687,27 @@ router.get("/weekly-zones", requireAuth, async (req, res) => {
 
     const byWeek = new Map<
       string,
-      { seconds: number[]; rides: number; ridesWithPower: number }
+      {
+        seconds: number[];
+        hrSeconds: number[];
+        rides: number;
+        ridesWithPower: number;
+        ridesWithHr: number;
+      }
     >();
     for (const ws of weekStarts) {
       byWeek.set(ws, {
         seconds: POWER_ZONES.map(() => 0),
+        hrSeconds: HR_ZONES.map(() => 0),
         rides: 0,
         ridesWithPower: 0,
+        ridesWithHr: 0,
       });
     }
 
     let sessionsWithPower = 0;
-    if (sessions.length > 0 && ftp) {
+    let sessionsWithHr = 0;
+    if (sessions.length > 0 && (ftp || maxHrGebruikt)) {
       // Alleen het streams-deel van de import ophalen — parsedSummary als
       // geheel draagt ook route-geometrie en is onnodig zwaar.
       const imports = await db
@@ -2640,15 +2734,22 @@ router.get("/weekly-zones", requireAuth, async (req, res) => {
         const agg = byWeek.get(week);
         if (!agg) continue;
         agg.rides += 1;
-        const zoneSeconds = powerZoneSecondsFromStreams(
-          streamsBySession.get(String(s.id)) ?? null,
-          ftp,
-        );
-        if (!zoneSeconds) continue;
-        agg.ridesWithPower += 1;
-        sessionsWithPower += 1;
-        for (let i = 0; i < zoneSeconds.length; i++) {
-          agg.seconds[i]! += zoneSeconds[i]!;
+        const streams = streamsBySession.get(String(s.id)) ?? null;
+        const zoneSeconds = ftp ? powerZoneSecondsFromStreams(streams, ftp) : null;
+        if (zoneSeconds) {
+          agg.ridesWithPower += 1;
+          sessionsWithPower += 1;
+          for (let i = 0; i < zoneSeconds.length; i++) {
+            agg.seconds[i]! += zoneSeconds[i]!;
+          }
+        }
+        const hrSeconds = hrZoneSecondsFromStreams(streams, maxHrGebruikt);
+        if (hrSeconds) {
+          agg.ridesWithHr += 1;
+          sessionsWithHr += 1;
+          for (let i = 0; i < hrSeconds.length; i++) {
+            agg.hrSeconds[i]! += hrSeconds[i]!;
+          }
         }
       }
     } else if (sessions.length > 0) {
@@ -2666,16 +2767,36 @@ router.get("/weekly-zones", requireAuth, async (req, res) => {
         fromW: ftp ? Math.round(z.lo * ftp) : null,
         toW: ftp && z.hi != null ? Math.round(z.hi * ftp) : null,
       })),
+      // SPOOR_H — hartslagzones staan NAAST de vermogenszones (§3.1): een
+      // renner met alleen een hartslagband krijgt een echte verdeling, geen
+      // lege vermogenskaart.
+      hrZones: HR_ZONES.map((z) => ({
+        zone: z.zone,
+        label: z.label,
+        fromBpm: maxHrGebruikt ? Math.round(z.lo * maxHrGebruikt) : null,
+        toBpm:
+          maxHrGebruikt && z.hi != null ? Math.round(z.hi * maxHrGebruikt) : null,
+      })),
+      maxHr: maxHrGebruikt,
+      maxHrBron,
       weeks: weekStarts.map((ws) => {
         const agg = byWeek.get(ws)!;
         return {
           weekStart: ws,
           rides: agg.rides,
           ridesWithPower: agg.ridesWithPower,
+          ridesWithHr: agg.ridesWithHr,
           zoneSeconds: agg.seconds,
+          hrZoneSeconds: agg.hrSeconds,
         };
       }),
       sessionsWithPower,
+      sessionsWithHr,
+      // Eerlijk onderscheid (SPOOR_H): hartslag kan als gemiddelde gemeten
+      // zijn (provider-import zonder samplereeksen). Dat activeert het
+      // hartslagspoor wél, maar levert geen zoneverdeling — de UI moet dan
+      // "wel signaal, geen samplereeksen" zeggen, nooit "geen sensorsignaal".
+      sessionsWithAvgHr: sessions.filter((x) => x.avgHR != null).length,
     });
   } catch (err) {
     req.log.error({ err }, "athlete.weekly-zones GET failed");

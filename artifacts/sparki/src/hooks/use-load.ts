@@ -9,6 +9,9 @@ export type LoadData = {
   atl: number;
   tsb: number;
   chartData: Array<{ date: string; ctl: number; atl: number; tsb: number; tss: number }>;
+  /** SPOOR_H (§3.1): op welke reeks het model draait — nooit gemengd. */
+  basis?: "vermogen" | "hartslag";
+  basisDetail?: { metVermogen: number; metHartslag: number; buitenBasis: number };
 };
 
 // `days` stuurt alleen het grafiekvenster (7–365); het belastingsmodel zelf

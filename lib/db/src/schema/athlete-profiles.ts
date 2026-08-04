@@ -67,6 +67,17 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   measurementLevel: text("measurement_level").$type<
     "pro" | "hartslag" | "tijd_gevoel" | "aanwezigheid"
   >(),
+  // MEETNIVEAU_EN_UITLEG_01 §3: laatst WAARGENOMEN sporen (geen instelling).
+  // v = vermogensspoor, h = hartslagspoor, r = herstelspoor. Alleen gebruikt
+  // om het wegvallen van een spoor te detecteren (één melding, stil
+  // terug-groeien). Null = nog nooit waargenomen. Interne codes (SPOOR_*)
+  // verlaten de server nooit (B4).
+  observedSporen: jsonb("observed_sporen").$type<{
+    v: boolean;
+    h: boolean;
+    r: boolean;
+    sinds: string;
+  }>(),
   // TRAINEN_DOELEN_SEIZOEN_01 F3: hartslagzones uit rust- en maximale hartslag
   // voor de hartslagbelasting van sessies zonder vermogen. Sporter-ingevuld,
   // nullable — zonder deze waarden blijft zo'n sessie eerlijk zonder belasting.

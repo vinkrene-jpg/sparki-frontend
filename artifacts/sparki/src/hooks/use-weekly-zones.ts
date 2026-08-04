@@ -11,8 +11,12 @@ export type WeeklyZoneWeek = {
   rides: number;
   /** Aantal sessies met echte vermogensstream. */
   ridesWithPower: number;
+  /** Aantal sessies met echte hartslagstream. */
+  ridesWithHr?: number;
   /** Seconden per zone (index volgt `zones`). */
   zoneSeconds: number[];
+  /** Seconden per hartslagzone (index volgt `hrZones`). */
+  hrZoneSeconds?: number[];
 };
 
 export type WeeklyZonesData = {
@@ -23,8 +27,19 @@ export type WeeklyZonesData = {
     fromW: number | null;
     toW: number | null;
   }>;
+  hrZones?: Array<{
+    zone: string;
+    label: string;
+    fromBpm: number | null;
+    toBpm: number | null;
+  }>;
+  maxHr?: number | null;
+  maxHrBron?: "profiel" | "schatting" | null;
   weeks: WeeklyZoneWeek[];
   sessionsWithPower: number;
+  sessionsWithHr?: number;
+  /** Sessies met een gemeten gemiddelde hartslag (ook zonder samplereeksen). */
+  sessionsWithAvgHr?: number;
 };
 
 /** Zoneverdeling per week (laatste 6 weken) uit echte vermogensstreams. */

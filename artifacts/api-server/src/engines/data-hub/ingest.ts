@@ -639,5 +639,16 @@ export async function ingestBatch(
 
   await ingestEquipment(clerkId, provider, batch, counts);
 
+  // MEETNIVEAU_EN_UITLEG_01 §3: het meetniveau is levend — na elke ingest
+  // opnieuw waarnemen. Best-effort: een falende waarneming mag een geslaagde
+  // import nooit laten mislukken; de melding bij een weggevallen spoor komt
+  // dan bij de volgende waarneming (ook op het uitleespad).
+  try {
+    const { refreshMeetniveau } = await import("../meetniveau");
+    await refreshMeetniveau(clerkId);
+  } catch {
+    // Bewust stil — zie hierboven.
+  }
+
   return counts;
 }

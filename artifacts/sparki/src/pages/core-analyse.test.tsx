@@ -18,6 +18,7 @@ type HookResult = {
 };
 
 let loadResult: HookResult;
+let weeklyZonesResult: HookResult;
 let ftpResult: HookResult;
 let sessionsResult: HookResult;
 let metricsResult: HookResult;
@@ -37,17 +38,17 @@ const h = (...args: unknown[]) =>
     globalThis as { React?: { createElement: CallableFunction } }
   ).React!.createElement(...(args as [never, never]));
 
-mock.module("@/components/sparki/screen-shell", {
-  namedExports: {
-    ScreenShell: (props: { children?: unknown }) =>
-      h("div", { "data-testid": "screen-shell" }, props.children),
-  },
-});
-
 mock.module("@/components/sparki/commercial-shell", {
   namedExports: {
     CommercialShell: (props: { children?: unknown }) =>
       h("div", { "data-testid": "schil" }, props.children),
+  },
+});
+
+mock.module("@/components/sparki/screen-shell", {
+  namedExports: {
+    ScreenShell: (props: { children?: unknown }) =>
+      h("div", { "data-testid": "screen-shell" }, props.children),
   },
 });
 
@@ -134,6 +135,10 @@ mock.module("@/hooks/use-load", {
   namedExports: { useLoad: () => loadResult },
 });
 
+mock.module("@/hooks/use-weekly-zones", {
+  namedExports: { useWeeklyZones: () => weeklyZonesResult },
+});
+
 mock.module("@/hooks/use-ftp-history", {
   namedExports: {
     useFtpHistory: () => ftpResult,
@@ -218,6 +223,21 @@ mock.module("wouter", {
   },
 });
 
+// Meetniveau-waarneming + pakketrechten — instelbaar per scenario (§4-poorten).
+let meetniveauResult: { data: unknown };
+let pakketResult: { entitled: boolean; known: boolean };
+
+mock.module("@/hooks/use-meetniveau", {
+  namedExports: { useMeetniveau: () => meetniveauResult },
+});
+
+mock.module("@/hooks/use-feature-access", {
+  namedExports: {
+    useFeatureAccess: () => ({ isLoading: false, ...pakketResult }),
+    useEntitlements: () => ({ data: undefined, isLoading: false }),
+  },
+});
+
 mock.module("@/lib/performance-radar", {
   namedExports: {
     computePerformanceRadar: () => radarAxes,
@@ -273,6 +293,7 @@ const zesAssen = [
 function vulAlles() {
   radarAxes = zesAssen;
   loadResult = ok({ ctl: 50, atl: 40, tsb: 5, chartData: [] });
+  weeklyZonesResult = ok(null);
   sessionsResult = ok([
     makeSession(1, { title: "Zondagsrit", durationMin: 120, tss: "55" }),
     makeSession(2, { title: "Intervalblok", durationMin: 60, tss: 42 }),
@@ -289,6 +310,10 @@ function vulAlles() {
   profileResult = {
     data: { displayName: "René", ftp: 250, weightKg: 72 },
   };
+  meetniveauResult = {
+    data: { vermogen: true, hartslag: true, herstel: true, profielregel: "" },
+  };
+  pakketResult = { entitled: true, known: true };
   metricsCalls.length = 0;
   navCalls.length = 0;
 }
@@ -314,7 +339,7 @@ test("volledige gegevens: radar, readiness, HRV, FTP en sessies tonen echte waar
     assert.ok(text.includes("62"), "HRV vandaag");
     assert.ok(text.includes("+5"), "HRV-delta vs gisteren");
     assert.ok(text.includes("250"), "profiel-FTP als bron van waarheid");
-    assert.ok(text.includes("uit je Sportpaspoort"));
+    assert.ok(text.includes("Sportpaspoort"));
     assert.ok(text.includes("+30W all-time"));
     assert.ok(text.includes("Zondagsrit"));
     assert.ok(text.includes("120 min"));
@@ -537,10 +562,15 @@ test("periodefilter: 30-dagenknop stuurt de query en markeert de keuze", async (
   vulAlles();
   const view = await renderPage();
   try {
+    assert.equal(metricsCalls[0], 90, "één query over 90 dagen; filter is client-side");
     const knop = view.container.querySelector(
       'button[aria-label="30 dagen"]',
     ) as HTMLButtonElement;
     assert.ok(knop, "30-dagenknop aanwezig");
+    assert.ok(
+      knop.className.includes("min-h-"),
+      "aanraakdoel met expliciete minimumhoogte",
+    );
     view.rtl.fireEvent.click(knop);
     assert.equal(knop.getAttribute("aria-pressed"), "true");
     const veertien = view.container.querySelector(
@@ -561,6 +591,10 @@ test("toegankelijkheid: grafieken hebben een tekstueel alternatief", async () =>
     assert.ok(
       text.includes("Performance-radar met 6 meetbare signalen"),
       "radar-samenvatting",
+    );
+    assert.ok(
+      text.includes("Gebaseerd op dagelijkse check-in scores."),
+      "readiness-grafiek heeft toelichting",
     );
     assert.ok(
       view.container.querySelector("[aria-pressed]"),
@@ -603,9 +637,7 @@ test("detail en navigatie: sessie opent drawer, lege staat linkt naar Training",
   vulAlles();
   const view = await renderPage();
   try {
-    const rij = Array.from(view.container.querySelectorAll("tr")).find(
-      (r) => (r.textContent ?? "").includes("Zondagsrit"),
-    );
+    const rij = view.container.querySelector('tr[aria-label="Sessie: Zondagsrit"]');
     assert.ok(rij, "sessierij aanwezig");
     view.rtl.fireEvent.click(rij!);
     assert.ok(
@@ -617,16 +649,166 @@ test("detail en navigatie: sessie opent drawer, lege staat linkt naar Training",
   }
 
   sessionsResult = ok([]);
-  navCalls.length = 0;
   const leeg = await renderPage();
   try {
-    const actie = Array.from(leeg.container.querySelectorAll("button")).find(
-      (b) => b.textContent === "Ga naar Trainen",
+    assert.ok(
+      (leeg.container.textContent ?? "").includes("Nog geen sessies gelogd"),
+      "lege staat is een eerlijke invoer-melding",
     );
-    assert.ok(actie, "lege staat biedt directe actie");
-    leeg.rtl.fireEvent.click(actie!);
-    assert.deepEqual(navCalls, ["/train"]);
   } finally {
     leeg.rtl.cleanup();
+  }
+});
+
+// 11. §4 datapoort (T2): vermogensspoor weg ⇒ de belastingsanalyse wordt
+// VERVANGEN door één sensormelding — zonder één woord pakkettaal.
+test("datapoort ritsensoren: zonder vermogen én hartslag vervangt de sensormelding de analyse", async () => {
+  vulAlles();
+  meetniveauResult = {
+    data: { vermogen: false, hartslag: false, herstel: true, profielregel: "" },
+  };
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("Hiervoor is vermogen nodig"), "sensormelding zichtbaar: " + text.slice(0, 200));
+    assert.ok(text.includes("vermogensmeter"), "melding benoemt de ontbrekende sensor");
+    assert.ok(!text.includes("Verkenning · simulatie"), "doelscenario-simulatie is weggelaten");
+    assert.ok(!text.includes("Belastingsgrafiek"), "belastingsgrafiek is weggelaten");
+    assert.ok(!text.toLowerCase().includes("upgrad"), "sensorprobleem spreekt nooit over upgraden");
+    assert.ok(!text.includes("Sparki Compleet"), "sensorprobleem noemt nooit het pakket");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// SPOOR_H (§3.1): alleen een hartslagband is GEEN "lager" geval — de
+// belastingsanalyse blijft staan (op de hartslagreeks), alleen de puur
+// vermogensgebonden simulaties gaan achter hun eigen vermogenspoort.
+test("SPOOR_H: alleen hartslag ⇒ analysekaarten blijven, alleen vermogenssimulaties gepoort", async () => {
+  vulAlles();
+  meetniveauResult = {
+    data: { vermogen: false, hartslag: true, herstel: true, profielregel: "" },
+  };
+  loadResult = ok({
+    ctl: 42,
+    atl: 38,
+    tsb: 4,
+    basis: "hartslag",
+    basisDetail: { metVermogen: 0, metHartslag: 12, buitenBasis: 0 },
+    chartData: Array.from({ length: 30 }, (_, i) => ({
+      date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+      ctl: 40 + i * 0.1,
+      atl: 38,
+      tsb: 2,
+      tss: 60,
+    })),
+  });
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("Belastingsgrafiek"), "belastingsgrafiek blijft staan op hartslagbasis");
+    assert.ok(
+      text.includes("interne belasting uit hartslag"),
+      "reeksbasis staat er eerlijk bij",
+    );
+    assert.ok(text.includes("Intensiteitsverdeling"), "intensiteitskaart blijft staan");
+    assert.ok(text.includes("Zoneverdeling per week"), "zonekaart blijft staan");
+    assert.ok(
+      text.includes("Doelscenario & Wattage-lab") && text.includes("Hiervoor is vermogen nodig"),
+      "vermogenssimulaties achter hun eigen vermogenspoort",
+    );
+    assert.ok(!text.includes("Verkenning · simulatie"), "geen vermogenssimulatie zonder vermogen");
+    // Progressie: powercurve en vermogensrecords zijn puur vermogensanalyse —
+    // ook met bestaande vermogenshistorie vervangt de sensormelding beide.
+    assert.ok(
+      text.includes("Powercurve & vermogensrecords"),
+      "Progressie toont één sensormelding voor powercurve+records",
+    );
+    assert.ok(
+      !text.includes("Persoonlijke vermogensrecords"),
+      "vermogensrecords worden niet gerenderd zonder vermogensspoor",
+    );
+    assert.ok(
+      !text.includes("Powercurve kon niet worden geladen"),
+      "de server-weigering mag nooit als generieke foutkaart verschijnen",
+    );
+    assert.ok(!text.toLowerCase().includes("upgrad"), "sensorprobleem spreekt nooit over upgraden");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// SPOOR_H eerlijk onderscheid: provider-hartslag zonder samplereeksen is
+// "wel signaal, geen reeksen" — nooit "geen sensorsignaal".
+test("SPOOR_H: hartslag gemeten maar geen samplereeksen ⇒ eerlijke aparte melding", async () => {
+  vulAlles();
+  meetniveauResult = {
+    data: { vermogen: false, hartslag: true, herstel: true, profielregel: "" },
+  };
+  weeklyZonesResult = ok({
+    ftp: null,
+    zones: [],
+    hrZones: [
+      { zone: "Z1", label: "Herstel", fromBpm: 0, toBpm: 114 },
+      { zone: "Z2", label: "Duur", fromBpm: 114, toBpm: 133 },
+    ],
+    maxHr: 190,
+    maxHrBron: "profiel",
+    weeks: [],
+    sessionsWithPower: 0,
+    sessionsWithHr: 0,
+    sessionsWithAvgHr: 8,
+  });
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(
+      text.includes("geen volledige hartslagreeksen beschikbaar"),
+      "melding benoemt het echte gat (reeksen), niet 'geen signaal': " + text.slice(0, 300),
+    );
+    assert.ok(
+      !text.includes("zonder echt sensorsignaal is er geen zoneverdeling"),
+      "de 'geen signaal'-melding is hier onterecht",
+    );
+    assert.ok(!text.includes("Geen FTP bekend"), "geen FTP-melding voor een hartslagrenner");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// 12. §4 pakketpoort (T3): pakket ontbreekt ⇒ upgrademelding, nooit sensortaal —
+// ook al zijn alle sensoren aanwezig.
+test("pakketpoort: upgrademelding zonder sensortaal, analyse weggelaten", async () => {
+  vulAlles();
+  pakketResult = { entitled: false, known: true };
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("Onderdeel van Sparki Compleet"), "pakketmelding zichtbaar");
+    assert.ok(text.toLowerCase().includes("upgrad"), "pakketmelding wijst naar upgraden");
+    assert.ok(!text.includes("Hiervoor is vermogen nodig"), "geen sensormelding tegelijk");
+    assert.ok(!text.includes("koppel een band"), "pakketprobleem zegt nooit 'koppel een band'");
+    assert.ok(!text.includes("Belastingsgrafiek"), "analyse blijft dicht achter de pakketpoort");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// 13. §4 datapoort herstel: geen nachtmetingen-spoor ⇒ HRV-trend vervangen
+// door de draagbare-melding, readiness (check-in) blijft gewoon staan.
+test("datapoort herstel: HRV-trend vervangen door draagbare-melding", async () => {
+  vulAlles();
+  meetniveauResult = {
+    data: { vermogen: true, hartslag: true, herstel: false, profielregel: "" },
+  };
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("Hiervoor zijn nachtmetingen nodig"), "draagbare-melding zichtbaar");
+    assert.ok(!text.includes("62ms"), "geen HRV-waarde meer tonen zonder herstelspoor");
+    assert.ok(text.includes("80 gereedheid"), "readiness (check-in) blijft onafhankelijk staan");
+    assert.ok(!text.toLowerCase().includes("upgrad"), "sensorprobleem spreekt nooit over upgraden");
+  } finally {
+    view.rtl.cleanup();
   }
 });

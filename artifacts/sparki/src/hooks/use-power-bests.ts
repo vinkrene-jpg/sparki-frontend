@@ -17,13 +17,16 @@ export type PowerBestsData = {
   sessionsWithBests: number;
 };
 
-export function usePowerBests() {
+export function usePowerBests(opts?: { enabled?: boolean }) {
   const { isSignedIn } = useUser();
 
   return useQuery({
     queryKey: queryKeys.athlete.powerBests(),
     queryFn: () => apiFetch<PowerBestsData>("/api/athlete/power-bests"),
-    enabled: isSignedIn === true || DEV_PREVIEW,
+    // §4 datapoort: zonder waargenomen vermogensspoor vraagt de UI niets op —
+    // de server weigert dan toch (sensorpoort), en een kale query-fout zou de
+    // verplichte sensormelding vervangen door een generieke foutkaart.
+    enabled: (isSignedIn === true || DEV_PREVIEW) && (opts?.enabled ?? true),
     staleTime: STALE.profile,
   });
 }

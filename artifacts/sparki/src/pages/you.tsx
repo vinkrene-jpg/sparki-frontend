@@ -8,6 +8,7 @@ import { SportPassport } from "@/components/sparki/sport-passport"
 import { ProfileSettings } from "@/components/sparki/profile-settings"
 import { useMotionPreference } from "@/hooks/use-motion-preference"
 import { useMeasurementLevel, useSetMeasurementLevel } from "@/hooks/use-measurement-level"
+import { useMeetniveau } from "@/hooks/use-meetniveau"
 import { HoofdstukTabs, type HoofdstukTab } from "@/components/sparki/hoofdstuk-tabs"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useClearPhotoDecor } from "@/hooks/use-photo-style"
@@ -304,6 +305,7 @@ export default function YouPage() {
   const { data: sessions } = useSessions(40)
   const { data: metrics } = useDailyMetrics(30)
   const runConnections = useRunConnections()
+  const meetniveau = useMeetniveau()
 
   // Real data sources so insight cards can lead with charts and group per metric.
   const insightSources: InsightSources = { metrics, ftpHistory, load, sessions }
@@ -497,6 +499,14 @@ export default function YouPage() {
           <h1 className="mt-1 font-sans text-2xl font-extralight tracking-tight text-foreground">
             Wat er van je bekend is
           </h1>
+          {/* MEETNIVEAU_EN_UITLEG_01 §7 — profielregel: één zin over wat er
+              waargenomen wordt, met wat ontbreekt erbij. Geen niveaunaam,
+              geen rang, geen kleurcode (B4). */}
+          {meetniveau.data?.profielregel && (
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              {meetniveau.data.profielregel}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Link
