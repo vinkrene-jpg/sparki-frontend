@@ -55,6 +55,10 @@ export type NearbyInput = {
   durationSec: number | null;
   surface: string;
   geometry: RoutePathPoint[] | null;
+  // Hoe vaak de aanvrager deze route aantoonbaar reed (ritgeschiedenis-cluster
+  // of geregistreerd routegebruik). 0 = niet door de aanvrager gereden —
+  // eerlijk, ook voor gedeelde/openbare routes van anderen.
+  keerGereden: number;
 };
 
 export type NearbyRouteOut = NearbyInput & {

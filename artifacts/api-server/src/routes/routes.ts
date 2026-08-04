@@ -1504,6 +1504,31 @@ router.get("/nearby", requireAuth, async (req, res) => {
       (r) => r.id,
     );
     const ownSavedIds = new Set(own.map((r) => r.id));
+    // Hoe vaak reed de aanvrager elke eigen route? Geteld uit geregistreerd
+    // routegebruik (route_version_usages, alleen eigen rijen); een route met
+    // bron "gereden" telt minimaal 1 (hij bestaat omdat hij gereden is).
+    const eigenGebruik = new Map<number, number>();
+    if (own.length > 0) {
+      const usageRows = await db
+        .select({
+          routeId: routeVersionUsagesTable.routeId,
+          n: sql<number>`count(*)::int`,
+        })
+        .from(routeVersionUsagesTable)
+        .where(
+          and(
+            eq(routeVersionUsagesTable.clerkId, clerkId),
+            inArray(
+              routeVersionUsagesTable.routeId,
+              own.map((r) => r.id),
+            ),
+          ),
+        )
+        .groupBy(routeVersionUsagesTable.routeId);
+      for (const u of usageRows) {
+        if (u.routeId != null) eigenGebruik.set(u.routeId, u.n);
+      }
+    }
     for (const r of own) {
       inputs.push({
         soort: "route",
@@ -1523,6 +1548,10 @@ router.get("/nearby", requireAuth, async (req, res) => {
         geometry: Array.isArray(r.geometry)
           ? (r.geometry as RoutePathPoint[])
           : null,
+        keerGereden: Math.max(
+          eigenGebruik.get(r.id) ?? 0,
+          r.source === "ridden" ? 1 : 0,
+        ),
       });
     }
 
@@ -1568,6 +1597,8 @@ router.get("/nearby", requireAuth, async (req, res) => {
         geometry: Array.isArray(c.geometry)
           ? (c.geometry as RoutePathPoint[])
           : null,
+        // De cluster telt de echte ritten op deze route uit de historie.
+        keerGereden: c.rideCount,
       });
     }
 
@@ -1712,6 +1743,8 @@ router.get("/nearby", requireAuth, async (req, res) => {
         durationSec: route.durationSec,
         surface: route.surface,
         geometry: view.geometry as RoutePathPoint[],
+        // Routes van anderen: de aanvrager reed ze (voor zover bekend) niet.
+        keerGereden: 0,
       });
     };
     for (const { route } of visibleShared) pushMasked(route, "gedeeld");

@@ -309,6 +309,9 @@ function VerdeelSlider({
   )
 }
 
+// Maximaal aantal routes dat standaard op de kaart getekend wordt.
+const TOP_AANTAL = 5
+
 const BRON_KORT: Record<NearbyRoute["bron"], string> = {
   bewaard: "Bewaard",
   plan: "Plan",
@@ -711,6 +714,9 @@ export function RouteKaartStart() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [lijstOpen, setLijstOpen] = useState(false)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  // Standaard tonen we op de kaart alleen de 5 vaakst gereden routes —
+  // alles tegelijk tekenen geeft geen overzicht. De lijst toont altijd alles.
+  const [toonAlles, setToonAlles] = useState(false)
 
   const geocode = useGeocode()
   const nearby = useNearbyRoutes(center, sport)
@@ -722,6 +728,27 @@ export function RouteKaartStart() {
     [alleRoutes, filters],
   )
   const selected = routes.find((r) => r.key === selectedKey) ?? null
+
+  // Kaartweergave: standaard de 5 vaakst gereden routes (echte rittellingen);
+  // zijn er minder dan 5 gereden, dan vullen we aan met de dichtstbijzijnde.
+  // De gekozen route wordt altijd getekend, ook buiten de top 5.
+  const kaartRoutes = useMemo(() => {
+    if (toonAlles || routes.length <= TOP_AANTAL) return routes
+    const opRitten = [...routes].sort(
+      (a, b) => b.keerGereden - a.keerGereden,
+    )
+    const top = opRitten
+      .filter((r) => r.keerGereden > 0)
+      .slice(0, TOP_AANTAL)
+    if (top.length < TOP_AANTAL) {
+      for (const r of routes) {
+        if (top.length >= TOP_AANTAL) break
+        if (!top.includes(r)) top.push(r)
+      }
+    }
+    if (selected && !top.some((r) => r.key === selected.key)) top.push(selected)
+    return top
+  }, [routes, toonAlles, selected])
 
   // Eén keer stil proberen de huidige locatie te krijgen; weigeren is oké —
   // dan blijft de eerlijke uitleg staan en kan de renner zoeken op plaatsnaam.
@@ -788,9 +815,19 @@ export function RouteKaartStart() {
             }}
             placeholder="Zoek een plaats…"
             aria-label="Zoek een plaats"
-            className="w-full rounded-full border border-border bg-card py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground"
+            className="w-full rounded-full border border-border bg-card py-2.5 pl-9 pr-12 text-sm text-foreground placeholder:text-muted-foreground"
             data-testid="nearby-zoekveld"
           />
+          <button
+            type="button"
+            onClick={() => void zoekPlaats()}
+            disabled={zoektekst.trim().length < 2}
+            aria-label="Zoek deze plaats"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-accent-cyan px-3 py-1.5 text-[12px] font-semibold text-[color:var(--color-on-accent)] disabled:opacity-40"
+            data-testid="nearby-zoek-ok"
+          >
+            OK
+          </button>
           {zoekresultaten != null && (
             <div className="absolute left-0 right-0 top-full z-40 mt-1 overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
               {zoekresultaten.length === 0 ? (
@@ -887,13 +924,36 @@ export function RouteKaartStart() {
 
       <NearbyMap
         center={center}
-        routes={routes}
+        routes={kaartRoutes}
         selectedKey={selectedKey}
         onSelect={(k) => {
           setSelectedKey(k)
           setLijstOpen(true)
         }}
       />
+
+      {/* Overzicht: standaard top 5 vaakst gereden; alles kan alsnog. */}
+      {routes.length > TOP_AANTAL && (
+        <div className="flex items-center justify-between gap-2 text-[12px] text-muted-foreground">
+          <span data-testid="nearby-kaartmodus">
+            {toonAlles
+              ? `Alle ${routes.length} routes op de kaart`
+              : `${
+                  kaartRoutes.some((r) => r.keerGereden > 0)
+                    ? `Top ${Math.min(TOP_AANTAL, kaartRoutes.length)} vaakst gereden op de kaart`
+                    : `De ${Math.min(TOP_AANTAL, kaartRoutes.length)} dichtstbijzijnde op de kaart`
+                }${kaartRoutes.length > TOP_AANTAL ? " + je selectie" : ""}`}
+          </span>
+          <button
+            type="button"
+            onClick={() => setToonAlles((v) => !v)}
+            className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 font-medium text-foreground hover:border-accent-cyan"
+            data-testid="knop-toon-alles"
+          >
+            {toonAlles ? "Toon top 5" : `Toon alle ${routes.length}`}
+          </button>
+        </div>
+      )}
 
       {/* Geselecteerde route */}
       {selected && (

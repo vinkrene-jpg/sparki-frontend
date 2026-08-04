@@ -843,6 +843,8 @@ export type NearbyRoute = {
   startAfstandKm: number;
   geometry: [number, number][];
   verificatie: "controle_bij_gebruik";
+  // Hoe vaak jij deze route aantoonbaar reed (0 = niet door jou gereden).
+  keerGereden: number;
 };
 
 export type NearbyRoutesResponse = {

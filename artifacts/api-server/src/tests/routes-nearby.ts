@@ -54,6 +54,7 @@ function rij(overrides: Partial<NearbyInput>): NearbyInput {
     soort: "route",
     id: 1,
     bron: "bewaard",
+    keerGereden: 0,
     naam: "Testroute",
     sport: "cycling",
     distanceKm: 40,
