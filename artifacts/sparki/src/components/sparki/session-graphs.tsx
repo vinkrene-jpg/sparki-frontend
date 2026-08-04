@@ -2,6 +2,7 @@ import { ChartFrame } from "@/components/viz/chart-frame"
 import { StreamChart } from "@/components/viz/stream-chart"
 import { ZoneDistribution } from "@/components/viz/zone-chart"
 import { UitlegDot } from "@/components/viz/uitleg"
+import { UITLEG, UITLEG_DOEN } from "@/lib/uitleg-content"
 import { ACCENT } from "@/components/sparki/ui"
 import type { SessionDetail } from "@/hooks/use-sessions"
 import type { TrainingSession } from "@/lib/athlete-types"
@@ -151,18 +152,30 @@ function AnalyseRow({
 }) {
   const color =
     tone === "positive" ? ACCENT : tone === "caution" ? "rgba(255,180,90,0.9)" : "rgba(255,255,255,0.85)"
+  const u = UITLEG[uitlegKey]
+  const doen = UITLEG_DOEN[uitlegKey]
   return (
-    <div className="flex items-start justify-between gap-3 py-2">
-      <div className="flex items-center gap-1">
-        <span className="text-[12px] text-muted-foreground">{label}</span>
-        <UitlegDot uitlegKey={uitlegKey} label={label} />
+    <div className="py-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-1">
+          <span className="text-[12px] text-muted-foreground">{label}</span>
+          <UitlegDot uitlegKey={uitlegKey} label={label} />
+        </div>
+        <div className="text-right">
+          <p className="text-[13px] font-medium" style={{ color }}>
+            {verdict}
+          </p>
+          <p className="font-mono text-[10px] tabular-nums text-muted-foreground">{detail}</p>
+        </div>
       </div>
-      <div className="text-right">
-        <p className="text-[13px] font-medium" style={{ color }}>
-          {verdict}
+      {/* Twee-zinnen-opbouw (B6): wat je ziet + wat je ermee doet, altijd
+          zichtbaar; de rekenwijze zit achter het uitleg-stipje hierboven. */}
+      {u != null && (
+        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+          {u.wat}
+          {doen ? ` ${doen}` : ""}
         </p>
-        <p className="font-mono text-[10px] tabular-nums text-muted-foreground">{detail}</p>
-      </div>
+      )}
     </div>
   )
 }

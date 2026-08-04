@@ -3,6 +3,10 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   UITLEG,
+  UITLEG_DOEN,
+  VORM_UITLEG_BASIS,
+  VORM_UITLEG_WAARSCHUWING,
+  vormGrafiekUitleg,
   buildUitlegContextRegels,
   type UitlegPersoonlijk,
 } from "./uitleg-content"
@@ -38,6 +42,54 @@ const VEREISTE_KEYS = [
   "voedingsadvies",
   "onzekerheid",
 ]
+
+// Twee-zinnen-opbouw (B6 04-08): kaarten in Analyse tonen altijd wat je ziet
+// (wat) + wat je ermee doet (doen). Deze keys dragen kaarten in Analyse of de
+// sessie-drawer en moeten dus een doen-zin hebben.
+const ANALYSE_KAART_KEYS = [
+  "fitheid", "vermoeidheid", "vorm", "belasting", "belastingsverloop", "trainingsvolume",
+  "intensiteitsverdeling", "slaap", "readinessTrend", "hrvTrend",
+  "performanceRadar", "ftpOntwikkeling", "records", "gewichtWkg",
+  "doelscenario", "doelenOverzicht", "sessielijst",
+  "vermogen", "hartslag", "vermogenszones", "hartslagzones",
+  "hartslagdrift", "vermogensverval", "pacing", "intervallen",
+]
+
+test("B6: elke Analyse-kaart-key heeft een doen-zin (wat je ermee doet)", () => {
+  for (const key of ANALYSE_KAART_KEYS) {
+    assert.ok(UITLEG[key], `key ontbreekt in UITLEG: ${key}`)
+    const doen = UITLEG_DOEN[key]
+    assert.ok(doen && doen.trim().length > 10, `${key}: doen-zin ontbreekt of te kort`)
+  }
+})
+
+test("B6: elke doen-zin hoort bij een bestaande registry-key en bevat geen 'AI'", () => {
+  const aiPattern = /\bA\.?I\.?\b/
+  for (const [key, doen] of Object.entries(UITLEG_DOEN)) {
+    assert.ok(UITLEG[key], `UITLEG_DOEN heeft key zonder registry-entry: ${key}`)
+    assert.ok(!aiPattern.test(doen), `${key}: doen-zin bevat 'AI'`)
+  }
+})
+
+test("§6/T7: vormgrafiek-uitleg — basis altijd, waarschuwing bij weinig activiteiten", () => {
+  // T7: periode met precies 1 activiteit → waarschuwende zin staat er.
+  const een = vormGrafiekUitleg(1, 14)
+  assert.ok(een.waarschuwing)
+  assert.ok(een.tekst.includes(VORM_UITLEG_BASIS))
+  assert.ok(een.tekst.includes(VORM_UITLEG_WAARSCHUWING))
+  assert.ok(een.tekst.includes("groen zonder training ervoor is geen vorm"))
+
+  // Nul activiteiten: ook waarschuwen.
+  assert.ok(vormGrafiekUitleg(0, 90).waarschuwing)
+
+  // Regelmatig trainen: geen waarschuwing, wél de vaste basistekst.
+  const veel = vormGrafiekUitleg(20, 30)
+  assert.ok(!veel.waarschuwing)
+  assert.equal(veel.tekst, VORM_UITLEG_BASIS)
+
+  // Lange periode met te dun ritme (5 ritten in een jaar) blijft weinig.
+  assert.ok(vormGrafiekUitleg(5, 365).waarschuwing)
+})
 
 test("registry bevat alle vereiste keys", () => {
   for (const key of VEREISTE_KEYS) {

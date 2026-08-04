@@ -130,6 +130,14 @@ export const UITLEG: Record<string, Uitleg> = {
     beinvloeden: "Verhoog geleidelijk (vuistregel: niet meer dan zo'n 10% per week) en houd je aan een vast weekritme. Consistentie over maanden verslaat elke uitschieter-week.",
     versie: 2,
   },
+  belastingsverloop: {
+    wat: "Twee lijnen door de tijd: je fitheid (wat je lichaam aan training gewend is) en je vermoeidheid (het werk van de laatste dagen).",
+    waarom: "Fitheid bouw je in weken op en verlies je langzaam; vermoeidheid komt snel en zakt snel. De afstand tussen de twee lijnen bepaalt je vorm.",
+    hoe: "Beide lijnen komen uit hetzelfde belastingsmodel: fitheid is een langzaam gemiddelde (ongeveer 42 dagen) van je dagelijkse belastingsscores, vermoeidheid een snel gemiddelde (ongeveer 7 dagen).",
+    verbanden: "Het verschil tussen deze twee lijnen is je vorm (TSB) hieronder; beide worden gevoed door de belastingsscore (TSS) van elke training.",
+    beinvloeden: "Regelmatig trainen tilt de fitheidslijn langzaam omhoog; een rustweek laat vooral de vermoeidheidslijn zakken. Grote sprongen in de fitheidslijn zijn niet haalbaar — kleine, volgehouden stappen wel.",
+    versie: 1,
+  },
   belasting: {
     wat: "De belastingsscore (TSS) van een training: hoe zwaar die was voor jouw lichaam, in één getal.",
     waarom: "Zo tellen een korte intensieve training en een lange rustige rit allebei mee in hetzelfde model. Rond de 100 staat voor een uur voluit op je drempel.",
@@ -310,14 +318,55 @@ export const UITLEG: Record<string, Uitleg> = {
     hoe: "Per analyse wordt bijgehouden welke bronnen echt beschikbaar waren. Ontbreekt er iets, dan staat dat erbij.",
     versie: 1,
   },
+  doelenOverzicht: {
+    wat: "Je actieve doelen en aankomende wedstrijden op één plek.",
+    waarom: "Zonder doel is elke training even goed — met een doel kun je keuzes maken en zien of je op koers ligt.",
+    hoe: "Doelen stel je zelf in; wedstrijden voeg je toe of komen uit je gekoppelde kalender. Alleen wat je zelf hebt vastgelegd staat hier — er wordt niets verzonnen.",
+    versie: 1,
+  },
+  sessielijst: {
+    wat: "Al je geregistreerde trainingen op een rij, met datum, duur en belastingsscore.",
+    waarom: "Dit is de brondata onder elke grafiek hierboven: klopt een lijn niet, dan vind je hier de rit die het verklaart.",
+    hoe: "Elke rij is een echte geregistreerde sessie uit je gekoppelde bronnen of handmatige invoer. Klik op een rij voor de volledige analyse van die training.",
+    versie: 1,
+  },
 }
 
 export type UitlegKey = keyof typeof UITLEG
 
-// ---------------------------------------------------------------------------
-// Persoonlijke context ("Bij jou") — pure functie, eerlijk over wat ontbreekt.
-// ---------------------------------------------------------------------------
-
+export const UITLEG_DOEN: Record<string, string> = {
+  fitheid: "Stijgt de lijn gestaag, dan zit je goed; zakt hij weken achtereen, plan dan weer regelmaat in.",
+  vermoeidheid: "Piekt dit getal vlak voor een belangrijke dag, las dan eerst een paar rustige dagen in.",
+  vorm: "Plan zware blokken als je dit aankunt en stuur naar licht positief in de dagen vóór een wedstrijd.",
+  belasting: "Vergelijk zware en lichte dagen en verdeel ze bewust over je week in plaats van alles even zwaar te maken.",
+  belastingsverloop: "Kijk of je fitheidslijn over weken rustig stijgt; schiet de vermoeidheidslijn er ver bovenuit, plan dan eerst herstel.",
+  trainingsvolume: "Groei per week met kleine stappen en gebruik een dip als teken om je ritme te herpakken.",
+  intensiteitsverdeling: "Zie je vooral middelmatig-stevige ritten, maak dan je rustige ritten rustiger en je harde dagen gerichter.",
+  slaap: "Zie je structureel korte nachten naast zware trainingsweken, plan dan eerst slaap en pas daarna extra training.",
+  readinessTrend: "Daalt de lijn twee weken achtereen, verlaag dan je belasting voordat je lichaam het afdwingt.",
+  hrvTrend: "Vergelijk met je eigen normale waarden en neem een aanhoudende daling serieus als sein voor rust.",
+  performanceRadar: "Kies één zwakke as tegelijk om aan te werken in plaats van alles tegelijk te willen verbeteren.",
+  ftpOntwikkeling: "Test of her-schat je FTP elke zes tot acht weken, zodat je zones en scores kloppen.",
+  records: "Zoek je zwakste duur uit en train die gericht; jaag records na een rustige dag, niet in een zware week.",
+  gewichtWkg: "Kijk naar de trend over weken en verander gewicht alleen geleidelijk, buiten zware trainingsblokken.",
+  doelscenario: "Gebruik de band om een voornemen vooraf te toetsen, niet als belofte — het blijft een verwachting.",
+  doelenOverzicht: "Houd je doelen actueel en haal weg wat niet meer speelt, zodat je advies erop kan sturen.",
+  sessielijst: "Open een rij om de volledige analyse van die training te bekijken.",
+  vermogen: "Zoek de momenten waar de lijn wegzakt of piekt en leg ze naast hoe de rit voelde.",
+  hartslag: "Loopt je hartslag op terwijl je vermogen gelijk blijft, neem dan je herstel en je drinken onder de loep.",
+  cadans: "Grote schommelingen kosten energie — probeer een tempo dat je een hele rit comfortabel volhoudt.",
+  vermogenszones: "Controleer of de verdeling past bij het doel van de rit: rustig hoort laag, intervallen horen hoog.",
+  hartslagzones: "Controleer of de rit zo zwaar was als bedoeld: veel tijd hoog in de zones op een rustige dag is een sein.",
+  hartslagdrift: "Bij hoge drift op duurritten: rijd iets rustiger of neem meer tijd voor eten en drinken onderweg.",
+  vermogensverval: "Zie je vaak duidelijk verval, begin dan rustiger zodat je het einde van de rit sterker haalt.",
+  pacing: "Rijd duurritten gelijkmatiger; bewaar grote wisselingen voor trainingen waar dat de bedoeling is.",
+  intervallen: "Vergelijk de gereden blokken met je plan en stel je doelvermogen bij als het structureel niet lukt.",
+  vergelijkbaarheid: "Vergelijk alleen ritten die echt op elkaar lijken — anders vergelijk je omstandigheden, geen vooruitgang.",
+  intensiteitsfactor: "Controleer of de zwaarte past bij het doel van de dag: rond 0,6 hoort bij rustig, rond 1,0 bij voluit.",
+  genormaliseerd_vermogen: "Ligt NP ver boven je gemiddelde vermogen, dan reed je wisselvallig — bedoeld of niet, dat zie je hier.",
+  ftp: "Houd deze waarde actueel; al je zones en scores rekenen ermee.",
+  readiness: "Pas op een slechte dag je training aan in plaats van door te duwen.",
+}
 export type UitlegPersoonlijk = {
   ftp?: number | null
   ftpEstimated?: boolean | null
@@ -438,4 +487,31 @@ export function buildUitlegContextRegels(
   }
 
   return regels
+}
+
+export const VORM_UITLEG_BASIS =
+  "Groen betekent uitgerust, rood dat je nog werk van de afgelopen dagen meedraagt. " +
+  "Rood hoort bij een trainingsblok, groen hoort bij de dagen vóór een wedstrijd."
+
+export const VORM_UITLEG_WAARSCHUWING =
+  "Let op: groen zonder training ervoor is geen vorm — dan zakt je fitheid mee."
+
+/**
+ * Bouwt de verplichte uitlegtekst onder de vormgrafiek. `actieveDagen` is het
+ * aantal dagen mét geregistreerde belasting in de getoonde periode van
+ * `periodeDagen` dagen. Weinig = minder dan 3 actieve dagen, of gemiddeld
+ * minder dan één activiteit per twee weken.
+ */
+export function vormGrafiekUitleg(
+  actieveDagen: number,
+  periodeDagen: number,
+): { tekst: string; waarschuwing: boolean } {
+  const drempel = Math.max(3, Math.round(periodeDagen / 14))
+  const waarschuwing = actieveDagen < drempel
+  return {
+    tekst: waarschuwing
+      ? `${VORM_UITLEG_BASIS} ${VORM_UITLEG_WAARSCHUWING}`
+      : VORM_UITLEG_BASIS,
+    waarschuwing,
+  }
 }

@@ -37,7 +37,7 @@ import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import { UitlegDot } from "@/components/viz/uitleg"
-import { UITLEG } from "@/lib/uitleg-content"
+import { UITLEG, UITLEG_DOEN, vormGrafiekUitleg } from "@/lib/uitleg-content"
 import { useLoad, type LoadData } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
@@ -99,14 +99,29 @@ import { CHART, tsbKleur, tsbBalkKleur } from "@/lib/chart-kleuren"
 
 const UitlegModus = createContext(false)
 
+// Twee-zinnen-opbouw (besluit B6 04-08): élke kaart toont altijd één zin wat
+// je ziet en één zin wat je ermee doet — geen jargon, tweede persoon. De
+// rekenwijze zit achter een optionele uitklap. De uitleg-schakelaar voegt
+// alleen nog de verdiepende waarom-laag toe.
 function UitlegRegel({ k }: { k: string }) {
   const aan = useContext(UitlegModus)
   const u = UITLEG[k]
-  if (!aan || !u) return null
+  if (!u) return null
+  const doen = UITLEG_DOEN[k]
   return (
-    <p className="mb-4 rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-      {u.wat} {u.waarom}
-    </p>
+    <div className="mb-4 rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+      <p>
+        {u.wat}
+        {doen ? ` ${doen}` : ""}
+      </p>
+      {aan && <p className="mt-1.5">{u.waarom}</p>}
+      <details className="mt-1.5">
+        <summary className="cursor-pointer select-none text-[11px] text-accent-cyan/80 hover:text-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+          Hoe wordt dit berekend?
+        </summary>
+        <p className="mt-1 text-[11px] leading-relaxed">{u.hoe}</p>
+      </details>
+    </div>
   )
 }
 
@@ -280,7 +295,7 @@ function fmtDatum(iso: string): string {
   return `${parts[2]}/${parts[1]}`
 }
 
-type LoadPunt = { date: string; ctl: number; atl: number; tsb: number }
+type LoadPunt = { date: string; ctl: number; atl: number; tsb: number; tss?: number }
 
 function CTLATLTooltip({
   active, payload, label,
@@ -346,6 +361,10 @@ function LoadGrafiek({
   const [atlAan, setAtlAan] = useState(true)
   const gefilterd: LoadPunt[] = chartData.slice(-periode)
   const intervalStap = Math.max(1, Math.floor(gefilterd.length / 7))
+  // §6: dagen mét geregistreerde belasting in de getoonde periode bepalen of
+  // de waarschuwende slotzin onder de vormgrafiek verplicht is (T7).
+  const actieveDagen = gefilterd.filter((p) => (p.tss ?? 0) > 0).length
+  const vormUitleg = vormGrafiekUitleg(actieveDagen, gefilterd.length)
 
   if (gefilterd.length < 3) {
     return (
@@ -527,25 +546,26 @@ function LoadGrafiek({
         )}
       </div>
 
-      {/* TSB */}
+      {/* TSB — de verplichte §6-uitlegtekst vervangt de oude legenda-uitleg;
+          de waarschuwende slotzin verschijnt bij weinig activiteiten in de
+          getoonde periode (acceptatietest T7). */}
       <div>
         <div className="flex flex-wrap items-center gap-4 mb-3">
           <LCardTitle>Vorm (TSB)</LCardTitle>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CHART.tsbPos }} />
-              Positief — goed uitgerust
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CHART.tsbNegLicht }} />
-              Licht negatief
+              Groen — uitgerust
             </span>
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CHART.tsbNeg }} />
-              Sterk negatief — vermoeid
+              Rood — werk in de benen
             </span>
           </div>
         </div>
+        <p className="mb-3 rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          {vormUitleg.tekst}
+        </p>
         <ResponsiveContainer width="100%" height={120}>
           <ComposedChart data={gefilterd} margin={{ top: 4, right: 8, left: -16, bottom: 0 }} barCategoryGap="25%">
             <CartesianGrid stroke={CHART.grid} vertical={false} />
@@ -644,7 +664,7 @@ function OverzichtTab({
               ))}
             </div>
           </div>
-          <UitlegRegel k="belasting" />
+          <UitlegRegel k="belastingsverloop" />
           <LoadGrafiek chartData={load.data.chartData} periode={overzichtPeriode} />
           <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
             <span>{overzichtPeriode} dagen geleden: fitheid {Math.round(load.data.chartData.slice(-overzichtPeriode)[0]?.ctl ?? 0)}</span>
@@ -1223,7 +1243,7 @@ function BelastingTab({
           </div>
         </div>
 
-        <UitlegRegel k="belasting" />
+        <UitlegRegel k="belastingsverloop" />
         {loadToestand === "laden" && <Skel className="h-64 w-full" />}
         {loadToestand === "fout" && <LFout titel="Belastingsgrafiek kon niet worden geladen." onOpnieuw={() => void load.refetch()} />}
         {(loadToestand === "ok" || loadToestand === "verouderd") && load.data && (
@@ -1260,6 +1280,7 @@ function BelastingTab({
             <LCardTitle>Readiness-trend</LCardTitle>
             <UitlegDot uitlegKey="readinessTrend" label="Readiness-trend" />
           </div>
+          {/* Twee-zinnen-regel volgt onder de periodekiezer */}
           <div className="flex gap-1" role="group" aria-label="Periode">
             {ANALYSE_PERIODES.map((p) => (
               <button
@@ -1280,6 +1301,7 @@ function BelastingTab({
             ))}
           </div>
         </div>
+        <UitlegRegel k="readinessTrend" />
 
         {readReeks.length >= 2 ? (
           <>
@@ -1898,6 +1920,7 @@ function DoelenTab() {
 
   return (
     <div className="space-y-8">
+      <UitlegRegel k="doelenOverzicht" />
       {/* Doelen */}
       <section>
         <div className="flex items-center justify-between mb-4">
@@ -2008,6 +2031,7 @@ function SessiesTab({
           </button>
         </div>
       )}
+      <UitlegRegel k="sessielijst" />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

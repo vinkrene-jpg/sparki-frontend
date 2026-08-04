@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { UitlegDot } from "@/components/viz/uitleg"
-import type { UITLEG } from "@/lib/uitleg-content"
+import { UITLEG, UITLEG_DOEN } from "@/lib/uitleg-content"
 
 /**
  * Herbruikbaar kader voor elke grafiek: titel + uitleg-stipje bovenaan en een
@@ -50,6 +50,23 @@ export function ChartFrame({
       </div>
 
       <div className="mt-2">{children}</div>
+
+      {/* Twee-zinnen-opbouw (besluit B6 04-08): altijd zichtbaar — wat je
+          ziet + wat je ermee doet; de rekenwijze achter een uitklap. */}
+      {uitlegKey != null && UITLEG[uitlegKey] != null && (
+        <div className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
+          <p>
+            {UITLEG[uitlegKey].wat}
+            {UITLEG_DOEN[uitlegKey] ? ` ${UITLEG_DOEN[uitlegKey]}` : ""}
+          </p>
+          <details className="mt-1">
+            <summary className="cursor-pointer select-none text-accent-cyan/80 hover:text-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              Hoe wordt dit berekend?
+            </summary>
+            <p className="mt-1">{UITLEG[uitlegKey].hoe}</p>
+          </details>
+        </div>
+      )}
 
       {metaRows.length > 0 && (
         <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-0.5 border-t border-border pt-2">

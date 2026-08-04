@@ -3,6 +3,7 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Sparkline } from "@/components/sparki/primitives"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { UitlegDot } from "@/components/viz/uitleg"
+import { UITLEG, UITLEG_DOEN } from "@/lib/uitleg-content"
 import {
   weeklyBuckets,
   trendDir,
@@ -42,6 +43,27 @@ const trendColor = (d: TrendDir, licht: boolean) =>
       : ACCENT
 
 // Weekvolume als uren, Nederlands genoteerd ("4,5u"); onder het uur in minuten.
+// Twee-zinnen-opbouw (besluit B6 04-08): altijd zichtbaar wat je ziet + wat je
+// ermee doet, met de rekenwijze achter een uitklap.
+function UitlegTweeZinnen({ k, zacht }: { k: string; zacht: string }) {
+  const u = UITLEG[k]
+  if (!u) return null
+  return (
+    <div className={`mt-3 text-[11px] leading-relaxed ${zacht}`}>
+      <p className="text-pretty">
+        {u.wat}
+        {UITLEG_DOEN[k] ? ` ${UITLEG_DOEN[k]}` : ""}
+      </p>
+      <details className="mt-1">
+        <summary className="cursor-pointer select-none underline underline-offset-2 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+          Hoe wordt dit berekend?
+        </summary>
+        <p className="mt-1">{u.hoe}</p>
+      </details>
+    </div>
+  )
+}
+
 function formatHours(totalMin: number) {
   if (totalMin < 60) return `${totalMin}m`
   const hours = totalMin / 60
@@ -175,6 +197,7 @@ export function TrainingProgression({
                 <p className={`mt-3 text-pretty text-[12px] leading-relaxed ${tekstZacht}`}>
                   {CTL_VERDICT[ctlDir]}
                 </p>
+                <UitlegTweeZinnen k="fitheid" zacht={tekstZacht} />
               </>
             ) : (
               <p className={`mt-3 text-pretty text-[12px] leading-relaxed ${tekstLeeg}`}>
@@ -250,6 +273,7 @@ export function TrainingProgression({
                     {VOLUME_VERDICT[volDir]}
                   </p>
                 )}
+                <UitlegTweeZinnen k="trainingsvolume" zacht={tekstZacht} />
               </>
             )}
           </div>
