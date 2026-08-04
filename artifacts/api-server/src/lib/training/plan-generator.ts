@@ -120,6 +120,18 @@ function dayKindFor(weekday: number): DayKind {
   }
 }
 
+// TRAININGSVORMEN_01 F2 (TRV-29): de generator kent zijn eigen bedoeling per
+// dag en schrijft daarom de belastingssoort mee — net als zone. Dit is een
+// vaste, expliciete mapping; er wordt nooit achteraf een soort geraden (TRV-78).
+const DAY_SOORT: Record<Exclude<DayKind, "rest">, "aeroob_duur" | "aeroob_hoog" | "herstel"> = {
+  recovery: "herstel",
+  endurance: "aeroob_duur",
+  long: "aeroob_duur",
+  tempo: "aeroob_hoog",
+  threshold: "aeroob_hoog",
+  vo2: "aeroob_hoog",
+};
+
 // Share of weekly minutes per training day (sums to 1.0 over training days).
 const DAY_WEIGHT: Record<DayKind, number> = {
   rest: 0,
@@ -511,6 +523,7 @@ export function generateThreeWeekPlan(
       targetTSS: tssFromBlocks(built.blocks),
       structure,
       status: "planned",
+      belastingssoort: DAY_SOORT[kind],
       source: "sparki",
     });
   }

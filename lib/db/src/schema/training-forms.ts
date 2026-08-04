@@ -123,6 +123,36 @@ export const trainingFormParametersTable = pgTable(
   (t) => [uniqueIndex("training_form_parameters_form_uq").on(t.formId)],
 );
 
+// ── F2: frisheidskost per belastingssoort (TRV-30) ──────────────────────────
+// Per geplande of uitgevoerde sessie één rij per soort met de startkost
+// (schaal 0–3). Dit is een COACHREGEL, geen gevalideerd model (TRV-96): de
+// kolom methode draagt dat expliciet en elke consument moet het als zodanig
+// tonen. Verval over dagen wordt bij het LEZEN berekend (deterministisch uit
+// datum + soort), zodat er geen dagelijkse batch nodig is en terugdraaien
+// additief blijft (TRV-89).
+export const freshnessCostsTable = pgTable(
+  "freshness_costs",
+  {
+    id: serial("id").primaryKey(),
+    clerkId: text("clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+    datum: text("datum").notNull(), // YYYY-MM-DD, lokale sessiedag
+    soort: text("soort").notNull(), // belastingssoorten
+    waarde: integer("waarde_x10").notNull(), // startkost ×10 (0–30) — geen floats in geld/score-stijl
+    // Herkomst: "planned:<id>" of "session:<id>". Nooit een rij zonder
+    // aanwijsbare sessie (TRV-78: geen verzonnen soort, dus ook geen kost).
+    afkomstigVan: text("afkomstig_van").notNull(),
+    methode: text("methode").notNull().default("coachregel_v1"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("freshness_costs_bron_soort_uq").on(t.clerkId, t.afkomstigVan, t.soort),
+    index("freshness_costs_clerk_datum_idx").on(t.clerkId, t.datum),
+  ],
+);
+
 // Bronnen per vorm (TRV-61). Bronnen worden nooit verzonnen (TRV-27):
 // zonder echte bron blijft deze tabel voor die vorm leeg en zegt de
 // toelichting eerlijk "nog niet ingeschaald".

@@ -24,6 +24,11 @@ import {
   belastingssoorten,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import {
+  FRESHNESS_METHODE,
+  freshnessForRange,
+  recomputeFreshnessForAthlete,
+} from "../lib/training/freshness";
 import { computeAge } from "../lib/age";
 import { hasAcceptedCoachLink } from "../lib/sharing";
 
@@ -160,6 +165,42 @@ router.get("/", requireAuth, async (req, res) => {
     return res.status(500).json({ error: "Bibliotheek laden mislukt" });
   }
 });
+
+// GET /api/training-forms/freshness?from=&to= — F2 (TRV-30/31/96).
+// Frisheidskost per belastingssoort per dag. Uitdrukkelijk gemarkeerd als
+// coachregel, geen gevalideerd model. Soorten zonder bekende kost ontbreken
+// in perSoort — dat is "onbekend", nooit 0 (TRV-62).
+router.get("/freshness", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const DATUM = /^\d{4}-\d{2}-\d{2}$/;
+  const from = String(req.query.from ?? "");
+  const to = String(req.query.to ?? "");
+  if (!DATUM.test(from) || !DATUM.test(to) || to < from) {
+    return res.status(400).json({ error: "from/to (YYYY-MM-DD, from ≤ to) zijn verplicht" });
+  }
+  if (daysSpan(from, to) > 62) {
+    return res.status(400).json({ error: "Bereik maximaal 62 dagen" });
+  }
+  try {
+    await recomputeFreshnessForAthlete(clerkId);
+    const dagen = await freshnessForRange(clerkId, from, to);
+    return res.json({
+      methode: FRESHNESS_METHODE,
+      // Bindende markering (TRV-30/96): dit is een coachregel, geen model.
+      coachregel: true,
+      toelichting:
+        "Frisheidskost is een coachregel (schaal 0–3 per belastingssoort), geen gevalideerd model.",
+      dagen: dagen.map((d) => ({ datum: d.datum, perSoort: d.perSoort })),
+    });
+  } catch (err) {
+    console.error("[training-forms] freshness failed", err);
+    return res.status(500).json({ error: "Frisheid laden mislukt" });
+  }
+});
+
+function daysSpan(a: string, b: string): number {
+  return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000);
+}
 
 // GET /api/training-forms/:id — detail met parameters + bronnen
 router.get("/:id", requireAuth, async (req, res) => {

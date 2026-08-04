@@ -235,6 +235,19 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
     | "herstel"
   >(),
   status: text("status").notNull().default("planned"),
+  // TRAININGSVORMEN_01 F2 (TRV-29/TRV-31): tweede as naast de rekenbare
+  // belasting. De generator schrijft de soort die hij zelf al kent (net als
+  // zone); bestaande rijen blijven null en een soort wordt NOOIT achteraf
+  // geraden (TRV-78) — null toont de UI als onbekend, nooit als 0.
+  belastingssoort: text("belastingssoort").$type<
+    | "aeroob_duur"
+    | "aeroob_hoog"
+    | "anaeroob"
+    | "neuromusculair"
+    | "kracht"
+    | "techniek_licht"
+    | "herstel"
+  >(),
   source: text("source").notNull().default("sparki"),
   // Bij source="coach": welke coach deze training heeft aangemaakt. Alleen die
   // coach mag de training wijzigen/herhalen (cross-coach isolatie). Nullable
@@ -493,7 +506,23 @@ export const insertPlannedWorkoutSchema = createInsertSchema(
   plannedWorkoutsTable,
 )
   .omit({ id: true })
-  .extend({ zone: zoneEnum });
+  .extend({
+    zone: zoneEnum,
+    // F2 (TRV-29): zelfde reden als zone — zonder expliciete enum zou de
+    // zod-inferentie `string` opleveren en de kolom-union breken.
+    belastingssoort: z
+      .enum([
+        "aeroob_duur",
+        "aeroob_hoog",
+        "anaeroob",
+        "neuromusculair",
+        "kracht",
+        "techniek_licht",
+        "herstel",
+      ])
+      .nullable()
+      .optional(),
+  });
 export const selectPlannedWorkoutSchema =
   createSelectSchema(plannedWorkoutsTable);
 
