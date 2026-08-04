@@ -4107,12 +4107,24 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       elevationPreference,
     });
     // "Vermijd onverhard": echt toepasbaar door het verharde-wegen-profiel te
-    // kiezen (cycling-road) — eerlijk gemeld in het rapport.
-    if (avoidOnverhard && profile !== "cycling-road") {
-      profile = "cycling-road";
-      avoidReport.toegepast.push("onverhard (via het wegprofiel)");
+    // kiezen (cycling-road) — eerlijk gemeld in het rapport. ALLEEN voor
+    // fietsprofielen (04-08-2026): een bewaarde fietswens mag een wandel- of
+    // hardloopaanvraag nooit stil naar het racefietsprofiel dwingen — dat gaf
+    // fiets-foutmeldingen ("fietsverbod, trap") op een wandelroute.
+    if (avoidOnverhard && profile.startsWith("cycling-")) {
+      if (profile !== "cycling-road") {
+        profile = "cycling-road";
+        avoidReport.toegepast.push("onverhard (via het wegprofiel)");
+      } else {
+        avoidReport.toegepast.push("onverhard");
+      }
     } else if (avoidOnverhard) {
-      avoidReport.toegepast.push("onverhard");
+      // Te voet is er geen harde onverhard-grens; eerlijk melden, niet negeren.
+      avoidReport.nietMogelijk.push({
+        wens: "onverhard vermijden",
+        reden:
+          "deze harde grens bestaat alleen voor fietsroutes; te voet blijft onverhard een routeopmerking",
+      });
     }
     // Harde grendel: nooit stil een racefiets/MTB-route leveren via een motor
     // die geen wegdek/legaliteit kan sturen terwijl de goede motor bestaat.
