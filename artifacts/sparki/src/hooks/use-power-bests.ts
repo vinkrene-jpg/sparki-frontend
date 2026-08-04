@@ -11,6 +11,8 @@ export type PowerBestsData = {
   allTime: Record<string, PowerBestEntry>;
   /** Best per window over de laatste 42 dagen. */
   recent: Record<string, PowerBestEntry>;
+  /** Best per window over de 42 dagen dáárvoor (dag 43–84) — periodevergelijking. */
+  previous?: Record<string, PowerBestEntry>;
   /** Hoeveel ritten echte per-seconde vermogensdata droegen. */
   sessionsWithBests: number;
 };

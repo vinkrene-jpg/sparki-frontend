@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, inArray } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -17,6 +17,16 @@ import {
 } from "@workspace/db";
 import type { BusyDay } from "../lib/training/plan-generator";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import {
+  POWER_ZONES,
+  powerZoneSecondsFromStreams,
+} from "../lib/activity-streams";
+import {
+  localDateStr,
+  shiftDateStr,
+  powerBestPeriods,
+  mondayOf,
+} from "../lib/analysis-periods";
 import { requireCommercialFeature } from "../lib/entitlements";
 import { maybeScheduleStravaCatchUp } from "../engines/data-hub/strava-sync";
 import {
@@ -2493,9 +2503,13 @@ router.get("/power-bests", requireAuth, async (req, res) => {
       .from(trainingSessionsTable)
       .where(eq(trainingSessionsTable.clerkId, clerkId));
 
-    const recentCutoff = daysAgoStr(42);
+    // Twee even lange, niet-overlappende blokken van exact 42 lokale
+    // kalenderdagen — voedt de powercurve-vergelijking (dit blok vs vorige
+    // blok) in Analyse. Grenzen uit één pure helper (getest).
+    const { recentStart, previousStart } = powerBestPeriods(localDateStr());
     const allTime: Record<string, { watts: number; date: string }> = {};
     const recent: Record<string, { watts: number; date: string }> = {};
+    const previous: Record<string, { watts: number; date: string }> = {};
     let sessionsWithBests = 0;
 
     for (const row of rows) {
@@ -2508,18 +2522,163 @@ router.get("/power-bests", requireAuth, async (req, res) => {
         if (!cur || watts > cur.watts) {
           allTime[win] = { watts, date: row.sessionDate };
         }
-        if (row.sessionDate >= recentCutoff) {
+        if (row.sessionDate >= recentStart) {
           const curR = recent[win];
           if (!curR || watts > curR.watts) {
             recent[win] = { watts, date: row.sessionDate };
+          }
+        } else if (row.sessionDate >= previousStart) {
+          const curP = previous[win];
+          if (!curP || watts > curP.watts) {
+            previous[win] = { watts, date: row.sessionDate };
           }
         }
       }
     }
 
-    res.json({ allTime, recent, sessionsWithBests });
+    res.json({ allTime, recent, previous, sessionsWithBests });
   } catch (err) {
     req.log.error({ err }, "athlete.power-bests GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/athlete/weekly-zones ────────────────────────────────────────────
+// Time-in-zone per week (Coggan zones on FTP) over the REAL stored power
+// streams of the last 6 weeks. Honest by construction: rides without a power
+// stream count as ride but contribute no zone time; without FTP or without any
+// power data the response says so instead of guessing.
+router.get("/weekly-zones", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const WEEKS = 6;
+  try {
+    const [athlete] = await db
+      .select({ ftp: athleteProfilesTable.ftp })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId))
+      .limit(1);
+    let ftp = athlete?.ftp ?? null;
+    if (ftp == null) {
+      // Zelfde bron als de FTP-ontwikkeling op de pagina: de meest recente
+      // geldige FTP-meting. Achterhaalde afgeleide rijen tellen niet mee
+      // (zelfde filter als GET /ftp) — anders zou de kaart "geen FTP" zeggen
+      // terwijl de gebruiker elders wél een FTP ziet.
+      const [latest] = await db
+        .select({ ftpWatts: ftpHistoryTable.ftpWatts })
+        .from(ftpHistoryTable)
+        .where(
+          and(
+            eq(ftpHistoryTable.clerkId, clerkId),
+            sql`NOT (${ftpHistoryTable.testType} = 'derived' AND coalesce(${ftpHistoryTable.notes}, '') LIKE '[achterhaald]%')`,
+          ),
+        )
+        .orderBy(desc(ftpHistoryTable.measuredAt))
+        .limit(1);
+      ftp = latest?.ftpWatts ?? null;
+    }
+
+    // Weekstart (maandag) in LOKALE dagen — sessionDate is een 'YYYY-MM-DD'
+    // string; "vandaag" en de weekgrenzen komen uit de geteste pure helpers
+    // (nooit via toISOString — UTC-dag-val).
+    const thisMonday = mondayOf(localDateStr());
+    const weekStarts: string[] = [];
+    for (let i = WEEKS - 1; i >= 0; i--) {
+      weekStarts.push(shiftDateStr(thisMonday, -i * 7));
+    }
+    const rangeStart = weekStarts[0]!;
+
+    const sessions = await db
+      .select({
+        id: trainingSessionsTable.id,
+        sessionDate: trainingSessionsTable.sessionDate,
+      })
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.clerkId, clerkId),
+          gte(trainingSessionsTable.sessionDate, rangeStart),
+        ),
+      );
+
+    const byWeek = new Map<
+      string,
+      { seconds: number[]; rides: number; ridesWithPower: number }
+    >();
+    for (const ws of weekStarts) {
+      byWeek.set(ws, {
+        seconds: POWER_ZONES.map(() => 0),
+        rides: 0,
+        ridesWithPower: 0,
+      });
+    }
+
+    let sessionsWithPower = 0;
+    if (sessions.length > 0 && ftp) {
+      // Alleen het streams-deel van de import ophalen — parsedSummary als
+      // geheel draagt ook route-geometrie en is onnodig zwaar.
+      const imports = await db
+        .select({
+          sessionId: activityImportsTable.linkedTrainingSessionId,
+          streams: sql<unknown>`${activityImportsTable.parsedSummary} -> 'streams'`,
+        })
+        .from(activityImportsTable)
+        .where(
+          and(
+            eq(activityImportsTable.clerkId, clerkId),
+            inArray(
+              activityImportsTable.linkedTrainingSessionId,
+              sessions.map((s) => s.id),
+            ),
+          ),
+        );
+      const streamsBySession = new Map<string, unknown>();
+      for (const imp of imports) {
+        if (imp.sessionId) streamsBySession.set(String(imp.sessionId), imp.streams);
+      }
+      for (const s of sessions) {
+        const week = mondayOf(s.sessionDate);
+        const agg = byWeek.get(week);
+        if (!agg) continue;
+        agg.rides += 1;
+        const zoneSeconds = powerZoneSecondsFromStreams(
+          streamsBySession.get(String(s.id)) ?? null,
+          ftp,
+        );
+        if (!zoneSeconds) continue;
+        agg.ridesWithPower += 1;
+        sessionsWithPower += 1;
+        for (let i = 0; i < zoneSeconds.length; i++) {
+          agg.seconds[i]! += zoneSeconds[i]!;
+        }
+      }
+    } else if (sessions.length > 0) {
+      for (const s of sessions) {
+        const agg = byWeek.get(mondayOf(s.sessionDate));
+        if (agg) agg.rides += 1;
+      }
+    }
+
+    res.json({
+      ftp,
+      zones: POWER_ZONES.map((z) => ({
+        zone: z.zone,
+        label: z.label,
+        fromW: ftp ? Math.round(z.lo * ftp) : null,
+        toW: ftp && z.hi != null ? Math.round(z.hi * ftp) : null,
+      })),
+      weeks: weekStarts.map((ws) => {
+        const agg = byWeek.get(ws)!;
+        return {
+          weekStart: ws,
+          rides: agg.rides,
+          ridesWithPower: agg.ridesWithPower,
+          zoneSeconds: agg.seconds,
+        };
+      }),
+      sessionsWithPower,
+    });
+  } catch (err) {
+    req.log.error({ err }, "athlete.weekly-zones GET failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

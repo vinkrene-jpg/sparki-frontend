@@ -63,6 +63,64 @@ const CHANNELS: Channel[] = [
   "distanceM",
 ];
 
+// ── Time-in-zone over stored streams ─────────────────────────────────────────
+// Coggan power zones on FTP — MUST mirror the frontend zone table
+// (artifacts/sparki/src/lib/stream-analysis.ts) so per-ride and per-week
+// distributions agree.
+export const POWER_ZONES: Array<{
+  zone: string;
+  label: string;
+  lo: number;
+  hi: number | null;
+}> = [
+  { zone: "Z1", label: "Herstel", lo: 0, hi: 0.55 },
+  { zone: "Z2", label: "Duur", lo: 0.55, hi: 0.75 },
+  { zone: "Z3", label: "Tempo", lo: 0.75, hi: 0.9 },
+  { zone: "Z4", label: "Drempel", lo: 0.9, hi: 1.05 },
+  { zone: "Z5", label: "VO2max", lo: 1.05, hi: 1.2 },
+  { zone: "Z6", label: "Anaeroob", lo: 1.2, hi: null },
+];
+
+/**
+ * Seconds per Coggan zone from stored (downsampled) streams against FTP.
+ * Null when there is no usable power channel or FTP — never a fabricated
+ * distribution. Buckets with a power gap simply do not count.
+ */
+export function powerZoneSecondsFromStreams(
+  streams: unknown,
+  ftp: number | null,
+): number[] | null {
+  if (!ftp || ftp <= 0) return null;
+  const s = streams as { t?: unknown; power?: unknown } | null;
+  if (!s || !Array.isArray(s.t) || !Array.isArray(s.power)) return null;
+  const t = s.t.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (t.length < 2 || t.length !== s.t.length) return null;
+
+  // Each bucket stands for the time until the next bucket (last gets median dt)
+  // — same rule as the per-ride frontend computation.
+  const dts: number[] = [];
+  for (let i = 1; i < t.length; i++) dts.push(t[i]! - t[i - 1]!);
+  const medianDt = dts.length
+    ? [...dts].sort((a, b) => a - b)[Math.floor(dts.length / 2)]!
+    : 1;
+
+  const seconds = POWER_ZONES.map(() => 0);
+  let any = false;
+  for (let i = 0; i < t.length && i < s.power.length; i++) {
+    const v = (s.power as unknown[])[i];
+    if (typeof v !== "number" || !Number.isFinite(v)) continue;
+    const ratio = v / ftp;
+    let idx = POWER_ZONES.findIndex(
+      (z) => ratio >= z.lo && (z.hi == null || ratio < z.hi),
+    );
+    if (idx < 0) idx = ratio < 0 ? 0 : POWER_ZONES.length - 1;
+    seconds[idx]! += medianDt;
+    any = true;
+  }
+  if (!any) return null;
+  return seconds.map((v) => Math.round(v));
+}
+
 export function createStreamCollector() {
   const samples: StreamSample[] = [];
   return {

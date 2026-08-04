@@ -258,6 +258,22 @@ export const UITLEG: Record<string, Uitleg> = {
     hoe: "Berekend uit de duur en zwaarte van de training en, waar bekend, je gewicht. Het zijn vuistregels voor sporters — geen dieetadvies en geen medische voedingsbegeleiding.",
     versie: 1,
   },
+  powercurve: {
+    wat: "Je beste gemiddelde vermogen per duur (5 seconden tot 60 minuten), voor dit blok van 42 dagen en het blok ervoor.",
+    waarom: "Zo zie je in één oogopslag of je sprint, aanval of duurvermogen vooruitgaat ten opzichte van de vorige periode.",
+    hoe: "Per rit met vermogensmeter wordt het beste gemiddelde over elk tijdvenster berekend; de curve toont per periode het hoogste van al die ritten. Duren zonder echte meting blijven leeg — er wordt niets bijgeschat.",
+    verbanden: "Dezelfde getallen voeden je recordtabel en de ondergrens-check op je FTP. Het 20-minutenpunt zegt het meest over je drempelvermogen.",
+    beinvloeden: "Vooruitgang op korte duren komt uit sprint- en intervalwerk, op lange duren uit drempel- en duurblokken. Test af en toe gericht, anders blijft de curve een onderschatting.",
+    versie: 1,
+  },
+  weekzoneverdeling: {
+    wat: "Hoeveel tijd je per week in elke vermogenszone reed, opgeteld over alle ritten met vermogensmeter.",
+    waarom: "Per rit zie je één training; per week zie je je werkelijke mix. Veel goede trainingsweken zijn vooral rustig (Z1–Z2) met gerichte harde tijd erbovenop.",
+    hoe: "Uit het echte vermogenssignaal van je geïmporteerde ritten, afgezet tegen je FTP (Coggan-zones). Ritten zonder vermogensdata tellen niet mee in de verdeling — de week toont dan eerlijk minder tijd dan je echt reed.",
+    verbanden: "Hangt samen met je intensiteitsverdeling en je belastingsverloop: veel tijd in Z3 zonder plan jaagt vermoeidheid op zonder evenredige fitheidswinst.",
+    beinvloeden: "Houd je FTP actueel, anders verschuiven alle zones mee. Wil je de mix veranderen: maak rustige ritten écht rustig en plan harde tijd bewust.",
+    versie: 1,
+  },
   intensiteitsverdeling: {
     wat: "Hoe je trainingstijd verdeeld is over rustige, stevige en harde sessies.",
     waarom: "Een gezonde mix — veel rustig, gericht hard — levert doorgaans meer op dan alles op middelmatige intensiteit rijden.",

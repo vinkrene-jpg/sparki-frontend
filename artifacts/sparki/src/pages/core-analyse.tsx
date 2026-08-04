@@ -44,6 +44,7 @@ import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { usePowerBests } from "@/hooks/use-power-bests"
+import { useWeeklyZones } from "@/hooks/use-weekly-zones"
 import { useGoalPicture, type Goal } from "@/hooks/use-goals"
 import { useRaces } from "@/hooks/use-races"
 import { useConnectors } from "@/hooks/use-connectors"
@@ -157,6 +158,15 @@ function toestandVan(bron: Bron<unknown>, hasData: boolean): AnalyseToestand {
 // Glass card conform de gedeelde schil: donkere ondergrond + laag-alpha rand +
 // backdrop-blur. Radius 16px (rounded-2xl), ruime padding (default p-5/20px,
 // door callers overschrijfbaar).
+// Intensiteitsfactor (IF) als tekst — alleen echte, aannemelijke waarden;
+// null (⇒ "—") wanneer de sessie geen IF droeg. Nooit berekend uit een gok.
+function ifLabel(raw: string | null | undefined): string | null {
+  if (raw == null) return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0 || n > 2) return null
+  return n.toFixed(2)
+}
+
 function LCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
@@ -743,6 +753,135 @@ function WeekVolumeCard({
   )
 }
 
+// ── Weekzoneverdeling (vermogenszones, echte streams) ────────────────────────
+// Tijd per Coggan-zone per week uit de echte vermogensstreams — dezelfde
+// zone-indeling als de per-rit verdeling in de sessieweergave. Eerlijk:
+// zonder FTP of zonder vermogensdata zegt de kaart dat, nooit een gok.
+
+const WEEKZONE_KLEUR: Record<string, string> = {
+  Z1: "#94a3b8", // slate-400 — herstel
+  Z2: "#2563EB", // blue-600  — duur
+  Z3: "#0891B2", // cyan-600  — tempo
+  Z4: "#D97706", // amber-600 — drempel
+  Z5: "#EA580C", // orange-600 — VO2max
+  Z6: "#DC2626", // red-600   — anaeroob
+}
+
+function weekLabelKort(weekStart: string): string {
+  const [, m, d] = weekStart.split("-")
+  return `${parseInt(d ?? "1", 10)}/${parseInt(m ?? "1", 10)}`
+}
+
+function WeekZonesTooltip({
+  active, payload, label,
+}: {
+  active?: boolean
+  payload?: Array<{ name?: string; value?: number; color?: string }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  const rows = payload.filter((p) => (p.value ?? 0) > 0)
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg">
+      <p className="mb-1 font-medium text-foreground">Week van {label}</p>
+      {rows.length === 0 ? (
+        <p className="text-muted-foreground">Geen vermogensdata deze week.</p>
+      ) : (
+        [...rows].reverse().map((p, i) => (
+          <p key={i} className="font-mono tabular-nums" style={{ color: p.color }}>
+            {p.name}: {(p.value ?? 0).toFixed(1)} u
+          </p>
+        ))
+      )}
+    </div>
+  )
+}
+
+function WeekZonesCard() {
+  const { data, isLoading, isError, refetch } = useWeeklyZones()
+
+  const reeks = (data?.weeks ?? []).map((w) => {
+    const rij: Record<string, number | string> = {
+      label: weekLabelKort(w.weekStart),
+      weekStart: w.weekStart,
+      rides: w.rides,
+      ridesWithPower: w.ridesWithPower,
+    }
+    for (let i = 0; i < (data?.zones.length ?? 0); i++) {
+      rij[data!.zones[i]!.zone] = Math.round(((w.zoneSeconds[i] ?? 0) / 3600) * 10) / 10
+    }
+    return rij
+  })
+  const heeftData = (data?.sessionsWithPower ?? 0) > 0
+  const wekenZonderPower = (data?.weeks ?? []).filter((w) => w.rides > 0 && w.ridesWithPower < w.rides).length
+
+  return (
+    <LCard className="p-5">
+      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+        <LCardTitle>Zoneverdeling per week</LCardTitle>
+        <UitlegDot uitlegKey="weekzoneverdeling" label="Zoneverdeling per week" />
+        <span className="text-xs text-muted-foreground ml-2">laatste 6 weken</span>
+      </div>
+      <UitlegRegel k="weekzoneverdeling" />
+      {isLoading ? (
+        <Skel className="h-56 w-full" />
+      ) : isError ? (
+        <LFout titel="Zoneverdeling kon niet worden geladen." onOpnieuw={() => void refetch()} />
+      ) : data?.ftp == null ? (
+        <MissingInputNotice compact showOrb={false} tone="dark"
+          title="Geen FTP bekend"
+          description="Zonder FTP kunnen je vermogenszones niet worden berekend. Stel je FTP in om deze verdeling te zien."
+          targets={["ftp"]}
+          returnTo="/analyse"
+        />
+      ) : !heeftData ? (
+        <LegeGrafiek titel="Geen ritten met vermogensdata in de laatste 6 weken — zonder echt vermogenssignaal is er geen zoneverdeling." />
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height={220}>
+            <ComposedChart data={reeks} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
+              <CartesianGrid stroke={CHART.grid} vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: CHART.as, fontSize: 10 }} />
+              <YAxis
+                tick={{ fill: CHART.as, fontSize: 10 }}
+                label={{ value: "uren", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
+              />
+              <Tooltip content={(props) => <WeekZonesTooltip {...(props as Parameters<typeof WeekZonesTooltip>[0])} />} />
+              {(data?.zones ?? []).map((z, i, all) => (
+                <Bar
+                  key={z.zone}
+                  dataKey={z.zone}
+                  name={`${z.zone} ${z.label}`}
+                  stackId="zones"
+                  fill={WEEKZONE_KLEUR[z.zone] ?? CHART.missing}
+                  radius={i === all.length - 1 ? [2, 2, 0, 0] : undefined}
+                  isAnimationActive={false}
+                />
+              ))}
+            </ComposedChart>
+          </ResponsiveContainer>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            {(data?.zones ?? []).map((z) => (
+              <span key={z.zone} className="inline-flex items-center gap-1">
+                <span className="inline-block h-2 w-2 rounded-sm" style={{ background: WEEKZONE_KLEUR[z.zone] ?? CHART.missing }} />
+                {z.zone} {z.label}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Je ziet per week hoeveel uur je in elke vermogenszone reed. Veel Z1–Z2 met gerichte harde tijd is een gezonde mix; groeit Z3 zonder plan, maak je rustige ritten dan weer écht rustig.
+          </p>
+          {wekenZonderPower > 0 && (
+            <p className="mt-1 text-[11px]" style={{ color: CHART.missing }}>
+              In {wekenZonderPower} {wekenZonderPower === 1 ? "week" : "weken"} reed je ook ritten zonder vermogensdata — die tellen hier niet mee, de werkelijke trainingstijd ligt daar dus hoger.
+            </p>
+          )}
+        </>
+      )}
+    </LCard>
+  )
+}
+
 // ── Intensiteitsverdeling ────────────────────────────────────────────────────
 
 const INTENSITEIT_KLEUR: Record<string, string> = {
@@ -1112,6 +1251,7 @@ function BelastingTab({
         doelUren={scenarioPct != null && urenBasis != null ? urenBasis.uren * (1 + scenarioPct / 100) : null}
       />
       <IntensiteitCard sessies={sessies.data ?? []} />
+      <WeekZonesCard />
 
       {/* Readiness-trend */}
       <LCard className="p-5">
@@ -1270,6 +1410,103 @@ const POWER_WINDOWS = [
   { key: "1200", label: "20 min"},
   { key: "3600", label: "60 min"},
 ] as const
+
+// Powercurve-grafiek: beste gemiddelde vermogen per duur, dit blok (laatste
+// 42 dagen) vs het blok ervoor, met all-time als referentie. Alleen echte
+// meetpunten — duren zonder data blijven eerlijk leeg (connectNulls uit).
+function PowerCurveTooltip({
+  active, payload, label,
+}: {
+  active?: boolean
+  payload?: Array<{ name?: string; value?: number | null; color?: string }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg">
+      <p className="mb-1 font-medium text-foreground">{label}</p>
+      {payload.filter((p) => p.value != null).map((p, i) => (
+        <p key={i} className="font-mono tabular-nums" style={{ color: p.color }}>
+          {p.name}: {p.value} W
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function PowerCurveCard() {
+  const { data, isLoading, isError, refetch } = usePowerBests()
+
+  const reeks = POWER_WINDOWS.map((w) => ({
+    label: w.label,
+    ditBlok: data?.recent[w.key]?.watts ?? null,
+    vorigBlok: data?.previous?.[w.key]?.watts ?? null,
+    allTime: data?.allTime[w.key]?.watts ?? null,
+  })).filter((r) => r.ditBlok != null || r.vorigBlok != null || r.allTime != null)
+
+  const heeftPeriodes = reeks.some((r) => r.ditBlok != null || r.vorigBlok != null)
+
+  return (
+    <LCard className="p-5">
+      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+        <LCardTitle>Powercurve</LCardTitle>
+        <UitlegDot uitlegKey="powercurve" label="Powercurve" />
+        <span className="text-xs text-muted-foreground ml-2">laatste 42 dagen vs 42 dagen ervoor</span>
+      </div>
+      <UitlegRegel k="powercurve" />
+      {isLoading ? (
+        <Skel className="h-56 w-full" />
+      ) : isError ? (
+        <LFout titel="Powercurve kon niet worden geladen." onOpnieuw={() => void refetch()} />
+      ) : reeks.length === 0 ? (
+        <LegeGrafiek titel="Nog geen ritten met vermogensmeter geïmporteerd — zonder echt vermogenssignaal is er geen curve." />
+      ) : (
+        <>
+          {!heeftPeriodes && (
+            <p className="mb-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+              Te weinig ritten met vermogensmeter in de laatste 84 dagen om periodes te vergelijken — alleen je all-time curve wordt getoond.
+            </p>
+          )}
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={reeks} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
+              <CartesianGrid stroke={CHART.grid} vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: CHART.as, fontSize: 10 }} />
+              <YAxis
+                tick={{ fill: CHART.as, fontSize: 10 }}
+                domain={["auto", "auto"]}
+                label={{ value: "watt", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
+              />
+              <Tooltip content={(props) => <PowerCurveTooltip {...(props as Parameters<typeof PowerCurveTooltip>[0])} />} />
+              <Line
+                type="monotone" dataKey="allTime" name="All-time"
+                stroke={CHART.missing} strokeWidth={1.5} strokeDasharray="5 4"
+                dot={{ r: 2, fill: CHART.missing, strokeWidth: 0 }} connectNulls={false} isAnimationActive={false}
+              />
+              <Line
+                type="monotone" dataKey="vorigBlok" name="Vorige 42 dagen"
+                stroke={CHART.atl} strokeWidth={1.5}
+                dot={{ r: 2.5, fill: CHART.atl, strokeWidth: 0 }} connectNulls={false} isAnimationActive={false}
+              />
+              <Line
+                type="monotone" dataKey="ditBlok" name="Laatste 42 dagen"
+                stroke={CHART.ftp} strokeWidth={2}
+                dot={{ r: 3, fill: CHART.ftp, strokeWidth: 0 }} connectNulls={false} isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.ftp }} />Laatste 42 dagen</span>
+            <span className="inline-flex items-center gap-1.5"><span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.atl }} />Vorige 42 dagen</span>
+            <span className="inline-flex items-center gap-1.5"><span className="inline-block h-0.5 w-5 rounded" style={{ backgroundImage: `repeating-linear-gradient(90deg,${CHART.missing} 0,${CHART.missing} 4px,transparent 4px,transparent 8px)` }} />All-time</span>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Je ziet per duur je beste gemiddelde vermogen in dit blok en het blok ervoor. Ligt de blauwe lijn onder de oranje, dan heb je die duur dit blok simpelweg nog niet zo hard gereden — dat is geen vormverlies op zich.
+          </p>
+        </>
+      )}
+    </LCard>
+  )
+}
 
 function PowerBestsTable() {
   const { data, isLoading, isError, refetch } = usePowerBests()
@@ -1543,6 +1780,9 @@ function ProgressieTab({
         doelZin={doelZin}
       />
 
+      {/* Powercurve met periodevergelijking */}
+      <PowerCurveCard />
+
       {/* Persoonlijke records (vermogen) */}
       <LCard className="p-5 lg:col-span-2">
         <div className="flex items-center gap-1.5 mb-4">
@@ -1775,6 +2015,12 @@ function SessiesTab({
               <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-3">Datum</th>
               <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-3">Training</th>
               <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-3 hidden sm:table-cell">Duur</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground pr-3">
+                <span className="inline-flex items-center gap-1">
+                  IF
+                  <UitlegDot uitlegKey="intensiteitsfactor" label="Intensiteitsfactor (IF)" />
+                </span>
+              </th>
               <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   TSS
@@ -1801,6 +2047,12 @@ function SessiesTab({
                 </td>
                 <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-muted-foreground hidden sm:table-cell">
                   {sessieDuurLabel(s.durationMin) ?? "—"}
+                </td>
+                <td
+                  className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums"
+                  style={{ color: ifLabel(s.intensityFactor) != null ? CHART.ftp : CHART.missing }}
+                >
+                  {ifLabel(s.intensityFactor) ?? "—"}
                 </td>
                 <td
                   className="py-2.5 text-right font-mono text-xs tabular-nums"
