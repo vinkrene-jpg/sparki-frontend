@@ -52,6 +52,24 @@ Laatst bijgewerkt: 2026-08-02.
 - De taakvoorstellen #549/#550 zijn door René geannuleerd; richting blijft
   vastgelegd hier, bouw start pas op expliciete opdracht.
 
+## Beslist 04-08-2026 — MEETNIVEAU_EN_UITLEG_01 v2 (§9, René)
+
+- Bijgewerkt document: `attached_assets/MEETNIVEAU_EN_UITLEG_01-1_1785877826756.md`.
+  De drie §9-vragen zijn beantwoord:
+  1. Ochtendvraag komt er WEL, ook zonder draagbare → `HERSTEL_S` (§5.4);
+     op alleen de subjectieve laag NOOIT de gezondheidsband (§5.3) afgeven.
+  2. `SPOOR_H` (alleen hartslag) krijgt een EIGEN kaartenset, geen terugval
+     op BASIS (§3.1a) — belastingsberekening in twee smaken (vermogen/HR),
+     niet uitwisselbaar; overstap = breuk tonen, niet stil plakken.
+  3. Herstelniveau krijgt later een aparte prijs → nu al eigen rechtensleutel
+     (B2b); tot die prijs blijft Compleet de enige poort.
+- Nieuw open bij René (§9): (a) hoe ochtendvraag-adoptie afdwingen
+  (herinnering/plek/moment onbepaald); (b) breuk-in-reeks bij overstap
+  SPOOR_H→SPOOR_V bevestigen (voorstel §3.1a).
+- Volgorde §10 blijft: §3 meetniveau → §4 poorten → §6 uitleglaag (parallel)
+  → §5 herstelblok (M2/M3 zijn bevestigd in het meetrapport, dus bouwbaar
+  zodra vrijgegeven). Taken #570/#571/#572 lopen.
+
 ## Beslist 04-08-2026 — Taken voorstellen mag weer (René)
 
 - De afspraak van 02-08 ("geen taken/concepten voorstellen") is GESCHRAPT:
