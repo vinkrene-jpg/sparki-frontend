@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { db, connectorConnectionsTable, syncRunsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
@@ -585,20 +585,59 @@ router.get("/strava/callback", async (req, res) => {
         },
       });
 
-    // Best-effort initial import. A failed import must NOT flip a freshly
-    // connected account to "error" — so we import via the hub provider directly
-    // (not runSync, which records a connection error on failure) and only record
-    // what actually imported. This brings in profile/weight/ftp AND activities
-    // through the central ingest pipeline.
-    try {
+    // Best-effort initial import — in de ACHTERGROND. Een mislukte import mag
+    // een verse koppeling nooit op "error" zetten, én de gebruiker mag niet
+    // ~20s in het redirect-scherm wachten terwijl profiel/gewicht/FTP en
+    // activiteiten bij Strava worden opgehaald. We redirecten dus direct en
+    // laten de import doorlopen; importedDataTypes/lastSyncAt worden pas
+    // bijgewerkt met wat er ECHT is geland (eerlijk: geen voorschot).
+    const initialImportClerkId = state.clerkId;
+    const initialImportGeneration = now.getTime();
+    const log = req.log;
+    void (async () => {
       const provider = getHubProvider("strava");
-      if (provider?.fetchAndNormalize) {
-        const allowed = await loadAllowedDataTypes(state.clerkId, "strava");
-        const batch = await provider.fetchAndNormalize({ clerkId: state.clerkId });
-        if (!batch.persistedExternally) {
-          await ingestBatch(state.clerkId, "strava", batch, { allowed });
+      const fetchAndNormalize = provider?.fetchAndNormalize;
+      if (!fetchAndNormalize) return;
+      // Zelfde advisory-lock-sleutel als runSync (engines/data-hub), zodat een
+      // door de UI gestarte "gather na OAuth"-sync en deze achtergrond-import
+      // elkaar SERIALISEREN in plaats van gelijktijdig te lopen (dubbele
+      // Strava-calls, rate-limit-druk, error-flip op een verse koppeling).
+      await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtext(${`${initialImportClerkId}:strava:sync`}))`,
+        );
+        // Generatiebewaking: als de gebruiker intussen heeft losgekoppeld of
+        // opnieuw gekoppeld (nieuwe connectedAt), is deze import verouderd en
+        // mag hij niets meer ophalen of terugschrijven.
+        const [conn] = await tx
+          .select({
+            status: connectorConnectionsTable.status,
+            connectedAt: connectorConnectionsTable.connectedAt,
+          })
+          .from(connectorConnectionsTable)
+          .where(
+            and(
+              eq(connectorConnectionsTable.clerkId, initialImportClerkId),
+              eq(connectorConnectionsTable.provider, "strava"),
+            ),
+          );
+        if (
+          !conn ||
+          conn.status !== "connected" ||
+          conn.connectedAt?.getTime() !== initialImportGeneration
+        ) {
+          log.info(
+            { clerkId: initialImportClerkId },
+            "strava.callback initial import skipped: connection changed",
+          );
+          return;
         }
-        await db
+        const allowed = await loadAllowedDataTypes(initialImportClerkId, "strava");
+        const batch = await fetchAndNormalize({ clerkId: initialImportClerkId });
+        if (!batch.persistedExternally) {
+          await ingestBatch(initialImportClerkId, "strava", batch, { allowed });
+        }
+        await tx
           .update(connectorConnectionsTable)
           .set({
             // Report only what consent actually let us persist.
@@ -609,14 +648,16 @@ router.get("/strava/callback", async (req, res) => {
           })
           .where(
             and(
-              eq(connectorConnectionsTable.clerkId, state.clerkId),
+              eq(connectorConnectionsTable.clerkId, initialImportClerkId),
               eq(connectorConnectionsTable.provider, "strava"),
+              // Nooit een intussen losgekoppelde/herkoppelde rij overschrijven.
+              eq(connectorConnectionsTable.connectedAt, new Date(initialImportGeneration)),
             ),
           );
-      }
-    } catch (importErr) {
-      req.log.warn({ err: importErr }, "strava.callback initial import failed");
-    }
+      });
+    })().catch((importErr) => {
+      log.warn({ err: importErr }, "strava.callback initial import failed");
+    });
 
     // Webhook-eerst: zorg (idempotent, app-breed) dat het Strava-abonnement
     // bestaat zodat nieuwe activiteiten via push binnenkomen. Best-effort en
