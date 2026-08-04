@@ -155,4 +155,5 @@
 - [Club-wedstrijdlaag BUILD_03](sparki-club-race-build03.md) — één-wedstrijd-sync (targetWhere-trap), vervanger zonder spoor, noodinfo-inzagelog, availabilityNote-afscherming, app-only dagmodus.
 - [Routefamilies & voet-geschiktheid](sparki-route-families-foot.md) — isRouteSportActive is de enige poort (geen vrijgaveflags); te voet: trap/fietsverbod ok, access=private/locked=yes hard; sport server-side via kandidaat-store.
 - [Praktijktest-APK + OTA](sparki-praktijktest-apk.md) — René test alleen APK+web; eas update --channel praktijktest hoort bij elke mobiele oplevering; babel-mix/intentFilter-valkuilen.
+- [Wedstrijddoel basis + volhoudbaarheid](sparki-wedstrijddoel-basis.md) — Laag 0 leeslaag; Strava-limiet gemeten 400/4000 (lees 200/2000) per app; koppeling haalt géén streams; historie-import pas na stream- of bestandsroute.
 - [Sparki marketingsite](sparki-marketingsite.md) — lib/pricing SSOT prijzen, prerender via ssrPath+meta-collector, rol-schermen via fixtures; git stash -u deregistreert ongecommit artifact.
