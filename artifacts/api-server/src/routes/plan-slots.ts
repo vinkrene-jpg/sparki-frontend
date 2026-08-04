@@ -24,6 +24,7 @@ import {
   plannedSessionsTable,
   plannedWorkoutsTable,
   trainerSlotDefaultsTable,
+  trainingSessionsTable,
   trainingFormParametersTable,
   trainingFormsTable,
   type Belastingssoort,
@@ -32,7 +33,17 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import { hasDirectCoachLink } from "../lib/sharing";
 import { formVisibleTo } from "../lib/training/form-visibility";
 import { computeAge } from "../lib/age";
-import { recomputeFreshnessForAthlete, startkostX10 } from "../lib/training/freshness";
+import {
+  recomputeFreshnessForAthlete,
+  restkostX10,
+  startkostX10,
+} from "../lib/training/freshness";
+import {
+  bepaalAfwijkingen,
+  projecteerBalans,
+  rekenbareBelasting,
+  valideerVormParameters,
+} from "../lib/training/plaatsing";
 
 const router = Router();
 
@@ -262,57 +273,17 @@ router.post("/slots/:id/sessie", requireAuth, async (req, res) => {
     const duur = num(b.duurMinuten) ?? params?.duurStandaardMinuten ?? null;
     const intensiteit = num(b.intensiteit) ?? params?.intensiteitStandaard ?? null;
     if (duur == null) return res.status(400).json({ error: "duurMinuten is verplicht (de vorm heeft geen standaardduur)" });
-    if (params?.duurMinuten != null && duur < params.duurMinuten) {
-      return res.status(400).json({ error: `Duur onder het bereik van de vorm (min ${params.duurMinuten} min)` });
-    }
-    if (params?.duurMaxMinuten != null && duur > params.duurMaxMinuten) {
-      return res.status(400).json({ error: `Duur boven het bereik van de vorm (max ${params.duurMaxMinuten} min)` });
-    }
-    if (intensiteit != null) {
-      if (params?.intensiteitMin != null && intensiteit < params.intensiteitMin) {
-        return res.status(400).json({ error: "Intensiteit onder het bereik van de vorm" });
-      }
-      if (params?.intensiteitMax != null && intensiteit > params.intensiteitMax) {
-        return res.status(400).json({ error: "Intensiteit boven het bereik van de vorm" });
-      }
-    }
+    const bereikfout = valideerVormParameters(params, duur, intensiteit);
+    if (bereikfout) return res.status(400).json({ error: bereikfout });
 
     // Plekstatus (TRV-40/41): binnen bandbreedte → vervuld; eroverheen of
     // andere vervangcategorie → afgeweken, met vastlegging van wat losgelaten is.
-    const afwijkingen: string[] = [];
-    if (slot.duurMinMinuten != null && duur < slot.duurMinMinuten) {
-      afwijkingen.push(`duur ${duur} min onder de plek-bandbreedte (min ${slot.duurMinMinuten})`);
-    }
-    if (slot.duurMaxMinuten != null && duur > slot.duurMaxMinuten) {
-      afwijkingen.push(`duur ${duur} min boven de plek-bandbreedte (max ${slot.duurMaxMinuten})`);
-    }
-    if (
-      intensiteit != null &&
-      slot.intensiteitsmaat != null &&
-      (params?.intensiteitsmaat ?? null) === slot.intensiteitsmaat
-    ) {
-      if (slot.intensiteitMin != null && intensiteit < slot.intensiteitMin) {
-        afwijkingen.push(`intensiteit ${intensiteit} onder de plek-bandbreedte (min ${slot.intensiteitMin})`);
-      }
-      if (slot.intensiteitMax != null && intensiteit > slot.intensiteitMax) {
-        afwijkingen.push(`intensiteit ${intensiteit} boven de plek-bandbreedte (max ${slot.intensiteitMax})`);
-      }
-    }
-    if (slot.vervangcategorie && form.categorie !== slot.vervangcategorie) {
-      afwijkingen.push(`vorm uit categorie "${form.categorie}" i.p.v. "${slot.vervangcategorie}"`);
-    } else if (!slot.vervangcategorie && slot.belastingssoort && form.belastingssoort !== slot.belastingssoort) {
-      afwijkingen.push(
-        `belastingssoort "${form.belastingssoort}" i.p.v. "${slot.belastingssoort}"`,
-      );
-    }
+    const afwijkingen = bepaalAfwijkingen(slot, form, params, duur, intensiteit);
     const status = afwijkingen.length > 0 ? "afgeweken" : "vervuld";
 
     // Belasting alleen als hij écht rekenbaar is (TRV-62): pct_ftp + duur.
     const maat = params?.intensiteitsmaat ?? null;
-    let geschatteBelasting: number | null = null;
-    if (maat === "pct_ftp" && intensiteit != null) {
-      geschatteBelasting = Math.round((duur / 60) * Math.pow(intensiteit / 100, 2) * 100);
-    }
+    const geschatteBelasting = rekenbareBelasting(maat, intensiteit, duur);
     const soort = form.belastingssoort as Belastingssoort;
     const frisheidskost = { [soort]: startkostX10(soort, duur) / 10 };
 
@@ -422,6 +393,175 @@ router.delete("/slots/:id/sessie", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[plan-slots] remove failed", err);
     return res.status(500).json({ error: "Sessie weghalen mislukt" });
+  }
+});
+
+// ── POST /api/plan/voorschouw — sleep-vooruitblik (TRV-36/37/65) ─────────────
+// Puur lezen, niets wordt geplaatst. Elke uitvoerwaarde draagt zijn eigen
+// bekend/onbekend-status mét reden; er wordt NIETS geraden (TRV-37/65).
+router.post("/voorschouw", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const b = req.body ?? {};
+    const sporterId = str(b.sporterId) ?? clerkId;
+    if (sporterId !== clerkId && !(await hasDirectCoachLink(clerkId, sporterId))) {
+      return res.status(403).json({ error: "Geen toegang tot dit schema" });
+    }
+    const datum = str(b.datum);
+    const formId = num(b.formId);
+    if (!datum || !DATUM.test(datum) || !formId) {
+      return res.status(400).json({ error: "datum (YYYY-MM-DD) en formId zijn verplicht" });
+    }
+
+    const [form] = await db
+      .select()
+      .from(trainingFormsTable)
+      .where(eq(trainingFormsTable.id, formId))
+      .limit(1);
+    if (!form || form.status !== "gepubliceerd" || !(await formVisibleTo(form, clerkId))) {
+      return res.status(404).json({ error: "Vorm niet gevonden of niet gepubliceerd" });
+    }
+    if (form.vereistAfspraak) {
+      return res.status(422).json({
+        error: "Deze vorm vereist een afspraak (baan/derny/motor) en is niet als losse training plaatsbaar",
+      });
+    }
+    const [params] = await db
+      .select()
+      .from(trainingFormParametersTable)
+      .where(eq(trainingFormParametersTable.formId, formId))
+      .limit(1);
+    const duur = num(b.duurMinuten) ?? params?.duurStandaardMinuten ?? null;
+    const intensiteit = num(b.intensiteit) ?? params?.intensiteitStandaard ?? null;
+    if (duur != null) {
+      const bereikfout = valideerVormParameters(params, duur, intensiteit);
+      if (bereikfout) return res.status(400).json({ error: bereikfout });
+    }
+    const maat = params?.intensiteitsmaat ?? null;
+    const soort = form.belastingssoort as Belastingssoort;
+
+    // 1) Frisheidskost per soort — coachregel, altijd zo gemarkeerd (TRV-30/31).
+    const frisheid =
+      duur == null
+        ? { bekend: false as const, reden: "Geen duur bekend (vorm heeft geen standaardduur)" }
+        : {
+            bekend: true as const,
+            methode: "coachregel_v1",
+            perSoort: { [soort]: startkostX10(soort, duur) / 10 },
+          };
+
+    // 2) Effect op conditieopbouw en balans van morgen — alleen als de
+    //    belasting écht rekenbaar is (pct_ftp + duur), anders onbekend (TRV-37).
+    const belasting = duur == null ? null : rekenbareBelasting(maat, intensiteit, duur);
+    let balansMorgen:
+      | { bekend: true; morgen: string; zonder: { ctl: number; tsb: number }; met: { ctl: number; tsb: number }; verschilTsbMorgen: number; verschilCtl: number }
+      | { bekend: false; reden: string };
+    if (belasting == null) {
+      balansMorgen = {
+        bekend: false,
+        reden:
+          duur == null
+            ? "Geen duur bekend, dus geen rekenbare belasting"
+            : "De belasting van deze vorm is niet rekenbaar (geen %FTP-intensiteit)",
+      };
+    } else {
+      const vanaf = new Date(Date.parse(`${datum}T00:00:00Z`) - 91 * 86400000)
+        .toISOString()
+        .slice(0, 10);
+      const historie = await db
+        .select({ sessionDate: trainingSessionsTable.sessionDate, tss: trainingSessionsTable.tss })
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.clerkId, sporterId),
+            gte(trainingSessionsTable.sessionDate, vanaf),
+            lte(trainingSessionsTable.sessionDate, datum),
+          ),
+        );
+      const tssByDate = new Map<string, number>();
+      for (const h of historie) {
+        if (h.tss != null) tssByDate.set(String(h.sessionDate), (tssByDate.get(String(h.sessionDate)) ?? 0) + Number(h.tss));
+      }
+      const proj = projecteerBalans(tssByDate, datum, belasting);
+      balansMorgen = {
+        bekend: true,
+        morgen: proj.morgen,
+        zonder: proj.zonder,
+        met: proj.met,
+        verschilTsbMorgen: proj.met.tsb - proj.zonder.tsb,
+        verschilCtl: proj.met.ctl - proj.zonder.ctl,
+      };
+    }
+
+    // 3) Plekstatus: blijft de plek vervuld met deze keuze? (TRV-36)
+    const slotId = num(b.slotId);
+    let slot: typeof planSlotsTable.$inferSelect | undefined;
+    if (slotId != null) {
+      [slot] = await db.select().from(planSlotsTable).where(eq(planSlotsTable.id, slotId)).limit(1);
+      if (!slot || slot.clerkId !== sporterId) {
+        return res.status(404).json({ error: "Plek niet gevonden bij deze sporter" });
+      }
+    } else {
+      [slot] = await db
+        .select()
+        .from(planSlotsTable)
+        .where(and(eq(planSlotsTable.clerkId, sporterId), eq(planSlotsTable.datum, datum)))
+        .limit(1);
+    }
+    let plekstatus:
+      | { bekend: true; status: "vervuld" | "afgeweken"; afwijkingen: string[] }
+      | { bekend: false; reden: string };
+    if (!slot) plekstatus = { bekend: false, reden: "Geen schemaplek op deze dag" };
+    else if (duur == null) plekstatus = { bekend: false, reden: "Geen duur bekend om tegen de bandbreedte te toetsen" };
+    else {
+      const afwijkingen = bepaalAfwijkingen(slot, form, params, duur, intensiteit);
+      plekstatus = { bekend: true, status: afwijkingen.length ? "afgeweken" : "vervuld", afwijkingen };
+    }
+
+    // 4) Wat gisteren was, als dat het beeld verandert (TRV-36): geplande/
+    //    uitgevoerde training van gisteren met resterende frisheidskost vandaag.
+    const gisterDatum = new Date(Date.parse(`${datum}T00:00:00Z`) - 86400000)
+      .toISOString()
+      .slice(0, 10);
+    const gisterenRows = await db
+      .select({
+        title: plannedWorkoutsTable.title,
+        soort: plannedWorkoutsTable.belastingssoort,
+        duur: plannedWorkoutsTable.targetDurationMin,
+        status: plannedWorkoutsTable.status,
+      })
+      .from(plannedWorkoutsTable)
+      .where(
+        and(eq(plannedWorkoutsTable.clerkId, sporterId), eq(plannedWorkoutsTable.scheduledDate, gisterDatum)),
+      );
+    const relevant = gisterenRows.filter((g) => g.status === "planned" || g.status === "completed");
+    const gisteren = relevant.map((g) => {
+      if (!g.soort) {
+        return { titel: g.title, soort: null, restkostVandaag: null, reden: "Belastingssoort onbekend" };
+      }
+      const gs = g.soort as Belastingssoort;
+      const rest = restkostX10(startkostX10(gs, g.duur), gs, gisterDatum, datum) / 10;
+      return { titel: g.title, soort: gs, restkostVandaag: rest };
+    });
+    const gisterenRelevant = gisteren.filter((g) => g.restkostVandaag == null || g.restkostVandaag > 0);
+
+    return res.json({
+      voorschouw: {
+        datum,
+        vorm: { id: form.id, naam: form.naam, belastingssoort: soort },
+        parameters: { duurMinuten: duur, intensiteit, intensiteitsmaat: maat },
+        belastingBekend: belasting != null,
+        geschatteBelasting: belasting,
+        balansMorgen,
+        frisheid,
+        plekstatus,
+        // Alleen tonen als het het beeld verandert: null = niets relevants.
+        gisteren: gisterenRelevant.length ? gisterenRelevant : null,
+      },
+    });
+  } catch (err) {
+    console.error("[plan-slots] voorschouw failed", err);
+    return res.status(500).json({ error: "Voorschouw mislukt" });
   }
 });
 
