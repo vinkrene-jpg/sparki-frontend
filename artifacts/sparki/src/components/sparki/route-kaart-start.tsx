@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react"
 import { createPortal } from "react-dom"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -48,6 +55,10 @@ type KaartFilters = {
   maxKm: number | null
   minHm: number | null
   maxHm: number | null
+  // Tijd-filter (minuten) — alleen eerlijk toepasbaar op routes met echt
+  // bekende durationSec; routes zonder bekende tijd vallen er dan buiten.
+  minTijdMin: number | null
+  maxTijdMin: number | null
   ondergrond: "geen" | "verhard" | "onverhard"
   type: "alle" | "lus" | "heenterug"
   moeilijkheid: Record<Moeilijkheid, boolean>
@@ -58,6 +69,8 @@ const FILTERS_LEEG: KaartFilters = {
   maxKm: null,
   minHm: null,
   maxHm: null,
+  minTijdMin: null,
+  maxTijdMin: null,
   ondergrond: "geen",
   type: "alle",
   moeilijkheid: { makkelijk: true, gemiddeld: true, zwaar: true },
@@ -69,6 +82,8 @@ function filtersActief(f: KaartFilters): boolean {
     f.maxKm != null ||
     f.minHm != null ||
     f.maxHm != null ||
+    f.minTijdMin != null ||
+    f.maxTijdMin != null ||
     f.ondergrond !== "geen" ||
     f.type !== "alle" ||
     !f.moeilijkheid.makkelijk ||
@@ -101,6 +116,16 @@ function pasFilters(routes: NearbyRoute[], f: KaartFilters): NearbyRoute[] {
       (r.elevationGainM == null || r.elevationGainM > f.maxHm)
     )
       return false
+    if (
+      f.minTijdMin != null &&
+      (r.durationSec == null || r.durationSec / 60 < f.minTijdMin)
+    )
+      return false
+    if (
+      f.maxTijdMin != null &&
+      (r.durationSec == null || r.durationSec / 60 > f.maxTijdMin)
+    )
+      return false
     if (f.ondergrond !== "geen" && ondergrondKlasse(r.surface) !== f.ondergrond)
       return false
     if (f.type === "lus" && !r.isLus) return false
@@ -117,6 +142,171 @@ function pasFilters(routes: NearbyRoute[], f: KaartFilters): NearbyRoute[] {
 
 function fmtKm(v: number | null | undefined) {
   return typeof v === "number" ? `${Math.round(v * 10) / 10} km` : "—"
+}
+
+function fmtMinuten(v: number): string {
+  const m = Math.round(v)
+  if (m < 60) return `${m} min`
+  const u = Math.floor(m / 60)
+  const rest = m % 60
+  return rest === 0 ? `${u} u` : `${u} u ${rest} min`
+}
+
+// ── Dubbele schuifbalk met histogram (Komoot-opzet, taak #562) ───────────────
+// Het histogram toont de echte verdeling van de opgehaalde routes; de twee
+// grepen kiezen een bereik. Een greep helemaal aan de rand = geen filter.
+
+const HISTO_BINS = 24
+
+function VerdeelSlider({
+  waarden,
+  stap,
+  min,
+  max,
+  onChange,
+  fmt,
+  labelMin,
+  labelMax,
+  leegTekst,
+  testId,
+}: {
+  waarden: number[]
+  stap: number
+  min: number | null
+  max: number | null
+  onChange: (min: number | null, max: number | null) => void
+  fmt: (v: number) => string
+  labelMin: string
+  labelMax: string
+  leegTekst: string
+  testId: string
+}) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const actief = useRef<"lo" | "hi" | null>(null)
+
+  const domainMax = useMemo(() => {
+    const top = waarden.length ? Math.max(...waarden) : 0
+    return Math.max(stap, Math.ceil(top / stap) * stap)
+  }, [waarden, stap])
+
+  const bins = useMemo(() => {
+    const b = new Array<number>(HISTO_BINS).fill(0)
+    for (const v of waarden) {
+      const i = Math.min(
+        HISTO_BINS - 1,
+        Math.max(0, Math.floor((v / domainMax) * HISTO_BINS)),
+      )
+      b[i] += 1
+    }
+    return b
+  }, [waarden, domainMax])
+
+  if (waarden.length === 0) {
+    return <p className="mt-2 text-[11.5px] text-muted-foreground">{leegTekst}</p>
+  }
+
+  const maxBin = Math.max(1, ...bins)
+  const lo = Math.min(min ?? 0, domainMax)
+  const hi = Math.max(lo, Math.min(max ?? domainMax, domainMax))
+  const loPct = (lo / domainMax) * 100
+  const hiPct = (hi / domainMax) * 100
+
+  function waardeUitClientX(clientX: number): number {
+    const rect = trackRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0) return 0
+    const f = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+    return Math.round((f * domainMax) / stap) * stap
+  }
+
+  // Randwaarde = geen filter (null), zodat "alles" eerlijk alles blijft —
+  // ook routes zonder bekende waarde blijven dan meetellen.
+  function zet(kant: "lo" | "hi", v: number) {
+    if (kant === "lo") {
+      const nieuw = Math.max(0, Math.min(v, hi))
+      onChange(nieuw <= 0 ? null : nieuw, max)
+    } else {
+      const nieuw = Math.min(domainMax, Math.max(v, lo))
+      onChange(min, nieuw >= domainMax ? null : nieuw)
+    }
+  }
+
+  function greepProps(kant: "lo" | "hi") {
+    const huidig = kant === "lo" ? lo : hi
+    return {
+      type: "button" as const,
+      role: "slider",
+      "aria-label": kant === "lo" ? labelMin : labelMax,
+      "aria-valuemin": 0,
+      "aria-valuemax": domainMax,
+      "aria-valuenow": huidig,
+      "aria-valuetext": fmt(huidig),
+      onPointerDown: (e: ReactPointerEvent<HTMLButtonElement>) => {
+        e.stopPropagation()
+        e.currentTarget.setPointerCapture(e.pointerId)
+        actief.current = kant
+      },
+      onPointerMove: (e: ReactPointerEvent<HTMLButtonElement>) => {
+        if (actief.current === kant && e.buttons > 0)
+          zet(kant, waardeUitClientX(e.clientX))
+      },
+      onPointerUp: () => {
+        actief.current = null
+      },
+      onKeyDown: (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+        if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+          e.preventDefault()
+          zet(kant, huidig - stap)
+        } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+          e.preventDefault()
+          zet(kant, huidig + stap)
+        }
+      },
+      className:
+        "absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-accent-cyan shadow focus:outline-none focus:ring-2 focus:ring-accent-cyan/50",
+    }
+  }
+
+  return (
+    <div className="mt-2 touch-none select-none" data-testid={testId}>
+      <div className="flex h-14 items-end gap-px px-2.5" aria-hidden>
+        {bins.map((n, i) => {
+          const centrum = ((i + 0.5) / HISTO_BINS) * domainMax
+          const binnen = centrum >= lo && centrum <= hi
+          return (
+            <div
+              key={i}
+              className={`flex-1 rounded-t-sm ${
+                binnen ? "bg-accent-cyan" : "bg-border"
+              }`}
+              style={{ height: n === 0 ? 0 : `${Math.max(10, (n / maxBin) * 100)}%` }}
+            />
+          )
+        })}
+      </div>
+      <div
+        ref={trackRef}
+        className="relative mx-2.5 h-8"
+        onPointerDown={(e) => {
+          // Tik op de balk: verplaats de dichtstbijzijnde greep.
+          const v = waardeUitClientX(e.clientX)
+          const kant = Math.abs(v - lo) <= Math.abs(v - hi) ? "lo" : "hi"
+          zet(kant, v)
+        }}
+      >
+        <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-border" />
+        <div
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-accent-cyan"
+          style={{ left: `${loPct}%`, right: `${100 - hiPct}%` }}
+        />
+        <button {...greepProps("lo")} style={{ left: `${loPct}%` }} />
+        <button {...greepProps("hi")} style={{ left: `${hiPct}%` }} />
+      </div>
+      <div className="flex justify-between px-1 text-xs text-muted-foreground">
+        <span>{min == null ? fmt(0) : fmt(lo)}</span>
+        <span>{max == null ? fmt(domainMax) : fmt(hi)}</span>
+      </div>
+    </div>
+  )
 }
 
 const BRON_KORT: Record<NearbyRoute["bron"], string> = {
@@ -244,6 +434,7 @@ function FiltersSheet({
   onClose,
   filters,
   onChange,
+  alleRoutes,
   teller,
   sportMeervoud,
 }: {
@@ -251,12 +442,36 @@ function FiltersSheet({
   onClose: () => void
   filters: KaartFilters
   onChange: (f: KaartFilters) => void
+  alleRoutes: NearbyRoute[]
   teller: number
   sportMeervoud: string
 }) {
+  // Afstand/Tijd-toggle: tijd alleen als er routes met echt bekende tijd zijn.
+  const [afstandModus, setAfstandModus] = useState<"afstand" | "tijd">("afstand")
+  const kmWaarden = useMemo(
+    () =>
+      alleRoutes
+        .map((r) => r.distanceKm)
+        .filter((v): v is number => typeof v === "number"),
+    [alleRoutes],
+  )
+  const hmWaarden = useMemo(
+    () =>
+      alleRoutes
+        .map((r) => r.elevationGainM)
+        .filter((v): v is number => typeof v === "number"),
+    [alleRoutes],
+  )
+  const tijdWaarden = useMemo(
+    () =>
+      alleRoutes
+        .map((r) => (r.durationSec == null ? null : r.durationSec / 60))
+        .filter((v): v is number => typeof v === "number"),
+    [alleRoutes],
+  )
   if (!open) return null
-  const veld =
-    "w-24 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-foreground"
+  const tijdBeschikbaar = tijdWaarden.length > 0
+  const modus = tijdBeschikbaar ? afstandModus : "afstand"
   const radio = (checked: boolean) =>
     `flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm transition-colors ${
       checked
@@ -291,40 +506,75 @@ function FiltersSheet({
 
         <section className="mt-4">
           <h3 className="text-sm font-semibold text-foreground">Afstand</h3>
-          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="min"
-              aria-label="Minimale afstand (km)"
-              className={veld}
-              value={filters.minKm ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...filters,
-                  minKm: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
+          {tijdBeschikbaar ? (
+            <div className="mt-2 inline-flex rounded-full border border-border bg-card p-0.5">
+              {(
+                [
+                  ["tijd", "Tijd"],
+                  ["afstand", "Afstand"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    setAfstandModus(id)
+                    // Eerlijk wisselen: het filter van de andere weergave gaat
+                    // uit, anders filtert er iets onzichtbaars mee.
+                    if (id === "tijd")
+                      onChange({ ...filters, minKm: null, maxKm: null })
+                    else
+                      onChange({ ...filters, minTijdMin: null, maxTijdMin: null })
+                  }}
+                  className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors ${
+                    modus === id
+                      ? "bg-accent-cyan text-[color:var(--color-on-accent)]"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {modus === "afstand" ? (
+            <VerdeelSlider
+              waarden={kmWaarden}
+              stap={1}
+              min={filters.minKm}
+              max={filters.maxKm}
+              onChange={(minKm, maxKm) => onChange({ ...filters, minKm, maxKm })}
+              fmt={(v) => `${Math.round(v)} km`}
+              labelMin="Minimale afstand (km)"
+              labelMax="Maximale afstand (km)"
+              leegTekst="Nog geen routes met bekende afstand in dit gebied."
+              testId="slider-afstand"
             />
-            <span>tot</span>
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="max"
-              aria-label="Maximale afstand (km)"
-              className={veld}
-              value={filters.maxKm ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...filters,
-                  maxKm: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-            />
-            <span>km</span>
-          </div>
+          ) : (
+            <>
+              <VerdeelSlider
+                waarden={tijdWaarden}
+                stap={5}
+                min={filters.minTijdMin}
+                max={filters.maxTijdMin}
+                onChange={(minTijdMin, maxTijdMin) =>
+                  onChange({ ...filters, minTijdMin, maxTijdMin })
+                }
+                fmt={fmtMinuten}
+                labelMin="Minimale tijd"
+                labelMax="Maximale tijd"
+                leegTekst="Geen routes met bekende tijd in dit gebied."
+                testId="slider-tijd"
+              />
+              {tijdWaarden.length < alleRoutes.length ? (
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                  Alleen echt gemeten tijden tellen mee:{" "}
+                  {alleRoutes.length - tijdWaarden.length} van {alleRoutes.length}{" "}
+                  routes zonder bekende tijd vallen bij dit filter af.
+                </p>
+              ) : null}
+            </>
+          )}
         </section>
 
         <section className="mt-5">
@@ -358,40 +608,18 @@ function FiltersSheet({
 
         <section className="mt-5">
           <h3 className="text-sm font-semibold text-foreground">Hoogtemeters</h3>
-          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="min"
-              aria-label="Minimale hoogtemeters"
-              className={veld}
-              value={filters.minHm ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...filters,
-                  minHm: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-            />
-            <span>tot</span>
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="max"
-              aria-label="Maximale hoogtemeters"
-              className={veld}
-              value={filters.maxHm ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...filters,
-                  maxHm: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-            />
-            <span>hm</span>
-          </div>
+          <VerdeelSlider
+            waarden={hmWaarden}
+            stap={10}
+            min={filters.minHm}
+            max={filters.maxHm}
+            onChange={(minHm, maxHm) => onChange({ ...filters, minHm, maxHm })}
+            fmt={(v) => `${Math.round(v)} hm`}
+            labelMin="Minimale hoogtemeters"
+            labelMax="Maximale hoogtemeters"
+            leegTekst="Nog geen routes met bekende hoogtemeters in dit gebied."
+            testId="slider-hoogte"
+          />
         </section>
 
         <section className="mt-5">
@@ -850,6 +1078,7 @@ export function RouteKaartStart() {
         onClose={() => setSheetOpen(false)}
         filters={filters}
         onChange={setFilters}
+        alleRoutes={alleRoutes}
         teller={routes.length}
         sportMeervoud={sportInfo.meervoud}
       />

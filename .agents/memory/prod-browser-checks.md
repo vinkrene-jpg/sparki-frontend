@@ -12,3 +12,5 @@ description: Hoe je productie-URL's met een echte browser controleert; runTest-s
 2. Chromium-shell mist libs op NixOS: verzamel lib-dirs uit /nix/store via ÉÉN inventaris (`cd /nix/store && printf '%s\n' * > lijst`; per-patroon globben is te traag, `ls /nix/store` wordt gekilld) en bouw LD_LIBRARY_PATH. Controleer ELF-klasse == 64-bit (byte 4 == 2); eerste hit kan 32-bit zijn ("wrong ELF class").
 3. Benodigde libs: nspr, nss, atk, at-spi2-atk/core, dbus, expat, mesa(gbm), libdrm, libxkbcommon, alsa-lib, systemd(libudev), libXcomposite/Xdamage/Xfixes/Xrandr.
 4. Let op: het draaiende dev-proces kan werkboombestanden aanraken (bv. public/opengraph.jpg-regeneratie); check `git status` na afloop en zet byte-exact terug via `git show HEAD:pad > pad` (geen destructief git-commando nodig).
+
+**Dev-preview browsercheck met data:** kies de preview-atleet via localStorage `sparki.dev.previewAthlete` (bv. `dev_qa_athlete`, heeft routes rond 52.2755/6.7925) vóór page-load (`addInitScript`); geolocatie via Playwright `geolocation`+`permissions`. Workspace `playwright-core` importeer je op het volle `.pnpm`-pad + Nix-chromium `executablePath`.
