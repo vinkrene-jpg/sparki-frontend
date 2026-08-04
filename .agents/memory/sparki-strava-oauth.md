@@ -81,3 +81,16 @@ GREEN when the capability is wired even if no user is connected yet (nothing is
 broken — you just can't import-test); reserve ORANGE/RED for a real failure of an
 actual live connection. Prefer validating via the same token-refresh helper the
 feature itself uses (cheap: refreshes only near expiry).
+
+## SPARKI_TOKEN_KEY in productie (04-08-2026)
+Regel: token-crypto (lib/token-crypto.ts) faalt in productie bewust fail-closed zonder
+`SPARKI_TOKEN_KEY`; in dev wordt stilletjes een sleutel afgeleid van CLERK_SECRET_KEY.
+**Why:** hierdoor werkte elke Strava-koppeling in dev, maar faalde ELKE prod-koppeling
+maandenlang met "SPARKI_TOKEN_KEY ontbreekt" (rijen status=error in connector_connections);
+deployment-logs toonden de callback-fout, dev nooit.
+**How to apply:** bij "koppelen werkt niet in prod maar wel in dev" eerst
+connector_connections.error_status in de prod-DB lezen; na het zetten/wijzigen van de
+secret is een nieuwe Publish nodig én moeten getroffen gebruikers opnieuw koppelen.
+Sleutel nooit meer wijzigen: eerder versleutelde tokens worden dan onleesbaar
+(dev-tokens van vóór 04-08 waren met de afgeleide dev-sleutel versleuteld → één keer
+opnieuw koppelen in dev).
