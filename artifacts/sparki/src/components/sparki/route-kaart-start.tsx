@@ -312,6 +312,10 @@ function VerdeelSlider({
 // Maximaal aantal routes dat standaard op de kaart getekend wordt.
 const TOP_AANTAL = 5
 
+// Kleur van de gekozen route op de kaart — bewust anders dan de standaard
+// routelijn, zodat de selectie direct te herkennen is tussen de andere lijnen.
+const SELECTIE_KLEUR = "#e63946"
+
 const BRON_KORT: Record<NearbyRoute["bron"], string> = {
   bewaard: "Bewaard",
   plan: "Plan",
@@ -411,8 +415,11 @@ function NearbyMap({
     for (const [key, line] of linesRef.current) {
       const active = key === selectedKey
       line.setStyle({
+        // Gekozen route in een eigen kleur; de rest grijst weg zodat je in
+        // één oogopslag ziet welke lijn bij de selectie hoort.
+        color: active ? SELECTIE_KLEUR : selectedKey == null ? ACCENT : "#9ca3af",
         weight: active ? 5 : 3,
-        opacity: active ? 0.95 : selectedKey == null ? 0.55 : 0.3,
+        opacity: active ? 0.95 : selectedKey == null ? 0.55 : 0.35,
       })
       if (active) {
         line.bringToFront()
