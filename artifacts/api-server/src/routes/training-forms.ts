@@ -31,6 +31,7 @@ import {
 } from "../lib/training/freshness";
 import { computeAge } from "../lib/age";
 import { hasAcceptedCoachLink } from "../lib/sharing";
+import { formVisibleTo } from "../lib/training/form-visibility";
 
 const router = Router();
 
@@ -67,16 +68,7 @@ function ageAllowed(minLeeftijd: number | null, age: number | null): boolean {
   return age != null && age >= minLeeftijd;
 }
 
-async function visibleTo(form: typeof trainingFormsTable.$inferSelect, clerkId: string): Promise<boolean> {
-  if (form.eigenaarType === "sparki") return form.status === "gepubliceerd";
-  if (form.eigenaarClerkId === clerkId) return true;
-  if (form.status !== "gepubliceerd") return false;
-  if (form.zichtbaarheid === "marktplaats") return true;
-  if (form.zichtbaarheid === "prive" && form.eigenaarClerkId) {
-    return hasAcceptedCoachLink(form.eigenaarClerkId, clerkId);
-  }
-  return false;
-}
+const visibleTo = formVisibleTo;
 
 // GET /api/training-forms?discipline=&belastingssoort=&categorie=
 router.get("/", requireAuth, async (req, res) => {

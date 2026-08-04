@@ -29,7 +29,8 @@ import {
   type Belastingssoort,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { hasCoachAccess, hasDirectCoachLink } from "../lib/sharing";
+import { hasDirectCoachLink } from "../lib/sharing";
+import { formVisibleTo } from "../lib/training/form-visibility";
 import { computeAge } from "../lib/age";
 import { recomputeFreshnessForAthlete, startkostX10 } from "../lib/training/freshness";
 
@@ -51,7 +52,9 @@ router.get("/:sporterId/slots", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const sporterId = String(req.params.sporterId);
   try {
-    if (sporterId !== clerkId && !(await hasCoachAccess(clerkId, sporterId))) {
+    // Individueel schema: alleen de sporter zelf of een DIRECTE trainer
+    // (clubtoewijzing alleen is niet genoeg — zie sharing-beleid).
+    if (sporterId !== clerkId && !(await hasDirectCoachLink(clerkId, sporterId))) {
       return res.status(403).json({ error: "Geen toegang tot dit schema" });
     }
     const from = String(req.query.from ?? "");
@@ -219,7 +222,13 @@ router.post("/slots/:id/sessie", requireAuth, async (req, res) => {
       .from(trainingFormsTable)
       .where(eq(trainingFormsTable.id, formId))
       .limit(1);
-    if (!form || form.status !== "gepubliceerd") {
+    if (
+      !form ||
+      form.status !== "gepubliceerd" ||
+      // Zelfde zichtbaarheidsregel als de bibliotheek: privévormen van een
+      // andere trainer zijn niet via ID-gokken plaatsbaar.
+      !(await formVisibleTo(form, clerkId))
+    ) {
       return res.status(404).json({ error: "Vorm niet gevonden of niet gepubliceerd" });
     }
     if (form.vereistAfspraak) {

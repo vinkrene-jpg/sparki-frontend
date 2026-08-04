@@ -173,8 +173,10 @@ export async function recomputeFreshnessForAthlete(clerkId: string): Promise<voi
 
 export type FreshnessDag = {
   datum: string;
-  // Som van restkosten per soort, geplafonneerd op 3.0; alleen soorten met
-  // een waarde > 0 komen voor. Afwezig = geen bekende kost, niet "0 belasting".
+  // Som van restkosten per soort, geplafonneerd op 3.0. Afwezig = geen
+  // bekende kost. Een soort met bekende NUL-kost (bv. herstel: actief herstel
+  // kost geen frisheid) staat op de sessiedag expliciet als 0 — bekend-nul is
+  // iets anders dan onbekend.
   perSoort: Partial<Record<Belastingssoort, number>>;
 };
 
@@ -208,6 +210,8 @@ export async function freshnessForRange(
       const soort = r.soort as Belastingssoort;
       const rest = restkostX10(r.waarde, soort, r.datum, day);
       if (rest > 0) perX10.set(soort, (perX10.get(soort) ?? 0) + rest);
+      // Bekende nul-kost expliciet tonen op de dag van de sessie zelf.
+      else if (String(r.datum) === day && !perX10.has(soort)) perX10.set(soort, 0);
     }
     const perSoort: FreshnessDag["perSoort"] = {};
     for (const [soort, x10] of perX10) perSoort[soort] = Math.min(30, x10) / 10;
