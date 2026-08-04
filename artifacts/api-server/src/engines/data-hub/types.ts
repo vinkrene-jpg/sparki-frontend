@@ -26,6 +26,15 @@ export interface CanonicalActivity {
   avgSpeedKph?: number | null;
   /** Best average power per window-seconds key, from real samples only. */
   powerBests?: Record<string, number> | null;
+  /**
+   * Volhoudbaarheid: totale arbeid (kJ) + best-vermogens per venster gesplitst
+   * per arbeidsniveau ("0"/"1000"/"1500"/"2000"/"2500" kJ vóór vensterstart).
+   * Alleen uit echte per-sample vermogensdata — nooit geschat.
+   */
+  powerDurability?: {
+    totalWorkKj: number;
+    bestsByWork: Record<string, Record<string, number>>;
+  } | null;
   tss?: number | null;
   /** Original payload (kept verbatim in connector_activities.raw). */
   raw?: unknown;

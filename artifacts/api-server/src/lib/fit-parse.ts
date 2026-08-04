@@ -24,6 +24,11 @@ import {
   createStreamCollector,
   type ActivityStreams,
 } from "./activity-streams";
+import {
+  createDurabilityCollector,
+  type DurabilityCollector,
+  type PowerDurability,
+} from "./power-durability";
 
 export type FitSummary = {
   // Discriminator so the frontend can tell a FIT summary apart from a GpxSummary.
@@ -46,6 +51,10 @@ export type FitSummary = {
   // from the REAL timestamped record samples. Null when the file carries no
   // usable per-sample power — never estimated from averages.
   powerBests: Record<string, number> | null;
+  // Volhoudbaarheid: cumulatieve arbeid (kJ) + best-vermogens per venster
+  // gesplitst per arbeidsniveau, uit de REAL per-sample vermogensdata. Null
+  // when the file carries no usable per-sample power — never estimated.
+  powerDurability: PowerDurability | null;
   // Downsampled real per-record streams (vermogen/hartslag/cadans/snelheid/
   // hoogte/temperatuur). Null when the file carried no usable samples.
   streams: ActivityStreams | null;
@@ -178,6 +187,8 @@ type RecordAgg = {
   hasAltitude: boolean;
   // Timestamped power samples for best-window computation (real data only).
   power: PowerSampleCollector;
+  // Same real samples, folded into the compact durability summary.
+  durability: DurabilityCollector;
   // Real per-record stream samples for the visualization layer.
   streams: ReturnType<typeof createStreamCollector>;
 };
@@ -231,6 +242,7 @@ export function parseFit(
       ascentM: 0,
       hasAltitude: false,
       power: createPowerSampleCollector(),
+      durability: createDurabilityCollector(),
       streams: createStreamCollector(),
     };
 
@@ -410,6 +422,7 @@ function harvestRecord(fields: Record<number, number | null>, agg: RecordAgg) {
     agg.powerMax = agg.powerMax == null ? power : Math.max(agg.powerMax, power);
     if (time != null && time >= FIT_MIN_REAL_DATE) {
       agg.power.add(time, power);
+      agg.durability.add(time, power);
     }
   }
 
@@ -539,6 +552,7 @@ function finalize(
     calories,
     recordCount: agg.count,
     powerBests: agg.power.finish(),
+    powerDurability: agg.durability.finish(),
     streams: agg.streams.finish(),
   };
 

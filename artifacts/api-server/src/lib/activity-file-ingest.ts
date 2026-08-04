@@ -138,6 +138,7 @@ export function summaryToCanonicalActivity(
       avgCadence: g.avgCadence ?? null,
       avgSpeedKph: avgSpeedKph(distanceKm, durationSec),
       powerBests: g.powerBests ?? null,
+      powerDurability: g.powerDurability ?? null,
       raw: g,
     };
   }
@@ -159,6 +160,10 @@ export function summaryToCanonicalActivity(
     // Echte piekvermogens per venster (FIT/TCX met per-seconde vermogen);
     // GPX kent geen vermogen en heeft dit veld niet.
     powerBests: "powerBests" in s ? (s.powerBests ?? null) : null,
+    // Volhoudbaarheid: cumulatieve arbeid + bests per arbeidsniveau, alleen
+    // wanneer het bestand echt per-sample vermogen droeg.
+    powerDurability:
+      "powerDurability" in s ? (s.powerDurability ?? null) : null,
     raw: s,
   };
 }

@@ -87,6 +87,17 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   // ("5", "10", "20", "60", "300", "1200"). Null/absent = the source carried
   // no per-sample power — never estimated from averages.
   powerBests: jsonb("power_bests").$type<Record<string, number>>(),
+  // Volhoudbaarheid (WEDSTRIJDDOELEN_15 hfst 18): compacte samenvatting van de
+  // echte per-sample vermogensdata op ingest-moment — totale arbeid (kJ) plus
+  // best-vermogens per venster GESPLITST per arbeidsniveau (buitenste keys =
+  // kJ verricht vóór de vensterstart: "0"=vers, "1000", "1500", "2000",
+  // "2500"; binnenste keys = vensterseconden, zoals power_bests). Null/absent
+  // = de bron droeg geen per-sample vermogen — nooit geschat, geen backfill
+  // voor oude sessies (zelfde regel als power_bests).
+  powerDurability: jsonb("power_durability").$type<{
+    totalWorkKj: number;
+    bestsByWork: Record<string, Record<string, number>>;
+  }>(),
   source: text("source").notNull().default("manual"),
   // Data Hub provenance. `externalRef` = "<provider>:<externalActivityId>" of the
   // primary source; `sources` = every connector that contributed to this row

@@ -6,6 +6,10 @@
 // import "failed" rather than inventing values).
 
 import { createPowerSampleCollector } from "./power-bests";
+import {
+  createDurabilityCollector,
+  type PowerDurability,
+} from "./power-durability";
 import { buildStreams, type ActivityStreams } from "./activity-streams";
 
 export type GpxSummary = {
@@ -31,6 +35,10 @@ export type GpxSummary = {
   // Best average power over fixed windows, computed from the REAL timestamped
   // per-point power samples. Null when the file has no usable power+time data.
   powerBests: Record<string, number> | null;
+  // Volhoudbaarheid: cumulatieve arbeid (kJ) + best-vermogens per venster
+  // gesplitst per arbeidsniveau, uit de echte per-punt vermogenssamples.
+  // Null when the file has no usable power+time data — never estimated.
+  powerDurability: PowerDurability | null;
   // Downsampled real per-point streams (alleen kanalen die het bestand echt
   // droeg). Null when the file has no timestamped points.
   streams: ActivityStreams | null;
@@ -157,8 +165,12 @@ export function parseGpx(content: string): GpxSummary | null {
 
   // Power bests from the real timestamped samples (same collector FIT/TCX use).
   const collector = createPowerSampleCollector();
+  const durabilityCollector = createDurabilityCollector();
   for (const p of points) {
-    if (p.power != null && p.time != null) collector.add(p.time / 1000, p.power);
+    if (p.power != null && p.time != null) {
+      collector.add(p.time / 1000, p.power);
+      durabilityCollector.add(p.time / 1000, p.power);
+    }
   }
 
   // Real per-point streams: cumulative distance from the real GPS track,
@@ -201,6 +213,7 @@ export function parseGpx(content: string): GpxSummary | null {
     maxHeartRate: hrVals.length > 0 ? Math.max(...hrVals) : null,
     avgCadence: avg(cadVals),
     powerBests: collector.finish(),
+    powerDurability: durabilityCollector.finish(),
     streams: buildStreams(streamSamples),
   };
 }

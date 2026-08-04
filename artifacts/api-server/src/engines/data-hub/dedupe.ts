@@ -87,6 +87,7 @@ const MERGEABLE_FIELDS = [
   "maxHR",
   "avgCadence",
   "powerBests",
+  "powerDurability",
   "avgSpeedKph",
   "tss",
   "intensityFactor",

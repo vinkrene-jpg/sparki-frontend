@@ -34,12 +34,20 @@ export type TcxSummary = {
   // from the REAL timestamped trackpoint samples. Null when the file has no
   // usable per-sample power — never estimated from averages.
   powerBests: Record<string, number> | null;
+  // Volhoudbaarheid: cumulatieve arbeid (kJ) + best-vermogens per venster
+  // gesplitst per arbeidsniveau, uit de REAL per-sample vermogensdata. Null
+  // when the file carries no usable per-sample power — never estimated.
+  powerDurability: PowerDurability | null;
   // Downsampled real per-trackpoint streams. Null when the file carried no
   // usable samples.
   streams: ActivityStreams | null;
 };
 
 import { createPowerSampleCollector } from "./power-bests";
+import {
+  createDurabilityCollector,
+  type PowerDurability,
+} from "./power-durability";
 import {
   createStreamCollector,
   type ActivityStreams,
@@ -129,6 +137,7 @@ export function parseTcx(content: string): TcxSummary | null {
   let firstTime: number | null = null;
   let lastTime: number | null = null;
   const powerCollector = createPowerSampleCollector();
+  const durabilityCollector = createDurabilityCollector();
   const streamCollector = createStreamCollector();
 
   const tpRe = /<Trackpoint\b[\s\S]*?<\/Trackpoint>/gi;
@@ -154,7 +163,10 @@ export function parseTcx(content: string): TcxSummary | null {
       powerMax = powerMax == null ? power : Math.max(powerMax, power);
       if (timeStr) {
         const t = Date.parse(timeStr);
-        if (Number.isFinite(t)) powerCollector.add(t / 1000, power);
+        if (Number.isFinite(t)) {
+          powerCollector.add(t / 1000, power);
+          durabilityCollector.add(t / 1000, power);
+        }
       }
     }
 
@@ -241,6 +253,7 @@ export function parseTcx(content: string): TcxSummary | null {
     avgCadence: cadenceCount > 0 ? round(cadenceSum / cadenceCount) : null,
     trackpointCount: count,
     powerBests: powerCollector.finish(),
+    powerDurability: durabilityCollector.finish(),
     streams: streamCollector.finish(),
   };
 

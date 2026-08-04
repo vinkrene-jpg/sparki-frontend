@@ -35,6 +35,7 @@ export function cleanActivity(a: CanonicalActivity): CanonicalActivity | null {
     avgCadence: intOrNull(inRange(a.avgCadence, 0, 250)),
     avgSpeedKph: inRange(a.avgSpeedKph, 0, 150),
     powerBests: cleanPowerBests(a.powerBests),
+    powerDurability: cleanPowerDurability(a.powerDurability),
     tss: intOrNull(inRange(a.tss, 0, 1000)),
   };
 }
@@ -52,6 +53,29 @@ function cleanPowerBests(
     if (Number.isInteger(win) && win > 0 && w != null) out[String(win)] = w;
   }
   return Object.keys(out).length > 0 ? out : null;
+}
+
+// Keep only a plausible durability summary: positive total work (capped at a
+// generous 50 000 kJ) and per-work-level best tables that pass the same
+// plausibility rules as power bests. Empty/implausible → null (absence).
+function cleanPowerDurability(
+  d: CanonicalActivity["powerDurability"],
+): CanonicalActivity["powerDurability"] {
+  if (!d || typeof d !== "object") return null;
+  const total = intOrNull(inRange(d.totalWorkKj, 1, 50000));
+  if (total == null) return null;
+  if (!d.bestsByWork || typeof d.bestsByWork !== "object") return null;
+  const bestsByWork: Record<string, Record<string, number>> = {};
+  for (const [levelKey, bests] of Object.entries(d.bestsByWork)) {
+    const level = Number(levelKey);
+    if (!Number.isInteger(level) || level < 0) continue;
+    // Een niveau boven de totale arbeid kan niet echt zijn.
+    if (level > total) continue;
+    const cleaned = cleanPowerBests(bests);
+    if (cleaned) bestsByWork[String(level)] = cleaned;
+  }
+  if (Object.keys(bestsByWork).length === 0) return null;
+  return { totalWorkKj: total, bestsByWork };
 }
 
 export function cleanDailyMetric(
