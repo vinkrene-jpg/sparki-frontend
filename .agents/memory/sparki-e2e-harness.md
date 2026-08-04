@@ -23,3 +23,7 @@ description: Blijvende e2e-harness in e2e/ — echte Clerk-login, echte kliks, r
 
 - `isAdmin` (api-server lib/flags.ts) heeft GEEN dev-bypass meer: alleen SPARKI_ADMIN_IDS. Admin-UI in dev previewen = seed-clerkId expliciet in dat env zetten. admin-smoke bewijst eerst de dichte poort (403), maakt zichzelf daarna admin via env.
 - Frontend admin-guards zonder DEV_PREVIEW-escape; TESTCONTEXT-label (identiteit · rol · echte rechten · ILLUSTRATIE bij override) altijd zichtbaar in DevPanel; overrides gemarkeerd "illustratie, geen echte data".
+
+## DB-seeden vanuit e2e-tests
+- e2e/ heeft geen eigen node_modules; `pg` resolven via `createRequire(new URL("../../lib/db/package.json", import.meta.url))` (lib/db draagt pg). Root/api-server resolven pg NIET (pnpm strikt).
+- Deterministisch corpus: seed rijen direct voor het QA-account (clerkId uit ensureE2eUser), idempotent op naamprefix (bv. `E2E-563%`), cleanup in finally. Routes van andere gebruikers staan privé en lekken niet in /api/routes/nearby.

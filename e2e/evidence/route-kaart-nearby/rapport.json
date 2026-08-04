@@ -1,0 +1,150 @@
+{
+  "test": "route-kaart-nearby (taak #563)",
+  "uitgevoerd": "2026-08-04T15:59:37.264Z",
+  "viewports": [
+    "mobiel",
+    "desktop"
+  ],
+  "resultaat": "GESLAAGD",
+  "fouten": 0,
+  "stappen": [
+    {
+      "stap": "seed",
+      "status": "OK",
+      "detail": "2 routes rond Westerbork voor user_3HG8jhjNUhHTFf7bqpMzZm5QhL4",
+      "t": "2026-08-04T15:58:46.231Z"
+    },
+    {
+      "stap": "mobiel: identiteit",
+      "status": "OK",
+      "detail": "status=200",
+      "t": "2026-08-04T15:58:53.242Z"
+    },
+    {
+      "stap": "mobiel: kaart-startweergave",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-04T15:58:57.902Z"
+    },
+    {
+      "stap": "mobiel: teller na plaatszoek",
+      "status": "OK",
+      "detail": "\"2 fietsroutes\"",
+      "t": "2026-08-04T15:59:02.722Z"
+    },
+    {
+      "stap": "mobiel: lijst toont beide routes",
+      "status": "OK",
+      "detail": "kort=true lang=true",
+      "t": "2026-08-04T15:59:03.727Z"
+    },
+    {
+      "stap": "mobiel: sheet-teller na max 30 km",
+      "status": "OK",
+      "detail": "\"1 fietsroutes\"",
+      "t": "2026-08-04T15:59:05.386Z"
+    },
+    {
+      "stap": "mobiel: teller na filter",
+      "status": "OK",
+      "detail": "\"1 fietsroutes\"",
+      "t": "2026-08-04T15:59:06.289Z"
+    },
+    {
+      "stap": "mobiel: lijst gefilterd",
+      "status": "OK",
+      "detail": "60km-weg=true 20km-nog=true",
+      "t": "2026-08-04T15:59:06.305Z"
+    },
+    {
+      "stap": "mobiel: teller na reset",
+      "status": "OK",
+      "detail": "\"2 fietsroutes\"",
+      "t": "2026-08-04T15:59:07.587Z"
+    },
+    {
+      "stap": "mobiel: teller dun gebied",
+      "status": "OK",
+      "detail": "\"0 fietsroutes\"",
+      "t": "2026-08-04T15:59:11.340Z"
+    },
+    {
+      "stap": "mobiel: eerlijke melding dun gebied",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-04T15:59:11.346Z"
+    },
+    {
+      "stap": "mobiel: Zelf plannen → wizard",
+      "status": "OK",
+      "detail": "http://127.0.0.1:38035/routes?view=maken",
+      "t": "2026-08-04T15:59:12.183Z"
+    },
+    {
+      "stap": "desktop: identiteit",
+      "status": "OK",
+      "detail": "status=200",
+      "t": "2026-08-04T15:59:15.935Z"
+    },
+    {
+      "stap": "desktop: kaart-startweergave",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-04T15:59:20.563Z"
+    },
+    {
+      "stap": "desktop: teller na plaatszoek",
+      "status": "OK",
+      "detail": "\"2 fietsroutes\"",
+      "t": "2026-08-04T15:59:25.521Z"
+    },
+    {
+      "stap": "desktop: lijst toont beide routes",
+      "status": "OK",
+      "detail": "kort=true lang=true",
+      "t": "2026-08-04T15:59:26.442Z"
+    },
+    {
+      "stap": "desktop: sheet-teller na max 30 km",
+      "status": "OK",
+      "detail": "\"1 fietsroutes\"",
+      "t": "2026-08-04T15:59:28.458Z"
+    },
+    {
+      "stap": "desktop: teller na filter",
+      "status": "OK",
+      "detail": "\"1 fietsroutes\"",
+      "t": "2026-08-04T15:59:29.310Z"
+    },
+    {
+      "stap": "desktop: lijst gefilterd",
+      "status": "OK",
+      "detail": "60km-weg=true 20km-nog=true",
+      "t": "2026-08-04T15:59:29.319Z"
+    },
+    {
+      "stap": "desktop: teller na reset",
+      "status": "OK",
+      "detail": "\"2 fietsroutes\"",
+      "t": "2026-08-04T15:59:30.337Z"
+    },
+    {
+      "stap": "desktop: teller dun gebied",
+      "status": "OK",
+      "detail": "\"0 fietsroutes\"",
+      "t": "2026-08-04T15:59:34.390Z"
+    },
+    {
+      "stap": "desktop: eerlijke melding dun gebied",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-04T15:59:34.398Z"
+    },
+    {
+      "stap": "desktop: Zelf plannen → wizard",
+      "status": "OK",
+      "detail": "http://127.0.0.1:38035/routes?view=maken",
+      "t": "2026-08-04T15:59:35.987Z"
+    }
+  ]
+}
