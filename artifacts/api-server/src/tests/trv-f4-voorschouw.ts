@@ -69,7 +69,7 @@ async function main() {
   await seedTrainingForms();
   for (const id of USERS) {
     await db.insert(userProfilesTable).values({ clerkId: id, email: `${id}@test.local`, roles: ["athlete"] });
-    await db.insert(athleteProfilesTable).values({ clerkId: id, displayName: id, birthDate: "1990-01-01" });
+    await db.insert(athleteProfilesTable).values({ clerkId: id, birthDate: "1990-01-01" } as never);
   }
 
   const vormen = await db.select().from(trainingFormsTable).where(eq(trainingFormsTable.status, "gepubliceerd"));
