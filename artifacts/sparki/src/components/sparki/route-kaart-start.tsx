@@ -76,6 +76,90 @@ const FILTERS_LEEG: KaartFilters = {
   moeilijkheid: { makkelijk: true, gemiddeld: true, zwaar: true },
 }
 
+// ── Filtervoorkeuren onthouden (per sport, localStorage) ────────────────────
+// Renners die altijd hetzelfde soort routes zoeken hoeven de filters-sheet
+// niet elke keer opnieuw in te stellen. "Alles resetten" wist de opgeslagen
+// voorkeur ook weer.
+
+type AfstandModus = "afstand" | "tijd"
+
+const FILTERS_STORAGE_PREFIX = "sparki.route-kaart-filters.v1."
+
+function filtersStorageKey(sport: SportKeuze): string {
+  return `${FILTERS_STORAGE_PREFIX}${sport}`
+}
+
+function saneNum(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null
+}
+
+// Leest een bewaarde voorkeur en valideert elk veld — een corrupt of verouderd
+// record valt terug op de lege standaard in plaats van stil rare filters.
+function laadFilterVoorkeur(sport: SportKeuze): {
+  filters: KaartFilters
+  modus: AfstandModus
+} {
+  const leeg = { filters: FILTERS_LEEG, modus: "afstand" as AfstandModus }
+  try {
+    const raw = window.localStorage.getItem(filtersStorageKey(sport))
+    if (!raw) return leeg
+    const p = JSON.parse(raw) as Record<string, unknown>
+    const f = (p.filters ?? {}) as Record<string, unknown>
+    const m = (f.moeilijkheid ?? {}) as Record<string, unknown>
+    const filters: KaartFilters = {
+      minKm: saneNum(f.minKm),
+      maxKm: saneNum(f.maxKm),
+      minHm: saneNum(f.minHm),
+      maxHm: saneNum(f.maxHm),
+      minTijdMin: saneNum(f.minTijdMin),
+      maxTijdMin: saneNum(f.maxTijdMin),
+      ondergrond:
+        f.ondergrond === "verhard" || f.ondergrond === "onverhard"
+          ? f.ondergrond
+          : "geen",
+      type: f.type === "lus" || f.type === "heenterug" ? f.type : "alle",
+      moeilijkheid: {
+        makkelijk: m.makkelijk !== false,
+        gemiddeld: m.gemiddeld !== false,
+        zwaar: m.zwaar !== false,
+      },
+    }
+    const modus: AfstandModus = p.modus === "tijd" ? "tijd" : "afstand"
+    return { filters, modus }
+  } catch {
+    return leeg
+  }
+}
+
+function bewaarFilterVoorkeur(
+  sport: SportKeuze,
+  filters: KaartFilters,
+  modus: AfstandModus,
+) {
+  try {
+    if (!filtersActief(filters) && modus === "afstand") {
+      // Niets actief = niets te onthouden; ruim de sleutel op.
+      window.localStorage.removeItem(filtersStorageKey(sport))
+    } else {
+      window.localStorage.setItem(
+        filtersStorageKey(sport),
+        JSON.stringify({ filters, modus }),
+      )
+    }
+  } catch {
+    // localStorage kan geblokkeerd zijn (privémodus) — filters werken dan
+    // gewoon, alleen zonder onthouden.
+  }
+}
+
+function wisFilterVoorkeur(sport: SportKeuze) {
+  try {
+    window.localStorage.removeItem(filtersStorageKey(sport))
+  } catch {
+    // idem: stil oké
+  }
+}
+
 function filtersActief(f: KaartFilters): boolean {
   return (
     f.minKm != null ||
@@ -447,6 +531,9 @@ function FiltersSheet({
   alleRoutes,
   teller,
   sportMeervoud,
+  afstandModus,
+  onModusChange,
+  onReset,
 }: {
   open: boolean
   onClose: () => void
@@ -455,9 +542,11 @@ function FiltersSheet({
   alleRoutes: NearbyRoute[]
   teller: number
   sportMeervoud: string
+  // Afstand/Tijd-modus leeft bij de ouder zodat hij mee onthouden wordt.
+  afstandModus: AfstandModus
+  onModusChange: (m: AfstandModus) => void
+  onReset: () => void
 }) {
-  // Afstand/Tijd-toggle: tijd alleen als er routes met echt bekende tijd zijn.
-  const [afstandModus, setAfstandModus] = useState<"afstand" | "tijd">("afstand")
   const kmWaarden = useMemo(
     () =>
       alleRoutes
@@ -527,15 +616,7 @@ function FiltersSheet({
                 <button
                   key={id}
                   type="button"
-                  onClick={() => {
-                    setAfstandModus(id)
-                    // Eerlijk wisselen: het filter van de andere weergave gaat
-                    // uit, anders filtert er iets onzichtbaars mee.
-                    if (id === "tijd")
-                      onChange({ ...filters, minKm: null, maxKm: null })
-                    else
-                      onChange({ ...filters, minTijdMin: null, maxTijdMin: null })
-                  }}
+                  onClick={() => onModusChange(id)}
                   className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors ${
                     modus === id
                       ? "bg-accent-cyan text-[color:var(--color-on-accent)]"
@@ -684,7 +765,7 @@ function FiltersSheet({
         <div className="sticky bottom-0 -mx-5 mt-6 flex gap-3 border-t border-border bg-background px-5 pb-1 pt-4">
           <button
             type="button"
-            onClick={() => onChange(FILTERS_LEEG)}
+            onClick={onReset}
             className="flex-1 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             Alles resetten
@@ -717,7 +798,38 @@ export function RouteKaartStart() {
   const [zoekresultaten, setZoekresultaten] = useState<GeocodeResult[] | null>(
     null,
   )
-  const [filters, setFilters] = useState<KaartFilters>(FILTERS_LEEG)
+  // Filters + Afstand/Tijd-modus starten vanuit de onthouden voorkeur per
+  // sport en worden bij elke wijziging opnieuw bewaard.
+  const [filters, setFilters] = useState<KaartFilters>(
+    () => laadFilterVoorkeur("cycling").filters,
+  )
+  const [afstandModus, setAfstandModus] = useState<AfstandModus>(
+    () => laadFilterVoorkeur("cycling").modus,
+  )
+
+  function wijzigFilters(f: KaartFilters) {
+    setFilters(f)
+    bewaarFilterVoorkeur(sport, f, afstandModus)
+  }
+
+  function wijzigModus(m: AfstandModus) {
+    // Eerlijk wisselen: het filter van de andere weergave gaat uit, anders
+    // filtert er iets onzichtbaars mee. Eén atomaire wijziging + opslag.
+    const next: KaartFilters =
+      m === "tijd"
+        ? { ...filters, minKm: null, maxKm: null }
+        : { ...filters, minTijdMin: null, maxTijdMin: null }
+    setFilters(next)
+    setAfstandModus(m)
+    bewaarFilterVoorkeur(sport, next, m)
+  }
+
+  function resetFilters() {
+    setFilters(FILTERS_LEEG)
+    setAfstandModus("afstand")
+    // "Alles resetten" wist ook de onthouden voorkeur voor deze sport.
+    wisFilterVoorkeur(sport)
+  }
   const [sheetOpen, setSheetOpen] = useState(false)
   const [lijstOpen, setLijstOpen] = useState(false)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -873,8 +985,13 @@ export function RouteKaartStart() {
           <select
             value={sport}
             onChange={(e) => {
-              setSport(e.target.value as SportKeuze)
+              const nieuw = e.target.value as SportKeuze
+              setSport(nieuw)
               setSelectedKey(null)
+              // Elke sport heeft z'n eigen onthouden filtervoorkeur.
+              const voorkeur = laadFilterVoorkeur(nieuw)
+              setFilters(voorkeur.filters)
+              setAfstandModus(voorkeur.modus)
             }}
             aria-label="Sport kiezen"
             className="appearance-none rounded-full border border-border bg-card py-2 pl-9 pr-8 text-[13px] font-medium text-foreground"
@@ -1144,10 +1261,13 @@ export function RouteKaartStart() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         filters={filters}
-        onChange={setFilters}
+        onChange={wijzigFilters}
         alleRoutes={alleRoutes}
         teller={routes.length}
         sportMeervoud={sportInfo.meervoud}
+        afstandModus={afstandModus}
+        onModusChange={wijzigModus}
+        onReset={resetFilters}
       />
     </div>
   )
