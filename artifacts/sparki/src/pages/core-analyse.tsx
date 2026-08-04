@@ -572,6 +572,8 @@ function OverzichtTab({
 }) {
   const tsb = load.data?.tsb
   const tsbWaarde = tsb == null ? null : `${tsb > 0 ? "+" : ""}${Math.round(tsb)}`
+  // Kiesbaar grafiekvenster — niet vast op 42 dagen.
+  const [overzichtPeriode, setOverzichtPeriode] = useState<number>(42)
 
   return (
     <div className="space-y-6">
@@ -608,14 +610,34 @@ function OverzichtTab({
       {/* Belastingsverloop — volwaardige grafiek, geen dunne sparkline */}
       {load.data && load.data.chartData.length >= 7 && (
         <LCard className="p-5">
-          <div className="flex items-center gap-1.5 mb-4">
-            <LCardTitle>Belastingsverloop — laatste 42 dagen</LCardTitle>
-            <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" />
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-1.5">
+              <LCardTitle>Belastingsverloop</LCardTitle>
+              <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" />
+            </div>
+            <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Grafiekperiode">
+              {GRAFIEK_PERIODES.map((p) => (
+                <button
+                  key={p.dagen}
+                  type="button"
+                  onClick={() => setOverzichtPeriode(p.dagen)}
+                  aria-pressed={overzichtPeriode === p.dagen}
+                  className={cn(
+                    "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
+                    overzichtPeriode === p.dagen
+                      ? "border-cyan-400/50 bg-accent-cyan/10 text-accent-cyan font-medium"
+                      : "border-border text-muted-foreground hover:text-foreground/85",
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
           <UitlegRegel k="belasting" />
-          <LoadGrafiek chartData={load.data.chartData} periode={42} />
+          <LoadGrafiek chartData={load.data.chartData} periode={overzichtPeriode} />
           <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
-            <span>42 dagen geleden: fitheid {Math.round(load.data.chartData.slice(-42)[0]?.ctl ?? 0)}</span>
+            <span>{overzichtPeriode} dagen geleden: fitheid {Math.round(load.data.chartData.slice(-overzichtPeriode)[0]?.ctl ?? 0)}</span>
             <span className="font-medium" style={{ color: CHART.ctl }}>Nu: {Math.round(load.data.ctl)}</span>
           </div>
         </LCard>
@@ -826,8 +848,10 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
 const GRAFIEK_PERIODES = [
   { dagen: 7,   label: "Week"     },
   { dagen: 28,  label: "Maand"    },
+  { dagen: 42,  label: "6 weken"  },
   { dagen: 90,  label: "Kwartaal" },
   { dagen: 182, label: "Seizoen"  },
+  { dagen: 365, label: "Jaar"     },
 ] as const
 
 function BelastingTab({
@@ -1920,7 +1944,9 @@ export default function CoreAnalysePage() {
   const [uitlegAan, setUitlegAan] = useState(false)
 
   // Bestaande hooks — berekeningen blijven in engines en API-laag
-  const load    = useLoad()
+  // Volledig jaar ophalen: de grafieken kiezen client-side hun venster
+  // (Week t/m Jaar) door op de reeks te slicen.
+  const load    = useLoad(365)
   const ftp     = useFtpHistory()
   const sessies = useSessions(60)
   const metrics = useDailyMetrics(90)

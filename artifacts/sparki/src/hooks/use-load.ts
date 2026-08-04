@@ -11,12 +11,15 @@ export type LoadData = {
   chartData: Array<{ date: string; ctl: number; atl: number; tsb: number; tss: number }>;
 };
 
-export function useLoad() {
+// `days` stuurt alleen het grafiekvenster (7–365); het belastingsmodel zelf
+// blijft server-side identiek. Invalidatie via de basissleutel raakt alle
+// vensters (prefix-match).
+export function useLoad(days = 42) {
   const { isSignedIn } = useUser();
 
   return useQuery({
-    queryKey: queryKeys.athlete.load(),
-    queryFn: () => apiFetch<LoadData>("/api/athlete/load"),
+    queryKey: [...queryKeys.athlete.load(), days],
+    queryFn: () => apiFetch<LoadData>(`/api/athlete/load?days=${days}`),
     enabled: isSignedIn === true || DEV_PREVIEW,
     staleTime: STALE.profile,
   });

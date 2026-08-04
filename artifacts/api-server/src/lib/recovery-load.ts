@@ -63,7 +63,7 @@ export function computeLoadSeries(
   sessions: Array<{ sessionDate: string; tss: number | null }>,
   chartDays = 42,
 ): Load & { chartData: LoadPoint[] } {
-  const days = Math.max(7, Math.min(90, Math.round(chartDays)));
+  const days = Math.max(7, Math.min(365, Math.round(chartDays)));
   const tssByDate = new Map<string, number>();
   for (const s of sessions) {
     if (s.tss != null) {
@@ -76,7 +76,9 @@ export function computeLoadSeries(
   let atl = 0;
   const chartData: LoadPoint[] = [];
 
-  for (let i = 90; i >= 0; i--) {
+  // Warmup: het model start altijd 90 dagen vóór het zichtbare venster, zodat
+  // CTL/ATL aan de linkerrand van elke gekozen periode al ingelopen zijn.
+  for (let i = days + 90; i >= 0; i--) {
     const d = new Date(today);
     d.setUTCDate(d.getUTCDate() - i);
     const dateStr = d.toISOString().split("T")[0]!;

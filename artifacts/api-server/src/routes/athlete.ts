@@ -2438,7 +2438,9 @@ router.get("/load", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const rawDays = Number(String(req.query.days ?? "42"));
-    const chartDays = Number.isFinite(rawDays) ? rawDays : 42;
+    const chartDays = Number.isFinite(rawDays)
+      ? Math.max(7, Math.min(365, Math.round(rawDays)))
+      : 42;
     const sessions = await db
       .select({
         sessionDate: trainingSessionsTable.sessionDate,
@@ -2448,7 +2450,9 @@ router.get("/load", requireAuth, async (req, res) => {
       .where(
         and(
           eq(trainingSessionsTable.clerkId, clerkId),
-          gte(trainingSessionsTable.sessionDate, daysAgoStr(90)),
+          // Venster + 90 dagen warmup, zodat het model aan de linkerrand
+          // van elke gekozen periode al ingelopen is.
+          gte(trainingSessionsTable.sessionDate, daysAgoStr(chartDays + 90)),
         ),
       );
 
@@ -2459,7 +2463,7 @@ router.get("/load", requireAuth, async (req, res) => {
       herkomst: {
         engine: "computeLoadSeries",
         versie: "1",
-        parameters: { chartDays, modelDays: 90 },
+        parameters: { chartDays, modelDays: chartDays + 90 },
         bron: "training_sessions.tss (gemeten of afgeleid)",
         aantalSessies: sessions.length,
         betrouwbaarheid: sessions.length > 0 ? "afgeleid" : "onvoldoende",

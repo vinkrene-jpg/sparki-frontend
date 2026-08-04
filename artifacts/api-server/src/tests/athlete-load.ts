@@ -8,7 +8,7 @@
 //     (one model, one truth);
 //   - two sessions on the SAME day are summed once per date (an activity never
 //     counts double, and never gets lost);
-//   - ?days= steers only the chart window (clamped 7..90, default 42) while
+//   - ?days= steers only the chart window (clamped 7..365, default 42) while
 //     the end-state numbers stay identical;
 //   - sessions of ANOTHER user never leak into the numbers.
 //
@@ -170,9 +170,9 @@ async function main() {
     );
   });
 
-  await scenario("?days= is clamped (999 → 90, garbage → default 42)", async () => {
+  await scenario("?days= is clamped (999 → 365, garbage → default 42)", async () => {
     const big = await fetchLoad("?days=999");
-    assert(big.body.chartData.length === 91, `clamp to 90, got ${big.body.chartData.length - 1}d`);
+    assert(big.body.chartData.length === 366, `clamp to 365, got ${big.body.chartData.length - 1}d`);
     const junk = await fetchLoad("?days=abc");
     assert(junk.body.chartData.length === 43, `default 42, got ${junk.body.chartData.length - 1}d`);
   });
