@@ -212,6 +212,7 @@ async function main() {
       for (const k of [
         "displayName",
         "discipline",
+        "birthDate",
         "weightKg",
         "ftp",
         "weeklyHourTarget",
@@ -245,6 +246,7 @@ async function main() {
       const { body } = await postMissing(id, {
         displayName: "  Nieuwe Renner  ",
         discipline: "Road",
+        birthDate: "2008-03-15",
         weightKg: "72.4",
         ftp: "250",
         weeklyHourTarget: "10",
@@ -264,6 +266,10 @@ async function main() {
         .from(athleteProfilesTable)
         .where(eq(athleteProfilesTable.clerkId, id));
       assert(prof?.discipline === "Road", `discipline not persisted: ${prof?.discipline}`);
+      // JEUGD_EN_PLOEGLEIDER_HERSTEL_01: geboortedatum is verplicht en moet
+      // exact als ingevoerd bewaard worden (datum + afgeleid jaar).
+      assert(prof?.birthDate === "2008-03-15", `birthDate not persisted: ${prof?.birthDate}`);
+      assert(prof?.birthYear === 2008, `birthYear not derived: ${prof?.birthYear}`);
       assert(Number(prof?.weightKg) === 72.4, `weightKg not persisted: ${prof?.weightKg}`);
       assert(prof?.ftp === 250, `ftp not persisted: ${prof?.ftp}`);
       // Manual entries must be marked measured, or the progressive engine re-asks.

@@ -134,10 +134,13 @@ function isoOffset(days: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// A 1×1 transparent PNG — enough bytes for a real object-storage upload so the
-// owner's photo-serve positive control returns actual 200 image bytes.
+// A tiny (4×4) semi-transparent PNG, generated with sharp itself — enough bytes
+// for a real object-storage upload so the owner's photo-serve positive control
+// returns actual 200 image bytes. NB: the previous hand-rolled 1×1 PNG passed
+// sharp's metadata() but failed the re-encode in the central file gate
+// ("vipspng: libpng read error"), so uploads were rejected with 415.
 const PNG_1x1_BASE64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEklEQVQImWPgEpFrQMYMpAsAAIRzC8FPgrPCAAAAAElFTkSuQmCC";
 
 // ── HTTP helper acting as a seeded dev athlete via x-dev-clerk-id ─────────────
 async function req(
