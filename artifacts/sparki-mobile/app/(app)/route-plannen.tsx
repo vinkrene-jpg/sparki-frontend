@@ -39,10 +39,20 @@ import {
 import {
   useDeleteRoute,
   useHerstelRoute,
+  useNearbyRoutes,
   useRoute,
   useRoutes,
   type RouteSummary,
 } from "@/lib/routes-api";
+import { nearbyTellerTekst, ontdekKaartCenter } from "@/lib/nearby-view";
+import {
+  NEARBY_FILTERS_LEEG,
+  nearbyFiltersActief,
+  pasNearbyFilters,
+  type NearbyFilters,
+  type NearbyMoeilijkheid,
+  type NearbySport,
+} from "@/lib/nearby-filters";
 
 // ── Hoofdstuk 1 MOBILE_ROUTE_NAV_AFBOUW_01: het schermmodel ─────────────────
 // Kaart-eerst (kaart is het scherm), zoekveld + filterbolletjes bovenop de
@@ -136,7 +146,51 @@ function trainingTypeVanWorkout(w: NonNullable<PlannedWorkoutToday>): string | n
   return null;
 }
 
-type Tab = "vandaag" | "bibliotheek" | "nieuw";
+// Kaart-eerst voorstellen (taak #561): sportkeuze + korte labels voor de lijst.
+const SPORT_OPTIES: { id: NearbySport; label: string; meervoud: string }[] = [
+  { id: "cycling", label: "Fietsen", meervoud: "fietsroutes" },
+  { id: "walking", label: "Wandelen", meervoud: "wandelroutes" },
+  { id: "hiking", label: "Hiken", meervoud: "hikeroutes" },
+];
+
+const MOEILIJKHEID_LABEL: Record<NearbyMoeilijkheid, string> = {
+  makkelijk: "Makkelijk",
+  gemiddeld: "Gemiddeld",
+  zwaar: "Zwaar",
+};
+
+const BRON_KORT: Record<string, string> = {
+  bewaard: "Bewaard",
+  plan: "Plan",
+  gereden: "Gereden",
+  gedeeld: "Gedeeld",
+  openbaar: "Openbaar",
+};
+
+// Afstand- en hoogtebanden als tikbare presets (mobiel geen invoervelden).
+const AFSTAND_BANDEN: {
+  label: string;
+  minKm: number | null;
+  maxKm: number | null;
+}[] = [
+  { label: "Alle", minKm: null, maxKm: null },
+  { label: "tot 25 km", minKm: null, maxKm: 25 },
+  { label: "25–60 km", minKm: 25, maxKm: 60 },
+  { label: "60+ km", minKm: 60, maxKm: null },
+];
+
+const HM_BANDEN: {
+  label: string;
+  minHm: number | null;
+  maxHm: number | null;
+}[] = [
+  { label: "Alle", minHm: null, maxHm: null },
+  { label: "vlak (≤300 hm)", minHm: null, maxHm: 300 },
+  { label: "heuvelig (300–800)", minHm: 300, maxHm: 800 },
+  { label: "bergen (800+)", minHm: 800, maxHm: null },
+];
+
+type Tab = "ontdek" | "vandaag" | "bibliotheek" | "nieuw";
 type BladHoogte = "laag" | "half" | "vol";
 
 export default function RoutePlannenScreen() {
@@ -157,10 +211,19 @@ export default function RoutePlannenScreen() {
   const [training, setTraining] = useState<string | null>(null);
   const [afstand, setAfstand] = useState<number>(40);
   const [fiets, setFiets] = useState<ZoekCriteria["bikeType"]>(null);
-  const [openFilter, setOpenFilter] = useState<"training" | "afstand" | "fiets" | null>(null);
+  const [openFilter, setOpenFilter] = useState<
+    "training" | "afstand" | "fiets" | "sport" | null
+  >(null);
+
+  // ── Ontdek: kaart-eerst voorstellen uit GET /api/routes/nearby (taak #561) ─
+  const [sport, setSport] = useState<NearbySport>("cycling");
+  const [nearbyFilters, setNearbyFilters] =
+    useState<NearbyFilters>(NEARBY_FILTERS_LEEG);
+  const [nearbyFiltersOpen, setNearbyFiltersOpen] = useState(false);
+  const [gekozenNearbyKey, setGekozenNearbyKey] = useState<string | null>(null);
 
   // ── Sleepblad ──────────────────────────────────────────────────────────────
-  const [tab, setTab] = useState<Tab>("bibliotheek");
+  const [tab, setTab] = useState<Tab>("ontdek");
   const [blad, setBlad] = useState<BladHoogte>("half");
   const bladHoogtePx: Record<BladHoogte, number> = {
     laag: 64 + insets.bottom,
@@ -437,18 +500,52 @@ export default function RoutePlannenScreen() {
   const bruikbaar = bekend?.filter((m) => m.bruikbaar) ?? [];
   const nietBruikbaar = bekend?.filter((m) => !m.bruikbaar) ?? [];
 
+  // ── Ontdek-gegevens: nearby-lijst + client-side filters (live teller) ──────
+  const nearbyQ = useNearbyRoutes(tab === "ontdek" ? startLatLon : null, sport);
+  const alleNearby = nearbyQ.data?.routes ?? [];
+  const nearbyRoutes = useMemo(
+    () => pasNearbyFilters(alleNearby, nearbyFilters),
+    [alleNearby, nearbyFilters],
+  );
+  const gekozenNearby =
+    nearbyRoutes.find((r) => r.key === gekozenNearbyKey) ?? null;
+  const sportInfo = SPORT_OPTIES.find((s) => s.id === sport)!;
+  const nearbyKaartLijnen = useMemo(
+    () =>
+      tab === "ontdek"
+        ? nearbyRoutes
+            .filter((r) => r.geometry.length >= 2)
+            .map((r) => ({ key: r.key, path: r.geometry.map(toLatLon) }))
+        : [],
+    [tab, nearbyRoutes],
+  );
+
   return (
     <View style={[styles.screen, { backgroundColor: c.background }]}>
       {/* ── De kaart is het scherm ── */}
       <RouteMap
         path={kaartPad}
         location={location}
-        following={kaartPad.length < 2}
+        following={kaartPad.length < 2 && nearbyKaartLijnen.length === 0}
         onUserPan={() => {}}
         primary={c.primary}
         background={c.background}
+        centerOn={
+          tab === "ontdek" && kaartPad.length < 2
+            ? ontdekKaartCenter(
+                startpunt ? { lat: startpunt.lat, lon: startpunt.lon } : null,
+                location,
+              )
+            : null
+        }
+        nearbyRoutes={nearbyKaartLijnen}
+        selectedNearbyKey={gekozenNearbyKey}
+        onNearbyPress={(key) => {
+          setGekozenNearbyKey(key);
+          setBlad((h) => (h === "laag" ? "half" : h));
+        }}
       />
-      {kaartPad.length < 2 && !location ? (
+      {kaartPad.length < 2 && !location && !(tab === "ontdek" && startpunt) ? (
         <View style={[StyleSheet.absoluteFill, styles.mapFallback]}>
           <Text style={[styles.honest, { color: c.mutedForeground, textAlign: "center" }]}>
             {locError ?? "Wachten op GPS voor de kaart…"}
@@ -531,7 +628,44 @@ export default function RoutePlannenScreen() {
           </View>
         ) : null}
 
-        {/* Filterbolletjes — het EERSTE bolletje is het trainingstype. */}
+        {/* Filterbolletjes — Ontdek: sport/locatie/filters; anders het
+            trainingstype eerst. */}
+        {tab === "ontdek" ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.bolletjesRij}
+          >
+            <FilterBolletje
+              label={sportInfo.label}
+              actief={openFilter === "sport"}
+              onPress={() => setOpenFilter(openFilter === "sport" ? null : "sport")}
+              c={c}
+            />
+            <FilterBolletje
+              label="Huidige locatie"
+              actief={startpunt == null && location != null}
+              onPress={() => {
+                setStartpunt(null);
+                setZoekTekst("");
+                setPlaatsen(null);
+                setGekozenNearbyKey(null);
+              }}
+              c={c}
+            />
+            <FilterBolletje
+              label={
+                nearbyFiltersActief(nearbyFilters) ? "Filters •" : "Filters"
+              }
+              actief={nearbyFiltersOpen || nearbyFiltersActief(nearbyFilters)}
+              onPress={() => {
+                setNearbyFiltersOpen((v) => !v);
+                setBlad((h) => (h === "laag" ? "half" : h));
+              }}
+              c={c}
+            />
+          </ScrollView>
+        ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -556,7 +690,29 @@ export default function RoutePlannenScreen() {
             c={c}
           />
         </ScrollView>
-        {openFilter ? (
+        )}
+        {openFilter === "sport" ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.bolletjesRij}
+          >
+            {SPORT_OPTIES.map((s) => (
+              <FilterBolletje
+                key={s.id}
+                label={s.label}
+                actief={sport === s.id}
+                onPress={() => {
+                  setSport(s.id);
+                  setGekozenNearbyKey(null);
+                  setOpenFilter(null);
+                }}
+                c={c}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
+        {openFilter && openFilter !== "sport" ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -623,6 +779,7 @@ export default function RoutePlannenScreen() {
         </View>
         {blad !== "laag" ? (
           <View style={styles.tabRij}>
+            <TabKnop label="Ontdek" actief={tab === "ontdek"} onPress={() => setTab("ontdek")} c={c} />
             <TabKnop label="Vandaag" actief={tab === "vandaag"} onPress={() => setTab("vandaag")} c={c} />
             <TabKnop label="Bibliotheek" actief={tab === "bibliotheek"} onPress={() => setTab("bibliotheek")} c={c} />
             <TabKnop label="Nieuw" actief={tab === "nieuw"} onPress={() => setTab("nieuw")} c={c} />
@@ -643,6 +800,8 @@ export default function RoutePlannenScreen() {
               gap: 12,
             }}
           >
+            {tab === "ontdek" ? <OntdekInhoud /> : null}
+
             {tab === "vandaag" ? (
               workoutQ.isLoading ? (
                 <ActivityIndicator color={c.primary} />
@@ -867,6 +1026,278 @@ export default function RoutePlannenScreen() {
       </View>
     </View>
   );
+
+  // Ontdek-tab (taak #561): voorstellen uit GET /api/routes/nearby met live
+  // gefilterde teller, kaartselectie en een eerlijke dun-gebied-melding met
+  // "Zelf plannen" als uitweg.
+  function OntdekInhoud() {
+    if (startLatLon == null) {
+      return (
+        <>
+          <Text style={[styles.honest, { color: c.mutedForeground }]}>
+            Er is nog geen locatie bekend. Zet locatietoestemming aan of zoek
+            een plaatsnaam bovenaan — dan verschijnen hier de routes uit die
+            omgeving.
+          </Text>
+          {startpuntUitleg}
+        </>
+      );
+    }
+    return (
+      <>
+        {nearbyFiltersOpen ? (
+          <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={[styles.cardName, { color: c.foreground }]}>Filters</Text>
+            <Text style={[styles.honest, { color: c.mutedForeground }]}>Afstand</Text>
+            <View style={styles.chipsWrap}>
+              {AFSTAND_BANDEN.map((b) => (
+                <FilterBolletje
+                  key={b.label}
+                  label={b.label}
+                  actief={
+                    nearbyFilters.minKm === b.minKm &&
+                    nearbyFilters.maxKm === b.maxKm
+                  }
+                  onPress={() =>
+                    setNearbyFilters({
+                      ...nearbyFilters,
+                      minKm: b.minKm,
+                      maxKm: b.maxKm,
+                    })
+                  }
+                  c={c}
+                />
+              ))}
+            </View>
+            <Text style={[styles.honest, { color: c.mutedForeground }]}>Hoogtemeters</Text>
+            <View style={styles.chipsWrap}>
+              {HM_BANDEN.map((b) => (
+                <FilterBolletje
+                  key={b.label}
+                  label={b.label}
+                  actief={
+                    nearbyFilters.minHm === b.minHm &&
+                    nearbyFilters.maxHm === b.maxHm
+                  }
+                  onPress={() =>
+                    setNearbyFilters({
+                      ...nearbyFilters,
+                      minHm: b.minHm,
+                      maxHm: b.maxHm,
+                    })
+                  }
+                  c={c}
+                />
+              ))}
+            </View>
+            <Text style={[styles.honest, { color: c.mutedForeground }]}>
+              Moeilijkheid (indicatief, uit echte afstand en hoogtemeters)
+            </Text>
+            <View style={styles.chipsWrap}>
+              {(Object.keys(MOEILIJKHEID_LABEL) as NearbyMoeilijkheid[]).map((m) => (
+                <FilterBolletje
+                  key={m}
+                  label={MOEILIJKHEID_LABEL[m]}
+                  actief={nearbyFilters.moeilijkheid[m]}
+                  onPress={() =>
+                    setNearbyFilters({
+                      ...nearbyFilters,
+                      moeilijkheid: {
+                        ...nearbyFilters.moeilijkheid,
+                        [m]: !nearbyFilters.moeilijkheid[m],
+                      },
+                    })
+                  }
+                  c={c}
+                />
+              ))}
+            </View>
+            <Text style={[styles.honest, { color: c.mutedForeground }]}>Ondergrond</Text>
+            <View style={styles.chipsWrap}>
+              {(
+                [
+                  ["geen", "Geen voorkeur"],
+                  ["verhard", "Weg of verhard"],
+                  ["onverhard", "Off-road"],
+                ] as const
+              ).map(([id, label]) => (
+                <FilterBolletje
+                  key={id}
+                  label={label}
+                  actief={nearbyFilters.ondergrond === id}
+                  onPress={() =>
+                    setNearbyFilters({ ...nearbyFilters, ondergrond: id })
+                  }
+                  c={c}
+                />
+              ))}
+            </View>
+            <Text style={[styles.honest, { color: c.mutedForeground }]}>
+              Routes zonder bekend wegdek tellen alleen mee bij "Geen voorkeur".
+            </Text>
+            <Text style={[styles.honest, { color: c.mutedForeground }]}>Type route</Text>
+            <View style={styles.chipsWrap}>
+              {(
+                [
+                  ["alle", "Alle"],
+                  ["lus", "Circulair"],
+                  ["heenterug", "Heen en terug"],
+                ] as const
+              ).map(([id, label]) => (
+                <FilterBolletje
+                  key={id}
+                  label={label}
+                  actief={nearbyFilters.type === id}
+                  onPress={() => setNearbyFilters({ ...nearbyFilters, type: id })}
+                  c={c}
+                />
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable
+                onPress={() => setNearbyFilters(NEARBY_FILTERS_LEEG)}
+                style={[styles.secondaryBtn, { borderColor: c.border, flex: 1 }]}
+              >
+                <Text style={[styles.secondaryBtnText, { color: c.foreground }]}>
+                  Alles resetten
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setNearbyFiltersOpen(false)}
+                style={[styles.primaryBtn, { backgroundColor: c.primary, flex: 1 }]}
+              >
+                <Text style={[styles.primaryBtnText, { color: c.primaryForeground }]}>
+                  {nearbyTellerTekst(nearbyRoutes.length, sportInfo.meervoud, {
+                    total: nearbyQ.data?.total,
+                    afgekapt: nearbyQ.data?.afgekapt,
+                  })}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
+        {nearbyQ.isLoading ? (
+          <View style={styles.busyRow}>
+            <ActivityIndicator color={c.primary} />
+            <Text style={[styles.honest, { color: c.mutedForeground }]}>
+              Routes in de buurt zoeken…
+            </Text>
+          </View>
+        ) : nearbyQ.isError ? (
+          <>
+            <Text style={[styles.honest, { color: c.destructive }]}>
+              Routes in de buurt konden niet geladen worden.
+            </Text>
+            <Pressable
+              onPress={() => void nearbyQ.refetch()}
+              style={[styles.secondaryBtn, { borderColor: c.border }]}
+            >
+              <Ionicons name="refresh" size={16} color={c.foreground} />
+              <Text style={[styles.secondaryBtnText, { color: c.foreground }]}>
+                Opnieuw proberen
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={[styles.sectionTitle, { color: c.foreground }]}>
+              {nearbyTellerTekst(nearbyRoutes.length, sportInfo.meervoud, {
+                total: nearbyQ.data?.total,
+                afgekapt: nearbyQ.data?.afgekapt,
+              })}
+            </Text>
+            {nearbyRoutes.length === 0 ? (
+              <>
+                <Text style={[styles.honest, { color: c.mutedForeground }]}>
+                  {alleNearby.length > 0
+                    ? "Geen routes binnen deze filters. Zet een filter ruimer of reset alles."
+                    : "Nog geen bekende routes in dit gebied. De voorstellen komen uit je eigen routes, je ritgeschiedenis en gedeelde of openbare routes van anderen — hier is daarvan nog niets. Plan zelf een route; die wordt dan met een echte blokkadecontrole gemaakt."}
+                </Text>
+                <Pressable
+                  onPress={() => setTab("nieuw")}
+                  style={[styles.primaryBtn, { backgroundColor: c.primary }]}
+                >
+                  <Ionicons name="sparkles" size={18} color={c.primaryForeground} />
+                  <Text style={[styles.primaryBtnText, { color: c.primaryForeground }]}>
+                    Zelf plannen
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              nearbyRoutes.map((r) => (
+                <Pressable
+                  key={r.key}
+                  onPress={() =>
+                    setGekozenNearbyKey(gekozenNearbyKey === r.key ? null : r.key)
+                  }
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: c.card,
+                      borderColor:
+                        gekozenNearbyKey === r.key ? c.primary : c.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.cardName, { color: c.foreground }]}
+                    numberOfLines={1}
+                  >
+                    {r.naam}
+                  </Text>
+                  <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
+                    {fmtKm(r.distanceKm)} · {fmtHm(r.elevationGainM)}
+                    {r.moeilijkheid
+                      ? ` · ${MOEILIJKHEID_LABEL[r.moeilijkheid]}`
+                      : ""}
+                    {` · ${r.isLus ? "Rondje" : "Heen en terug / A-B"}`}
+                  </Text>
+                  <Text style={[styles.honest, { color: c.mutedForeground }]}>
+                    {BRON_KORT[r.bron] ?? r.bronLabel} · start op{" "}
+                    {r.startAfstandKm.toFixed(1)} km
+                  </Text>
+                  {gekozenNearbyKey === r.key ? (
+                    r.soort === "route" &&
+                    (r.bron === "bewaard" ||
+                      r.bron === "plan" ||
+                      r.bron === "gereden") ? (
+                      <Pressable
+                        onPress={() => router.push(`/navigate/${r.id}`)}
+                        style={styles.ctaRow}
+                      >
+                        <Ionicons name="play" size={15} color={c.primary} />
+                        <Text style={[styles.ctaText, { color: c.primary }]}>
+                          Navigeer
+                        </Text>
+                      </Pressable>
+                    ) : (
+                      <Text style={[styles.honest, { color: c.mutedForeground }]}>
+                        {r.soort === "kandidaat"
+                          ? "Gereden rit — bewaar hem eerst als route via je ritgeschiedenis."
+                          : "Gedeelde of openbare route — open hem via je routebibliotheek op web."}
+                      </Text>
+                    )
+                  ) : null}
+                  {gekozenNearbyKey === r.key ? (
+                    <Text style={[styles.honest, { color: c.mutedForeground }]}>
+                      Vóór opslaan of navigeren volgt altijd een nieuwe
+                      blokkadecontrole.
+                    </Text>
+                  ) : null}
+                </Pressable>
+              ))
+            )}
+            {nearbyQ.data ? (
+              <Text style={[styles.honest, { color: c.mutedForeground }]}>
+                {nearbyQ.data.corpusNote} {nearbyQ.data.verificatieNote}
+              </Text>
+            ) : null}
+          </>
+        )}
+      </>
+    );
+  }
 
   // Gedeelde resultatenlijst (bekende routes + nieuwe voorstellen) — gebruikt
   // door zowel het Vandaag-tabblad als het Nieuw-tabblad.
@@ -1184,6 +1615,7 @@ const styles = StyleSheet.create({
   },
   cardName: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
   cardMeta: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   ctaRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 },
   ctaText: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
 });

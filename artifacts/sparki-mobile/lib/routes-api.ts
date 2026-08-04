@@ -2,6 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
 import { buildRideGpx } from "@/lib/ride-gpx";
+import type {
+  NearbyRoutesResponse,
+  NearbySport,
+} from "@/lib/nearby-filters";
 import {
   enqueueRideUpload,
   getUploadQueue,
@@ -235,6 +239,35 @@ export function useRouteRoadObjects(id: number | null) {
       customFetch<RouteRoadObjects>(`/api/road-objects/along-route/${id}`, {
         responseType: "json",
       }),
+  });
+}
+
+// Kaart-eerst routevoorstellen (taak #561): alle échte routes uit het eigen
+// corpus rond een punt — eigen bewaard/plan, gereden kandidaten, gedeeld en
+// openbaar (die laatste twee al privacy-afgeschermd door de server). Geen
+// generatie; dun gebied = eerlijk weinig rijen. Filteren gebeurt client-side
+// (lib/nearby-filters.ts) op deze lijst, dus de teller is live zonder
+// server-bursts.
+export function useNearbyRoutes(
+  center: { lat: number; lon: number } | null,
+  sport: NearbySport,
+  radiusKm = 25,
+) {
+  return useQuery({
+    queryKey: [
+      "routes",
+      "nearby",
+      center ? `${center.lat.toFixed(3)},${center.lon.toFixed(3)}` : "geen",
+      sport,
+      radiusKm,
+    ],
+    enabled: center != null,
+    staleTime: 60_000,
+    queryFn: () =>
+      customFetch<NearbyRoutesResponse>(
+        `/api/routes/nearby?lat=${center!.lat}&lon=${center!.lon}&sport=${encodeURIComponent(sport)}&radiusKm=${radiusKm}`,
+        { responseType: "json" },
+      ),
   });
 }
 

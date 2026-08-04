@@ -22,7 +22,8 @@
     "check:prod-config": "node scripts/check-prod-config.mjs",
     "test:live-share": "node ../../scripts/run-tsx-test.mjs --test lib/live-share.test.ts",
     "test:veld-bron": "node ../../scripts/run-tsx-test.mjs --test lib/veld-bron.test.ts",
-    "test:route-aanvraag": "node ../../scripts/run-tsx-test.mjs --test lib/route-aanvraag-state.test.ts"
+    "test:route-aanvraag": "node ../../scripts/run-tsx-test.mjs --test lib/route-aanvraag-state.test.ts",
+    "test:nearby-filters": "node ../../scripts/run-tsx-test.mjs --test lib/nearby-filters.test.ts lib/nearby-view.test.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

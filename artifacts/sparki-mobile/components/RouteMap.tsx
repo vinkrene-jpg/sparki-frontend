@@ -21,6 +21,10 @@ export function RouteMap({
   background,
   friendClusters,
   onFriendPress,
+  nearbyRoutes,
+  selectedNearbyKey,
+  onNearbyPress,
+  centerOn,
 }: {
   path: LatLon[];
   /** Echt gerouteerd verbindingsstuk terug naar de lijn (herberekening). */
@@ -34,8 +38,35 @@ export function RouteMap({
   /** Kleine vriendmarkers (Opdracht 4) — nooit dominant over navigatie. */
   friendClusters?: FriendCluster[];
   onFriendPress?: (cluster: FriendCluster) => void;
+  /**
+   * Kaart-eerst routevoorstellen (taak #561): échte routelijnen uit het eigen
+   * corpus rond de rijder. Tik op een lijn = selecteren; de selectie wordt
+   * dikker getekend, de rest dimt. Alleen lijnen met ≥2 echte punten.
+   */
+  nearbyRoutes?: { key: string; path: LatLon[] }[];
+  selectedNearbyKey?: string | null;
+  onNearbyPress?: (key: string) => void;
+  /**
+   * Actief ontdek-centrum (gezochte plaats of GPS): de kaart centreert hierop
+   * zodra het verandert, óók zonder fysieke GPS-positie — een gezochte plaats
+   * mag nooit een lijst tonen terwijl de kaart elders blijft hangen.
+   */
+  centerOn?: LatLon | null;
 }) {
   const mapRef = useRef<MapView>(null);
+
+  // Centreer op het ontdek-centrum wanneer dat verspringt (plaats gekozen,
+  // "Huidige locatie" getikt). Bewust géén continue follow: één animatie per
+  // wijziging, daarna blijft de kaart vrij beweegbaar.
+  const centerKey = centerOn ? `${centerOn.latitude},${centerOn.longitude}` : null;
+  useEffect(() => {
+    if (!mapRef.current || !centerOn) return;
+    mapRef.current.animateCamera(
+      { center: centerOn, zoom: 11 },
+      { duration: 600 },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerKey]);
 
   // Vrije modus (following=false): geen enkele animateCamera — de kaart
   // blijft exact waar de gebruiker hem zette (zoom, positie én rotatie).
@@ -49,12 +80,15 @@ export function RouteMap({
   // Hoofdstuk 1 (MOBILE_ROUTE_NAV_AFBOUW_01): het planscherm is kaart-eerst —
   // de kaart moet dus óók zonder gekozen route kunnen renderen, gecentreerd op
   // de rijder. Alleen zonder route én zonder locatie is er niets te tonen.
+  // Een expliciet ontdek-centrum (gezochte plaats) maakt de kaart ook zonder
+  // route én zonder GPS bruikbaar.
   const center =
     path.length > 0
       ? path[0]
-      : location
-        ? { latitude: location.latitude, longitude: location.longitude }
-        : null;
+      : centerOn ??
+        (location
+          ? { latitude: location.latitude, longitude: location.longitude }
+          : null);
   if (!center) return null;
 
   return (
@@ -82,6 +116,24 @@ export function RouteMap({
       mapType={Platform.OS === "android" ? "none" : "standard"}
     >
       <UrlTile urlTemplate={MAPBOX_TILE_URL} tileSize={512} zIndex={-1} />
+      {/* Routevoorstellen uit de buurt (alleen zonder gekozen routelijn). */}
+      {path.length < 2 &&
+        (nearbyRoutes ?? [])
+          .filter((r) => r.path.length >= 2)
+          .map((r) => {
+            const actief = r.key === selectedNearbyKey;
+            return (
+              <Polyline
+                key={`nearby-${r.key}`}
+                coordinates={r.path}
+                strokeColor={actief ? primary : "rgba(56,189,248,0.55)"}
+                strokeWidth={actief ? 6 : 3}
+                tappable
+                onPress={() => onNearbyPress?.(r.key)}
+                zIndex={actief ? 3 : 1}
+              />
+            );
+          })}
       {/* Witte omlijning onder de routelijn zodat de lijn op elke ondergrond afsteekt. */}
       {path.length >= 2 && (
         <>
