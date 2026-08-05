@@ -54,6 +54,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/scripts/seed-social.ts"),
       path.resolve(artifactDir, "src/scripts/seed-virtual-athletes.ts"),
       path.resolve(artifactDir, "src/scripts/seed-preview-athletes.ts"),
+      path.resolve(artifactDir, "src/scripts/seed-demo-club.ts"),
       path.resolve(artifactDir, "src/scripts/seed-intel.ts"),
       path.resolve(artifactDir, "src/scripts/seed-voorbeeldsporter.ts"),
       path.resolve(artifactDir, "src/scripts/seed-sparki-world.ts"),
