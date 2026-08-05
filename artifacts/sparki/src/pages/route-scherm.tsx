@@ -43,6 +43,16 @@ import { localISODate } from "@/lib/commercial-shell"
 // keuze — de oude per-route kaartvragen (rotondes/verkeerslichten/weer)
 // draaien hier bewust NIET (§3 R11); of ze ooit achter het driepuntsmenu
 // terugkomen is een open keuze bij René (§7).
+// R17 (taak 604): op ≥lg een twee-vlaks indeling — kaart naast een vast
+// zijpaneel met exact dezelfde functies (zelfde hooks/state, eigen indeling).
+
+const MENU_ITEMS = [
+  { label: "Zelf plannen", to: "/routes?view=maken" },
+  { label: "GPX importeren", to: "/routes?view=gpx" },
+  { label: "Bewaarde routes", to: "/routes?view=bewaard" },
+  { label: "Ontdekken", to: "/routes?view=ontdek" },
+  { label: "Instellingen", to: "/routes?view=instellingen" },
+]
 
 type SportKeuze = "cycling" | "walking" | "hiking"
 
@@ -125,7 +135,12 @@ export default function RouteSchermPage() {
     ).addTo(map)
     map.setView([52.1, 5.3], 7)
     mapRef.current = map
+    // R17: de kaartbreedte verandert bij de lg-grens (zijpaneel erbij/eraf) —
+    // Leaflet moet dan zijn maat herzien of tegels/klikken lopen scheef.
+    const observer = new ResizeObserver(() => map.invalidateSize())
+    observer.observe(containerRef.current)
     return () => {
+      observer.disconnect()
       map.remove()
       mapRef.current = null
       linesRef.current.clear()
@@ -274,6 +289,240 @@ export default function RouteSchermPage() {
   const sheetHoogte =
     stand === "vol" ? "75dvh" : stand === "half" ? "42dvh" : "9rem"
 
+  // ── Gedeelde bouwstenen (R17) — één keer opgebouwd, getoond in het
+  // mobiele onderblad ÉN het desktop-zijpaneel. Zelfde state, zelfde hooks,
+  // alleen de plek verschilt.
+  const chipRij = (
+    <>
+      <Chip
+        label={
+          trainingType
+            ? TRAININGSTYPEN.find((t) => t.id === trainingType)?.label ?? trainingType
+            : "Trainingstype"
+        }
+        actief={trainingType != null}
+        open={openChip === "training"}
+        onClick={() => setOpenChip(openChip === "training" ? null : "training")}
+      />
+      <Chip
+        label={SPORTEN.find((s) => s.id === sport)?.label ?? "Sport"}
+        actief
+        open={openChip === "sport"}
+        onClick={() => setOpenChip(openChip === "sport" ? null : "sport")}
+      />
+      <Chip
+        label={`± ${afstandKm} km`}
+        actief
+        open={openChip === "afstand"}
+        onClick={() => setOpenChip(openChip === "afstand" ? null : "afstand")}
+      />
+    </>
+  )
+
+  const chipKeuzes = openChip && (
+    <>
+      {openChip === "training" && (
+        <div className="flex flex-wrap gap-2">
+          {TRAININGSTYPEN.map((t) => (
+            <KeuzeKnop
+              key={t.id}
+              label={t.label}
+              actief={trainingType === t.id}
+              onClick={() => kiesTrainingstype(t.id)}
+            />
+          ))}
+        </div>
+      )}
+      {openChip === "sport" && (
+        <div className="flex flex-wrap gap-2">
+          {SPORTEN.map((s) => (
+            <KeuzeKnop
+              key={s.id}
+              label={s.label}
+              actief={sport === s.id}
+              onClick={() => {
+                setSport(s.id)
+                setOpenChip(null)
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {openChip === "afstand" && (
+        <div className="flex flex-wrap gap-2">
+          {AFSTANDEN.map((km) => (
+            <KeuzeKnop
+              key={km}
+              label={`± ${km} km`}
+              actief={afstandKm === km}
+              onClick={() => {
+                setAfstandKm(km)
+                setOpenChip(null)
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  )
+
+  const zoekLijst = (
+    <div className="flex flex-col">
+      {zoekResultaten.map((r, i) => (
+        <button
+          key={`${r.lat}-${r.lon}-${i}`}
+          type="button"
+          onClick={() => kiesPlaats(r)}
+          className="border-b border-slate-100 px-1 py-3 text-left text-[14px] text-slate-700"
+        >
+          {r.label}
+        </button>
+      ))}
+      {geocode.isSuccess && zoekResultaten.length === 0 && (
+        <p className="px-1 py-3 text-[13px] text-slate-500">Niets gevonden.</p>
+      )}
+    </div>
+  )
+
+  const paneelInhoud = (
+    <>
+      {/* Generatievoortgang / fout */}
+      {generate.isPending && (
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5">
+          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+          <span className="text-[13px] text-slate-600">
+            {fase ? FASE_TEKST[fase] ?? "Bezig…" : "Route maken…"}
+          </span>
+        </div>
+      )}
+      {genFout && (
+        <p className="mb-3 rounded-xl bg-red-50 px-3 py-2.5 text-[13px] text-red-700">
+          {genFout}
+        </p>
+      )}
+
+      {/* Gegenereerde kandidaat — mét de reden erbij (R6 Go) */}
+      {kandidaat && (
+        <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-3">
+          <p className="text-[14px] font-semibold text-slate-800">{kandidaat.name}</p>
+          <p className="mt-0.5 text-[12px] text-slate-600">
+            {kandidaat.distanceKm != null ? `${kandidaat.distanceKm.toFixed(1)} km` : "—"}
+            {kandidaat.elevationGainM != null ? ` · ${Math.round(kandidaat.elevationGainM)} hm` : ""}
+            {kandidaat.durationSec != null
+              ? ` · ± ${Math.round(kandidaat.durationSec / 60)} min`
+              : ""}
+          </p>
+          {kandidaat.profile.length > 1 && (
+            <MiniElevationProfile profile={kandidaat.profile} className="mt-2 h-12 w-full" />
+          )}
+          {kandidaat.rationale && (
+            <p className="mt-2 text-[12px] leading-relaxed text-slate-600">
+              {kandidaat.rationale}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setNavigeren(true)}
+              className="rounded-full bg-slate-900 px-4 py-2 text-[13px] font-medium text-white"
+            >
+              Start
+            </button>
+            <button
+              type="button"
+              onClick={() => bewaar.mutate({ candidate: kandidaat })}
+              disabled={bewaar.isPending || bewaar.isSuccess}
+              className="rounded-full border border-slate-300 px-4 py-2 text-[13px] text-slate-700 disabled:opacity-50"
+            >
+              {bewaar.isSuccess ? "Bewaard" : bewaar.isPending ? "Bezig…" : "Bewaar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setKandidaat(null)
+                bewaar.reset()
+              }}
+              className="rounded-full border border-slate-200 px-4 py-2 text-[13px] text-slate-500"
+            >
+              Weg
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* R6 — Compleet: de training van vandaag met de route eronder */}
+      {pkg === "compleet" && trainingVandaag && !kandidaat && (
+        <div className="mb-4 rounded-2xl border border-slate-200 p-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+            Training van vandaag
+          </p>
+          <p className="mt-1 text-[14px] font-semibold text-slate-800">
+            {trainingVandaag.title}
+          </p>
+          <p className="mt-0.5 text-[12px] text-slate-600">
+            {trainingVandaag.targetDurationMin
+              ? `${trainingVandaag.targetDurationMin} min`
+              : "Duur onbekend"}
+          </p>
+          {trainingVandaag.routeId == null && (
+            <p className="mt-1.5 text-[12px] text-slate-500">
+              Nog geen route gekoppeld — kies een trainingstype hierboven en er
+              wordt er één voor gemaakt.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Routes in beeld (R5): kaartlijn + gegevens, geen sfeerfoto */}
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+        {nearby.isLoading
+          ? "Routes in beeld laden…"
+          : `Routes in beeld (${routes.length})`}
+      </p>
+      {nearby.isError && (
+        <p className="mt-2 text-[13px] text-slate-500">
+          Routes in beeld konden niet worden geladen.
+        </p>
+      )}
+      {!nearby.isLoading && !nearby.isError && routes.length === 0 && (
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
+          Geen bekende routes in dit gebied. Kies een trainingstype om er één
+          te laten maken, of plan zelf via het menu.
+        </p>
+      )}
+      <div className="mt-2 flex flex-col gap-2">
+        {/* Fail-closed: zolang het pakket laadt (pkg null) tonen we de
+            Gratis-weergave, nooit méér dan waar recht op is. */}
+        {(pkg === "go" || pkg === "compleet" ? routes : routes.slice(0, 3)).map((r) => (
+          <RouteRegel
+            key={r.key}
+            route={r}
+            gekozen={r.key === gekozenKey}
+            onKies={() => {
+              setGekozenKey(r.key === gekozenKey ? null : r.key)
+              setStand("half")
+            }}
+          />
+        ))}
+        {pkg !== "go" && pkg !== "compleet" && routes.length > 3 && (
+          <p className="mt-1 text-[12px] text-slate-500">
+            Gratis toont drie routes — met Go of Compleet zie je alles in beeld.
+          </p>
+        )}
+      </div>
+
+      {gekozenRoute && gekozenRoute.soort === "route" && gekozenRoute.bron === "bewaard" && (
+        <button
+          type="button"
+          onClick={() => setLocation(`/routes?view=bewaard&route=${gekozenRoute.id}`)}
+          className="mt-3 w-full rounded-full bg-slate-900 px-4 py-2.5 text-[13px] font-medium text-white"
+        >
+          Openen en starten
+        </button>
+      )}
+    </>
+  )
+
   // Navigatielaag over dezelfde kaart (R8) — alleen voor een gegenereerde
   // kandidaat met echte geometrie en navigatie-aanwijzingen.
   if (navigeren && kandidaat) {
@@ -292,12 +541,84 @@ export default function RouteSchermPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-map-ink">
-      {/* Kaart beeldvullend (R1) */}
+    <div className="fixed inset-0 z-40 flex bg-map-ink">
+      {/* Desktop-zijpaneel (R17, ≥lg): kaart naast het routepaneel, zelfde
+          functies als mobiel via dezelfde gedeelde bouwstenen. */}
+      <aside className="hidden w-[400px] shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+        <div className="flex items-center gap-2 border-b border-slate-100 p-3">
+          <button
+            type="button"
+            onClick={() => setLocation("/routes")}
+            aria-label="Terug"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+          >
+            <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <input
+            type="text"
+            value={zoekTekst}
+            onChange={(e) => setZoekTekst(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && zoek()}
+            placeholder="Zoek een plaats…"
+            className="h-11 min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 text-[14px] text-slate-800 focus:border-accent-cyan/50 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={zoek}
+            disabled={geocode.isPending}
+            aria-label="Zoeken"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white"
+          >
+            {geocode.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" strokeWidth={2} />
+            )}
+          </button>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+            >
+              <MoreVertical className="h-5 w-5" strokeWidth={2} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-12 z-[530] w-52 overflow-hidden rounded-2xl bg-white shadow-xl">
+                {MENU_ITEMS.map((m) => (
+                  <button
+                    key={m.to}
+                    type="button"
+                    onClick={() => setLocation(m.to)}
+                    className="block w-full px-4 py-3 text-left text-[14px] text-slate-700 hover:bg-slate-50"
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        {(zoekResultaten.length > 0 || (geocode.isSuccess && zoekTekst.trim() !== "")) && (
+          <div className="border-b border-slate-100 px-3">{zoekLijst}</div>
+        )}
+        <div className="flex flex-wrap gap-2 px-3 pt-3">{chipRij}</div>
+        {chipKeuzes && (
+          <div className="mx-3 mt-3 rounded-2xl border border-slate-200 p-3">{chipKeuzes}</div>
+        )}
+        <div className="mt-3 min-h-0 flex-1 overflow-y-auto border-t border-slate-100 p-4">
+          {paneelInhoud}
+        </div>
+      </aside>
+
+      {/* Kaartvlak — mobiel beeldvullend (R1), desktop naast het zijpaneel */}
+      <div className="relative min-w-0 flex-1">
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Bovenop: terug + zoekveld + driepuntsmenu (R2) */}
-      <div className="absolute inset-x-0 top-0 z-[500] flex items-center gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      {/* Bovenop: terug + zoekveld + driepuntsmenu (R2) — alleen mobiel */}
+      <div className="absolute inset-x-0 top-0 z-[500] flex items-center gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
         <button
           type="button"
           onClick={() => setLocation("/routes")}
@@ -326,13 +647,7 @@ export default function RouteSchermPage() {
           </button>
           {menuOpen && (
             <div className="absolute right-0 top-12 w-52 overflow-hidden rounded-2xl bg-white shadow-xl">
-              {[
-                { label: "Zelf plannen", to: "/routes?view=maken" },
-                { label: "GPX importeren", to: "/routes?view=gpx" },
-                { label: "Bewaarde routes", to: "/routes?view=bewaard" },
-                { label: "Ontdekken", to: "/routes?view=ontdek" },
-                { label: "Instellingen", to: "/routes?view=instellingen" },
-              ].map((m) => (
+              {MENU_ITEMS.map((m) => (
                 <button
                   key={m.to}
                   type="button"
@@ -347,83 +662,22 @@ export default function RouteSchermPage() {
         </div>
       </div>
 
-      {/* Filterbolletjes — trainingstype vooraan (R3) */}
-      <div className="absolute inset-x-0 top-16 z-[500] mt-[max(0rem,env(safe-area-inset-top))] flex gap-2 overflow-x-auto px-3 py-1 [scrollbar-width:none]">
-        <Chip
-          label={
-            trainingType
-              ? TRAININGSTYPEN.find((t) => t.id === trainingType)?.label ?? trainingType
-              : "Trainingstype"
-          }
-          actief={trainingType != null}
-          open={openChip === "training"}
-          onClick={() => setOpenChip(openChip === "training" ? null : "training")}
-        />
-        <Chip
-          label={SPORTEN.find((s) => s.id === sport)?.label ?? "Sport"}
-          actief
-          open={openChip === "sport"}
-          onClick={() => setOpenChip(openChip === "sport" ? null : "sport")}
-        />
-        <Chip
-          label={`± ${afstandKm} km`}
-          actief
-          open={openChip === "afstand"}
-          onClick={() => setOpenChip(openChip === "afstand" ? null : "afstand")}
-        />
+      {/* Filterbolletjes — trainingstype vooraan (R3) — alleen mobiel */}
+      <div className="absolute inset-x-0 top-16 z-[500] mt-[max(0rem,env(safe-area-inset-top))] flex gap-2 overflow-x-auto px-3 py-1 [scrollbar-width:none] lg:hidden">
+        {chipRij}
       </div>
 
-      {/* Chip-keuzepanelen */}
-      {openChip && (
-        <div className="absolute inset-x-3 top-28 z-[510] mt-[max(0rem,env(safe-area-inset-top))] rounded-2xl bg-white p-3 shadow-xl">
-          {openChip === "training" && (
-            <div className="flex flex-wrap gap-2">
-              {TRAININGSTYPEN.map((t) => (
-                <KeuzeKnop
-                  key={t.id}
-                  label={t.label}
-                  actief={trainingType === t.id}
-                  onClick={() => kiesTrainingstype(t.id)}
-                />
-              ))}
-            </div>
-          )}
-          {openChip === "sport" && (
-            <div className="flex flex-wrap gap-2">
-              {SPORTEN.map((s) => (
-                <KeuzeKnop
-                  key={s.id}
-                  label={s.label}
-                  actief={sport === s.id}
-                  onClick={() => {
-                    setSport(s.id)
-                    setOpenChip(null)
-                  }}
-                />
-              ))}
-            </div>
-          )}
-          {openChip === "afstand" && (
-            <div className="flex flex-wrap gap-2">
-              {AFSTANDEN.map((km) => (
-                <KeuzeKnop
-                  key={km}
-                  label={`± ${km} km`}
-                  actief={afstandKm === km}
-                  onClick={() => {
-                    setAfstandKm(km)
-                    setOpenChip(null)
-                  }}
-                />
-              ))}
-            </div>
-          )}
+      {/* Chip-keuzepanelen — alleen mobiel (desktop: in het zijpaneel) */}
+      {chipKeuzes && (
+        <div className="absolute inset-x-3 top-28 z-[510] mt-[max(0rem,env(safe-area-inset-top))] rounded-2xl bg-white p-3 shadow-xl lg:hidden">
+          {chipKeuzes}
         </div>
       )}
 
-      {/* Kaartbediening rechtsonder, duimbereik (R4) */}
+      {/* Kaartbediening rechtsonder, duimbereik (R4) — mobiel boven het
+          onderblad, desktop gewoon onderin (geen onderblad daar). */}
       <div
-        className="absolute right-3 z-[500] flex flex-col gap-2"
+        className="absolute right-3 z-[500] flex flex-col gap-2 lg:hidden"
         style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
       >
         <button
@@ -457,9 +711,42 @@ export default function RouteSchermPage() {
         </button>
       </div>
 
-      {/* Zoek-overlay */}
+      {/* Kaartbediening desktop — rechtsonder op het kaartvlak (geen onderblad) */}
+      <div className="absolute bottom-3 right-3 z-[500] hidden flex-col gap-2 lg:flex">
+        <button
+          type="button"
+          aria-label="Zoom in"
+          onClick={() => mapRef.current?.zoomIn()}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-md"
+        >
+          <Plus className="h-5 w-5" strokeWidth={2} />
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom uit"
+          onClick={() => mapRef.current?.zoomOut()}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-md"
+        >
+          <Minus className="h-5 w-5" strokeWidth={2} />
+        </button>
+        <button
+          type="button"
+          aria-label="Mijn locatie"
+          onClick={() =>
+            navigator.geolocation?.getCurrentPosition(
+              (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+              () => undefined,
+            )
+          }
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-md"
+        >
+          <Crosshair className="h-5 w-5" strokeWidth={2} style={{ color: ACCENT }} />
+        </button>
+      </div>
+
+      {/* Zoek-overlay — alleen mobiel (desktop zoekt inline in het zijpaneel) */}
       {zoekOpen && (
-        <div className="absolute inset-0 z-[520] bg-white p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="absolute inset-0 z-[520] bg-white p-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
           <div className="flex items-center gap-2">
             <input
               autoFocus
@@ -492,27 +779,13 @@ export default function RouteSchermPage() {
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
-          <div className="mt-3 flex flex-col">
-            {zoekResultaten.map((r, i) => (
-              <button
-                key={`${r.lat}-${r.lon}-${i}`}
-                type="button"
-                onClick={() => kiesPlaats(r)}
-                className="border-b border-slate-100 px-1 py-3 text-left text-[14px] text-slate-700"
-              >
-                {r.label}
-              </button>
-            ))}
-            {geocode.isSuccess && zoekResultaten.length === 0 && (
-              <p className="px-1 py-3 text-[13px] text-slate-500">Niets gevonden.</p>
-            )}
-          </div>
+          <div className="mt-3">{zoekLijst}</div>
         </div>
       )}
 
-      {/* Sleep-open onderblad (R5/R6) */}
+      {/* Sleep-open onderblad (R5/R6) — alleen mobiel */}
       <div
-        className="absolute inset-x-0 bottom-0 z-[510] flex flex-col rounded-t-3xl bg-white shadow-[0_-8px_30px_rgba(15,23,42,0.18)] transition-[height] duration-200"
+        className="absolute inset-x-0 bottom-0 z-[510] flex flex-col rounded-t-3xl bg-white shadow-[0_-8px_30px_rgba(15,23,42,0.18)] transition-[height] duration-200 lg:hidden"
         style={{ height: sheetHoogte }}
       >
         <button
@@ -527,141 +800,9 @@ export default function RouteSchermPage() {
         </button>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {/* Generatievoortgang / fout */}
-          {generate.isPending && (
-            <div className="mb-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5">
-              <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-              <span className="text-[13px] text-slate-600">
-                {fase ? FASE_TEKST[fase] ?? "Bezig…" : "Route maken…"}
-              </span>
-            </div>
-          )}
-          {genFout && (
-            <p className="mb-3 rounded-xl bg-red-50 px-3 py-2.5 text-[13px] text-red-700">
-              {genFout}
-            </p>
-          )}
-
-          {/* Gegenereerde kandidaat — mét de reden erbij (R6 Go) */}
-          {kandidaat && (
-            <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-3">
-              <p className="text-[14px] font-semibold text-slate-800">{kandidaat.name}</p>
-              <p className="mt-0.5 text-[12px] text-slate-600">
-                {kandidaat.distanceKm != null ? `${kandidaat.distanceKm.toFixed(1)} km` : "—"}
-                {kandidaat.elevationGainM != null ? ` · ${Math.round(kandidaat.elevationGainM)} hm` : ""}
-                {kandidaat.durationSec != null
-                  ? ` · ± ${Math.round(kandidaat.durationSec / 60)} min`
-                  : ""}
-              </p>
-              {kandidaat.profile.length > 1 && (
-                <MiniElevationProfile profile={kandidaat.profile} className="mt-2 h-12 w-full" />
-              )}
-              {kandidaat.rationale && (
-                <p className="mt-2 text-[12px] leading-relaxed text-slate-600">
-                  {kandidaat.rationale}
-                </p>
-              )}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setNavigeren(true)}
-                  className="rounded-full bg-slate-900 px-4 py-2 text-[13px] font-medium text-white"
-                >
-                  Start
-                </button>
-                <button
-                  type="button"
-                  onClick={() => bewaar.mutate({ candidate: kandidaat })}
-                  disabled={bewaar.isPending || bewaar.isSuccess}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-[13px] text-slate-700 disabled:opacity-50"
-                >
-                  {bewaar.isSuccess ? "Bewaard" : bewaar.isPending ? "Bezig…" : "Bewaar"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setKandidaat(null)
-                    bewaar.reset()
-                  }}
-                  className="rounded-full border border-slate-200 px-4 py-2 text-[13px] text-slate-500"
-                >
-                  Weg
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* R6 — Compleet: de training van vandaag met de route eronder */}
-          {pkg === "compleet" && trainingVandaag && !kandidaat && (
-            <div className="mb-4 rounded-2xl border border-slate-200 p-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-                Training van vandaag
-              </p>
-              <p className="mt-1 text-[14px] font-semibold text-slate-800">
-                {trainingVandaag.title}
-              </p>
-              <p className="mt-0.5 text-[12px] text-slate-600">
-                {trainingVandaag.targetDurationMin
-                  ? `${trainingVandaag.targetDurationMin} min`
-                  : "Duur onbekend"}
-              </p>
-              {trainingVandaag.routeId == null && (
-                <p className="mt-1.5 text-[12px] text-slate-500">
-                  Nog geen route gekoppeld — kies een trainingstype hierboven en er
-                  wordt er één voor gemaakt.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Routes in beeld (R5): kaartlijn + gegevens, geen sfeerfoto */}
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-            {nearby.isLoading
-              ? "Routes in beeld laden…"
-              : `Routes in beeld (${routes.length})`}
-          </p>
-          {nearby.isError && (
-            <p className="mt-2 text-[13px] text-slate-500">
-              Routes in beeld konden niet worden geladen.
-            </p>
-          )}
-          {!nearby.isLoading && !nearby.isError && routes.length === 0 && (
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
-              Geen bekende routes in dit gebied. Kies een trainingstype om er één
-              te laten maken, of plan zelf via het menu.
-            </p>
-          )}
-          <div className="mt-2 flex flex-col gap-2">
-            {/* Fail-closed: zolang het pakket laadt (pkg null) tonen we de
-                Gratis-weergave, nooit méér dan waar recht op is. */}
-            {(pkg === "go" || pkg === "compleet" ? routes : routes.slice(0, 3)).map((r) => (
-              <RouteRegel
-                key={r.key}
-                route={r}
-                gekozen={r.key === gekozenKey}
-                onKies={() => {
-                  setGekozenKey(r.key === gekozenKey ? null : r.key)
-                  setStand("half")
-                }}
-              />
-            ))}
-            {pkg !== "go" && pkg !== "compleet" && routes.length > 3 && (
-              <p className="mt-1 text-[12px] text-slate-500">
-                Gratis toont drie routes — met Go of Compleet zie je alles in beeld.
-              </p>
-            )}
-          </div>
-
-          {gekozenRoute && gekozenRoute.soort === "route" && gekozenRoute.bron === "bewaard" && (
-            <button
-              type="button"
-              onClick={() => setLocation(`/routes?view=bewaard&route=${gekozenRoute.id}`)}
-              className="mt-3 w-full rounded-full bg-slate-900 px-4 py-2.5 text-[13px] font-medium text-white"
-            >
-              Openen en starten
-            </button>
-          )}
+          {paneelInhoud}
         </div>
+      </div>
       </div>
     </div>
   )
