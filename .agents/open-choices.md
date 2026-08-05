@@ -21,6 +21,22 @@ Laatst bijgewerkt: 2026-08-05.
   "Alleen deze aanpassen" (incl. verplaatsen), "Deze en volgende" (reeks
   splitsen) en "Deze overslaan".
 
+## Ontvangen 05-08-2026 — twee NIEUWE documenten (nog geen startsein, K6: input ≠ toestemming)
+
+- `AI_COACH_KOPPELING_EN_GEHEUGEN_01` (attached_assets/…_1785907472373.md): vier
+  koppelgaten G1–G4 (CTL/ATL/TSB, diepe analyse, adviesdossier, meetniveau naar de
+  coachcontext) + geheugen-niveau (bevestigd/voorlopig/weerlegd, proactieve triggers,
+  terugleesbaar, vergeten). Volgorde §6: R3 eerst. Open bij René (§8): de
+  triggerlijst voor §4.2 — §4.2 start pas als die binnen is.
+- `TRAINERSZANDBAK_EN_BLOKKEN_01` (…_1785907472381.md): trainingsblokken op de
+  bestaande slotmechaniek (T1: heet "blok", nooit "segment") + trainerszandbak op
+  computeLoadSeries (deterministisch, fictief-markering permanent). Afhankelijk van
+  voorbeeldsporter (ANALYSE §5.1) — die eerst. Open bij René (§8): tien
+  startblok-teksten worden aangeleverd; zandbak ook voor sporters zonder trainer?;
+  marktplaats blokken tegelijk of later.
+- MEETNIVEAU v3, ANALYSE_UITBREIDING en CLUB_AFRONDING zijn byte-identiek opnieuw
+  geüpload (geen wijzigingen); CLUB_AFRONDING is al volledig gebouwd (05-08).
+
 ## GEZAGHEBBEND 02-08-2026 — Besluitenoverzicht René
 
 - `docs/besluiten/BESLUITEN_VOOR_REPLIT_2026-08-02.md` bevat ALLE productbesluiten
