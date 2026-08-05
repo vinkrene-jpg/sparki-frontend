@@ -794,6 +794,78 @@ test("pakketpoort: upgrademelding zonder sensortaal, analyse weggelaten", async 
   }
 });
 
+// 14. Presentatie-dedup MiniDuiding (taak: duiding nooit dubbel of stilletjes
+// weg). De tabpanelen blijven gemount met `hidden`, dus we tellen alleen
+// ZICHTBARE voorkomens (geen [hidden]-voorouder). De MiniDuiding-regel is
+// herkenbaar aan de gecombineerde wat+doen-zin (UITLEG[k].wat + " " +
+// UITLEG_DOEN[k]) in één <p> — de volledige uitlegblokken dragen alleen de
+// wat-zin, nooit de concatenatie.
+const DUIDING_KEYS = ["fitheid", "vorm", "ftp"] as const;
+
+function zichtbaar(el: Element): boolean {
+  for (let n: Element | null = el; n; n = n.parentElement) {
+    if (n.hasAttribute("hidden")) return false;
+  }
+  return true;
+}
+
+async function zichtbareDuidingen(view: { container: HTMLElement }, k: string) {
+  const uitleg = await import("@/lib/uitleg-content");
+  const combi = `${uitleg.UITLEG[k].wat} ${uitleg.UITLEG_DOEN[k]}`;
+  return Array.from(view.container.querySelectorAll("p")).filter(
+    (p) => (p.textContent ?? "").trim() === combi && zichtbaar(p),
+  );
+}
+
+test("duiding-dedup Overzicht: fitheid/vorm/ftp precies één keer zichtbaar, via de tegels", async () => {
+  vulAlles();
+  const view = await renderPage();
+  try {
+    for (const k of DUIDING_KEYS) {
+      const gevonden = await zichtbareDuidingen(view, k);
+      assert.equal(
+        gevonden.length,
+        1,
+        `duiding "${k}" moet op Overzicht precies één keer zichtbaar zijn, zag ${gevonden.length}`,
+      );
+      // De drager is de stat-tegel (binnen het Overzicht-tabpaneel), niet de strip.
+      assert.ok(
+        gevonden[0].closest("#tab-overzicht"),
+        `duiding "${k}" hoort op Overzicht in de tegel-rij te staan, niet in de strip`,
+      );
+    }
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+test("duiding-dedup ander tabblad: dezelfde duiding precies één keer zichtbaar, via de strip", async () => {
+  vulAlles();
+  const view = await renderPage();
+  try {
+    const knop = Array.from(view.container.querySelectorAll("button")).find(
+      (b) => (b.textContent ?? "").trim() === "Sessies",
+    );
+    assert.ok(knop, "tabknop Sessies aanwezig");
+    view.rtl.fireEvent.click(knop!);
+    for (const k of DUIDING_KEYS) {
+      const gevonden = await zichtbareDuidingen(view, k);
+      assert.equal(
+        gevonden.length,
+        1,
+        `duiding "${k}" moet op het Sessies-tabblad precies één keer zichtbaar zijn, zag ${gevonden.length}`,
+      );
+      // Nu draagt de samenvattingsstrip (buiten de tabpanelen) de tekst.
+      assert.ok(
+        !gevonden[0].closest('[role="tabpanel"]'),
+        `duiding "${k}" hoort buiten Overzicht via de strip te komen, niet uit een tabpaneel`,
+      );
+    }
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
 // 13. §4 datapoort herstel: geen nachtmetingen-spoor ⇒ HRV-trend vervangen
 // door de draagbare-melding, readiness (check-in) blijft gewoon staan.
 test("datapoort herstel: HRV-trend vervangen door draagbare-melding", async () => {
