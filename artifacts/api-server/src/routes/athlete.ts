@@ -2682,6 +2682,41 @@ router.get("/power-bests", requireAuth, requireCommercialFeature("performance_la
   }
 });
 
+// ── POST /api/athlete/wat-als ────────────────────────────────────────────────
+// ANALYSE §5.2 — een trainingsblok doorrekenen zonder het te rijden. Zelfde
+// belastingsmodel (projectLoadForward in recovery-load), geen tweede model,
+// geen AI. Uitkomst is ALTIJD een berekening, nooit een voorspelling.
+router.post("/wat-als", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const { tssPerDag } = (req.body ?? {}) as { tssPerDag?: unknown };
+  if (
+    !Array.isArray(tssPerDag) ||
+    tssPerDag.length < 1 ||
+    tssPerDag.length > 42 ||
+    tssPerDag.some((v) => typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 600)
+  ) {
+    res.status(400).json({
+      error: "Geef 1 tot 42 dagwaarden (belastingsscore 0–600) om door te rekenen.",
+    });
+    return;
+  }
+  try {
+    const { projectLoadForward } = await import("../lib/recovery-load");
+    const sessies = await db
+      .select({
+        sessionDate: trainingSessionsTable.sessionDate,
+        tss: trainingSessionsTable.tss,
+      })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.clerkId, clerkId));
+    const uitkomst = projectLoadForward(sessies, tssPerDag as number[]);
+    res.json({ soort: "berekening", ...uitkomst });
+  } catch (err) {
+    req.log.error({ err }, "athlete.wat-als POST failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── GET /api/athlete/eisprofiel ──────────────────────────────────────────────
 // ANALYSE §2 vierde kaart: wat de eerstvolgende doelwedstrijd van de curve
 // vraagt, tegen de eigen gemeten curve (recent blok vs eigen beste — nooit een

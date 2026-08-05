@@ -48,6 +48,7 @@ import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useOntkoppeling } from "@/hooks/use-ontkoppeling"
 import { useEisprofiel } from "@/hooks/use-eisprofiel"
+import { useWatAls } from "@/hooks/use-wat-als"
 import {
   ANALYSE_KAARTEN,
   useAnalyses,
@@ -1630,6 +1631,9 @@ function BelastingTab({
       <OpbouwsnelheidCard load={load} onVraagAnalyse={() => vraagAnalyseOver("opbouwsnelheid")} />
       <EisprofielCard />
 
+      {/* §5.2 — Wat-als: blok doorrekenen met hetzelfde model (berekening). */}
+      <WatAlsCard />
+
       {/* §3/§4 — Analyse op verzoek: 1–5 kaarten, bewaard, zichtbare daglimiet. */}
       <AnalyseVerzoekCard selectie={analyseSelectie} setSelectie={setAnalyseSelectie} />
       </div>
@@ -1700,6 +1704,92 @@ function EisprofielCard() {
             vensters tellen, volgt uit het wedstrijdtype van je eerstvolgende doelwedstrijd.
           </p>
         </>
+      )}
+    </LCard>
+  )
+}
+
+// ── §5.2 Wat-als (berekening, geen voorspelling) ─────────────────────────────
+
+function WatAlsCard() {
+  const watAls = useWatAls()
+  const [weken, setWeken] = useState<[number, number, number]>([300, 350, 200])
+
+  const rekenDoor = () => {
+    // Weekscore deterministisch over de dagen verdeeld: ma/wo/vr/za/zo trainen,
+    // di/do rust — één vaste, uitlegbare verdeling.
+    const verdeling = [0.25, 0, 0.2, 0, 0.15, 0.25, 0.15]
+    const tssPerDag = weken.flatMap((weekTss) =>
+      verdeling.map((f) => Math.round(weekTss * f)),
+    )
+    watAls.mutate({ tssPerDag })
+  }
+  const eind = watAls.data?.verloop[watAls.data.verloop.length - 1] ?? null
+
+  return (
+    <LCard className="p-5" data-testid="card-wat-als">
+      <h3 className="text-sm font-medium text-foreground">Wat-als: blok doorrekenen</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Reken drie weken door zonder ze te rijden — met hetzelfde belastingsmodel als de
+        grafiek hierboven. Dit is een <strong>berekening</strong>, geen voorspelling: het laat
+        zien wat het model doet, niet wat je lichaam gaat doen.
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        {weken.map((w, i) => (
+          <label key={i} className="text-xs text-muted-foreground">
+            Week {i + 1} (belastingsscore)
+            <input
+              type="number"
+              min={0}
+              max={2000}
+              value={w}
+              onChange={(e) => {
+                const next = [...weken] as [number, number, number]
+                next[i] = Math.max(0, Math.min(2000, Number(e.target.value) || 0))
+                setWeken(next)
+              }}
+              className="mt-1 block w-24 rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm text-foreground"
+              data-testid={`watals-week-${i + 1}`}
+            />
+          </label>
+        ))}
+        <button
+          type="button"
+          onClick={rekenDoor}
+          disabled={watAls.isPending}
+          className="min-h-8 rounded-lg border border-cyan-400/50 bg-accent-cyan/10 px-3 text-xs font-medium text-accent-cyan transition-colors hover:bg-accent-cyan/20 disabled:opacity-50"
+          data-testid="knop-reken-door"
+        >
+          {watAls.isPending ? "Bezig…" : "Reken door"}
+        </button>
+      </div>
+      {watAls.isError && (
+        <p className="mt-3 text-sm text-amber-600">
+          {watAls.error instanceof Error ? watAls.error.message : "Doorrekenen mislukt."}
+        </p>
+      )}
+      {watAls.data && eind && (
+        <div className="mt-4 rounded-lg border border-border p-3" data-testid="watals-resultaat">
+          <p className="text-xs text-muted-foreground">
+            Berekening · van vandaag ({watAls.data.start.ctl} fitheid, vorm{" "}
+            {watAls.data.start.tsb >= 0 ? "+" : ""}
+            {watAls.data.start.tsb}) naar {eind.date}
+          </p>
+          <p className="mt-1 text-sm text-foreground/90">
+            Fitheid {watAls.data.start.ctl} → <strong>{eind.ctl}</strong> · vermoeidheid{" "}
+            {watAls.data.start.atl} → <strong>{eind.atl}</strong> · vorm{" "}
+            {watAls.data.start.tsb >= 0 ? "+" : ""}
+            {watAls.data.start.tsb} →{" "}
+            <strong>
+              {eind.tsb >= 0 ? "+" : ""}
+              {eind.tsb}
+            </strong>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Vaste dagverdeling per week (vijf trainingsdagen, twee rustdagen). Zelfde invoer geeft
+            altijd dezelfde uitkomst.
+          </p>
+        </div>
       )}
     </LCard>
   )

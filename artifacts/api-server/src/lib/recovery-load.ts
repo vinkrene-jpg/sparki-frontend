@@ -104,6 +104,36 @@ export function computeLoadSeries(
   };
 }
 
+// ANALYSE §5.2 — Wat-als: een trainingsblok doorrekenen zonder het te rijden.
+// ZELFDE model (identieke 42/7-daagse constanten, zelfde startstand als
+// computeLoadSeries), alleen vooruit in plaats van terug. Uitkomsten zijn een
+// BEREKENING, geen voorspelling — de aanroepende laag moet dat zo benoemen.
+export function projectLoadForward(
+  sessions: Array<{ sessionDate: string; tss: number | null }>,
+  toekomstTssPerDag: number[],
+): { start: Load; verloop: LoadPoint[] } {
+  const nu = computeLoadSeries(sessions, 7);
+  let ctl = nu.ctl;
+  let atl = nu.atl;
+  const vandaag = new Date();
+  const verloop: LoadPoint[] = [];
+  toekomstTssPerDag.slice(0, 42).forEach((tssRuw, i) => {
+    const tss = Math.max(0, Math.min(600, Math.round(tssRuw) || 0));
+    ctl = ctl + (tss - ctl) / 42;
+    atl = atl + (tss - atl) / 7;
+    const d = new Date(vandaag);
+    d.setUTCDate(d.getUTCDate() + i + 1);
+    verloop.push({
+      date: d.toISOString().split("T")[0]!,
+      ctl: Math.round(ctl),
+      atl: Math.round(atl),
+      tsb: Math.round(ctl - atl),
+      tss,
+    });
+  });
+  return { start: { ctl: nu.ctl, atl: nu.atl, tsb: nu.tsb }, verloop };
+}
+
 export type RiskLevel = "low" | "moderate" | "high";
 
 export type RiskSignal = {
