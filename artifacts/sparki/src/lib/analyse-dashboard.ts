@@ -472,6 +472,186 @@ function r1(n: number): number {
 
 // ── Samenvatting (summary-modus voor /you) ───────────────────────────────────
 
+// ── §7.3 Oordeelregel + aandachtspunten (ANALYSE_UITBREIDING_EN_ZANDBAK_01) ──
+// Beide zijn PURE afleidingen over de reeks die de grafiek zelf al toont
+// (computeLoadSeries server-side) — géén tweede berekening van belasting of
+// vorm, alleen een uitspraak over dezelfde getallen.
+
+export type LoadPunt = { date: string; ctl: number; atl: number; tsb: number }
+
+export type Oordeel = {
+  /** De uitspraak — geen getal, wel een zin. */
+  zin: string
+  /** Klein erbij: waar dat op gebaseerd is (zelfde model als de grafiek). */
+  basis: string
+}
+
+/** CTL per 7 dagen terug (0, 7, 14, 21 dagen geleden), nieuwste eerst. */
+function weekCtls(chartData: LoadPunt[]): number[] {
+  const uit: number[] = []
+  for (let w = 0; w < 4; w++) {
+    const idx = chartData.length - 1 - w * 7
+    if (idx < 0) break
+    uit.push(chartData[idx]!.ctl)
+  }
+  return uit
+}
+
+/** Aantal opeenvolgende weken (max 3) waarin CTL per week ≥1 punt zakt. */
+function dalendeWeken(chartData: LoadPunt[]): number {
+  const wk = weekCtls(chartData)
+  let n = 0
+  for (let i = 0; i + 1 < wk.length; i++) {
+    if (wk[i]! <= wk[i + 1]! - 1) n++
+    else break
+  }
+  return n
+}
+
+/** Aantal opeenvolgende weken (max 3) waarin CTL per week ≥1 punt stijgt. */
+function stijgendeWeken(chartData: LoadPunt[]): number {
+  const wk = weekCtls(chartData)
+  let n = 0
+  for (let i = 0; i + 1 < wk.length; i++) {
+    if (wk[i]! >= wk[i + 1]! + 1) n++
+    else break
+  }
+  return n
+}
+
+const WEEKWOORD = ["", "een week", "twee weken", "drie weken"] as const
+
+/**
+ * Eén oordeelregel bovenaan Overzicht — uit hetzelfde belastingsmodel als de
+ * grafiek eronder. Bij te weinig reeks (<14 dagen) eerlijk null: geen oordeel
+ * zonder basis.
+ */
+export function overzichtOordeel(load: {
+  chartData: LoadPunt[]
+  tsb: number
+  ctl: number
+  basis?: "vermogen" | "hartslag"
+}): Oordeel | null {
+  const reeks = load.chartData
+  if (reeks.length < 14) return null
+
+  const tsb = load.tsb
+  const vorm =
+    tsb >= 5 ? "je bent uitgerust" : tsb <= -15 ? "je draagt flinke vermoeidheid mee" : "je vorm is neutraal"
+
+  const dal = dalendeWeken(reeks)
+  const stijg = stijgendeWeken(reeks)
+  const wk = weekCtls(reeks)
+  let fit: string
+  if (dal >= 2) fit = `je fitheid zakt al ${WEEKWOORD[Math.min(dal, 3)]}`
+  else if (stijg >= 2) fit = `je fitheid bouwt al ${WEEKWOORD[Math.min(stijg, 3)]} op`
+  else fit = "je fitheid is stabiel"
+
+  const koppel = (tsb >= 5 && dal >= 2) || (tsb <= -15 && stijg >= 2) ? "maar" : "en"
+  const zin = `${vorm[0]!.toUpperCase()}${vorm.slice(1)}, ${koppel} ${fit}.`
+
+  const span = Math.min(wk.length - 1, 3)
+  const basisReeks = load.basis === "hartslag" ? "hartslagbelasting" : "vermogensbelasting"
+  const basis =
+    `Op basis van vorm ${tsb >= 0 ? "+" : ""}${Math.round(tsb)} en fitheid ` +
+    `${Math.round(wk[span] ?? load.ctl)} → ${Math.round(load.ctl)} over ${span} ${span === 1 ? "week" : "weken"} — ` +
+    `hetzelfde model (${basisReeks}) als de grafiek hieronder.`
+  return { zin, basis }
+}
+
+export type Aandachtspunt = {
+  id: string
+  tekst: string
+  /** Naam van de kaart waar dit vandaan komt. */
+  kaart: string
+  /** Tabblad waarop die kaart staat — voor de doorklik. */
+  tab: "overzicht" | "belasting" | "progressie" | "doelen" | "sessies"
+}
+
+/**
+ * Maximaal drie punten die vandaag aandacht vragen, elk met verwijzing naar de
+ * kaart waar het vandaan komt. Géén punten ⇒ lege lijst; de UI toont dan dat
+ * er niets bijzonders is (nooit lege ruimte, nooit een verzonnen punt).
+ * Deterministisch: vaste ernst-volgorde, zelfde invoer ⇒ zelfde uitkomst.
+ */
+export function aandachtspunten(input: {
+  load: { chartData: LoadPunt[]; tsb: number; ctl: number } | null
+  sessies: SessieInput[]
+  metrics: MetricInput[]
+  todayIso: string
+}): Aandachtspunt[] {
+  const uit: Aandachtspunt[] = []
+  const load = input.load
+
+  if (load && load.chartData.length >= 14) {
+    // 1. Diep negatieve vorm — herstel gaat vóór extra belasting.
+    if (load.tsb <= -20) {
+      uit.push({
+        id: "tsb-diep",
+        tekst: `Je vorm staat diep negatief (${Math.round(load.tsb)}) — herstel is nu belangrijker dan extra belasting.`,
+        kaart: "Belastingsverloop",
+        tab: "overzicht",
+      })
+    }
+    // 2. Snelle opbouw — CTL ≥6 punten omhoog in 7 dagen.
+    const c7 = load.chartData[load.chartData.length - 8]?.ctl
+    if (c7 != null && load.ctl - c7 >= 6) {
+      uit.push({
+        id: "opbouw-snel",
+        tekst: `Je fitheid stijgt snel (+${Math.round(load.ctl - c7)} in een week) — sneller opbouwen dan je gewend bent vergroot de kans op overbelasting.`,
+        kaart: "Belastingsverloop",
+        tab: "overzicht",
+      })
+    }
+    // 3. Fitheid zakt al ≥2 weken.
+    const dal = dalendeWeken(load.chartData)
+    if (dal >= 2) {
+      const wk = weekCtls(load.chartData)
+      uit.push({
+        id: "ctl-daalt",
+        tekst: `Je fitheid zakt al ${WEEKWOORD[Math.min(dal, 3)]} (${Math.round(wk[Math.min(dal, wk.length - 1)] ?? 0)} → ${Math.round(load.ctl)}).`,
+        kaart: "Belastingsverloop",
+        tab: "overzicht",
+      })
+    }
+  }
+
+  // 4. Korte nachten afgelopen week (alleen bij ≥3 echte metingen).
+  const grens = new Date(`${input.todayIso}T12:00:00`)
+  grens.setDate(grens.getDate() - 7)
+  const grensIso = `${grens.getFullYear()}-${String(grens.getMonth() + 1).padStart(2, "0")}-${String(grens.getDate()).padStart(2, "0")}`
+  const nachten = input.metrics
+    .filter((m) => m.metricDate >= grensIso && m.metricDate <= input.todayIso)
+    .map((m) => alsGetal(m.sleepHours))
+    .filter((v): v is number => v != null && v > 0)
+  if (nachten.length >= 3) {
+    const gem = nachten.reduce((a, b) => a + b, 0) / nachten.length
+    if (gem < 6.5) {
+      uit.push({
+        id: "slaap-kort",
+        tekst: `Je sliep afgelopen week gemiddeld ${gem.toFixed(1).replace(".", ",")} uur — aan de korte kant om trainingen goed te verwerken.`,
+        kaart: "Slaap",
+        tab: "belasting",
+      })
+    }
+  }
+
+  // 5. Geen enkele training in de afgelopen 7 dagen.
+  const recente = input.sessies.filter(
+    (s) => s.sessionDate >= grensIso && s.sessionDate <= input.todayIso,
+  )
+  if (input.sessies.length > 0 && recente.length === 0) {
+    uit.push({
+      id: "geen-training",
+      tekst: "Geen trainingen geregistreerd in de afgelopen zeven dagen.",
+      kaart: "Sessies",
+      tab: "sessies",
+    })
+  }
+
+  return uit.slice(0, 3)
+}
+
 export type AnalyseSamenvatting = {
   ctl: number | null
   atl: number | null

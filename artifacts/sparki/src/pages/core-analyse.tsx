@@ -46,6 +46,7 @@ import { useLoad, type LoadData } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
+import type { AthleteDailyMetric } from "@/lib/athlete-types"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { usePowerBests } from "@/hooks/use-power-bests"
 import { useWeeklyZones } from "@/hooks/use-weekly-zones"
@@ -64,6 +65,8 @@ import {
   analyseSamenvatting,
   alsGetal,
   belastingProjectie,
+  overzichtOordeel,
+  aandachtspunten,
   type BelastingProjectie,
   type DoelOverlays,
   type WeekVolume,
@@ -615,18 +618,69 @@ function OverzichtTab({
   load,
   profiel,
   sessies,
+  metrics,
+  naarTab,
 }: {
   load: Bron<LoadData>
   profiel: Profiel
   sessies: Bron<TrainingSession[]>
+  metrics: Bron<AthleteDailyMetric[]>
+  naarTab: (tab: Tab) => void
 }) {
   const tsb = load.data?.tsb
   const tsbWaarde = tsb == null ? null : `${tsb > 0 ? "+" : ""}${Math.round(tsb)}`
   // Kiesbaar grafiekvenster — niet vast op 42 dagen.
   const [overzichtPeriode, setOverzichtPeriode] = useState<number>(42)
 
+  // §7.3 — oordeelregel + max drie aandachtspunten, uit HETZELFDE model als de
+  // grafiek eronder (pure afleiding in lib/analyse-dashboard, geen tweede
+  // berekening). Geen punten ⇒ expliciet "niets bijzonders", nooit leegte.
+  const todayIso = localISODate(new Date())
+  const oordeel = load.data ? overzichtOordeel(load.data) : null
+  const punten = load.data
+    ? aandachtspunten({
+        load: load.data,
+        sessies: (sessies.data ?? []).map((s) => ({
+          id: s.id,
+          sessionDate: s.sessionDate,
+          durationMin: s.durationMin,
+          tss: s.tss,
+        })),
+        metrics: metrics.data ?? [],
+        todayIso,
+      })
+    : []
+
   return (
     <div className="space-y-6">
+      {oordeel && (
+        <LCard className="p-5" data-testid="oordeelregel">
+          <p className="text-base text-foreground">{oordeel.zin}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{oordeel.basis}</p>
+          <div className="mt-3 space-y-2" data-testid="aandachtspunten">
+            {punten.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Niets bijzonders vandaag — geen van de kaarten wijkt af.
+              </p>
+            ) : (
+              punten.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => naarTab(p.tab)}
+                  className="flex w-full items-start gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm text-foreground/90 transition-colors hover:border-cyan-400/40 hover:text-foreground"
+                >
+                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" aria-hidden />
+                  <span>
+                    {p.tekst}{" "}
+                    <span className="text-xs text-muted-foreground">— kaart: {p.kaart}</span>
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </LCard>
+      )}
       {/* Stat-tegels */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTegel
@@ -2528,7 +2582,7 @@ export default function CoreAnalysePage() {
           />
 
           <div id="tab-overzicht"  role="tabpanel" aria-labelledby="tabknop-overzicht" hidden={activeTab !== "overzicht"}>
-            <OverzichtTab load={load} profiel={profiel} sessies={sessies} />
+            <OverzichtTab load={load} profiel={profiel} sessies={sessies} metrics={metrics} naarTab={setActiveTab} />
           </div>
           <div id="tab-belasting"  role="tabpanel" aria-labelledby="tabknop-belasting" hidden={activeTab !== "belasting"}>
             <BelastingTab
