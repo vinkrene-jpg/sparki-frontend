@@ -63,12 +63,28 @@ Laatst bijgewerkt: 2026-08-02.
      niet uitwisselbaar; overstap = breuk tonen, niet stil plakken.
   3. Herstelniveau krijgt later een aparte prijs → nu al eigen rechtensleutel
      (B2b); tot die prijs blijft Compleet de enige poort.
-- Nieuw open bij René (§9): (a) hoe ochtendvraag-adoptie afdwingen
-  (herinnering/plek/moment onbepaald); (b) breuk-in-reeks bij overstap
-  SPOOR_H→SPOOR_V bevestigen (voorstel §3.1a).
-- Volgorde §10 blijft: §3 meetniveau → §4 poorten → §6 uitleglaag (parallel)
-  → §5 herstelblok (M2/M3 zijn bevestigd in het meetrapport, dus bouwbaar
-  zodra vrijgegeven). Taken #570/#571/#572 lopen.
+- **v3 (05-08, `attached_assets/MEETNIVEAU_EN_UITLEG_01-2_1785898806082.md`)
+  sluit de laatste open punten en voegt bindend toe:**
+  - §5.4a ochtendvraag-vorm: hoofdweg = vergrendelscherm-melding met drie
+    antwoordknoppen (goed/gewoon/slecht), verwerkt ZONDER app te openen;
+    vangnet = één keer bovenaan Dashboard na 11:00; NOOIT een tweede melding
+    of aanmaning; tijdstip instelbaar; widget later/optioneel; schermvullende
+    popup verboden (Play Store). Tests T12/T13.
+  - §6.0 uitlegplicht = TOELATINGSREGEL: kaart zonder twee-zinnen-uitleg
+    wordt niet gebouwd; geldt met terugwerkende kracht.
+  - §6.1a kaartcatalogus (12 kaarten, concept-uitlegzinnen — René stelt
+    formulering bij; zonder ingevulde uitleg niet live): powercurve met
+    vorig-jaar-vergelijking, weekzones, intervallen, TSS/IF, interne
+    belasting (H), opbouwsnelheid, HR-verloop, ontkoppeling, efficiëntie,
+    eisprofiel wedstrijd, RHR/HRV-basislijn, gevoel-basislijn.
+  - §6.1b komt er NIET (uitlegplicht): VO2max-schatting, percentielen/
+    ranglijsten, losse absolute HRV/rustpols, voorspellingen >1 week.
+    Afwijken kan alleen via besluit René.
+  - Breuk-weergave SPOOR_H→SPOOR_V bevestigd (zichtbare breuk, nooit stil
+    plakken). Geen open punten meer uit deze ronde.
+- Meetrapporten klaar: 04-08 + herijking 05-08 (`docs/rapporten/`).
+  #570/#571/#572/#578–#582 gemerged. Voorstellen #573–#577 sluiten aan;
+  #575 (herstelblok) moet §5.4a + T12/T13 volgen zodra opgepakt.
 
 ## Beslist 04-08-2026 — Taken voorstellen mag weer (René)
 
