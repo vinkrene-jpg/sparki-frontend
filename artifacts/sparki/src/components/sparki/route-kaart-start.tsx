@@ -440,8 +440,6 @@ function NearbyMap({
   // Voor de fit-logica in het teken-effect (zonder her-tekenen bij selectie).
   const selectedKeyRef = useRef<string | null>(selectedKey)
   selectedKeyRef.current = selectedKey
-  const kleurenRef = useRef(kleuren)
-  kleurenRef.current = kleuren
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -493,13 +491,11 @@ function NearbyMap({
     linesRef.current.clear()
     for (const r of routes) {
       if (!r.geometry || r.geometry.length < 2) continue
+      // Neutrale beginstijl; het stijl-effect hieronder zet direct de juiste
+      // kleur (per-route of accent) én de selectie-uitlichting.
       const line = L.polyline(
         r.geometry.map(([lat, lon]) => [lat, lon] as [number, number]),
-        {
-          color: kleurenRef.current.get(r.key) ?? ACCENT,
-          weight: 3,
-          opacity: 0.7,
-        },
+        { color: ACCENT, weight: 3, opacity: 0.7 },
       )
       line.on("click", () => onSelect(r.key))
       line.addTo(map)
@@ -519,17 +515,19 @@ function NearbyMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routes])
 
-  // Selectie uitlichten.
+  // Stijl (kleur per route + selectie-uitlichting) — draait bij ELKE wissel
+  // van kleurenset (top 5 ↔ alles), selectie of hertekening, zodat lijnen
+  // nooit de stijl van een vorige stand houden.
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
     for (const [key, line] of linesRef.current) {
       const active = key === selectedKey
-      const eigenKleur = kleurenRef.current.get(key) ?? ACCENT
+      const eigenKleur = kleuren.get(key) ?? ACCENT
       line.setStyle({
         // Gekozen route uitgelicht; de rest grijst weg zodat je in één
         // oogopslag ziet welke lijn bij de selectie hoort. Zonder selectie
-        // krijgt elke route z'n eigen kleur terug.
+        // krijgt elke route z'n eigen kleur (top 5) of de accentkleur (alles).
         color: active ? SELECTIE_KLEUR : selectedKey == null ? eigenKleur : "#9ca3af",
         weight: active ? 5 : 3,
         opacity: active ? 0.95 : selectedKey == null ? 0.7 : 0.35,
@@ -539,7 +537,7 @@ function NearbyMap({
         map.fitBounds(line.getBounds(), { padding: [32, 32] })
       }
     }
-  }, [selectedKey])
+  }, [routes, kleuren, selectedKey])
 
   return (
     <div
