@@ -2699,62 +2699,73 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
     // (beheer/owner/teammanager wél). Geldt uitsluitend hier, bij
     // wedstrijdselecties — nergens anders.
     const actorRole = ctx.membership.role;
-    const [existing] = await db
-      .select()
-      .from(clubRaceSelectionsTable)
-      .where(
-        and(
-          eq(clubRaceSelectionsTable.eventId, eventId),
-          eq(clubRaceSelectionsTable.clerkId, clerkId),
-        ),
-      );
-    // CLUB_AFRONDING_01 C4: niet op de letterlijke rolnaam "ploegleider"
-    // toetsen — ook de vervanger op deputyClerkId (ongeacht clubrol) beheert
-    // dit evenement via canManageRaceEvent en valt onder de blokkade. Alleen
-    // teammanager of clubbeheer mag een overrule wijzigen.
-    if (
-      existing != null &&
-      existing.overruledAt != null &&
-      existing.role !== role &&
-      actorRole !== "teammanager" &&
-      !canManageClub(ctx)
-    ) {
+    // CLUB_AFRONDING_01 C4 (review): lees-en-schrijf in ÉÉN transactie met
+    // row lock, anders kan een ploegleider met een verouderde lezing langs de
+    // blokkade schrijven terwijl de teammanager net de overrule vastzet.
+    const outcome = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(clubRaceSelectionsTable)
+        .where(
+          and(
+            eq(clubRaceSelectionsTable.eventId, eventId),
+            eq(clubRaceSelectionsTable.clerkId, clerkId),
+          ),
+        )
+        .for("update");
+      // Niet op de letterlijke rolnaam "ploegleider" toetsen — ook de
+      // vervanger op deputyClerkId (ongeacht clubrol) beheert dit evenement
+      // via canManageRaceEvent en valt onder de blokkade. Alleen teammanager
+      // of clubbeheer mag een overrule wijzigen.
+      if (
+        existing != null &&
+        existing.overruledAt != null &&
+        existing.role !== role &&
+        actorRole !== "teammanager" &&
+        !canManageClub(ctx)
+      ) {
+        return { blocked: true as const };
+      }
+      const isOverrule =
+        actorRole === "teammanager" &&
+        existing != null &&
+        existing.selectedByRole === "ploegleider" &&
+        existing.role !== role;
+
+      const [row] = await tx
+        .insert(clubRaceSelectionsTable)
+        .values({
+          eventId,
+          clerkId,
+          role,
+          selectedByClerkId: ctx.membership.clerkId,
+          selectedByRole: actorRole,
+        })
+        .onConflictDoUpdate({
+          target: [clubRaceSelectionsTable.eventId, clubRaceSelectionsTable.clerkId],
+          set: {
+            role,
+            selectedByClerkId: ctx.membership.clerkId,
+            selectedByRole: actorRole,
+            ...(isOverrule
+              ? { overruledAt: new Date(), overruledByClerkId: ctx.membership.clerkId }
+              : {}),
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      return { blocked: false as const, row, existing, isOverrule };
+    });
+    if (outcome.blocked) {
       res.status(403).json({
         error:
           "Deze selectie is door de teammanager vastgezet en kan door de ploegleider niet worden teruggedraaid.",
       });
       return;
     }
-    const isOverrule =
-      actorRole === "teammanager" &&
-      existing != null &&
-      existing.selectedByRole === "ploegleider" &&
-      existing.role !== role;
+    const { row, existing, isOverrule } = outcome;
 
-    const [row] = await db
-      .insert(clubRaceSelectionsTable)
-      .values({
-        eventId,
-        clerkId,
-        role,
-        selectedByClerkId: ctx.membership.clerkId,
-        selectedByRole: actorRole,
-      })
-      .onConflictDoUpdate({
-        target: [clubRaceSelectionsTable.eventId, clubRaceSelectionsTable.clerkId],
-        set: {
-          role,
-          selectedByClerkId: ctx.membership.clerkId,
-          selectedByRole: actorRole,
-          ...(isOverrule
-            ? { overruledAt: new Date(), overruledByClerkId: ctx.membership.clerkId }
-            : {}),
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-
-    if (isOverrule && existing.selectedByClerkId) {
+    if (isOverrule && existing?.selectedByClerkId) {
       // Bericht mét diff aan de overrulede ploegleider — eerlijk en volledig.
       void createNotification({
         clerkId: existing.selectedByClerkId,
@@ -2835,9 +2846,11 @@ router.delete("/:clubId/races/:eventId/selection/:memberId", requireAuth, async 
     // toetsen — iedereen die dit evenement beheert via canManageRaceEvent
     // (dus óók de vervanger op deputyClerkId, ongeacht clubrol) valt onder
     // de blokkade; alleen de teammanager zelf mag zijn overrule terugdraaien.
-    if (existing.overruledAt != null && ctx.membership.role !== "teammanager") {
+    // CLUB_AFRONDING_01 C4 (review): zelfde beleid als het POST-pad —
+    // teammanager óf clubbeheer mag een vastgezette selectie verwijderen.
+    if (existing.overruledAt != null && ctx.membership.role !== "teammanager" && !canManageClub(ctx)) {
       res.status(403).json({
-        error: "Deze selectie is door de teammanager vastgezet en kan alleen door de teammanager worden teruggedraaid.",
+        error: "Deze selectie is door de teammanager vastgezet en kan alleen door de teammanager of clubbeheer worden teruggedraaid.",
       });
       return;
     }

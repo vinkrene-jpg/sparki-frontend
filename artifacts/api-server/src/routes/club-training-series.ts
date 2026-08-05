@@ -66,6 +66,7 @@ function intOrNull(v: unknown): number | null {
 async function trainerCtx(
   req: import("express").Request,
   res: import("express").Response,
+  write = true,
 ): Promise<ClubContext | null> {
   const clubId = intOrNull(req.params["clubId"]);
   if (clubId == null) {
@@ -79,6 +80,14 @@ async function trainerCtx(
   }
   if (!canManageTrainings(ctx)) {
     res.status(403).json({ error: "Alleen beheer of een trainer kan clubtrainingsreeksen beheren." });
+    return null;
+  }
+  // Zelfde statuspoort als alle andere club-schrijfpaden (clubWritableOr409):
+  // in een niet-actieve club kan alles bekeken maar niets gewijzigd worden.
+  if (write && ctx.club.status !== "actief") {
+    res.status(409).json({
+      error: "Deze club is op dit moment niet actief. Bekijken kan, wijzigen niet.",
+    });
     return null;
   }
   return ctx;
@@ -270,7 +279,7 @@ router.post("/", requireAuth, async (req, res) => {
 // ── GET / — reeksen van de club ──────────────────────────────────────────────
 router.get("/", requireAuth, async (req, res) => {
   try {
-    const ctx = await trainerCtx(req, res);
+    const ctx = await trainerCtx(req, res, false);
     if (!ctx) return;
     const series = await db
       .select()
