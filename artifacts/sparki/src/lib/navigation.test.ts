@@ -26,6 +26,12 @@ import {
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const appSource = readFileSync(path.join(here, "..", "App.tsx"), "utf8")
+// Task 588: PageErrorFallback is een gedeeld component (ook dev-preview),
+// dus het BottomNav-contract leeft in een eigen bestand.
+const fallbackSource = readFileSync(
+  path.join(here, "..", "components", "sparki", "page-error-fallback.tsx"),
+  "utf8",
+)
 
 // Alle geregistreerde routepaden uit App.tsx (bron van waarheid voor routing).
 const routePaths = [...appSource.matchAll(/<Route path="([^"]+)"/g)].map(
@@ -206,7 +212,7 @@ test("paginacrash-fallback behoudt de navigatie (uitweg naar andere tab)", () =>
   // die de onderbalk (BottomNav) bevat, zodat één kapot menu-item nooit de
   // navigatie meetrekt.
   assert.ok(
-    /function PageErrorFallback\(\)[\s\S]*?<BottomNav \/>/m.test(appSource),
+    /function PageErrorFallback\(\)[\s\S]*?<BottomNav \/>/m.test(fallbackSource),
     "PageErrorFallback moet BottomNav renderen",
   )
   assert.ok(

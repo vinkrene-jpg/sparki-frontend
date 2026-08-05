@@ -70,6 +70,8 @@ import AdminHealthDetailPage from "@/pages/admin-health-detail"
 import DevDesignSystemPage from "@/pages/dev-design-system"
 import NutritionSpecialistHome from "@/pages/nutrition-start"
 import RolStartPage from "@/pages/rol-start"
+import { ErrorBoundary } from "@/components/sparki/error-boundary"
+import { PageErrorFallback } from "@/components/sparki/page-error-fallback"
 
 const LANDING_PATH = "/_dev/landing"
 const ONBOARDING_PATH = "/_dev/onboarding"
@@ -686,7 +688,12 @@ export function DevPreview() {
         coachScenario={coachScenario}
         onCoachScenario={setCoachScenario}
       />
-      {page}
+      {/* Zelfde per-paginaboundary als productie (ProtectedPage): een
+          paginacrash toont de fallback mét BottomNav, ook in de toets-/
+          dev-previewomgeving (task 588). */}
+      <ErrorBoundary key={location} fallback={<PageErrorFallback />}>
+        {page}
+      </ErrorBoundary>
     </>
   )
 }

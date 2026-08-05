@@ -105,7 +105,7 @@ export function BottomNav() {
   const items = clubEntries ? withClubIcons(clubEntries) : navForRole(profile?.activeRole)
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50">
+    <nav aria-label="Hoofdnavigatie" className="fixed inset-x-0 bottom-0 z-50">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-background to-transparent"

@@ -47,6 +47,7 @@
 - [Sparki Core-prediction engine](core-prediction-engine.md) — per-workout Core forecast nu→tijdens→eind→herstel; exhaustive factor coverage (gap=honest "missing").
 - [Sparki Performance Intelligence Hub](sparki-intel-hub.md) — /kennis "Voor jou" intel module; gated by knowledge_base flag; feed at root not /feed (decl before /:id); details in topic file.
 - [Sparki hand-rolled modal layering](sparki-modal-layering.md) — custom fixed modals createPortal to body + z-[70]+ (z-50 collides with bottom nav, silent "nothing happens"); [chat overlay](sparki-chat-overlay.md) header SPARKI button, portal z-[80].
+- [Clubbalken C2](sparki-club-nav-bars.md) — bare verbergt de onderbalk (doelpagina's van balk-links nooit bare); hoofdtrainer krijgt alleen-Structuur op /club/beheer; herbewijs via e2e club-balken-rollen.
 - [Multi-role context & nav](sparki-multirole-context.md) — BB-06 vijf vaste posities per rol; teamcontext alleen in sporter-rol tonen; shellNavForRole moet elke rol expliciet dekken.
 - [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.
 - [Drizzle/DB migratie-traps](drizzle-onconflict-partial-index.md) — onConflict partial-index predicate keys; guarded ADD CONSTRAINT ([migratie](db-nondestructive-constraint-migration.md)); drift ([push](drizzle-push-drift-loops.md)).

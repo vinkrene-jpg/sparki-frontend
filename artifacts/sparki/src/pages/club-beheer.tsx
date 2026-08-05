@@ -890,7 +890,7 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
 }
 
 // WP-03: seizoenen & teams/selecties beheren.
-function SeasonsTeamsSection({ clubId }: { clubId: number }) {
+function SeasonsTeamsSection({ clubId, canManage = true }: { clubId: number; canManage?: boolean }) {
   const { data: seasons } = useClubSeasons(clubId)
   const { data: dash } = useClubDashboard(clubId)
   const createSeason = useCreateClubSeason(clubId)
@@ -923,13 +923,13 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
               </p>
             </div>
             <div className="flex shrink-0 gap-1.5">
-              {s.status === "gepland" && !activeSeason && (
+              {canManage && s.status === "gepland" && !activeSeason && (
                 <button
                   onClick={() => { setError(null); seasonAction.mutate({ seasonId: s.id, action: "activate" }, { onError: onErr }) }}
                   className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-border"
                 >Activeren</button>
               )}
-              {s.status !== "afgesloten" && (
+              {canManage && s.status !== "afgesloten" && (
                 <button
                   onClick={() => {
                     setError(null)
@@ -942,6 +942,7 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
             </div>
           </div>
         ))}
+        {canManage && (
         <div className="flex gap-1.5">
           <input
             value={seasonName}
@@ -961,6 +962,7 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
             className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-border disabled:opacity-40"
           >Aanmaken</button>
         </div>
+        )}
 
         <div className="pt-2">
           <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Teams & selecties</p>
@@ -973,6 +975,7 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
               ))}
             </div>
           ))}
+          {canManage && (
           <div className="mt-1.5 flex gap-1.5">
             <input
               value={teamName}
@@ -1006,7 +1009,8 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
               className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-border disabled:opacity-40"
             >Toevoegen</button>
           </div>
-          {activeSeason && <p className="mt-1 text-[11px] text-muted-foreground">Nieuwe teams worden gekoppeld aan seizoen {activeSeason.name}.</p>}
+          )}
+          {canManage && activeSeason && <p className="mt-1 text-[11px] text-muted-foreground">Nieuwe teams worden gekoppeld aan seizoen {activeSeason.name}.</p>}
         </div>
       </div>
     </section>
@@ -1878,7 +1882,17 @@ type BeheerSheetKind =
 export default function ClubBeheerPage() {
   const { data: myClubs, isLoading } = useMyClubs()
   const [, navigate] = useLocation()
-  const mine = (myClubs ?? []).find((r) => r.membership.role === "owner" || r.membership.role === "admin")
+  const beheerLid = (myClubs ?? []).find((r) => r.membership.role === "owner" || r.membership.role === "admin")
+  // CLUB_AFRONDING_01 C2 (browserbewijs task 588): de hoofdtrainer-clubbalk
+  // linkt naar /club/beheer?tab=structuur. De hoofdtrainer mag de team- en
+  // groepsindeling zien (server staat indeling-wijzigingen al toe), maar geen
+  // beheer-schrijfacties: alleen het Structuur-tabblad, zonder aanmaak-/
+  // uitnodig-/documentacties. Rechten blijven volledig server-side.
+  const hoofdtrainerLid = beheerLid
+    ? null
+    : (myClubs ?? []).find((r) => r.membership.role === "hoofdtrainer")
+  const mine = beheerLid ?? hoofdtrainerLid ?? undefined
+  const alleenStructuur = !beheerLid && hoofdtrainerLid != null
   const clubId = mine?.membership.clubId ?? null
   const { data: dash } = useClubDashboard(clubId)
   // C2/C3: de clubbalk linkt naar /club/beheer?tab=… — tabblad volgt de URL.
@@ -1900,8 +1914,11 @@ export default function ClubBeheerPage() {
   const [sheet, setSheet] = useState<BeheerSheetKind>(null)
 
   if (isLoading) {
+    // CLUB_AFRONDING_01 C2 (browserbewijs task 588): niet bare — anders
+    // verdwijnt de onderbalk (clubbalk!) en het hoofdmenu op /club/beheer,
+    // precies het startscherm van de beheer-clubrol.
     return (
-      <ScreenShell bg={null} section="club" bare>
+      <ScreenShell bg={null} section="club">
         <p className="text-sm text-muted-foreground">Beheer wordt geladen…</p>
       </ScreenShell>
     )
@@ -1913,16 +1930,19 @@ export default function ClubBeheerPage() {
   const isConcept = mine.club?.status === "concept"
   const closeSheet = () => setSheet(null)
 
-  const TABS: { id: BeheerTab; label: string }[] = [
-    // C3: zichtbare labels volgen de clubbalk-namen (bevestigd 05-08-2026).
-    { id: "overzicht", label: "Organisatie" },
-    { id: "leden", label: "Mensen" },
-    { id: "structuur", label: "Structuur" },
-    { id: "instellingen", label: "Beheer" },
-  ]
+  const TABS: { id: BeheerTab; label: string }[] = alleenStructuur
+    ? [{ id: "structuur", label: "Structuur" }]
+    : [
+        // C3: zichtbare labels volgen de clubbalk-namen (bevestigd 05-08-2026).
+        { id: "overzicht", label: "Organisatie" },
+        { id: "leden", label: "Mensen" },
+        { id: "structuur", label: "Structuur" },
+        { id: "instellingen", label: "Beheer" },
+      ]
+  const tabActief: BeheerTab = alleenStructuur ? "structuur" : tab
 
   return (
-    <ScreenShell bg={null} section="club" bare terug={false}>
+    <ScreenShell bg={null} section="club" terug={false}>
       <div className="flex flex-col gap-5">
         {/* Kop + hoofdhandeling in beeld bij openen (TUX-24/26). Eén primaire
             actie: club activeren als de club nog in oprichting is, anders een
@@ -1942,7 +1962,7 @@ export default function ClubBeheerPage() {
           </div>
         </header>
 
-        {isConcept ? (
+        {alleenStructuur ? null : isConcept ? (
           <button
             onClick={() => setTab("structuur")}
             className="flex items-center justify-center gap-2 rounded-xl border border-emerald-300/40 bg-emerald-300/10 px-4 py-3 text-[14px] font-medium text-[color:var(--color-positive)]"
@@ -1959,17 +1979,17 @@ export default function ClubBeheerPage() {
         )}
 
         {/* Kerninformatie meteen in beeld: operationele prioriteiten. */}
-        <RoleTodaySection rol="clubbeheer" />
+        {!alleenStructuur && <RoleTodaySection rol="clubbeheer" />}
 
         <HoofdstukTabs<BeheerTab>
           tabs={TABS}
-          actief={tab}
+          actief={tabActief}
           onKies={(id) => setTab(id)}
           ariaLabel="Clubbeheer-onderdelen"
         />
 
         {/* ── Overzicht: signalen, inrichting, snelle plan-acties. ─────────── */}
-        {tab === "overzicht" && (
+        {tabActief === "overzicht" && (
           <div className="flex flex-col gap-5">
             {(dash?.signals?.length ?? 0) > 0 && (
               <section aria-label="Signalen" className="space-y-1.5">
@@ -2010,7 +2030,7 @@ export default function ClubBeheerPage() {
         )}
 
         {/* ── Leden: ledenlijst + uitnodigingen. ──────────────────────────── */}
-        {tab === "leden" && (
+        {tabActief === "leden" && (
           <div className="flex flex-col gap-5">
             {isConcept ? (
               <section aria-label="Uitnodigingen">
@@ -2035,27 +2055,31 @@ export default function ClubBeheerPage() {
         )}
 
         {/* ── Structuur: oprichting, seizoenen/teams, locaties, documenten. ─ */}
-        {tab === "structuur" && (
+        {tabActief === "structuur" && (
           <div className="flex flex-col gap-5">
-            {isConcept && <OnboardingSection clubId={clubId} />}
-            <SeasonsTeamsSection clubId={clubId} />
-            <div className={`${CARD}`}>
-              <p className="text-[12px] text-muted-foreground">Vaste locaties beheren opent als venster.</p>
-              <button onClick={() => setSheet("locatie")} className={`${BTN} mt-2`}>
-                <MapPin className="mr-1 inline h-3 w-3" /> Locaties beheren
-              </button>
-            </div>
-            <div className={`${CARD}`}>
-              <p className="text-[12px] text-muted-foreground">Clubdocumenten uploaden en publiceren opent als venster.</p>
-              <button onClick={() => setSheet("document")} className={`${BTN} mt-2`}>
-                <FileText className="mr-1 inline h-3 w-3" /> Documenten beheren
-              </button>
-            </div>
+            {!alleenStructuur && isConcept && <OnboardingSection clubId={clubId} />}
+            <SeasonsTeamsSection clubId={clubId} canManage={!alleenStructuur} />
+            {!alleenStructuur && (
+              <div className={`${CARD}`}>
+                <p className="text-[12px] text-muted-foreground">Vaste locaties beheren opent als venster.</p>
+                <button onClick={() => setSheet("locatie")} className={`${BTN} mt-2`}>
+                  <MapPin className="mr-1 inline h-3 w-3" /> Locaties beheren
+                </button>
+              </div>
+            )}
+            {!alleenStructuur && (
+              <div className={`${CARD}`}>
+                <p className="text-[12px] text-muted-foreground">Clubdocumenten uploaden en publiceren opent als venster.</p>
+                <button onClick={() => setSheet("document")} className={`${BTN} mt-2`}>
+                  <FileText className="mr-1 inline h-3 w-3" /> Documenten beheren
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* ── Instellingen: clubprofiel, clubcode, pakket (eigenaar). ──────── */}
-        {tab === "instellingen" && (
+        {tabActief === "instellingen" && (
           <div className="flex flex-col gap-5">
             {mine.club && <ClubSettingsSection club={mine.club} isOwner={isOwner} />}
             {mine.club && <JoinCodeSection club={mine.club} />}

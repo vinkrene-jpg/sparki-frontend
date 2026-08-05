@@ -10,7 +10,6 @@ import {
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { nlNL } from "@clerk/localizations";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
-import { Zap } from "lucide-react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { DayHome, DashboardAnalyse } from "@/components/sparki/day-home";
 import { CommercialToday } from "@/components/sparki/commercial-shell";
@@ -21,7 +20,7 @@ import { CoachDashboard } from "@/components/sparki/role-dashboards/coach-dashbo
 import { ParentDashboard } from "@/components/sparki/role-dashboards/parent-dashboard";
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
-import { BottomNav } from "@/components/sparki/bottom-nav";
+import { PageErrorFallback } from "@/components/sparki/page-error-fallback";
 import { ConsentGate } from "@/components/consent-gate";
 import NotFound from "@/pages/not-found";
 import LegalPage from "@/pages/legal";
@@ -616,33 +615,6 @@ function HomeRedirect() {
       <Show when="signed-out">
         <LandingPage />
       </Show>
-    </>
-  );
-}
-
-// Fallback bij een paginacrash: Nederlandse melding MÉT de onderbalk, zodat
-// je altijd naar een ander onderdeel kunt — één kapot menu-item mag nooit de
-// navigatie meetrekken.
-function PageErrorFallback() {
-  return (
-    <>
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 pb-28 text-center">
-        <Zap className="h-7 w-7 text-accent-cyan" aria-hidden="true" />
-        <p className="font-sans text-base font-semibold text-foreground/80">
-          Er ging iets mis op deze pagina
-        </p>
-        <p className="max-w-xs text-sm text-muted-foreground">
-          Kies hieronder een ander onderdeel, of probeer het opnieuw.
-        </p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="mt-2 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan"
-        >
-          Probeer opnieuw
-        </button>
-      </div>
-      <BottomNav />
     </>
   );
 }
