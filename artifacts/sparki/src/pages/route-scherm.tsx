@@ -26,6 +26,14 @@ import {
   type RouteCandidate,
   type GeneratePhase,
 } from "@/hooks/use-routes"
+import { useClimbSearchNearby, useClimbDetail } from "@/hooks/use-climbs"
+import {
+  afstandNaInkorten,
+  afstandNaUitkorten,
+  voerAanpassingUit,
+  type AanpassingReden,
+} from "@/lib/route-aanpassing"
+import { KIND_LABEL, type ClimbHit } from "@/lib/climb-types"
 import { usePlanRange } from "@/hooks/use-training-plan"
 import { usePackage } from "@/hooks/use-package"
 import { MiniElevationProfile } from "@/components/sparki/elevation-profile"
@@ -108,7 +116,35 @@ export default function RouteSchermPage() {
   const [genFout, setGenFout] = useState<string | null>(null)
   const [navigeren, setNavigeren] = useState(false)
 
+  // ── R7: route aanpassen ────────────────────────────────────────────────
+  // Vier manieren: punt van de lijn verslepen · waypoint toevoegen ·
+  // in-/uitkorten · klim uit de buurt toevoegen. Alles loopt door ÉÉN
+  // hergenereer-functie met precies één routeaanvraag per aanpassing (R16).
+  const [aanpassen, setAanpassen] = useState(false)
+  // Via-punten ([lat, lon]) uit slepen/tikken — meegegeven aan de bestaande
+  // lus-generatie (géén tweede routegeneratie).
+  const [viaPunten, setViaPunten] = useState<[number, number][]>([])
+  const [klim, setKlim] = useState<ClimbHit | null>(null)
+  const [klimOpen, setKlimOpen] = useState(false)
+  const viaMarkersRef = useRef<L.Marker[]>([])
+  // Handler-verse spiegels zodat kaart/lijn-handlers niet per render opnieuw
+  // gebonden hoeven te worden.
+  const aanpassenRef = useRef(false)
+  aanpassenRef.current = aanpassen && kandidaat != null
+  // Tik-identiteitspoort (R16): een tik die al door de lijn- of
+  // marker-handler is verwerkt mag NOOIT ook nog de kaart-handler bereiken
+  // (die zou er een tweede waypoint + tweede routeaanvraag naast zetten).
+  // Leaflets stopPropagation op het Leaflet-event is daarvoor niet
+  // betrouwbaar; we markeren daarom het onderliggende DOM-event zelf.
+  const verwerkteTikRef = useRef<Event | null>(null)
+
   const geocode = useGeocode()
+  // Klimmen uit de buurt (R7): zoekt pas wanneer de kiezer open is.
+  const klimZoek = useClimbSearchNearby(center, "", 30, klimOpen)
+  // Canoniek klimdetail (naam/top/voet) op osmId — nooit uit de lijsthit alleen.
+  const klimDetail = useClimbDetail(klim?.osmId ?? null)
+  const klimVoet: [number, number] | null =
+    klimDetail.data?.profile?.points?.[0] ?? null
   const nearby = useNearbyRoutes(center, sport)
   const generate = useGenerateRoute((p) => setFase(p))
   const bewaar = useSaveGeneratedRoute()
@@ -223,6 +259,21 @@ export default function RouteSchermPage() {
       weight: 5,
       opacity: 0.95,
     }).addTo(map)
+    // Punt van de lijn verslepen (R7): in aanpasmodus is een tik op de lijn
+    // een VOLLEDIGE aanpassing — het punt wordt daar vastgepind en er start
+    // meteen precies één routeaanvraag (R16). Daarna is het punt versleepbaar;
+    // elke sleep is opnieuw één aanvraag.
+    line.on("click", (e: L.LeafletMouseEvent) => {
+      if (!aanpassenRef.current) return
+      verwerkteTikRef.current = e.originalEvent
+      if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent)
+      const via: [number, number][] = [
+        ...viaPuntenRef.current,
+        [e.latlng.lat, e.latlng.lng],
+      ]
+      setViaPunten(via)
+      hergenereerRef.current({ reden: "punt-verslepen", via })
+    })
     line.bringToFront()
     map.fitBounds(line.getBounds(), { padding: [40, 40] })
     kandidaatLineRef.current = line
@@ -244,6 +295,11 @@ export default function RouteSchermPage() {
     setGenFout(null)
     setKandidaat(null)
     setFase(null)
+    // Vers trainingstype = verse route: aanpassingen van de vorige kandidaat
+    // (via-punten/klim) reizen niet stiekem mee.
+    setViaPunten([])
+    setKlim(null)
+    setAanpassen(false)
     // Verse kandidaat = verse bewaar-status; anders blijft "Bewaard" van een
     // vorige route op de knop staan.
     bewaar.reset()
@@ -267,6 +323,126 @@ export default function RouteSchermPage() {
       },
     )
   }
+
+  // ── R7/R16: één hergenereer-pad voor ALLE aanpassingen ────────────────
+  // Elke aanpassing (punt slepen, waypoint, in-/uitkorten, klim) = precies
+  // één routeaanvraag via de bestaande gedeelde generate-hook. De opbouw van
+  // die éne aanvraag leeft in lib/route-aanpassing.ts (getest op R16).
+  const hergenereer = (opts: {
+    reden: AanpassingReden
+    via?: [number, number][]
+    afstand?: number
+    klimKeuze?: ClimbHit | null
+  }) => {
+    const gekozenKlim = opts.klimKeuze === undefined ? klim : opts.klimKeuze
+    // Klim reist alleen mee met een geladen canoniek detail (voet + top).
+    const klimCanoniek =
+      gekozenKlim && klimDetail.data?.osmId === gekozenKlim.osmId
+        ? klimDetail.data
+        : null
+    voerAanpassingUit(
+      {
+        bezig: generate.isPending,
+        center,
+        kandidaat,
+        fallbackTrainingType: trainingType,
+        fallbackAfstandKm: afstandKm,
+        viaPunten,
+        klimDetail: klimCanoniek,
+        klimVoet: klimCanoniek ? klimVoet : null,
+      },
+      { reden: opts.reden, via: opts.via, afstand: opts.afstand },
+      (input) => {
+        setGenFout(null)
+        setFase(null)
+        bewaar.reset()
+        generate.mutate(input, {
+          onSuccess: (res) => setKandidaat(res.candidate),
+          onError: (e) =>
+            setGenFout(
+              e instanceof Error ? e.message : "Route aanpassen is niet gelukt.",
+            ),
+          onSettled: () => setFase(null),
+        })
+      },
+      (regel) => console.info(regel),
+    )
+  }
+
+  // Kaart-handlers leven lang; via deze ref roepen ze altijd de verse
+  // hergenereer aan (met actuele state) zonder herbinden per render.
+  const hergenereerRef = useRef(hergenereer)
+  hergenereerRef.current = hergenereer
+  const viaPuntenRef = useRef(viaPunten)
+  viaPuntenRef.current = viaPunten
+
+  // Waypoint toevoegen (R7): in aanpasmodus voegt een kaart-tik náást de lijn
+  // een via-punt toe → één routeaanvraag.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const onTik = (e: L.LeafletMouseEvent) => {
+      if (!aanpassenRef.current) return
+      // Al verwerkt door de lijn- of marker-handler? Dan is deze tik géén
+      // nieuw waypoint (anders: tweede aanvraag bij dezelfde tik — R16).
+      if (e.originalEvent && e.originalEvent === verwerkteTikRef.current) return
+      const via: [number, number][] = [
+        ...viaPuntenRef.current,
+        [e.latlng.lat, e.latlng.lng],
+      ]
+      setViaPunten(via)
+      hergenereerRef.current({ reden: "waypoint", via })
+    }
+    map.on("click", onTik)
+    return () => {
+      map.off("click", onTik)
+    }
+  }, [])
+
+  // Via-punt-markers: versleepbaar (punt verslepen, R7). Slepen eindigt in
+  // één routeaanvraag; tikken verwijdert het punt (ook één aanvraag).
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    for (const m of viaMarkersRef.current) m.remove()
+    viaMarkersRef.current = []
+    if (!aanpassen || !kandidaat) return
+    viaPunten.forEach((p, i) => {
+      const marker = L.marker(p, {
+        draggable: true,
+        // Statisch opgebouwde HTML — nooit gebruikersinvoer (XSS-regel).
+        icon: L.divIcon({
+          className: "",
+          html: '<span style="display:block;width:16px;height:16px;border-radius:9999px;background:#8b5cf6;border:3px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,.4)"></span>',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        }),
+      }).addTo(map)
+      marker.on("dragend", () => {
+        const ll = marker.getLatLng()
+        const via = viaPuntenRef.current.map((q, j) =>
+          j === i ? ([ll.lat, ll.lng] as [number, number]) : q,
+        )
+        setViaPunten(via)
+        hergenereerRef.current({ reden: "punt-verslepen", via })
+      })
+      marker.on("click", (e: L.LeafletMouseEvent) => {
+        // Verwijderen = precies één aanvraag: de tik mag NIET doorlekken naar
+        // de kaart-handler (die zou er anders meteen een nieuw waypoint mét
+        // tweede aanvraag naast zetten).
+        verwerkteTikRef.current = e.originalEvent
+        if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent)
+        const via = viaPuntenRef.current.filter((_, j) => j !== i)
+        setViaPunten(via)
+        hergenereerRef.current({ reden: "waypoint", via })
+      })
+      viaMarkersRef.current.push(marker)
+    })
+    return () => {
+      for (const m of viaMarkersRef.current) m.remove()
+      viaMarkersRef.current = []
+    }
+  }, [viaPunten, aanpassen, kandidaat])
 
   const zoek = () => {
     const q = zoekTekst.trim()
@@ -454,13 +630,173 @@ export default function RouteSchermPage() {
               type="button"
               onClick={() => {
                 setKandidaat(null)
+                setViaPunten([])
+                setKlim(null)
+                setAanpassen(false)
+                setKlimOpen(false)
                 bewaar.reset()
               }}
               className="rounded-full border border-slate-200 px-4 py-2 text-[13px] text-slate-500"
             >
               Weg
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAanpassen((v) => !v)
+                setKlimOpen(false)
+              }}
+              aria-pressed={aanpassen}
+              className={`rounded-full border px-4 py-2 text-[13px] ${
+                aanpassen
+                  ? "border-violet-500 bg-violet-500 text-white"
+                  : "border-slate-300 text-slate-700"
+              }`}
+            >
+              Aanpassen
+            </button>
           </div>
+
+          {/* R7 — aanpasmodus: vier manieren, elk precies één aanvraag (R16) */}
+          {aanpassen && (
+            <div className="mt-3 border-t border-violet-200 pt-3">
+              <p className="text-[12px] leading-relaxed text-slate-600">
+                Tik op de lijn om de route daar vast te pinnen en versleep
+                het punt om hem te verleggen. Tik naast de lijn voor een
+                extra waypoint; tik op een punt om het te verwijderen. Elke
+                aanpassing is één nieuwe routeberekening.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={generate.isPending}
+                  onClick={() => {
+                    const huidig =
+                      kandidaat.targetDistanceKm ??
+                      kandidaat.distanceKm ??
+                      afstandKm
+                    const korter = afstandNaInkorten(huidig)
+                    setAfstandKm(korter)
+                    hergenereer({ reden: "inkorten", afstand: korter })
+                  }}
+                  className="rounded-full border border-slate-300 px-4 py-2 text-[13px] text-slate-700 disabled:opacity-50"
+                >
+                  Inkorten −25%
+                </button>
+                <button
+                  type="button"
+                  disabled={generate.isPending}
+                  onClick={() => {
+                    const huidig =
+                      kandidaat.targetDistanceKm ??
+                      kandidaat.distanceKm ??
+                      afstandKm
+                    const langer = afstandNaUitkorten(huidig)
+                    setAfstandKm(langer)
+                    hergenereer({ reden: "uitkorten", afstand: langer })
+                  }}
+                  className="rounded-full border border-slate-300 px-4 py-2 text-[13px] text-slate-700 disabled:opacity-50"
+                >
+                  Uitkorten +25%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKlimOpen((v) => !v)}
+                  aria-expanded={klimOpen}
+                  className={`rounded-full border px-4 py-2 text-[13px] ${
+                    klim
+                      ? "border-violet-500 text-violet-700"
+                      : "border-slate-300 text-slate-700"
+                  }`}
+                >
+                  {klim ? `Klim: ${klim.name}` : "Klim toevoegen"}
+                </button>
+              </div>
+
+              {/* Klim uit de buurt (R7) */}
+              {klimOpen && (
+                <div className="mt-2 rounded-xl bg-white p-2">
+                  {klimZoek.isLoading && (
+                    <p className="px-1 py-2 text-[12px] text-slate-500">
+                      Klimmen in de buurt zoeken…
+                    </p>
+                  )}
+                  {klimZoek.isError && (
+                    <p className="px-1 py-2 text-[12px] text-slate-500">
+                      Klimmen konden niet worden geladen.
+                    </p>
+                  )}
+                  {klimZoek.data && klimZoek.data.climbs.length === 0 && (
+                    <p className="px-1 py-2 text-[12px] text-slate-500">
+                      Geen klimmen gevonden binnen {klimZoek.data.radiusKm} km.
+                    </p>
+                  )}
+                  {(klimZoek.data?.climbs ?? []).slice(0, 8).map((c) => (
+                    <button
+                      key={c.osmId}
+                      type="button"
+                      onClick={() => {
+                        setKlim(c)
+                      }}
+                      className={`block w-full rounded-lg px-2 py-2 text-left text-[13px] ${
+                        klim?.osmId === c.osmId
+                          ? "bg-violet-50 text-violet-800"
+                          : "text-slate-700"
+                      }`}
+                    >
+                      {c.name}
+                      <span className="ml-1 text-[11px] text-slate-500">
+                        {KIND_LABEL[c.kind]}
+                        {c.elevationM != null ? ` · ${Math.round(c.elevationM)} m` : ""}
+                      </span>
+                    </button>
+                  ))}
+                  {klim && (
+                    <div className="mt-1 flex items-center gap-2 border-t border-slate-100 px-1 pt-2">
+                      {klimDetail.isLoading ? (
+                        <p className="text-[12px] text-slate-500">
+                          Klimprofiel laden…
+                        </p>
+                      ) : klimVoet ? (
+                        <button
+                          type="button"
+                          disabled={generate.isPending}
+                          onClick={() => {
+                            setKlimOpen(false)
+                            hergenereer({ reden: "klim", klimKeuze: klim })
+                          }}
+                          className="rounded-full bg-violet-600 px-4 py-2 text-[13px] font-medium text-white disabled:opacity-50"
+                        >
+                          Leg {klim.name} in de route
+                        </button>
+                      ) : (
+                        <p className="text-[12px] text-slate-500">
+                          Voor deze klim is geen betrouwbaar klimprofiel
+                          beschikbaar — kies een andere klim.
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setKlim(null)}
+                        className="rounded-full border border-slate-200 px-3 py-1.5 text-[12px] text-slate-500"
+                      >
+                        Weg
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Eerlijk klim-resultaat: alleen tonen wat de server bewees */}
+              {kandidaat.climbInclusion && (
+                <p className="mt-2 text-[12px] text-slate-600">
+                  {kandidaat.climbInclusion.verified
+                    ? `Klim ${kandidaat.climbInclusion.name} ligt op de route (top op ${Math.round(kandidaat.climbInclusion.offsetM)} m van de lijn).`
+                    : `Klim ${kandidaat.climbInclusion.name} kon niet geverifieerd op de route worden gelegd.`}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
