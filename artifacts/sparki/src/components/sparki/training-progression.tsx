@@ -184,14 +184,20 @@ export function TrainingProgression({
                     </span>
                   )}
                 </div>
-                <div className="mt-3">
+                {/* Y-as-duiding (05-08): zonder schaal is de lijn niet te
+                    lezen — hoogste en laagste waarde van de periode ernaast. */}
+                <div className="mt-3 flex items-stretch gap-1.5">
+                  <div className={`flex w-6 shrink-0 flex-col justify-between text-right font-mono text-[9px] tabular-nums ${labelKlein}`}>
+                    <span>{Math.round(Math.max(...ctlSeries))}</span>
+                    <span>{Math.round(Math.min(...ctlSeries))}</span>
+                  </div>
                   <Sparkline
                     data={ctlSeries}
                     width={340}
                     height={48}
                     stroke={lijnKleur}
                     fill={lijnFill}
-                    className={`w-full ${licht ? "text-blue-600" : "text-accent-cyan"}`}
+                    className={`min-w-0 flex-1 ${licht ? "text-blue-600" : "text-accent-cyan"}`}
                   />
                 </div>
                 <p className={`mt-3 text-pretty text-[12px] leading-relaxed ${tekstZacht}`}>

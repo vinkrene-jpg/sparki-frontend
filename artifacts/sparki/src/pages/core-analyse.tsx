@@ -2378,6 +2378,7 @@ function GewichtWkgCard({
               yAxisId="kg"
               tick={{ fill: CHART.as, fontSize: 10 }}
               domain={["auto", "auto"]}
+              tickFormatter={(v: number) => String(Math.round(v * 10) / 10).replace(".", ",")}
               label={{ value: "kg", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
             />
             <YAxis
@@ -2386,6 +2387,8 @@ function GewichtWkgCard({
               tick={{ fill: CHART.as, fontSize: 10 }}
               domain={["auto", "auto"]}
               hide={!heeftWkg}
+              // Leesbare NL-ticks: 2 decimalen met komma i.p.v. 2.2725.
+              tickFormatter={(v: number) => (Math.round(v * 100) / 100).toFixed(2).replace(".", ",")}
               label={{ value: "W/kg", angle: 90, position: "insideRight", offset: 12, fill: CHART.as, fontSize: 10 }}
             />
             <Tooltip content={(props) => <GewichtTooltip {...(props as Parameters<typeof GewichtTooltip>[0])} />} />
