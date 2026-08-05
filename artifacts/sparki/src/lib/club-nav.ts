@@ -18,10 +18,16 @@ const EVENT = "sparki:club-nav-role"
 
 export type ClubNavStand = { clubId: number; role: string } | null
 
-function read(): ClubNavStand {
+// C-T6: drie standen — een gekozen clubcontext, een EXPLICIET gekozen
+// accountrol ("account"), of nog niets gekozen (null). Alleen bij "nog niets
+// gekozen" mag een standaard-clubstand gelden (clubbeheerder zonder keuze).
+export type ClubNavKeuze = { clubId: number; role: string } | "account" | null
+
+function read(): ClubNavKeuze {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return null
+    if (raw === JSON.stringify("account")) return "account"
     const parsed = JSON.parse(raw) as { clubId?: unknown; role?: unknown }
     if (typeof parsed?.clubId === "number" && typeof parsed?.role === "string") {
       return { clubId: parsed.clubId, role: parsed.role }
@@ -32,10 +38,10 @@ function read(): ClubNavStand {
   }
 }
 
-let cache: ClubNavStand = null
+let cache: ClubNavKeuze = null
 let cacheRaw: string | null = null
 
-function snapshot(): ClubNavStand {
+function snapshot(): ClubNavKeuze {
   let raw: string | null = null
   try {
     raw = localStorage.getItem(KEY)
@@ -49,7 +55,7 @@ function snapshot(): ClubNavStand {
   return cache
 }
 
-export function setClubNavStand(stand: ClubNavStand): void {
+export function setClubNavStand(stand: ClubNavKeuze): void {
   try {
     if (stand) localStorage.setItem(KEY, JSON.stringify(stand))
     else localStorage.removeItem(KEY)
@@ -68,7 +74,47 @@ function subscribe(cb: () => void): () => void {
   }
 }
 
-/** Actieve clubnavigatie-stand (reactief). */
-export function useClubNavStand(): ClubNavStand {
+/** Ruwe keuze uit opslag (reactief): clubstand, "account" of nog niets. */
+export function useClubNavKeuze(): ClubNavKeuze {
   return useSyncExternalStore(subscribe, snapshot, () => null)
+}
+
+// Minimale vorm van een useMyClubs-rij die we hier nodig hebben.
+type ClubRow = { membership?: { clubId?: number; role?: string } | null } | null
+
+// C-T6: rollen die ZONDER expliciete keuze de clubbalk krijgen. Bewust alleen
+// clubbeheer (owner/admin) — andere stafrollen zijn vaak óók sporter en houden
+// hun sporterbalk tot ze zelf de clubcontext kiezen (C-T7 blijft werken).
+const DEFAULT_STAND_ROLES = ["owner", "admin"]
+
+/**
+ * Effectieve clubstand: expliciete keuze wint; "account" = geen clubbalk;
+ * nog geen keuze ⇒ standaard de clubbalk voor een clubbeheerder (C-T6).
+ * Fail-closed: een gekozen stand telt alleen als de server het lidmaatschap
+ * bevestigt; zolang de clublijst nog laadt is er géén stand.
+ */
+export function effectiveClubStand(
+  keuze: ClubNavKeuze,
+  myClubs: ClubRow[] | undefined,
+): ClubNavStand {
+  if (keuze === "account") return null
+  if (!Array.isArray(myClubs)) return null
+  if (keuze) {
+    const echt = myClubs.some(
+      (r) => r?.membership?.clubId === keuze.clubId && r?.membership?.role === keuze.role,
+    )
+    return echt ? keuze : null
+  }
+  for (const rol of DEFAULT_STAND_ROLES) {
+    const rij = myClubs.find((r) => r?.membership?.role === rol)
+    const clubId = rij?.membership?.clubId
+    if (typeof clubId === "number") return { clubId, role: rol }
+  }
+  return null
+}
+
+/** Actieve clubnavigatie-stand (reactief, incl. C-T6-standaard). */
+export function useClubNavStand(myClubs: ClubRow[] | undefined): ClubNavStand {
+  const keuze = useSyncExternalStore(subscribe, snapshot, () => null)
+  return effectiveClubStand(keuze, myClubs)
 }

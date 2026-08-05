@@ -249,14 +249,9 @@ export function CommercialShell({
   const hideDashboard = pkg === "gratis"
   // CLUB_AFRONDING_01 C2: actieve clubcontext ⇒ balk van die clubrol.
   // Fail-closed: alleen wanneer de server het lidmaatschap bevestigt.
-  const clubStand = useClubNavStand()
-  const standEntries =
-    clubStand &&
-    (clubsQuery.data ?? []).some(
-      (r) => r?.membership?.clubId === clubStand.clubId && r?.membership?.role === clubStand.role,
-    )
-      ? clubNavEntriesFor(clubStand.role)
-      : null
+  // Fail-closed + C-T6-standaard (clubbeheer zonder keuze) in useClubNavStand.
+  const clubStand = useClubNavStand(clubsQuery.data)
+  const standEntries = clubStand ? clubNavEntriesFor(clubStand.role) : null
   const shellNav = shellNavForRole(profile?.activeRole, hasClubRole, hideDashboard, standEntries)
   // Prefix-match zodat ook diepere paden (/train/…, /routes/…) het juiste
   // nav-item actief markeren — zelfde gedrag op desktop en mobiel.

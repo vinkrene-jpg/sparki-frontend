@@ -95,19 +95,13 @@ export function BottomNav() {
   const [pathname] = useLocation()
   const search = useSearch()
   const { profile } = useUserProfile()
-  const stand = useClubNavStand()
   const { data: myClubs } = useMyClubs()
   // C2 (besluit 01-08): actieve clubcontext ⇒ eigen clubbalk, géén terugval
-  // op de sporterbalk. Fail-closed: de stand telt alleen wanneer de server
-  // bevestigt dat dit account die rol in die club echt heeft.
-  const clubEntries = (() => {
-    if (!stand || profile?.activeRole !== "athlete") return null
-    if (!Array.isArray(myClubs)) return null
-    const echt = myClubs.some(
-      (r) => r?.membership?.clubId === stand.clubId && r?.membership?.role === stand.role,
-    )
-    return echt ? clubNavEntriesFor(stand.role) : null
-  })()
+  // op de sporterbalk. Fail-closed + C-T6-standaard voor clubbeheer zitten
+  // in useClubNavStand (server bevestigt het lidmaatschap).
+  const stand = useClubNavStand(myClubs)
+  const clubEntries =
+    stand && profile?.activeRole === "athlete" ? clubNavEntriesFor(stand.role) : null
   const items = clubEntries ? withClubIcons(clubEntries) : navForRole(profile?.activeRole)
 
   return (

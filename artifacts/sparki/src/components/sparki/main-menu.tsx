@@ -19,7 +19,7 @@ import { useFeedback } from "@/contexts/FeedbackContext"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useClubMembership, useMyClubs } from "@/hooks/use-club"
 import { roleStartFor } from "@/lib/role-start"
-import { setClubNavStand, useClubNavStand } from "@/lib/club-nav"
+import { effectiveClubStand, setClubNavStand, useClubNavKeuze } from "@/lib/club-nav"
 import { useAdminWhoami } from "@/hooks/use-bug-reports"
 import { chaptersForRole, clubNavEntriesFor, ROLE_LABELS } from "@/lib/chapters"
 import { ErrorBoundary } from "@/components/sparki/error-boundary"
@@ -132,7 +132,10 @@ function MainMenuContent({
   // Club-poort: alleen een GEACCEPTEERDE trainerkoppeling telt. Nooit gefingeerd.
   const { isMember } = useClubMembership()
   const { data: myClubs } = useMyClubs()
-  const clubNavStand = useClubNavStand()
+  // C-T6: effectieve stand (incl. standaard-clubbalk voor clubbeheer zonder
+  // keuze), zodat de contextregel de juiste rij als actief markeert.
+  const clubNavKeuze = useClubNavKeuze()
+  const clubNavStand = effectiveClubStand(clubNavKeuze, myClubs ?? undefined)
   const [wisselOpen, setWisselOpen] = useState(false)
   const [contextFilter, setContextFilter] = useState("")
   // Admin-ingang: alleen zichtbaar wanneer de server bevestigt dat dit account
@@ -189,8 +192,9 @@ function MainMenuContent({
   // vanaf een rolvreemde pagina wisselt.
   const switchToRole = async (r: Role) => {
     // C2: kiezen voor een accountrol beëindigt een actieve clubcontext —
-    // de rolwisselaar is leidend voor welke onderbalk er staat.
-    setClubNavStand(null)
+    // de rolwisselaar is leidend. Expliciet "account" (niet null), anders
+    // zou de C-T6-standaard de clubbalk direct weer terugzetten.
+    setClubNavStand("account")
     if (r === active) return
     onClose()
     try {
