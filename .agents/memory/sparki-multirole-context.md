@@ -18,3 +18,13 @@ description: Vaste vijf nav-posities per rol, contextregel in de shells, en cont
 
 ## Vandaag-rolcontract (02-08-2026)
 Begeleidende clubrollen (ploegleider, teammanager, soigneur, medical_staff, vrijwilliger) hebben een eigen eerlijke Vandaag (orchestrateBegeleiderToday). **Regel:** een nieuwe rolwaarde moet op DRIE plekken tegelijk: server `todayRoles`+availableTodayRoles+dispatch, web `TodayRole`-union in hooks/use-today.ts, én ROLE_VIEW_LABELS in coach-home — anders filtert de client de rol stil weg. Nooit atleet-terugval voor een onbekende rol. Testomgeving-markering: DsOmgevingContext (web, DEV_PREVIEW) + TestContextBanner (mobiel, __DEV__).
+
+## /coach is rol-bewust (05-08-2026, sporter-coach-omgeving)
+- `/coach` rendert via een rol-switch: trainerrol → CoachHome (roster), anders de
+  sporter-coach-omgeving (`pages/sporter-coach.tsx`: doellijn `plan.goal`, complete
+  plan per week/fase uit `/api/training-plan` days, voortgang useLoad+ontwikkelingTrend,
+  deterministische decideCoach + observations). Dev-preview spiegelt dezelfde switch.
+- **Why:** het pad /coach was al de trainerswerkomgeving; René's besluit 05-08 vroeg
+  een sporter-coach-pagina op /coach — beide bestaan nu op één pad, per rol.
+- **How to apply:** nieuwe /coach-subroutes of nav-verwijzingen moeten eerst weten
+  voor welke rol ze bedoeld zijn; nooit aannemen dat /coach de trainer-roster is.

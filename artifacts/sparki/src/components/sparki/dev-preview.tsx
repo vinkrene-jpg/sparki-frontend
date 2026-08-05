@@ -52,6 +52,7 @@ import TesterQrPage from "@/pages/tester-qr"
 import TesterWelcomePage from "@/pages/tester-welcome"
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import CoachCockpitPage from "@/pages/coach-cockpit"
+import SporterCoachPage from "@/pages/sporter-coach"
 import LandingPage from "@/pages/landing"
 import StartPage from "@/pages/start"
 import LegalPage from "@/pages/legal"
@@ -131,6 +132,7 @@ const VIEWS: DevView[] = [
   { label: "Design system", path: DESIGN_PATH },
   { label: "Activiteiten", path: "/activiteiten" },
   { label: "Train", path: "/train" },
+  { label: "Coach", path: "/coach" },
   { label: "Feed", path: "/feed" },
   { label: "Analyse", path: "/analyse" },
   { label: "You", path: "/you" },
@@ -627,9 +629,10 @@ export function DevPreview() {
   } else if (location.startsWith("/coach/athletes/")) {
     page = <CoachAthletePlanPage />
   } else if (location === "/coach" || location.startsWith("/coach?")) {
-    // DASHBOARD_01 Fase B — de trainerswerkomgeving (roster) als doorklik vanaf
-    // het dashboard; dezelfde component als de echte /coach-route.
-    page = <CoachHome />
+    // Rol-bewust, gespiegeld aan CoachSwitchPage in App.tsx: trainers zien de
+    // trainerswerkomgeving (roster), sporters hun eigen coach-omgeving (#607).
+    page =
+      profile?.activeRole === "coach" ? <CoachHome /> : <SporterCoachPage />
   } else if (location.startsWith("/meer")) {
     page = <MeerPage />
   } else if (location.startsWith("/privacy")) {

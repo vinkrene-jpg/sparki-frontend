@@ -57,6 +57,7 @@ import TesterWelcomePage from "@/pages/tester-welcome";
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import CoachCockpitPage from "@/pages/coach-cockpit";
 import CoachMessagesPage from "@/pages/coach-messages";
+import SporterCoachPage from "@/pages/sporter-coach";
 import FacturatiePage from "@/pages/facturatie";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
@@ -572,6 +573,15 @@ function VandaagRedirect() {
 // Fail-open patroon: zolang flags laden renderen we de CommercialShell-pagina
 // (met DsMobileNav). Zonder dit valt useFeatureFlag terug op false — de
 // ScreenShell-pagina rendert zonder mobiele ondernavigatie.
+// Taak #607 — /coach is rol-bewust: trainers houden hun bestaande
+// werkomgeving (roster, CoachHome); sporters krijgen hier hun eigen
+// coach-omgeving met het complete plan per week/fase, doellijn en voortgang.
+function CoachSwitchPage() {
+  const { profile } = useUserProfile();
+  if (profile?.activeRole === "coach") return <CoachHome />;
+  return <SporterCoachPage />;
+}
+
 function TrainSwitchPage() {
   const { flags, isLoading: flagsLoading } = useFeatureFlags();
   const page =
@@ -944,7 +954,7 @@ function AppRouter() {
                     planning, berichten). Het dashboard op /dashboard verwijst
                     hierheen door; niets is weggelaten (DSH-13a). */}
                 <Route path="/coach">
-                  <ProtectedPage component={CoachHome} />
+                  <ProtectedPage component={CoachSwitchPage} />
                 </Route>
                 <Route path="/coach/athletes/:athleteId/plan">
                   <ProtectedPage component={CoachAthletePlanPage} />
