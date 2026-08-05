@@ -35,6 +35,20 @@ export type ConfirmQuestion = {
  * Kandidaten: patroon-observaties die nog niet bevestigd/weerlegd zijn.
  */
 export async function getConfirmQuestion(clerkId: string): Promise<ConfirmQuestion | null> {
+  // Atomair: één advisory-lock per sporter zodat twee gelijktijdige GETs niet
+  // allebei "geen vraag vandaag" zien en elk een eigen vraag registreren.
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${"memory-confirm:" + clerkId}))`);
+    return getConfirmQuestionLocked(tx, clerkId);
+  });
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function getConfirmQuestionLocked(
+  db: Tx,
+  clerkId: string,
+): Promise<ConfirmQuestion | null> {
   // Vandaag al een vraag getoond? Dan die teruggeven, nooit een tweede.
   const [vandaagGetoond] = await db
     .select()
@@ -104,6 +118,21 @@ export async function answerConfirmQuestion(
       and(eq(aiObservationsTable.id, observationId), eq(aiObservationsTable.clerkId, clerkId)),
     );
   if (!obs) return null;
+
+  // Autorisatie: alleen een conclusie die daadwerkelijk als bevestigingsvraag
+  // is voorgelegd mag beantwoord worden — nooit een willekeurige eigen rij.
+  const [voorgelegd] = await db
+    .select({ id: aiMemoryEventsTable.id })
+    .from(aiMemoryEventsTable)
+    .where(
+      and(
+        eq(aiMemoryEventsTable.clerkId, clerkId),
+        eq(aiMemoryEventsTable.eventType, "confirm_question_shown"),
+        eq(aiMemoryEventsTable.relatedObservationId, obs.id),
+      ),
+    )
+    .limit(1);
+  if (!voorgelegd) return null;
 
   if (antwoord === "klopt") {
     await db

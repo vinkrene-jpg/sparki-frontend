@@ -43,7 +43,11 @@ import {
   significantNumbers,
 } from "../engines/observation/content-dedupe";
 
-const ACTIVE_STATUSES = ["new", "acknowledged", "saved"] as const;
+// Actief = alles wat nog in context/lijsten kan opduiken (incl. §4.1-statussen).
+const ACTIVE_STATUSES = ["new", "acknowledged", "saved", "voorlopig", "bevestigd"] as const;
+// §4.4 demoveert alleen wat de sporter nooit heeft bevestigd; "bevestigd"
+// blijft staan, "voorlopig" zit al in de her-voorleg-stroom.
+const NEVER_CONFIRMED_STATUSES = ["new", "acknowledged", "saved"] as const;
 const GOAL_MIN_AGE_DAYS = 14;
 // §4.4 — één seizoen; daarna zakt een nooit-bevestigde herinnering terug naar
 // "voorlopig" en wordt hij één keer opnieuw voorgelegd.
@@ -235,7 +239,7 @@ export async function runObservationCleanup(
       .where(
         and(
           eq(aiObservationsTable.clerkId, clerkId),
-          inArray(aiObservationsTable.status, [...ACTIVE_STATUSES]),
+          inArray(aiObservationsTable.status, [...NEVER_CONFIRMED_STATUSES]),
           lt(aiObservationsTable.createdAt, seizoenGrens),
         ),
       );

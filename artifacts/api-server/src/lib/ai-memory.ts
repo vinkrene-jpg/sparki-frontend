@@ -308,9 +308,7 @@ export function formatObservationsForPrompt(obs: AiObservation[]): string {
     const statusTag =
       o.status === "bevestigd"
         ? " [BEVESTIGD door de sporter — mag een advies dragen]"
-        : o.status === "voorlopig"
-          ? " [VOORLOPIG — nog niet bevestigd: gebruik dit alleen voor een vraag, nooit voor een directief advies]"
-          : "";
+        : " [NIET BEVESTIGD — gebruik dit alleen voor continuïteit of een vraag, nooit als grond voor een directief advies]";
     return `  - [${date}] (${o.category}/${o.severity})${statusTag} ${o.title}: ${o.summary ?? o.observationText}`;
   });
   return `EARLIER SAVED OBSERVATIONS (use these for continuity; do not contradict or blindly repeat them; only entries marked BEVESTIGD may carry a directive advice — unconfirmed ones may only prompt a question):\n${lines.join("\n")}`;
