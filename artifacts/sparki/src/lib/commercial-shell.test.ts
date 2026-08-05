@@ -77,7 +77,7 @@ scenario("alle nav-doelen zijn bestaande app-routes", () => {
   const known = new Set([
     "/dashboard",
     "/train",
-    "/routes",
+    "/route",
     "/activiteiten",
     "/analyse",
     "/meer",

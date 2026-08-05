@@ -89,6 +89,7 @@ const SHELL_MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
   "/dashboard": IconHome,
   "/train": IconPlan,
   "/routes": IconRijden,
+  "/route": IconRijden,
   "/activiteiten": IconActiviteiten,
   "/analyse": IconAnalyse,
   "/meer": IconMenu,

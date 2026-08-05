@@ -40,7 +40,7 @@ export const ATHLETE_CHAPTERS: Chapter[] = [
   { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
   { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding & herstel" },
   { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Fiets & onderhoud" },
-  { href: "/routes", icon: Map, label: "Routes", hint: "Maken & navigeren" },
+  { href: "/route", icon: Map, label: "Routes", hint: "Maken & navigeren" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
   { href: "/feed", icon: Compass, label: "Ontdekken", hint: "Nieuws & inspiratie" },
   { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Planning & seizoen" },
@@ -124,7 +124,7 @@ export type NavEntry = { href: string; label: string }
 export const ATHLETE_NAV_ENTRIES: NavEntry[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/train", label: "Trainen" },
-  { href: "/routes", label: "Routes" },
+  { href: "/route", label: "Routes" },
   { href: "/races", label: "Wedstrijd" },
   { href: "/meer", label: "Meer" },
 ]

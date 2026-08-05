@@ -20,7 +20,7 @@ export const COMMERCIAL_MOBILE_NAV: CommercialNavItem[] = [
   // Label gelijkgetrokken met het menu-label "Trainen" (Beslisblok 01,
   // veilige fix 1) — de paginatitel en de nav zeggen nu hetzelfde.
   { href: "/train", label: "Trainen" },
-  { href: "/routes", label: "Rijden" },
+  { href: "/route", label: "Rijden" },
   // Analyse verving Activiteiten op verzoek van René (28-7-2026);
   // Activiteiten blijft bereikbaar via Meer → Veelgebruikt.
   { href: "/analyse", label: "Analyse" },
@@ -91,7 +91,7 @@ export function dashboardLaag3Zichtbaar(
 export const COMMERCIAL_DESKTOP_NAV: CommercialNavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/train", label: "Trainen" },
-  { href: "/routes", label: "Rijden" },
+  { href: "/route", label: "Rijden" },
   { href: "/races", label: "Wedstrijd" },
   { href: "/activiteiten", label: "Activiteiten" },
   { href: "/analyse", label: "Analyse" },

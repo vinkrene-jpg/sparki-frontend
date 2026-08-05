@@ -97,7 +97,7 @@ test("onbekende rol levert null (eerlijke melding, geen nagebootst scherm)", () 
 test("voedingsdeskundige: Voeding eerst, geen sporter-navigatie of -hoofdstukken", () => {
   assert.equal(NUTRITION_SPECIALIST_NAV_ENTRIES[0]!.label, "Voeding")
   const hrefs = chaptersForRole("nutrition_specialist", false).map((c) => c.href)
-  for (const sporterPad of ["/dashboard", "/vandaag", "/train", "/routes", "/races"]) {
+  for (const sporterPad of ["/dashboard", "/vandaag", "/train", "/route", "/races"]) {
     assert.ok(!hrefs.includes(sporterPad), `terugval op sporterhoofdstuk ${sporterPad}`)
   }
 })

@@ -33,7 +33,7 @@ export const GLOBAL_ROLE_STARTS: RoleStart[] = [
     functies: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/train", label: "Trainen" },
-      { href: "/routes", label: "Routes" },
+      { href: "/route", label: "Routes" },
     ],
   },
   {

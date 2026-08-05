@@ -57,7 +57,7 @@ test("sporter heeft precies vijf hoofdkeuzes in de vaste volgorde", () => {
   )
   assert.deepEqual(
     ATHLETE_NAV_ENTRIES.map((e) => e.href),
-    ["/dashboard", "/train", "/routes", "/races", "/meer"],
+    ["/dashboard", "/train", "/route", "/races", "/meer"],
   )
 })
 

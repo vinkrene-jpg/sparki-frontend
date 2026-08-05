@@ -36,6 +36,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/dashboard": Sun,
   "/train": Dumbbell,
   "/routes": Map,
+  "/route": Map,
   "/races": Trophy,
   "/meer": LayoutGrid,
   "/": Home,
