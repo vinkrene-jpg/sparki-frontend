@@ -47,6 +47,12 @@ import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useOntkoppeling } from "@/hooks/use-ontkoppeling"
+import {
+  ANALYSE_KAARTEN,
+  useAnalyses,
+  useVraagAnalyse,
+  type AnalyseKaartKey,
+} from "@/hooks/use-analyses"
 import type { AthleteDailyMetric } from "@/lib/athlete-types"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { usePowerBests } from "@/hooks/use-power-bests"
@@ -1609,8 +1615,125 @@ function BelastingTab({
       <OntkoppelingCard />
       <EfficientieCard />
       <OpbouwsnelheidCard load={load} />
+
+      {/* §3/§4 — Analyse op verzoek: 1–5 kaarten, bewaard, zichtbare daglimiet. */}
+      <AnalyseVerzoekCard />
       </div>
     </div>
+  )
+}
+
+// ── §3/§4 Analyse op verzoek ─────────────────────────────────────────────────
+
+function AnalyseVerzoekCard() {
+  const bestaand = useAnalyses()
+  const vraag = useVraagAnalyse()
+  const [selectie, setSelectie] = useState<AnalyseKaartKey[]>(["belastingsverloop"])
+  const [periode, setPeriode] = useState<number>(90)
+  const [foutmelding, setFoutmelding] = useState<string | null>(null)
+
+  const toggle = (key: AnalyseKaartKey) =>
+    setSelectie((cur) =>
+      cur.includes(key) ? cur.filter((k) => k !== key) : cur.length >= 5 ? cur : [...cur, key],
+    )
+
+  const laatste = vraag.data?.analyse ?? bestaand.data?.analyses?.[0] ?? null
+  const gebruikt = vraag.data?.gebruiktVandaag ?? bestaand.data?.gebruiktVandaag ?? 0
+  const limiet = vraag.data?.limiet ?? bestaand.data?.limiet ?? 5
+
+  return (
+    <LCard className="p-5" data-testid="card-analyse-verzoek">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-medium text-foreground">Analyse op verzoek</h3>
+        <span className="text-xs tabular-nums text-muted-foreground" data-testid="analyse-daglimiet">
+          {gebruikt}/{limiet} vandaag
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Kies één tot vijf kaarten en vraag wat ze (samen) betekenen. Dezelfde selectie over
+        dezelfde periode geeft hetzelfde antwoord; een verband is altijd een waarneming
+        ("gaat samen op met"), nooit een oorzaak.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {ANALYSE_KAARTEN.map((k) => (
+          <button
+            key={k.key}
+            type="button"
+            onClick={() => toggle(k.key)}
+            aria-pressed={selectie.includes(k.key)}
+            className={cn(
+              "min-h-8 rounded-lg border px-3 text-xs transition-colors",
+              selectie.includes(k.key)
+                ? "border-cyan-400/50 bg-accent-cyan/10 text-accent-cyan font-medium"
+                : "border-border text-muted-foreground hover:text-foreground/85",
+            )}
+          >
+            {k.label}
+          </button>
+        ))}
+        <select
+          value={periode}
+          onChange={(e) => setPeriode(Number(e.target.value))}
+          className="min-h-8 rounded-lg border border-border bg-transparent px-2 text-xs text-muted-foreground"
+          aria-label="Periode"
+        >
+          <option value={30}>30 dagen</option>
+          <option value={90}>90 dagen</option>
+          <option value={180}>180 dagen</option>
+          <option value={365}>1 jaar</option>
+        </select>
+        <button
+          type="button"
+          disabled={selectie.length === 0 || vraag.isPending}
+          onClick={() => {
+            setFoutmelding(null)
+            vraag.mutate(
+              { kaarten: selectie, periodeDays: periode },
+              {
+                onError: (err) =>
+                  setFoutmelding(err instanceof Error ? err.message : "Analyse mislukt."),
+              },
+            )
+          }}
+          className="min-h-8 rounded-lg border border-cyan-400/50 bg-accent-cyan/10 px-3 text-xs font-medium text-accent-cyan transition-colors hover:bg-accent-cyan/20 disabled:opacity-50"
+          data-testid="knop-analyseer-nu"
+        >
+          {vraag.isPending ? "Bezig…" : "Analyseer nu"}
+        </button>
+      </div>
+      {foutmelding && (
+        <p className="mt-3 text-sm text-amber-600" data-testid="analyse-fout">{foutmelding}</p>
+      )}
+      {laatste && (
+        <div className="mt-4 rounded-lg border border-border p-3" data-testid="analyse-resultaat">
+          <p className="text-xs text-muted-foreground">
+            {laatste.kaarten
+              .map((k) => ANALYSE_KAARTEN.find((x) => x.key === k)?.label ?? k)
+              .join(" + ")}{" "}
+            · {laatste.periodeDays} dagen · bewaard
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-foreground/90">{laatste.tekst}</p>
+        </div>
+      )}
+      {(bestaand.data?.analyses?.length ?? 0) > 1 && (
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs text-muted-foreground">
+            Eerdere analyses ({(bestaand.data!.analyses.length - 1)})
+          </summary>
+          <div className="mt-2 space-y-2">
+            {bestaand.data!.analyses.slice(1, 6).map((a) => (
+              <div key={a.id} className="rounded-lg border border-border p-3">
+                <p className="text-xs text-muted-foreground">
+                  {a.kaarten.join(" + ")} · {a.periodeDays} dagen ·{" "}
+                  {a.createdAt.slice(0, 10)}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground/90">{a.tekst}</p>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </LCard>
   )
 }
 

@@ -188,6 +188,21 @@ export const AI_PURPOSES = {
     timeoutMs: 60_000,
     maxRetries: 0,
   },
+  // ANALYSE_UITBREIDING §3 — analyse op verzoek: deterministische engines
+  // leveren de uitkomsten, het model formuleert alleen. Zelfde selectie +
+  // periode + data ⇒ bewaarde tekst, geen nieuwe aanroep (route dwingt af).
+  analyse_on_demand: {
+    label: "Analyse op verzoek (verwoording van engine-uitkomsten)",
+    provider: "anthropic",
+    model: MODEL,
+    promptVersion: "analyse-on-demand-v1",
+    inputCategories: ["trainingscontext"],
+    consent: "ai_coaching",
+    sensitive: false,
+    minorBlocked: false,
+    timeoutMs: 45_000,
+    maxRetries: 1,
+  },
   workout_adjust: {
     label: "Verwoording aanpassingsvoorstel",
     provider: "anthropic",

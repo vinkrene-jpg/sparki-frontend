@@ -20,6 +20,7 @@ import {
   db,
   pool,
   athleteProfilesTable,
+  privacySettingsTable,
   trainingSessionsTable,
   athleteDailyMetricsTable,
   ftpHistoryTable,
@@ -130,6 +131,16 @@ async function main() {
     silentLogger,
   );
   if (!profile) throw new Error("ensureAccount gaf geen profiel terug");
+
+  // Analyse op verzoek (§3) moet op de voorbeeldsporter demonstreerbaar zijn:
+  // AI-coaching-toestemming expliciet aan (fictief account, geen echte data).
+  await db
+    .insert(privacySettingsTable)
+    .values({ clerkId: VOORBEELD_CLERK_ID, aiCoachingEnabled: true })
+    .onConflictDoUpdate({
+      target: privacySettingsTable.clerkId,
+      set: { aiCoachingEnabled: true },
+    });
 
   // Idempotent: alle kindrijen eerst weg (identieke uitkomst per run).
   await db.delete(activityImportsTable).where(eq(activityImportsTable.clerkId, VOORBEELD_CLERK_ID));

@@ -29,6 +29,9 @@ export const ADVICE_TYPES = [
   "plan_aanpassing",
   "herstel_advies",
   "doel_bewaking",
+  // ANALYSE_UITBREIDING §3 — door de gebruiker gevraagde analyse; elk
+  // resultaat krijgt een dossier (terugleesbaar waarop het gebaseerd is).
+  "analyse_op_verzoek",
 ] as const;
 export type AdviceType = (typeof ADVICE_TYPES)[number];
 
