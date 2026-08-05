@@ -27,6 +27,8 @@ import {
   checkDerdeHardeDagLogic,
   checkEersteWedstrijdLogic,
   checkZelfdeWeekInzinkingLogic,
+  checkEersteRitHitteLogic,
+  checkEersteRitHitte,
   checkAfwijkendSignaalLogic,
   checkTerugkeerLogic,
   addDays,
@@ -48,7 +50,8 @@ const USER_PRIV = `${RUN}_priv`;
 const USER_PACING = `${RUN}_pacing`;
 const USER_A6 = `${RUN}_a6`;    // A6: T1 derde_harde_dag end-to-end
 const USER_IDEM = `${RUN}_idem`; // idempotentie T6
-const ALL_USERS = [USER_PRIV, USER_PACING, USER_A6, USER_IDEM];
+const USER_HITTE = `${RUN}_hitte`; // T4 seizoens-dedup
+const ALL_USERS = [USER_PRIV, USER_PACING, USER_A6, USER_IDEM, USER_HITTE];
 
 async function cleanup() {
   for (const clerkId of ALL_USERS) {
@@ -197,6 +200,36 @@ function testZelfdeWeekInzinking() {
     today,
   );
   check("T3: vuur t NIET voor observaties uit het huidige jaar", posHuidig === null);
+}
+
+// ── Unit-logica: T4 eerste_rit_hitte ─────────────────────────────────────────
+
+function testEersteRitHitte() {
+  const today = "2026-08-05";
+  const actief = [{ sessionDate: addDays(today, -1) }]; // sessie gisteren = actief
+  const inactief = [{ sessionDate: addDays(today, -7) }]; // laatste sessie > 3 dagen terug
+
+  // Positief: actief + forecast ≥ 28°C
+  const pos = checkEersteRitHitteLogic(actief, 31.4, today);
+  check("T4: vuur t bij actieve sporter + forecast ≥ 28°C", pos?.triggerId === "eerste_rit_hitte", JSON.stringify(pos));
+  check("T4: boodschap noemt de temperatuur (afgerond)", (pos?.message ?? "").includes("31°C"), pos?.message);
+  check("T4: geen geheugen-herinnering (data-gedreven)", pos?.memoryObservationId === null);
+
+  // Negatief: net onder de drempel
+  const negKoel = checkEersteRitHitteLogic(actief, 27.9, today);
+  check("T4: vuur t NIET bij forecast onder 28°C", negKoel === null);
+
+  // Negatief: geen forecast beschikbaar
+  const negGeenWeer = checkEersteRitHitteLogic(actief, null, today);
+  check("T4: vuur t NIET zonder forecast (honest null)", negGeenWeer === null);
+
+  // Negatief: hete dag maar sporter niet actief (geen sessie in 3 dagen)
+  const negInactief = checkEersteRitHitteLogic(inactief, 33, today);
+  check("T4: vuur t NIET voor een inactieve sporter, ook bij hitte", negInactief === null);
+
+  // Grens: sessie precies 3 dagen geleden telt nog als actief
+  const grens = checkEersteRitHitteLogic([{ sessionDate: addDays(today, -3) }], 30, today);
+  check("T4: sessie exact 3 dagen geleden telt als actief", grens?.triggerId === "eerste_rit_hitte");
 }
 
 // ── Unit-logica: T5 afwijkend_signaal ────────────────────────────────────────
@@ -355,6 +388,24 @@ async function integrationTests() {
 
   const idem2 = await checkProactiveTriggers(USER_IDEM);
   check("Idempotentie: tweede aanroep dezelfde dag → null (terugkeer-episode al afgehandeld)", idem2 === null, JSON.stringify(idem2));
+
+  // ── D: T4 seizoens-dedup (één keer per jaar) — met geïnjecteerd hitte-weer ─
+  await seedUser(USER_HITTE, true);
+  await seedSession(USER_HITTE, today); // actief
+  const heet = async () => 32;
+
+  const hitte1 = await checkEersteRitHitte(USER_HITTE, null, null, [{ sessionDate: today }], today, heet);
+  check("T4 dedup: eerste keer dit seizoen → kandidaat", hitte1?.triggerId === "eerste_rit_hitte", JSON.stringify(hitte1));
+
+  // Simuleer dat de trigger dit jaar al gevuurd heeft
+  await db.insert(aiMemoryEventsTable).values({
+    clerkId: USER_HITTE,
+    eventType: "proactive_trigger_shown",
+    metadata: { triggerId: "eerste_rit_hitte" },
+  } as typeof aiMemoryEventsTable.$inferInsert);
+
+  const hitte2 = await checkEersteRitHitte(USER_HITTE, null, null, [{ sessionDate: today }], today, heet);
+  check("T4 dedup: tweede keer hetzelfde seizoen → null", hitte2 === null, JSON.stringify(hitte2));
 }
 
 // ── Acceptatietest A6: derde harde dag — T1 end-to-end ───────────────────────
@@ -413,6 +464,7 @@ async function main() {
   testDerdeHardeDag();
   testEersteWedstrijd();
   testZelfdeWeekInzinking();
+  testEersteRitHitte();
   testAfwijkendSignaal();
   testTerugkeer();
 

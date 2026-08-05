@@ -365,13 +365,15 @@ export function checkZelfdeWeekInzinkingLogic(
 // Vereist: (1) hete dag-forecast, (2) sporter is aantoonbaar actief (sessie in de afgelopen 3 dagen).
 // Dedup: per seizoen (jaar-start).
 
-async function checkEersteRitHitte(
-  clerkId: string,
-  homeLat: string | null,
-  homeLon: string | null,
+/**
+ * Pure T4-logica: actief-vereiste + hittedrempel — testbaar zonder DB/weer-API.
+ * `maxTempC` is de verwachte maximumtemperatuur van vandaag (null = geen forecast).
+ */
+export function checkEersteRitHitteLogic(
   recentSessions: { sessionDate: string }[],
+  maxTempC: number | null,
   today: string,
-): Promise<Omit<TriggerFire, "dossierId"> | null> {
+): Omit<TriggerFire, "dossierId"> | null {
   // Vereiste: sporter is actief (sessie in de afgelopen 3 dagen)
   // Zonder recente activiteit heeft de hittewaarschuwing geen relevantie.
   const activeWindow = addDays(today, -3);
@@ -380,7 +382,37 @@ async function checkEersteRitHitte(
   );
   if (!isActief) return null;
 
-  // Controleer of de trigger dit jaar al eerder gevuurd heeft
+  if (maxTempC == null || maxTempC < 28) return null;
+  const maxTemp = maxTempC;
+
+  return {
+    triggerId: "eerste_rit_hitte",
+    title: "Eerste warme dag dit seizoen",
+    message: `Vandaag kan het ${Math.round(maxTemp)}°C worden — voor het eerst boven de 28 graden dit jaar. Houd daar rekening mee als je buiten fietst.`,
+    memoryObservationId: null,
+  };
+}
+
+/**
+ * T4 met DB-dedup (één keer per seizoen/jaar) en weer-oproep.
+ * `fetchMaxTemp` is injecteerbaar voor tests; default = echte home-forecast.
+ */
+export async function checkEersteRitHitte(
+  clerkId: string,
+  homeLat: string | null,
+  homeLon: string | null,
+  recentSessions: { sessionDate: string }[],
+  today: string,
+  fetchMaxTemp?: () => Promise<number | null>,
+): Promise<Omit<TriggerFire, "dossierId"> | null> {
+  // Snelle poort: niet actief → nooit een weer-oproep doen.
+  const activeWindow = addDays(today, -3);
+  const isActief = recentSessions.some(
+    (s) => s.sessionDate >= activeWindow && s.sessionDate <= today,
+  );
+  if (!isActief) return null;
+
+  // Controleer of de trigger dit jaar al eerder gevuurd heeft (seizoens-dedup)
   const jaarStart = `${today.slice(0, 4)}-01-01`;
   const alVroeger = await db
     .select({ id: aiMemoryEventsTable.id })
@@ -396,17 +428,13 @@ async function checkEersteRitHitte(
     .limit(1);
   if (alVroeger.length > 0) return null;
 
-  const weather = await getHomeWeather(homeLat, homeLon, null).catch(() => null);
-  if (!weather?.todayForecast) return null;
-  const maxTemp = weather.todayForecast.tempMaxC;
-  if (maxTemp == null || maxTemp < 28) return null;
+  const maxTemp = fetchMaxTemp
+    ? await fetchMaxTemp().catch(() => null)
+    : await getHomeWeather(homeLat, homeLon, null)
+        .then((w) => w?.todayForecast?.tempMaxC ?? null)
+        .catch(() => null);
 
-  return {
-    triggerId: "eerste_rit_hitte",
-    title: "Eerste warme dag dit seizoen",
-    message: `Vandaag kan het ${Math.round(maxTemp)}°C worden — voor het eerst boven de 28 graden dit jaar. Houd daar rekening mee als je buiten fietst.`,
-    memoryObservationId: null,
-  };
+  return checkEersteRitHitteLogic(recentSessions, maxTemp, today);
 }
 
 // ── T5: rusthartslag of gevoel wijkt af met BEVESTIGDE patroon-herinnering ───
