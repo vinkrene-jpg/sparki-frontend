@@ -19,7 +19,14 @@ export type AthleteProfile = {
   // WP-K2: herkomststatus per kernwaarde (Sportpaspoort) — één brondefinitie.
   herkomst?: Record<
     string,
-    { origin: string; estimated: boolean; stale: boolean }
+    {
+      origin: string
+      estimated: boolean
+      stale: boolean
+      // D4 (DATABRONNEN_EN_FTP_01): datum + bron van de huidige waarde.
+      since?: string | null
+      source?: string | null
+    }
   > | null;
   weightKg: string | null;
   heightCm: number | null;

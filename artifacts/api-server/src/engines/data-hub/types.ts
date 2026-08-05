@@ -16,6 +16,8 @@ export interface CanonicalActivity {
   /** A real user-provided note about the activity. Null when none. */
   notes?: string | null;
   durationMin?: number | null;
+  /** Exacte duur in seconden (H4) — de belastingscore rekent hiermee. */
+  durationSec?: number | null;
   distanceKm?: number | null;
   elevationM?: number | null;
   avgPower?: number | null;
@@ -36,6 +38,18 @@ export interface CanonicalActivity {
     bestsByWork: Record<string, Record<string, number>>;
   } | null;
   tss?: number | null;
+  /**
+   * Gedownsamplede echte reeksen (ActivityStreams-vorm) opgehaald bij ingest —
+   * bewaard op connector_activities.streams. Null = provider leverde geen
+   * reeksen (nooit verzonnen).
+   */
+  streams?: unknown | null;
+  /**
+   * "sparki" wanneer normalizedPower door Sparki zelf uit de vermogensreeks is
+   * berekend (Coggan, lib/normalized-power) i.p.v. overgenomen van de
+   * provider. Stuurt de per-veld herkomst (D5: nooit stilzwijgend mengen).
+   */
+  npBron?: "sparki" | null;
   /** Original payload (kept verbatim in connector_activities.raw). */
   raw?: unknown;
 }

@@ -50,6 +50,11 @@ export const connectorActivitiesTable = pgTable(
     dedupeKey: text("dedupe_key"),
     // Original normalized payload as received (for audit / re-processing).
     raw: jsonb("raw"),
+    // DATABRONNEN_EN_FTP_01 H3/§3: gedownsamplede echte reeksen (vermogen,
+    // hartslag, cadans …) opgehaald bij ingest — zelfde vorm als
+    // activity_imports.parsedSummary.streams (ActivityStreams). Null = de
+    // provider leverde geen reeksen (nooit verzonnen).
+    streams: jsonb("streams"),
     // The merged canonical session this raw row contributed to.
     normalizedSessionId: integer("normalized_session_id").references(
       () => trainingSessionsTable.id,

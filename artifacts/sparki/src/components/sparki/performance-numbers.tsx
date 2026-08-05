@@ -138,6 +138,31 @@ function herkomstLabel(
   return null
 }
 
+// D4 (DATABRONNEN_EN_FTP_01): FTP nooit als kaal getal — altijd met datum en
+// bron. Ontbreekt de herkomst, dan zeggen we dat eerlijk.
+const ORIGIN_LABELS: Record<string, string> = {
+  gemeten: "gemeten",
+  handmatig: "handmatig ingevoerd",
+  berekend: "berekend",
+  geschat: "geschat",
+  onbekend: "herkomst onbekend",
+}
+
+function ftpHerkomstRegel(profile: AthleteProfile | undefined): string | null {
+  if (profile?.ftp == null) return null
+  const h = profile.herkomst?.["ftp"]
+  if (!h) return "FTP: herkomst onbekend"
+  const delen: string[] = []
+  delen.push(ORIGIN_LABELS[h.origin] ?? h.origin)
+  if (h.source) delen.push(h.source)
+  if (h.since) {
+    const d = new Date(`${h.since}T00:00:00`)
+    if (!Number.isNaN(d.getTime()))
+      delen.push(d.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }))
+  }
+  return `FTP: ${delen.join(" · ")}`
+}
+
 export function PerformanceNumbers({
   profile,
   ftpHistory,

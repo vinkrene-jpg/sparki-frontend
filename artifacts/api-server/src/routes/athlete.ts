@@ -6,6 +6,7 @@ import {
   athleteProfilesTable,
   trainingSessionsTable,
   activityImportsTable,
+  connectorActivitiesTable,
   plannedWorkoutsTable,
   plannedWorkoutChangesTable,
   workoutFeedbackTable,
@@ -127,7 +128,15 @@ router.get("/profile", requireAuth, async (req, res) => {
       ? Object.fromEntries(
           passport.fields.map((f) => [
             f.field,
-            { origin: f.origin, estimated: f.estimated, stale: f.stale },
+            {
+              origin: f.origin,
+              estimated: f.estimated,
+              stale: f.stale,
+              // DATABRONNEN_EN_FTP_01 D4: FTP (en andere kernwaarden) altijd
+              // met datum + bron kunnen tonen — nooit een kaal getal.
+              since: f.since,
+              source: f.source,
+            },
           ]),
         )
       : null;
@@ -1807,13 +1816,37 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
     const rawStreams = summaryBlob?.streams as {
       t?: unknown;
     } | null;
-    const streams =
+    let streams =
       rawStreams &&
       Array.isArray(rawStreams.t) &&
       rawStreams.t.length >= 2 &&
       rawStreams.t.every((v) => typeof v === "number" && Number.isFinite(v))
         ? (summaryBlob!.streams as Record<string, unknown>)
         : null;
+    // DATABRONNEN_EN_FTP_01 H3/§3: geen bestand-import? Dan de bij ingest
+    // opgehaalde connector-reeksen (zelfde ActivityStreams-vorm, zelfde
+    // validatie) — echte samples of niets.
+    if (!streams) {
+      const [connRow] = await db
+        .select({ streams: connectorActivitiesTable.streams })
+        .from(connectorActivitiesTable)
+        .where(
+          and(
+            eq(connectorActivitiesTable.clerkId, clerkId),
+            eq(connectorActivitiesTable.normalizedSessionId, session.id),
+          ),
+        )
+        .limit(1);
+      const cs = (connRow?.streams ?? null) as { t?: unknown } | null;
+      if (
+        cs &&
+        Array.isArray(cs.t) &&
+        cs.t.length >= 2 &&
+        cs.t.every((v) => typeof v === "number" && Number.isFinite(v))
+      ) {
+        streams = cs as Record<string, unknown>;
+      }
+    }
     // Only accept real numeric [lat, lon(, ele)] tuples — guards against
     // malformed historical JSON rather than trusting the stored shape blindly.
     const geometry = Array.isArray(stored?.geometry)

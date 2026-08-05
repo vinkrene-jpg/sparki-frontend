@@ -3,6 +3,7 @@ import {
   syncStrava,
   fetchStravaActivities,
   fetchStravaActivityById,
+  enrichStravaActivitiesWithStreams,
 } from "../../lib/connectors/providers/strava";
 import {
   fetchGarminActivities,
@@ -34,6 +35,8 @@ const stravaProvider: HubProvider = {
         const one = await fetchStravaActivityById(ctx.clerkId, id);
         if (one) targeted.push(one);
       }
+      // H3/§3: echte reeksen (vermogen/hartslag) + eigen NP per activiteit.
+      await enrichStravaActivitiesWithStreams(ctx.clerkId, targeted);
       const importedDataTypes: ConnectorDataType[] =
         targeted.length > 0 ? ["activities", "training_history"] : [];
       return {
@@ -53,6 +56,10 @@ const stravaProvider: HubProvider = {
         ? { afterEpochSec: ctx.afterEpochSec, maxPages: 5 }
         : {},
     );
+
+    // H3/§3: echte reeksen (vermogen/hartslag) + eigen NP, budget-begrensd —
+    // nieuwste eerst; oudere ritten volgen bij latere syncs.
+    await enrichStravaActivitiesWithStreams(ctx.clerkId, activities);
 
     const importedDataTypes: ConnectorDataType[] = [...profile.importedDataTypes];
     // Only claim activity/history import when activities were actually returned.

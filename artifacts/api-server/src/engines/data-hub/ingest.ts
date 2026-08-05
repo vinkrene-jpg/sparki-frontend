@@ -153,6 +153,21 @@ async function ingestActivities(
   }
 }
 
+// D5 (DATABRONNEN_EN_FTP_01): wanneer Sparki de NP zelf uit de vermogensreeks
+// heeft berekend, is de per-veld herkomst "sparki" — nooit stilzwijgend mengen
+// met de providerwaarde. Alleen toegepast als het veld daadwerkelijk in deze
+// schrijfronde is gezet (bij een merge: als de patch hem bevat).
+function withNpBron(
+  fieldSources: Record<string, string> | null,
+  a: CanonicalActivity,
+  patch?: Record<string, unknown>,
+): Record<string, string> | null {
+  if (a.npBron !== "sparki" || fieldSources == null) return fieldSources;
+  if (patch && !("normalizedPower" in patch)) return fieldSources;
+  if (!patch && fieldSources["normalizedPower"] == null) return fieldSources;
+  return { ...fieldSources, normalizedPower: "sparki" };
+}
+
 async function persistOneActivity(
   clerkId: string,
   provider: string,
@@ -170,7 +185,10 @@ async function persistOneActivity(
     let intensityFactor: number | null = null;
     if (tss == null) {
       const derived = deriveTss({
-        durationMin: a.durationMin,
+        // H4: rekenen met exacte seconden wanneer die er zijn — hele minuten
+        // kosten ~0,2% in de TSS.
+        durationMin:
+          a.durationSec != null ? a.durationSec / 60 : a.durationMin,
         normalizedPower: a.normalizedPower,
         avgPower: a.avgPower,
         ftp: ftpAtDate(ftpCtx.history, dateOf(a.startedAt), ftpCtx.profileFtp),
@@ -310,10 +328,10 @@ async function persistOneActivity(
         ownFields,
       );
       const sources = mergeSources(existing.sources ?? null, provider);
-      const fieldSources = updateFieldSources(
-        existing.fieldSources ?? null,
+      const fieldSources = withNpBron(
+        updateFieldSources(existing.fieldSources ?? null, patch, provider),
+        a,
         patch,
-        provider,
       );
       // Intern conflictlogboek: leg vast welke bron erbij kwam, welke velden
       // verschilden en waarom de behouden waarde won. Alleen intern zichtbaar
@@ -371,6 +389,7 @@ async function persistOneActivity(
           title: a.title ?? null,
           notes: a.notes ?? null,
           durationMin: a.durationMin,
+          durationSec: a.durationSec ?? null,
           distanceKm: numStr(a.distanceKm),
           elevationM: a.elevationM,
           normalizedPower: a.normalizedPower,
@@ -396,7 +415,8 @@ async function persistOneActivity(
           dedupeKey,
           sources: [provider],
           // Per-veld herkomst voor alle velden die deze bron echt leverde.
-          fieldSources: updateFieldSources(
+          fieldSources: withNpBron(
+            updateFieldSources(
             null,
             {
               durationMin: a.durationMin,
@@ -416,6 +436,8 @@ async function persistOneActivity(
               notes: a.notes ?? null,
             },
             provider,
+            ),
+            a,
           ),
         })
         .returning({ id: trainingSessionsTable.id });
@@ -466,6 +488,9 @@ async function persistOneActivity(
         startedAt: new Date(a.startedAt),
         dedupeKey: sessionDedupeKey,
         raw: (a.raw ?? rawActivity) as object,
+        // H3/§3: echte gedownsamplede reeksen (nooit verzonnen; null = de
+        // provider leverde er geen).
+        streams: (a.streams ?? null) as object | null,
         normalizedSessionId: sessionId,
       })
       .onConflictDoUpdate({

@@ -42,6 +42,9 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   type: text("type").notNull().default("ride"),
   title: text("title"),
   durationMin: integer("duration_min"),
+  // DATABRONNEN_EN_FTP_01 H4: exacte duur in seconden — de belastingscore
+  // rekent hiermee als hij er is (hele minuten kosten ~0,2% in de TSS).
+  durationSec: integer("duration_sec"),
   distanceKm: numeric("distance_km", { precision: 7, scale: 2 }),
   elevationM: integer("elevation_m"),
   normalizedPower: integer("normalized_power"),

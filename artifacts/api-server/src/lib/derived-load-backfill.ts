@@ -101,6 +101,8 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
       id: trainingSessionsTable.id,
       sessionDate: trainingSessionsTable.sessionDate,
       durationMin: trainingSessionsTable.durationMin,
+      // H4: exacte seconden hebben voorrang op hele minuten in de TSS.
+      durationSec: trainingSessionsTable.durationSec,
       normalizedPower: trainingSessionsTable.normalizedPower,
       avgPower: trainingSessionsTable.avgPower,
     })
@@ -117,6 +119,7 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
       ),
     );
   if (rows.length === 0) return { updated: 0, skipped: 0 };
+  // (H4: rows carry durationSec when known; deriveTss below prefers it.)
 
   const [profile] = await db
     .select({
@@ -156,7 +159,8 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
       profile && profile.estimated !== true ? (profile.ftp ?? null) : null,
     );
     const derived = deriveTss({
-      durationMin: row.durationMin,
+      durationMin:
+        row.durationSec != null ? row.durationSec / 60 : row.durationMin,
       normalizedPower: row.normalizedPower,
       avgPower: row.avgPower,
       ftp,
@@ -220,6 +224,67 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
  * ftp_history so belastingscores use the right FTP from that date on.
  * A user-measured FTP is never touched.
  */
+// DATABRONNEN_EN_FTP_01 D3 — eigen FTP-afleiding: beste 20 minuten van de
+// laatste 6 weken × 0,95. ALTIJD een voorstel met bronrit — nooit stil
+// doorgevoerd, ook niet bij een geschatte FTP (een FTP-wijziging verandert
+// alle trainingszones). Idempotent: createProposal dedupet open voorstellen.
+export async function proposeFtpFromBestTwentyMin(
+  clerkId: string,
+): Promise<{ proposed: boolean; candidate: number | null }> {
+  const [profile] = await db
+    .select({ ftp: athleteProfilesTable.ftp })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .limit(1);
+  if (!profile) return { proposed: false, candidate: null };
+
+  const rows = await db
+    .select({
+      id: trainingSessionsTable.id,
+      sessionDate: trainingSessionsTable.sessionDate,
+      title: trainingSessionsTable.title,
+      best20: sql<string | null>`${trainingSessionsTable.powerBests} ->> '1200'`,
+    })
+    .from(trainingSessionsTable)
+    .where(
+      and(
+        eq(trainingSessionsTable.clerkId, clerkId),
+        sql`${trainingSessionsTable.sessionDate} >= (CURRENT_DATE - make_interval(days => 42))::date`,
+        sql`(${trainingSessionsTable.powerBests} ->> '1200') IS NOT NULL`,
+      ),
+    );
+  let best: { watts: number; sessionDate: string; title: string | null } | null =
+    null;
+  for (const r of rows) {
+    const w = r.best20 != null ? Number(r.best20) : NaN;
+    if (!Number.isFinite(w) || w <= 0) continue;
+    if (!best || w > best.watts)
+      best = { watts: Math.round(w), sessionDate: r.sessionDate, title: r.title };
+  }
+  if (!best) return { proposed: false, candidate: null };
+
+  const candidate = Math.round(best.watts * 0.95);
+  // Alleen voorstellen wat echt iets toevoegt: hoger dan de huidige FTP, of
+  // een eerste waarde wanneer er nog geen FTP bekend is.
+  if (profile.ftp != null && candidate <= profile.ftp)
+    return { proposed: false, candidate };
+
+  const rit = best.title
+    ? `rit "${best.title}" op ${best.sessionDate}`
+    : `je rit op ${best.sessionDate}`;
+  const { createProposal } = await import("./passport");
+  const r = await createProposal({
+    clerkId,
+    field: "ftp",
+    proposedValue: String(candidate),
+    origin: "berekend",
+    source: "beste 20 minuten × 0,95",
+    reason: `Je beste 20 minuten van de laatste 6 weken was ${best.watts} watt (${rit}). 95% daarvan geeft ${candidate} watt als FTP-voorstel.`,
+    proposedBy: "ftp-20min-afleiding",
+  }).catch(() => ({ created: false }));
+  return { proposed: r.created, candidate };
+}
+
 export async function recalibrateEstimatedFtp(
   clerkId: string,
   windowDays = 120,
@@ -233,6 +298,10 @@ export async function recalibrateEstimatedFtp(
     .where(eq(athleteProfilesTable.clerkId, clerkId))
     .limit(1);
   if (!profile) return { changed: false, ftp: null };
+
+  // D3: eigen 20-minuten-afleiding draait bij elke herijking mee — altijd als
+  // voorstel, nooit stil. Best-effort: een mislukt voorstel breekt niets.
+  await proposeFtpFromBestTwentyMin(clerkId).catch(() => undefined);
 
   // Zelf ingevoerde/gemeten FTP wordt NOOIT automatisch aangepast — als een
   // echte inspanning aantoont dat hij te laag staat, wordt dat een
