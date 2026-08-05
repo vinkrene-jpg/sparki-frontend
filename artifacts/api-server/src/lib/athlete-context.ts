@@ -20,6 +20,8 @@ import {
 } from "../engines/coaching";
 import { computeAge } from "./age";
 import { computeLoadSeries } from "./recovery-load";
+import { observeSporen } from "../engines/meetniveau/derive";
+import { interneCode, profielregel } from "../engines/meetniveau/compute";
 import { resolveFlags } from "./flags";
 import { buildRaceContext, formatRaceContextForPrompt } from "./race-context";
 import {
@@ -58,6 +60,7 @@ export async function buildAthleteContext(
     upcomingRaces,
     priorObservations,
     loadSessions,
+    sporen,
   ] = await Promise.all([
     db
       .select()
@@ -122,6 +125,9 @@ export async function buildAthleteContext(
       .where(eq(trainingSessionsTable.clerkId, clerkId))
       .orderBy(desc(trainingSessionsTable.sessionDate))
       .limit(400),
+    // R4 — meetniveau: welke sporen deze sporter werkelijk heeft. Faalt de
+    // waarneming, dan eerlijk null (geen niveau verzinnen).
+    observeSporen(clerkId).catch(() => null),
   ]);
 
   const todayPlan = allWorkouts.find((w) => w.scheduledDate === today) ?? null;
@@ -266,6 +272,17 @@ export async function buildAthleteContext(
     );
   } else {
     parts.push(`VORM: nog geen belastingsgegevens (geen sessies met TSS).`);
+  }
+
+  // R4 — MEETNIVEAU: adviseer nooit op een grootheid die deze sporter niet
+  // meet; benoem hoogstens één keer wat een ontbrekende sensor zou toevoegen,
+  // nooit als verkooppraatje.
+  if (sporen) {
+    parts.push(
+      `MEETNIVEAU (${interneCode(sporen)}): ${profielregel(sporen)} REGEL: adviseer nooit op een grootheid die deze sporter niet meet (geen vermogensadvies zonder vermogensspoor, geen HRV/herstel-advies zonder herstelspoor); benoem hoogstens één keer neutraal wat een ontbrekende sensor zou toevoegen.`,
+    );
+  } else {
+    parts.push(`MEETNIVEAU: waarneming niet beschikbaar — doe geen aannames over welke sensoren deze sporter heeft.`);
   }
 
   if (recentMetrics.length > 1) {
