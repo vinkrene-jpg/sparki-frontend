@@ -120,40 +120,64 @@ const UitlegModus = createContext(false)
 // je ziet en één zin wat je ermee doet — geen jargon, tweede persoon. De
 // rekenwijze zit achter een optionele uitklap. De uitleg-schakelaar voegt
 // alleen nog de verdiepende waarom-laag toe.
+// Ingeklapt-standaard (besluit René 05-08): de uitleg begint als één
+// afgekapte regel met puntjes, zodat je ziet dát er meer is zonder dat de
+// tekst het scherm opeet. Eén tik klapt de volledige uitleg open.
 function UitlegRegel({ k }: { k: string }) {
   const aan = useContext(UitlegModus)
+  const [open, setOpen] = useState(false)
   const u = UITLEG[k]
   if (!u) return null
   const doen = UITLEG_DOEN[k]
   return (
     <div className="mb-4 rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-      <p>
-        {u.wat}
-        {doen ? ` ${doen}` : ""}
-      </p>
-      {aan && <p className="mt-1.5">{u.waarom}</p>}
-      <details className="mt-1.5">
-        <summary className="cursor-pointer select-none text-[11px] text-accent-cyan/80 hover:text-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
-          Hoe wordt dit berekend?
-        </summary>
-        <p className="mt-1 text-[11px] leading-relaxed">{u.hoe}</p>
-      </details>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+      >
+        <span className={open ? undefined : "line-clamp-1"}>
+          {u.wat}
+          {doen ? ` ${doen}` : ""}
+        </span>
+        <span className="mt-0.5 block text-[11px] text-accent-cyan/80">
+          {open ? "Minder" : "… meer"}
+        </span>
+      </button>
+      {open && aan && <p className="mt-1.5">{u.waarom}</p>}
+      {open && (
+        <details className="mt-1.5">
+          <summary className="cursor-pointer select-none text-[11px] text-accent-cyan/80 hover:text-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+            Hoe wordt dit berekend?
+          </summary>
+          <p className="mt-1 text-[11px] leading-relaxed">{u.hoe}</p>
+        </details>
+      )}
     </div>
   )
 }
 
-// Compacte variant van dezelfde twee-zinnen-opbouw voor de stat-tegels en de
-// samenvattingsstrip bovenaan: altijd zichtbaar, zelfde bron (UITLEG +
-// UITLEG_DOEN), geen uitklap — die zit al achter het uitleg-stipje.
+// Compacte variant voor de stat-tegels: zelfde bron (UITLEG + UITLEG_DOEN),
+// standaard ingeklapt tot één afgekapte regel — tikken klapt open.
 function MiniDuiding({ k }: { k: string }) {
+  const [open, setOpen] = useState(false)
   const u = UITLEG[k]
   if (!u) return null
   const doen = UITLEG_DOEN[k]
   return (
-    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-      {u.wat}
-      {doen ? ` ${doen}` : ""}
-    </p>
+    <button
+      type="button"
+      onClick={() => setOpen((v) => !v)}
+      aria-expanded={open}
+      className="mt-1 block w-full text-left text-[11px] leading-relaxed text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+    >
+      <span className={open ? undefined : "line-clamp-1"}>
+        {u.wat}
+        {doen ? ` ${doen}` : ""}
+      </span>
+      <span className="text-accent-cyan/80">{open ? "Minder" : "… meer"}</span>
+    </button>
   )
 }
 
@@ -2823,7 +2847,6 @@ function SamenvattingStrip({
   metrics,
   sessies,
   todayIso,
-  toonDuiding,
 }: {
   load: Bron<LoadData>
   ftpTests: Array<{ ftpWatts: number; measuredAt: string }>
@@ -2831,10 +2854,6 @@ function SamenvattingStrip({
   metrics: Array<{ metricDate: string; weightKg?: number | string | null }>
   sessies: TrainingSession[]
   todayIso: string
-  // Presentatie-dedup: op het Overzicht-tabblad dragen de stat-tegels al
-  // precies dezelfde wat+doen-regels (fitheid/vorm/ftp); dan laat de strip
-  // ze weg zodat de tekst nooit dubbel op één scherm staat.
-  toonDuiding: boolean
 }) {
   const connectors = useConnectors()
   const kern = analyseSamenvatting({
@@ -2851,12 +2870,15 @@ function SamenvattingStrip({
     todayIso,
   )
 
-  const cel = (label: string, waarde: ReactNode, sub?: string, duidingKey?: string) => (
+  // Presentatie-dedup (besluit René 05-08): de strip staat op élk tabblad —
+  // uitlegtekst hier zou dus overal dubbelen met de metriekkaarten. De strip
+  // toont daarom alleen waarden; uitleg zit achter het stipje en bij de
+  // kaarten zelf (ingeklapt).
+  const cel = (label: string, waarde: ReactNode, sub?: string) => (
     <div className="min-w-0">
       <LLabel>{label}</LLabel>
       <div className="mt-0.5 text-sm text-foreground">{waarde}</div>
       {sub && <p className="truncate text-[10px] text-muted-foreground">{sub}</p>}
-      {toonDuiding && duidingKey && <MiniDuiding k={duidingKey} />}
     </div>
   )
 
@@ -2869,7 +2891,6 @@ function SamenvattingStrip({
             ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-muted-foreground">CTL</span> <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /></span>
             : <span className="text-muted-foreground">—</span>,
           kern.atl != null ? `vermoeidheid ${kern.atl}` : undefined,
-          "fitheid",
         )}
         {cel(
           "Vorm & herstel",
@@ -2877,7 +2898,6 @@ function SamenvattingStrip({
             ? <span className="tabular-nums" style={{ color: tsbKleur(kern.tsb) }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb} <UitlegDot uitlegKey="vorm" label="Vorm (TSB)" /></span>
             : <span className="text-muted-foreground">—</span>,
           kern.vormLabel ?? undefined,
-          "vorm",
         )}
         {cel(
           "Ontwikkeling",
@@ -2894,7 +2914,6 @@ function SamenvattingStrip({
             )
             : <span className="text-muted-foreground">—</span>,
           kern.wkg != null ? `${String(kern.wkg).replace(".", ",")} W/kg` : undefined,
-          "ftp",
         )}
         {cel(
           "Laatste sync",
@@ -3054,7 +3073,6 @@ export default function CoreAnalysePage() {
             metrics={metrics.data ?? []}
             sessies={sessies.data ?? []}
             todayIso={todayIso}
-            toonDuiding={activeTab !== "overzicht"}
           />
 
           <div id="tab-overzicht"  role="tabpanel" aria-labelledby="tabknop-overzicht" hidden={activeTab !== "overzicht"}>
