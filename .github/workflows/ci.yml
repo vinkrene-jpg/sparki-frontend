@@ -1,5 +1,5 @@
 # CI — draait op elke push naar main en elke pull request.
-# Alleen controles die op main bewezen groen zijn (SHA 04232ddc, 04-08-2026).
+# Alleen controles die op main bewezen groen zijn (build-job bewezen op merge-SHA b52cc738, 04-08-2026).
 # Geen secrets, geen deploy, geen productie-toegang.
 name: ci
 on:
@@ -28,6 +28,28 @@ jobs:
         run: pnpm run typecheck
       - name: Merkcopy-lint
         run: node scripts/check-brand-copy.mjs
+  build:
+    name: build (volledige productie-build + deploy-size)
+    runs-on: ubuntu-latest
+    env:
+      # De statische Expo-export eist een domeinnaam bij het bouwen. In CI
+      # bestaat er geen echt domein; deze bewust ongeldige waarde bewijst
+      # alleen dat de build slaagt — het bundel-artefact wordt nergens
+      # gepubliceerd of gebruikt. Geen geheim, geen echte omgeving.
+      EXPO_PUBLIC_DOMAIN: ci-dummy.invalid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Productie-build (typecheck + alle pakketten + deploy-size-check)
+        run: pnpm run build
   validators:
     name: validators (promise-calibratie + sanity-rapporten)
     runs-on: ubuntu-latest
