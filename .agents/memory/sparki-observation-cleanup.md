@@ -29,6 +29,17 @@ periodic — `sweepObservationCleanup()` at api-server boot + daily setInterval 
 active observations. Event metadata carries `trigger` so auto vs manual runs are distinguishable.
 Cleanup call must run after the tx commits or it won't see the freshly marked FTP rows.
 
+**§4.1/§4.4 bevestigd geheugen (AI_COACH):** statuses `voorlopig`/`bevestigd`/`weerlegd`; in de
+coach-prompt mag ALLEEN `bevestigd` een directief advies dragen — alle andere statussen krijgen
+expliciet een vraag/continuïteit-only-tag. Bevestigingsvraag: max 1/Amsterdam-dag, idempotent,
+atomair via `pg_advisory_xact_lock('memory-confirm:'+clerkId)`; antwoord alleen geldig op een rij
+met een `confirm_question_shown`-event (anders 404). `klopt_niet` → weerlegd + correctie-observatie
+(dedupeKey `correctie:<origineel>`, sourceType moet uit het bestaande enum komen — `manual_note`).
+Vergeten: cleanup demoveert >365d nooit-bevestigd (alleen new/acknowledged/saved!) naar voorlopig;
+voorlopig + her-voorlegging ≥14d geleden getoond → stil `outdated`. Cleanup-actief-set moet
+voorlopig+bevestigd bevatten of bevestigde rijen ontsnappen aan regels A–C. NB: privacy
+`ai_memory_enabled=false` slikt de correctie-persist stil in — by design, maar verwarrend bij testen.
+
 **Why:** production user accumulated 120 "new" rows retelling the same FTP story; the fake
 "terugval van 331W" came from an outdated derived FTP row, not a real decline.
 
