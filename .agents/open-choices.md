@@ -42,6 +42,25 @@ Laatst bijgewerkt: 2026-08-05.
   drempels, wind, temperatuur) bereikbaar achter het driepuntsmenu, of verdwijnen
   ze helemaal? Tot dat besluit: uit de hoofdbediening weg, NIET verwijderd.
 
+## Ontvangen 05-08-2026 — HABITAT_01 (zesde document in de reeks)
+
+- `attached_assets/HABITAT_01_1785908496410.md`: afgeschermde oefenwereld met
+  EIGEN database (H1, vermenging onmogelijk i.p.v. onwaarschijnlijk), alleen
+  René (H2), zelfde codebasis/versie (H3), deterministisch + terugzetknop (H4).
+  Bezetting §2 (familie + club OWC + tweede club), bewegende tijd, lopende
+  zaken. Wisselfunctie §4 achter env-var die in productie NIET bestaat +
+  faal-test H-T10. Uit: e-mail/push/betalingen/echte connectors/beeldgeneratie
+  (§5). Volgorde §7: eerst omgeving+db, dan voorbeeldsporter-generator
+  (ANALYSE §5.1, BLOKKEREND — nog niet gebouwd), dan bezetting, wissel, lopende
+  zaken; trainerszandbak pas daarna. §3a: trainer-ervaring uit GEDRAG (nooit
+  zelfgekozen), verschuift alleen wat vooraan staat, nooit wat mag.
+- **Open bij René (§9):** namen/leeftijden §2 akkoord of bijstellen
+  (rolverdeling moet compleet blijven)? Tweede club (WV De Zuidrand) meteen
+  mee of tweede ronde?
+- **Open (uitvoering):** startmoment — ROUTEPLANNER_MOBIEL_01 loopt nog en de
+  voorbeeldsporter-generator (blokkerend) staat óók vooraan in de
+  ANALYSE-volgorde.
+
 ## Ontvangen 05-08-2026 — twee NIEUWE documenten
 
 - `AI_COACH_KOPPELING_EN_GEHEUGEN_01` (attached_assets/…_1785907472373.md): vier

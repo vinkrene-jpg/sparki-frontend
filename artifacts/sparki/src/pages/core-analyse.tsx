@@ -183,13 +183,17 @@ function MiniDuiding({ k }: { k: string }) {
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 
-type Tab = "overzicht" | "belasting" | "progressie" | "doelen" | "sessies"
+type Tab = "overzicht" | "belasting" | "progressie" | "doelen" | "sessies" | "lab"
 const TABS: { id: Tab; label: string }[] = [
   { id: "overzicht",  label: "Overzicht"  },
   { id: "belasting",  label: "Belasting"  },
   { id: "progressie", label: "Progressie" },
   { id: "doelen",     label: "Doelen"     },
   { id: "sessies",    label: "Sessies"    },
+  // Besluit 05-08-2026: alle simulaties (Doelscenario, Wattage-lab, Wat-als)
+  // bij elkaar op één altijd vindbaar tabblad — met per tool een eerlijke
+  // melding wanneer de benodigde data ontbreekt.
+  { id: "lab",        label: "Lab"        },
 ]
 
 // ── Gedeelde datalaag-types ───────────────────────────────────────────────────
@@ -1212,36 +1216,7 @@ function BelastingTab({
   // met de pakketpoort hierboven. Puur vermogensgebonden kaarten (doelscenario,
   // Wattage-lab) houden hun eigen vermogenspoort, óók wanneer hartslag actief is.
   const ritsensorOntbreekt = poort === "data"
-  const vermogenOntbreekt = meetniveau.data != null && !vermogenActief
   const herstelOntbreekt = meetniveau.data != null && !meetniveau.data.herstel
-
-  // Doelscenario: volumeverandering in % (null = uit). Deterministische
-  // projectie uit de gedeelde engine; zonder echte belastingsscores geen band.
-  const [scenarioPct, setScenarioPct] = useState<number | null>(null)
-
-  // Urenbasis voor het scenario: eerst de uren uit je trainingsplan, anders
-  // je werkelijke gemiddelde van de laatste 4 weken. Geen van beide = eerlijk
-  // geen urenvertaling.
-  const urenBasis: { uren: number; bron: "plan" | "werkelijk" } | null = (() => {
-    const planUren = profiel?.weeklyHourTarget
-    if (planUren != null && planUren > 0) return { uren: planUren, bron: "plan" }
-    const grens = new Date()
-    grens.setDate(grens.getDate() - 28)
-    const grensIso = localISODate(grens)
-    const minuten = (sessies.data ?? [])
-      .filter((s) => s.sessionDate >= grensIso && s.durationMin != null && s.durationMin > 0)
-      .reduce((sum, s) => sum + (s.durationMin ?? 0), 0)
-    if (minuten <= 0) return null
-    return { uren: minuten / 60 / 4, bron: "werkelijk" }
-  })()
-  const projectie =
-    scenarioPct != null && load.data
-      ? belastingProjectie({
-          chartData: load.data.chartData,
-          sessies: (sessies.data ?? []).map((s) => ({ sessionDate: s.sessionDate, tss: s.tss, hrLoad: s.hrLoad ?? null })),
-          pctVolume: scenarioPct,
-        })
-      : null
 
   // Radar axes — bestaande berekening
   const assen = computePerformanceRadar({
@@ -1253,27 +1228,6 @@ function BelastingTab({
   })
   const meetbaar = assen.filter((a): a is typeof a & { level: number } => a.level != null)
   const radarSamenv = radarSamenvatting(meetbaar)
-
-  // Scenario-overlay op de radar: dezelfde asberekeningen (SSOT), maar met de
-  // belasting die het Doelscenario na 6 weken verwacht. Fitheid = midden van de
-  // verwachte CTL-band; vermoeidheid (ATL) is dan vrijwel geconvergeerd naar de
-  // nieuwe dagbelasting. Alleen belasting-assen (fitheid/vorm/herstel) schuiven
-  // mee — vermogen, gevoel en regelmaat volgen niet automatisch uit volume.
-  const scenarioAssen = (() => {
-    if (scenarioPct == null || !projectie || !load.data) return null
-    const ctlS = (projectie.ctlEind[0] + projectie.ctlEind[1]) / 2
-    const atlS = projectie.basisTssPerDag * (1 + scenarioPct / 100)
-    return computePerformanceRadar({
-      load: { ctl: ctlS, atl: atlS, tsb: ctlS - atlS },
-      sessions: (sessies.data ?? []).map((s) => ({ sessionDate: s.sessionDate, feelScore: s.feelScore ?? null })),
-      ftpWatts: profiel?.ftp ?? null,
-      weightKg: profiel?.weightKg ?? null,
-      todayIso: localISODate(new Date()),
-    })
-  })()
-  const radarOverlay = scenarioAssen
-    ? meetbaar.map((a) => scenarioAssen.find((s) => s.key === a.key)?.level ?? a.level)
-    : null
 
   const readReeks = readinessReeks(metrics.data ?? [])
   const hrvWaarde = hrvVandaag(metrics.data ?? [])
@@ -1305,115 +1259,6 @@ function BelastingTab({
         </LCard>
       )}
       {!ritsensorOntbreekt && (<>
-      {/* SPOOR_H: met alleen een hartslagband blijven de vermogensgebonden
-          simulaties (doelscenario, Wattage-lab) eerlijk achter hun eigen
-          vermogenspoort — de belastingsgrafiek en zonekaarten hieronder
-          draaien dan op de hartslagreeks. */}
-      {vermogenOntbreekt && (
-        <LCard className="p-5">
-          <LCardTitle>Doelscenario & Wattage-lab</LCardTitle>
-          <div className="mt-3">
-            <DataPoortNotice sensor="vermogensmeter" />
-          </div>
-        </LCard>
-      )}
-      {!vermogenOntbreekt && (<>
-      {/* Doelscenario — centraal veld boven de grafiek */}
-      <LCard className="p-5 border-2 border-purple-400/25">
-        <div className="flex items-center gap-1.5 mb-1">
-          <LCardTitle>Doelscenario</LCardTitle>
-          <UitlegDot uitlegKey="doelscenario" label="Doelscenario" />
-          {/* WP-K5: vast label — dit is een verkenning, geen meting of advies. */}
-          <span className="ml-auto rounded-full border border-purple-400/25 bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-purple-700">
-            Verkenning · simulatie
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          Kies een voorgenomen verandering van je trainingsvolume. De grafiek toont dan in het paars
-          de verwachte ontwikkeling van je fitheid, als band met een boven- en onderwaarde.
-        </p>
-        <UitlegRegel k="doelscenario" />
-        <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Doelscenario trainingsvolume">
-          {/* Draaiwieltje: in stappen van 5% van −50% tot +50% */}
-          <div className="inline-flex items-center rounded-xl border border-border overflow-hidden">
-            <button
-              type="button"
-              aria-label="5% minder volume"
-              disabled={(scenarioPct ?? 0) <= -50}
-              onClick={() => setScenarioPct(Math.max(-50, (scenarioPct ?? 0) - 5) || null)}
-              className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
-            >
-              −
-            </button>
-            <span
-              aria-live="polite"
-              className={cn(
-                "min-w-[5.5rem] border-x border-border px-3 py-2 text-center font-mono text-sm tabular-nums",
-                scenarioPct == null ? "text-muted-foreground" : "font-semibold text-purple-700",
-              )}
-            >
-              {scenarioPct == null ? "0% (uit)" : `${scenarioPct > 0 ? "+" : ""}${scenarioPct}%`}
-            </span>
-            <button
-              type="button"
-              aria-label="5% meer volume"
-              disabled={(scenarioPct ?? 0) >= 50}
-              onClick={() => setScenarioPct(Math.min(50, (scenarioPct ?? 0) + 5) || null)}
-              className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
-            >
-              +
-            </button>
-          </div>
-          {scenarioPct != null && (
-            <button
-              type="button"
-              onClick={() => setScenarioPct(null)}
-              className="min-h-9 rounded-lg border border-border px-3 text-xs text-muted-foreground hover:text-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
-            >
-              Uit
-            </button>
-          )}
-        </div>
-        {scenarioPct != null && urenBasis != null && (
-          <p className="mt-2 text-sm text-muted-foreground tabular-nums">
-            {scenarioPct > 0 ? "+" : ""}{scenarioPct}% volume ≈{" "}
-            <strong>{urenDeltaLabel(urenBasis.uren, scenarioPct)}</strong>{" "}
-            ({urenLabel(urenBasis.uren)} → {urenLabel(urenBasis.uren * (1 + scenarioPct / 100))} u/week,{" "}
-            {urenBasis.bron === "plan" ? "op basis van je trainingsplan" : "op basis van je werkelijke laatste 4 weken"}).
-          </p>
-        )}
-        {scenarioPct != null && urenBasis == null && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Wat dit in uren betekent is nog niet te zeggen: er staan geen uren per week in je plan en er
-            zijn geen recente sessies met een duur.
-          </p>
-        )}
-        {scenarioPct != null && projectie && (
-          <p className="mt-3 rounded-lg bg-purple-500/100/10 border border-purple-400/20 px-3 py-2 text-sm text-muted-foreground">
-            Bij <strong>{scenarioPct > 0 ? "+" : ""}{scenarioPct}% trainingsvolume</strong> komt je fitheid over{" "}
-            {projectie.dagen} dagen naar verwachting uit tussen{" "}
-            <strong className="tabular-nums" style={{ color: CHART.verwacht }}>
-              {projectie.ctlEind[0]} en {projectie.ctlEind[1]}
-            </strong>{" "}
-            (nu {projectie.ctlNu}).
-            {projectie.tsbDip < -15 && (
-              <> Je vorm zakt onderweg tijdelijk naar ongeveer {projectie.tsbDip} — houd rekening met extra vermoeidheid.</>
-            )}{" "}
-            Dit is een verwachting op basis van je werkelijke belasting van de laatste vier weken, geen zekerheid.
-          </p>
-        )}
-        {scenarioPct != null && !projectie && (
-          <p className="mt-3 rounded-lg bg-muted border border-border px-3 py-2 text-sm text-muted-foreground">
-            Er zijn de afgelopen vier weken geen sessies met een belastingsscore, dus een verwachting
-            is nu niet te berekenen. Log trainingen met duur en intensiteit of koppel een platform.
-          </p>
-        )}
-      </LCard>
-
-      {/* Wattage-lab — knutselen met eigen vermogensdoelen (eerlijke vuistregels) */}
-      <WattageLab ftp={profiel?.ftp ?? null} weightKg={profiel?.weightKg ?? null} />
-      </>)}
-
       {/* Load grafiek — volle breedte */}
       <LCard className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -1479,7 +1324,6 @@ function BelastingTab({
               raceMarkers={overlays.raceMarkers}
               vergelijk={vergelijk}
               onDagKlik={onDagKlik}
-              projectie={projectie}
             />
           ) : (
             <LegeGrafiek titel="Nog te weinig belastingsdata voor een grafiek." />
@@ -1494,7 +1338,6 @@ function BelastingTab({
         sessies={sessies.data ?? []}
         todayIso={todayIso}
         onWeekKlik={onWeekKlik}
-        doelUren={scenarioPct != null && urenBasis != null ? urenBasis.uren * (1 + scenarioPct / 100) : null}
       />
       {/* Intensiteit en weekzones draaien op vermogen óf hartslag — achter
           dezelfde ritsensorpoort als de belastingsgrafiek (melding bovenaan). */}
@@ -1623,22 +1466,12 @@ function BelastingTab({
               axes={meetbaar}
               labelColor="rgba(20,24,31,0.62)"
               gridColor="rgba(20,24,31,0.10)"
-              overlay={radarOverlay}
-              overlayAccent="rgba(168,85,247,0.9)"
             />
             {radarSamenv && <p className="sr-only">{radarSamenv}</p>}
             <p className="text-center text-xs text-muted-foreground max-w-xs text-pretty">
               {meetbaar.length} van {assen.length} assen meetbaar.
               Sterkste: {meetbaar.reduce((a, b) => (b.level > a.level ? b : a)).label}.
             </p>
-            {radarOverlay && scenarioPct != null && (
-              <p className="text-center text-xs text-purple-700 max-w-xs text-pretty">
-                Paars gestippeld: verwachte stand na {projectie?.dagen ?? 42} dagen met{" "}
-                {scenarioPct > 0 ? `${scenarioPct}% meer` : `${Math.abs(scenarioPct)}% minder`} volume —
-                fitheid, vorm en herstel schuiven mee; vermogen, gevoel en regelmaat volgen niet
-                vanzelf uit volume.
-              </p>
-            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground py-4 text-center">
@@ -1654,9 +1487,6 @@ function BelastingTab({
       <EfficientieCard onVraagAnalyse={() => vraagAnalyseOver("efficientie")} />
       <OpbouwsnelheidCard load={load} onVraagAnalyse={() => vraagAnalyseOver("opbouwsnelheid")} />
       <EisprofielCard />
-
-      {/* §5.2 — Wat-als: blok doorrekenen met hetzelfde model (berekening). */}
-      <WatAlsCard />
 
       {/* §3/§4 — Analyse op verzoek: 1–5 kaarten, bewaard, zichtbare daglimiet. */}
       <AnalyseVerzoekCard selectie={analyseSelectie} setSelectie={setAnalyseSelectie} />
@@ -1730,6 +1560,245 @@ function EisprofielCard() {
         </>
       )}
     </LCard>
+  )
+}
+
+
+// ── Lab-tabblad — alle simulaties bij elkaar (besluit 05-08-2026) ────────────
+// Doelscenario, Wattage-lab en Wat-als staan hier permanent vindbaar, elk met
+// een eerlijke melding per tool wanneer de benodigde data ontbreekt. Zelfde
+// pakketpoort als de diepe belastingsanalyse; berekeningen komen ongewijzigd
+// uit de gedeelde engines (geen tweede implementatie).
+
+function DoelscenarioCard({
+  load,
+  sessies,
+  profiel,
+}: {
+  load: Bron<LoadData>
+  sessies: Bron<TrainingSession[]>
+  profiel: Profiel
+}) {
+  // Doelscenario: volumeverandering in % (null = uit). Deterministische
+  // projectie uit de gedeelde engine; zonder echte belastingsscores geen band.
+  const [scenarioPct, setScenarioPct] = useState<number | null>(null)
+
+  // Urenbasis voor het scenario: eerst de uren uit je trainingsplan, anders
+  // je werkelijke gemiddelde van de laatste 4 weken. Geen van beide = eerlijk
+  // geen urenvertaling.
+  const urenBasis: { uren: number; bron: "plan" | "werkelijk" } | null = (() => {
+    const planUren = profiel?.weeklyHourTarget
+    if (planUren != null && planUren > 0) return { uren: planUren, bron: "plan" }
+    const grens = new Date()
+    grens.setDate(grens.getDate() - 28)
+    const grensIso = localISODate(grens)
+    const minuten = (sessies.data ?? [])
+      .filter((s) => s.sessionDate >= grensIso && s.durationMin != null && s.durationMin > 0)
+      .reduce((sum, s) => sum + (s.durationMin ?? 0), 0)
+    if (minuten <= 0) return null
+    return { uren: minuten / 60 / 4, bron: "werkelijk" }
+  })()
+  const projectie =
+    scenarioPct != null && load.data
+      ? belastingProjectie({
+          chartData: load.data.chartData,
+          sessies: (sessies.data ?? []).map((s) => ({ sessionDate: s.sessionDate, tss: s.tss, hrLoad: s.hrLoad ?? null })),
+          pctVolume: scenarioPct,
+        })
+      : null
+
+  // Eerlijke tool-staat: zonder geladen belastingsreeks is er niets te
+  // verkennen — dan geen bedienbare kaart tonen die stil niets zou doen.
+  if (load.isLoading) {
+    return (
+      <LCard className="p-5">
+        <LCardTitle>Doelscenario</LCardTitle>
+        <Skel className="mt-3 h-16 w-full" />
+      </LCard>
+    )
+  }
+  if (!load.data) {
+    return (
+      <LCard className="p-5">
+        <LCardTitle>Doelscenario</LCardTitle>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Je belastingsgegevens konden niet worden geladen, dus er valt nu geen scenario door te
+          rekenen. Probeer het later opnieuw.
+        </p>
+      </LCard>
+    )
+  }
+
+  return (
+    <>
+      <LCard className="p-5 border-2 border-purple-400/25">
+        <div className="flex items-center gap-1.5 mb-1">
+          <LCardTitle>Doelscenario</LCardTitle>
+          <UitlegDot uitlegKey="doelscenario" label="Doelscenario" />
+          {/* WP-K5: vast label — dit is een verkenning, geen meting of advies. */}
+          <span className="ml-auto rounded-full border border-purple-400/25 bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-purple-700">
+            Verkenning · simulatie
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Kies een voorgenomen verandering van je trainingsvolume. De grafiek toont dan in het paars
+          de verwachte ontwikkeling van je fitheid, als band met een boven- en onderwaarde.
+        </p>
+        <UitlegRegel k="doelscenario" />
+        <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Doelscenario trainingsvolume">
+          {/* Draaiwieltje: in stappen van 5% van −50% tot +50% */}
+          <div className="inline-flex items-center rounded-xl border border-border overflow-hidden">
+            <button
+              type="button"
+              aria-label="5% minder volume"
+              disabled={(scenarioPct ?? 0) <= -50}
+              onClick={() => setScenarioPct(Math.max(-50, (scenarioPct ?? 0) - 5) || null)}
+              className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+            >
+              −
+            </button>
+            <span
+              aria-live="polite"
+              className={cn(
+                "min-w-[5.5rem] border-x border-border px-3 py-2 text-center font-mono text-sm tabular-nums",
+                scenarioPct == null ? "text-muted-foreground" : "font-semibold text-purple-700",
+              )}
+            >
+              {scenarioPct == null ? "0% (uit)" : `${scenarioPct > 0 ? "+" : ""}${scenarioPct}%`}
+            </span>
+            <button
+              type="button"
+              aria-label="5% meer volume"
+              disabled={(scenarioPct ?? 0) >= 50}
+              onClick={() => setScenarioPct(Math.min(50, (scenarioPct ?? 0) + 5) || null)}
+              className="min-h-11 min-w-11 px-3 text-lg text-muted-foreground hover:bg-muted hover:text-foreground/85 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+            >
+              +
+            </button>
+          </div>
+          {scenarioPct != null && (
+            <button
+              type="button"
+              onClick={() => setScenarioPct(null)}
+              className="min-h-9 rounded-lg border border-border px-3 text-xs text-muted-foreground hover:text-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+            >
+              Uit
+            </button>
+          )}
+        </div>
+        {scenarioPct != null && urenBasis != null && (
+          <p className="mt-2 text-sm text-muted-foreground tabular-nums">
+            {scenarioPct > 0 ? "+" : ""}{scenarioPct}% volume ≈{" "}
+            <strong>{urenDeltaLabel(urenBasis.uren, scenarioPct)}</strong>{" "}
+            ({urenLabel(urenBasis.uren)} → {urenLabel(urenBasis.uren * (1 + scenarioPct / 100))} u/week,{" "}
+            {urenBasis.bron === "plan" ? "op basis van je trainingsplan" : "op basis van je werkelijke laatste 4 weken"}).
+          </p>
+        )}
+        {scenarioPct != null && urenBasis == null && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Wat dit in uren betekent is nog niet te zeggen: er staan geen uren per week in je plan en er
+            zijn geen recente sessies met een duur.
+          </p>
+        )}
+        {scenarioPct != null && projectie && (
+          <p className="mt-3 rounded-lg bg-purple-500/100/10 border border-purple-400/20 px-3 py-2 text-sm text-muted-foreground">
+            Bij <strong>{scenarioPct > 0 ? "+" : ""}{scenarioPct}% trainingsvolume</strong> komt je fitheid over{" "}
+            {projectie.dagen} dagen naar verwachting uit tussen{" "}
+            <strong className="tabular-nums" style={{ color: CHART.verwacht }}>
+              {projectie.ctlEind[0]} en {projectie.ctlEind[1]}
+            </strong>{" "}
+            (nu {projectie.ctlNu}).
+            {projectie.tsbDip < -15 && (
+              <> Je vorm zakt onderweg tijdelijk naar ongeveer {projectie.tsbDip} — houd rekening met extra vermoeidheid.</>
+            )}{" "}
+            Dit is een verwachting op basis van je werkelijke belasting van de laatste vier weken, geen zekerheid.
+          </p>
+        )}
+        {scenarioPct != null && !projectie && (
+          <p className="mt-3 rounded-lg bg-muted border border-border px-3 py-2 text-sm text-muted-foreground">
+            Er zijn de afgelopen vier weken geen sessies met een belastingsscore, dus een verwachting
+            is nu niet te berekenen. Log trainingen met duur en intensiteit of koppel een platform.
+          </p>
+        )}
+      </LCard>
+      {/* Band zichtbaar op de grafiek zodra een scenario aanstaat — zelfde
+          LoadGrafiek en projectie als altijd, geen tweede berekening. */}
+      {scenarioPct != null && projectie && load.data && load.data.chartData.length >= 3 && (
+        <LCard className="p-5">
+          <LCardTitle>Verwachte ontwikkeling (paarse band)</LCardTitle>
+          <div className="mt-3">
+            <LoadGrafiek chartData={load.data.chartData} periode={90} projectie={projectie} />
+          </div>
+        </LCard>
+      )}
+    </>
+  )
+}
+
+function LabTab({
+  load,
+  sessies,
+  profiel,
+}: {
+  load: Bron<LoadData>
+  sessies: Bron<TrainingSession[]>
+  profiel: Profiel
+}) {
+  // Zelfde pakketpoort als de diepe belastingsanalyse; de datapoort geldt hier
+  // per tool (eerlijke melding in plaats van de tool), nooit als blanco muur.
+  const pakket = useFeatureAccess("performance_lab")
+  const meetniveau = useMeetniveau()
+  const poort = bepaalPoort({
+    pakketOk: pakket.entitled,
+    pakketBekend: pakket.known,
+    dataOk: true,
+    dataBekend: true,
+  })
+  const vermogenOntbreekt = meetniveau.data != null && !meetniveau.data.vermogen
+
+  if (poort === "pakket") {
+    return (
+      <div className="space-y-4">
+        <PakketPoortNotice onderdeel="Het Lab" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Hier staan alle simulaties bij elkaar. Alles op dit tabblad is een verkenning of
+        berekening op basis van je eigen data — nooit een meting of belofte.
+      </p>
+
+      {/* Doelscenario — vermogensgebonden: eerlijke melding zonder vermogensspoor */}
+      {vermogenOntbreekt ? (
+        <LCard className="p-5">
+          <LCardTitle>Doelscenario</LCardTitle>
+          <div className="mt-3">
+            <DataPoortNotice sensor="vermogensmeter" />
+          </div>
+        </LCard>
+      ) : (
+        <DoelscenarioCard load={load} sessies={sessies} profiel={profiel} />
+      )}
+
+      {/* Wattage-lab — vermogensgebonden: zelfde eerlijke poort per tool */}
+      {vermogenOntbreekt ? (
+        <LCard className="p-5">
+          <LCardTitle>Wattage-lab</LCardTitle>
+          <div className="mt-3">
+            <DataPoortNotice sensor="vermogensmeter" />
+          </div>
+        </LCard>
+      ) : (
+        <WattageLab ftp={profiel?.ftp ?? null} weightKg={profiel?.weightKg ?? null} />
+      )}
+
+      {/* §5.2 — Wat-als: blok doorrekenen met hetzelfde model (berekening);
+          toont zelf een eerlijke lege staat zonder recente belastingsdata. */}
+      <WatAlsCard />
+    </div>
   )
 }
 
@@ -3104,6 +3173,9 @@ export default function CoreAnalysePage() {
           </div>
           <div id="tab-sessies"    role="tabpanel" aria-labelledby="tabknop-sessies" hidden={activeTab !== "sessies"}>
             <SessiesTab sessies={sessies} onOpen={setOpenSessie} />
+          </div>
+          <div id="tab-lab"        role="tabpanel" aria-labelledby="tabknop-lab" hidden={activeTab !== "lab"}>
+            <LabTab load={load} sessies={sessies} profiel={profiel} />
           </div>
         </div>
       </UitlegModus.Provider>

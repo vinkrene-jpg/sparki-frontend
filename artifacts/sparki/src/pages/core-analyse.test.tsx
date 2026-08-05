@@ -713,9 +713,15 @@ test("SPOOR_H: alleen hartslag ⇒ analysekaarten blijven, alleen vermogenssimul
     );
     assert.ok(text.includes("Intensiteitsverdeling"), "intensiteitskaart blijft staan");
     assert.ok(text.includes("Zoneverdeling per week"), "zonekaart blijft staan");
+    // Besluit 05-08: de simulaties wonen op het Lab-tabblad — daar krijgt élk
+    // tool zijn eigen eerlijke vermogensmelding (geen gecombineerde muur meer).
+    const lab = view.container.querySelector("#tab-lab");
+    assert.ok(lab, "Lab-tabpaneel aanwezig");
+    const labText = lab!.textContent ?? "";
     assert.ok(
-      text.includes("Doelscenario & Wattage-lab") && text.includes("Hiervoor is vermogen nodig"),
-      "vermogenssimulaties achter hun eigen vermogenspoort",
+      labText.includes("Doelscenario") && labText.includes("Wattage-lab") &&
+        labText.includes("Hiervoor is vermogen nodig"),
+      "vermogenssimulaties op Lab achter hun eigen vermogenspoort per tool",
     );
     assert.ok(!text.includes("Verkenning · simulatie"), "geen vermogenssimulatie zonder vermogen");
     // Progressie: powercurve en vermogensrecords zijn puur vermogensanalyse —
@@ -733,6 +739,31 @@ test("SPOOR_H: alleen hartslag ⇒ analysekaarten blijven, alleen vermogenssimul
       "de server-weigering mag nooit als generieke foutkaart verschijnen",
     );
     assert.ok(!text.toLowerCase().includes("upgrad"), "sensorprobleem spreekt nooit over upgraden");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// Lab-tabblad (besluit 05-08): alle simulaties bij elkaar, altijd vindbaar.
+test("Lab-tabblad: Doelscenario, Wattage-lab en Wat-als staan samen op Lab", async () => {
+  vulAlles();
+  const view = await renderPage();
+  try {
+    const tabknop = Array.from(view.container.querySelectorAll("button")).find(
+      (b) => (b.textContent ?? "").trim() === "Lab",
+    );
+    assert.ok(tabknop, "tabknop Lab aanwezig");
+    const lab = view.container.querySelector("#tab-lab");
+    assert.ok(lab, "Lab-tabpaneel aanwezig");
+    const labText = lab!.textContent ?? "";
+    assert.ok(labText.includes("Verkenning · simulatie"), "Doelscenario staat op Lab");
+    assert.ok(labText.includes("Wattage-lab"), "Wattage-lab staat op Lab");
+    assert.ok(labText.includes("Wat-als"), "Wat-als staat op Lab");
+    // En niet dubbel op Belasting (presentatie-dedup: verhuisd, niet gekopieerd).
+    const belasting = view.container.querySelector("#tab-belasting");
+    const belastingText = belasting?.textContent ?? "";
+    assert.ok(!belastingText.includes("Verkenning · simulatie"), "Doelscenario niet meer op Belasting");
+    assert.ok(!belastingText.includes("Wattage-lab"), "Wattage-lab niet meer op Belasting");
   } finally {
     view.rtl.cleanup();
   }

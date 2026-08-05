@@ -2686,7 +2686,7 @@ router.get("/power-bests", requireAuth, requireCommercialFeature("performance_la
 // ANALYSE §5.2 — een trainingsblok doorrekenen zonder het te rijden. Zelfde
 // belastingsmodel (projectLoadForward in recovery-load), geen tweede model,
 // geen AI. Uitkomst is ALTIJD een berekening, nooit een voorspelling.
-router.post("/wat-als", requireAuth, async (req, res) => {
+router.post("/wat-als", requireAuth, requireCommercialFeature("performance_lab"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { tssPerDag } = (req.body ?? {}) as { tssPerDag?: unknown };
   if (
