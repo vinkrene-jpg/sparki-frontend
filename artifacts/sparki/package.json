@@ -16,6 +16,7 @@
     "test:uitleg-content": "node ../../scripts/run-tsx-test.mjs src/lib/uitleg-content.test.ts",
     "test:session-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/session-analysis.test.ts",
     "test:session-graphs-uitleg": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/session-graphs-uitleg.test.tsx",
+    "test:session-graphs-meta-voet": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/session-graphs-meta-voet.test.tsx",
     "test:insight-grouping": "node ../../scripts/run-tsx-test.mjs src/lib/insight-grouping.test.ts",
     "test:ontwikkelprioriteit": "node ../../scripts/run-tsx-test.mjs src/lib/ontwikkelprioriteit.test.ts",
     "test:bandbreedte": "node ../../scripts/run-tsx-test.mjs src/lib/bandbreedte.test.ts",
