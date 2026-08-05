@@ -244,7 +244,8 @@
     "test:strava-oauth-callback": "node ./scripts/run-test.mjs strava-oauth-callback --dev-auth",
     "seed:voorbeeld": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-voorbeeldsporter.mjs",
     "test:np": "node ./scripts/run-test.mjs np-berekening",
-    "test:ftp-20min": "node ./scripts/run-test.mjs ftp-20min-voorstel"
+    "test:ftp-20min": "node ./scripts/run-test.mjs ftp-20min-voorstel",
+    "test:herstel-608": "node ./scripts/run-test.mjs herstel-608"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

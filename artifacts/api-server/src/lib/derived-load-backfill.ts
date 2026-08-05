@@ -251,6 +251,7 @@ export async function proposeFtpFromBestTwentyMin(
         eq(trainingSessionsTable.clerkId, clerkId),
         sql`${trainingSessionsTable.sessionDate} >= (CURRENT_DATE - make_interval(days => 42))::date`,
         sql`(${trainingSessionsTable.powerBests} ->> '1200') IS NOT NULL`,
+        sql`coalesce(${trainingSessionsTable.notes}, '') NOT LIKE '[twijfelachtige data]%'`,
       ),
     );
   let best: { watts: number; sessionDate: string; title: string | null } | null =
@@ -321,6 +322,7 @@ export async function recalibrateEstimatedFtp(
         and(
           eq(trainingSessionsTable.clerkId, clerkId),
           sql`${trainingSessionsTable.sessionDate} >= (CURRENT_DATE - make_interval(days => ${windowDays}))::date`,
+          sql`coalesce(${trainingSessionsTable.notes}, '') NOT LIKE '[twijfelachtige data]%'`,
         ),
       );
     const measuredFloor = estimateFtpFloor(measured);
@@ -460,6 +462,7 @@ export async function recalibrateEstimatedFtp(
       and(
         eq(trainingSessionsTable.clerkId, clerkId),
         sql`${trainingSessionsTable.sessionDate} >= (CURRENT_DATE - make_interval(days => ${windowDays}))::date`,
+        sql`coalesce(${trainingSessionsTable.notes}, '') NOT LIKE '[twijfelachtige data]%'`,
       ),
     );
   const floor = estimateFtpFloor(sessions);

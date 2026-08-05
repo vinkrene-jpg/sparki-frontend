@@ -61,6 +61,13 @@ export function deriveTss(input: DeriveTssInput): DerivedTss | null {
 // trainer > sporter > sparki_afgeleid > import. Een lagere bron overschrijft
 // nooit een hogere: hij wordt hooguit als NIET-leidende rij bewaard.
 
+/**
+ * Notes-prefix voor sessies met twijfelachtige data (bijv. onmogelijk hoog
+ * gemiddeld vermogen zonder vermogensreeks). De sessie blijft zichtbaar —
+ * nooit stil weggelaten — maar telt niet mee voor FTP-afleiding.
+ */
+export const TWIJFELACHTIG_PREFIX = "[twijfelachtige data]";
+
 export type FtpBron = "trainer" | "sporter" | "sparki_afgeleid" | "import";
 
 export const FTP_BRON_RANG: Record<FtpBron, number> = {

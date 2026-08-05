@@ -398,6 +398,23 @@ export async function runSync(
     // let it break a successful sync.
     await ensureMaterialNudgeNotification(clerkId).catch(() => {});
 
+    // #609: historische stream-backfill in porties — oudere Strava-ritten
+    // zonder reeksen krijgen alsnog watts/hartslag/cadans/hoogte/tijd, met
+    // eerlijke voortgang in het logboek. Best-effort, budget-begrensd.
+    if (providerId === "strava") {
+      try {
+        const { backfillStravaStreamsForUser, beschrijfBackfill } =
+          await import("../../lib/strava-stream-backfill");
+        const bf = await backfillStravaStreamsForUser(clerkId);
+        if (bf.attempted > 0)
+          console.info(`[data-hub] ${beschrijfBackfill(bf)}`);
+      } catch (err) {
+        console.warn(
+          `[data-hub] streams-backfill overgeslagen: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
     // Repair derived numbers over the athlete's full history: fill scores that
     // became derivable (e.g. FTP arrived after older rides) and re-derive an
     // ESTIMATED weekly target from real riding. Best-effort, never throws.

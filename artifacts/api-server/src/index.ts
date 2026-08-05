@@ -6,6 +6,7 @@ import { ensureIntelSeed } from "./lib/intel-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
 import { repair410wFtp } from "./lib/repair-410w-ftp";
 import { repairStravaFtpOverride } from "./lib/repair-strava-ftp-override";
+import { repairTrainerFtp345 } from "./lib/repair-trainer-ftp-345";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
@@ -133,6 +134,13 @@ app.listen(port, (err) => {
         { err },
         "Strava-FTP-herstel mislukt — backfill draait alsnog",
       ),
+    )
+    // Herstel #608 (opdracht René 05-08): trainerwaarde 345 W weer leidend
+    // vanaf 05-08, 272 W-importrij niet-leidend bewaard, verdachte rit 08-07
+    // gemarkeerd als twijfelachtige data, scores genulled voor herberekening.
+    .then(() => repairTrainerFtp345())
+    .catch((err) =>
+      logger.error({ err }, "herstel-608 mislukt — backfill draait alsnog"),
     )
     // Fire-and-forget self-heal: rides imported before belastingscore-derivation
     // existed (e.g. Strava history) get their score derived from their own power

@@ -350,87 +350,129 @@ const STREAM_CALL_BUDGET = 40;
  * rate-limit (429) stopt de hele ronde eerlijk — de samenvattingsdata is dan
  * nog steeds compleet, alleen de reeksen ontbreken tot een volgende sync.
  */
+export type StravaStreamEnrichment = {
+  streams: NonNullable<CanonicalActivity["streams"]>;
+  normalizedPower: number | null;
+  powerBests: Record<string, number> | null;
+  avgHR: number | null;
+  maxHR: number | null;
+};
+
+/**
+ * Eén stream-call → afgeleide verrijking (reeksen, eigen NP, power bests,
+ * HR-samenvatting). Gedeeld door de live sync-verrijking én de historische
+ * backfill (strava-stream-backfill), zodat beide paden identiek rekenen.
+ * Gooit door bij netwerk-/limietfouten (429 blijft herkenbaar via .status).
+ */
+export async function fetchStravaStreamEnrichment(
+  accessToken: string,
+  externalActivityId: string,
+): Promise<StravaStreamEnrichment | null> {
+  const set = await fetchStravaActivityStreams(accessToken, externalActivityId);
+  const time = set?.time?.data;
+  if (!set || !Array.isArray(time) || time.length < 2) return null;
+
+  const { computeNormalizedPower } = await import("../../normalized-power");
+  const { createStreamCollector } = await import("../../activity-streams");
+  const { createPowerSampleCollector } = await import("../../power-bests");
+
+  const watts = set.watts?.data ?? null;
+  const hr = set.heartrate?.data ?? null;
+  const cad = set.cadence?.data ?? null;
+  const vel = set.velocity_smooth?.data ?? null;
+  const alt = set.altitude?.data ?? null;
+  const dist = set.distance?.data ?? null;
+
+  const collector = createStreamCollector();
+  const bests = createPowerSampleCollector();
+  const num = (arr: Array<number | null> | null, i: number): number | null => {
+    const v = arr?.[i];
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  };
+  for (let i = 0; i < time.length; i++) {
+    const t = time[i];
+    if (typeof t !== "number" || !Number.isFinite(t)) continue;
+    const w = num(watts, i);
+    const v = num(vel, i);
+    collector.add({
+      tSec: t,
+      power: w,
+      heartRate: num(hr, i),
+      cadence: num(cad, i),
+      speedKph: v != null ? v * 3.6 : null,
+      elevationM: num(alt, i),
+      distanceM: num(dist, i),
+    });
+    if (w != null) bests.add(t, w);
+  }
+  const streams = collector.finish();
+  if (!streams) return null;
+
+  // Eigen NP uit de echte reeks (D5) — providerwaarde alleen als terugval.
+  let np: number | null = null;
+  if (watts) {
+    np = computeNormalizedPower(
+      time.filter((v): v is number => typeof v === "number"),
+      watts,
+    );
+  }
+
+  let avgHR: number | null = null;
+  let maxHR: number | null = null;
+  if (hr) {
+    const real = hr.filter(
+      (v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0,
+    );
+    if (real.length > 0) {
+      avgHR = Math.round(real.reduce((s, v) => s + v, 0) / real.length);
+      maxHR = Math.round(Math.max(...real));
+    }
+  }
+
+  return {
+    streams,
+    normalizedPower: np,
+    powerBests: bests.finish(),
+    avgHR,
+    maxHR,
+  };
+}
+
 export async function enrichStravaActivitiesWithStreams(
   clerkId: string,
   activities: CanonicalActivity[],
 ): Promise<void> {
   if (activities.length === 0) return;
   const accessToken = await getValidStravaAccessToken(clerkId);
-  const { computeNormalizedPower } = await import("../../normalized-power");
-  const { createStreamCollector } = await import("../../activity-streams");
-  const { createPowerSampleCollector } = await import("../../power-bests");
 
   let calls = 0;
   for (const act of activities) {
     if (calls >= STREAM_CALL_BUDGET) break;
-    let set: StravaStreamSet | null = null;
+    let enrichment: StravaStreamEnrichment | null = null;
     try {
       calls++;
-      set = await fetchStravaActivityStreams(accessToken, act.externalId);
+      enrichment = await fetchStravaStreamEnrichment(
+        accessToken,
+        act.externalId,
+      );
     } catch (err) {
       const status = (err as { status?: number }).status;
       if (status === 429) break; // limiet bereikt — eerlijk stoppen
       continue; // deze activiteit zonder reeksen verder verwerken
     }
-    const time = set?.time?.data;
-    if (!set || !Array.isArray(time) || time.length < 2) continue;
+    if (!enrichment) continue;
 
-    const watts = set.watts?.data ?? null;
-    const hr = set.heartrate?.data ?? null;
-    const cad = set.cadence?.data ?? null;
-    const vel = set.velocity_smooth?.data ?? null;
-    const alt = set.altitude?.data ?? null;
-    const dist = set.distance?.data ?? null;
-
-    const collector = createStreamCollector();
-    const bests = createPowerSampleCollector();
-    const num = (arr: Array<number | null> | null, i: number): number | null => {
-      const v = arr?.[i];
-      return typeof v === "number" && Number.isFinite(v) ? v : null;
-    };
-    for (let i = 0; i < time.length; i++) {
-      const t = time[i];
-      if (typeof t !== "number" || !Number.isFinite(t)) continue;
-      const w = num(watts, i);
-      const v = num(vel, i);
-      collector.add({
-        tSec: t,
-        power: w,
-        heartRate: num(hr, i),
-        cadence: num(cad, i),
-        speedKph: v != null ? v * 3.6 : null,
-        elevationM: num(alt, i),
-        distanceM: num(dist, i),
-      });
-      if (w != null) bests.add(t, w);
+    act.streams = enrichment.streams;
+    if (enrichment.normalizedPower != null) {
+      act.normalizedPower = enrichment.normalizedPower;
+      act.npBron = "sparki";
     }
-    act.streams = collector.finish();
-
-    // Eigen NP uit de echte reeks (D5) — providerwaarde alleen als terugval.
-    if (watts) {
-      const np = computeNormalizedPower(
-        time.filter((v): v is number => typeof v === "number"),
-        watts,
-      );
-      if (np != null) {
-        act.normalizedPower = np;
-        act.npBron = "sparki";
-      }
-    }
-    const bestsOut = bests.finish();
-    if (bestsOut && act.powerBests == null) act.powerBests = bestsOut;
-
+    if (enrichment.powerBests && act.powerBests == null)
+      act.powerBests = enrichment.powerBests;
     // Hartslagspoor vullen wanneer de samenvatting die miste (H3).
-    if (hr) {
-      const real = hr.filter(
-        (v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0,
-      );
-      if (real.length > 0) {
-        if (act.avgHR == null) {
-          act.avgHR = Math.round(real.reduce((s, v) => s + v, 0) / real.length);
-        }
-        if (act.maxHR == null) act.maxHR = Math.round(Math.max(...real));
-      }
-    }
+    if (act.avgHR == null && enrichment.avgHR != null)
+      act.avgHR = enrichment.avgHR;
+    if (act.maxHR == null && enrichment.maxHR != null)
+      act.maxHR = enrichment.maxHR;
   }
 }
