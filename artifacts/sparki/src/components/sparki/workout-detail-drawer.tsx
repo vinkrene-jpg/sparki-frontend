@@ -24,6 +24,8 @@ import {
   useCancelWorkout,
 } from "@/hooks/use-training-plan"
 import { useSessions } from "@/hooks/use-sessions"
+import { API_BASE } from "@/lib/api"
+import type { BuilderStep as CoachBuilderStep } from "@/hooks/use-coach-cockpit"
 import type {
   WorkoutBlock,
   WorkoutCompletion,
@@ -49,7 +51,30 @@ import {
   Unlink,
   Ban,
   HeartPulse,
+  Download,
 } from "lucide-react"
+
+// Labels + samenvatting voor bouwer-stappen van de coach (zelfde vorm als in
+// de coach-cockpit; doelen blijven %FTP of RPE — nooit verzonnen watts).
+const COACH_STAP_LABEL: Record<string, string> = {
+  warmup: "Warming-up",
+  werk: "Werk",
+  herstel: "Herstel",
+  cooldown: "Cooling-down",
+  vrij: "Vrij",
+}
+
+function coachStapSamenvatting(s: CoachBuilderStep): string {
+  const doel =
+    s.ftpLowPct != null && s.ftpHighPct != null
+      ? `${s.ftpLowPct}–${s.ftpHighPct}% FTP`
+      : s.rpe != null
+        ? `RPE ${s.rpe}`
+        : "vrij"
+  const herhaal = s.herhaal != null ? `${s.herhaal}× ` : ""
+  const rust = s.herhaal != null && s.rustMin != null ? ` / ${s.rustMin}m rust` : ""
+  return `${herhaal}${s.duurMin}m ${doel}${rust}`
+}
 
 const zoneColor: Record<number, string> = {
   1: "rgba(120,210,230,0.25)",
@@ -291,7 +316,19 @@ export function WorkoutDetailDrawer({
     onOpenChange(next)
   }
 
-  const structure = workout?.structure ?? null
+  // De plan-structuur (blocks/rationale) komt uit de Sparki-plangenerator; een
+  // coachtraining draagt in hetzelfde veld juist bouwer-stappen (`steps`) of
+  // een wedstrijdkoppeling. Alleen een échte plan-structuur als zodanig
+  // behandelen — anders crasht de OPBOUW-sectie op ontbrekende blocks.
+  const rawStructure = (workout?.structure ?? null) as Record<string, unknown> | null
+  const structure =
+    rawStructure && Array.isArray(rawStructure["blocks"])
+      ? (rawStructure as unknown as NonNullable<typeof workout>["structure"])
+      : null
+  const coachSteps: CoachBuilderStep[] =
+    rawStructure && Array.isArray(rawStructure["steps"])
+      ? (rawStructure["steps"] as CoachBuilderStep[])
+      : []
 
   const loadExplanation = () => {
     if (!workout) return
@@ -485,6 +522,36 @@ export function WorkoutDetailDrawer({
                   </div>
                 )
               })()}
+
+              {coachSteps.length > 0 && (
+                <div>
+                  <p className="mb-1 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
+                    OPBOUW (VAN JE COACH)
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    {coachSteps.map((s, i) => (
+                      <p key={i} className="font-mono text-[11px] text-muted-foreground">
+                        {COACH_STAP_LABEL[s.soort] ?? s.soort} · {coachStapSamenvatting(s)}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    {(["zwo", "fit"] as const).map((fmt) => (
+                      <a
+                        key={fmt}
+                        href={`${API_BASE}/api/athlete/workouts/${workout.id}/export?format=${fmt}`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+                      >
+                        <Download className="h-3 w-3" /> {fmt === "zwo" ? "Zwift (.zwo)" : "Garmin/Wahoo (.fit)"}
+                      </a>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    Vermogensdoelen staan in %FTP — je device rekent ze om met je
+                    eigen FTP-instelling.
+                  </p>
+                </div>
+              )}
 
               {structure && structure.equipment.length > 0 && (
                 <div className="flex items-start gap-2.5">

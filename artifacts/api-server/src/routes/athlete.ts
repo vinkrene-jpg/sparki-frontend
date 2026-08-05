@@ -55,6 +55,7 @@ import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
 import { sessionOrigin, findSessionSyncRun } from "../engines/data-origin";
 import { sanitizePlanDetails } from "../lib/plan-details";
+import { parseBuilderSteps, buildZwo, buildFitWorkout } from "../lib/workout-builder";
 import {
   computeTrimPreview,
   sliceProfile,
@@ -1227,6 +1228,62 @@ router.get("/workouts/:id", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "athlete.workouts.detail failed");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/athlete/workouts/:id/export ─────────────────────────────────────
+// Download een training met gestructureerde stappen als .zwo (Zwift) of .fit
+// (Garmin/Wahoo). Eigen trainingen alleen (clerkId); vermogensdoelen blijven
+// %FTP — het device rekent met de eigen FTP-instelling van de sporter.
+router.get("/workouts/:id/export", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  const format = String(req.query["format"] ?? "zwo");
+  if (isNaN(id) || !["zwo", "fit"].includes(format)) {
+    res.status(400).json({ error: "Ongeldige export-aanvraag" });
+    return;
+  }
+  try {
+    const [workout] = await db
+      .select({
+        id: plannedWorkoutsTable.id,
+        title: plannedWorkoutsTable.title,
+        description: plannedWorkoutsTable.description,
+        structure: plannedWorkoutsTable.structure,
+      })
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    if (!workout) {
+      res.status(404).json({ error: "Training niet gevonden" });
+      return;
+    }
+    const rawSteps = (workout.structure as Record<string, unknown> | null)?.["steps"];
+    const parsedSteps = parseBuilderSteps(rawSteps);
+    if (!parsedSteps.ok || parsedSteps.steps.length === 0) {
+      res.status(400).json({
+        error: "Deze training heeft geen gestructureerde stappen om te exporteren",
+      });
+      return;
+    }
+    const safeName = workout.title.replace(/[^\w\-]+/g, "_").slice(0, 60) || "training";
+    if (format === "zwo") {
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}.zwo"`);
+      res.send(buildZwo(workout.title, workout.description, parsedSteps.steps));
+    } else {
+      const bytes = buildFitWorkout(workout.title, parsedSteps.steps);
+      res.setHeader("Content-Type", "application/octet-stream");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}.fit"`);
+      res.send(Buffer.from(bytes));
+    }
+  } catch (err) {
+    req.log.error({ err }, "athlete.workouts.export failed");
+    res.status(500).json({ error: "Kon training niet exporteren" });
   }
 });
 

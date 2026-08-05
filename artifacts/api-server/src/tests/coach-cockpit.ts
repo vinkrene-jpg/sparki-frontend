@@ -326,6 +326,17 @@ async function main() {
     // Definitiecheck: file_id.serial_number moet base type uint32z (0x8c) zijn.
     assert(bytes.includes(0x8c), "fit-definities missen uint32z-basistype");
 
+    // De sporter zelf kan de training óók downloaden (die zet hem op z'n
+    // device); een vreemde sporter niet (404 — geen eigen training).
+    const own = await fetch(`${baseUrl}/api/athlete/workouts/${wid}/export?format=fit`, {
+      headers: { "x-dev-clerk-id": clerkAthlete },
+    });
+    assert(own.status === 200, `sporter-export: verwacht 200, kreeg ${own.status}`);
+    const vreemd = await fetch(`${baseUrl}/api/athlete/workouts/${wid}/export?format=fit`, {
+      headers: { "x-dev-clerk-id": clerkCoachB },
+    });
+    assert(vreemd.status === 404, `vreemde sporter-export: verwacht 404, kreeg ${vreemd.status}`);
+
     // Training zonder stappen exporteren = eerlijke 400.
     const plain = await req("POST", `/api/coach/athletes/${clerkAthlete}/workouts`, clerkCoach, {
       scheduledDate: iso(4),
