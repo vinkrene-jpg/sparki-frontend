@@ -392,10 +392,19 @@ router.get("/athletes/:athleteId/workouts", requireAuth, async (req, res) => {
         status: plannedWorkoutsTable.status,
         source: plannedWorkoutsTable.source,
         structure: plannedWorkoutsTable.structure,
+        coachClerkId: plannedWorkoutsTable.coachClerkId,
       })
       .from(plannedWorkoutsTable)
       .where(and(...where))
       .orderBy(asc(plannedWorkoutsTable.scheduledDate));
+    // Server-afgeleide bewerkbaarheid: alleen eigen coachtrainingen (legacy
+    // null-eigenaar blijft voor elke gekoppelde coach bewerkbaar). De UI
+    // gebruikt dit voor slepen/kopiëren; de mutatieroutes checken het zelf ook.
+    const withCanEdit = workouts.map(({ coachClerkId, ...w }) => ({
+      ...w,
+      canEdit:
+        w.source === "coach" && (coachClerkId == null || coachClerkId === coachId),
+    }));
     res.json({ workouts });
   } catch (err) {
     req.log.error({ err }, "coach.workouts.list failed");
@@ -645,6 +654,8 @@ router.get(
           title: plannedWorkoutsTable.title,
           description: plannedWorkoutsTable.description,
           structure: plannedWorkoutsTable.structure,
+          source: plannedWorkoutsTable.source,
+          coachClerkId: plannedWorkoutsTable.coachClerkId,
         })
         .from(plannedWorkoutsTable)
         .where(
@@ -655,6 +666,15 @@ router.get(
         );
       if (!w) {
         res.status(404).json({ error: "Training niet gevonden" });
+        return;
+      }
+      // Cross-coach isolatie: alleen de coach die de training bouwde mag hem
+      // exporteren (legacy null-eigenaar: elke gekoppelde coach, zoals bij PUT).
+      if (
+        w.source !== "coach" ||
+        (w.coachClerkId != null && w.coachClerkId !== coachId)
+      ) {
+        res.status(403).json({ error: "Alleen je eigen coachtrainingen kun je exporteren" });
         return;
       }
       const rawSteps = (w.structure as Record<string, unknown> | null)?.steps;

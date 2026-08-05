@@ -62,8 +62,10 @@ export function CoachWeekCalendar({ athleteId }: { athleteId: string }) {
 
   const busy = update.isPending || repeat.isPending
 
+  // Server-afgeleide bewerkbaarheid: alleen eigen coachtrainingen zijn
+  // sleepbaar/kopieerbaar — trainingen van een andere coach dus ook niet.
   function isOwn(w: CoachWorkout) {
-    return w.source === "coach" && w.status !== "cancelled"
+    return w.canEdit === true && w.status !== "cancelled"
   }
 
   function dropOn(date: string, workout: CoachWorkout | null, kind: "verplaats" | "kopieer") {

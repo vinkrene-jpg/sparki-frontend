@@ -257,7 +257,7 @@ export function buildFitWorkout(title: string, steps: BuilderStep[]): Uint8Array
     { num: 0, size: 1, baseType: BT.enum }, // type
     { num: 1, size: 2, baseType: BT.u16 }, // manufacturer
     { num: 2, size: 2, baseType: BT.u16 }, // product
-    { num: 3, size: 4, baseType: BT.u32 }, // serial_number (uint32z)
+    { num: 3, size: 4, baseType: 0x8c }, // serial_number (uint32z)
   ]);
   body.u8(0x00);
   body.u8(5);

@@ -306,6 +306,25 @@ async function main() {
     assert(String.fromCharCode(...bytes.slice(8, 12)) === ".FIT", "fit-magic ontbreekt");
     const dataLen = bytes[4]! | (bytes[5]! << 8) | (bytes[6]! << 16) | (bytes[7]! << 24);
     assert(bytes.length === 14 + dataLen + 2, "fit-datalengte klopt niet met bestandsgrootte");
+    // CRC-16-verificatie (gedocumenteerd FIT-algoritme) over header + data.
+    const crcTable = [0x0000, 0xcc01, 0xd801, 0x1400, 0xf001, 0x3c00, 0x2800, 0xe401, 0xa001, 0x6c00, 0x7800, 0xb401, 0x5000, 0x9c01, 0x8801, 0x4400];
+    const crcOf = (arr: Uint8Array, start: number, end: number) => {
+      let crc = 0;
+      for (let i = start; i < end; i++) {
+        const b = arr[i]!;
+        let tmp = crcTable[crc & 0xf]!;
+        crc = ((crc >> 4) & 0x0fff) ^ tmp ^ crcTable[b & 0xf]!;
+        tmp = crcTable[crc & 0xf]!;
+        crc = ((crc >> 4) & 0x0fff) ^ tmp ^ crcTable[(b >> 4) & 0xf]!;
+      }
+      return crc;
+    };
+    const headerCrc = bytes[12]! | (bytes[13]! << 8);
+    assert(crcOf(bytes, 0, 12) === headerCrc, "fit-header-CRC klopt niet");
+    const fileCrc = bytes[14 + dataLen]! | (bytes[15 + dataLen]! << 8);
+    assert(crcOf(bytes, 0, 14 + dataLen) === fileCrc, "fit-bestands-CRC klopt niet");
+    // Definitiecheck: file_id.serial_number moet base type uint32z (0x8c) zijn.
+    assert(bytes.includes(0x8c), "fit-definities missen uint32z-basistype");
 
     // Training zonder stappen exporteren = eerlijke 400.
     const plain = await req("POST", `/api/coach/athletes/${clerkAthlete}/workouts`, clerkCoach, {
@@ -584,6 +603,12 @@ async function main() {
       { dates: [isoOffset(21)] },
     );
     assert(rep.status === 404, `herhalen door coach B: verwacht 404, kreeg ${rep.status}`);
+    // Export van andermans training is óók afgeschermd (data-lek anders).
+    const exp = await fetch(
+      `${baseUrl}/api/coach/athletes/${clerkAthlete}/workouts/${coachWorkoutId}/export?format=zwo`,
+      { headers: { "x-dev-clerk-id": clerkCoachB } },
+    );
+    assert(exp.status === 403, `export door coach B: verwacht 403, kreeg ${exp.status}`);
     // Voorstel op training van coach A: B ziet het niet in de lijst en mag niet beslissen.
     const [pb] = await db
       .insert(coachChangeProposalsTable)

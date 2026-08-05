@@ -63,6 +63,8 @@ export type CoachWorkout = {
   status: string;
   source: string;
   structure: Record<string, unknown> | null;
+  /** Server-afgeleid: alleen eigen coachtrainingen zijn bewerkbaar. */
+  canEdit?: boolean;
 };
 
 export type CoachProposal = {
