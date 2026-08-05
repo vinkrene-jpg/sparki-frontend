@@ -401,6 +401,70 @@ export function useDeletePrivateNote(athleteId: string | null) {
   });
 }
 
+// ── Naleving: gepland vs. werkelijk uitgevoerd ──────────────────────────────
+
+export type ComplianceStatus = "groen" | "geel" | "rood" | "open" | "grijs";
+
+export type ComplianceEntry = {
+  date: string;
+  status: ComplianceStatus;
+  reason: string | null;
+  planned: {
+    id: number;
+    title: string;
+    source: string;
+    targetDurationMin: number | null;
+    targetTSS: number | null;
+  } | null;
+  executed: {
+    sessionId: number;
+    title: string | null;
+    durationMin: number | null;
+    tss: number | null;
+    hrLoad: number | null;
+  } | null;
+  extra: boolean;
+};
+
+export type ComplianceSummary = {
+  groen: number;
+  geel: number;
+  rood: number;
+  open: number;
+  extra: number;
+};
+
+export function useCoachCompliance(athleteId: string | null) {
+  return useQuery({
+    queryKey: ["coach", "cockpit", athleteId ?? "", "compliance"] as const,
+    queryFn: () =>
+      apiFetch<{ from: string; to: string; entries: ComplianceEntry[]; summary: ComplianceSummary }>(
+        `/api/coach/athletes/${athleteId}/compliance`,
+      ),
+    enabled: useEnabled(Boolean(athleteId)),
+    staleTime: 60_000,
+  });
+}
+
+export type ComplianceOverviewAthlete = {
+  athleteClerkId: string;
+  displayName: string | null;
+  sharing: "none" | "summary" | "full";
+  summary: ComplianceSummary | null;
+};
+
+export function useCoachComplianceOverview(enabled = true) {
+  return useQuery({
+    queryKey: ["coach", "cockpit", "compliance-overview"] as const,
+    queryFn: () =>
+      apiFetch<{ from: string; to: string; athletes: ComplianceOverviewAthlete[] }>(
+        "/api/coach/compliance/overview",
+      ),
+    enabled: useEnabled(enabled),
+    staleTime: 60_000,
+  });
+}
+
 export function useContextAboutMe() {
   return useQuery({
     queryKey: ck.aboutMe(),

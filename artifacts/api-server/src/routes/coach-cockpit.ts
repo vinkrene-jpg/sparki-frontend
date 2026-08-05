@@ -40,6 +40,8 @@ import {
   hasRole,
 } from "../engines/coaching";
 import { buildCoachSignals, openPriority } from "../lib/coach-signals";
+import { buildCompliance } from "../lib/coach-compliance";
+import { markOverdueAsMissed } from "../lib/workout-execution";
 
 const router = Router();
 
@@ -49,6 +51,12 @@ function todayISO() {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isoDaysAgo(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 async function requireCoach(clerkId: string, res: import("express").Response) {
   if (!(await hasRole(clerkId, "coach"))) {
@@ -706,6 +714,114 @@ router.post("/workouts/bulk", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "coach.workouts.bulk failed");
     res.status(500).json({ error: "Kon bulk-planning niet uitvoeren" });
+  }
+});
+
+// ── Naleving: gepland vs. werkelijk uitgevoerd ───────────────────────────────
+// Leest uitsluitend de bestaande uitvoeringskoppeling (workout-execution) —
+// geen tweede oordeel. Zelfde toestemmingsgates als de rest van de cockpit.
+
+// GET dag-voor-dag nalevingsbeeld van één sporter (standaard laatste 14 dagen).
+router.get("/athletes/:athleteId/compliance", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const athleteId = String(req.params.athleteId);
+  const today = todayISO();
+  const from = DATE_RE.test(String(req.query.from ?? ""))
+    ? String(req.query.from)
+    : isoDaysAgo(13);
+  const to = DATE_RE.test(String(req.query.to ?? "")) ? String(req.query.to) : today;
+  try {
+    if (!(await gateAthlete(coachId, athleteId, res))) return;
+    // Lazy zelfheling: verstreken geplande trainingen zonder rit worden eerst
+    // eerlijk "missed" — zelfde pad als de sporterkant.
+    await markOverdueAsMissed(athleteId, today);
+    const { entries, summary } = await buildCompliance(athleteId, from, to, today);
+    void writeAudit({
+      event: "viewed_by_coach",
+      actorClerkId: coachId,
+      subjectClerkId: athleteId,
+      meta: { rol: "coach", scherm: "naleving" },
+      req,
+    });
+    res.json({ from, to, entries, summary });
+  } catch (err) {
+    req.log.error({ err }, "coach.compliance failed");
+    res.status(500).json({ error: "Kon naleving niet laden" });
+  }
+});
+
+// GET nalevingsoverzicht over alle direct gekoppelde sporters (laatste 7
+// dagen) — voor het dashboard: wie week het meest af. Alleen directe links;
+// wie niets deelt staat er eerlijk in zonder cijfers.
+router.get("/compliance/overview", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const today = todayISO();
+  const from = isoDaysAgo(6);
+  try {
+    const links = await db
+      .select({ athleteClerkId: coachAthleteLinksTable.athleteClerkId })
+      .from(coachAthleteLinksTable)
+      .where(
+        and(
+          eq(coachAthleteLinksTable.coachClerkId, coachId),
+          eq(coachAthleteLinksTable.status, "accepted"),
+          isNull(coachAthleteLinksTable.endedAt),
+        ),
+      );
+    const ids = links.map((l) => l.athleteClerkId);
+    if (ids.length === 0) {
+      res.json({ from, to: today, athletes: [] });
+      return;
+    }
+    const names = await db
+      .select({
+        clerkId: userProfilesTable.clerkId,
+        displayName: userProfilesTable.displayName,
+      })
+      .from(userProfilesTable)
+      .where(inArray(userProfilesTable.clerkId, ids));
+    const nameById = new Map(names.map((n) => [n.clerkId, n.displayName]));
+
+    const athletes = [];
+    for (const athleteId of ids) {
+      const sharing = await coachSharingLevel(athleteId);
+      if (sharing === "none") {
+        athletes.push({
+          athleteClerkId: athleteId,
+          displayName: nameById.get(athleteId) ?? null,
+          sharing,
+          summary: null,
+        });
+        continue;
+      }
+      await markOverdueAsMissed(athleteId, today);
+      const { summary } = await buildCompliance(athleteId, from, today, today);
+      athletes.push({
+        athleteClerkId: athleteId,
+        displayName: nameById.get(athleteId) ?? null,
+        sharing,
+        summary,
+      });
+    }
+    // Meeste afwijking eerst (rood zwaarst, dan geel); rustig onderaan.
+    athletes.sort((a, b) => {
+      const wa = a.summary ? a.summary.rood * 2 + a.summary.geel : -1;
+      const wb = b.summary ? b.summary.rood * 2 + b.summary.geel : -1;
+      if (wa !== wb) return wb - wa;
+      return (a.displayName ?? "").localeCompare(b.displayName ?? "");
+    });
+    void writeAudit({
+      event: "viewed_by_coach",
+      actorClerkId: coachId,
+      meta: { rol: "coach", scherm: "naleving_overzicht", aantal: ids.length },
+      req,
+    });
+    res.json({ from, to: today, athletes });
+  } catch (err) {
+    req.log.error({ err }, "coach.compliance.overview failed");
+    res.status(500).json({ error: "Kon nalevingsoverzicht niet laden" });
   }
 });
 

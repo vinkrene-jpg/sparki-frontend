@@ -44,6 +44,7 @@ import {
   type CoachSignal,
   type CoachWorkout,
   type CoachProposal,
+  useCoachCompliance,
 } from "@/hooks/use-coach-cockpit"
 import {
   useTrainerGoalPolicy,
@@ -421,6 +422,105 @@ function PlanningSection({
           />
         )}
       </BeheerSheet>
+    </div>
+  )
+}
+
+// ── Naleving: gepland vs. werkelijk uitgevoerd (laatste 14 dagen) ───────────
+// Leest het bestaande uitvoeringsoordeel (koppeling sessie↔training); toont
+// eerlijk "geen rit binnengekomen" bij rood en de reden bij geel.
+
+const NALEVING_DOT: Record<string, { kleur: string; label: string }> = {
+  groen: { kleur: "oklch(0.82 0.16 150)", label: "Zoals gepland" },
+  geel: { kleur: "oklch(0.78 0.16 60)", label: "Afwijkend" },
+  rood: { kleur: "oklch(0.72 0.19 25)", label: "Gemist" },
+  open: { kleur: "var(--color-accent-cyan)", label: "Nog open" },
+  grijs: { kleur: "var(--color-muted-foreground)", label: "Geannuleerd" },
+}
+
+function NalevingSection({ athleteId, name }: { athleteId: string; name: string }) {
+  const { data, isLoading, isError } = useCoachCompliance(athleteId)
+  if (isLoading) return <div className="h-20 animate-pulse rounded-2xl bg-muted" />
+  if (isError)
+    return (
+      <p className="text-[13px] text-muted-foreground">
+        Kon de naleving niet ophalen — mogelijk deelt {name} geen data met jou.
+      </p>
+    )
+  const entries = data?.entries ?? []
+  const s = data?.summary
+  return (
+    <div className="mt-2 flex flex-col gap-3">
+      <SectionLabel n="02" title="Naleving — laatste 14 dagen" />
+      {s && (
+        <div className="flex flex-wrap gap-3 font-mono text-[11px] text-muted-foreground">
+          <span style={{ color: NALEVING_DOT.groen!.kleur }}>{s.groen} zoals gepland</span>
+          <span style={{ color: NALEVING_DOT.geel!.kleur }}>{s.geel} afwijkend</span>
+          <span style={{ color: NALEVING_DOT.rood!.kleur }}>{s.rood} gemist</span>
+          {s.extra > 0 && <span>{s.extra} extra (ongepland)</span>}
+          {s.open > 0 && <span>{s.open} nog open</span>}
+        </div>
+      )}
+      {entries.length === 0 ? (
+        <p className="text-[13px] text-muted-foreground">
+          Geen geplande trainingen of ritten in de afgelopen twee weken.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {entries.map((e, i) => {
+            const dot = NALEVING_DOT[e.status] ?? NALEVING_DOT.open!
+            return (
+              <div key={`${e.date}-${e.planned?.id ?? "x"}-${e.executed?.sessionId ?? i}`} className={CARD}>
+                <div className="flex items-start gap-2.5">
+                  <span
+                    className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: dot.kleur }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                      {fmtDay(e.date)} · {e.extra ? "Extra rit (ongepland)" : dot.label}
+                    </span>
+                    <p className="mt-0.5 truncate text-[14px] tracking-tight text-foreground/90">
+                      {e.planned?.title ?? e.executed?.title ?? "Rit"}
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-3 font-mono text-[11px] text-muted-foreground">
+                      {e.planned && (
+                        <span>
+                          Gepland:{" "}
+                          {[
+                            e.planned.targetDurationMin != null ? `${e.planned.targetDurationMin}m` : null,
+                            e.planned.targetTSS != null ? `${e.planned.targetTSS} bp` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "geen doelwaarden"}
+                        </span>
+                      )}
+                      {e.executed && (
+                        <span>
+                          Gereden:{" "}
+                          {[
+                            e.executed.durationMin != null ? `${e.executed.durationMin}m` : null,
+                            e.executed.tss != null
+                              ? `${e.executed.tss} bp`
+                              : e.executed.hrLoad != null
+                                ? `${e.executed.hrLoad} bp (hartslag)`
+                                : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "geen cijfers"}
+                        </span>
+                      )}
+                    </div>
+                    {e.reason && (
+                      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{e.reason}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -1206,6 +1306,7 @@ function CockpitBody({
               adding={addingWorkout}
               onAddingChange={setAddingWorkout}
             />
+            <NalevingSection athleteId={athleteId} name={name} />
           </div>
         )}
 

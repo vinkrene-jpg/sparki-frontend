@@ -34,6 +34,7 @@ import {
   coachMessagesTable,
   coachContextItemsTable,
   coachChangeProposalsTable,
+  trainingSessionsTable,
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import app from "../app";
@@ -119,6 +120,9 @@ async function req(
 }
 
 async function cleanup() {
+  for (const c of [clerkAthlete, clerkAthleteNone, clerkStranger]) {
+    await db.delete(trainingSessionsTable).where(eq(trainingSessionsTable.clerkId, c)).catch(() => {});
+  }
   for (const t of [
     { table: plannedWorkoutsTable, col: plannedWorkoutsTable.clerkId, ids: [clerkAthlete, clerkAthleteNone, clerkStranger] },
   ]) {
@@ -184,6 +188,72 @@ async function main() {
   await scenario("dashboard 403 zonder coach-rol", async () => {
     const r = await req("GET", "/api/coach/dashboard", clerkStranger);
     assert(r.status === 403, `verwacht 403, kreeg ${r.status}`);
+  });
+
+  // ── Naleving: gepland vs. uitgevoerd ──────────────────────────────────────
+  await scenario("naleving: groen via link, rood zonder rit, extra ongepland; gates fail-closed", async () => {
+    const iso = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+    // Eergisteren: rit + gekoppelde geplande training (completed) → groen.
+    const [ses] = await db
+      .insert(trainingSessionsTable)
+      .values({ clerkId: clerkAthlete, sessionDate: iso(-2), title: "Duurrit", durationMin: 90, tss: 80 })
+      .returning({ id: trainingSessionsTable.id });
+    await db.insert(plannedWorkoutsTable).values({
+      clerkId: clerkAthlete,
+      scheduledDate: iso(-2),
+      title: "Duurtraining",
+      targetDurationMin: 90,
+      targetTSS: 80,
+      status: "completed",
+      sessionId: ses!.id,
+      source: "sparki",
+    });
+    // Gisteren: gepland maar geen rit → lazy zelfheling maakt hem missed (rood).
+    await db.insert(plannedWorkoutsTable).values({
+      clerkId: clerkAthlete,
+      scheduledDate: iso(-1),
+      title: "Intervallen",
+      targetDurationMin: 60,
+      status: "planned",
+      source: "sparki",
+    });
+    // Gisteren óók een losse, ongekoppelde rit → telt eerlijk als extra.
+    await db
+      .insert(trainingSessionsTable)
+      .values({ clerkId: clerkAthlete, sessionDate: iso(-1), title: "Losse rit", durationMin: 45 });
+
+    const r = await req("GET", `/api/coach/athletes/${clerkAthlete}/compliance`, clerkCoach);
+    assert(r.status === 200, `verwacht 200, kreeg ${r.status}`);
+    const entries: any[] = r.json?.entries ?? [];
+    const groen = entries.find((e) => e.planned?.title === "Duurtraining");
+    assert(groen?.status === "groen" && groen.executed?.sessionId === ses!.id, "gekoppelde training moet groen zijn met rit erbij");
+    const rood = entries.find((e) => e.planned?.title === "Intervallen");
+    assert(rood?.status === "rood", "verstreken training zonder rit moet rood zijn");
+    assert(typeof rood.reason === "string" && rood.reason.includes("Geen rit"), "rood moet eerlijk 'geen rit' als reden dragen");
+    const extra = entries.find((e) => e.extra === true);
+    assert(extra?.executed?.title === "Losse rit" && extra.planned == null, "ongekoppelde rit moet als extra verschijnen");
+    assert(r.json?.summary?.groen >= 1 && r.json?.summary?.rood >= 1 && r.json?.summary?.extra >= 1, "samenvatting telt groen/rood/extra");
+
+    // Gates: ongekoppeld en deelt-niet fail-closed.
+    const a = await req("GET", `/api/coach/athletes/${clerkStranger}/compliance`, clerkCoach);
+    assert(a.status === 403, `ongekoppeld: verwacht 403, kreeg ${a.status}`);
+    const b = await req("GET", `/api/coach/athletes/${clerkAthleteNone}/compliance`, clerkCoach);
+    assert(b.status === 403, `deelt niet: verwacht 403, kreeg ${b.status}`);
+
+    // Overzicht: delende sporter mét cijfers, deelt-niet eerlijk zonder.
+    const o = await req("GET", "/api/coach/compliance/overview", clerkCoach);
+    assert(o.status === 200, `overzicht: verwacht 200, kreeg ${o.status}`);
+    const rows: any[] = o.json?.athletes ?? [];
+    const rowFull = rows.find((x) => x.athleteClerkId === clerkAthlete);
+    const rowNone = rows.find((x) => x.athleteClerkId === clerkAthleteNone);
+    assert(rowFull?.summary != null, "delende sporter moet cijfers hebben in het overzicht");
+    assert(rowNone && rowNone.summary == null, "deelt-niet moet zonder cijfers in het overzicht staan");
+    const oNoRole = await req("GET", "/api/coach/compliance/overview", clerkStranger);
+    assert(oNoRole.status === 403, `zonder coach-rol: verwacht 403, kreeg ${oNoRole.status}`);
   });
 
   // ── Signalen + besluiten ───────────────────────────────────────────────────

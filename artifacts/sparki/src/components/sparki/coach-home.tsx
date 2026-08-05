@@ -22,6 +22,7 @@ import { useEndCoachLink } from "@/hooks/use-coach"
 import {
   useCoachDashboard,
   useBulkCoachWorkout,
+  useCoachComplianceOverview,
   type DashboardAthlete,
 } from "@/hooks/use-coach-cockpit"
 import { useInvitations } from "@/hooks/use-invitations"
@@ -368,6 +369,53 @@ function BulkPlanner({ athletes }: { athletes: DashboardAthlete[] }) {
   )
 }
 
+// Nalevingsoverzicht (laatste 7 dagen): wie week het meest af van het plan.
+// Cijfers komen uit de bestaande uitvoeringskoppeling; wie niets deelt staat
+// er eerlijk in zonder cijfers.
+function ComplianceOverview({ enabled }: { enabled: boolean }) {
+  const { data, isLoading, isError } = useCoachComplianceOverview(enabled)
+  if (!enabled || isError) return null
+  if (isLoading)
+    return <div className="h-20 animate-pulse rounded-2xl bg-muted" />
+  const rows = data?.athletes ?? []
+  if (rows.length === 0) return null
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 backdrop-blur-md">
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Naleving — laatste 7 dagen
+      </span>
+      <div className="mt-2 space-y-1.5">
+        {rows.map((r) => (
+          <Link
+            key={r.athleteClerkId}
+            href={`/coach/athletes/${r.athleteClerkId}/cockpit`}
+            className="flex items-center gap-2 rounded-lg px-1 py-1 text-[13px] text-muted-foreground hover:bg-muted"
+          >
+            <span className="min-w-0 flex-1 truncate text-foreground/85">
+              {r.displayName ?? "Atleet"}
+            </span>
+            {r.summary == null ? (
+              <span className="text-[11px] text-muted-foreground">Deelt niet</span>
+            ) : (
+              <span className="flex shrink-0 gap-2.5 font-mono text-[11px]">
+                <span style={{ color: "oklch(0.82 0.16 150)" }}>{r.summary.groen}✓</span>
+                <span style={{ color: "oklch(0.78 0.16 60)" }}>{r.summary.geel}~</span>
+                <span style={{ color: "oklch(0.72 0.19 25)" }}>{r.summary.rood}✗</span>
+                {r.summary.extra > 0 && (
+                  <span className="text-muted-foreground">+{r.summary.extra} extra</span>
+                )}
+              </span>
+            )}
+          </Link>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        ✓ zoals gepland · ~ afwijkend · ✗ gemist, op basis van gekoppelde ritten.
+      </p>
+    </div>
+  )
+}
+
 // Labels voor de rolweergavewissel (alleen echte, server-bevestigde opties).
 const ROLE_VIEW_LABELS: Partial<Record<TodayRole, string>> = {
   trainer: "Trainer",
@@ -469,6 +517,8 @@ export function CoachHome() {
             ))}
           </div>
         )}
+
+        <ComplianceOverview enabled={athletes.length > 0} />
 
         <OpenInvitations />
 
