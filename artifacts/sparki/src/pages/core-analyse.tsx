@@ -166,7 +166,7 @@ type Bron<T> = {
 }
 
 type Profiel =
-  | { displayName?: string | null; ftp?: number | null; ftpEstimated?: boolean | null; weightKg?: number | null; weeklyHourTarget?: number | null }
+  | { displayName?: string | null; ftp?: number | null; ftpEstimated?: boolean | null; weightKg?: number | null; weeklyHourTarget?: number | null; voorbeeld?: boolean }
   | null
   | undefined
 
@@ -2463,6 +2463,15 @@ export default function CoreAnalysePage() {
           chrome/achtergrond). Alleen de eigen sectielabel, titel en acties. */}
       <section className="flex flex-col gap-3">
         <SectionLabel title="Performance-analyse" />
+        {profiel?.voorbeeld === true && (
+          <div
+            className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-700"
+            data-testid="banner-voorbeeldsporter"
+          >
+            Voorbeeldsporter — alle gegevens op deze pagina zijn fictief en
+            gegenereerd om de analyse te laten zien. Dit is geen echte sporter.
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="type-display font-light tracking-tight text-foreground">

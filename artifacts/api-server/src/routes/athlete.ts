@@ -131,7 +131,17 @@ router.get("/profile", requireAuth, async (req, res) => {
         )
       : null;
 
-    res.json({ ...user, ...athlete, zones, wkg, herkomst });
+    // §5.1 Voorbeeldsporter: zichtbare markering — dit account is fictief en
+    // mag nooit met eigen data verward worden.
+    const { isVoorbeeldSporter } = await import("../lib/voorbeeldsporter");
+    res.json({
+      ...user,
+      ...athlete,
+      zones,
+      wkg,
+      herkomst,
+      voorbeeld: isVoorbeeldSporter(clerkId),
+    });
   } catch (err) {
     req.log.error({ err }, "athlete.profile GET failed");
     res.status(500).json({ error: "Internal server error" });

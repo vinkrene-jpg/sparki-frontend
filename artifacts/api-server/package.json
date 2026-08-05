@@ -239,7 +239,8 @@
     "test:trv-f4-voorschouw": "tsx src/tests/trv-f4-voorschouw.ts",
     "test:routes-nearby": "node ./scripts/run-test.mjs routes-nearby",
     "test:routes-nearby-corpus": "node ./scripts/run-test.mjs routes-nearby-corpus",
-    "test:strava-oauth-callback": "node ./scripts/run-test.mjs strava-oauth-callback --dev-auth"
+    "test:strava-oauth-callback": "node ./scripts/run-test.mjs strava-oauth-callback --dev-auth",
+    "seed:voorbeeld": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-voorbeeldsporter.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

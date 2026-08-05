@@ -21,7 +21,13 @@ Laatst bijgewerkt: 2026-08-05.
   "Alleen deze aanpassen" (incl. verplaatsen), "Deze en volgende" (reeks
   splitsen) en "Deze overslaan".
 
-## Ontvangen 05-08-2026 — twee NIEUWE documenten (nog geen startsein, K6: input ≠ toestemming)
+## STARTSEIN 05-08-2026 (René: "Allebei, in die volgorde")
+
+- Eerst ANALYSE_UITBREIDING_EN_ZANDBAK_01 (volgorde §9), daarna
+  AI_COACH_KOPPELING_EN_GEHEUGEN_01 (volgorde §6, R3 eerst). §4.2-triggerlaag
+  blijft wachten op René's triggerlijst; B8-ijking wacht op intervals.icu-kant.
+
+## Ontvangen 05-08-2026 — twee NIEUWE documenten
 
 - `AI_COACH_KOPPELING_EN_GEHEUGEN_01` (attached_assets/…_1785907472373.md): vier
   koppelgaten G1–G4 (CTL/ATL/TSB, diepe analyse, adviesdossier, meetniveau naar de

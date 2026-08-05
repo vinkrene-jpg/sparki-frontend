@@ -14,6 +14,8 @@ export type AthleteProfile = {
   id: number;
   ftp: number | null;
   ftpEstimated: boolean | null;
+  // §5.1 Voorbeeldsporter: dit account is fictief (zichtbare markering).
+  voorbeeld?: boolean;
   // WP-K2: herkomststatus per kernwaarde (Sportpaspoort) — één brondefinitie.
   herkomst?: Record<
     string,
