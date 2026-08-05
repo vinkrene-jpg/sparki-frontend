@@ -652,6 +652,33 @@ export function aandachtspunten(input: {
   return uit.slice(0, 3)
 }
 
+// ── §2 Opbouwsnelheid — weekstijging van CTL uit de BESTAANDE reeks ─────────
+// Geen tweede berekening: dit leest alleen de serie die computeLoadSeries al
+// leverde en zet er de week-op-week-verandering naast.
+
+export type OpbouwPunt = {
+  /** Maandag van de week (YYYY-MM-DD). */
+  weekStart: string
+  /** CTL aan het einde van die week. */
+  ctl: number
+  /** Verandering t.o.v. een week eerder; null voor de eerste week. */
+  stijging: number | null
+}
+
+export function opbouwsnelheid(chartData: LoadPunt[]): OpbouwPunt[] {
+  if (chartData.length < 8) return []
+  const perWeek = new Map<string, number>()
+  for (const p of chartData) {
+    perWeek.set(weekStartVan(p.date), p.ctl) // laatste punt van de week wint
+  }
+  const weken = [...perWeek.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  return weken.map(([weekStart, ctl], i) => ({
+    weekStart,
+    ctl: Math.round(ctl * 10) / 10,
+    stijging: i === 0 ? null : Math.round((ctl - weken[i - 1]![1]) * 10) / 10,
+  }))
+}
+
 export type AnalyseSamenvatting = {
   ctl: number | null
   atl: number | null

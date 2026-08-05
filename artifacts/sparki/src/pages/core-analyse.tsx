@@ -46,6 +46,7 @@ import { useLoad, type LoadData } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
+import { useOntkoppeling } from "@/hooks/use-ontkoppeling"
 import type { AthleteDailyMetric } from "@/lib/athlete-types"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { usePowerBests } from "@/hooks/use-power-bests"
@@ -67,6 +68,7 @@ import {
   belastingProjectie,
   overzichtOordeel,
   aandachtspunten,
+  opbouwsnelheid,
   type BelastingProjectie,
   type DoelOverlays,
   type WeekVolume,
@@ -1602,8 +1604,156 @@ function BelastingTab({
       </LCard>
 
       <SlaapCard metrics={metrics.data ?? []} periode={periode} />
+
+      {/* §2 — Ontkoppeling, Efficiëntie en Opbouwsnelheid (catalogus 6.1a). */}
+      <OntkoppelingCard />
+      <EfficientieCard />
+      <OpbouwsnelheidCard load={load} />
       </div>
     </div>
+  )
+}
+
+// ── §2-kaarten: Ontkoppeling / Efficiëntie / Opbouwsnelheid ──────────────────
+
+function OntkoppelingCard() {
+  const bron = useOntkoppeling(180)
+  const met = (bron.data?.ritten ?? []).filter((r) => r.ontkoppelingPct != null)
+  const zonder = (bron.data?.ritten ?? []).filter((r) => r.reden != null)
+  const laatste = met[met.length - 1] ?? null
+  const reeks = met.map((r) => ({ x: r.date, y: r.ontkoppelingPct! }))
+  return (
+    <LCard className="p-5" data-testid="card-ontkoppeling">
+      <div className="mb-1 flex items-center gap-2">
+        <h3 className="text-sm font-medium text-foreground">Ontkoppeling (HR:Power)</h3>
+        <UitlegDot uitlegKey="ontkoppeling" label="Ontkoppeling" />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Of je hartslag in de tweede helft van de rit wegloopt bij hetzelfde vermogen.
+        De directste maat voor je duuruithoudingsvermogen — hij verbetert zichtbaar in een goede winter.
+      </p>
+      {bron.isLoading ? (
+        <p className="mt-3 text-sm text-muted-foreground">Laden…</p>
+      ) : met.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Nog geen geschikte ritten (vermogen én hartslag, minimaal een uur, gelijkmatig gereden).
+        </p>
+      ) : (
+        <>
+          <p className="mt-3 text-2xl font-semibold tabular-nums text-foreground">
+            {laatste!.ontkoppelingPct! > 0 ? "+" : ""}
+            {laatste!.ontkoppelingPct}%
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              laatste geschikte rit ({laatste!.date})
+            </span>
+          </p>
+          {reeks.length >= 2 && (
+            <Sparkline
+              data={reeks.map((p) => p.y)}
+              width={340}
+              height={44}
+              stroke={CHART.atl}
+              fill="rgba(245,158,11,0.07)"
+              className="mt-2 w-full"
+            />
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            {met.length} geschikte ritten in het venster
+            {zonder.length > 0 ? ` — ${zonder.length} ritten niet meegeteld (te kort, te wisselend of zonder beide sensoren)` : ""}.
+            Lager is beter; onder de 5% geldt als stabiel.
+          </p>
+        </>
+      )}
+    </LCard>
+  )
+}
+
+function EfficientieCard() {
+  const bron = useOntkoppeling(180)
+  const met = (bron.data?.ritten ?? []).filter((r) => r.efficientieWPerSlag != null)
+  const laatste = met[met.length - 1] ?? null
+  const reeks = met.map((r) => r.efficientieWPerSlag!)
+  return (
+    <LCard className="p-5" data-testid="card-efficientie">
+      <div className="mb-1 flex items-center gap-2">
+        <h3 className="text-sm font-medium text-foreground">Efficiëntie</h3>
+        <UitlegDot uitlegKey="efficientie" label="Efficiëntie" />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Hoeveel vermogen je levert per hartslag. Vergelijk dit over maanden:
+        stijgt de lijn, dan wordt dezelfde snelheid je goedkoper.
+      </p>
+      {bron.isLoading ? (
+        <p className="mt-3 text-sm text-muted-foreground">Laden…</p>
+      ) : met.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Nog geen geschikte ritten met vermogen én hartslag.
+        </p>
+      ) : (
+        <>
+          <p className="mt-3 text-2xl font-semibold tabular-nums text-foreground">
+            {laatste!.efficientieWPerSlag}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">W per hartslag ({laatste!.date})</span>
+          </p>
+          {reeks.length >= 2 && (
+            <Sparkline
+              data={reeks}
+              width={340}
+              height={44}
+              stroke={CHART.ftp}
+              fill="rgba(6,182,212,0.07)"
+              className="mt-2 w-full"
+            />
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Zelfde ritselectie als de ontkoppeling — één rit zegt weinig, de trend over maanden telt.
+          </p>
+        </>
+      )}
+    </LCard>
+  )
+}
+
+function OpbouwsnelheidCard({ load }: { load: Bron<LoadData> }) {
+  const punten = load.data ? opbouwsnelheid(load.data.chartData) : []
+  const recent = punten.slice(-12)
+  const laatste = recent[recent.length - 1] ?? null
+  return (
+    <LCard className="p-5" data-testid="card-opbouwsnelheid">
+      <div className="mb-1 flex items-center gap-2">
+        <h3 className="text-sm font-medium text-foreground">Opbouwsnelheid</h3>
+        <UitlegDot uitlegKey="opbouwsnelheid" label="Opbouwsnelheid" />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Hoe snel je fitheid per week stijgt — rechtstreeks uit je belastingsverloop hierboven.
+        Te snelle opbouw is de meest voorkomende oorzaak van overbelasting; hier zie je het aankomen.
+      </p>
+      {punten.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Nog te weinig weken met belastingsdata voor een weektrend.
+        </p>
+      ) : (
+        <>
+          <p className="mt-3 text-2xl font-semibold tabular-nums text-foreground">
+            {laatste?.stijging == null ? "—" : `${laatste.stijging > 0 ? "+" : ""}${laatste.stijging}`}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">CTL per week (deze week)</span>
+          </p>
+          {recent.filter((p) => p.stijging != null).length >= 2 && (
+            <Sparkline
+              data={recent.filter((p) => p.stijging != null).map((p) => p.stijging!)}
+              width={340}
+              height={44}
+              stroke={CHART.ctl}
+              fill="rgba(34,197,94,0.07)"
+              className="mt-2 w-full"
+            />
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Vuistregel: tot ongeveer +5 per week is vol te houden; daarboven loopt het blessurerisico snel op.
+          </p>
+        </>
+      )}
+    </LCard>
   )
 }
 
