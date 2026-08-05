@@ -21,6 +21,7 @@ import {
 import { computeAge } from "./age";
 import { computeLoadSeries } from "./recovery-load";
 import { observeSporen } from "../engines/meetniveau/derive";
+import { buildDeepAnalysisBlock } from "./deep-analysis-context";
 import { interneCode, profielregel } from "../engines/meetniveau/compute";
 import { resolveFlags } from "./flags";
 import { buildRaceContext, formatRaceContextForPrompt } from "./race-context";
@@ -283,6 +284,20 @@ export async function buildAthleteContext(
     );
   } else {
     parts.push(`MEETNIVEAU: waarneming niet beschikbaar — doe geen aannames over welke sensoren deze sporter heeft.`);
+  }
+
+  // R2 — diepe analyse: zoneverdeling, intervallen vs plan, hartslagdrift,
+  // vermogensverval en de powercurve-vergelijking. Additief: een fout hier
+  // mag de context nooit blokkeren.
+  try {
+    const deepBlock = await buildDeepAnalysisBlock(
+      clerkId,
+      recentSessions.map((s) => ({ id: s.id, sessionDate: s.sessionDate, title: s.title })),
+      athlete?.ftp ?? null,
+    );
+    if (deepBlock) parts.push(deepBlock);
+  } catch {
+    // eerlijk stil: geen diepe analyse beschikbaar, geen verzonnen blok
   }
 
   if (recentMetrics.length > 1) {
