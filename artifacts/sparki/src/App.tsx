@@ -36,6 +36,7 @@ import ProfielPage from "@/pages/profiel";
 import LichaamPage from "@/pages/lichaam";
 import MechaniekerPage from "@/pages/mechanieker";
 import RoutesPage from "@/pages/routes";
+import RouteSchermPage from "@/pages/route-scherm";
 import KalenderPage from "@/pages/kalender";
 import RacesPage from "@/pages/races";
 import RaceDetailPage from "@/pages/race-detail";
@@ -874,6 +875,11 @@ function AppRouter() {
                 </Route>
                 <Route path="/routes">
                   <ProtectedPage component={RoutesPage} />
+                </Route>
+                {/* ROUTEPLANNER_MOBIEL_01: nieuw schermvullend routescherm
+                    (telefoon), gebouwd NAAST het bevroren oude paneel. */}
+                <Route path="/route">
+                  <ProtectedPage component={RouteSchermPage} />
                 </Route>
                 <Route path="/kalender">
                   <ProtectedPage component={KalenderPage} />

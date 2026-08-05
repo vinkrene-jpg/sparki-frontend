@@ -27,6 +27,21 @@ Laatst bijgewerkt: 2026-08-05.
   AI_COACH_KOPPELING_EN_GEHEUGEN_01 (volgorde §6, R3 eerst). §4.2-triggerlaag
   blijft wachten op René's triggerlijst; B8-ijking wacht op intervals.icu-kant.
 
+## Ontvangen 05-08-2026 — ROUTEPLANNER_MOBIEL_01 (zevende document, IN UITVOERING)
+
+- `attached_assets/ROUTEPLANNER_MOBIEL_01_1785911461555.md`: routeplanner opnieuw
+  als schermvullend kaartscherm voor de telefoon (R1–R8); oude `route-panel.tsx`
+  per direct BEVROREN (geen enkele wijziging meer); rekenwerk/datatoegang naar
+  gedeelde modules; één routeaanvraag per keuze (R16); nav-laag over dezelfde
+  kaart; desktop zelfde data/functies met eigen indeling. Verwijderen oude paneel
+  pas als alle tests groen én desktop live (terugvalregel).
+- Aangescherpte regel 05-08: geen verschil in data/functies tussen desktop en
+  telefoon, wél in uiterlijk en bediening — één gedeelde datalaag, gescheiden
+  schermlagen. Routeplanner is het eerste bewijsstuk.
+- **Open bij René (§7):** blijven de oude filters (rotondes, verkeerslichten,
+  drempels, wind, temperatuur) bereikbaar achter het driepuntsmenu, of verdwijnen
+  ze helemaal? Tot dat besluit: uit de hoofdbediening weg, NIET verwijderd.
+
 ## Ontvangen 05-08-2026 — twee NIEUWE documenten
 
 - `AI_COACH_KOPPELING_EN_GEHEUGEN_01` (attached_assets/…_1785907472373.md): vier

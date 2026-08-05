@@ -44,6 +44,7 @@ import SamenPage from "@/pages/samen"
 import LichaamPage from "@/pages/lichaam"
 import MechaniekerPage from "@/pages/mechanieker"
 import RoutesPage from "@/pages/routes"
+import RouteSchermPage from "@/pages/route-scherm"
 import KalenderPage from "@/pages/kalender"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
@@ -578,6 +579,11 @@ export function DevPreview() {
     page = <MechaniekerPage />
   } else if (location.startsWith("/routes")) {
     page = <RoutesPage />
+  } else if (location.startsWith("/route")) {
+    // ROUTEPLANNER_MOBIEL_01 — nieuw schermvullend routescherm (ná /routes:
+    // dat prefix-match anders alles vangt). Eigen chrome, geen onderbalk.
+    page = <RouteSchermPage />
+    showNav = false
   } else if (location.startsWith("/kalender")) {
     page = <KalenderPage />
   } else if (location.startsWith("/photo-lab")) {
