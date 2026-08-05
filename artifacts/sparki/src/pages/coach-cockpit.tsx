@@ -46,6 +46,7 @@ import {
   type CoachProposal,
   useCoachCompliance,
 } from "@/hooks/use-coach-cockpit"
+import { CoachWeekCalendar } from "@/components/sparki/coach-week-calendar"
 import {
   useTrainerGoalPolicy,
   useTrainerAthleteGoals,
@@ -1301,6 +1302,7 @@ function CockpitBody({
               Jouw trainingen voor {name}, komende vier weken. Sparki-onderdelen zijn
               zichtbaar maar alleen jouw eigen trainingen zijn aanpasbaar.
             </p>
+            <CoachWeekCalendar athleteId={athleteId} />
             <PlanningSection
               athleteId={athleteId}
               adding={addingWorkout}
