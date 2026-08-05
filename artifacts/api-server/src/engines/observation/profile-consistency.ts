@@ -177,6 +177,9 @@ export async function loadProfileFacts(
       and(
         eq(trainingSessionsTable.clerkId, clerkId),
         sql`${trainingSessionsTable.sessionDate} >= (CURRENT_DATE - make_interval(days => ${FTP_WINDOW_DAYS}))::date`,
+        // Sessies gemarkeerd als twijfelachtige data tellen nergens mee voor
+        // FTP-afleiding — zelfde regel als in derived-load-backfill.
+        sql`coalesce(${trainingSessionsTable.notes}, '') NOT LIKE '[twijfelachtige data]%'`,
       ),
     );
 

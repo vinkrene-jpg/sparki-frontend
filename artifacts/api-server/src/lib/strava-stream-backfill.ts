@@ -23,6 +23,8 @@ export type StreamBackfillResult = {
   updatedSessions: number;
   remaining: number;
   stoppedByRateLimit: boolean;
+  /** false = scores gewist maar herafleiding faalde — zichtbaar, niet stil. */
+  tssRederived: boolean;
 };
 
 /** Porties: max. stream-calls per backfillronde — losstaand van het budget van
@@ -35,7 +37,20 @@ export async function backfillStravaStreamsForUser(
 ): Promise<StreamBackfillResult> {
   const budget = Math.max(1, Math.min(opts.budget ?? BACKFILL_CALL_BUDGET, 100));
 
-  // Kandidaten: Strava-activiteiten zonder reeksen, nieuwste eerst.
+  // Eerlijke voortgang: de restteller telt de VOLLEDIGE achterstand, niet
+  // alleen de portie van deze ronde.
+  const pendingWhere = and(
+    eq(connectorActivitiesTable.clerkId, clerkId),
+    eq(connectorActivitiesTable.provider, "strava"),
+    isNull(connectorActivitiesTable.streams),
+    isNotNull(connectorActivitiesTable.externalActivityId),
+  );
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(connectorActivitiesTable)
+    .where(pendingWhere);
+
+  // Kandidaten voor deze portie: nieuwste eerst.
   const candidates = await db
     .select({
       id: connectorActivitiesTable.id,
@@ -43,23 +58,17 @@ export async function backfillStravaStreamsForUser(
       sessionId: connectorActivitiesTable.normalizedSessionId,
     })
     .from(connectorActivitiesTable)
-    .where(
-      and(
-        eq(connectorActivitiesTable.clerkId, clerkId),
-        eq(connectorActivitiesTable.provider, "strava"),
-        isNull(connectorActivitiesTable.streams),
-        isNotNull(connectorActivitiesTable.externalActivityId),
-      ),
-    )
+    .where(pendingWhere)
     .orderBy(desc(connectorActivitiesTable.startedAt))
-    .limit(budget + 500); // ook de restteller eerlijk kunnen melden
+    .limit(budget);
 
   const result: StreamBackfillResult = {
     attempted: 0,
     fetched: 0,
     updatedSessions: 0,
-    remaining: candidates.length,
+    remaining: total ?? candidates.length,
     stoppedByRateLimit: false,
+    tssRederived: true,
   };
   if (candidates.length === 0) return result;
 
@@ -156,17 +165,29 @@ export async function backfillStravaStreamsForUser(
   }
 
   // Gewiste scores direct opnieuw afleiden met de leidende FTP-historie.
+  // Faalt dat, dan is dat ZICHTBAAR in het resultaat/logboek (nooit stil):
+  // de scores staan dan op null tot de volgende backfill-/bootronde ze vult.
   if (touchedSessions.length > 0) {
-    const { backfillTssForAthlete } = await import("./derived-load-backfill");
-    await backfillTssForAthlete(clerkId).catch(() => undefined);
+    try {
+      const { backfillTssForAthlete } = await import("./derived-load-backfill");
+      await backfillTssForAthlete(clerkId);
+    } catch (err) {
+      result.tssRederived = false;
+      console.warn(
+        `[data-hub] streams-backfill: herafleiding belastingscore faalde (${touchedSessions.length} sessies wachten op de volgende ronde): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
   return result;
 }
 
 /** Eén regel eerlijke voortgang voor het logboek. */
 export function beschrijfBackfill(r: StreamBackfillResult): string {
-  const basis = `streams-backfill: ${r.fetched} reeksen opgehaald (${r.attempted} geprobeerd), ${r.updatedSessions} sessies bijgewerkt, ${r.remaining} activiteiten resterend`;
-  return r.stoppedByRateLimit
-    ? `${basis} — gestopt op de Strava-aanroeplimiet, volgende sync gaat verder`
-    : basis;
+  let basis = `streams-backfill: ${r.fetched} reeksen opgehaald (${r.attempted} geprobeerd), ${r.updatedSessions} sessies bijgewerkt, ${r.remaining} activiteiten resterend`;
+  if (r.stoppedByRateLimit)
+    basis += " — gestopt op de Strava-aanroeplimiet, volgende sync gaat verder";
+  if (!r.tssRederived)
+    basis +=
+      " — LET OP: belastingscores nog niet herafgeleid (volgende ronde probeert opnieuw)";
+  return basis;
 }

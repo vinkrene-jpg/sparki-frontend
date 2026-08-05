@@ -87,7 +87,11 @@ export async function repairTrainerFtp345(
   const trainerNotes =
     "Trainerwaarde (ijking B8) — nog niet bevestigd met een FTP-test; gemeten ondergrens 278 W blijft als onderbouwing zichtbaar.";
   const [bestaandeTrainerRij] = await db
-    .select({ id: ftpHistoryTable.id, leidend: ftpHistoryTable.leidend })
+    .select({
+      id: ftpHistoryTable.id,
+      leidend: ftpHistoryTable.leidend,
+      notes: ftpHistoryTable.notes,
+    })
     .from(ftpHistoryTable)
     .where(
       and(
