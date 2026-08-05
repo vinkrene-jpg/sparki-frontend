@@ -7,25 +7,15 @@
 
 Laatst bijgewerkt: 2026-08-05.
 
-## Ter bevestiging (CLUB_AFRONDING_01, 05-08-2026)
+## Beslist 05-08-2026 — CLUB_AFRONDING_01 C1/C2/C3 (René: "Eerst c2c3 daarna direct door")
 
-- **C2 — navigatielabels per clubrol (voorstel §2, gebouwd als voorstel):**
-  clubbeheerder (owner/admin): Organisatie · Leden · Agenda · Berichten · Meer;
-  hoofdtrainer: Trainingen · Groepen · Wedstrijden · Berichten · Meer;
-  ploegleider/teammanager: Wedstrijden · Agenda · Documenten · Berichten · Meer;
-  overige staf: Club · Documenten · Berichten · Meer. Werking: clubcontext
-  kiezen in de rolwisselaar zet de bijbehorende onderbalk; accountrol kiezen
-  zet hem weer terug. Labels zijn met één regel in `lib/chapters.ts` bij te stellen.
-- **C3 — tabindeling clubbeheer (§7):** bestaande vier tabs behouden
-  (Overzicht/Leden/Structuur/Instellingen); de clubbalk-links gebruiken de
-  §7-namen (organisatie→Overzicht, mensen→Leden, structuur, beheer→Instellingen).
-  Wil René de zichtbare tablabels óók hernoemd naar Organisatie/Mensen/
-  Structuur/Beheer, dan is dat één labelwijziging.
-- **C1 — reeksbeheer-UI:** aanmaken (wekelijks, t/m seizoenseinde of eigen
-  einddatum), beëindigen en annuleren zitten in het Training plannen-venster;
-  per-training verplaatsen/splitsen ("deze"/"deze en volgende") kan al via de
-  API maar heeft nog geen eigen UI-knop — akkoord om dat in een vervolgronde
-  toe te voegen?
+- C2-navigatielabels per clubrol bevestigd zoals gebouwd (beheer: Organisatie·Leden·
+  Agenda·Berichten·Meer; hoofdtrainer: Trainingen·Groepen·Wedstrijden·Berichten·Meer;
+  wedstrijdstaf: Wedstrijden·Agenda·Documenten·Berichten·Meer; staf: Club·Documenten·
+  Berichten·Meer).
+- C3: zichtbare tablabels in /club/beheer hernoemd naar Organisatie/Mensen/
+  Structuur/Beheer (tab-ids ongewijzigd).
+- C1 reeksbeheer per-training UI: loopt als taak #586.
 
 ## GEZAGHEBBEND 02-08-2026 — Besluitenoverzicht René
 

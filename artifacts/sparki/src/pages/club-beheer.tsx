@@ -1759,10 +1759,11 @@ export default function ClubBeheerPage() {
   const closeSheet = () => setSheet(null)
 
   const TABS: { id: BeheerTab; label: string }[] = [
-    { id: "overzicht", label: "Overzicht" },
-    { id: "leden", label: "Leden" },
+    // C3: zichtbare labels volgen de clubbalk-namen (bevestigd 05-08-2026).
+    { id: "overzicht", label: "Organisatie" },
+    { id: "leden", label: "Mensen" },
     { id: "structuur", label: "Structuur" },
-    { id: "instellingen", label: "Instellingen" },
+    { id: "instellingen", label: "Beheer" },
   ]
 
   return (

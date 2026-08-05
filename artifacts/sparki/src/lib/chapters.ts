@@ -167,9 +167,9 @@ export const NUTRITION_SPECIALIST_NAV_ENTRIES: NavEntry[] = [
 
 // ── CLUB_AFRONDING_01 C2 — onderbalken voor clubrollen ───────────────────────
 // Besluit 01-08: Club en Team horen in de hoofdnavigatie onderin voor wie een
-// clubrol heeft; geen terugval op de sporterbalk. Labels/volgorde zijn een
-// VOORSTEL (§7, ter bevestiging door René); bindend ongeacht de labels:
-// vaste posities met "Meer" altijd als laatste. Alle hrefs zijn bestaande
+// clubrol heeft; geen terugval op de sporterbalk. Labels/volgorde bevestigd
+// door René op 05-08-2026; bindend: vaste posities met "Meer" altijd als
+// laatste. Alle hrefs zijn bestaande
 // schermen (tab-parameter opent het juiste tabblad).
 const CLUB_BEHEER_NAV: NavEntry[] = [
   { href: "/club/beheer?tab=organisatie", label: "Organisatie" },
