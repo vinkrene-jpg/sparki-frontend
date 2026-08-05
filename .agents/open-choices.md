@@ -86,6 +86,33 @@ Laatst bijgewerkt: 2026-08-02.
   #570/#571/#572/#578–#582 gemerged. Voorstellen #573–#577 sluiten aan;
   #575 (herstelblok) moet §5.4a + T12/T13 volgen zodra opgepakt.
 
+## ANALYSE_UITBREIDING_EN_ZANDBAK_01 (05-08, gemeten op e15645a)
+
+- Bron: `attached_assets/ANALYSE_UITBREIDING_EN_ZANDBAK_01-1_1785901573615.md`.
+  Trainer-voorstellen #583–#585 door René geannuleerd; dit document is de
+  actuele richting voor Analyse.
+- Volgorde §9 (bindend): 1) §6 ijking FIT vs intervals.icu + M6/M7 —
+  M6/M7 zijn al beantwoord in het meetrapport 05-08 (CTL dagelijks herrekend
+  bij opvraag, trapjes = afronding; TSB = zelfde dag) — resterend: B8-ijking;
+  2) §5.1 voorbeeldsporter (seed-script, vaste startwaarde, gemarkeerd,
+  nooit koppelbaar aan echt account); 3) §7.3 oordeelregel + max 3
+  aandachtspunten bovenaan Overzicht (zelfde model als grafiek, "niets
+  bijzonders" i.p.v. leegte); 4) §2 ontkoppeling+efficiëntie (via
+  assessComparability, ongeschikte rit = reden i.p.v. getal), dan
+  opbouwsnelheid (weekstijging CTL, géén tweede berekening); 5) §3 analyse
+  op verzoek (deterministische engines leveren, model formuleert; zelfde
+  selectie+periode = identiek antwoord; bewaard; adviesdossier R3;
+  daglimiet); 6) §4 multi-grafiek-analyse (2–5 kaarten, "gaat samen op met"
+  nooit "komt door", dun bewijs expliciet); 7) §2 eisprofiel wedstrijd;
+  8) §5.2 wat-als (zelfde belastingsmodel, "berekening" nooit
+  "voorspelling"); 9) §5.3 demo clubs/trainers.
+- §10 verboden: geen tweede berekening van belasting/vorm/zones/powercurve;
+  geen kaart zonder twee uitlegzinnen; geen oorzakelijke taal; geen
+  voorbeelddata die met echte data kan mengen. Acceptatietests B1–B11.
+- Open bij René: B8-ijking vergt een intervals.icu-account voor de
+  vergelijkingskant; Sparki-kant (TSS/IF/NP/CTL/ATL/TSB/zones uit één
+  FIT) kan ik zelf leveren.
+
 ## Beslist 04-08-2026 — Taken voorstellen mag weer (René)
 
 - De afspraak van 02-08 ("geen taken/concepten voorstellen") is GESCHRAPT:
