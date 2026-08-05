@@ -189,6 +189,8 @@ function normalizeStravaActivity(
     startedAt: started.toISOString(),
     title: act.name ?? null,
     durationMin: seconds != null ? seconds / 60 : null,
+    // H4: exacte duur in seconden — de belastingscore rekent hiermee.
+    durationSec: seconds != null ? Math.round(seconds) : null,
     distanceKm: distanceM != null ? distanceM / 1000 : null,
     elevationM: finiteNum(act.total_elevation_gain),
     avgPower: finiteNum(act.average_watts),

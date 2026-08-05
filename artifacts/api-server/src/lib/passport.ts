@@ -207,15 +207,36 @@ export async function applyValueChange(input: {
           .set({ ftpWatts: watts, notes: input.source ?? null })
           .where(eq(ftpHistoryTable.id, existing.id));
       } else {
+        // D2 (DATABRONNEN_EN_FTP_01): bron uit de actor, en leidend alleen
+        // wanneer er geen leidende hógere bron op of vóór deze datum staat —
+        // een sporter-invoer overschrijft nooit een trainer-waarde.
+        const bron =
+          input.actorType === "coach"
+            ? "trainer"
+            : input.actorType === "engine"
+              ? "sparki_afgeleid"
+              : "sporter";
+        const bestaand = await tx
+          .select({
+            bron: ftpHistoryTable.bron,
+            measuredAt: ftpHistoryTable.measuredAt,
+            leidend: ftpHistoryTable.leidend,
+          })
+          .from(ftpHistoryTable)
+          .where(
+            and(
+              eq(ftpHistoryTable.clerkId, input.clerkId),
+              eq(ftpHistoryTable.leidend, true),
+            ),
+          );
+        const { isFtpLeidend } = await import("./derived-load");
         await tx.insert(ftpHistoryTable).values({
           clerkId: input.clerkId,
           measuredAt,
           ftpWatts: watts,
           testType: "manual",
-          // Handmatige invoer in de app = bron "sporter" (D2); alleen een
-          // trainer-waarde staat daarboven en die schrijft via een eigen pad.
-          bron: "sporter",
-          leidend: true,
+          bron,
+          leidend: isFtpLeidend(bron, measuredAt, bestaand),
           notes: input.source ?? null,
         });
       }

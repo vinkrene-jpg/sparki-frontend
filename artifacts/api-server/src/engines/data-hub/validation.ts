@@ -26,6 +26,8 @@ export function cleanActivity(a: CanonicalActivity): CanonicalActivity | null {
   return {
     ...a,
     durationMin: intOrNull(inRange(a.durationMin, 1, 24 * 60)),
+    // H4: seconden binnen dezelfde plausibiliteitsgrens als minuten.
+    durationSec: intOrNull(inRange(a.durationSec, 1, 24 * 3600)),
     distanceKm: inRange(a.distanceKm, 0, 2000),
     elevationM: intOrNull(inRange(a.elevationM, 0, 20000)),
     avgPower: intOrNull(inRange(a.avgPower, 0, 2000)),

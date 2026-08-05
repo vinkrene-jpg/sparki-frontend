@@ -3073,16 +3073,33 @@ router.post("/ftp", requireAuth, async (req, res) => {
   }
 
   try {
+    // D2 (DATABRONNEN_EN_FTP_01): sporter-invoer wordt alleen leidend wanneer
+    // er geen leidende trainer-waarde op of vóór deze datum staat.
+    const mAt = measuredAt ?? todayStr();
+    const bestaand = await db
+      .select({
+        bron: ftpHistoryTable.bron,
+        measuredAt: ftpHistoryTable.measuredAt,
+        leidend: ftpHistoryTable.leidend,
+      })
+      .from(ftpHistoryTable)
+      .where(
+        and(
+          eq(ftpHistoryTable.clerkId, clerkId),
+          eq(ftpHistoryTable.leidend, true),
+        ),
+      );
+    const { isFtpLeidend } = await import("../lib/derived-load");
+    const leidend = isFtpLeidend("sporter", mAt, bestaand);
     const [entry] = await db
       .insert(ftpHistoryTable)
       .values({
         clerkId,
         ftpWatts,
         testType: testType ?? "manual",
-        // DATABRONNEN_EN_FTP_01 D2: dit is het invoerpad van de sporter zelf.
         bron: "sporter",
-        leidend: true,
-        measuredAt: measuredAt ?? todayStr(),
+        leidend,
+        measuredAt: mAt,
         notes: notes ?? null,
       })
       .returning();

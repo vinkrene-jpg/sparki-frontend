@@ -502,6 +502,10 @@ async function persistOneActivity(
         set: {
           dedupeKey: sessionDedupeKey,
           normalizedSessionId: sessionId,
+          raw: (a.raw ?? rawActivity) as object,
+          // Alleen verversen wanneer deze ronde écht reeksen droeg — een
+          // her-import zonder verrijking (budget op) wist niets.
+          ...(a.streams != null ? { streams: a.streams as object } : {}),
           importedAt: new Date(),
         },
       });

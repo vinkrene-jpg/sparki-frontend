@@ -233,12 +233,15 @@ export function PerformanceNumbers({
             label="Gewicht"
           />
         </div>
-        {(herkomstLabel(profile, "ftp") != null && ftp != null) ||
+        {ftpHerkomstRegel(profile) != null ||
         (herkomstLabel(profile, "weightKg") != null && weight != null) ? (
           <p className="mt-3 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
             {[
-              ftp != null && herkomstLabel(profile, "ftp") != null
-                ? `FTP ${ftp} W · ${herkomstLabel(profile, "ftp")}`
+              // D4: FTP altijd met datum + bron — nooit een kaal getal.
+              ftpHerkomstRegel(profile) != null
+                ? [ftpHerkomstRegel(profile), herkomstLabel(profile, "ftp")]
+                    .filter(Boolean)
+                    .join(" · ")
                 : null,
               weight != null && herkomstLabel(profile, "weightKg") != null
                 ? `gewicht ${Math.round(weight * 10) / 10} kg · ${herkomstLabel(profile, "weightKg")}`
