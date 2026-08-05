@@ -27,8 +27,13 @@
 // ALLEEN na expliciet akkoord van René; de dry-run levert de rapportage
 // vooraf (lijst ids), de her-telling de rapportage achteraf.
 
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { db, aiObservationsTable, athleteProfilesTable } from "@workspace/db";
+import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import {
+  db,
+  aiObservationsTable,
+  aiMemoryEventsTable,
+  athleteProfilesTable,
+} from "@workspace/db";
 import { getOutdatedFtpWatts, recordMemoryEvent } from "../lib/ai-memory";
 import {
   citesWattValue,
@@ -40,6 +45,10 @@ import {
 
 const ACTIVE_STATUSES = ["new", "acknowledged", "saved"] as const;
 const GOAL_MIN_AGE_DAYS = 14;
+// §4.4 — één seizoen; daarna zakt een nooit-bevestigde herinnering terug naar
+// "voorlopig" en wordt hij één keer opnieuw voorgelegd.
+const SEASON_DAYS = 365;
+const RE_ASK_WAIT_DAYS = 14;
 
 export type CleanupReason =
   | "achterhaalde_ftp_waarde"
@@ -210,6 +219,51 @@ export async function runObservationCleanup(
         ),
       );
     activeAfter = after.length;
+  }
+
+  // §4.4 — vergeten is een functie (alleen bij apply; nooit harde deletes):
+  //  1. ouder dan één seizoen en nooit bevestigd → terug naar "voorlopig",
+  //     zodat de bevestigingsstroom hem precies één keer opnieuw voorlegt;
+  //  2. staat hij daarna nog steeds op "voorlopig" én is de her-voorlegging
+  //     ≥ 14 dagen geleden getoond → stil vervallen ("outdated").
+  //  Weerlegde herinneringen komen nooit automatisch terug (niet geraakt).
+  if (apply) {
+    const seizoenGrens = new Date(Date.now() - SEASON_DAYS * 86_400_000);
+    await db
+      .update(aiObservationsTable)
+      .set({ status: "voorlopig", updatedAt: new Date() })
+      .where(
+        and(
+          eq(aiObservationsTable.clerkId, clerkId),
+          inArray(aiObservationsTable.status, [...ACTIVE_STATUSES]),
+          lt(aiObservationsTable.createdAt, seizoenGrens),
+        ),
+      );
+    const herVoorlegGrens = new Date(Date.now() - RE_ASK_WAIT_DAYS * 86_400_000);
+    const getoond = await db
+      .select({ obsId: aiMemoryEventsTable.relatedObservationId })
+      .from(aiMemoryEventsTable)
+      .where(
+        and(
+          eq(aiMemoryEventsTable.clerkId, clerkId),
+          eq(aiMemoryEventsTable.eventType, "confirm_question_shown"),
+          lt(aiMemoryEventsTable.createdAt, herVoorlegGrens),
+        ),
+      );
+    const getoondIds = getoond.map((g) => g.obsId).filter((v): v is number => v != null);
+    if (getoondIds.length > 0) {
+      await db
+        .update(aiObservationsTable)
+        .set({ status: "outdated", updatedAt: new Date() })
+        .where(
+          and(
+            eq(aiObservationsTable.clerkId, clerkId),
+            eq(aiObservationsTable.status, "voorlopig"),
+            lt(aiObservationsTable.createdAt, seizoenGrens),
+            inArray(aiObservationsTable.id, getoondIds),
+          ),
+        );
+    }
   }
 
   return {

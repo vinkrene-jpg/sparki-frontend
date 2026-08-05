@@ -43,6 +43,7 @@ import {
 } from "@/lib/core-profile"
 import { missingTargets, type InputTargetKey } from "@/lib/missing-input"
 import { labelSignal } from "@/lib/signal-labels"
+import { AiMemoryPanel } from "@/components/sparki/ai-memory-panel"
 import {
   Settings,
   X,
@@ -1162,6 +1163,12 @@ export default function YouPage() {
           >
             Naar je doelen op Trainen
           </Link>
+        </section>
+
+        {/* SPARKI GEHEUGEN — AI_COACH §4.3: het geheugenpaneel woont in de
+            gewone route (onder het profiel), niet meer alleen op Lab. */}
+        <section id="geheugen" className="scroll-mt-24">
+          <AiMemoryPanel />
         </section>
 
         {/* SFEERBEELD */}

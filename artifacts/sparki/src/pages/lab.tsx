@@ -493,8 +493,7 @@ export default function LabPage() {
       {/* 07 MENTALE WEERBAARHEID */}
       <MentalResilienceCard n="07" />
 
-      {/* 08 AI GEHEUGEN */}
-      <AiMemoryPanel />
+      {/* AI GEHEUGEN is verhuisd naar /you (AI_COACH §4.3) */}
 
       {/* 09 SPARKI ONTHOUDT */}
       <ContextMemoryPanel />
