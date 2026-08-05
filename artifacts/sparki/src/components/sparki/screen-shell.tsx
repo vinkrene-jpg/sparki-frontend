@@ -467,9 +467,12 @@ export function ScreenShell({
 
       <div
         className={cn(
-          "relative z-10 flex flex-col gap-10 px-6 pt-12",
+          // Mobiel compact: op een telefoon is elke centimeter chrome er één
+          // te veel — kleinere toppadding en kleinere blokafstand. Desktop
+          // houdt de ruimere maat.
+          "relative z-10 flex flex-col gap-6 px-6 pt-6 lg:gap-10",
           bare
-            ? "mx-auto max-w-md pb-32"
+            ? "mx-auto max-w-md pb-32 lg:pt-12"
             : "mx-auto max-w-md pb-32 lg:ml-56 lg:max-w-3xl lg:pb-16 lg:pt-8",
         )}
       >
@@ -516,7 +519,7 @@ export function ScreenShell({
         {/* Subtiele paginaregel onder de balk: alleen hoofdstuktitel links en
             eventueel het clubembleem. Rolwissel, testerbadge en Vraag Sparki
             verhuisden naar het hoofdmenu — de balk blijft rustig. */}
-        <div className="-mt-6 flex items-center justify-between gap-3">
+        <div className="-mt-3 flex items-center justify-between gap-3 lg:-mt-6">
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <SectionIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="font-mono text-[10px] tracking-[0.28em] uppercase">{sectionLabel}</span>
@@ -531,7 +534,7 @@ export function ScreenShell({
           <button
             type="button"
             onClick={goBack}
-            className="-mt-4 flex items-center gap-1.5 self-start rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+            className="-mt-2 flex items-center gap-1.5 self-start rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground/75 transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan lg:-mt-4"
           >
             <ChevronLeft className="h-4 w-4" />
             Terug

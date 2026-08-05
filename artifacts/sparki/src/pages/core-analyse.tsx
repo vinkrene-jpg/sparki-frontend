@@ -2988,7 +2988,11 @@ export default function CoreAnalysePage() {
       {/* Paginakop — leunt op de gedeelde donkere schil (ScreenShell bezit de
           chrome/achtergrond). Alleen de eigen sectielabel, titel en acties. */}
       <section className="flex flex-col gap-3">
-        <SectionLabel title="Performance-analyse" />
+        {/* Op mobiel is dit label dubbelop (de schil zegt al INZICHT en de
+            titel zegt Analyse) — elke regel chrome kost daar schermruimte. */}
+        <div className="hidden lg:block">
+          <SectionLabel title="Performance-analyse" />
+        </div>
         {profiel?.voorbeeld === true && (
           <div
             className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-700"
