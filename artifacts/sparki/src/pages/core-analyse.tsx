@@ -1151,6 +1151,18 @@ function BelastingTab({
   const [grafiekPeriode, setGrafiekPeriode] = useState<number>(90)
   const [vergelijk, setVergelijk] = useState(false)
 
+  // §7.2 punt 3 / B11 — de ingang per kaart: "hier een analyse over vragen"
+  // zet de kaart in de analyse-selectie hieronder.
+  const [analyseSelectie, setAnalyseSelectie] = useState<AnalyseKaartKey[]>([
+    "belastingsverloop",
+  ])
+  const vraagAnalyseOver = (kaart: AnalyseKaartKey) => {
+    setAnalyseSelectie(() => [kaart])
+    document
+      .querySelector('[data-testid="card-analyse-verzoek"]')
+      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   // MEETNIVEAU_EN_UITLEG_01 §4 — twee gescheiden poorten. De pakketpoort
   // (Compleet/Trainer) gaat vóór de datapoort (sensoren): er kan nooit een
   // gemengde of dubbele melding ontstaan. UI faalt open bij onbekend antwoord;
@@ -1612,12 +1624,12 @@ function BelastingTab({
       <SlaapCard metrics={metrics.data ?? []} periode={periode} />
 
       {/* §2 — Ontkoppeling, Efficiëntie en Opbouwsnelheid (catalogus 6.1a). */}
-      <OntkoppelingCard />
-      <EfficientieCard />
-      <OpbouwsnelheidCard load={load} />
+      <OntkoppelingCard onVraagAnalyse={() => vraagAnalyseOver("ontkoppeling")} />
+      <EfficientieCard onVraagAnalyse={() => vraagAnalyseOver("efficientie")} />
+      <OpbouwsnelheidCard load={load} onVraagAnalyse={() => vraagAnalyseOver("opbouwsnelheid")} />
 
       {/* §3/§4 — Analyse op verzoek: 1–5 kaarten, bewaard, zichtbare daglimiet. */}
-      <AnalyseVerzoekCard />
+      <AnalyseVerzoekCard selectie={analyseSelectie} setSelectie={setAnalyseSelectie} />
       </div>
     </div>
   )
@@ -1625,10 +1637,15 @@ function BelastingTab({
 
 // ── §3/§4 Analyse op verzoek ─────────────────────────────────────────────────
 
-function AnalyseVerzoekCard() {
+function AnalyseVerzoekCard({
+  selectie,
+  setSelectie,
+}: {
+  selectie: AnalyseKaartKey[]
+  setSelectie: (fn: (cur: AnalyseKaartKey[]) => AnalyseKaartKey[]) => void
+}) {
   const bestaand = useAnalyses()
   const vraag = useVraagAnalyse()
-  const [selectie, setSelectie] = useState<AnalyseKaartKey[]>(["belastingsverloop"])
   const [periode, setPeriode] = useState<number>(90)
   const [foutmelding, setFoutmelding] = useState<string | null>(null)
 
@@ -1739,7 +1756,20 @@ function AnalyseVerzoekCard() {
 
 // ── §2-kaarten: Ontkoppeling / Efficiëntie / Opbouwsnelheid ──────────────────
 
-function OntkoppelingCard() {
+function VraagAnalyseKnop({ onClick }: { onClick?: () => void }) {
+  if (!onClick) return null
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-3 text-xs text-accent-cyan underline-offset-2 hover:underline"
+    >
+      Vraag hierover een analyse
+    </button>
+  )
+}
+
+function OntkoppelingCard({ onVraagAnalyse }: { onVraagAnalyse?: () => void }) {
   const bron = useOntkoppeling(180)
   const met = (bron.data?.ritten ?? []).filter((r) => r.ontkoppelingPct != null)
   const zonder = (bron.data?.ritten ?? []).filter((r) => r.reden != null)
@@ -1787,11 +1817,12 @@ function OntkoppelingCard() {
           </p>
         </>
       )}
+      <VraagAnalyseKnop onClick={onVraagAnalyse} />
     </LCard>
   )
 }
 
-function EfficientieCard() {
+function EfficientieCard({ onVraagAnalyse }: { onVraagAnalyse?: () => void }) {
   const bron = useOntkoppeling(180)
   const met = (bron.data?.ritten ?? []).filter((r) => r.efficientieWPerSlag != null)
   const laatste = met[met.length - 1] ?? null
@@ -1833,11 +1864,18 @@ function EfficientieCard() {
           </p>
         </>
       )}
+      <VraagAnalyseKnop onClick={onVraagAnalyse} />
     </LCard>
   )
 }
 
-function OpbouwsnelheidCard({ load }: { load: Bron<LoadData> }) {
+function OpbouwsnelheidCard({
+  load,
+  onVraagAnalyse,
+}: {
+  load: Bron<LoadData>
+  onVraagAnalyse?: () => void
+}) {
   const punten = load.data ? opbouwsnelheid(load.data.chartData) : []
   const recent = punten.slice(-12)
   const laatste = recent[recent.length - 1] ?? null
@@ -1876,6 +1914,7 @@ function OpbouwsnelheidCard({ load }: { load: Bron<LoadData> }) {
           </p>
         </>
       )}
+      <VraagAnalyseKnop onClick={onVraagAnalyse} />
     </LCard>
   )
 }
