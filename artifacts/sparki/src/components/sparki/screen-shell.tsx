@@ -67,6 +67,8 @@ import {
   NUTRITION_SPECIALIST_NAV_ENTRIES,
   ROLE_LABELS,
 } from "@/lib/chapters"
+import { clubNavEntriesFor } from "@/lib/chapters"
+import { useClubNavStand } from "@/lib/club-nav"
 import type { Role } from "@/contexts/UserContext"
 import { DsContextRegel } from "@/components/ds/context"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
@@ -107,10 +109,23 @@ const SHELL_MOBILE_NAV_ITEMS: DsNavItem[] = COMMERCIAL_MOBILE_NAV.map((item) => 
 function shellNavForRole(
   role: string | null | undefined,
   hasClubRole = false,
+  clubEntries: { href: string; label: string }[] | null = null,
 ): {
   desktop: { href: string; label: string }[]
   mobiel: DsNavItem[]
 } {
+  // CLUB_AFRONDING_01 C2: actieve clubcontext (rolwisselaar) ⇒ de balk van
+  // die clubrol, niet de sporterbalk.
+  if (clubEntries && (role == null || role === "athlete")) {
+    return {
+      desktop: clubEntries,
+      mobiel: clubEntries.map((e) => ({
+        href: e.href,
+        label: e.label,
+        icon: Building2,
+      })),
+    }
+  }
   const entries =
     role === "coach"
       ? COACH_NAV_ENTRIES
@@ -378,9 +393,20 @@ export function ScreenShell({
   // WP-R1: rol-bewuste hoofdnavigatie (ouder/coach eigen onderbalk + zijbalk).
   // Besluitenpatch 2026-08-01: actieve clubrol ⇒ "Club" vervangt Analyse.
   const clubsQuery = useMyClubs()
+  // CLUB_AFRONDING_01 C2: actieve clubcontext ⇒ balk van die clubrol.
+  // Fail-closed: alleen wanneer de server het lidmaatschap bevestigt.
+  const clubStand = useClubNavStand()
+  const standEntries =
+    clubStand &&
+    (clubsQuery.data ?? []).some(
+      (r) => r?.membership?.clubId === clubStand.clubId && r?.membership?.role === clubStand.role,
+    )
+      ? clubNavEntriesFor(clubStand.role)
+      : null
   const shellNav = shellNavForRole(
     profile?.activeRole,
     (clubsQuery.data ?? []).length > 0,
+    standEntries,
   )
   const showAutoTerug = terug && !navRoots.has(pathname)
   const goBack = () => {

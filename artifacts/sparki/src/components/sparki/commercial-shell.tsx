@@ -40,6 +40,8 @@ import {
   NUTRITION_SPECIALIST_NAV_ENTRIES,
   ROLE_LABELS,
 } from "@/lib/chapters"
+import { clubNavEntriesFor } from "@/lib/chapters"
+import { useClubNavStand } from "@/lib/club-nav"
 import type { Role } from "@/contexts/UserContext"
 import { DsContextRegel } from "@/components/ds/context"
 import { cn } from "@/lib/utils"
@@ -143,10 +145,23 @@ function shellNavForRole(
   role: string | null | undefined,
   hasClubRole = false,
   hideDashboard = false,
+  clubEntries: { href: string; label: string }[] | null = null,
 ): {
   desktop: { href: string; label: string }[]
   mobiel: DsNavItem[]
 } {
+  // CLUB_AFRONDING_01 C2: actieve clubcontext (rolwisselaar) ⇒ de balk van
+  // die clubrol, niet de sporterbalk.
+  if (clubEntries && (role == null || role === "athlete")) {
+    return {
+      desktop: clubEntries,
+      mobiel: clubEntries.map((e) => ({
+        href: e.href,
+        label: e.label,
+        icon: Building2,
+      })),
+    }
+  }
   const entries =
     role === "coach"
       ? COACH_NAV_ENTRIES
@@ -232,7 +247,17 @@ export function CommercialShell({
   // verwijst Gratis dan alsnog netjes door, DSH-22).
   const { pkg } = usePackage()
   const hideDashboard = pkg === "gratis"
-  const shellNav = shellNavForRole(profile?.activeRole, hasClubRole, hideDashboard)
+  // CLUB_AFRONDING_01 C2: actieve clubcontext ⇒ balk van die clubrol.
+  // Fail-closed: alleen wanneer de server het lidmaatschap bevestigt.
+  const clubStand = useClubNavStand()
+  const standEntries =
+    clubStand &&
+    (clubsQuery.data ?? []).some(
+      (r) => r?.membership?.clubId === clubStand.clubId && r?.membership?.role === clubStand.role,
+    )
+      ? clubNavEntriesFor(clubStand.role)
+      : null
+  const shellNav = shellNavForRole(profile?.activeRole, hasClubRole, hideDashboard, standEntries)
   // Prefix-match zodat ook diepere paden (/train/…, /routes/…) het juiste
   // nav-item actief markeren — zelfde gedrag op desktop en mobiel.
   const isActive = (href: string) =>

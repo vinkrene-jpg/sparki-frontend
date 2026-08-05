@@ -5,7 +5,27 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-08-02.
+Laatst bijgewerkt: 2026-08-05.
+
+## Ter bevestiging (CLUB_AFRONDING_01, 05-08-2026)
+
+- **C2 — navigatielabels per clubrol (voorstel §2, gebouwd als voorstel):**
+  clubbeheerder (owner/admin): Organisatie · Leden · Agenda · Berichten · Meer;
+  hoofdtrainer: Trainingen · Groepen · Wedstrijden · Berichten · Meer;
+  ploegleider/teammanager: Wedstrijden · Agenda · Documenten · Berichten · Meer;
+  overige staf: Club · Documenten · Berichten · Meer. Werking: clubcontext
+  kiezen in de rolwisselaar zet de bijbehorende onderbalk; accountrol kiezen
+  zet hem weer terug. Labels zijn met één regel in `lib/chapters.ts` bij te stellen.
+- **C3 — tabindeling clubbeheer (§7):** bestaande vier tabs behouden
+  (Overzicht/Leden/Structuur/Instellingen); de clubbalk-links gebruiken de
+  §7-namen (organisatie→Overzicht, mensen→Leden, structuur, beheer→Instellingen).
+  Wil René de zichtbare tablabels óók hernoemd naar Organisatie/Mensen/
+  Structuur/Beheer, dan is dat één labelwijziging.
+- **C1 — reeksbeheer-UI:** aanmaken (wekelijks, t/m seizoenseinde of eigen
+  einddatum), beëindigen en annuleren zitten in het Training plannen-venster;
+  per-training verplaatsen/splitsen ("deze"/"deze en volgende") kan al via de
+  API maar heeft nog geen eigen UI-knop — akkoord om dat in een vervolgronde
+  toe te voegen?
 
 ## GEZAGHEBBEND 02-08-2026 — Besluitenoverzicht René
 

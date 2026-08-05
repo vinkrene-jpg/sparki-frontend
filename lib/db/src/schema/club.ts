@@ -335,6 +335,51 @@ export const clubTrainerAssignmentsTable = pgTable(
   ],
 );
 
+// ── Clubtrainingsreeksen (CLUB_AFRONDING_01 C1) ──────────────────────────────
+// Zelfde reeksbehandeling als workout_series (F5): een reeks materialiseert
+// echte club_trainings-rijen vooruit, begrensd door de einddatum van het
+// actieve seizoen. Géén tweede reeksmechanisme — herhaalregel en scopes
+// hergebruiken lib/workout-series.
+export const clubTrainingSeriesTable = pgTable(
+  "club_training_series",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    // Herhaalregel (identiek aan workout_series).
+    frequency: text("frequency").notNull(), // daily | weekly | weekdays | interval
+    weekdays: integer("weekdays").array(),
+    intervalDays: integer("interval_days"),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }).notNull(),
+    exceptions: date("exceptions", { mode: "string" }).array(),
+    status: text("status").notNull().default("active"), // active | ended | cancelled
+    // Sjabloon: dezelfde velden als een losse clubtraining.
+    title: text("title").notNull(),
+    startTime: text("start_time"),
+    location: text("location"),
+    locationId: integer("location_id"),
+    routeId: integer("route_id"),
+    level: text("level"),
+    goal: text("goal"),
+    trainerClerkId: text("trainer_clerk_id"),
+    teamId: integer("team_id"),
+    groupId: integer("group_id"),
+    maxParticipants: integer("max_participants"),
+    durationMin: integer("duration_min"),
+    materialInfo: text("material_info"),
+    safetyInfo: text("safety_info"),
+    notes: text("notes"),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_training_series_club_idx").on(t.clubId)],
+);
+
+export type ClubTrainingSeries = typeof clubTrainingSeriesTable.$inferSelect;
+
 // ── Clubtrainingen ────────────────────────────────────────────────────────────
 export const clubTrainingsTable = pgTable(
   "club_trainings",
@@ -367,6 +412,11 @@ export const clubTrainingsTable = pgTable(
     }),
     notes: text("notes"),
     status: text("status").notNull().default("gepland"), // gepland | geannuleerd | afgerond
+    // C1: hoort deze training bij een reeks? Losgekoppelde uitzonderingen
+    // krijgen NULL (blijven zelfstandig bestaan).
+    seriesId: integer("series_id").references(() => clubTrainingSeriesTable.id, {
+      onDelete: "set null",
+    }),
     createdByClerkId: text("created_by_clerk_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -10,7 +10,7 @@ import {
   Radio,
   type LucideIcon,
 } from "lucide-react"
-import { Link, useLocation } from "wouter"
+import { Link, useLocation, useSearch } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
 import {
@@ -18,8 +18,12 @@ import {
   COACH_NAV_ENTRIES,
   PARENT_NAV_ENTRIES,
   NUTRITION_SPECIALIST_NAV_ENTRIES,
+  clubNavEntriesFor,
   type NavEntry,
 } from "@/lib/chapters"
+import { useClubNavStand } from "@/lib/club-nav"
+import { useMyClubs } from "@/hooks/use-club"
+import { Building2, CalendarDays, Users, MessageSquare, FileText } from "lucide-react"
 
 type NavItem = NavEntry & { icon: LucideIcon }
 
@@ -57,10 +61,54 @@ function navForRole(role: Role | null | undefined): NavItem[] {
   return ATHLETE_NAV
 }
 
+// C2: iconen voor clubbalk-labels (op label, want hrefs dragen tab-params).
+const CLUB_LABEL_ICONS: Record<string, LucideIcon> = {
+  Organisatie: Building2,
+  Leden: Users,
+  Agenda: CalendarDays,
+  Berichten: MessageSquare,
+  Trainingen: Dumbbell,
+  Groepen: Users,
+  Wedstrijden: Trophy,
+  Documenten: FileText,
+  Club: Building2,
+  Meer: LayoutGrid,
+}
+
+function withClubIcons(entries: NavEntry[]): NavItem[] {
+  return entries.map((e) => ({ ...e, icon: CLUB_LABEL_ICONS[e.label] ?? Building2 }))
+}
+
+/** Is dit nav-item actief, rekening houdend met een eventuele ?tab=. */
+function itemActive(href: string, pathname: string, search: string): boolean {
+  const [path, query] = href.split("?")
+  if (href === "/") return pathname === "/"
+  if (!pathname.startsWith(path!)) return false
+  if (!query) return true
+  const wantTab = new URLSearchParams(query).get("tab")
+  const haveTab = new URLSearchParams(search).get("tab")
+  // Zonder tab in de URL is het eerste tabblad van dat scherm actief.
+  return wantTab === (haveTab ?? wantTab)
+}
+
 export function BottomNav() {
   const [pathname] = useLocation()
+  const search = useSearch()
   const { profile } = useUserProfile()
-  const items = navForRole(profile?.activeRole)
+  const stand = useClubNavStand()
+  const { data: myClubs } = useMyClubs()
+  // C2 (besluit 01-08): actieve clubcontext ⇒ eigen clubbalk, géén terugval
+  // op de sporterbalk. Fail-closed: de stand telt alleen wanneer de server
+  // bevestigt dat dit account die rol in die club echt heeft.
+  const clubEntries = (() => {
+    if (!stand || profile?.activeRole !== "athlete") return null
+    if (!Array.isArray(myClubs)) return null
+    const echt = myClubs.some(
+      (r) => r?.membership?.clubId === stand.clubId && r?.membership?.role === stand.role,
+    )
+    return echt ? clubNavEntriesFor(stand.role) : null
+  })()
+  const items = clubEntries ? withClubIcons(clubEntries) : navForRole(profile?.activeRole)
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50">
@@ -71,8 +119,7 @@ export function BottomNav() {
       <div className="mx-auto flex max-w-md items-center border-t border-border bg-background/85 px-2 pb-7 pt-3.5 backdrop-blur-xl">
         {items.map((item) => {
           const Icon = item.icon
-          const isActive =
-            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+          const isActive = itemActive(item.href, pathname, search)
           return (
             <Link
               key={item.href}

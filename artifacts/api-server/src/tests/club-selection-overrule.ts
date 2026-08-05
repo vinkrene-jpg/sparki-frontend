@@ -47,7 +47,9 @@ const OWNER = `test-${T}-owner`;
 const PLOEGLEIDER = `test-${T}-ploegleider`;
 const TEAMMANAGER = `test-${T}-teammanager`;
 const RENNER = `test-${T}-renner`;
-const ALL = [OWNER, PLOEGLEIDER, TEAMMANAGER, RENNER];
+// CLUB_AFRONDING_01 C4: vervanger op deputyClerkId met een ANDERE clubrol.
+const DEPUTY = `test-${T}-deputy`;
+const ALL = [OWNER, PLOEGLEIDER, TEAMMANAGER, RENNER, DEPUTY];
 
 let server: Server;
 let base: string;
@@ -97,10 +99,17 @@ async function seed() {
     { clubId, clerkId: PLOEGLEIDER, role: "ploegleider" },
     { clubId, clerkId: TEAMMANAGER, role: "teammanager" },
     { clubId, clerkId: RENNER, role: "member" },
+    { clubId, clerkId: DEPUTY, role: "mechanieker" },
   ]);
   const [event] = await db
     .insert(clubRaceEventsTable)
-    .values({ clubId, name: `TESTRACE-${T}`, raceDate: "2026-09-01", createdByClerkId: OWNER })
+    .values({
+      clubId,
+      name: `TESTRACE-${T}`,
+      raceDate: "2026-09-01",
+      createdByClerkId: OWNER,
+      deputyClerkId: DEPUTY,
+    })
     .returning();
   eventId = event!.id;
 }
@@ -180,6 +189,16 @@ async function main() {
     assert(r.status === 403, `verwacht 403, kreeg ${r.status}`);
     const row = await selection();
     assert(row?.role === "reserve", "rol blijft reserve");
+  });
+
+  await scenario("C4: vervanger (deputyClerkId, andere clubrol) kan de overrule NIET terugdraaien", async () => {
+    const r = await api(DEPUTY, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+      clerkId: RENNER,
+      role: "renner",
+    });
+    assert(r.status === 403, `verwacht 403, kreeg ${r.status}: ${JSON.stringify(r.json)}`);
+    const row = await selection();
+    assert(row?.role === "reserve", "rol blijft reserve — overrule intact");
   });
 
   await scenario("teammanager kan daarna nog wél wijzigen", async () => {

@@ -7,7 +7,9 @@ import {
   date,
   timestamp,
   jsonb,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { isNotNull } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -103,7 +105,15 @@ export const racesTable = pgTable("races", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (t) => [
+  // BUILD_03 selectie-sync: idempotente upsert per (clerk_id, club_event_id).
+  // Partieel (alleen sync-rijen) — handmatige races zonder clubEventId blijven
+  // onbeperkt. Deze index MOET bestaan, anders faalt de onConflictDoUpdate in
+  // club-race-sync met "no unique or exclusion constraint".
+  uniqueIndex("races_clerk_club_event_uq")
+    .on(t.clerkId, t.clubEventId)
+    .where(isNotNull(t.clubEventId)),
+]);
 
 // Finished-race outcome. Stored in races.result (jsonb). All fields optional so
 // a planned (not-yet-raced) event simply has no result.

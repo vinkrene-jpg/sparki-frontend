@@ -2708,10 +2708,16 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
           eq(clubRaceSelectionsTable.clerkId, clerkId),
         ),
       );
+    // CLUB_AFRONDING_01 C4: niet op de letterlijke rolnaam "ploegleider"
+    // toetsen — ook de vervanger op deputyClerkId (ongeacht clubrol) beheert
+    // dit evenement via canManageRaceEvent en valt onder de blokkade. Alleen
+    // teammanager of clubbeheer mag een overrule wijzigen.
     if (
-      existing?.overruledAt != null &&
-      actorRole === "ploegleider" &&
-      existing.role !== role
+      existing != null &&
+      existing.overruledAt != null &&
+      existing.role !== role &&
+      actorRole !== "teammanager" &&
+      !canManageClub(ctx)
     ) {
       res.status(403).json({
         error:

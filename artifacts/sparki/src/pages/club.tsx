@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { clubLogoSrc } from "@/lib/club-logo"
 import { IconCheck } from "@/components/ds"
-import { Link, Redirect, useLocation } from "wouter"
+import { Link, Redirect, useLocation, useSearch } from "wouter"
 import {
   Shield,
   Users,
@@ -372,7 +372,19 @@ function RealClubView({ clubId }: { clubId: number }) {
   const markRead = useMarkClubMessageRead(clubId)
   const revokeAttachment = useRevokeClubAttachment(clubId)
   const [, navigate] = useLocation()
-  const [tab, setTab] = useState<ClubLidTab>("vandaag")
+  // C2: de clubbalk linkt naar /club?tab=… — het tabblad volgt de URL zodat
+  // de onderbalk het juiste tabblad opent (en actief markeert).
+  const zoek = useSearch()
+  const tabUitUrl = (() => {
+    const t = new URLSearchParams(zoek).get("tab")
+    return t === "berichten" || t === "documenten" || t === "meer" || t === "vandaag"
+      ? (t as ClubLidTab)
+      : null
+  })()
+  const [tab, setTab] = useState<ClubLidTab>(tabUitUrl ?? "vandaag")
+  useEffect(() => {
+    if (tabUitUrl) setTab(tabUitUrl)
+  }, [tabUitUrl])
   // Eén stappenvenster tegelijk: composer of toestemming. Nooit inline.
   const [sheet, setSheet] = useState<"bericht" | "toestemming" | null>(null)
   const closeSheet = () => setSheet(null)

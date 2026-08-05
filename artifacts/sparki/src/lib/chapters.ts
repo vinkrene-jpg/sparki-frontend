@@ -165,6 +165,65 @@ export const NUTRITION_SPECIALIST_NAV_ENTRIES: NavEntry[] = [
   { href: "/meer", label: "Meer" }, // 5 Meer (vast)
 ]
 
+// ── CLUB_AFRONDING_01 C2 — onderbalken voor clubrollen ───────────────────────
+// Besluit 01-08: Club en Team horen in de hoofdnavigatie onderin voor wie een
+// clubrol heeft; geen terugval op de sporterbalk. Labels/volgorde zijn een
+// VOORSTEL (§7, ter bevestiging door René); bindend ongeacht de labels:
+// vaste posities met "Meer" altijd als laatste. Alle hrefs zijn bestaande
+// schermen (tab-parameter opent het juiste tabblad).
+const CLUB_BEHEER_NAV: NavEntry[] = [
+  { href: "/club/beheer?tab=organisatie", label: "Organisatie" },
+  { href: "/club/beheer?tab=mensen", label: "Leden" },
+  { href: "/club?tab=vandaag", label: "Agenda" },
+  { href: "/club?tab=berichten", label: "Berichten" },
+  { href: "/meer", label: "Meer" },
+]
+
+const CLUB_HOOFDTRAINER_NAV: NavEntry[] = [
+  { href: "/club?tab=vandaag", label: "Trainingen" },
+  { href: "/club/beheer?tab=structuur", label: "Groepen" },
+  { href: "/club?tab=meer", label: "Wedstrijden" },
+  { href: "/club?tab=berichten", label: "Berichten" },
+  { href: "/meer", label: "Meer" },
+]
+
+const CLUB_WEDSTRIJDSTAF_NAV: NavEntry[] = [
+  { href: "/club?tab=meer", label: "Wedstrijden" },
+  { href: "/club?tab=vandaag", label: "Agenda" },
+  { href: "/club?tab=documenten", label: "Documenten" },
+  { href: "/club?tab=berichten", label: "Berichten" },
+  { href: "/meer", label: "Meer" },
+]
+
+// Overige stafrollen: het eigen werkgebied (cluboverzicht) voorop.
+const CLUB_STAF_NAV: NavEntry[] = [
+  { href: "/club?tab=vandaag", label: "Club" },
+  { href: "/club?tab=documenten", label: "Documenten" },
+  { href: "/club?tab=berichten", label: "Berichten" },
+  { href: "/meer", label: "Meer" },
+]
+
+export const CLUB_ROLE_NAV_ENTRIES: Record<string, NavEntry[]> = {
+  owner: CLUB_BEHEER_NAV,
+  admin: CLUB_BEHEER_NAV,
+  hoofdtrainer: CLUB_HOOFDTRAINER_NAV,
+  ploegleider: CLUB_WEDSTRIJDSTAF_NAV,
+  teammanager: CLUB_WEDSTRIJDSTAF_NAV,
+  trainer: CLUB_STAF_NAV,
+  assistent: CLUB_STAF_NAV,
+  mechanieker: CLUB_STAF_NAV,
+  soigneur: CLUB_STAF_NAV,
+  medical_staff: CLUB_STAF_NAV,
+  vrijwilliger: CLUB_STAF_NAV,
+  alleen_lezen: CLUB_STAF_NAV,
+}
+
+/** Onderbalk voor een clubrol, of null als de rol geen eigen balk heeft. */
+export function clubNavEntriesFor(clubRole: string | null | undefined): NavEntry[] | null {
+  if (!clubRole) return null
+  return CLUB_ROLE_NAV_ENTRIES[clubRole] ?? null
+}
+
 // F4: één bron van waarheid voor het zichtbare rollabel in de contextregel
 // en het hoofdmenu.
 export const ROLE_LABELS: Record<Role, string> = {

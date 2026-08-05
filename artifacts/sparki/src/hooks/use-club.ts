@@ -696,6 +696,49 @@ export function useCreateClubTraining(clubId: number | null) {
   })
 }
 
+// CLUB_AFRONDING_01 C1 — herhalende clubtrainingen (reeksen).
+export type ClubTrainingSeries = {
+  id: number
+  title: string
+  frequency: string
+  startDate: string
+  endDate: string
+  startTime: string | null
+  location: string | null
+  status: "active" | "ended" | "cancelled"
+}
+
+export function useClubTrainingSeries(clubId: number | null) {
+  return useQuery<ClubTrainingSeries[]>({
+    queryKey: ["clubs", clubId, "training-series"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/training-series`),
+    enabled: clubId != null,
+  })
+}
+
+export function useCreateClubTrainingSeries(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiFetch(`/api/clubs/${clubId}/training-series`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId] }),
+  })
+}
+
+export function useClubTrainingSeriesAction(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, action, body }: { seriesId: number; action: "end" | "cancel" | "skip"; body?: Record<string, unknown> }) =>
+      action === "cancel"
+        ? apiFetch(`/api/clubs/${clubId}/training-series/${seriesId}`, { method: "DELETE" })
+        : apiFetch(`/api/clubs/${clubId}/training-series/${seriesId}/${action}`, {
+            method: "POST",
+            body: body ? JSON.stringify(body) : undefined,
+          }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId] }),
+  })
+}
+
 export function useCreateClubRace(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({

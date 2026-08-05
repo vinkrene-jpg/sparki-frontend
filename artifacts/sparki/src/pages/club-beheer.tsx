@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { IconCheck } from "@/components/ds"
-import { Redirect, useLocation } from "wouter"
+import { Redirect, useLocation, useSearch } from "wouter"
 import { ArrowLeft, Users, CalendarDays, Trophy, Package, ClipboardList, Link2, MapPin, QrCode, Settings2, Plus } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -20,6 +20,9 @@ import {
   useSetMemberRole,
   useEndMembership,
   useCreateClubTraining,
+  useClubTrainingSeries,
+  useCreateClubTrainingSeries,
+  useClubTrainingSeriesAction,
   useCreateClubRace,
   useClubSubscription,
   useTeamSubscription,
@@ -420,12 +423,19 @@ function InviteSection({ clubId }: { clubId: number }) {
 
 function PlanTrainingSection({ clubId }: { clubId: number }) {
   const create = useCreateClubTraining(clubId)
+  // CLUB_AFRONDING_01 C1 — herhaaloptie: zelfde formulier, één vinkje erbij.
+  const createSeries = useCreateClubTrainingSeries(clubId)
+  const seriesQuery = useClubTrainingSeries(clubId)
+  const seriesAction = useClubTrainingSeriesAction(clubId)
+  const [herhaal, setHerhaal] = useState(false)
+  const [endDate, setEndDate] = useState("")
   const [title, setTitle] = useState("")
   const [date, setDate] = useState("")
   const [startTime, setStartTime] = useState("")
   const [location, setLocation] = useState("")
   const [max, setMax] = useState("")
   const [msg, setMsg] = useState<string | null>(null)
+  const reeksen = (seriesQuery.data ?? []).filter((s) => s.status === "active")
 
   return (
     <section aria-label="Training plannen">
@@ -436,6 +446,25 @@ function PlanTrainingSection({ clubId }: { clubId: number }) {
           e.preventDefault()
           setMsg(null)
           if (!title.trim() || !date) { setMsg("Titel en datum zijn verplicht."); return }
+          const reset = () => { setTitle(""); setDate(""); setStartTime(""); setLocation(""); setMax(""); setEndDate(""); setHerhaal(false) }
+          if (herhaal) {
+            createSeries.mutate(
+              {
+                title: title.trim(),
+                frequency: "weekly",
+                startDate: date,
+                endDate: endDate || undefined,
+                startTime: startTime || undefined,
+                location: location.trim() || undefined,
+                maxParticipants: max ? parseInt(max, 10) : undefined,
+              },
+              {
+                onSuccess: () => { setMsg("Reeks gepland — alle trainingen staan in de kalender."); reset() },
+                onError: (err) => setMsg(err instanceof Error ? err.message : "Niet gelukt."),
+              },
+            )
+            return
+          }
           create.mutate(
             {
               title: title.trim(),
@@ -445,7 +474,7 @@ function PlanTrainingSection({ clubId }: { clubId: number }) {
               maxParticipants: max ? parseInt(max, 10) : undefined,
             },
             {
-              onSuccess: () => { setMsg("Training gepland."); setTitle(""); setDate(""); setStartTime(""); setLocation(""); setMax("") },
+              onSuccess: () => { setMsg("Training gepland."); reset() },
               onError: (err) => setMsg(err instanceof Error ? err.message : "Niet gelukt."),
             },
           )
@@ -460,9 +489,71 @@ function PlanTrainingSection({ clubId }: { clubId: number }) {
           <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Locatie" className={INPUT} />
           <input type="number" min="1" value={max} onChange={(e) => setMax(e.target.value)} placeholder="Max deelnemers" className={INPUT} />
         </div>
+        {/* C1: herhaaloptie — wekelijks, standaard t/m het einde van het
+            actieve seizoen (einddatum leeg laten), of tot een eigen datum. */}
+        <label className="flex items-center gap-2 text-[12px] text-foreground/80">
+          <input
+            type="checkbox"
+            checked={herhaal}
+            onChange={(e) => setHerhaal(e.target.checked)}
+            className="h-3.5 w-3.5 accent-[var(--accent-cyan)]"
+          />
+          Wekelijks herhalen
+        </label>
+        {herhaal && (
+          <div className="space-y-1">
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className={INPUT}
+              aria-label="Einddatum van de reeks (leeg = einde actief seizoen)"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Einddatum leeg laten = herhalen tot het einde van het actieve seizoen.
+            </p>
+          </div>
+        )}
         {msg && <p className="text-[11px] text-muted-foreground">{msg}</p>}
-        <button type="submit" disabled={create.isPending} className={BTN}>Plan training</button>
+        <button type="submit" disabled={create.isPending || createSeries.isPending} className={BTN}>
+          {herhaal ? "Plan reeks" : "Plan training"}
+        </button>
       </form>
+
+      {/* C1: bestaande reeksen beheren — beëindigen laat uitgevoerde trainingen
+          staan en haalt alleen toekomstige weg; annuleren geldt de hele reeks. */}
+      {reeksen.length > 0 && (
+        <div className={`${CARD} mt-3 space-y-2`}>
+          <h3 className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Herhalende trainingen</h3>
+          {reeksen.map((s) => (
+            <div key={s.id} className="flex flex-wrap items-center gap-2 border-t border-border pt-2 first:border-t-0 first:pt-0">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] text-foreground/85">{s.title}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Wekelijks · {s.startDate} t/m {s.endDate}
+                  {s.startTime ? ` · ${s.startTime}` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={seriesAction.isPending}
+                onClick={() => seriesAction.mutate({ seriesId: s.id, action: "end" })}
+                className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-foreground/75"
+              >
+                Beëindigen
+              </button>
+              <button
+                type="button"
+                disabled={seriesAction.isPending}
+                onClick={() => seriesAction.mutate({ seriesId: s.id, action: "cancel" })}
+                className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground"
+              >
+                Annuleren
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
@@ -1635,7 +1726,22 @@ export default function ClubBeheerPage() {
   const mine = (myClubs ?? []).find((r) => r.membership.role === "owner" || r.membership.role === "admin")
   const clubId = mine?.membership.clubId ?? null
   const { data: dash } = useClubDashboard(clubId)
-  const [tab, setTab] = useState<BeheerTab>("overzicht")
+  // C2/C3: de clubbalk linkt naar /club/beheer?tab=… — tabblad volgt de URL.
+  // URL-namen (§7-voorstel: organisatie/mensen/structuur/beheer) mappen op de
+  // bestaande vier tabs; onbekende waarden vallen terug op het eerste tabblad.
+  const zoek = useSearch()
+  const tabUitUrl = ((): BeheerTab | null => {
+    const t = new URLSearchParams(zoek).get("tab")
+    if (t === "organisatie" || t === "overzicht") return "overzicht"
+    if (t === "mensen" || t === "leden") return "leden"
+    if (t === "structuur") return "structuur"
+    if (t === "beheer" || t === "instellingen") return "instellingen"
+    return null
+  })()
+  const [tab, setTab] = useState<BeheerTab>(tabUitUrl ?? "overzicht")
+  useEffect(() => {
+    if (tabUitUrl) setTab(tabUitUrl)
+  }, [tabUitUrl])
   const [sheet, setSheet] = useState<BeheerSheetKind>(null)
 
   if (isLoading) {

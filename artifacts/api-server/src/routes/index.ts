@@ -75,6 +75,7 @@ import goalsRouter from "./goals";
 import adviceDossiersRouter from "./advice-dossiers";
 import engagementRouter from "./engagement";
 import clubRouter from "./club";
+import clubTrainingSeriesRouter from "./club-training-series";
 import workObjectsRouter from "./work-objects";
 import clubRaceLogisticsRouter from "./club-race-logistics";
 import clubRaceDocumentsRouter from "./club-race-documents";
@@ -242,6 +243,13 @@ router.use("/climbs", climbsRouter);
 router.use("/alerts", alertsRouter);
 router.use("/attention", attentionRouter);
 router.use("/share", shareRouter);
+// CLUB_AFRONDING_01 C1: herhalende clubtrainingen (vóór de algemene clubrouter
+// zodat /training-series niet in /:clubId-catchalls valt).
+router.use(
+  "/clubs/:clubId/training-series",
+  killSwitchGuard("club_features"),
+  clubTrainingSeriesRouter,
+);
 router.use("/clubs", killSwitchGuard("club_features"), clubRouter);
 // SPARKI_BUILD_01 F7 lijn 3b: zelfstandige trainer ↔ gekoppelde sporter.
 // Buiten de club, twee richtingen, ouder <16 leest mee. Zelfde berichtenlaag.

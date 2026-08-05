@@ -19,8 +19,9 @@ import { useFeedback } from "@/contexts/FeedbackContext"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useClubMembership, useMyClubs } from "@/hooks/use-club"
 import { roleStartFor } from "@/lib/role-start"
+import { setClubNavStand, useClubNavStand } from "@/lib/club-nav"
 import { useAdminWhoami } from "@/hooks/use-bug-reports"
-import { chaptersForRole, ROLE_LABELS } from "@/lib/chapters"
+import { chaptersForRole, clubNavEntriesFor, ROLE_LABELS } from "@/lib/chapters"
 import { ErrorBoundary } from "@/components/sparki/error-boundary"
 import { useBillingStatus } from "@/hooks/use-billing"
 
@@ -131,6 +132,7 @@ function MainMenuContent({
   // Club-poort: alleen een GEACCEPTEERDE trainerkoppeling telt. Nooit gefingeerd.
   const { isMember } = useClubMembership()
   const { data: myClubs } = useMyClubs()
+  const clubNavStand = useClubNavStand()
   const [wisselOpen, setWisselOpen] = useState(false)
   const [contextFilter, setContextFilter] = useState("")
   // Admin-ingang: alleen zichtbaar wanneer de server bevestigt dat dit account
@@ -186,6 +188,9 @@ function MainMenuContent({
   // "/" is het juiste, begrijpelijke startpunt na een wissel — ook wanneer je
   // vanaf een rolvreemde pagina wisselt.
   const switchToRole = async (r: Role) => {
+    // C2: kiezen voor een accountrol beëindigt een actieve clubcontext —
+    // de rolwisselaar is leidend voor welke onderbalk er staat.
+    setClubNavStand(null)
     if (r === active) return
     onClose()
     try {
@@ -235,14 +240,24 @@ function MainMenuContent({
         items.push({
           key: `club:${membership.clubId}`,
           label: `${row?.club?.name ?? "Club"} — ${clubRolLabel}`,
-          actief: false,
-          onSelect: () => go("/club"),
+          // C2: de clubcontext is actief wanneer de onderbalk erop staat.
+          actief:
+            clubNavStand != null &&
+            clubNavStand.clubId === membership.clubId &&
+            clubNavStand.role === clubRol,
+          onSelect: () => {
+            // C2 (C-T7): clubcontext kiezen wisselt de onderbalk mee naar de
+            // balk van deze clubrol; eerste balkitem is het startpunt.
+            if (clubRol) setClubNavStand({ clubId: membership.clubId, role: clubRol })
+            const eerste = clubRol ? clubNavEntriesFor(clubRol)?.[0]?.href : null
+            go(eerste ?? "/club")
+          },
         })
       }
     }
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roles.join(","), active, myClubs])
+  }, [roles.join(","), active, myClubs, clubNavStand])
   const toonZoekveld = contexts.length > 5
   const zichtbareContexts = contextFilter.trim()
     ? contexts.filter((c) => c.label.toLowerCase().includes(contextFilter.trim().toLowerCase()))

@@ -162,6 +162,7 @@
     "test:club-race-structure": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-race-structure",
     "test:work-objects": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs work-objects",
     "test:club-selection-overrule": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-selection-overrule",
+    "test:club-training-series": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club-training-series",
     "test:today-orchestrator": "node ./scripts/run-test.mjs today-orchestrator",
     "test:terugblik": "node ./scripts/run-test.mjs terugblik",
     "test:nav-sanitize": "node ./scripts/run-test.mjs nav-sanitize",
