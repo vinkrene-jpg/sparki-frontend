@@ -28,6 +28,11 @@ description: Blijvende e2e-harness in e2e/ — echte Clerk-login, echte kliks, r
 - e2e/ heeft geen eigen node_modules; `pg` resolven via `createRequire(new URL("../../lib/db/package.json", import.meta.url))` (lib/db draagt pg). Root/api-server resolven pg NIET (pnpm strikt).
 - Deterministisch corpus: seed rijen direct voor het QA-account (clerkId uit ensureE2eUser), idempotent op naamprefix (bv. `E2E-563%`), cleanup in finally. Routes van andere gebruikers staan privé en lekken niet in /api/routes/nearby.
 
+
+## Routescherm-lessen (nieuwe mobiele planner)
+- Navigator-sluitknop opent bewust een rit-einde-blad; eerlijk afsluiten in tests = "Weggooien" → "Zeker weten?". Een statusbolletje zweeft boven de knop en vangt zelfs `click({force:true})` af (force dispatcht op het TOPMOST element) — gebruik `locator.evaluate(el => el.click())`.
+- Bevestigingsvraag-detectie: nooit greppen op /bevestig/ in body-tekst — de eerlijke wegdek-melding bevat "bevestigd". Match op vraagvormen ("weet je zeker") en knoppen (^Bevestig).
+- Pakketverschillen testen: snapshot + flip `user_profiles.entitlement_mode/product_variant` per subrun, altijd terugzetten in finally; Compleet-onderblad eist een geplande training van vandaag.
 ## Clubrol-doorlopen (task 588-les)
 - Het QA-account draagt leftover-clublidmaatschappen van eerdere e2e-runs; die maskeren rolgedrag (een achtergebleven admin-club liet /club/beheer "werken" voor een hoofdtrainer). Isoleer per test: actieve club_members-rijen tijdelijk `ended_at=now()` zetten en in finally exact terugzetten.
 - Mobiele onderbalk = `nav[aria-label="Hoofdnavigatie"]` (DsMobileNav, knoppen — geen links); labels case-insensitief lezen. De rolwisselaar-contexten zitten achter `button[title="Wissel van context"]` in het hoofdmenu.

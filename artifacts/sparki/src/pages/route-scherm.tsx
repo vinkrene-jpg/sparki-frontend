@@ -420,6 +420,20 @@ export default function RouteSchermPage() {
               {kandidaat.rationale}
             </p>
           )}
+          {/* R13/R-T7: onbekend wegdek is in Nederland een MELDING, nooit
+              een bevestigingsvraag. Geen meting van de motor = ook eerlijk
+              melden; alleen 100% bekend wegdek toont niets. */}
+          {(kandidaat.engineSurface?.knownPct == null ||
+            kandidaat.engineSurface.knownPct < 100) && (
+            <p
+              data-testid="wegdek-melding"
+              className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[12px] text-amber-800"
+            >
+              {kandidaat.engineSurface?.knownPct != null
+                ? `Wegdek voor ${Math.round(kandidaat.engineSurface.knownPct)}% bekend — de rest is niet bevestigd. Controle volgt bij gebruik.`
+                : "Het wegdek van deze route is niet volledig bekend. Controle volgt bij gebruik."}
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"

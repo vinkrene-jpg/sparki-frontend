@@ -1,0 +1,216 @@
+{
+  "stappen": [
+    {
+      "stap": "voorbereiding: QA-profiel aanwezig",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:16:09.509Z"
+    },
+    {
+      "stap": "voorbereiding: corpus geseed (4 eigen + 1 openbaar + training vandaag)",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:16:09.986Z"
+    },
+    {
+      "stap": "R-T1: kaart beeldvullend",
+      "status": "OK",
+      "detail": "402x874 op 402x874",
+      "t": "2026-08-05T08:16:18.229Z"
+    },
+    {
+      "stap": "R-T1: zoekveld bovenop de kaart",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:16:18.232Z"
+    },
+    {
+      "stap": "R-T1: driepuntsmenu bovenop de kaart",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:16:18.234Z"
+    },
+    {
+      "stap": "R-T1: geen tabblad-paginakop of stappenwizard",
+      "status": "OK",
+      "detail": "tabs=0 wizardkop=0",
+      "t": "2026-08-05T08:16:18.238Z"
+    },
+    {
+      "stap": "R-T2: geen overflow (startstand)",
+      "status": "OK",
+      "detail": "402/402",
+      "t": "2026-08-05T08:16:18.295Z"
+    },
+    {
+      "stap": "R-T2: geen overflow (onderblad vol)",
+      "status": "OK",
+      "detail": "402/402",
+      "t": "2026-08-05T08:16:18.745Z"
+    },
+    {
+      "stap": "R-T2: routekaarten één kolom (schermbreed)",
+      "status": "OK",
+      "detail": "5 kaarten",
+      "t": "2026-08-05T08:16:18.779Z"
+    },
+    {
+      "stap": "R-T2: geen overflow (chip-paneel open)",
+      "status": "OK",
+      "detail": "402/402",
+      "t": "2026-08-05T08:16:18.863Z"
+    },
+    {
+      "stap": "R-T6: openbare route van een ander zichtbaar in het onderblad",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:16:18.911Z"
+    },
+    {
+      "stap": "R-T6: naam van de maker nergens zichtbaar",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:16:18.913Z"
+    },
+    {
+      "stap": "R-T6: begin en einde afgekapt",
+      "status": "OK",
+      "detail": "begin 647 m, einde 647 m verschoven; 51/61 punten",
+      "t": "2026-08-05T08:16:18.944Z"
+    },
+    {
+      "stap": "R-T6: routenaam zonder maker",
+      "status": "OK",
+      "detail": "E2E-603 openbaar van ander",
+      "t": "2026-08-05T08:16:18.944Z"
+    },
+    {
+      "stap": "R-T3: dubbeltik + klik tijdens berekening ⇒ precies één aanvraag",
+      "status": "OK",
+      "detail": "1 POST /generate/*",
+      "t": "2026-08-05T08:16:20.611Z"
+    },
+    {
+      "stap": "R-T3: keuze levert een echte routekandidaat",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:24.861Z"
+    },
+    {
+      "stap": "R-T3: totaal blijft één aanvraag (na afronden)",
+      "status": "OK",
+      "detail": "1",
+      "t": "2026-08-05T08:18:24.861Z"
+    },
+    {
+      "stap": "R-T7: geen bevestigingsvraag na generatie in NL",
+      "status": "OK",
+      "detail": "dialogen=0 bevestigvragen=0",
+      "t": "2026-08-05T08:18:24.951Z"
+    },
+    {
+      "stap": "R-T7: eerlijke wegdek-melding zichtbaar",
+      "status": "OK",
+      "detail": "Wegdek voor 88% bekend — de rest is niet bevestigd. Controle volgt bij gebruik.",
+      "t": "2026-08-05T08:18:24.955Z"
+    },
+    {
+      "stap": "R-T4: navigatielaag zichtbaar",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:25.188Z"
+    },
+    {
+      "stap": "R-T4: planningsbediening weg",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:25.193Z"
+    },
+    {
+      "stap": "R-T4: kaart nog steeds aanwezig (zelfde kaartlaag)",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:25.195Z"
+    },
+    {
+      "stap": "R-T4: sluiten (rit weggooien) keert terug naar het planscherm",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:25.555Z"
+    },
+    {
+      "stap": "R-T5 Gratis: pakketlabel klopt",
+      "status": "OK",
+      "detail": "Gratis",
+      "t": "2026-08-05T08:18:30.856Z"
+    },
+    {
+      "stap": "R-T5 Gratis: precies 3 routes + eerlijke melding",
+      "status": "OK",
+      "detail": "3 rijen, melding=true",
+      "t": "2026-08-05T08:18:30.856Z"
+    },
+    {
+      "stap": "R-T5 Gratis: geen Compleet-trainingblok",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:30.856Z"
+    },
+    {
+      "stap": "R-T5 Go: pakketlabel klopt",
+      "status": "OK",
+      "detail": "Sparki Go",
+      "t": "2026-08-05T08:18:35.398Z"
+    },
+    {
+      "stap": "R-T5 Go: alle routes zichtbaar, geen gratis-melding",
+      "status": "OK",
+      "detail": "5 rijen",
+      "t": "2026-08-05T08:18:35.398Z"
+    },
+    {
+      "stap": "R-T5 Go: geen Compleet-trainingblok",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:35.398Z"
+    },
+    {
+      "stap": "R-T5 Compleet: pakketlabel klopt",
+      "status": "OK",
+      "detail": "Sparki Compleet",
+      "t": "2026-08-05T08:18:39.964Z"
+    },
+    {
+      "stap": "R-T5 Compleet: training van vandaag met route-uitnodiging eronder",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:39.966Z"
+    },
+    {
+      "stap": "R-T5 Compleet: alle routes zichtbaar",
+      "status": "OK",
+      "detail": "5 rijen",
+      "t": "2026-08-05T08:18:39.966Z"
+    },
+    {
+      "stap": "R-T8: desktop en telefoon zien exact dezelfde routedata",
+      "status": "OK",
+      "detail": "5 routes op beide",
+      "t": "2026-08-05T08:18:48.321Z"
+    },
+    {
+      "stap": "R-T8: routescherm functioneert op desktop (kaart + onderblad)",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T08:18:48.323Z"
+    },
+    {
+      "stap": "R-T8 (deels): eigen desktop-indeling",
+      "status": "INFO",
+      "detail": "nog niet aanwezig — aparte bouwstap (desktop-indeling, R17); R-T8 is hiermee bewust NIET volledig geclaimd",
+      "t": "2026-08-05T08:18:48.325Z"
+    }
+  ],
+  "exitCode": 0,
+  "t": "2026-08-05T08:18:49.203Z"
+}
