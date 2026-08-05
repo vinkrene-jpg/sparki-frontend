@@ -1,0 +1,175 @@
+{
+  "stappen": [
+    {
+      "stap": "[desktop] Login + identiteit QA-account",
+      "status": "OK",
+      "detail": "user_3HG8jhjNUhHTFf7bqpMzZm5QhL4",
+      "t": "2026-08-05T05:28:50.256Z"
+    },
+    {
+      "stap": "[desktop] Seed: club + 2 reeksen (deels verstreken)",
+      "status": "OK",
+      "detail": "clubId=415",
+      "t": "2026-08-05T05:28:50.419Z"
+    },
+    {
+      "stap": "[desktop] Training plannen-venster toont beide reeksen",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:28:53.565Z"
+    },
+    {
+      "stap": "[desktop] Klik Beëindigen: reeks A weg uit actieve lijst, B blijft",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:28:54.175Z"
+    },
+    {
+      "stap": "[desktop] DB na Beëindigen: toekomst weg, historie (3 rijen) intact, status ended",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:28:54.190Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: uitgevoerde training van vandaag (reeks A) blijft zichtbaar",
+      "status": "OK",
+      "detail": "wo 5 aug",
+      "t": "2026-08-05T05:28:56.356Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: beëindigde toekomstige training A+6 weg",
+      "status": "OK",
+      "detail": "di 11 aug",
+      "t": "2026-08-05T05:28:56.356Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: beëindigde toekomstige training A+13 weg",
+      "status": "OK",
+      "detail": "di 18 aug",
+      "t": "2026-08-05T05:28:56.356Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: reeks B (nog actief) toekomst zichtbaar",
+      "status": "OK",
+      "detail": "wo 12 aug",
+      "t": "2026-08-05T05:28:56.356Z"
+    },
+    {
+      "stap": "[desktop] Klik Annuleren: reeks B weg uit actieve lijst",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:29:00.070Z"
+    },
+    {
+      "stap": "[desktop] DB na Annuleren: hele reeks B weg (ook verstreken), historie A intact",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:29:00.083Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: geannuleerde training B+7 weg",
+      "status": "OK",
+      "detail": "wo 12 aug",
+      "t": "2026-08-05T05:29:02.223Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: geannuleerde training B+14 weg",
+      "status": "OK",
+      "detail": "wo 19 aug",
+      "t": "2026-08-05T05:29:02.223Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: uitgevoerde training van vandaag blijft ook nu zichtbaar",
+      "status": "OK",
+      "detail": "wo 5 aug",
+      "t": "2026-08-05T05:29:02.223Z"
+    },
+    {
+      "stap": "[mobiel] Login + identiteit QA-account",
+      "status": "OK",
+      "detail": "user_3HG8jhjNUhHTFf7bqpMzZm5QhL4",
+      "t": "2026-08-05T05:29:05.266Z"
+    },
+    {
+      "stap": "[mobiel] Seed: club + 2 reeksen (deels verstreken)",
+      "status": "OK",
+      "detail": "clubId=416",
+      "t": "2026-08-05T05:29:05.377Z"
+    },
+    {
+      "stap": "[mobiel] Training plannen-venster toont beide reeksen",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:29:07.861Z"
+    },
+    {
+      "stap": "[mobiel] Klik Beëindigen: reeks A weg uit actieve lijst, B blijft",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:29:08.557Z"
+    },
+    {
+      "stap": "[mobiel] DB na Beëindigen: toekomst weg, historie (3 rijen) intact, status ended",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:29:08.572Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: uitgevoerde training van vandaag (reeks A) blijft zichtbaar",
+      "status": "OK",
+      "detail": "wo 5 aug",
+      "t": "2026-08-05T05:29:10.750Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: beëindigde toekomstige training A+6 weg",
+      "status": "OK",
+      "detail": "di 11 aug",
+      "t": "2026-08-05T05:29:10.750Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: beëindigde toekomstige training A+13 weg",
+      "status": "OK",
+      "detail": "di 18 aug",
+      "t": "2026-08-05T05:29:10.750Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: reeks B (nog actief) toekomst zichtbaar",
+      "status": "OK",
+      "detail": "wo 12 aug",
+      "t": "2026-08-05T05:29:10.750Z"
+    },
+    {
+      "stap": "[mobiel] Klik Annuleren: reeks B weg uit actieve lijst",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:29:14.263Z"
+    },
+    {
+      "stap": "[mobiel] DB na Annuleren: hele reeks B weg (ook verstreken), historie A intact",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:29:14.276Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: geannuleerde training B+7 weg",
+      "status": "OK",
+      "detail": "wo 12 aug",
+      "t": "2026-08-05T05:29:16.381Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: geannuleerde training B+14 weg",
+      "status": "OK",
+      "detail": "wo 19 aug",
+      "t": "2026-08-05T05:29:16.381Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: uitgevoerde training van vandaag blijft ook nu zichtbaar",
+      "status": "OK",
+      "detail": "wo 5 aug",
+      "t": "2026-08-05T05:29:16.381Z"
+    }
+  ],
+  "fouten": 0,
+  "vandaag": "2026-08-05",
+  "t": "2026-08-05T05:29:16.534Z"
+}
