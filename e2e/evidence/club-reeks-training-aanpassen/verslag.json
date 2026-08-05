@@ -1,0 +1,162 @@
+{
+  "stappen": [
+    {
+      "stap": "[desktop] Login + identiteit QA-account",
+      "status": "OK",
+      "detail": "user_3HG8jhjNUhHTFf7bqpMzZm5QhL4",
+      "t": "2026-08-05T05:16:33.192Z"
+    },
+    {
+      "stap": "[desktop] Seed: verse club + actief seizoen",
+      "status": "OK",
+      "detail": "clubId=417",
+      "t": "2026-08-05T05:16:33.223Z"
+    },
+    {
+      "stap": "[desktop] Training plannen-venster geopend",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:16:36.163Z"
+    },
+    {
+      "stap": "[desktop] Reeks aangemaakt via UI",
+      "status": "OK",
+      "detail": "5 trainingen 2026-08-10…2026-09-07",
+      "t": "2026-08-05T05:16:36.905Z"
+    },
+    {
+      "stap": "[desktop] Training aanpassen-paneel geopend",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:16:37.456Z"
+    },
+    {
+      "stap": "[desktop] Eén training verplaatst (alleen deze)",
+      "status": "OK",
+      "detail": "2026-08-17 → 2026-08-18",
+      "t": "2026-08-05T05:16:37.843Z"
+    },
+    {
+      "stap": "[desktop] Eén datum overgeslagen",
+      "status": "OK",
+      "detail": "2026-08-24",
+      "t": "2026-08-05T05:16:38.191Z"
+    },
+    {
+      "stap": "[desktop] Deze en volgende (reeks gesplitst)",
+      "status": "OK",
+      "detail": "2 trainingen om 19:30, eerdere ongewijzigd",
+      "t": "2026-08-05T05:16:38.626Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: verplaatste datum zichtbaar",
+      "status": "OK",
+      "detail": "di 18 aug",
+      "t": "2026-08-05T05:16:40.829Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: oorspronkelijke datum weg",
+      "status": "OK",
+      "detail": "ma 17 aug",
+      "t": "2026-08-05T05:16:40.830Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: overgeslagen datum weg",
+      "status": "OK",
+      "detail": "ma 24 aug",
+      "t": "2026-08-05T05:16:40.830Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: gesplitste training met nieuwe tijd",
+      "status": "OK",
+      "detail": "ma 31 aug · 19:30",
+      "t": "2026-08-05T05:16:40.830Z"
+    },
+    {
+      "stap": "[desktop] Trainingslijst: eerste (ongewijzigde) training zichtbaar",
+      "status": "OK",
+      "detail": "ma 10 aug",
+      "t": "2026-08-05T05:16:40.830Z"
+    },
+    {
+      "stap": "[mobiel] Login + identiteit QA-account",
+      "status": "OK",
+      "detail": "user_3HG8jhjNUhHTFf7bqpMzZm5QhL4",
+      "t": "2026-08-05T05:16:43.966Z"
+    },
+    {
+      "stap": "[mobiel] Seed: verse club + actief seizoen",
+      "status": "OK",
+      "detail": "clubId=418",
+      "t": "2026-08-05T05:16:44.002Z"
+    },
+    {
+      "stap": "[mobiel] Training plannen-venster geopend",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:16:46.501Z"
+    },
+    {
+      "stap": "[mobiel] Reeks aangemaakt via UI",
+      "status": "OK",
+      "detail": "5 trainingen 2026-08-10…2026-09-07",
+      "t": "2026-08-05T05:16:47.166Z"
+    },
+    {
+      "stap": "[mobiel] Training aanpassen-paneel geopend",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-05T05:16:47.330Z"
+    },
+    {
+      "stap": "[mobiel] Eén training verplaatst (alleen deze)",
+      "status": "OK",
+      "detail": "2026-08-17 → 2026-08-18",
+      "t": "2026-08-05T05:16:47.524Z"
+    },
+    {
+      "stap": "[mobiel] Eén datum overgeslagen",
+      "status": "OK",
+      "detail": "2026-08-24",
+      "t": "2026-08-05T05:16:47.659Z"
+    },
+    {
+      "stap": "[mobiel] Deze en volgende (reeks gesplitst)",
+      "status": "OK",
+      "detail": "2 trainingen om 19:30, eerdere ongewijzigd",
+      "t": "2026-08-05T05:16:47.807Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: verplaatste datum zichtbaar",
+      "status": "OK",
+      "detail": "di 18 aug",
+      "t": "2026-08-05T05:16:49.926Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: oorspronkelijke datum weg",
+      "status": "OK",
+      "detail": "ma 17 aug",
+      "t": "2026-08-05T05:16:49.926Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: overgeslagen datum weg",
+      "status": "OK",
+      "detail": "ma 24 aug",
+      "t": "2026-08-05T05:16:49.926Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: gesplitste training met nieuwe tijd",
+      "status": "OK",
+      "detail": "ma 31 aug · 19:30",
+      "t": "2026-08-05T05:16:49.926Z"
+    },
+    {
+      "stap": "[mobiel] Trainingslijst: eerste (ongewijzigde) training zichtbaar",
+      "status": "OK",
+      "detail": "ma 10 aug",
+      "t": "2026-08-05T05:16:49.926Z"
+    }
+  ],
+  "fouten": 0,
+  "t": "2026-08-05T05:16:50.070Z"
+}
