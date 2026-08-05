@@ -25,6 +25,7 @@ export type ZoekIngang = {
 const TREFWOORDEN: Record<string, string[]> = {
   "/dashboard": ["dashboard", "vandaag", "dagstart", "home", "moment", "dag", "waar sta je", "vorm", "overzicht"],
   "/train": ["trainen", "training", "schema", "plan", "verloop", "blok"],
+  "/coach": ["coach", "coachomgeving", "weekplan", "fase", "doellijn", "voortgang", "advies"],
   "/races": ["wedstrijd", "wedstrijden", "races", "race", "koers", "voorbereiding"],
   "/activiteiten": ["activiteiten", "ritten", "rit", "sessies", "geschiedenis"],
   "/lichaam": ["lichaam", "voeding", "eten", "herstel", "gezondheid", "slaap", "ziek", "blessure"],
@@ -55,6 +56,9 @@ const EXTRA_ATHLETE: ZoekIngang[] = [
   { href: "/journey", label: "Jouw verhaal", hint: "Tijdlijn & dossier", trefwoorden: TREFWOORDEN["/journey"] },
   { href: "/connect", label: "Koppelingen", hint: "Bronnen verbinden", trefwoorden: TREFWOORDEN["/connect"] },
   { href: "/lab", label: "Inzicht", hint: "Cijfers & analyse", trefwoorden: TREFWOORDEN["/lab"] },
+  // Klimmen staat niet meer in het Meer-menu (verhuisd naar Ontdekken,
+  // besluit 01-08-2026) maar blijft via zoeken direct bereikbaar.
+  { href: "/klimmen", label: "Klimmen", hint: "Klimmenverkenner", trefwoorden: TREFWOORDEN["/klimmen"] },
   { href: "/meer", label: "Meer", hint: "Alle onderdelen", trefwoorden: TREFWOORDEN["/meer"] },
 ]
 

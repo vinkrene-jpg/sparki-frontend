@@ -93,12 +93,14 @@ const PHOTO_LAB_ITEM: Chapter = {
 // zonder aantoonbare noodzaak. Lege groepen worden niet getoond (filter in page).
 
 function groepeerAtleet(isClubMember: boolean, isAdmin: boolean): MeerGroep[] {
-  // ATHLETE_MEER_CHAPTERS bevat: /you, /lichaam, /mechanieker, /samen, /feed,
-  // /activiteiten, /kalender, /kennis, /paspoort, /klimmen, /geluid, /.
+  // ATHLETE_MEER_CHAPTERS bevat: /you, /coach, /lichaam, /mechanieker, /samen,
+  // /feed, /activiteiten, /kalender, /kennis, /paspoort, /geluid, /.
+  // (/klimmen is per besluit 01-08-2026 verhuisd naar Ontdekken en staat niet
+  // meer in de Meer-SSOT; de pagina blijft vindbaar via de app-brede zoek.)
   // Indeling volgens de gebruikerseisen:
   // 1. Profiel & account: /you, /paspoort
   // 2. Veelgebruikt: /, /kalender, /activiteiten, /samen, /feed, Club (indien lid)
-  // 3. Sport & materiaal: /lichaam, /mechanieker, /klimmen, /geluid
+  // 3. Sport & materiaal: /lichaam, /mechanieker, /geluid
   // 4. Koppelingen & gegevens: Connect
   // 5. Ondersteuning & kennis: /kennis, Support
   // 6. Beheer, instellingen & privacy: Admin (indien admin)
@@ -114,7 +116,9 @@ function groepeerAtleet(isClubMember: boolean, isAdmin: boolean): MeerGroep[] {
     {
       titel: "Veelgebruikt",
       items: [
-        ...["/", "/kalender", "/activiteiten"].map((h) => byHref.get(h)!),
+        // Taak #611: de sporter-coach-omgeving (/coach) hoort direct vindbaar
+        // te zijn — hier én via de doorklik op /train.
+        ...["/", "/coach", "/kalender", "/activiteiten"].map((h) => byHref.get(h)!),
         ANALYSE_ITEM,
         ...["/samen", "/feed"].map((h) => byHref.get(h)!),
         ...(isClubMember ? [CLUB_CHAPTER] : []),
@@ -165,7 +169,9 @@ function groepeerCoach(): MeerGroep[] {
     },
     {
       titel: "Veelgebruikt",
-      items: ["/dashboard", "/samen", "/invitations"]
+      // /facturatie (SPARKI_BUILD_04 F14) hoort hier ook vindbaar te zijn —
+      // elke COACH_CHAPTERS-bestemming precies één keer (test:core-meer).
+      items: ["/dashboard", "/samen", "/invitations", "/facturatie"]
         .map((h) => byHref.get(h)!)
         .filter(Boolean),
     },

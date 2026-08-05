@@ -15,9 +15,9 @@ import {
   Activity,
   BookOpen,
   IdCard,
-  Mountain,
   Music,
   LifeBuoy,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react"
 import type { Role } from "@/contexts/UserContext"
@@ -56,8 +56,19 @@ export const ATHLETE_CHAPTERS: Chapter[] = [
 // al in ATHLETE_CHAPTERS (StartPage-raster en MainMenu). Op het Meer-scherm
 // leiden ze tot dubbele vermeldingen. Bereikbaar via Startoverzicht (/) of
 // de directe navigatielinks in het MainMenu.
+// Taak #611 — ingang naar de sporter-coach-omgeving (/coach, taak #607).
+// Bewust GEEN wijziging aan de vaste vijf nav-posities (BB-06/BB-07, MRC):
+// de ingang loopt via het Meer-menu (chapters-SSOT) en een doorklik op /train.
+export const SPORTER_COACH_CHAPTER: Chapter = {
+  href: "/coach",
+  icon: ClipboardList,
+  label: "Coach",
+  hint: "Plan per week & fase",
+}
+
 export const ATHLETE_MEER_CHAPTERS: Chapter[] = [
   { href: "/you", icon: User, label: "Jij", hint: "Profiel & doelen" },
+  SPORTER_COACH_CHAPTER,
   { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding & herstel" },
   { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Fiets & onderhoud" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
@@ -65,7 +76,9 @@ export const ATHLETE_MEER_CHAPTERS: Chapter[] = [
   { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Planning & seizoen" },
   { href: "/kennis", icon: BookOpen, label: "Kennis", hint: "Kennis & inzichten" },
   { href: "/paspoort", icon: IdCard, label: "Sportpaspoort", hint: "Jouw gegevens" },
-  { href: "/klimmen", icon: Mountain, label: "Klimmen", hint: "Klimmenverkenner" },
+  // Klimmen is bewust GEEN Meer-onderdeel meer (besluit 01-08-2026: de
+  // Klimmenverkenner leeft in Ontdekken (/feed → sectie Klimmen); de pagina
+  // /klimmen blijft bestaan en vindbaar via de app-brede zoek).
   { href: "/geluid", icon: Music, label: "Geluid", hint: "Geluiden & wekker" },
   { href: "/", icon: Home, label: "Startoverzicht", hint: "Alle hoofdstukken" },
 ]

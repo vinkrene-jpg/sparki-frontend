@@ -43,6 +43,16 @@ test("iedere zoekingang wijst naar een geregistreerde route", () => {
   }
 })
 
+// Taak #611: de sporter-coach-omgeving is via zoeken vindbaar; Klimmen blijft
+// vindbaar ondanks dat het uit het Meer-menu is verhuisd (besluit 01-08-2026).
+test("sporter vindt /coach en /klimmen via zoeken", () => {
+  const ingangen = zoekIngangen("athlete", false)
+  const coach = filterZoekIngangen(ingangen, "coach")
+  assert.ok(coach.some((e) => e.href === "/coach"), "zoek 'coach' vindt /coach")
+  const klim = filterZoekIngangen(ingangen, "klimmen")
+  assert.ok(klim.some((e) => e.href === "/klimmen"), "zoek 'klimmen' vindt /klimmen")
+})
+
 test("geen dubbele hrefs per rol", () => {
   for (const role of ROLES) {
     const hrefs = zoekIngangen(role, true).map((e) => e.href)

@@ -86,6 +86,25 @@ test("alle hoofdstukken en Meer-onderdelen blijven bereikbaar", () => {
   }
 })
 
+// Taak #611: de sporter-coach-omgeving (/coach) is vindbaar via het Meer-menu
+// én via een doorklik op de Trainen-pagina (geen wijziging aan de vaste vijf
+// nav-posities).
+test("sporter-coach-omgeving is vindbaar via Meer en via /train", () => {
+  assert.ok(
+    ATHLETE_MEER_CHAPTERS.some((c) => c.href === "/coach"),
+    "Meer bevat /coach",
+  )
+  const planSource = readFileSync(
+    path.join(here, "..", "pages", "core-plan.tsx"),
+    "utf8",
+  )
+  assert.ok(
+    planSource.includes('data-testid="link-coach-omgeving"') &&
+      planSource.includes('href="/coach"'),
+    "/train bevat de doorklik naar /coach",
+  )
+})
+
 test("Meer bevat de verplichte onderdelen", () => {
   const hrefs = new Set(ATHLETE_MEER_CHAPTERS.map((c) => c.href))
   for (const verplicht of ["/you", "/lichaam", "/mechanieker", "/samen", "/kennis"]) {

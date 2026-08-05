@@ -164,13 +164,32 @@ test("ouder: alle PARENT_CHAPTERS + Support", () => {
     isAdmin: false,
   })
   const hrefs = groepen.flatMap((g) => g.items.map((i) => i.href))
+  // PARENT_CHAPTERS bevat zelf al /support (rij "Hulp"); op de Meer-pagina
+  // hoort elke bestemming precies één keer — dus ontdubbelen in de verwachting.
   const verwacht = [
-    ...PARENT_CHAPTERS.map((ch) => ch.href),
-    "/support",
-    "/privacy",
-    "/voorwaarden",
+    ...new Set([
+      ...PARENT_CHAPTERS.map((ch) => ch.href),
+      "/support",
+      "/privacy",
+      "/voorwaarden",
+    ]),
   ].sort()
   assert.deepEqual([...hrefs].sort(), verwacht)
+})
+
+// Taak #611: de sporter-coach-omgeving (/coach) is vindbaar via het Meer-menu.
+test("atleet: /coach staat in de Meer-indeling (Veelgebruikt)", () => {
+  const groepen = bouwMeerGroepen({
+    role: "athlete",
+    isClubMember: false,
+    isAdmin: false,
+  })
+  const veelgebruikt = groepen.find((g) => g.titel === "Veelgebruikt")
+  assert.ok(veelgebruikt, "groep Veelgebruikt aanwezig")
+  assert.ok(
+    veelgebruikt!.items.some((i) => i.href === "/coach"),
+    "/coach vindbaar in Veelgebruikt",
+  )
 })
 
 test("ouder: vaste groepsvolgorde", () => {

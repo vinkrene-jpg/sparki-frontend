@@ -28,6 +28,9 @@ mock.module("@/contexts/UserContext", {
 mock.module("@/hooks/use-club", {
   namedExports: {
     useClubMembership: () => ({ isMember: mockIsMember }),
+    // Vol import-oppervlak dekken: CommercialShell importeert deze hooks ook.
+    useMyClubs: () => ({ data: [], isLoading: false }),
+    useShellOrganisatie: () => null,
   },
 })
 

@@ -68,6 +68,17 @@ function PlanHeader() {
       <p className="type-body text-content-secondary mt-1">
         Schema: {bronZin(plan, hasManual)}
       </p>
+      {/* Taak #611 — doorklik naar de sporter-coach-omgeving (/coach, taak
+          #607): het complete plan per week/fase, doellijn en voortgang. Geen
+          nav-wijziging (BB-06); dit is de vindbare ingang vanaf Trainen. */}
+      <Link
+        href="/coach"
+        className="type-body mt-2 inline-flex items-center gap-1 text-content-secondary underline underline-offset-4 hover:text-content-primary"
+        data-testid="link-coach-omgeving"
+      >
+        Naar de coach-omgeving: weekplan, fase en voortgang
+        <IconChevron className="h-4 w-4" />
+      </Link>
     </div>
   );
 }
