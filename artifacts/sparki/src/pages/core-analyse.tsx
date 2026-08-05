@@ -129,6 +129,21 @@ function UitlegRegel({ k }: { k: string }) {
   )
 }
 
+// Compacte variant van dezelfde twee-zinnen-opbouw voor de stat-tegels en de
+// samenvattingsstrip bovenaan: altijd zichtbaar, zelfde bron (UITLEG +
+// UITLEG_DOEN), geen uitklap — die zit al achter het uitleg-stipje.
+function MiniDuiding({ k }: { k: string }) {
+  const u = UITLEG[k]
+  if (!u) return null
+  const doen = UITLEG_DOEN[k]
+  return (
+    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+      {u.wat}
+      {doen ? ` ${doen}` : ""}
+    </p>
+  )
+}
+
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 
 type Tab = "overzicht" | "belasting" | "progressie" | "doelen" | "sessies"
@@ -288,6 +303,7 @@ function StatTegel({
         )
       }
       {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
+      {uitlegKey && <MiniDuiding k={uitlegKey} />}
     </LCard>
   )
 }
@@ -638,6 +654,7 @@ function OverzichtTab({
           value={profiel?.ftp ?? null}
           unit="W"
           color={CHART.ftp}
+          uitlegKey="ftp"
         />
       </div>
 
@@ -2280,6 +2297,7 @@ function SamenvattingStrip({
   metrics,
   sessies,
   todayIso,
+  toonDuiding,
 }: {
   load: Bron<LoadData>
   ftpTests: Array<{ ftpWatts: number; measuredAt: string }>
@@ -2287,6 +2305,10 @@ function SamenvattingStrip({
   metrics: Array<{ metricDate: string; weightKg?: number | string | null }>
   sessies: TrainingSession[]
   todayIso: string
+  // Presentatie-dedup: op het Overzicht-tabblad dragen de stat-tegels al
+  // precies dezelfde wat+doen-regels (fitheid/vorm/ftp); dan laat de strip
+  // ze weg zodat de tekst nooit dubbel op één scherm staat.
+  toonDuiding: boolean
 }) {
   const connectors = useConnectors()
   const kern = analyseSamenvatting({
@@ -2303,11 +2325,12 @@ function SamenvattingStrip({
     todayIso,
   )
 
-  const cel = (label: string, waarde: ReactNode, sub?: string) => (
+  const cel = (label: string, waarde: ReactNode, sub?: string, duidingKey?: string) => (
     <div className="min-w-0">
       <LLabel>{label}</LLabel>
       <div className="mt-0.5 text-sm text-foreground">{waarde}</div>
       {sub && <p className="truncate text-[10px] text-muted-foreground">{sub}</p>}
+      {toonDuiding && duidingKey && <MiniDuiding k={duidingKey} />}
     </div>
   )
 
@@ -2320,6 +2343,7 @@ function SamenvattingStrip({
             ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-muted-foreground">CTL</span> <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /></span>
             : <span className="text-muted-foreground">—</span>,
           kern.atl != null ? `vermoeidheid ${kern.atl}` : undefined,
+          "fitheid",
         )}
         {cel(
           "Vorm & herstel",
@@ -2327,6 +2351,7 @@ function SamenvattingStrip({
             ? <span className="tabular-nums" style={{ color: tsbKleur(kern.tsb) }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb} <UitlegDot uitlegKey="vorm" label="Vorm (TSB)" /></span>
             : <span className="text-muted-foreground">—</span>,
           kern.vormLabel ?? undefined,
+          "vorm",
         )}
         {cel(
           "Ontwikkeling",
@@ -2343,6 +2368,7 @@ function SamenvattingStrip({
             )
             : <span className="text-muted-foreground">—</span>,
           kern.wkg != null ? `${String(kern.wkg).replace(".", ",")} W/kg` : undefined,
+          "ftp",
         )}
         {cel(
           "Laatste sync",
@@ -2489,6 +2515,7 @@ export default function CoreAnalysePage() {
             metrics={metrics.data ?? []}
             sessies={sessies.data ?? []}
             todayIso={todayIso}
+            toonDuiding={activeTab !== "overzicht"}
           />
 
           <div id="tab-overzicht"  role="tabpanel" aria-labelledby="tabknop-overzicht" hidden={activeTab !== "overzicht"}>
