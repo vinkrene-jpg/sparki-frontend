@@ -20,6 +20,7 @@ GlobalRegistrator.register();
 type Role = "coach" | "athlete" | "parent";
 let role: Role = "athlete";
 let planData: unknown = undefined;
+let loadData: unknown = undefined;
 
 function el(tag: string, props: Record<string, unknown> | null, ...children: unknown[]) {
   const React = (globalThis as Record<string, unknown>).React as typeof import("react");
@@ -72,7 +73,7 @@ mock.module("@/hooks/use-training-plan", {
 
 mock.module("@/hooks/use-load", {
   namedExports: {
-    useLoad: () => ({ data: undefined, isLoading: false }),
+    useLoad: () => ({ data: loadData, isLoading: false }),
   },
 });
 
@@ -259,5 +260,107 @@ test("sporter met plan ziet de weekgroepen ook echt gerenderd", async () => {
   } finally {
     view.unmount();
     planData = undefined;
+  }
+});
+
+// ── 3. Voortgang-kaart: trend-zin uit echte belastingsdata ─────────────────
+
+/** chartData met `n` dagen en lineair oplopende/aflopende CTL. */
+function chart(n: number, startCtl: number, deltaPerDag: number) {
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(Date.UTC(2026, 6, 1 + i)); // vanaf 1 juli 2026
+    return { date: d.toISOString().slice(0, 10), ctl: startCtl + i * deltaPerDag };
+  });
+}
+
+function planMetDoel(phase: string | null) {
+  return {
+    plan: { id: 1, name: "Plan", maker: "Sparki", source: "auto", createdAt: "", goal: "Doel", mode: "autonomous", status: "active" },
+    inputs: {
+      nextRace: { name: "Grote Prijs", raceDate: "2026-09-01" },
+      phase,
+    },
+    days: [],
+  };
+}
+
+test("Voortgang: stijgende CTL in opbouwfase → trend-zin zonder afwijkingsmarkering", async () => {
+  role = "athlete";
+  planData = planMetDoel("build");
+  // 21 dagen, +0,5 CTL/dag ⇒ delta +10 over het venster → "volgens schema"
+  loadData = { ctl: 60, atl: 55, tsb: 5, chartData: chart(21, 50, 0.5) };
+  const view = await renderSwitch();
+  try {
+    const text = view.container.textContent!;
+    assert.ok(text.includes("Je fitheid (CTL) stijgt met +10 over de laatste 21 dagen"), "richting + delta + venster in de zin");
+    assert.ok(text.includes("richting Grote Prijs (1 september)"), "doelnaam + datum gekoppeld");
+    assert.ok(text.includes("je bouwt volgens schema op"), "opbouw-framing");
+    const p = Array.from(view.container.querySelectorAll("p")).find((n) =>
+      n.textContent!.includes("je bouwt volgens schema op"),
+    )!;
+    assert.ok(!p.className.includes("text-amber-600"), "geen afwijkingsmarkering bij trend volgens schema");
+  } finally {
+    view.unmount();
+    planData = undefined;
+    loadData = undefined;
+  }
+});
+
+test("Voortgang: stagnerende CTL in opbouwfase → afwijking zichtbaar gemarkeerd", async () => {
+  role = "athlete";
+  planData = planMetDoel("build");
+  // 14 dagen vlak ⇒ delta 0 → stagnatie wijkt af van de opbouw
+  loadData = { ctl: 50, atl: 50, tsb: 0, chartData: chart(14, 50, 0) };
+  const view = await renderSwitch();
+  try {
+    const text = view.container.textContent!;
+    assert.ok(text.includes("blijft gelijk met +0 over de laatste 14 dagen"), "eerlijke vlakke richting");
+    assert.ok(text.includes("je opbouw stagneert"), "afwijkende framing benoemd");
+    const p = Array.from(view.container.querySelectorAll("p")).find((n) =>
+      n.textContent!.includes("je opbouw stagneert"),
+    )!;
+    assert.ok(p.className.includes("text-amber-600"), "afwijking krijgt de amber-markering");
+  } finally {
+    view.unmount();
+    planData = undefined;
+    loadData = undefined;
+  }
+});
+
+test("Voortgang: dalende CTL in taper → juist géén afwijking (afbouw is goed)", async () => {
+  role = "athlete";
+  planData = planMetDoel("taper");
+  loadData = { ctl: 55, atl: 40, tsb: 15, chartData: chart(20, 60, -0.4) };
+  const view = await renderSwitch();
+  try {
+    const text = view.container.textContent!;
+    assert.ok(text.includes("je bouwt belasting af richting je doel"), "taper-framing");
+    const p = Array.from(view.container.querySelectorAll("p")).find((n) =>
+      n.textContent!.includes("je bouwt belasting af"),
+    )!;
+    assert.ok(!p.className.includes("text-amber-600"), "dalend in taper is geen afwijking");
+  } finally {
+    view.unmount();
+    planData = undefined;
+    loadData = undefined;
+  }
+});
+
+test("Voortgang: <14 dagen belastingsdata → eerlijke 'te weinig dagen'-tak", async () => {
+  role = "athlete";
+  planData = planMetDoel("build");
+  loadData = { ctl: 50, atl: 48, tsb: 2, chartData: chart(13, 50, 0.5) };
+  const view = await renderSwitch();
+  try {
+    const text = view.container.textContent!;
+    assert.ok(
+      text.includes("Nog te weinig dagen met belastingsdata voor een trendoordeel"),
+      "eerlijke lege staat bij <14 dagen",
+    );
+    assert.ok(!text.includes("Je fitheid (CTL) stijgt"), "geen trend-zin verzonnen");
+  } finally {
+    view.unmount();
+    planData = undefined;
+    loadData = undefined;
   }
 });
