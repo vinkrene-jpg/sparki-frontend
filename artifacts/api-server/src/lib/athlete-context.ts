@@ -19,6 +19,7 @@ import {
   coachingProfileDirective,
 } from "../engines/coaching";
 import { computeAge } from "./age";
+import { computeLoadSeries } from "./recovery-load";
 import { resolveFlags } from "./flags";
 import { buildRaceContext, formatRaceContextForPrompt } from "./race-context";
 import {
@@ -56,6 +57,7 @@ export async function buildAthleteContext(
     nutritionLogs,
     upcomingRaces,
     priorObservations,
+    loadSessions,
   ] = await Promise.all([
     db
       .select()
@@ -109,6 +111,17 @@ export async function buildAthleteContext(
       .orderBy(racesTable.raceDate)
       .limit(5),
     getContextObservations(clerkId),
+    // R1 (AI_COACH_KOPPELING): vorm/belasting uit DEZELFDE bron als de
+    // Analyse-grafiek — computeLoadSeries — nooit een tweede berekening.
+    db
+      .select({
+        sessionDate: trainingSessionsTable.sessionDate,
+        tss: trainingSessionsTable.tss,
+      })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.clerkId, clerkId))
+      .orderBy(desc(trainingSessionsTable.sessionDate))
+      .limit(400),
   ]);
 
   const todayPlan = allWorkouts.find((w) => w.scheduledDate === today) ?? null;
@@ -232,6 +245,27 @@ export async function buildAthleteContext(
     }
   } else {
     parts.push(`RECENT SESSIONS: No sessions logged yet`);
+  }
+
+  // R1 — VORM/BELASTING uit computeLoadSeries (zelfde bron als de
+  // Analyse-grafiek). Regel: wat in Analyse staat en wat de coach zegt komt
+  // uit hetzelfde getal; afwijken is een fout, geen interpretatieverschil.
+  if (loadSessions.some((s) => s.tss != null)) {
+    const serie = computeLoadSeries(loadSessions, 28);
+    const punt = (dagenTerug: number) =>
+      serie.chartData[serie.chartData.length - 1 - dagenTerug] ?? null;
+    const richting = (dagen: number): string => {
+      const eerder = punt(dagen);
+      if (!eerder) return "onbekend";
+      const delta = serie.ctl - eerder.ctl;
+      return delta > 1 ? "stijgend" : delta < -1 ? "dalend" : "vlak";
+    };
+    const belasteDagen = serie.chartData.filter((p) => p.tss > 0).length;
+    parts.push(
+      `VORM (uit dezelfde berekening als de Analyse-grafiek — spreek deze getallen nooit tegen): CTL=${serie.ctl}, ATL=${serie.atl}, TSB=${serie.tsb}. Richting CTL over 7 dagen: ${richting(7)}, over 28 dagen: ${richting(28)}. Dagen met belasting in de laatste 28 dagen: ${belasteDagen}.`,
+    );
+  } else {
+    parts.push(`VORM: nog geen belastingsgegevens (geen sessies met TSS).`);
   }
 
   if (recentMetrics.length > 1) {
