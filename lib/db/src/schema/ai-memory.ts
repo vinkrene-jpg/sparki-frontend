@@ -81,6 +81,12 @@ export const aiObservationStatuses = [
   "saved",
   "dismissed",
   "outdated",
+  // AI_COACH §4.1 — bevestigd geheugen. Een conclusie wordt eerst voorgelegd:
+  // "voorlopig" mag alleen een vraag dragen, alleen "bevestigd" mag een advies
+  // dragen, "weerlegd" verdwijnt en komt nooit automatisch terug.
+  "voorlopig",
+  "bevestigd",
+  "weerlegd",
 ] as const;
 export type AiObservationStatus = (typeof aiObservationStatuses)[number];
 
@@ -144,6 +150,10 @@ export const aiMemoryEventTypes = [
   // opgeschoond door de cleanup-taak.
   "observation_suppressed",
   "observation_cleanup",
+  // AI_COACH §4.1 — bevestigingsstroom (max één vraag per dag).
+  "confirm_question_shown",
+  "observation_confirmed",
+  "observation_refuted",
 ] as const;
 export type AiMemoryEventType = (typeof aiMemoryEventTypes)[number];
 

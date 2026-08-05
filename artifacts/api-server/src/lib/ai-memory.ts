@@ -29,7 +29,10 @@ import { getEffectivePrivacy } from "./privacy";
 import { SPARKI_ENGINE_VERSION } from "./engine-version";
 import { createNotification } from "./notifications";
 
-const ACTIVE_STATUSES = ["new", "acknowledged", "saved"] as const;
+// §4.1 bevestigd geheugen: "bevestigd" en "voorlopig" blijven actief zichtbaar
+// (bevestigd draagt advies, voorlopig alleen een vraag); "weerlegd" is — net
+// als dismissed/outdated — nooit meer actief.
+const ACTIVE_STATUSES = ["new", "acknowledged", "saved", "voorlopig", "bevestigd"] as const;
 const DISMISS_COOLDOWN_DAYS = 14;
 const CONTEXT_WINDOW_DAYS = 30;
 // Venster waarbinnen een nieuwe observatie met dezelfde strekking als een
@@ -288,9 +291,13 @@ export async function getContextObservations(
     (r) =>
       r.status === "saved" ||
       r.status === "acknowledged" ||
+      r.status === "bevestigd" ||
+      r.status === "voorlopig" ||
       r.severity === "important" ||
       r.severity === "urgent",
   );
+  // Bevestigde herinneringen wegen zwaarder: die gaan voorop in de context.
+  relevant.sort((a, b) => (b.status === "bevestigd" ? 1 : 0) - (a.status === "bevestigd" ? 1 : 0));
   return relevant.slice(0, limit);
 }
 
@@ -298,9 +305,15 @@ export function formatObservationsForPrompt(obs: AiObservation[]): string {
   if (obs.length === 0) return "";
   const lines = obs.map((o) => {
     const date = new Date(o.createdAt).toISOString().split("T")[0];
-    return `  - [${date}] (${o.category}/${o.severity}) ${o.title}: ${o.summary ?? o.observationText}`;
+    const statusTag =
+      o.status === "bevestigd"
+        ? " [BEVESTIGD door de sporter — mag een advies dragen]"
+        : o.status === "voorlopig"
+          ? " [VOORLOPIG — nog niet bevestigd: gebruik dit alleen voor een vraag, nooit voor een directief advies]"
+          : "";
+    return `  - [${date}] (${o.category}/${o.severity})${statusTag} ${o.title}: ${o.summary ?? o.observationText}`;
   });
-  return `EARLIER SAVED OBSERVATIONS (use these for continuity; do not contradict or blindly repeat them):\n${lines.join("\n")}`;
+  return `EARLIER SAVED OBSERVATIONS (use these for continuity; do not contradict or blindly repeat them; only entries marked BEVESTIGD may carry a directive advice — unconfirmed ones may only prompt a question):\n${lines.join("\n")}`;
 }
 
 // ── Preferences ──────────────────────────────────────────────────────────────

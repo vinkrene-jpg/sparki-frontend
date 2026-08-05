@@ -35,6 +35,7 @@ import {
 } from "../lib/athlete-context";
 import { sessionSeed, rotateWithinGroups } from "../lib/variation";
 import { maakCoachDossier } from "../lib/coach-dossier";
+import { getConfirmQuestion, answerConfirmQuestion, type ConfirmAnswer } from "../lib/memory-confirm";
 import {
   getActiveKnowledge,
   knowledgeSourceBlock,
@@ -245,6 +246,41 @@ router.post("/ask", requireAuth, async (req, res) => {
     }
     req.log.error({ err }, "ai.ask failed");
     res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
+  }
+});
+
+// ── §4.1 Bevestigd geheugen ──────────────────────────────────────────────────
+// Hoogstens één bevestigingsvraag per dag; dezelfde vraag blijft de hele dag
+// staan. Alleen "bevestigd" mag een advies dragen.
+router.get("/memory/confirm-question", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const vraag = await getConfirmQuestion(clerkId);
+    res.json({ vraag });
+  } catch (err) {
+    req.log.error({ err }, "ai.memory confirm-question failed");
+    res.status(500).json({ error: "De vraag kon niet worden opgehaald. Probeer het straks opnieuw." });
+  }
+});
+
+router.post("/memory/observations/:id/answer", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  const { antwoord } = req.body as { antwoord?: string };
+  if (!Number.isInteger(id) || !["klopt", "klopt_niet", "weet_niet"].includes(antwoord ?? "")) {
+    res.status(400).json({ error: "antwoord moet klopt, klopt_niet of weet_niet zijn" });
+    return;
+  }
+  try {
+    const result = await answerConfirmQuestion(clerkId, id, antwoord as ConfirmAnswer);
+    if (!result) {
+      res.status(404).json({ error: "Herinnering niet gevonden" });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "ai.memory answer failed");
+    res.status(500).json({ error: "Het antwoord kon niet worden verwerkt. Probeer het straks opnieuw." });
   }
 });
 
