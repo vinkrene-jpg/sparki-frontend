@@ -21,6 +21,17 @@ Laatst bijgewerkt: 2026-08-05.
   "Alleen deze aanpassen" (incl. verplaatsen), "Deze en volgende" (reeks
   splitsen) en "Deze overslaan".
 
+## Beslist 05-08-2026 — twee vormkeuzes (René via vragenformulier)
+
+- **Knutseltools (Doelscenario/Wattage-lab/Wat-als):** extra tabblad "Lab" op
+  /analyse — alle simulaties bij elkaar, altijd vindbaar, per tool een eerlijke
+  melding als data ontbreekt. GEBOUWD 05-08 (commit ac985b5d): tools verhuisd
+  van Belasting naar Lab; server-poort performance_lab op POST /wat-als dicht.
+- **Sterke coach-omgeving:** een APARTE pagina (bijv. /coach) — volledige
+  coach-omgeving met het complete plan per week/fase, doellijn en voortgang,
+  los van het dagelijkse /trainen. Nog niet gebouwd; hoort bij
+  AI_COACH_KOPPELING_EN_GEHEUGEN_01 (na ANALYSE_UITBREIDING, zie startsein).
+
 ## STARTSEIN 05-08-2026 (René: "Allebei, in die volgorde")
 
 - Eerst ANALYSE_UITBREIDING_EN_ZANDBAK_01 (volgorde §9), daarna
@@ -54,12 +65,14 @@ Laatst bijgewerkt: 2026-08-05.
   (ANALYSE §5.1, BLOKKEREND — nog niet gebouwd), dan bezetting, wissel, lopende
   zaken; trainerszandbak pas daarna. §3a: trainer-ervaring uit GEDRAG (nooit
   zelfgekozen), verschuift alleen wat vooraan staat, nooit wat mag.
-- **Open bij René (§9):** namen/leeftijden §2 akkoord of bijstellen
-  (rolverdeling moet compleet blijven)? Tweede club (WV De Zuidrand) meteen
-  mee of tweede ronde?
-- **Open (uitvoering):** startmoment — ROUTEPLANNER_MOBIEL_01 loopt nog en de
-  voorbeeldsporter-generator (blokkerend) staat óók vooraan in de
-  ANALYSE-volgorde.
+- **Beslist 05-08 (formulier):** tweede club WV De Zuidrand METEEN mee
+  (privacy over de clubgrens direct testbaar); startmoment = EERST de
+  routeplanner-opdracht afmaken (R7 #602, browser-tests #603, desktop #604),
+  dán de habitat.
+- **Beslist 05-08 (tweede formulier):** §2-bezetting AKKOORD zoals in het
+  document (Henk, Kay, Marietje, Floris, Karel, Bea, Joop, Nora, enz.).
+  Alle §9-punten zijn daarmee beantwoord; HABITAT_01 wacht alleen nog op de
+  routeplanner-afronding (startvolgorde) en de voorbeeldsporter-generator.
 
 ## Ontvangen 05-08-2026 — twee NIEUWE documenten
 
