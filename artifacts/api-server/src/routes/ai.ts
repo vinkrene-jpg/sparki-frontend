@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Router } from "express";
 import { and, eq } from "drizzle-orm";
 import {
@@ -33,6 +34,7 @@ import {
   gatherKnowledge,
 } from "../lib/athlete-context";
 import { sessionSeed, rotateWithinGroups } from "../lib/variation";
+import { maakCoachDossier } from "../lib/coach-dossier";
 import {
   getActiveKnowledge,
   knowledgeSourceBlock,
@@ -78,10 +80,26 @@ router.post("/brief", requireAuth, requireCommercialFeature("ai_observations"), 
       return;
     }
     const brief = block.text;
+    // R3 (AI_COACH_KOPPELING): zonder dossier geen advies. Het dossier wordt
+    // VOOR het antwoord aangemaakt; faalt dat, dan ziet de sporter het advies
+    // niet (catch hieronder geeft een eerlijke 500).
+    const dossier = await maakCoachDossier({
+      clerkId,
+      adviceType: "dag_advies",
+      adviceKey: `brief:${todayStr()}`,
+      title: `Dagelijkse coach-update ${todayStr()}`,
+      adviceText: brief,
+      aiPurpose: "brief",
+      knowledgeRefs: managedItems.map((k) => ({ evidenceId: k.id, version: k.version })),
+      alternativesConsidered: [{ option: "Geen update geven tot er meer signalen zijn" }],
+      whyAlternativeRejected:
+        "De sporter vraagt om een dagelijkse stand; beperkingen in de data worden in de tekst zelf benoemd.",
+    });
     res.json({
       brief,
       sources,
       bronnen: buildSourceCitations(managedItems),
+      dossierId: dossier.id,
     });
     // Herleidbaarheid: pin de gebruikte kennisversies (best-effort).
     void recordKnowledgeUsage(managedItems, "vandaag", clerkId).catch((err) =>
@@ -176,7 +194,22 @@ router.post("/ask", requireAuth, async (req, res) => {
       return;
     }
     const answer = block.text;
-    res.json({ answer, sources });
+    // R3: dossier vóór het antwoord — zonder dossier geen advies.
+    const dossier = await maakCoachDossier({
+      clerkId,
+      adviceType: "coach_besluit",
+      adviceKey: `ask:${todayStr()}:${createHash("sha256").update(question.trim()).digest("hex").slice(0, 12)}`,
+      title: `Antwoord op vraag: ${question.trim().slice(0, 80)}`,
+      adviceText: answer,
+      aiPurpose: "ask",
+      extraBasedOn: [
+        { kind: "vraag", label: "vraag van de sporter", value: question.trim().slice(0, 300), date: todayStr() },
+      ],
+      alternativesConsidered: [{ option: "Niet antwoorden en doorverwijzen" }],
+      whyAlternativeRejected:
+        "De vraag is binnen het coachdomein beantwoordbaar met de beschikbare data; grenzen worden in het antwoord benoemd.",
+    });
+    res.json({ answer, sources, dossierId: dossier.id });
 
     // Only persist genuinely important insights from Q&A — not every exchange.
     void (async () => {
@@ -555,7 +588,26 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
       res.status(502).json({ error: "Er kon geen uitleg worden gevormd. Probeer het opnieuw." });
       return;
     }
-    res.json({ short });
+    // R3: dossier vóór het antwoord — zonder dossier geen uitleg.
+    const dossier = await maakCoachDossier({
+      clerkId,
+      adviceType: "dag_advies",
+      adviceKey: `workout-explain:${workout.id}`,
+      title: `Uitleg training "${workout.title}" (${workout.scheduledDate})`,
+      adviceText: short,
+      aiPurpose: "workout_explain",
+      extraBasedOn: [
+        {
+          kind: "training",
+          label: `geplande training #${workout.id}`,
+          value: JSON.stringify({ title: workout.title, tss: workout.targetTSS, min: workout.targetDurationMin }),
+          date: String(workout.scheduledDate),
+        },
+      ],
+      alternativesConsidered: [{ option: "Geen uitleg tonen" }],
+      whyAlternativeRejected: "De sporter vroeg zelf om uitleg bij deze geplande training.",
+    });
+    res.json({ short, dossierId: dossier.id });
   } catch (err) {
     if (err instanceof AiBlockedError) {
       res.status(403).json({ error: err.message, reason: err.reason });
@@ -631,7 +683,26 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
       res.status(502).json({ error: "Er kon geen uitleg worden gevormd. Probeer het opnieuw." });
       return;
     }
-    res.json({ extended });
+    // R3: dossier vóór het antwoord — zonder dossier geen uitleg.
+    const dossier = await maakCoachDossier({
+      clerkId,
+      adviceType: "dag_advies",
+      adviceKey: `workout-explain-extended:${workout.id}`,
+      title: `Uitgebreide uitleg training "${workout.title}" (${workout.scheduledDate})`,
+      adviceText: extended,
+      aiPurpose: "workout_explain_extended",
+      extraBasedOn: [
+        {
+          kind: "training",
+          label: `geplande training #${workout.id}`,
+          value: JSON.stringify({ title: workout.title, tss: workout.targetTSS, min: workout.targetDurationMin }),
+          date: String(workout.scheduledDate),
+        },
+      ],
+      alternativesConsidered: [{ option: "Alleen de korte uitleg tonen" }],
+      whyAlternativeRejected: "De sporter opende zelf de uitgebreide onderbouwing.",
+    });
+    res.json({ extended, dossierId: dossier.id });
   } catch (err) {
     if (err instanceof AiBlockedError) {
       res.status(403).json({ error: err.message, reason: err.reason });
@@ -821,7 +892,38 @@ router.post("/workout-adjust", requireAuth, requireCommercialFeature("autonomous
       confidence: decision.confidence,
     };
 
-    res.json({ proposal });
+    // R3: dossier vóór het voorstel — zonder dossier geen advies. De
+    // aanbeveling zelf komt uit de deterministische beslislaag; dat staat
+    // expliciet in de regels.
+    const dossier = await maakCoachDossier({
+      clerkId,
+      adviceType: "plan_aanpassing",
+      adviceKey: `workout-adjust:${workout.id}:${todayStr()}`,
+      title: `Aanpassingsvoorstel "${workout.title}" (${workout.scheduledDate})`,
+      adviceText: `${title}\n\n${messageText}`,
+      aiPurpose: "workout_adjust",
+      extraBasedOn: [
+        {
+          kind: "feedback",
+          label: "feedback van de sporter",
+          value: JSON.stringify({ feedbackType, rpe: rpe ?? null, note: note?.trim()?.slice(0, 300) ?? null }),
+          date: todayStr(),
+        },
+        {
+          kind: "besluit",
+          label: "deterministische beslissing",
+          value: JSON.stringify({ recommendation: decision.recommendation, changes: decision.changes, basis: decision.basis }),
+          date: todayStr(),
+        },
+      ],
+      extraRules: ["adjust-rules:deterministische-beslislaag", "llm:alleen-verwoording"],
+      alternativesConsidered: [{ option: "Training ongewijzigd laten" }],
+      whyAlternativeRejected:
+        decision.recommendation === "keep"
+          ? "Niet van toepassing: het voorstel ís de training laten staan."
+          : "De deterministische beslisregels wogen de feedback zwaarder dan ongewijzigd doorgaan (zie basis).",
+    });
+    res.json({ proposal, dossierId: dossier.id });
   } catch (err) {
     req.log.error({ err }, "ai.workout-adjust failed");
     res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
