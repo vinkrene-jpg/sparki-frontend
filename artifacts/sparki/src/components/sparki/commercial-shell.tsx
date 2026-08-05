@@ -31,6 +31,7 @@ import {
   type TodayItem,
 } from "@/hooks/use-today"
 import { TodayDebugPanel } from "@/components/sparki/role-today"
+import { ProactiveTriggerSection } from "@/components/sparki/proactive-trigger-card"
 import { Users, Bell, ShieldCheck, Building2 } from "lucide-react"
 import { useMyClubs, useShellOrganisatie } from "@/hooks/use-club"
 import { useUserProfile } from "@/contexts/UserContext"
@@ -1251,6 +1252,12 @@ export function CommercialToday() {
         planWeek={planWeek}
         toonFoto={heeftInformatie}
       />
+      {/* AI_COACH §4.2 — Proactieve coach-trigger: Sparki opent vanuit zichzelf
+          een gesprek als een deterministische check vuur t. Staat boven de
+          Today-orchestrator (aandachtswet: eerste coach-bericht is leidend).
+          Zichtbaar ookals er een legeStaat is — een terugkeer-trigger is juist
+          dan relevant. Stil bij fout of geen trigger. */}
+      <ProactiveTriggerSection />
       {/* In de samengevoegde lege staat draagt de orchestrator alleen extra
           losse kaarten aan (training voorstellen · route) — die acties zitten
           al in de ene kaart. Laag 1 = één visueel element + actie eronder. */}

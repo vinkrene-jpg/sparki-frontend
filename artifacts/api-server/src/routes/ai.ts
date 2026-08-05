@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Router } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   db,
   aiObservationsTable,
@@ -12,6 +12,7 @@ import {
   humorLevels,
   plannedWorkoutsTable,
   coachChangeProposalsTable,
+  adviceDossiersTable,
   type AiObservation,
 } from "@workspace/db";
 import { aiMessage, AiBlockedError } from "../lib/ai/gateway";
@@ -965,5 +966,81 @@ router.post("/workout-adjust", requireAuth, requireCommercialFeature("autonomous
     res.status(500).json({ error: "De coach-dienst is tijdelijk niet beschikbaar. Probeer het straks opnieuw." });
   }
 });
+
+// ── GET /api/ai/dossier/:id ───────────────────────────────────────────────────
+// AI_COACH §4.3 — Geeft het adviesdossier voor een specifieke coach-boodschap
+// terug. Vereist eigenaarschap (clerkId moet overeenkomen) — nooit andermans
+// dossier tonen.
+
+router.get("/dossier/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const dossierIdRaw = Number(String(req.params["id"]));
+  if (!Number.isFinite(dossierIdRaw) || dossierIdRaw <= 0) {
+    res.status(400).json({ error: "Ongeldig dossier-ID" });
+    return;
+  }
+
+  try {
+    const [row] = await db
+      .select({
+        id: adviceDossiersTable.id,
+        title: adviceDossiersTable.title,
+        adviceText: adviceDossiersTable.adviceText,
+        confidenceLevel: adviceDossiersTable.confidenceLevel,
+        basedOn: adviceDossiersTable.basedOn,
+        risks: adviceDossiersTable.risks,
+        whyAlternativeRejected: adviceDossiersTable.whyAlternativeRejected,
+      })
+      .from(adviceDossiersTable)
+      .where(
+        and(
+          eq(adviceDossiersTable.id, dossierIdRaw),
+          eq(adviceDossiersTable.clerkId, clerkId), // eigenaarschap
+        ),
+      )
+      .limit(1);
+
+    if (!row) {
+      res.status(404).json({ error: "Dossier niet gevonden" });
+      return;
+    }
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "ai.dossier.get failed");
+    res.status(500).json({ error: "Kon het dossier niet laden" });
+  }
+});
+
+// ── GET /api/ai/proactive-trigger ────────────────────────────────────────────
+// AI_COACH §4.2 — Proactieve coach-triggers: deterministische checks die Sparki
+// uit zichzelf laten reageren. Dezelfde poort als /brief (ai_observations),
+// nooit tegelijk met de §4.1-bevestigingsvraag (geregeld in de lib zelf).
+import { checkProactiveTriggers } from "../lib/proactive-triggers";
+
+router.get(
+  "/proactive-trigger",
+  requireAuth,
+  requireCommercialFeature("ai_observations"),
+  async (req, res) => {
+    const clerkId = getClerkUserId(req)!;
+    // Atomiciteitsgarantie: sessieslot per gebruiker zorgt dat gelijktijdige
+    // dashboardverzoeken nooit dubbele dossiers of events aanmaken.
+    // pg_advisory_lock is een sessiesleutel (NIET transactiescoped), dus we
+    // geven hem altijd vrij in de finally-tak.
+    const lockKey = `proactive-trigger:${clerkId}`;
+    try {
+      await db.execute(sql`SELECT pg_advisory_lock(hashtext(${lockKey}))`);
+      try {
+        const trigger = await checkProactiveTriggers(clerkId);
+        res.json({ trigger });
+      } finally {
+        await db.execute(sql`SELECT pg_advisory_unlock(hashtext(${lockKey}))`);
+      }
+    } catch (err) {
+      req.log.error({ err }, "ai.proactive-trigger failed");
+      res.status(500).json({ error: "Kon proactieve trigger niet laden" });
+    }
+  },
+);
 
 export default router;

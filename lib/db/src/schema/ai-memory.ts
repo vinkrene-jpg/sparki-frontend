@@ -154,6 +154,8 @@ export const aiMemoryEventTypes = [
   "confirm_question_shown",
   "observation_confirmed",
   "observation_refuted",
+  // AI_COACH §4.2 — proactieve coach-trigger gevuurd (max één per trigger per dag).
+  "proactive_trigger_shown",
 ] as const;
 export type AiMemoryEventType = (typeof aiMemoryEventTypes)[number];
 

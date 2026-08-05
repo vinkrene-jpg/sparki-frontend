@@ -106,6 +106,8 @@ export const queryKeys = {
     observations: () => ["ai-memory", "observations"] as const,
     connectionReadiness: () => ["ai-memory", "connection-readiness"] as const,
     preferences: () => ["ai-memory", "preferences"] as const,
+    /** AI_COACH §4.2 — proactieve coach-triggers */
+    proactiveTrigger: () => ["ai-memory", "proactive-trigger"] as const,
   },
 
   contextMemory: {
