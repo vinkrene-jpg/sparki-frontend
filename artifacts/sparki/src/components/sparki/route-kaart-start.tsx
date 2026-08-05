@@ -400,6 +400,10 @@ const TOP_AANTAL = 5
 // routelijn, zodat de selectie direct te herkennen is tussen de andere lijnen.
 const SELECTIE_KLEUR = "#e63946"
 
+// Eigen kleur per top-5-route, zodat de lijnen op de kaart uit elkaar te
+// houden zijn. Volgorde = vaakst gereden eerst (zelfde volgorde als de kaart).
+const TOP_KLEUREN = ["#0e7490", "#7c3aed", "#d97706", "#16a34a", "#db2777"]
+
 const BRON_KORT: Record<NearbyRoute["bron"], string> = {
   bewaard: "Bewaard",
   plan: "Plan",
@@ -419,11 +423,13 @@ const MOEILIJKHEID_LABEL: Record<Moeilijkheid, string> = {
 function NearbyMap({
   center,
   routes,
+  kleuren,
   selectedKey,
   onSelect,
 }: {
   center: { lat: number; lon: number } | null
   routes: NearbyRoute[]
+  kleuren: ReadonlyMap<string, string>
   selectedKey: string | null
   onSelect: (key: string) => void
 }) {
@@ -431,6 +437,11 @@ function NearbyMap({
   const mapRef = useRef<L.Map | null>(null)
   const linesRef = useRef<Map<string, L.Polyline>>(new Map())
   const markerRef = useRef<L.CircleMarker | null>(null)
+  // Voor de fit-logica in het teken-effect (zonder her-tekenen bij selectie).
+  const selectedKeyRef = useRef<string | null>(selectedKey)
+  selectedKeyRef.current = selectedKey
+  const kleurenRef = useRef(kleuren)
+  kleurenRef.current = kleuren
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -469,7 +480,9 @@ function NearbyMap({
       fillColor: "#e63946",
       fillOpacity: 1,
     }).addTo(map)
-    map.setView([center.lat, center.lon], 11)
+    // Alleen naar het punt springen zolang er nog geen routes getekend zijn;
+    // zodra er routes staan bepaalt de route-omvang het zicht (fitBounds).
+    if (linesRef.current.size === 0) map.setView([center.lat, center.lon], 11)
   }, [center])
 
   // Routelijnen (her)tekenen.
@@ -482,11 +495,25 @@ function NearbyMap({
       if (!r.geometry || r.geometry.length < 2) continue
       const line = L.polyline(
         r.geometry.map(([lat, lon]) => [lat, lon] as [number, number]),
-        { color: ACCENT, weight: 3, opacity: 0.55 },
+        {
+          color: kleurenRef.current.get(r.key) ?? ACCENT,
+          weight: 3,
+          opacity: 0.7,
+        },
       )
       line.on("click", () => onSelect(r.key))
       line.addTo(map)
       linesRef.current.set(r.key, line)
+    }
+    // Zicht aanpassen aan de OMVANG van de getekende routes (niet alleen het
+    // centrum), zolang er geen specifieke route gekozen is.
+    if (linesRef.current.size > 0 && selectedKeyRef.current == null) {
+      const bounds = L.latLngBounds([])
+      for (const line of linesRef.current.values())
+        bounds.extend(line.getBounds())
+      if (center) bounds.extend([center.lat, center.lon])
+      if (bounds.isValid())
+        map.fitBounds(bounds, { padding: [28, 28], maxZoom: 13 })
     }
     // onSelect is stabiel genoeg per render; routes is de echte trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -498,12 +525,14 @@ function NearbyMap({
     if (!map) return
     for (const [key, line] of linesRef.current) {
       const active = key === selectedKey
+      const eigenKleur = kleurenRef.current.get(key) ?? ACCENT
       line.setStyle({
-        // Gekozen route in een eigen kleur; de rest grijst weg zodat je in
-        // één oogopslag ziet welke lijn bij de selectie hoort.
-        color: active ? SELECTIE_KLEUR : selectedKey == null ? ACCENT : "#9ca3af",
+        // Gekozen route uitgelicht; de rest grijst weg zodat je in één
+        // oogopslag ziet welke lijn bij de selectie hoort. Zonder selectie
+        // krijgt elke route z'n eigen kleur terug.
+        color: active ? SELECTIE_KLEUR : selectedKey == null ? eigenKleur : "#9ca3af",
         weight: active ? 5 : 3,
-        opacity: active ? 0.95 : selectedKey == null ? 0.55 : 0.35,
+        opacity: active ? 0.95 : selectedKey == null ? 0.7 : 0.35,
       })
       if (active) {
         line.bringToFront()
@@ -869,6 +898,18 @@ export function RouteKaartStart() {
     return top
   }, [routes, toonAlles, selected])
 
+  // Eigen kleur per getekende route in de top-5-weergave; bij "alles tonen"
+  // is één kleur juist rustiger (te veel lijnen voor een kleurcode).
+  const routeKleuren = useMemo(() => {
+    const m = new Map<string, string>()
+    if (!toonAlles) {
+      kaartRoutes.slice(0, TOP_AANTAL).forEach((r, i) => {
+        m.set(r.key, TOP_KLEUREN[i % TOP_KLEUREN.length]!)
+      })
+    }
+    return m
+  }, [kaartRoutes, toonAlles])
+
   // Eén keer stil proberen de huidige locatie te krijgen; weigeren is oké —
   // dan blijft de eerlijke uitleg staan en kan de renner zoeken op plaatsnaam.
   const autoLocatie = useRef(false)
@@ -1049,6 +1090,7 @@ export function RouteKaartStart() {
       <NearbyMap
         center={center}
         routes={kaartRoutes}
+        kleuren={routeKleuren}
         selectedKey={selectedKey}
         onSelect={(k) => {
           setSelectedKey(k)
@@ -1077,6 +1119,36 @@ export function RouteKaartStart() {
             {toonAlles ? "Toon top 5" : `Toon alle ${routes.length}`}
           </button>
         </div>
+      )}
+
+      {/* Legenda: welke kleur hoort bij welke route (alleen top-5-weergave). */}
+      {!toonAlles && routeKleuren.size > 1 && (
+        <ul
+          className="flex flex-wrap gap-x-3 gap-y-1.5 text-[12px] text-muted-foreground"
+          data-testid="nearby-kleurlegenda"
+        >
+          {kaartRoutes.slice(0, TOP_AANTAL).map((r) => (
+            <li key={r.key} className="flex min-w-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedKey(r.key)
+                  setLijstOpen(true)
+                }}
+                className="flex min-w-0 items-center gap-1.5 hover:text-foreground/90"
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: routeKleuren.get(r.key) }}
+                />
+                <span className="max-w-[10rem] truncate">
+                  {displayRouteName(r.naam, r.distanceKm).display}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       {/* Geselecteerde route */}

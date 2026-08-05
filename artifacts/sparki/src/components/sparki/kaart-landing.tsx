@@ -114,12 +114,15 @@ function OnderbladGratis() {
 }
 
 // ── Onderblad: Go — routevoorstel van vandaag mét reden ─────────────────────
-function OnderbladGo() {
+function OnderbladGo({
+  workout,
+  linked,
+}: {
+  workout: ReturnType<typeof useTodayWorkout>
+  linked: SparkiRoute | null
+}) {
   const [, navigate] = useLocation()
-  const workout = useTodayWorkout()
   const w = workout.isError ? null : workout.data
-  const routes = useWorkoutRoutes(w?.id)
-  const linked = routes.data?.routes?.[0] ?? null
 
   // De reden: het doel van de training van vandaag (bestaande bron), of — bij
   // een gekoppelde route — de rationale van die route.
@@ -192,6 +195,24 @@ export function KaartLanding({ pkg }: { pkg: Package }) {
   const { data } = useRoutes()
   const achtergrondRoute = eersteRouteMetGeometrie(data?.routes)
 
+  // Go: de training van vandaag + de eventueel gekoppelde route. De kaart
+  // toont dan DIE route — nooit stilzwijgend een andere. Voor Gratis blijft
+  // de nieuwste bewaarde route het decor, met naam erbij zodat het nooit op
+  // "het voorstel van vandaag" lijkt.
+  const workout = useTodayWorkout()
+  const w = workout.isError ? null : workout.data
+  const workoutRoutes = useWorkoutRoutes(pkg === "go" ? w?.id : undefined)
+  const linked = pkg === "go" ? (workoutRoutes.data?.routes?.[0] ?? null) : null
+
+  const kaartRoute =
+    linked && (linked.geometry?.length ?? 0) > 1 ? linked : achtergrondRoute
+  const kaartLabel =
+    kaartRoute == null
+      ? null
+      : kaartRoute === linked
+        ? `Route van vandaag: ${kaartRoute.name}`
+        : `Laatst bewaarde route: ${kaartRoute.name}`
+
   return (
     <CommercialShell actief="/routes">
       <div className="relative">
@@ -200,11 +221,19 @@ export function KaartLanding({ pkg }: { pkg: Package }) {
             Leaflet-container een echte hoogte heeft (inline height wint van CSS). */}
         <div className="relative w-full overflow-hidden">
           <RouteMap
-            geometry={achtergrondRoute?.geometry ?? []}
-            climbs={achtergrondRoute?.climbs ?? []}
+            geometry={kaartRoute?.geometry ?? []}
+            climbs={kaartRoute?.climbs ?? []}
             className="w-full !rounded-none !border-0"
             height={320}
           />
+          {kaartLabel && (
+            <span
+              className="absolute left-3 top-3 z-[500] max-w-[75%] truncate rounded-full border border-border bg-app/90 px-3 py-1.5 text-[11px] font-medium text-foreground/85 backdrop-blur"
+              data-testid="kaart-landing-routelabel"
+            >
+              {kaartLabel}
+            </span>
+          )}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-app"
@@ -223,7 +252,11 @@ export function KaartLanding({ pkg }: { pkg: Package }) {
             aria-hidden="true"
             className="mx-auto mb-5 h-1 w-10 rounded-full bg-muted"
           />
-          {pkg === "go" ? <OnderbladGo /> : <OnderbladGratis />}
+          {pkg === "go" ? (
+            <OnderbladGo workout={workout} linked={linked} />
+          ) : (
+            <OnderbladGratis />
+          )}
         </section>
       </div>
     </CommercialShell>
