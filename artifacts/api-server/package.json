@@ -141,6 +141,7 @@
     "test:sprints-stop": "node ./scripts/run-test.mjs sprints-stop",
     "test:today-roles": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-roles",
     "test:today-matrix": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs today-matrix",
+    "test:ftp-bron": "node ./scripts/run-test.mjs ftp-bron-rangorde",
     "test:mental": "node ./scripts/run-test.mjs mental",
     "test:meetniveau-sporen": "node ./scripts/run-test.mjs meetniveau-sporen --dev-auth",
     "test:trv-f2-freshness": "node ./scripts/run-test.mjs trv-f2-freshness --dev-auth",

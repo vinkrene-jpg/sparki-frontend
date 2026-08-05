@@ -3046,6 +3046,9 @@ router.post("/ftp", requireAuth, async (req, res) => {
         clerkId,
         ftpWatts,
         testType: testType ?? "manual",
+        // DATABRONNEN_EN_FTP_01 D2: dit is het invoerpad van de sporter zelf.
+        bron: "sporter",
+        leidend: true,
         measuredAt: measuredAt ?? todayStr(),
         notes: notes ?? null,
       })

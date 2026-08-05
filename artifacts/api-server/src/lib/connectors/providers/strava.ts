@@ -79,47 +79,11 @@ export async function syncStrava(clerkId: string): Promise<ProviderSyncResult> {
     imported.add("weight");
   }
 
-  // FTP (watts) → athlete profile + ftp_history entry tagged as a Strava import.
-  if (
-    typeof athlete.ftp === "number" &&
-    athlete.ftp >= 50 &&
-    athlete.ftp <= 600
-  ) {
-    profilePatch.ftp = athlete.ftp;
-    // Een FTP die de renner zelf op Strava heeft ingesteld is een echte
-    // instelling, geen schatting — anders blijft de ondergrens-engine een
-    // oude "bewezen" waarde over deze echte waarde heen zetten.
-    profilePatch.ftpEstimated = false;
-    // Idempotent per dag: er is geen unique constraint, dus dedupliceer
-    // expliciet in plaats van te vertrouwen op onConflictDoNothing.
-    const measuredAt = todayStr();
-    const [existingFtp] = await db
-      .select({ id: ftpHistoryTable.id, ftpWatts: ftpHistoryTable.ftpWatts })
-      .from(ftpHistoryTable)
-      .where(
-        and(
-          eq(ftpHistoryTable.clerkId, clerkId),
-          eq(ftpHistoryTable.measuredAt, measuredAt),
-          eq(ftpHistoryTable.testType, "strava"),
-        ),
-      )
-      .limit(1);
-    if (!existingFtp) {
-      await db.insert(ftpHistoryTable).values({
-        clerkId,
-        measuredAt,
-        ftpWatts: athlete.ftp,
-        testType: "strava",
-        notes: "Geïmporteerd uit Strava",
-      });
-    } else if (existingFtp.ftpWatts !== athlete.ftp) {
-      await db
-        .update(ftpHistoryTable)
-        .set({ ftpWatts: athlete.ftp })
-        .where(eq(ftpHistoryTable.id, existingFtp.id));
-    }
-    imported.add("ftp");
-  }
+  // FTP wordt bewust NIET uit Strava overgenomen — niet als leidende waarde
+  // en niet als voorstel (DATABRONNEN_EN_FTP_01, besluit D1, 05-08-2026).
+  // Het Strava-profielveld is wat iemand ooit heeft ingetikt, geen meting;
+  // een import die er wél op vertrouwde overschreef in productie een
+  // handmatige trainer-FTP (345 → 272 W), waarna elke rit 61% te zwaar telde.
 
   // WP-K1: profielwaarden gaan via het Sportpaspoort (waarde + herkomst-event
   // in één transactie) — nooit meer een kernwaarde met "herkomst onbekend".

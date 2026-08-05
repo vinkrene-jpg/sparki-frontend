@@ -7,6 +7,7 @@ import {
   date,
   timestamp,
   unique,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -48,6 +49,11 @@ export const ftpHistoryTable = pgTable("ftp_history", {
   measuredAt: date("measured_at").notNull(),
   ftpWatts: integer("ftp_watts").notNull(),
   testType: text("test_type").notNull().default("manual"),
+  // DATABRONNEN_EN_FTP_01 (05-08-2026) D2/H2: elke FTP-rij legt vast waar hij
+  // vandaan komt en of hij leidend is. Rangorde: trainer > sporter >
+  // sparki_afgeleid > import — een lagere bron overschrijft nooit een hogere.
+  bron: text("bron").notNull().default("sporter"),
+  leidend: boolean("leidend").notNull().default(true),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

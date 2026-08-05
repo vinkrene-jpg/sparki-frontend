@@ -5,6 +5,7 @@ import { ensureWorldSeed } from "./lib/world-seed";
 import { ensureIntelSeed } from "./lib/intel-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
 import { repair410wFtp } from "./lib/repair-410w-ftp";
+import { repairStravaFtpOverride } from "./lib/repair-strava-ftp-override";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
@@ -114,6 +115,24 @@ app.listen(port, (err) => {
     })
     .catch((err) =>
       logger.error({ err }, "410W-FTP repair failed — backfill will still run"),
+    )
+    // DATABRONNEN_EN_FTP_01 H1: demoveer Strava-importrijen die een hogere
+    // FTP-bron overschreven, herstel de profiel-FTP en null de getroffen
+    // belastingscores — VÓÓR backfillDerivedLoad, zodat dezelfde serverstart
+    // ze met de juiste FTP-keten herleidt. Idempotent (leidend-vlag = marker).
+    .then(() => repairStravaFtpOverride())
+    .then((r) => {
+      if (r.usersAffected > 0)
+        logger.info(
+          { repair: "strava-ftp-override", ...r },
+          `Strava-FTP-herstel: ${r.usersAffected} sporter(s), ${r.rowsDemoted} rij(en) gedemoveerd, ${r.profilesRestored} profiel(en) hersteld, ${r.sessionsNulled} belastingscores genulled`,
+        );
+    })
+    .catch((err) =>
+      logger.error(
+        { err },
+        "Strava-FTP-herstel mislukt — backfill draait alsnog",
+      ),
     )
     // Fire-and-forget self-heal: rides imported before belastingscore-derivation
     // existed (e.g. Strava history) get their score derived from their own power

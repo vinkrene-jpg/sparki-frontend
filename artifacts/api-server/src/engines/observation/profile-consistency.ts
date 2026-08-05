@@ -321,6 +321,9 @@ export async function applyProfileCorrection(
           measuredAt: floor.sessionDate,
           ftpWatts: floor.floorWatts,
           testType: "derived",
+          // Eigen afleiding uit echte inspanning (D2: sparki_afgeleid).
+          bron: "sparki_afgeleid",
+          leidend: true,
           notes,
         });
       } else if (existing.ftpWatts !== floor.floorWatts) {

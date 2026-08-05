@@ -10,7 +10,12 @@ import {
   type ConnectorDataType,
   type SyncRunCounts,
 } from "@workspace/db";
-import { deriveTss, ftpAtDate, type FtpEntry } from "../../lib/derived-load";
+import {
+  deriveTss,
+  ftpAtDate,
+  isFtpLeidend,
+  type FtpEntry,
+} from "../../lib/derived-load";
 import { recordComputation } from "../data-origin";
 import type { CanonicalActivity, NormalizedBatch } from "./types";
 import { legacyTypeForSport } from "./sports";
@@ -99,7 +104,13 @@ async function loadFtpContext(clerkId: string): Promise<{
       ftpWatts: ftpHistoryTable.ftpWatts,
     })
     .from(ftpHistoryTable)
-    .where(eq(ftpHistoryTable.clerkId, clerkId));
+    .where(
+      and(
+        eq(ftpHistoryTable.clerkId, clerkId),
+        // DATABRONNEN_EN_FTP_01: alleen leidende rijen sturen de score.
+        eq(ftpHistoryTable.leidend, true),
+      ),
+    );
   // DATA_TRUST_01: een GESCHATTE profiel-FTP telt niet als brondata voor de
   // afgeleide belastingscore — dan liever eerlijk geen score.
   const profileFtp =
@@ -544,6 +555,13 @@ async function ingestFtp(
   batch: NormalizedBatch,
   counts: SyncRunCounts,
 ): Promise<void> {
+  // DATABRONNEN_EN_FTP_01 D1: FTP wordt niet uit Strava overgenomen — in
+  // geen enkele vorm. Andere providers mogen hooguit een NIET-leidende rij
+  // achterlaten wanneer er al een hogere bron geldt (D2).
+  if (provider === "strava" && (batch.ftp?.length ?? 0) > 0) {
+    counts.skipped = (counts.skipped ?? 0) + (batch.ftp?.length ?? 0);
+    return;
+  }
   for (const raw of batch.ftp ?? []) {
     const f = cleanFtp(raw);
     if (!f) {
@@ -562,11 +580,22 @@ async function ingestFtp(
         ),
       );
     if (existing) continue; // idempotent — don't duplicate the same test
+    // D2-rangorde: een import wordt nooit leidend over een hogere bron heen.
+    const bestaand = await db
+      .select({
+        bron: ftpHistoryTable.bron,
+        measuredAt: ftpHistoryTable.measuredAt,
+        leidend: ftpHistoryTable.leidend,
+      })
+      .from(ftpHistoryTable)
+      .where(eq(ftpHistoryTable.clerkId, clerkId));
     await db.insert(ftpHistoryTable).values({
       clerkId,
       measuredAt: f.measuredAt,
       ftpWatts: f.ftpWatts,
       testType,
+      bron: "import",
+      leidend: isFtpLeidend("import", f.measuredAt, bestaand),
     });
     counts.ftp = (counts.ftp ?? 0) + 1;
   }

@@ -57,6 +57,48 @@ export function deriveTss(input: DeriveTssInput): DerivedTss | null {
   };
 }
 
+// ── FTP-bronrangorde (DATABRONNEN_EN_FTP_01, D2) ─────────────────────────────
+// trainer > sporter > sparki_afgeleid > import. Een lagere bron overschrijft
+// nooit een hogere: hij wordt hooguit als NIET-leidende rij bewaard.
+
+export type FtpBron = "trainer" | "sporter" | "sparki_afgeleid" | "import";
+
+export const FTP_BRON_RANG: Record<FtpBron, number> = {
+  trainer: 4,
+  sporter: 3,
+  sparki_afgeleid: 2,
+  import: 1,
+};
+
+export type FtpBronRij = {
+  bron: string;
+  measuredAt: string;
+  leidend: boolean;
+};
+
+/**
+ * Mag een nieuwe FTP-rij leidend zijn? Nee zodra er al een LEIDENDE rij van
+ * een hogere bronrang bestaat met measured_at op of vóór de nieuwe datum —
+ * die hogere bron blijft dan gelden en de nieuwe rij wordt hooguit bewaard
+ * als niet-leidend (of, bij een voorstel-flow, ter bevestiging aangeboden).
+ * Onbekende bronnen tellen als laagste rang (fail-closed: nooit boven een
+ * bekende hogere bron uitkomen).
+ */
+export function isFtpLeidend(
+  nieuweBron: string,
+  measuredAt: string,
+  bestaand: FtpBronRij[],
+): boolean {
+  const rang =
+    FTP_BRON_RANG[nieuweBron as FtpBron] ?? 0;
+  return !bestaand.some(
+    (r) =>
+      r.leidend &&
+      (FTP_BRON_RANG[r.bron as FtpBron] ?? 0) > rang &&
+      r.measuredAt <= measuredAt,
+  );
+}
+
 export type FtpEntry = { measuredAt: string; ftpWatts: number };
 
 /**

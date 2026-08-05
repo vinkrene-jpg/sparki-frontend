@@ -212,6 +212,10 @@ export async function applyValueChange(input: {
           measuredAt,
           ftpWatts: watts,
           testType: "manual",
+          // Handmatige invoer in de app = bron "sporter" (D2); alleen een
+          // trainer-waarde staat daarboven en die schrijft via een eigen pad.
+          bron: "sporter",
+          leidend: true,
           notes: input.source ?? null,
         });
       }

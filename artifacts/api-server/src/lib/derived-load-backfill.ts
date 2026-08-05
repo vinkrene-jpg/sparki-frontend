@@ -140,6 +140,9 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
           // Achterhaalde afgeleide rijen tellen nergens meer mee — ook niet
           // in de belastingscore-afleiding.
           sql`NOT (${ftpHistoryTable.testType} = 'derived' AND coalesce(${ftpHistoryTable.notes}, '') LIKE '[achterhaald]%')`,
+          // DATABRONNEN_EN_FTP_01: niet-leidende rijen (bv. een import die
+          // een hogere bron zou overschrijven) sturen de score nooit.
+          eq(ftpHistoryTable.leidend, true),
         ),
       )
   ).map((e) => ({ measuredAt: e.measuredAt, ftpWatts: e.ftpWatts }));
@@ -290,6 +293,8 @@ export async function recalibrateEstimatedFtp(
       and(
         eq(ftpHistoryTable.clerkId, clerkId),
         sql`${ftpHistoryTable.testType} <> 'derived'`,
+        // DATABRONNEN_EN_FTP_01: een niet-leidende rij is geen "echte invoer".
+        eq(ftpHistoryTable.leidend, true),
       ),
     )
     .orderBy(sql`${ftpHistoryTable.measuredAt} DESC`)
@@ -460,6 +465,9 @@ export async function recalibrateEstimatedFtp(
         measuredAt: floor.basis.sessionDate,
         ftpWatts: floor.floorWatts,
         testType: "derived",
+        // Eigen afleiding uit echte inspanning (D2: sparki_afgeleid).
+        bron: "sparki_afgeleid",
+        leidend: true,
         notes,
       });
     } else if (existing.ftpWatts !== floor.floorWatts) {

@@ -70,7 +70,14 @@ async function loadFtp(clerkId: string): Promise<{
       ftpWatts: ftpHistoryTable.ftpWatts,
     })
     .from(ftpHistoryTable)
-    .where(eq(ftpHistoryTable.clerkId, clerkId));
+    .where(
+      and(
+        eq(ftpHistoryTable.clerkId, clerkId),
+        // DATABRONNEN_EN_FTP_01: alleen leidende rijen tellen mee — een
+        // niet-leidende import mag de belastingscore nooit sturen.
+        eq(ftpHistoryTable.leidend, true),
+      ),
+    );
   // DATA_TRUST_01: een GESCHATTE profiel-FTP is geen brondata — een
   // belastingscore afgeleid van een schatting zou een verzonnen getal zijn.
   const profileFtp =
