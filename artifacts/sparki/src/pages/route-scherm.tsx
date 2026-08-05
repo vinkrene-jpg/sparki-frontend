@@ -216,6 +216,10 @@ export default function RouteSchermPage() {
   // R16/R-T3: één routeaanvraag per keuze — trainingstype kiezen start
   // precies één generatie-job vanaf het kaartcentrum.
   const kiesTrainingstype = (type: string) => {
+    // R16-poort: er loopt al een aanvraag → geen tweede job starten. De
+    // keuze wordt dus óók niet gewisseld, anders liegt de chip over wat er
+    // berekend wordt.
+    if (generate.isPending) return
     setTrainingType(type)
     setOpenChip(null)
     if (!center) {
@@ -225,6 +229,9 @@ export default function RouteSchermPage() {
     setGenFout(null)
     setKandidaat(null)
     setFase(null)
+    // Verse kandidaat = verse bewaar-status; anders blijft "Bewaard" van een
+    // vorige route op de knop staan.
+    bewaar.reset()
     generate.mutate(
       {
         mode: "loop",
@@ -625,7 +632,9 @@ export default function RouteSchermPage() {
             </p>
           )}
           <div className="mt-2 flex flex-col gap-2">
-            {(pkg === "gratis" ? routes.slice(0, 3) : routes).map((r) => (
+            {/* Fail-closed: zolang het pakket laadt (pkg null) tonen we de
+                Gratis-weergave, nooit méér dan waar recht op is. */}
+            {(pkg === "go" || pkg === "compleet" ? routes : routes.slice(0, 3)).map((r) => (
               <RouteRegel
                 key={r.key}
                 route={r}
@@ -636,7 +645,7 @@ export default function RouteSchermPage() {
                 }}
               />
             ))}
-            {pkg === "gratis" && routes.length > 3 && (
+            {pkg !== "go" && pkg !== "compleet" && routes.length > 3 && (
               <p className="mt-1 text-[12px] text-slate-500">
                 Gratis toont drie routes — met Go of Compleet zie je alles in beeld.
               </p>
