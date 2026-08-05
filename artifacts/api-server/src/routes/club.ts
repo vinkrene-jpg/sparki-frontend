@@ -2726,10 +2726,16 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
       ) {
         return { blocked: true as const };
       }
+      // Taak 587 (gelijktijdigheidsbewijs): het teammanagerbesluit ligt óók
+      // vast wanneer de bestaande selectie door de VERVANGER (deputyClerkId,
+      // ongeacht clubrol) is gezet — anders kon een deputy die de row lock
+      // nét vóór de teammanager pakte de overrule-markering ontlopen en het
+      // besluit later alsnog terugdraaien.
       const isOverrule =
         actorRole === "teammanager" &&
         existing != null &&
-        existing.selectedByRole === "ploegleider" &&
+        (existing.selectedByRole === "ploegleider" ||
+          existing.selectedByClerkId === event.deputyClerkId) &&
         existing.role !== role;
 
       const [row] = await tx

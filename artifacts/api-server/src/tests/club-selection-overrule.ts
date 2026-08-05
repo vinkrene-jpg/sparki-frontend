@@ -211,6 +211,128 @@ async function main() {
     assert(row?.role === "renner", "teammanager-wijziging doorgevoerd");
   });
 
+  // Taak 587 — gelijktijdigheidsbewijs: de row lock (SELECT ... FOR UPDATE)
+  // garandeert dat een vastgezette selectie nooit stiekem terugdraait, ook
+  // als ploegleider en teammanager exact tegelijk schrijven.
+  async function resetBaseline() {
+    await db
+      .delete(clubRaceSelectionsTable)
+      .where(
+        and(
+          eq(clubRaceSelectionsTable.eventId, eventId),
+          eq(clubRaceSelectionsTable.clerkId, RENNER),
+        ),
+      );
+    const seed = await api(PLOEGLEIDER, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+      clerkId: RENNER,
+      role: "renner",
+    });
+    assert(seed.status === 201, `baseline-seed verwacht 201, kreeg ${seed.status}`);
+    const row = await selection();
+    assert(row?.selectedByRole === "ploegleider" && row.overruledAt == null, "baseline: ploegleider-besluit zonder overrule");
+  }
+
+  await scenario(
+    "gelijktijdig (ploegleider vs teammanager, 8 herhalingen): eindstand is altijd het teammanagerbesluit",
+    async () => {
+      for (let i = 0; i < 8; i++) {
+        await resetBaseline();
+        const [pl, tm] = await Promise.all([
+          api(PLOEGLEIDER, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+            clerkId: RENNER,
+            role: "renner",
+          }),
+          api(TEAMMANAGER, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+            clerkId: RENNER,
+            role: "reserve",
+          }),
+        ]);
+        assert(tm.status === 201, `iteratie ${i}: teammanager verwacht 201, kreeg ${tm.status}`);
+        assert(
+          pl.status === 201 || pl.status === 403,
+          `iteratie ${i}: ploegleider verwacht 201 (vóór overrule) of 403 (erna), kreeg ${pl.status}`,
+        );
+        const row = await selection();
+        assert(row?.role === "reserve", `iteratie ${i}: eindstand moet reserve (teammanager) zijn, is ${row?.role}`);
+        assert(row?.overruledAt != null, `iteratie ${i}: overruledAt moet gezet zijn`);
+        assert(
+          row?.overruledByClerkId === TEAMMANAGER,
+          `iteratie ${i}: overruledBy moet teammanager zijn, is ${row?.overruledByClerkId}`,
+        );
+        assert(
+          row?.selectedByRole === "teammanager",
+          `iteratie ${i}: selectedByRole mag na overrule nooit een oude rol tonen, is ${row?.selectedByRole}`,
+        );
+        // Nalopers: gelijktijdige late pogingen van ploegleider én vervanger
+        // mogen de vastgezette stand nooit meer terugdraaien.
+        const late = await Promise.all([
+          api(PLOEGLEIDER, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+            clerkId: RENNER,
+            role: "renner",
+          }),
+          api(DEPUTY, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+            clerkId: RENNER,
+            role: "renner",
+          }),
+        ]);
+        for (const r of late) {
+          assert(r.status === 403, `iteratie ${i}: naloper verwacht 403, kreeg ${r.status}`);
+        }
+        const after = await selection();
+        assert(after?.role === "reserve", `iteratie ${i}: rol blijft reserve na nalopers`);
+        assert(
+          String(after?.overruledAt) === String(row?.overruledAt) &&
+            after?.overruledByClerkId === TEAMMANAGER,
+          `iteratie ${i}: overruledAt/overruledBy onaangetast door nalopers`,
+        );
+      }
+    },
+  );
+
+  await scenario(
+    "gelijktijdig (vervanger/deputy vs teammanager, 4 herhalingen): teammanagerrol wint altijd",
+    async () => {
+      for (let i = 0; i < 4; i++) {
+        await resetBaseline();
+        const [dep, tm] = await Promise.all([
+          api(DEPUTY, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+            clerkId: RENNER,
+            role: "renner",
+          }),
+          api(TEAMMANAGER, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+            clerkId: RENNER,
+            role: "reserve",
+          }),
+        ]);
+        assert(tm.status === 201, `iteratie ${i}: teammanager verwacht 201, kreeg ${tm.status}`);
+        assert(
+          dep.status === 201 || dep.status === 403,
+          `iteratie ${i}: deputy verwacht 201 of 403, kreeg ${dep.status}`,
+        );
+        const row = await selection();
+        assert(row?.role === "reserve", `iteratie ${i}: eindstand moet reserve (teammanager) zijn, is ${row?.role}`);
+        // Onvoorwaardelijk: ook als de deputy de lock nét eerder pakte, moet
+        // het teammanagerbesluit vastliggen (overruledAt gezet) en mag een
+        // naloper het nooit meer terugdraaien.
+        assert(row?.overruledAt != null, `iteratie ${i}: overruledAt moet gezet zijn, ook na een deputy-first schrijfvolgorde`);
+        assert(
+          row?.overruledByClerkId === TEAMMANAGER,
+          `iteratie ${i}: overruledAt mag alleen door de teammanager gezet zijn`,
+        );
+        const lateDep = await api(DEPUTY, "POST", `/api/clubs/${clubId}/races/${eventId}/selection`, {
+          clerkId: RENNER,
+          role: "renner",
+        });
+        assert(lateDep.status === 403, `iteratie ${i}: naloper-deputy verwacht 403, kreeg ${lateDep.status}`);
+        const after = await selection();
+        assert(
+          after?.role === "reserve" && String(after.overruledAt) === String(row.overruledAt),
+          `iteratie ${i}: vastgezette stand draait nooit terug`,
+        );
+      }
+    },
+  );
+
   server.close();
   await cleanup();
   const failed = results.filter((r) => r.status === "fail");

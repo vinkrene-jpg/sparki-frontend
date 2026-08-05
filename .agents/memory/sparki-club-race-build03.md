@@ -15,3 +15,7 @@ description: Één-wedstrijd-sync naar persoonlijke races, vervanger zonder spoo
 
 **Why:** patch D is bindend besloten (o.a. geen spoor van vervanger, origineel opdracht niet bewaren) — niet "verbeteren".
 **How to apply:** elke nieuwe event-scoped route: rechten via canManageRaceEvent ná event-load; sync-writes altijd door club-race-sync helpers.
+
+## Selectie-overrule & gelijktijdigheid (08-2026)
+- De overrule-markering (overruledAt) mag nooit alleen op de letterlijke rolnaam "ploegleider" toetsen: de vervanger (deputyClerkId, willekeurige clubrol) beheert hetzelfde evenement. Zonder `selectedByClerkId === event.deputyClerkId` in de isOverrule-conditie kan een deputy-first schrijfvolgorde (row lock nét eerder) de vastzetting ontlopen en het teammanagerbesluit later terugdraaien.
+- Gelijktijdigheidstests met Promise.all + herhalingen moeten hun invariant ONVOORWAARDELIJK asserten (elke lock-volgorde), niet gate-en op "als overruledAt gezet is" — anders bewijst de test niets bij de racevolgorde die je juist wilt afdekken.
