@@ -42,6 +42,13 @@ import {
 import { buildCoachSignals, openPriority } from "../lib/coach-signals";
 import { buildCompliance } from "../lib/coach-compliance";
 import { markOverdueAsMissed } from "../lib/workout-execution";
+import {
+  parseBuilderSteps,
+  stepsTotalMin,
+  buildZwo,
+  buildFitWorkout,
+  type BuilderStep,
+} from "../lib/workout-builder";
 
 const router = Router();
 
@@ -404,10 +411,11 @@ interface WorkoutInput {
   targetDurationMin?: unknown;
   targetTSS?: unknown;
   raceId?: unknown;
+  steps?: unknown;
 }
 
 function parseWorkoutInput(body: WorkoutInput):
-  | { ok: true; value: { scheduledDate: string; title: string; type: string; description: string | null; targetDurationMin: number | null; targetTSS: number | null; raceId: number | null } }
+  | { ok: true; value: { scheduledDate: string; title: string; type: string; description: string | null; targetDurationMin: number | null; targetTSS: number | null; raceId: number | null; steps: BuilderStep[] } }
   | { ok: false; error: string } {
   const scheduledDate = String(body.scheduledDate ?? "");
   const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
@@ -425,9 +433,11 @@ function parseWorkoutInput(body: WorkoutInput):
   const raceId = body.raceId == null ? null : Number(body.raceId);
   if (raceId != null && !Number.isInteger(raceId))
     return { ok: false, error: "Ongeldige wedstrijd" };
+  const parsedSteps = parseBuilderSteps(body.steps);
+  if (!parsedSteps.ok) return { ok: false, error: parsedSteps.error };
   return {
     ok: true,
-    value: { scheduledDate, title, type, description, targetDurationMin: dur, targetTSS: tss, raceId },
+    value: { scheduledDate, title, type, description, targetDurationMin: dur, targetTSS: tss, raceId, steps: parsedSteps.steps },
   };
 }
 
@@ -458,16 +468,22 @@ router.post("/athletes/:athleteId/workouts", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Wedstrijd niet gevonden bij deze sporter" });
       return;
     }
-    const { raceId, ...fields } = parsed.value;
+    const { raceId, steps, ...fields } = parsed.value;
+    const structure: Record<string, unknown> = {};
+    if (raceId != null) structure.raceId = raceId;
+    if (steps.length > 0) structure.steps = steps;
     const [workout] = await db
       .insert(plannedWorkoutsTable)
       .values({
         clerkId: athleteId,
         ...fields,
+        // Zonder losse duur nemen we eerlijk de opgetelde stappenduur over.
+        targetDurationMin:
+          fields.targetDurationMin ?? (steps.length > 0 ? stepsTotalMin(steps) : null),
         status: "planned",
         source: "coach",
         coachClerkId: coachId,
-        structure: raceId != null ? { raceId } : null,
+        structure: Object.keys(structure).length > 0 ? structure : null,
       })
       .returning();
     void writeAudit({
@@ -566,6 +582,24 @@ router.put(
         }
         set.status = s;
       }
+      if (body.steps !== undefined) {
+        const parsedSteps = parseBuilderSteps(body.steps);
+        if (!parsedSteps.ok) {
+          res.status(400).json({ error: parsedSteps.error });
+          return;
+        }
+        // Stappen vervangen; een eventuele wedstrijdkoppeling in structure
+        // blijft behouden.
+        const [row] = await db
+          .select({ structure: plannedWorkoutsTable.structure })
+          .from(plannedWorkoutsTable)
+          .where(eq(plannedWorkoutsTable.id, workoutId));
+        const prev = (row?.structure ?? {}) as Record<string, unknown>;
+        const next: Record<string, unknown> = { ...prev };
+        if (parsedSteps.steps.length > 0) next.steps = parsedSteps.steps;
+        else delete next.steps;
+        set.structure = Object.keys(next).length > 0 ? next : null;
+      }
 
       const [updated] = await db
         .update(plannedWorkoutsTable)
@@ -583,6 +617,75 @@ router.put(
     } catch (err) {
       req.log.error({ err }, "coach.workouts.update failed");
       res.status(500).json({ error: "Kon training niet wijzigen" });
+    }
+  },
+);
+
+// GET exporteer een training met stappen als .zwo (Zwift) of .fit (Garmin/
+// Wahoo) — een DOWNLOAD; we pushen niets automatisch naar een device.
+// Vermogensdoelen blijven %FTP: het device rekent met de FTP van de sporter.
+router.get(
+  "/athletes/:athleteId/workouts/:workoutId/export",
+  requireAuth,
+  async (req, res) => {
+    const coachId = getClerkUserId(req)!;
+    if (!(await requireCoach(coachId, res))) return;
+    const athleteId = String(req.params.athleteId);
+    const workoutId = Number(req.params.workoutId);
+    const format = String(req.query.format ?? "zwo");
+    if (!Number.isInteger(workoutId) || !["zwo", "fit"].includes(format)) {
+      res.status(400).json({ error: "Ongeldige export-aanvraag" });
+      return;
+    }
+    try {
+      if (!(await gateAthlete(coachId, athleteId, res))) return;
+      const [w] = await db
+        .select({
+          id: plannedWorkoutsTable.id,
+          title: plannedWorkoutsTable.title,
+          description: plannedWorkoutsTable.description,
+          structure: plannedWorkoutsTable.structure,
+        })
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.id, workoutId),
+            eq(plannedWorkoutsTable.clerkId, athleteId),
+          ),
+        );
+      if (!w) {
+        res.status(404).json({ error: "Training niet gevonden" });
+        return;
+      }
+      const rawSteps = (w.structure as Record<string, unknown> | null)?.steps;
+      const parsedSteps = parseBuilderSteps(rawSteps);
+      if (!parsedSteps.ok || parsedSteps.steps.length === 0) {
+        res.status(400).json({
+          error: "Deze training heeft geen gestructureerde stappen om te exporteren",
+        });
+        return;
+      }
+      const safeName = w.title.replace(/[^\w\-]+/g, "_").slice(0, 60) || "training";
+      if (format === "zwo") {
+        res.setHeader("Content-Type", "application/xml; charset=utf-8");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeName}.zwo"`);
+        res.send(buildZwo(w.title, w.description, parsedSteps.steps));
+      } else {
+        const bytes = buildFitWorkout(w.title, parsedSteps.steps);
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeName}.fit"`);
+        res.send(Buffer.from(bytes));
+      }
+      void writeAudit({
+        event: "viewed_by_coach",
+        actorClerkId: coachId,
+        subjectClerkId: athleteId,
+        meta: { rol: "coach", wat: "training_geexporteerd", formaat: format, trainingId: workoutId },
+        req,
+      });
+    } catch (err) {
+      req.log.error({ err }, "coach.workouts.export failed");
+      res.status(500).json({ error: "Kon training niet exporteren" });
     }
   },
 );

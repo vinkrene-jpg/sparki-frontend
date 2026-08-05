@@ -256,6 +256,68 @@ async function main() {
     assert(oNoRole.status === 403, `zonder coach-rol: verwacht 403, kreeg ${oNoRole.status}`);
   });
 
+  // ── Workoutbouwer: stappen + export .zwo/.fit ─────────────────────────────
+  await scenario("workoutbouwer: stappen opslaan, valideren, exporteren als .zwo en .fit", async () => {
+    const iso = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+    const create = await req("POST", `/api/coach/athletes/${clerkAthlete}/workouts`, clerkCoach, {
+      scheduledDate: iso(3),
+      title: "Blokken 4x4",
+      steps: [
+        { soort: "warmup", duurMin: 10, ftpLowPct: 45, ftpHighPct: 65 },
+        { soort: "werk", duurMin: 4, ftpLowPct: 105, ftpHighPct: 115, herhaal: 4, rustMin: 3 },
+        { soort: "cooldown", duurMin: 10, ftpLowPct: 60, ftpHighPct: 40 },
+      ],
+    });
+    assert(create.status === 400, "cooldown met onder>boven moet 400 geven");
+    const ok = await req("POST", `/api/coach/athletes/${clerkAthlete}/workouts`, clerkCoach, {
+      scheduledDate: iso(3),
+      title: "Blokken 4x4",
+      steps: [
+        { soort: "warmup", duurMin: 10, ftpLowPct: 45, ftpHighPct: 65 },
+        { soort: "werk", duurMin: 4, ftpLowPct: 105, ftpHighPct: 115, herhaal: 4, rustMin: 3 },
+        { soort: "vrij", duurMin: 10 },
+      ],
+    });
+    assert(ok.status === 201, `verwacht 201, kreeg ${ok.status}`);
+    const wid = ok.json?.workout?.id;
+    assert(Array.isArray(ok.json?.workout?.structure?.steps), "stappen moeten in structure staan");
+    // Zonder losse duur: opgetelde stappenduur (10 + 4×4 + 3×4 + 10 = 48).
+    assert(ok.json?.workout?.targetDurationMin === 48, `duur uit stappen verwacht 48, kreeg ${ok.json?.workout?.targetDurationMin}`);
+
+    const zwo = await fetch(`${baseUrl}/api/coach/athletes/${clerkAthlete}/workouts/${wid}/export?format=zwo`, {
+      headers: { "x-dev-clerk-id": clerkCoach },
+    });
+    assert(zwo.status === 200, `zwo-export: verwacht 200, kreeg ${zwo.status}`);
+    const xml = await zwo.text();
+    assert(xml.includes("<IntervalsT Repeat=\"4\""), "zwo mist het intervalblok");
+    assert(xml.includes("<FreeRide"), "vrije stap moet FreeRide zijn (geen verzonnen vermogensband)");
+    assert(!xml.includes("watt"), "zwo mag geen watts bevatten — alleen FTP-fracties");
+
+    const fit = await fetch(`${baseUrl}/api/coach/athletes/${clerkAthlete}/workouts/${wid}/export?format=fit`, {
+      headers: { "x-dev-clerk-id": clerkCoach },
+    });
+    assert(fit.status === 200, `fit-export: verwacht 200, kreeg ${fit.status}`);
+    const bytes = new Uint8Array(await fit.arrayBuffer());
+    assert(bytes.length > 14 && bytes[0] === 14, "fit-header moet 14 bytes zijn");
+    assert(String.fromCharCode(...bytes.slice(8, 12)) === ".FIT", "fit-magic ontbreekt");
+    const dataLen = bytes[4]! | (bytes[5]! << 8) | (bytes[6]! << 16) | (bytes[7]! << 24);
+    assert(bytes.length === 14 + dataLen + 2, "fit-datalengte klopt niet met bestandsgrootte");
+
+    // Training zonder stappen exporteren = eerlijke 400.
+    const plain = await req("POST", `/api/coach/athletes/${clerkAthlete}/workouts`, clerkCoach, {
+      scheduledDate: iso(4),
+      title: "Losse duurtraining",
+    });
+    const noSteps = await fetch(`${baseUrl}/api/coach/athletes/${clerkAthlete}/workouts/${plain.json?.workout?.id}/export?format=zwo`, {
+      headers: { "x-dev-clerk-id": clerkCoach },
+    });
+    assert(noSteps.status === 400, `zonder stappen: verwacht 400, kreeg ${noSteps.status}`);
+  });
+
   // ── Signalen + besluiten ───────────────────────────────────────────────────
   await scenario("signalen: gate fail-closed (geen koppeling 403, deelt niet 403)", async () => {
     const a = await req("GET", `/api/coach/athletes/${clerkStranger}/signals`, clerkCoach);

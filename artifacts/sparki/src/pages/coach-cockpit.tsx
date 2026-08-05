@@ -16,6 +16,7 @@ import {
   StickyNote,
   Repeat,
   Send,
+  Download,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
@@ -23,6 +24,7 @@ import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useCoachAthleteDetail } from "@/hooks/use-coach"
+import { API_BASE } from "@/lib/api"
 import {
   useCoachSignals,
   useSignalAction,
@@ -44,6 +46,7 @@ import {
   type CoachSignal,
   type CoachWorkout,
   type CoachProposal,
+  type BuilderStep,
   useCoachCompliance,
 } from "@/hooks/use-coach-cockpit"
 import { CoachWeekCalendar } from "@/components/sparki/coach-week-calendar"
@@ -195,6 +198,160 @@ function SignalCard({
 
 // ── Planning ────────────────────────────────────────────────────────────────
 
+// ── Workoutbouwer (585): gestructureerde stappen naast de vrije tekst ───────
+// Vermogensdoelen zijn %FTP-bereiken (het device van de sporter rekent met de
+// eigen FTP); wie geen vermogensmeter heeft kiest RPE of vrij — we verzinnen
+// nooit watts.
+
+const STAP_SOORTEN: { key: BuilderStep["soort"]; label: string }[] = [
+  { key: "warmup", label: "Warming-up" },
+  { key: "werk", label: "Werk" },
+  { key: "herstel", label: "Herstel" },
+  { key: "cooldown", label: "Cooling-down" },
+  { key: "vrij", label: "Vrij" },
+]
+
+function stapSamenvatting(s: BuilderStep): string {
+  const doel =
+    s.ftpLowPct != null && s.ftpHighPct != null
+      ? `${s.ftpLowPct}–${s.ftpHighPct}% FTP`
+      : s.rpe != null
+        ? `RPE ${s.rpe}`
+        : "vrij"
+  const herhaal = s.herhaal != null ? `${s.herhaal}× ` : ""
+  const rust = s.herhaal != null && s.rustMin != null ? ` / ${s.rustMin}m rust` : ""
+  return `${herhaal}${s.duurMin}m ${doel}${rust}`
+}
+
+function StepBuilder({
+  steps,
+  onChange,
+}: {
+  steps: BuilderStep[]
+  onChange: (steps: BuilderStep[]) => void
+}) {
+  const [soort, setSoort] = useState<BuilderStep["soort"]>("werk")
+  const [duurMin, setDuurMin] = useState("")
+  const [doel, setDoel] = useState<"ftp" | "rpe" | "vrij">("ftp")
+  const [ftpLow, setFtpLow] = useState("")
+  const [ftpHigh, setFtpHigh] = useState("")
+  const [rpe, setRpe] = useState("")
+  const [herhaal, setHerhaal] = useState("")
+  const [rustMin, setRustMin] = useState("")
+
+  const num = (v: string) => (v.trim() === "" ? null : Number(v.replace(",", ".")))
+
+  const kanToevoegen =
+    num(duurMin) != null &&
+    (doel !== "ftp" || (num(ftpLow) != null && num(ftpHigh) != null)) &&
+    (doel !== "rpe" || num(rpe) != null)
+
+  function voegToe() {
+    if (!kanToevoegen) return
+    const h = num(herhaal)
+    onChange([
+      ...steps,
+      {
+        soort,
+        duurMin: num(duurMin)!,
+        ftpLowPct: doel === "ftp" ? num(ftpLow) : null,
+        ftpHighPct: doel === "ftp" ? num(ftpHigh) : null,
+        rpe: doel === "rpe" ? num(rpe) : null,
+        herhaal: soort === "werk" && h != null && h >= 2 ? h : null,
+        rustMin: soort === "werk" && h != null && h >= 2 ? (num(rustMin) ?? 1) : null,
+        rustFtpPct: null,
+      },
+    ])
+    setDuurMin("")
+    setFtpLow("")
+    setFtpHigh("")
+    setRpe("")
+    setHerhaal("")
+    setRustMin("")
+  }
+
+  const veld =
+    "rounded-lg border border-border bg-muted px-2 py-1.5 text-[12px] text-foreground/85 placeholder:text-muted-foreground"
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border p-2.5">
+      <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+        Stappen (optioneel) — voor export naar Zwift/Garmin
+      </span>
+      {steps.length > 0 && (
+        <div className="space-y-1">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 text-[12px] text-muted-foreground">
+              <span className="min-w-0 flex-1 truncate">
+                {STAP_SOORTEN.find((x) => x.key === s.soort)?.label} · {stapSamenvatting(s)}
+              </span>
+              <button
+                type="button"
+                onClick={() => onChange(steps.filter((_, j) => j !== i))}
+                aria-label="Stap verwijderen"
+                className="shrink-0 text-muted-foreground hover:text-foreground/80"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <select value={soort} onChange={(e) => setSoort(e.target.value as BuilderStep["soort"])} className={veld}>
+          {STAP_SOORTEN.map((s) => (
+            <option key={s.key} value={s.key}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <input
+          value={duurMin}
+          onChange={(e) => setDuurMin(e.target.value.replace(/[^\d.,]/g, ""))}
+          placeholder="Min"
+          inputMode="decimal"
+          className={`w-16 ${veld}`}
+        />
+        <select value={doel} onChange={(e) => setDoel(e.target.value as "ftp" | "rpe" | "vrij")} className={veld}>
+          <option value="ftp">%FTP</option>
+          <option value="rpe">RPE (zonder meter)</option>
+          <option value="vrij">Vrij</option>
+        </select>
+        {doel === "ftp" && (
+          <>
+            <input value={ftpLow} onChange={(e) => setFtpLow(e.target.value.replace(/\D/g, ""))} placeholder="Van %" inputMode="numeric" className={`w-16 ${veld}`} />
+            <input value={ftpHigh} onChange={(e) => setFtpHigh(e.target.value.replace(/\D/g, ""))} placeholder="Tot %" inputMode="numeric" className={`w-16 ${veld}`} />
+          </>
+        )}
+        {doel === "rpe" && (
+          <input value={rpe} onChange={(e) => setRpe(e.target.value.replace(/\D/g, ""))} placeholder="RPE 1–10" inputMode="numeric" className={`w-20 ${veld}`} />
+        )}
+        {soort === "werk" && (
+          <>
+            <input value={herhaal} onChange={(e) => setHerhaal(e.target.value.replace(/\D/g, ""))} placeholder="×" inputMode="numeric" title="Herhalingen" className={`w-12 ${veld}`} />
+            {num(herhaal) != null && num(herhaal)! >= 2 && (
+              <input value={rustMin} onChange={(e) => setRustMin(e.target.value.replace(/[^\d.,]/g, ""))} placeholder="Rust m" inputMode="decimal" className={`w-16 ${veld}`} />
+            )}
+          </>
+        )}
+        <button
+          type="button"
+          disabled={!kanToevoegen}
+          onClick={voegToe}
+          className="rounded-lg border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground hover:bg-muted disabled:opacity-40"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        %FTP-stappen rekent het device om met de FTP van de sporter — zonder
+        vermogensmeter kies je RPE of vrij; dan exporteren we eerlijk zonder
+        vermogensband.
+      </p>
+    </div>
+  )
+}
+
 function WorkoutForm({
   initial,
   onSubmit,
@@ -208,6 +365,7 @@ function WorkoutForm({
     description: string | null
     targetDurationMin: number | null
     targetTSS: number | null
+    steps: BuilderStep[]
   }) => void
   onCancel: () => void
   busy: boolean
@@ -217,6 +375,11 @@ function WorkoutForm({
   const [desc, setDesc] = useState(initial?.description ?? "")
   const [dur, setDur] = useState(initial?.targetDurationMin?.toString() ?? "")
   const [tss, setTss] = useState(initial?.targetTSS?.toString() ?? "")
+  const [steps, setSteps] = useState<BuilderStep[]>(
+    Array.isArray((initial?.structure as Record<string, unknown> | undefined)?.steps)
+      ? ((initial!.structure as Record<string, unknown>).steps as BuilderStep[])
+      : [],
+  )
   return (
     <div className="space-y-2 rounded-xl border border-border bg-muted p-3">
       <div className="flex gap-2">
@@ -240,6 +403,7 @@ function WorkoutForm({
         rows={2}
         className="w-full rounded-lg border border-border bg-muted px-3 py-1.5 text-[13px] text-foreground/85 placeholder:text-muted-foreground"
       />
+      <StepBuilder steps={steps} onChange={setSteps} />
       <div className="flex gap-2">
         <input
           value={dur}
@@ -266,6 +430,7 @@ function WorkoutForm({
                 description: desc.trim() || null,
                 targetDurationMin: dur ? Number(dur) : null,
                 targetTSS: tss ? Number(tss) : null,
+                steps,
               })
             }
             className="rounded-lg border border-accent-cyan/25 bg-accent-cyan/[0.06] px-3 py-1.5 text-[12px] text-accent-cyan disabled:opacity-40"
@@ -331,6 +496,26 @@ function PlanningSection({
                   )}
                   {w.targetTSS != null && <span>{w.targetTSS} belastingpunten</span>}
                 </div>
+                {Array.isArray((w.structure as Record<string, unknown> | null)?.steps) && (
+                  <div className="mt-1.5 space-y-0.5">
+                    {((w.structure as Record<string, unknown>).steps as BuilderStep[]).map((s, i) => (
+                      <p key={i} className="font-mono text-[11px] text-muted-foreground">
+                        {STAP_SOORTEN.find((x) => x.key === s.soort)?.label ?? s.soort} · {stapSamenvatting(s)}
+                      </p>
+                    ))}
+                    <div className="mt-1 flex gap-2">
+                      {(["zwo", "fit"] as const).map((fmt) => (
+                        <a
+                          key={fmt}
+                          href={`${API_BASE}/api/coach/athletes/${athleteId}/workouts/${w.id}/export?format=${fmt}`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+                        >
+                          <Download className="h-3 w-3" /> .{fmt}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             {w.source === "coach" && w.status !== "cancelled" && (

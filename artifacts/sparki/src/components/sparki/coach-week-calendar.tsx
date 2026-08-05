@@ -230,7 +230,7 @@ export function CoachWeekCalendar({ athleteId }: { athleteId: string }) {
       )}
       <p className="mt-2 text-[11px] text-muted-foreground">
         Sleep of tik je eigen trainingen om ze te verplaatsen; Sparki-trainingen
-        zijn zichtbaar maar alleen door de sporter of Sparki aan te passen.
+        zijn hier zichtbaar maar niet aanpasbaar.
       </p>
     </div>
   )

@@ -164,6 +164,20 @@ export function useCoachWorkouts(athleteId: string | null, from?: string, to?: s
   });
 }
 
+// Gestructureerde stap uit de workoutbouwer (585). Vermogensdoelen zijn altijd
+// %FTP-bereiken — het device van de sporter rekent met de eigen FTP.
+export type BuilderStep = {
+  soort: "warmup" | "werk" | "herstel" | "cooldown" | "vrij";
+  naam?: string | null;
+  duurMin: number;
+  ftpLowPct?: number | null;
+  ftpHighPct?: number | null;
+  rpe?: number | null;
+  herhaal?: number | null;
+  rustMin?: number | null;
+  rustFtpPct?: number | null;
+};
+
 export type WorkoutInput = {
   scheduledDate: string;
   title: string;
@@ -172,6 +186,7 @@ export type WorkoutInput = {
   targetDurationMin?: number | null;
   targetTSS?: number | null;
   raceId?: number | null;
+  steps?: BuilderStep[];
 };
 
 export function useCreateCoachWorkout(athleteId: string | null) {
