@@ -14,7 +14,6 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { DayHome, DashboardAnalyse } from "@/components/sparki/day-home";
 import { CommercialToday } from "@/components/sparki/commercial-shell";
 import { KaartLanding } from "@/components/sparki/kaart-landing";
-import { CoachHome } from "@/components/sparki/coach-home";
 // DASHBOARD_01 Fase B — rol-dashboards (drie-lagen skelet) als eerste scherm.
 import { CoachDashboard } from "@/components/sparki/role-dashboards/coach-dashboard";
 import { ParentDashboard } from "@/components/sparki/role-dashboards/parent-dashboard";
@@ -56,7 +55,7 @@ import TesterWelcomePage from "@/pages/tester-welcome";
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import CoachCockpitPage from "@/pages/coach-cockpit";
 import CoachMessagesPage from "@/pages/coach-messages";
-import SporterCoachPage from "@/pages/sporter-coach";
+import { CoachSwitchPage } from "@/pages/sporter-coach";
 import FacturatiePage from "@/pages/facturatie";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
@@ -572,14 +571,9 @@ function VandaagRedirect() {
 // Fail-open patroon: zolang flags laden renderen we de CommercialShell-pagina
 // (met DsMobileNav). Zonder dit valt useFeatureFlag terug op false — de
 // ScreenShell-pagina rendert zonder mobiele ondernavigatie.
-// Taak #607 — /coach is rol-bewust: trainers houden hun bestaande
-// werkomgeving (roster, CoachHome); sporters krijgen hier hun eigen
-// coach-omgeving met het complete plan per week/fase, doellijn en voortgang.
-function CoachSwitchPage() {
-  const { profile } = useUserProfile();
-  if (profile?.activeRole === "coach") return <CoachHome />;
-  return <SporterCoachPage />;
-}
+// Taak #607/#612 — /coach is rol-bewust; de switch woont bij de pagina
+// (src/pages/sporter-coach.tsx, CoachSwitchPage) zodat de node-page-test
+// hem samen met groepeerWeken bewaakt.
 
 function TrainSwitchPage() {
   const { flags, isLoading: flagsLoading } = useFeatureFlags();

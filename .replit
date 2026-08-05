@@ -548,3 +548,14 @@ E2E_PROOF_TOKEN = "d_dckBVoj6Aia0tPZV5VYpTl5r074ZSPsy5CRIUqoEI"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-26c63990-dec3-42e3-b3ed-3f8d9932257c"
+
+[[workflows.workflow]]
+name = "test-sporter-coach"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/sparki run test:sporter-coach"
+
+[workflows.workflow.metadata]
+isValidation = true

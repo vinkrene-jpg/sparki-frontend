@@ -27,6 +27,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { CommercialShell } from "@/components/sparki/commercial-shell";
+import { CoachHome } from "@/components/sparki/coach-home";
+import { useUserProfile } from "@/contexts/UserContext";
 import { useTrainingPlan, type PlanDay } from "@/hooks/use-training-plan";
 import { useLoad } from "@/hooks/use-load";
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard";
@@ -64,7 +66,7 @@ function urenZin(minuten: number): string {
   return m === 0 ? `${u} u` : `${u} u ${m.toString().padStart(2, "0")}`;
 }
 
-type WeekGroep = {
+export type WeekGroep = {
   weekIndex: number;
   maandagISO: string;
   fase: Fase | null;
@@ -74,7 +76,7 @@ type WeekGroep = {
 };
 
 /** Groepeer de plan-dagen per weekIndex — puur uit bestaande engine-data. */
-function groepeerWeken(days: PlanDay[], raceDateISO: string | null): WeekGroep[] {
+export function groepeerWeken(days: PlanDay[], raceDateISO: string | null): WeekGroep[] {
   const map = new Map<number, PlanDay[]>();
   for (const d of days) {
     const arr = map.get(d.weekIndex) ?? [];
@@ -359,6 +361,19 @@ function WaarnemingenKaart() {
       )}
     </Kaart>
   );
+}
+
+// ── rol-switch ───────────────────────────────────────────────────────────────
+
+// Taak #607 — /coach is rol-bewust: trainers houden hun bestaande
+// werkomgeving (roster, CoachHome); sporters krijgen hier hun eigen
+// coach-omgeving met het complete plan per week/fase, doellijn en voortgang.
+// (Hier gedefinieerd — naast de sporter-pagina — zodat de node-page-test
+// de switch samen met groepeerWeken kan bewaken; App.tsx importeert 'm.)
+export function CoachSwitchPage() {
+  const { profile } = useUserProfile();
+  if (profile?.activeRole === "coach") return <CoachHome />;
+  return <SporterCoachPage />;
 }
 
 // ── pagina ───────────────────────────────────────────────────────────────────
