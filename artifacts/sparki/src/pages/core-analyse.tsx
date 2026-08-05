@@ -47,6 +47,7 @@ import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useOntkoppeling } from "@/hooks/use-ontkoppeling"
+import { useEisprofiel } from "@/hooks/use-eisprofiel"
 import {
   ANALYSE_KAARTEN,
   useAnalyses,
@@ -1627,11 +1628,80 @@ function BelastingTab({
       <OntkoppelingCard onVraagAnalyse={() => vraagAnalyseOver("ontkoppeling")} />
       <EfficientieCard onVraagAnalyse={() => vraagAnalyseOver("efficientie")} />
       <OpbouwsnelheidCard load={load} onVraagAnalyse={() => vraagAnalyseOver("opbouwsnelheid")} />
+      <EisprofielCard />
 
       {/* §3/§4 — Analyse op verzoek: 1–5 kaarten, bewaard, zichtbare daglimiet. */}
       <AnalyseVerzoekCard selectie={analyseSelectie} setSelectie={setAnalyseSelectie} />
       </div>
     </div>
+  )
+}
+
+// ── §2 Eisprofiel wedstrijd (vierde kaart) ───────────────────────────────────
+
+function vensterLabel(sec: number): string {
+  if (sec < 60) return `${sec} sec`
+  if (sec < 3600) return `${Math.round(sec / 60)} min`
+  return `${Math.round(sec / 3600)} uur`
+}
+
+function EisprofielCard() {
+  const bron = useEisprofiel()
+  const d = bron.data
+  return (
+    <LCard className="p-5" data-testid="card-eisprofiel">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-medium text-foreground">Eisprofiel wedstrijd</h3>
+        <UitlegDot uitlegKey="eisprofiel" />
+      </div>
+      {bron.isLoading ? (
+        <p className="text-sm text-muted-foreground">Laden…</p>
+      ) : !d ? (
+        <p className="text-sm text-muted-foreground">Niet beschikbaar.</p>
+      ) : !d.beschikbaar ? (
+        <p className="text-sm text-muted-foreground" data-testid="eisprofiel-reden">{d.reden}</p>
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground">
+            {d.wedstrijd.typeLabel} · {d.wedstrijd.name} · {d.wedstrijd.raceDate}
+          </p>
+          <div className="mt-3 space-y-2">
+            {d.vensters.map((v) => (
+              <div
+                key={v.sec}
+                className={cn(
+                  "rounded-lg border p-3",
+                  v.sec === d.zwaksteVenster ? "border-amber-400/50" : "border-border",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm text-foreground/90">
+                    {vensterLabel(v.sec)} <span className="text-muted-foreground">— {v.rol}</span>
+                  </p>
+                  {v.verhouding != null ? (
+                    <span className="text-sm tabular-nums text-foreground">
+                      {Math.round(v.verhouding * 100)}%
+                    </span>
+                  ) : null}
+                </div>
+                {v.reden ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{v.reden}</p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Recent {v.recentWatts} W van je beste {v.besteWatts} W
+                    {v.sec === d.zwaksteVenster ? " — dit venster blijft nu het meest achter." : ""}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Vergeleken met je eigen beste meting per venster — nooit met een verzonnen norm. Welke
+            vensters tellen, volgt uit het wedstrijdtype van je eerstvolgende doelwedstrijd.
+          </p>
+        </>
+      )}
+    </LCard>
   )
 }
 

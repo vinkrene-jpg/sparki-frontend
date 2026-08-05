@@ -162,6 +162,14 @@ export const UITLEG: Record<string, Uitleg> = {
     beinvloeden: "Bouw in kleine stappen en plan elke drie à vier weken een rustiger week; dat houdt de stijging vol te houden.",
     versie: 1,
   },
+  eisprofiel: {
+    wat: "Wat je eerstvolgende doelwedstrijd van je vermogenscurve vraagt, gelegd naast wat je nu daadwerkelijk hebt gemeten.",
+    waarom: "Zo zie je welk stuk van je curve nog tekortschiet voor jóuw doel — niet voor een gemiddelde renner, maar voor de koers waar je voor traint.",
+    hoe: "Per wedstrijdtype tellen andere duurvensters (bij een criterium de sprint en de herstart, bij een tijdrit het lange werk). We vergelijken je beste recente meting (laatste 42 dagen) per venster met je eigen beste ooit — nooit met een verzonnen norm. Ontbreekt een meting, dan staat de reden erbij.",
+    verbanden: "Gebruikt dezelfde vermogensrecords als de powercurve; hangt samen met je FTP en je belastingsverloop.",
+    beinvloeden: "Train gericht het venster dat achterblijft: sprintjes voor het korte werk, blokken rond de drempel voor het lange werk. Een recente meting vergt ook gewoon een keer voluit rijden op dat venster.",
+    versie: 1,
+  },
   belasting: {
     wat: "De belastingsscore (TSS) van een training: hoe zwaar die was voor jouw lichaam, in één getal.",
     waarom: "Zo tellen een korte intensieve training en een lange rustige rit allebei mee in hetzelfde model. Rond de 100 staat voor een uur voluit op je drempel.",

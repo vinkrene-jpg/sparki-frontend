@@ -2682,6 +2682,21 @@ router.get("/power-bests", requireAuth, requireCommercialFeature("performance_la
   }
 });
 
+// ── GET /api/athlete/eisprofiel ──────────────────────────────────────────────
+// ANALYSE §2 vierde kaart: wat de eerstvolgende doelwedstrijd van de curve
+// vraagt, tegen de eigen gemeten curve (recent blok vs eigen beste — nooit een
+// verzonnen norm). Zelfde pakketpoort als de andere curve-analyses.
+router.get("/eisprofiel", requireAuth, requireCommercialFeature("performance_lab"), async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const { computeEisprofiel } = await import("../lib/eisprofiel");
+    res.json(await computeEisprofiel(clerkId));
+  } catch (err) {
+    req.log.error({ err }, "athlete.eisprofiel GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── GET /api/athlete/weekly-zones ────────────────────────────────────────────
 // Time-in-zone per week (Coggan zones on FTP) over the REAL stored power
 // streams of the last 6 weeks. Honest by construction: rides without a power
