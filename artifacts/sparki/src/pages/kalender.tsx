@@ -35,6 +35,7 @@ import {
   type LifeEventImpact,
 } from "@/hooks/use-life-events"
 import { workoutIcon } from "@/lib/workout-visual"
+import { AddTrainingModal } from "@/components/sparki/add-training"
 import { useDataState } from "@/hooks/use-data-state"
 import { DataStateNotice } from "@/components/sparki/data-state-notice"
 import { localISODate } from "@/lib/commercial-shell"
@@ -375,16 +376,51 @@ function DagPanel({
           onClose={() => setLevenToevoegen(false)}
         />
       ) : (
-        <button
-          type="button"
-          onClick={() => setLevenToevoegen(true)}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
-        >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-          Leefagenda op deze dag
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setLevenToevoegen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+          >
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+            Leefagenda op deze dag
+          </button>
+          {/* Wedstrijd toevoegen hergebruikt de bestaande 5-staps wizard op
+              /races, met deze dag voorgevuld via de ?datum=-deep-link. */}
+          <Link
+            href={`/races?datum=${dagIso}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+          >
+            <Trophy className="h-3.5 w-3.5" strokeWidth={2} />
+            Wedstrijd op deze dag
+          </Link>
+          {/* Losse training: bestaande chooser-first "Training toevoegen"-flow
+              met deze dag als context (plan vooruit / log terug). */}
+          <TrainingToevoegenKnop dagIso={dagIso} />
+        </div>
       )}
     </div>
+  )
+}
+
+// Kleine pil-knop die de bestaande chooser-first "Training toevoegen"-modal
+// opent met de gekozen kalenderdag als context.
+function TrainingToevoegenKnop({ dagIso }: { dagIso: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+      >
+        <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+        Training op deze dag
+      </button>
+      {open && (
+        <AddTrainingModal onClose={() => setOpen(false)} contextDate={dagIso} />
+      )}
+    </>
   )
 }
 

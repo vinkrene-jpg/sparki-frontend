@@ -440,6 +440,22 @@ export default function RacesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus])
 
+  // Deep-link ?datum=YYYY-MM-DD (maandkalender: "Wedstrijd op deze dag") opent
+  // de aanmaak-wizard met die datum voorgevuld, daarna strippen we de parameter
+  // zodat ververs/terug hem niet opnieuw opent.
+  const [wizardInitialDate, setWizardInitialDate] = useState<string | undefined>(undefined)
+  const datumHandled = useRef(false)
+  useEffect(() => {
+    if (datumHandled.current) return
+    const datum = new URLSearchParams(window.location.search).get("datum") ?? ""
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datum)) return
+    datumHandled.current = true
+    startCreate()
+    setWizardInitialDate(datum)
+    setLocation("/races", { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Deep-link ?edit=<id> (bv. vanaf het wedstrijddetail) opent meteen het
   // werkblad van die wedstrijd, daarna strippen we de parameter zodat een
   // ververs/terug hem niet opnieuw opent.
@@ -466,6 +482,9 @@ export default function RacesPage() {
     setShowForm(false)
     setWizardSource(source)
     setWizardRace(null)
+    // Voorgevulde kalenderdatum geldt alleen voor de deep-link-opening; een
+    // verse "Race toevoegen" begint weer leeg.
+    setWizardInitialDate(undefined)
     setShowWizard(true)
     setError(null)
   }
@@ -473,6 +492,7 @@ export default function RacesPage() {
   function closeWizard() {
     setShowWizard(false)
     setWizardRace(null)
+    setWizardInitialDate(undefined)
     setError(null)
   }
 
@@ -660,6 +680,7 @@ export default function RacesPage() {
           initialSource={wizardSource}
           demoStep={showWizard ? undefined : demoStep}
           initialRace={wizardRace}
+          initialDate={wizardRace == null ? wizardInitialDate : undefined}
           onOpenFullForm={wizardRace != null ? openFullFormFromWizard : undefined}
         />
       ) : (

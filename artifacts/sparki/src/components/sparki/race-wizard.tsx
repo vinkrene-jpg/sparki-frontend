@@ -1359,6 +1359,7 @@ export function RaceWizard({
   initialSource = "handmatig",
   demoStep,
   initialRace,
+  initialDate,
   onOpenFullForm,
 }: {
   onSave: (input: RaceInput) => Promise<void>
@@ -1368,6 +1369,8 @@ export function RaceWizard({
   demoStep?: WizardStep
   /** Bewerken: bestaande race — form + herkomst worden hieruit opgebouwd. */
   initialRace?: Race | null
+  /** Aanmaken met voorgevulde datum (maandkalender: "Wedstrijd op deze dag"). */
+  initialDate?: string
   /** Bewerken: escape naar het uitgebreide (platte) formulier met álle velden. */
   onOpenFullForm?: () => void
 }) {
@@ -1383,7 +1386,13 @@ export function RaceWizard({
       ? raceToWizardForm(initialRace)
       : demoStep != null
       ? { ...DEMO_FORM }
-      : { ...EMPTY_FORM },
+      : {
+          ...EMPTY_FORM,
+          // Voorgevulde kalenderdatum alleen als hij een echte ISO-datum is.
+          ...(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)
+            ? { raceDate: initialDate }
+            : {}),
+        },
   )
   const [provenance, setProvenance] = useState<Provenance>(() =>
     initialRace != null
