@@ -728,13 +728,18 @@ export function useCreateClubTrainingSeries(clubId: number | null) {
 export function useClubTrainingSeriesAction(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ seriesId, action, body }: { seriesId: number; action: "end" | "cancel" | "skip"; body?: Record<string, unknown> }) =>
+    mutationFn: ({ seriesId, action, body }: { seriesId: number; action: "end" | "cancel" | "skip" | "update"; body?: Record<string, unknown> }) =>
       action === "cancel"
         ? apiFetch(`/api/clubs/${clubId}/training-series/${seriesId}`, { method: "DELETE" })
-        : apiFetch(`/api/clubs/${clubId}/training-series/${seriesId}/${action}`, {
-            method: "POST",
-            body: body ? JSON.stringify(body) : undefined,
-          }),
+        : action === "update"
+          ? apiFetch(`/api/clubs/${clubId}/training-series/${seriesId}`, {
+              method: "PUT",
+              body: JSON.stringify(body ?? {}),
+            })
+          : apiFetch(`/api/clubs/${clubId}/training-series/${seriesId}/${action}`, {
+              method: "POST",
+              body: body ? JSON.stringify(body) : undefined,
+            }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId] }),
   })
 }

@@ -23,6 +23,7 @@ import {
   useClubTrainingSeries,
   useCreateClubTrainingSeries,
   useClubTrainingSeriesAction,
+  type ClubTrainingSeries,
   useCreateClubRace,
   useClubSubscription,
   useTeamSubscription,
@@ -435,6 +436,8 @@ function PlanTrainingSection({ clubId }: { clubId: number }) {
   const [location, setLocation] = useState("")
   const [max, setMax] = useState("")
   const [msg, setMsg] = useState<string | null>(null)
+  // C1-vervolg: per-training aanpassen/overslaan — welk reekspaneel staat open.
+  const [aanpassenId, setAanpassenId] = useState<number | null>(null)
   const reeksen = (seriesQuery.data ?? []).filter((s) => s.status === "active")
 
   return (
@@ -526,30 +529,41 @@ function PlanTrainingSection({ clubId }: { clubId: number }) {
         <div className={`${CARD} mt-3 space-y-2`}>
           <h3 className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Herhalende trainingen</h3>
           {reeksen.map((s) => (
-            <div key={s.id} className="flex flex-wrap items-center gap-2 border-t border-border pt-2 first:border-t-0 first:pt-0">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] text-foreground/85">{s.title}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Wekelijks · {s.startDate} t/m {s.endDate}
-                  {s.startTime ? ` · ${s.startTime}` : ""}
-                </p>
+            <div key={s.id} className="border-t border-border pt-2 first:border-t-0 first:pt-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] text-foreground/85">{s.title}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Wekelijks · {s.startDate} t/m {s.endDate}
+                    {s.startTime ? ` · ${s.startTime}` : ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAanpassenId(aanpassenId === s.id ? null : s.id)}
+                  className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-foreground/75"
+                  aria-expanded={aanpassenId === s.id}
+                >
+                  Training aanpassen
+                </button>
+                <button
+                  type="button"
+                  disabled={seriesAction.isPending}
+                  onClick={() => seriesAction.mutate({ seriesId: s.id, action: "end" })}
+                  className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-foreground/75"
+                >
+                  Beëindigen
+                </button>
+                <button
+                  type="button"
+                  disabled={seriesAction.isPending}
+                  onClick={() => seriesAction.mutate({ seriesId: s.id, action: "cancel" })}
+                  className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground"
+                >
+                  Annuleren
+                </button>
               </div>
-              <button
-                type="button"
-                disabled={seriesAction.isPending}
-                onClick={() => seriesAction.mutate({ seriesId: s.id, action: "end" })}
-                className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-foreground/75"
-              >
-                Beëindigen
-              </button>
-              <button
-                type="button"
-                disabled={seriesAction.isPending}
-                onClick={() => seriesAction.mutate({ seriesId: s.id, action: "cancel" })}
-                className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground"
-              >
-                Annuleren
-              </button>
+              {aanpassenId === s.id && <ReeksTrainingAanpassen series={s} action={seriesAction} />}
             </div>
           ))}
         </div>
@@ -558,6 +572,147 @@ function PlanTrainingSection({ clubId }: { clubId: number }) {
   )
 }
 
+function ReeksTrainingAanpassen({
+  series,
+  action,
+}: {
+  series: ClubTrainingSeries
+  action: ReturnType<typeof useClubTrainingSeriesAction>
+}) {
+  const [fromDate, setFromDate] = useState("")
+  const [newDate, setNewDate] = useState("")
+  const [newTime, setNewTime] = useState("")
+  const [newLocation, setNewLocation] = useState("")
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const patch: Record<string, unknown> = {}
+  if (newTime) patch["startTime"] = newTime
+  if (newLocation.trim()) patch["location"] = newLocation.trim()
+
+  const run = (kind: "one" | "following" | "skip") => {
+    setMsg(null)
+    if (!fromDate) {
+      setMsg("Kies eerst de datum van de training in de reeks.")
+      return
+    }
+    if (kind === "skip") {
+      action.mutate(
+        { seriesId: series.id, action: "skip", body: { date: fromDate } },
+        {
+          onSuccess: () => setMsg("Training overgeslagen."),
+          onError: (e) => setMsg(e instanceof Error ? e.message : "Overslaan is niet gelukt."),
+        },
+      )
+      return
+    }
+    if (kind === "one" && !newDate && Object.keys(patch).length === 0) {
+      setMsg("Geef een nieuwe datum, starttijd of locatie op.")
+      return
+    }
+    if (kind === "following" && Object.keys(patch).length === 0) {
+      setMsg("Geef een nieuwe starttijd of locatie op voor deze en volgende trainingen.")
+      return
+    }
+    action.mutate(
+      {
+        seriesId: series.id,
+        action: "update",
+        body: {
+          scope: kind,
+          fromDate,
+          ...patch,
+          ...(kind === "one" && newDate ? { trainingDate: newDate } : {}),
+        },
+      },
+      {
+        onSuccess: () =>
+          setMsg(
+            kind === "one"
+              ? "Alleen deze training is aangepast; de rest van de reeks blijft staan."
+              : "Deze en volgende trainingen zijn aangepast (reeks gesplitst).",
+          ),
+        onError: (e) => setMsg(e instanceof Error ? e.message : "Aanpassen is niet gelukt."),
+      },
+    )
+  }
+
+  return (
+    <div className="mt-2 space-y-2 rounded-lg border border-border/60 bg-background/40 p-2.5">
+      <p className="text-[11px] text-muted-foreground">
+        Kies de datum van de training in de reeks. Je kunt alleen die training verplaatsen of
+        aanpassen, die datum overslaan, of de wijziging laten gelden voor deze en alle volgende.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-[11px] text-muted-foreground">
+          Training op
+          <input
+            type="date"
+            value={fromDate}
+            min={series.startDate}
+            max={series.endDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1 text-[12px] text-foreground"
+          />
+        </label>
+        <label className="text-[11px] text-muted-foreground">
+          Nieuwe datum (alleen deze)
+          <input
+            type="date"
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1 text-[12px] text-foreground"
+          />
+        </label>
+        <label className="text-[11px] text-muted-foreground">
+          Nieuwe starttijd
+          <input
+            type="time"
+            value={newTime}
+            onChange={(e) => setNewTime(e.target.value)}
+            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1 text-[12px] text-foreground"
+          />
+        </label>
+        <label className="text-[11px] text-muted-foreground">
+          Nieuwe locatie
+          <input
+            type="text"
+            value={newLocation}
+            onChange={(e) => setNewLocation(e.target.value)}
+            placeholder="Ongewijzigd laten = leeg"
+            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1 text-[12px] text-foreground"
+          />
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={action.isPending}
+          onClick={() => run("one")}
+          className="rounded-lg border border-border bg-foreground/5 px-2.5 py-1 text-[11px] text-foreground/85"
+        >
+          Alleen deze aanpassen
+        </button>
+        <button
+          type="button"
+          disabled={action.isPending}
+          onClick={() => run("following")}
+          className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-foreground/75"
+        >
+          Deze en volgende
+        </button>
+        <button
+          type="button"
+          disabled={action.isPending}
+          onClick={() => run("skip")}
+          className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground"
+        >
+          Deze overslaan
+        </button>
+      </div>
+      {msg && <p className="text-[11px] text-muted-foreground" role="status">{msg}</p>}
+    </div>
+  )
+}
 function PlanRaceSection({ clubId }: { clubId: number }) {
   const create = useCreateClubRace(clubId)
   const [name, setName] = useState("")

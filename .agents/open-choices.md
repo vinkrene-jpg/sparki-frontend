@@ -7,6 +7,7 @@
 
 Laatst bijgewerkt: 2026-08-05.
 
+
 ## Beslist 05-08-2026 — CLUB_AFRONDING_01 C1/C2/C3 (René: "Eerst c2c3 daarna direct door")
 
 - C2-navigatielabels per clubrol bevestigd zoals gebouwd (beheer: Organisatie·Leden·
@@ -15,7 +16,10 @@ Laatst bijgewerkt: 2026-08-05.
   Berichten·Meer).
 - C3: zichtbare tablabels in /club/beheer hernoemd naar Organisatie/Mensen/
   Structuur/Beheer (tab-ids ongewijzigd).
-- C1 reeksbeheer per-training UI: loopt als taak #586.
+- C1 reeksbeheer per-training UI: GEBOUWD (taak 586, 05-08): per reeks een
+  "Training aanpassen"-paneel in het Training plannen-venster met
+  "Alleen deze aanpassen" (incl. verplaatsen), "Deze en volgende" (reeks
+  splitsen) en "Deze overslaan".
 
 ## GEZAGHEBBEND 02-08-2026 — Besluitenoverzicht René
 
