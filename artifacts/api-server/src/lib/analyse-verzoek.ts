@@ -282,33 +282,56 @@ export async function analyseOpVerzoek(clerkId: string, kaartenRuw: unknown, per
   const uitkomsten = await bouwUitkomsten(clerkId, kaarten, periodeDays);
   const digest = uitkomstenDigest(kaarten, periodeDays, uitkomsten);
 
-  // Zelfde selectie+periode+data ⇒ bewaarde analyse terug (geen modelaanroep,
-  // telt niet mee voor de daglimiet).
-  const [bestaand] = await db
-    .select()
-    .from(analysisRequestsTable)
-    .where(
-      and(
-        eq(analysisRequestsTable.clerkId, clerkId),
-        eq(analysisRequestsTable.dataDigest, digest),
-      ),
-    )
-    .orderBy(desc(analysisRequestsTable.createdAt))
-    .limit(1);
-  if (bestaand) {
-    const gebruikt = await analysesVandaag(clerkId);
-    return { analyse: bestaand, hergebruikt: true as const, gebruiktVandaag: gebruikt, limiet: ANALYSES_PER_DAG };
-  }
+  // Kostenbeheersing: de hele beslissing (hergebruik? limiet? aanroepen?)
+  // loopt per sporter achter een advisory-transactielock. Gelijktijdige
+  // verzoeken serialiseren; het tweede identieke verzoek vindt daarna de
+  // bewaarde rij en de daglimiet kan niet meer voorbijgerend worden.
+  // Mislukt de modelaanroep, dan rolt de transactie terug en telt er niets.
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${"analyse-verzoek:" + clerkId}))`,
+    );
 
-  const gebruikt = await analysesVandaag(clerkId);
-  if (gebruikt >= ANALYSES_PER_DAG) {
-    return { limietBereikt: true as const, gebruiktVandaag: gebruikt, limiet: ANALYSES_PER_DAG };
-  }
+    // Zelfde selectie+periode+data ⇒ bewaarde analyse terug (geen modelaanroep,
+    // telt niet mee voor de daglimiet).
+    const [bestaand] = await tx
+      .select()
+      .from(analysisRequestsTable)
+      .where(
+        and(
+          eq(analysisRequestsTable.clerkId, clerkId),
+          eq(analysisRequestsTable.dataDigest, digest),
+        ),
+      )
+      .orderBy(desc(analysisRequestsTable.createdAt))
+      .limit(1);
+    const dag = amsterdamDag();
+    const telVandaag = async () => {
+      const [row] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(analysisRequestsTable)
+        .where(
+          and(
+            eq(analysisRequestsTable.clerkId, clerkId),
+            sql`(${analysisRequestsTable.createdAt} AT TIME ZONE 'Europe/Amsterdam')::date = ${dag}::date`,
+          ),
+        );
+      return row?.n ?? 0;
+    };
+    if (bestaand) {
+      const gebruikt = await telVandaag();
+      return { analyse: bestaand, hergebruikt: true as const, gebruiktVandaag: gebruikt, limiet: ANALYSES_PER_DAG };
+    }
 
-  const tekst = await formuleerAnalyse(clerkId, kaarten, periodeDays, uitkomsten);
+    const gebruikt = await telVandaag();
+    if (gebruikt >= ANALYSES_PER_DAG) {
+      return { limietBereikt: true as const, gebruiktVandaag: gebruikt, limiet: ANALYSES_PER_DAG };
+    }
 
-  // Adviesdossier (R3): elk resultaat is terugleesbaar onderbouwd.
-  const dossier = await createAdviceDossier({
+    const tekst = await formuleerAnalyse(clerkId, kaarten, periodeDays, uitkomsten);
+
+    // Adviesdossier (R3): elk resultaat is terugleesbaar onderbouwd.
+    const dossier = await createAdviceDossier({
     clerkId,
     adviceType: "analyse_op_verzoek",
     adviceKey: `analyse:${digest}`,
@@ -340,19 +363,20 @@ export async function analyseOpVerzoek(clerkId: string, kaartenRuw: unknown, per
       { engine: "computeOntkoppelingRitten" },
     ],
     aiInvolvement: { used: true, purpose: "analyse_on_demand" },
-  });
+    });
 
-  const [rij] = await db
-    .insert(analysisRequestsTable)
-    .values({
-      clerkId,
-      kaarten: [...kaarten].sort(),
-      periodeDays,
-      dataDigest: digest,
-      uitkomsten,
-      tekst,
-      adviceDossierId: dossier.id,
-    })
-    .returning();
-  return { analyse: rij!, hergebruikt: false as const, gebruiktVandaag: gebruikt + 1, limiet: ANALYSES_PER_DAG };
+    const [rij] = await tx
+      .insert(analysisRequestsTable)
+      .values({
+        clerkId,
+        kaarten: [...kaarten].sort(),
+        periodeDays,
+        dataDigest: digest,
+        uitkomsten,
+        tekst,
+        adviceDossierId: dossier.id,
+      })
+      .returning();
+    return { analyse: rij!, hergebruikt: false as const, gebruiktVandaag: gebruikt + 1, limiet: ANALYSES_PER_DAG };
+  });
 }
