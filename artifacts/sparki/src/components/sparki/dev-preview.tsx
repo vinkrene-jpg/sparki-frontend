@@ -45,6 +45,7 @@ import LichaamPage from "@/pages/lichaam"
 import MechaniekerPage from "@/pages/mechanieker"
 import RoutesPage from "@/pages/routes"
 import RouteSchermPage from "@/pages/route-scherm"
+import KaartProefPage from "@/pages/kaart-proef"
 import KalenderPage from "@/pages/kalender"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
@@ -587,6 +588,10 @@ export function DevPreview() {
     // ROUTEPLANNER_MOBIEL_01 — nieuw schermvullend routescherm (ná /routes:
     // dat prefix-match anders alles vangt). Eigen chrome, geen onderbalk.
     page = <RouteSchermPage />
+    showNav = false
+  } else if (location.startsWith("/kaart-proef")) {
+    // KAART_VECTOR_01 F1 — proefpagina vectorkaart, alleen via directe URL.
+    page = <KaartProefPage />
     showNav = false
   } else if (location.startsWith("/kalender")) {
     page = <KalenderPage />

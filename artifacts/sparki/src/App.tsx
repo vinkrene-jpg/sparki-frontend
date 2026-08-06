@@ -35,6 +35,7 @@ import LichaamPage from "@/pages/lichaam";
 import MechaniekerPage from "@/pages/mechanieker";
 import RoutesPage from "@/pages/routes";
 import RouteSchermPage from "@/pages/route-scherm";
+import KaartProefPage from "@/pages/kaart-proef";
 import KalenderPage from "@/pages/kalender";
 import RacesPage from "@/pages/races";
 import RaceDetailPage from "@/pages/race-detail";
@@ -856,6 +857,11 @@ function AppRouter() {
                     (telefoon), gebouwd NAAST het bevroren oude paneel. */}
                 <Route path="/route">
                   <ProtectedPage component={RouteSchermPage} />
+                </Route>
+                {/* KAART_VECTOR_01 F1: proefpagina vectorkaart — bewust niet
+                    in de navigatie; alleen via de directe URL bereikbaar. */}
+                <Route path="/kaart-proef">
+                  <ProtectedPage component={KaartProefPage} />
                 </Route>
                 <Route path="/kalender">
                   <ProtectedPage component={KalenderPage} />
