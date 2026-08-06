@@ -9,6 +9,7 @@
 
 import { isCyclingProfile } from "../profile-selection";
 import { sanitizeNavSteps } from "../nav-sanitize";
+import { noteRoutingProviderCall } from "../../overpass/client";
 import type {
   GeocodeResult,
   GeoPoint,
@@ -140,6 +141,7 @@ export class OrsProvider implements RoutingProvider {
     // ORS kent geen apart gravelprofiel (taak #445): gravel rijdt op het
     // reguliere fietsprofiel; de kwaliteitspoorten blijven profiel-eigen.
     const orsProfile = profile === "cycling-gravel" ? "cycling-regular" : profile;
+    noteRoutingProviderCall(); // ROUTEMETING_01 M3
     return fetch(`${ORS_BASE}/v2/directions/${orsProfile}/geojson`, {
       method: "POST",
       headers: {

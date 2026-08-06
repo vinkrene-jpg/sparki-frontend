@@ -195,7 +195,10 @@ import {
   maxSlopePct,
   surfacesSource,
 } from "../lib/route-surfaces";
-import { withOverpassBudget } from "../lib/overpass/client";
+import {
+  withOverpassBudget,
+  overpassStatsSnapshot,
+} from "../lib/overpass/client";
 
 const router = Router();
 
@@ -3987,6 +3990,10 @@ async function buildLoopCandidate(
     // Gemeten N-weg-aandeel (0..1) voor het eerlijke avoid-rapport; null als
     // de motor geen road_class-details leverde.
     busyRoadFraction: routeResult.busyRoadFraction ?? null,
+    // ROUTEMETING_01 M12: eerlijke wegdekfracties uit de routebron (null als
+    // de bron geen surface-details leverde) — puur informatief.
+    pavedFraction: routeResult.pavedFraction ?? null,
+    surfaceKnownFraction: routeResult.surfaceKnownFraction ?? null,
     // Road objects are delivered asynchronously via GET /candidate/:id/enrich.
     roadObjects: null,
     // Extra echte voorstellen uit dezelfde pool (leeg bij cache-hit of als de
@@ -4260,6 +4267,31 @@ function withOverpassAccounting(
   handler: import("express").RequestHandler,
 ): import("express").RequestHandler {
   return async (req, res, next) => {
+    // ROUTEMETING_01: alleen in dev en alleen op expliciete aanvraag
+    // (header x-routemeting: 1) reist een meetblok mee in de respons —
+    // tellers (M3/M4) van de lopende generatie. Nooit in productie.
+    if (
+      process.env.NODE_ENV !== "production" &&
+      req.headers["x-routemeting"] === "1"
+    ) {
+      const origJson = res.json.bind(res);
+      res.json = ((body: unknown) => {
+        if (body && typeof body === "object" && !Array.isArray(body)) {
+          const snap = overpassStatsSnapshot();
+          if (snap) {
+            (body as Record<string, unknown>).meting = {
+              overpassRequests: snap.requests,
+              overpassCacheHits: snap.cacheHits,
+              orsCalls: snap.orsCalls,
+              obstacleProbes: snap.obstacleProbes,
+              obstacleMs: snap.obstacleMs,
+              durationMs: Date.now() - snap.startedAt,
+            };
+          }
+        }
+        return origJson(body as never);
+      }) as typeof res.json;
+    }
     const { stats } = await withOverpassBudget(async () => {
       await handler(req, res, next);
     });
@@ -4276,6 +4308,29 @@ function withOverpassAccounting(
       "routegeneratie: overpass-meting",
     );
   };
+}
+
+// ROUTEMETING_01 (M9): alleen in dev en alleen op expliciete aanvraag meet de
+// respons ook het bebouwd-aandeel van de geleverde route — via exact dezelfde
+// bestaande omgevingsmeting (getRouteEnvironment), nooit een schatting.
+function routemetingGevraagd(req: import("express").Request): boolean {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    req.headers["x-routemeting"] === "1"
+  );
+}
+
+async function metingOmgevingOf(
+  req: import("express").Request,
+  geometry: RoutePathPoint[] | null | undefined,
+): Promise<{ builtUpSharePct: number | null } | null> {
+  if (!routemetingGevraagd(req)) return null;
+  try {
+    const env = await getRouteEnvironment(geometry);
+    return { builtUpSharePct: env?.builtUpSharePct ?? null };
+  } catch {
+    return { builtUpSharePct: null };
+  }
 }
 
 const generateHandler: import("express").RequestHandler = async (req, res) => {
@@ -4656,12 +4711,14 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         return { ...a, avoidReport: altReport };
       });
       applyBusyRoadReport(avoidReport, avoidBusyRoads, candidate.busyRoadFraction);
+      const metingOmgevingLoop = await metingOmgevingOf(req, candidate.geometry);
       res.json({
         candidate: {
           ...candidate,
           avoidReport,
           alternates: alternatesWithReport,
         },
+        ...(metingOmgevingLoop ? { metingOmgeving: metingOmgevingLoop } : {}),
       });
       return;
     }
@@ -4877,6 +4934,10 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         endName: resolvedEndName,
         plannedWorkoutId,
         targetDistanceKm: null,
+        // ROUTEMETING_01 M12: eerlijke wegdekfracties uit de routebron (null
+        // als de bron geen surface-details leverde) — puur informatief.
+        pavedFraction: geom.pavedFraction ?? null,
+        surfaceKnownFraction: geom.surfaceKnownFraction ?? null,
         avoidReport,
         // Gekozen klim: aantoonbaar-op-route-verificatie (alleen via-loop met
         // climbCheck; null in alle andere gevallen).
@@ -4954,6 +5015,10 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       // Geometry cache hit: skip ORS + geocoding entirely.
       if (await rejectIfBlocked(ptpGeomCached.geometry.path)) return;
       if (!verifyClimbOnPath(ptpGeomCached.geometry.path)) return;
+      const metingOmgevingHit = await metingOmgevingOf(
+        req,
+        ptpGeomCached.geometry.path,
+      );
       res.json({
         candidate: buildPtpResponse(
           ptpGeomCached.geometry,
@@ -4961,6 +5026,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
           ptpGeomCached.endName,
           true,
         ),
+        ...(metingOmgevingHit ? { metingOmgeving: metingOmgevingHit } : {}),
       });
       return;
     }
@@ -5026,8 +5092,10 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
 
     if (await rejectIfBlocked(ptpGeom.path)) return;
     if (!verifyClimbOnPath(ptpGeom.path)) return;
+    const metingOmgevingPtp = await metingOmgevingOf(req, ptpGeom.path);
     res.json({
       candidate: buildPtpResponse(ptpGeom, startName, endName, false),
+      ...(metingOmgevingPtp ? { metingOmgeving: metingOmgevingPtp } : {}),
     });
   } catch (err) {
     req.log.error({ err }, "routes.generate failed");

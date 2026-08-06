@@ -10,6 +10,7 @@
 // de kaartdata blijven mogelijk. Die eerlijkheid blijft in de UI staan.
 
 import { sanitizeNavSteps } from "../nav-sanitize";
+import { noteRoutingProviderCall } from "../../overpass/client";
 import type {
   GeocodeResult,
   GeoPoint,
@@ -288,6 +289,7 @@ export class GraphHopperProvider implements RoutingProvider {
     body: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<Response> {
+    noteRoutingProviderCall(); // ROUTEMETING_01 M3
     return fetch(`${GH_BASE}/route?key=${encodeURIComponent(this.apiKey())}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

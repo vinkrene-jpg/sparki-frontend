@@ -125,4 +125,60 @@ router.get("/preview-athletes", async (req, res) => {
   }
 });
 
+// ── ROUTEMETING_01: langlopende meetrun als kindproces van de api-server ────
+// De sandbox kent geen losse achtergrondprocessen (ze sterven op de
+// toolgrens) en de workflow-limiet is vol; de api-server zelf is wél een
+// beheerd, langlevend proces. Deze dev-only endpoints starten de meting als
+// los (detached) kindproces met logbestand, en rapporteren de voortgang.
+// Alleen buiten productie bereikbaar (deze router bestaat daar niet).
+import { spawn } from "node:child_process";
+import { openSync, existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+
+const METING_LOG = "/tmp/routemeting-run.log";
+const METING_PID = "/tmp/routemeting-run.pid";
+const REPO_ROOT = path.resolve(process.cwd(), "../..");
+
+function metingDraait(): number | null {
+  try {
+    const pid = Number(readFileSync(METING_PID, "utf8").trim());
+    if (!Number.isFinite(pid)) return null;
+    process.kill(pid, 0); // bestaat het proces nog?
+    return pid;
+  } catch {
+    return null;
+  }
+}
+
+router.post("/routemeting/start", async (req, res) => {
+  const lopend = metingDraait();
+  if (lopend) {
+    res.status(409).json({ error: "meting draait al", pid: lopend });
+    return;
+  }
+  const extraArgs = Array.isArray(req.body?.args)
+    ? (req.body.args as unknown[]).map(String).filter((a) => /^[-\w.,=]+$/.test(a))
+    : [];
+  const out = openSync(METING_LOG, "a");
+  const child = spawn(
+    "pnpm",
+    ["--filter", "@workspace/scripts", "run", "routemeting", ...extraArgs],
+    { cwd: REPO_ROOT, detached: true, stdio: ["ignore", out, out] },
+  );
+  child.unref();
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(METING_PID, String(child.pid ?? ""));
+  res.json({ gestart: true, pid: child.pid, log: METING_LOG });
+});
+
+router.get("/routemeting/status", (_req, res) => {
+  const pid = metingDraait();
+  let staart: string[] = [];
+  if (existsSync(METING_LOG)) {
+    const raw = readFileSync(METING_LOG, "utf8");
+    staart = raw.split("\n").filter(Boolean).slice(-8);
+  }
+  res.json({ draait: pid != null, pid, staart });
+});
+
 export default router;

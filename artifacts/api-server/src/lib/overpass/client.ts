@@ -118,6 +118,12 @@ export type OverpassStats = {
   budgetDenied: number; // aanvragen geweigerd omdat het budget op was
   perMirror: Record<string, { ok: number; fail: number }>;
   startedAt: number;
+  // ROUTEMETING_01 (M3/M4): tellers voor de meetlaag. orsCalls telt échte
+  // netwerkaanvragen naar de routebron; obstacleProbes/obstacleMs meten de
+  // blokkade-/obstakelbevragingen (route-remarks) binnen deze generatie.
+  orsCalls: number;
+  obstacleProbes: number;
+  obstacleMs: number;
 };
 
 type BudgetContext = { max: number; stats: OverpassStats };
@@ -144,6 +150,9 @@ export async function withOverpassBudget<T>(
       budgetDenied: 0,
       perMirror: {},
       startedAt: Date.now(),
+      orsCalls: 0,
+      obstacleProbes: 0,
+      obstacleMs: 0,
     },
   };
   const result = await budgetStore.run(ctx, fn);
@@ -152,6 +161,29 @@ export async function withOverpassBudget<T>(
 
 function stats(): OverpassStats | null {
   return budgetStore.getStore()?.stats ?? null;
+}
+
+// ── ROUTEMETING_01: tellers voor de meetlaag ────────────────────────────────
+// Buiten een budget-context (geen actieve generatie) zijn dit stille no-ops —
+// de tellers bestaan alleen om een lopende generatie te meten.
+export function noteRoutingProviderCall(): void {
+  const s = stats();
+  if (s) s.orsCalls += 1;
+}
+
+export function noteObstacleProbe(ms: number): void {
+  const s = stats();
+  if (s) {
+    s.obstacleProbes += 1;
+    s.obstacleMs += Math.max(0, Math.round(ms));
+  }
+}
+
+// Momentopname van de tellers van de lopende generatie (of null buiten een
+// budget-context). Alleen bedoeld voor de dev-gegate meetrespons.
+export function overpassStatsSnapshot(): OverpassStats | null {
+  const s = stats();
+  return s ? { ...s, perMirror: { ...s.perMirror } } : null;
 }
 
 // ── Persistente cache ───────────────────────────────────────────────────────
