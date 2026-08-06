@@ -206,9 +206,13 @@ export default function RouteSchermPage() {
     "makkelijk" | "gemiddeld" | "zwaar" | null
   >(null)
   const [filterGereden, setFilterGereden] = useState(false)
-  // Onderweg: klim is eerlijk afleidbaar (hm per km); koffie/eten niet — die
-  // gegevens dragen routes nog niet en worden dus ook niet als filter geveinsd.
+  // Onderweg: klim is eerlijk afleidbaar (hm per km); koffie/eten komen uit
+  // de POI-laag (OSM) als onderweg-velden op elke nearby-rij. Filteren op
+  // koffie/eten houdt alleen rijen met een aantoonbaar punt (true) over —
+  // onbekend (null) valt eerlijk af, dat wordt in het blad uitgelegd.
   const [filterKlim, setFilterKlim] = useState(false)
+  const [filterKoffie, setFilterKoffie] = useState(false)
+  const [filterEten, setFilterEten] = useState(false)
   // §5.7 moment 2: het gebied van de laatst gekozen zoekplaats (geocoder-bbox,
   // als [[lat,lon],[lat,lon]]) — een dorp krijgt zo een ander kader dan een
   // provincie. Alleen gezet als de geocoder echt een vak leverde.
@@ -429,7 +433,11 @@ export default function RouteSchermPage() {
             (r.elevationGainM != null &&
               r.distanceKm != null &&
               r.distanceKm > 0 &&
-              r.elevationGainM / r.distanceKm >= 8)),
+              r.elevationGainM / r.distanceKm >= 8)) &&
+          // Koffie/eten: alleen rijen met een aantoonbaar punt ≤250 m van de
+          // lijn (true). Onbekend (null) valt eerlijk af — nooit stil doorlaten.
+          (!filterKoffie || r.onderweg?.koffie === true) &&
+          (!filterEten || r.onderweg?.eten === true),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -441,6 +449,8 @@ export default function RouteSchermPage() {
       filterMoeilijkheid,
       filterGereden,
       filterKlim,
+      filterKoffie,
+      filterEten,
     ],
   )
   const filtersActief =
@@ -450,7 +460,9 @@ export default function RouteSchermPage() {
     filterTypeRoute != null ||
     filterMoeilijkheid != null ||
     filterGereden ||
-    filterKlim
+    filterKlim ||
+    filterKoffie ||
+    filterEten
 
   // Routes in beeld tekenen (gefilterd corpus) — F3: één setData op de bron.
   useEffect(() => {
@@ -772,6 +784,8 @@ export default function RouteSchermPage() {
     setFilterMoeilijkheid(null)
     setFilterGereden(false)
     setFilterKlim(false)
+    setFilterKoffie(false)
+    setFilterEten(false)
   }
 
   // §5.2: drie knoppen — [trainingstype ▾] [straal ▾] [Filters]. De uitklap
@@ -1790,11 +1804,22 @@ export default function RouteSchermPage() {
                 actief={filterKlim}
                 onClick={() => setFilterKlim((v) => !v)}
               />
+              <KeuzeKnop
+                label="Koffie onderweg"
+                actief={filterKoffie}
+                onClick={() => setFilterKoffie((v) => !v)}
+              />
+              <KeuzeKnop
+                label="Eten onderweg"
+                actief={filterEten}
+                onClick={() => setFilterEten((v) => !v)}
+              />
             </div>
             <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
-              Klim is afgeleid uit echte hoogtemeters (≥ 8 hm per km). Koffie- en
-              eetpunten volgen zodra routes die gegevens dragen — daarop filteren
-              zou nu een lege belofte zijn.
+              Klim is afgeleid uit echte hoogtemeters (≥ 8 hm per km). Koffie en
+              eten komen uit OpenStreetMap: een benoemd café of restaurant binnen
+              250 m van de route. Is dat voor een route niet vast te stellen, dan
+              valt die bij deze filters eerlijk af.
             </p>
 
             <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
@@ -1817,11 +1842,6 @@ export default function RouteSchermPage() {
                 onClick={() => setFilterGereden((v) => !v)}
               />
             </div>
-            <p className="mt-4 text-[12px] leading-relaxed text-slate-500">
-              Onderweg-filters (koffie, eten, klim) volgen zodra routes die
-              gegevens dragen — nu filteren op iets dat er niet is zou een
-              lege belofte zijn.
-            </p>
           </div>
           {/* Vaste voetbalk: links resetten, rechts het actuele aantal. */}
           <div className="flex items-center gap-3 border-t border-slate-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">

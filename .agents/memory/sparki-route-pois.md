@@ -12,3 +12,9 @@ description: POIs along a route via Overpass + reroute-via-place + hourly coffee
 
 **Why:** Overpass behavior (504 on verbose queries, transient slot 502s) is not discoverable from code and cost a debug round.
 **How to apply:** any future Overpass feature — use nwr unions, keep honest-null on failure, expect transient failures.
+
+## Onderweg-velden op corpus-lijsten — eerlijkheidsles
+- Verrijk corpus-lijsten met POI-feiten via één gebiedsvraag, nooit per rij (bursts). "Nee" mag alleen bij bewijsbaar volledige dekking; alles anders is null.
+- **Why:** drie beoordelaar-gevonden leugen-paden: dekking claimen die nooit bevraagd is (sleutel/grens ≠ query-grens), een 200-antwoord met Overpass-`remark` (onvolledige uitvoering) als volledig behandelen, en "afstand tot de lijn" meten tot hoekpunten i.p.v. segmenten.
+- **How to apply:** één canonieke bbox (naar buiten afgerond) gedeeld door query, cache en dekkingstoets; remark ⇒ mirror/null; segment-bewuste afstand.
+

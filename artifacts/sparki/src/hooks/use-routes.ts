@@ -852,6 +852,10 @@ export type NearbyRoute = {
   verificatie: "controle_bij_gebruik";
   // Hoe vaak jij deze route aantoonbaar reed (0 = niet door jou gereden).
   keerGereden: number;
+  // Onderweg-velden uit de POI-laag (OSM): true = punt ≤250 m van de lijn,
+  // false = aantoonbaar niets binnen het dekkingsgebied, null = eerlijk
+  // onbekend (bron onbereikbaar of route deels buiten het dekkingsgebied).
+  onderweg: { koffie: boolean | null; eten: boolean | null };
 };
 
 export type NearbyRoutesResponse = {

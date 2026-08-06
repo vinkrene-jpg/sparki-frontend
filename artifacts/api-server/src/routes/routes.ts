@@ -167,7 +167,13 @@ import {
   nearbyOphaalBbox,
   type NearbyInput,
 } from "../lib/routes-nearby";
-import { getRoutePois } from "../lib/route-pois";
+import {
+  eateryBboxRond,
+  getAreaEateries,
+  getRoutePois,
+  onderwegVoorRoute,
+  type OnderwegVelden,
+} from "../lib/route-pois";
 import {
   getRouteRemarks,
   computeDataRemarks,
@@ -1760,7 +1766,22 @@ router.get("/nearby", requireAuth, async (req, res) => {
         .filter((r): r is NonNullable<typeof r> => r != null),
     );
     const MAX_GELEVERD = 250;
-    const routes = alleMatches.slice(0, MAX_GELEVERD);
+    const geleverd = alleMatches.slice(0, MAX_GELEVERD);
+
+    // Onderweg-velden (koffie/eten) uit de bestaande POI-laag: één Overpass-
+    // gebiedsvraag (6h cache) + lokale match per route. Bij een upstream-gat
+    // zijn de velden eerlijk null — de filters vallen dan leeg uit met uitleg,
+    // er wordt nooit een "nee" geveinsd. Zie lib/route-pois.ts.
+    const eateryBbox = eateryBboxRond(filters.center, filters.radiusKm);
+    const eateries =
+      geleverd.length > 0 ? await getAreaEateries(eateryBbox) : null;
+    const routes = geleverd.map((r) => ({
+      ...r,
+      onderweg:
+        eateries == null
+          ? ({ koffie: null, eten: null } satisfies OnderwegVelden)
+          : onderwegVoorRoute(r.geometry!, eateryBbox, eateries),
+    }));
     res.json({
       sport: filters.sport,
       radiusKm: filters.radiusKm,

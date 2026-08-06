@@ -19,6 +19,12 @@ import {
   type NearbyFilters,
   type NearbyInput,
 } from "../lib/routes-nearby";
+import {
+  eateryBboxRond,
+  eateryCacheKey,
+  getAreaEateries,
+  onderwegVoorRoute,
+} from "../lib/route-pois";
 
 let failures = 0;
 function assert(cond: boolean, msg: string) {
@@ -238,6 +244,162 @@ assert(
   gesorteerd[0]!.bron === "bewaard" && gesorteerd[1]!.bron === "gedeeld",
   "bij gelijke afstand eigen bron vóór gedeeld",
 );
+
+// ── onderweg-velden (koffie/eten uit de POI-laag, pure match) ────────────────
+console.log("onderweg (koffie/eten):");
+{
+  const geom = lusRond(52.266, 6.793);
+  const bbox = eateryBboxRond({ lat: 52.266, lon: 6.793 }, 25);
+  // Café pal op een routepunt, restaurant ver weg (>250 m).
+  const opRoute = geom[0]!;
+  const eateries = [
+    { lat: opRoute[0], lon: opRoute[1], soort: "koffie" as const },
+    { lat: 52.266, lon: 6.793, soort: "eten" as const }, // middelpunt lus, 2 km van de lijn
+  ];
+  const v = onderwegVoorRoute(geom, bbox, eateries);
+  assert(v.koffie === true, "café op de lijn ⇒ koffie=true");
+  assert(v.eten === false, "restaurant ver van de lijn, route volledig binnen dekking ⇒ eten=false");
+
+  const leeg = onderwegVoorRoute(geom, bbox, []);
+  assert(leeg.koffie === false && leeg.eten === false, "geen punten + volledige dekking ⇒ eerlijk false");
+
+  // Route deels buiten het dekkingsgebied zonder match ⇒ null (eerlijk onbekend).
+  const buitenBbox = eateryBboxRond({ lat: 52.266, lon: 6.793 }, 1);
+  const deels = onderwegVoorRoute(lusRond(52.266, 6.793, 2), buitenBbox, []);
+  assert(deels.koffie === null && deels.eten === null, "deels buiten dekking zonder match ⇒ null");
+
+  // Match binnen het dekkingsgebied wint van gedeeltelijke dekking: een AB-lijn
+  // van 3 km loopt deels buiten de 1 km-bbox, maar het café op het (gedekte)
+  // startpunt maakt koffie aantoonbaar true.
+  const deelsMetMatch = onderwegVoorRoute(abLijn(52.266, 6.793, 3), buitenBbox, [
+    { lat: 52.266, lon: 6.793, soort: "koffie" as const },
+  ]);
+  assert(deelsMetMatch.koffie === true, "aantoonbaar punt wint van gedeeltelijke dekking");
+  assert(deelsMetMatch.eten === null, "geen eten-match + deels buiten dekking ⇒ null");
+
+  // Segment-bewust: café naast het MIDDEN van een lang segment (beide
+  // hoekpunten >250 m weg) moet tóch matchen — de belofte is "≤250 m van de
+  // lijn", niet "≤250 m van een hoekpunt".
+  const langSegment: [number, number][] = [
+    [52.266, 6.793],
+    [52.266 + 2 / 111.19, 6.793], // 2 km recht naar het noorden
+  ];
+  const middenLat = 52.266 + 1 / 111.19; // segmentmidden, 1 km van elk hoekpunt
+  const naastMidden = {
+    lat: middenLat,
+    lon: 6.793 + 0.1 / (111.19 * Math.cos((middenLat * Math.PI) / 180)), // ~100 m opzij
+    soort: "koffie" as const,
+  };
+  const segMatch = onderwegVoorRoute(langSegment, bbox, [naastMidden]);
+  assert(segMatch.koffie === true, "café naast segmentmidden (hoekpunten >250 m) ⇒ koffie=true");
+  const verVanLijn = onderwegVoorRoute(langSegment, bbox, [
+    { ...naastMidden, lon: 6.793 + 0.4 / (111.19 * Math.cos((middenLat * Math.PI) / 180)) }, // ~400 m opzij
+  ]);
+  assert(verVanLijn.koffie === false, "café ~400 m naast de lijn ⇒ geen match");
+
+  // Cachesleutel: een verschoven bbox mag nooit dezelfde sleutel (en dus
+  // andermans dekking) hergebruiken — sleutel = exact de bevraagde bbox.
+  const kA = eateryCacheKey(eateryBboxRond({ lat: 52.266, lon: 6.793 }, 25));
+  const kB = eateryCacheKey(eateryBboxRond({ lat: 52.269, lon: 6.796 }, 25));
+  assert(kA !== kB, "verschoven bbox ⇒ andere cachesleutel (geen valse dekking)");
+  const kA2 = eateryCacheKey(eateryBboxRond({ lat: 52.266, lon: 6.793 }, 25));
+  assert(kA === kA2, "identieke bbox ⇒ zelfde cachesleutel (cache blijft werken)");
+
+  // Canonieke bbox: exact 4 decimalen én NAAR BUITEN afgerond, zodat query,
+  // cachesleutel en dekkingstoets dezelfde grenzen delen. Een dekkingstoets
+  // ruimer dan het werkelijk bevraagde gebied zou in de randstrook een vals
+  // "false" geven — daarom moet de canonieke bbox de ruwe cirkel OMVATTEN.
+  const c = { lat: 52.26637, lon: 6.79319 }; // bewust niet-ronde coördinaten
+  const kb = eateryBboxRond(c, 25);
+  const dLat = 25 / 111.19;
+  const dLon = 25 / (111.19 * Math.cos((c.lat * Math.PI) / 180));
+  const is4Dec = (v: number) => Math.abs(v * 1e4 - Math.round(v * 1e4)) < 1e-9;
+  assert(
+    is4Dec(kb.minLat) && is4Dec(kb.maxLat) && is4Dec(kb.minLon) && is4Dec(kb.maxLon),
+    "bbox-grenzen zijn exact 4 decimalen (identiek aan de Overpass-query)",
+  );
+  assert(
+    kb.minLat <= c.lat - dLat &&
+      kb.maxLat >= c.lat + dLat &&
+      kb.minLon <= c.lon - dLon &&
+      kb.maxLon >= c.lon + dLon,
+    "canonieke bbox omvat de ruwe zoekcirkel (naar buiten afgerond)",
+  );
+  // Routepunt exact op de bbox-grens telt als gedekt: geen POI ⇒ false (niet
+  // null), want die grens is werkelijk bevraagd.
+  const opGrens = onderwegVoorRoute(
+    [
+      [kb.minLat, c.lon],
+      [kb.minLat + 0.001, c.lon],
+      [kb.minLat + 0.002, c.lon],
+      [kb.minLat + 0.003, c.lon],
+    ],
+    kb,
+    [],
+  );
+  assert(
+    opGrens.koffie === false && opGrens.eten === false,
+    "punt exact op de (werkelijk bevraagde) bbox-grens ⇒ gedekt ⇒ false",
+  );
+}
+
+// ── getAreaEateries: Overpass-remark ⇒ eerlijk null (gemockte fetch) ─────────
+console.log("getAreaEateries (gemockte fetch):");
+{
+  const echteFetch = globalThis.fetch;
+  const antwoord = (body: unknown) =>
+    Promise.resolve(
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  try {
+    // 200-JSON mét remark (Overpass runtime-timeout) op BEIDE hosts ⇒ null,
+    // nooit een vals-volledige lege lijst.
+    globalThis.fetch = (() =>
+      antwoord({
+        elements: [],
+        remark: "runtime error: Query timed out in ...",
+      })) as typeof fetch;
+    const metRemark = await getAreaEateries(
+      eateryBboxRond({ lat: 51.1, lon: 4.1 }, 10),
+    );
+    assert(metRemark === null, "200 + remark (timeout) op alle hosts ⇒ eerlijk null");
+
+    // Schone 200 zonder remark ⇒ echte (hier lege) dekking, geen null.
+    globalThis.fetch = (() => antwoord({ elements: [] })) as typeof fetch;
+    const schoon = await getAreaEateries(
+      eateryBboxRond({ lat: 50.9, lon: 3.9 }, 10),
+    );
+    assert(
+      Array.isArray(schoon) && schoon.length === 0,
+      "schone 200 zonder remark ⇒ lege lijst (volledige dekking), geen null",
+    );
+
+    // Remark op de hoofdhost, schoon antwoord op de mirror ⇒ mirror wint.
+    let aanroep = 0;
+    globalThis.fetch = (() => {
+      aanroep += 1;
+      return aanroep === 1
+        ? antwoord({ elements: [], remark: "runtime error: timed out" })
+        : antwoord({
+            elements: [
+              { type: "node", id: 1, lat: 50.7, lon: 3.7, tags: { amenity: "cafe", name: "Test" } },
+            ],
+          });
+    }) as typeof fetch;
+    const viaMirror = await getAreaEateries(
+      eateryBboxRond({ lat: 50.7, lon: 3.7 }, 10),
+    );
+    assert(
+      Array.isArray(viaMirror) && viaMirror.length === 1 && viaMirror[0]!.soort === "koffie",
+      "remark op hoofdhost ⇒ mirror geprobeerd en gebruikt",
+    );
+  } finally {
+    globalThis.fetch = echteFetch;
+  }
+}
 
 // ── uitslag ──────────────────────────────────────────────────────────────────
 if (failures > 0) {
