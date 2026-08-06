@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { RouteGenerator, RoutePassport } from "@/components/sparki/route-generator"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
+import { NavSettingsPanel } from "@/components/sparki/nav-settings-panel"
 import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { RouteDiscover } from "@/components/sparki/route-discover"
-import { useLocation } from "wouter"
+import { useLocation, useSearch } from "wouter"
 import {
   Map as MapLibreMap,
   Marker as MapLibreMarker,
@@ -59,7 +60,6 @@ import {
   activiteit,
   standaardAfstand,
   HOOGTES,
-  VORMEN,
   type ActiviteitId,
   type HoogteKeuze,
   type OndergrondKeuze,
@@ -280,6 +280,24 @@ export default function RouteSchermPage() {
   const [navigeren, setNavigeren] = useState(false)
   // Geopende flow uit het driepuntsmenu — als eigen scherm over de kaart.
   const [flow, setFlow] = useState<FlowKeuze | null>(null)
+  // Deep-links (§9): de oude /routes-links wijzen nu naar /route met dezelfde
+  // query. Bij binnenkomst de juiste flow openen; de flow-componenten zelf
+  // lezen de rest van de query (?route=, ?ritopties=, ?nav=, ?klim=…).
+  const zoekQuery = useSearch()
+  const deeplinkGedaan = useRef(false)
+  useEffect(() => {
+    if (deeplinkGedaan.current) return
+    deeplinkGedaan.current = true
+    const p = new URLSearchParams(zoekQuery)
+    const view = p.get("view")
+    if (view === "bewaard" || p.get("route") || p.get("ritopties") || p.get("nav")) {
+      setFlow("bewaard")
+    } else if (view === "maken" || p.get("klim")) {
+      setFlow("maken")
+    } else if (view === "ontdek") setFlow("ontdek")
+    else if (view === "paspoort") setFlow("paspoort")
+    else if (view === "instellingen") setFlow("instellingen")
+  }, [zoekQuery])
   // Navigatie van een BEWAARDE route (uit Bewaarde routes/GPX/Zelf plannen)
   // over dezelfde kaartlaag als de gegenereerde kandidaat (R8).
   const [navRoute, setNavRoute] = useState<SparkiRoute | null>(null)
@@ -715,6 +733,14 @@ export default function RouteSchermPage() {
         ...(bron === "zelf" && act.factoren.onderweg.beschikbaar && onderwegWens
           ? { wish: "graag koffie, eten of een bezienswaardigheid onderweg" }
           : {}),
+        // Ondergrondvoorkeur: alleen gravel/MTB — de motor gebruikt hem daar
+        // echt (voorkeur, geen garantie); elders zou meesturen een dode knop
+        // maskeren omdat de server hem negeert.
+        ...(bron === "zelf" &&
+        (act.bikeType === "gravel" || act.bikeType === "mtb") &&
+        ondergrond !== "geen"
+          ? { unpavedPreferencePct: ondergrond === "onverhard" ? 70 : 10 }
+          : {}),
       },
       {
         onSuccess: (res) => {
@@ -1140,17 +1166,12 @@ export default function RouteSchermPage() {
         </div>
       </div>
       {act.factoren.vorm && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-[12px] text-slate-500">Vorm</span>
-          {VORMEN.map((v) => (
-            <KeuzeKnop
-              key={v.id}
-              label={v.label}
-              actief={vorm === v.id}
-              onClick={() => setVorm(v.id)}
-            />
-          ))}
-        </div>
+        <p className="mt-2 text-[12px] text-slate-500">
+          {/* Eerlijk: de routemotor bouwt nu alleen rondjes (lussen). Geen
+              dode knoppen voor vormen die hij nog niet kan leveren. */}
+          Vorm: rondje (lus). Heen-en-terug en A-naar-B volgen zodra de
+          routemotor ze kan maken.
+        </p>
       )}
       {act.factoren.hoogte && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1185,6 +1206,27 @@ export default function RouteSchermPage() {
           />
         </div>
       )}
+      {act.factoren.ondergrond.keuze &&
+        (act.bikeType === "gravel" || act.bikeType === "mtb") && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-[12px] text-slate-500">Ondergrond</span>
+            {(
+              [
+                { id: "verhard", label: "Vooral verhard" },
+                { id: "onverhard", label: "Vooral onverhard" },
+              ] as const
+            ).map((o) => (
+              <KeuzeKnop
+                key={o.id}
+                label={o.label}
+                actief={ondergrond === o.id}
+                onClick={() =>
+                  setOndergrond(ondergrond === o.id ? "geen" : o.id)
+                }
+              />
+            ))}
+          </div>
+        )}
       {act.factoren.ondergrond.vast && (
         <p className="mt-2 text-[12px] text-slate-500">
           Ondergrond ligt bij {act.label.toLowerCase()} vast:{" "}
@@ -2511,6 +2553,25 @@ export default function RouteSchermPage() {
 
       {/* Ontdekken: kant-en-klare routes per gebied + openbare routes van
           anderen — dezelfde componenten als het oude scherm. */}
+      {flow === "instellingen" && (
+        <div className="absolute inset-0 z-[540] flex flex-col bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button
+              type="button"
+              onClick={() => setFlow(null)}
+              aria-label="Terug"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <p className="text-[15px] font-semibold text-slate-800">Instellingen</p>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <NavSettingsPanel />
+          </div>
+        </div>
+      )}
+
       {flow === "ontdek" && (
         <div className="absolute inset-0 z-[540] flex flex-col bg-white">
           <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">

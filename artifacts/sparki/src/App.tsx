@@ -849,6 +849,11 @@ function AppRouter() {
                 <Route path="/mechanieker">
                   <ProtectedPage component={MechaniekerPage} />
                 </Route>
+                {/* RIJDEN_01 §9: oude /routes-bookmarks en externe links
+                    blijven werken — doorsturen naar /route mét query. */}
+                <Route path="/routes">
+                  <RoutesDoorstuur />
+                </Route>
                 {/* RIJDEN_01: hét routescherm — de oude /routes-tabbladen
                     zijn gesloopt (§9); alles loopt via de stappenmachine. */}
                 <Route path="/route">
@@ -956,6 +961,16 @@ function AppRouter() {
       </QueryClientProvider>
     </ClerkProvider>
   );
+}
+
+// RIJDEN_01 §9: /routes bestaat niet meer; stuur door naar /route en neem de
+// volledige query mee (?view=bewaard&route=…, ?nav=…, ?klim=… blijven werken).
+function RoutesDoorstuur() {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    setLocation(`/route${window.location.search}`, { replace: true });
+  }, [setLocation]);
+  return null;
 }
 
 function App() {

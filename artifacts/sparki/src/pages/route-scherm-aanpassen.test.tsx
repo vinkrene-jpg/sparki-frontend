@@ -204,6 +204,9 @@ mock.module("@/components/sparki/route-navigator", {
 mock.module("@/components/sparki/route-generator", {
   namedExports: { RouteGenerator: () => h("div"), RoutePassport: () => h("div") },
 })
+mock.module("@/components/sparki/nav-settings-panel", {
+  namedExports: { NavSettingsPanel: () => h("div") },
+})
 mock.module("@/components/sparki/route-explorer", {
   namedExports: { RouteExplorer: () => h("div") },
 })
@@ -220,7 +223,7 @@ mock.module("@/lib/commercial-shell", {
   namedExports: { localISODate: () => "2026-08-05" },
 })
 mock.module("wouter", {
-  namedExports: { useLocation: () => ["/route", () => undefined] },
+  namedExports: { useLocation: () => ["/route", () => undefined], useSearch: () => "" },
 })
 const icoon = () => h("i")
 mock.module("lucide-react", {
