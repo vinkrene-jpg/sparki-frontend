@@ -157,5 +157,10 @@
     "file": "artifacts/api-server/src/engines/meetniveau/compute.ts",
     "contains": "Sparki ziet van jou",
     "reason": "Profielregel MEETNIVEAU_EN_UITLEG_01 §7: voorgeschreven vorm 'Sparki ziet van jou ...' — beschrijft wat Sparki waarneemt, geen coachadvies."
+  },
+  {
+    "file": "artifacts/sparki/src/pages/route-scherm.tsx",
+    "contains": "Sparki laat maken",
+    "reason": "RIJDEN_01 3-A: documentnaam van de knop — de renner laat Sparki (het product) een route maken; geen derde-persoons coachzin."
   }
 ]

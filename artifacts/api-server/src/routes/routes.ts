@@ -58,6 +58,7 @@ import {
   HOME_ZONE_RADIUS_M,
 } from "../lib/world-social/privacy-zones";
 import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
+import type { RouteResult } from "../lib/routing/types";
 import { controlUnpavedShare } from "../lib/surface-control";
 import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
@@ -454,7 +455,7 @@ import { recordGeneratedArea } from "../lib/route-env-warmup";
 type RationaleInput = {
   trainingType: string;
   profile: RoutingProfile;
-  mode: "loop" | "ptp" | "waypoints";
+  mode: "loop" | "ptp" | "waypoints" | "out_and_back";
   distanceKm: number | null;
   durationSec: number | null;
   elevationGainM: number | null;
@@ -481,7 +482,9 @@ function buildRationaleFallback(input: RationaleInput): string {
       ? `een lus${input.startName ? ` vanuit ${input.startName}` : ""}`
       : input.mode === "waypoints"
         ? `een zelf uitgestippelde route${input.startName ? ` vanuit ${input.startName}` : ""}`
-        : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
+        : input.mode === "out_and_back"
+          ? `een heen-en-terugroute over dezelfde weg${input.startName ? ` vanuit ${input.startName}` : ""}`
+          : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
   const parts: string[] = [];
   if (input.distanceKm != null) parts.push(`${Math.round(input.distanceKm)} km`);
   if (input.durationSec != null)
@@ -500,7 +503,9 @@ async function buildRationale(input: RationaleInput): Promise<string> {
       ? `een lus${input.startName ? ` vanuit ${input.startName}` : ""}`
       : input.mode === "waypoints"
         ? `een zelf uitgestippelde route${input.startName ? ` vanuit ${input.startName}` : ""}`
-        : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
+        : input.mode === "out_and_back"
+          ? `een heen-en-terugroute over dezelfde weg${input.startName ? ` vanuit ${input.startName}` : ""}`
+          : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
   const durationLabel =
     input.durationSec != null
       ? `${Math.round(input.durationSec / 60)} min`
@@ -4356,7 +4361,9 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       ? "ptp"
       : body.mode === "waypoints"
         ? "waypoints"
-        : "loop";
+        : body.mode === "out_and_back"
+          ? "out_and_back"
+          : "loop";
   // Phased rollout: route generation is available for active ROUTE families
   // (cycling + walking + hiking — MOBILE_ROUTE_WALKING_01). Validate the RAW
   // input before coercion — coerceSport would otherwise silently map an
@@ -4633,6 +4640,27 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       }
     }
 
+    // Heen-en-terug (out-and-back): een deterministisch keerpunt op ~de halve
+    // doelafstand, in een richting die uit de seed volgt. De route wordt als
+    // echte wegroute start → keerpunt → start gepland, dus heen en terug over
+    // dezelfde weg waar de wegen dat toestaan (eenrichtingsverkeer blijft
+    // eerlijk gevolgd). Straal begint op 0,7× hemelsbreed van de halve
+    // doelafstand (wegafstand is doorgaans langer dan hemelsbreed) en wordt
+    // na de eerste meting één keer bijgesteld op het echte resultaat.
+    const oabTurnStart =
+      mode === "out_and_back"
+        ? (() => {
+            const bearingRad =
+              ((((seed ?? 0) * 137.508) % 360) * Math.PI) / 180;
+            const rKm = (targetDistanceKm / 2) * 0.7;
+            const dLat = (rKm * Math.cos(bearingRad)) / 111;
+            const dLon =
+              (rKm * Math.sin(bearingRad)) /
+              (111 * Math.max(0.2, Math.cos((startLat * Math.PI) / 180)));
+            return { lat: startLat + dLat, lon: startLon + dLon };
+          })()
+        : null;
+
     // Loop mode: build the candidate via the shared helper so the single-route
     // path and the 3-distance chooser (/generate/options) never drift.
     // The geometry cache lives inside buildLoopCandidate — identical ORS params
@@ -4751,6 +4779,16 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
             profile,
             avoidBusyRoads,
           }
+        : mode === "out_and_back"
+          ? {
+              mode: "out_and_back",
+              startLat,
+              startLon,
+              targetDistanceKm,
+              seed: seed ?? null,
+              profile,
+              avoidBusyRoads,
+            }
         : mode === "waypoints"
           ? {
               mode: "waypoints",
@@ -4845,6 +4883,8 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
         ? `Variant op ${hybrideBase.name}${distLabel ? ` · ${distLabel}` : ""}`
         : mode === "ptp"
           ? `${resolvedStartName ?? "Start"} → ${resolvedEndName ?? "bestemming"}${distLabel ? ` · ${distLabel}` : ""}`
+          : mode === "out_and_back"
+            ? `Heen en terug${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
           : mode === "waypoints"
             ? `Eigen route${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
             : `${workoutTrainingType}-lus${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
@@ -5036,10 +5076,49 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       return;
     }
 
+    // Heen-en-terug: route start → keerpunt → start als echte wegroute. Na de
+    // eerste meting stellen we het keerpunt ÉÉN keer bij op de gemeten
+    // wegafstand (>20% naast het doel), daarna is het resultaat eerlijk wat de
+    // wegen toelaten — nooit eindeloos itereren.
+    const routeOutAndBack = async (): Promise<RouteResult> => {
+      const startPt = { lat: startLat, lon: startLon };
+      let turn = oabTurnStart!;
+      let result = await provider.routeWaypoints({
+        points: [startPt, turn, startPt],
+        profile,
+        avoidBusyRoads,
+      });
+      const got = result.distanceKm;
+      if (
+        got != null &&
+        got > 0 &&
+        Math.abs(got - targetDistanceKm) / targetDistanceKm > 0.2
+      ) {
+        const scale = Math.min(3, Math.max(0.3, targetDistanceKm / got));
+        turn = {
+          lat: startLat + (turn.lat - startLat) * scale,
+          lon: startLon + (turn.lon - startLon) * scale,
+        };
+        try {
+          result = await provider.routeWaypoints({
+            points: [startPt, turn, startPt],
+            profile,
+            avoidBusyRoads,
+          });
+        } catch {
+          // Bijstelling mislukt (bv. keerpunt in water) — het eerste echte
+          // resultaat blijft staan; de afstand op de kandidaat is eerlijk.
+        }
+      }
+      return result;
+    };
+
     // Cache miss: call ORS provider, then geocode place names concurrently.
     const _t_ors0 = performance.now();
     const orsResult =
-      mode === "waypoints"
+      mode === "out_and_back"
+        ? await routeOutAndBack()
+        : mode === "waypoints"
         ? await provider.routeWaypoints({
             points: waypoints,
             profile,

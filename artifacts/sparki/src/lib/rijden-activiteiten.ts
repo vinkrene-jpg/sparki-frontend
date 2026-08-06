@@ -207,3 +207,36 @@ export function standaardAfstand(
   }
   return { km: a.afstand.standaardKm, uitTraining: false }
 }
+
+/**
+ * Vormkeuze → generate-payload (RIJDEN_01 stap 3-Z). Pure functie zodat het
+ * contract testbaar is: elke vorm levert een ANDERE geldige payload op.
+ * - rondje      → mode "loop" (de lusgenerator)
+ * - heen-terug  → mode "out_and_back" (server plant start → keerpunt → start)
+ * - a-naar-b    → mode "ptp" + destinationText (server geocodeert de
+ *                 bestemming en weigert eerlijk met 422 als die niet bestaat)
+ * Zonder bestemming is A-naar-B geen geldige aanvraag — dan komt er een
+ * eerlijke fout terug in plaats van een stil teruggevallen rondje.
+ */
+export type VormPayload =
+  | { mode: "loop" }
+  | { mode: "out_and_back" }
+  | { mode: "ptp"; destinationText: string }
+
+export function vormGeneratePayload(
+  vorm: VormKeuze,
+  bestemming?: string,
+): { ok: true; payload: VormPayload } | { ok: false; fout: string } {
+  if (vorm === "a-naar-b") {
+    const b = (bestemming ?? "").trim()
+    if (!b) {
+      return {
+        ok: false,
+        fout: "Vul een bestemming in voor een A-naar-B-route.",
+      }
+    }
+    return { ok: true, payload: { mode: "ptp", destinationText: b } }
+  }
+  if (vorm === "heen-terug") return { ok: true, payload: { mode: "out_and_back" } }
+  return { ok: true, payload: { mode: "loop" } }
+}

@@ -10,6 +10,7 @@ import {
   standaardAfstand,
   VORMEN,
   HOOGTES,
+  vormGeneratePayload,
 } from "./rijden-activiteiten"
 
 test("tabel A: precies acht activiteiten in documentvolgorde", () => {
@@ -110,4 +111,32 @@ test("standaardAfstand: training van vandaag wint, geklemd; anders tabel B", () 
 test("vormen en hoogte-opties bestaan met enginekoppeling", () => {
   assert.deepEqual(VORMEN.map((v) => v.id), ["rondje", "heen-terug", "a-naar-b"])
   assert.deepEqual(HOOGTES.map((h) => h.engine), ["flat", "hilly", "hilly"])
+})
+
+// Contracttest (taak Rijden vormkeuzes): elke vormkeuze produceert aantoonbaar
+// een ANDERE geldige generate-payload — geen dode knoppen, geen stil
+// terugvallen op een rondje.
+test("vormGeneratePayload: elke vorm levert een andere geldige payload", () => {
+  const rondje = vormGeneratePayload("rondje")
+  const heenTerug = vormGeneratePayload("heen-terug")
+  const aNaarB = vormGeneratePayload("a-naar-b", "Herentals")
+  assert.ok(rondje.ok && heenTerug.ok && aNaarB.ok)
+  if (!rondje.ok || !heenTerug.ok || !aNaarB.ok) return
+  assert.deepEqual(rondje.payload, { mode: "loop" })
+  assert.deepEqual(heenTerug.payload, { mode: "out_and_back" })
+  assert.deepEqual(aNaarB.payload, { mode: "ptp", destinationText: "Herentals" })
+  // Drie verschillende modes — de drie vormen kunnen nooit stil samenvallen.
+  const modes = new Set([rondje.payload.mode, heenTerug.payload.mode, aNaarB.payload.mode])
+  assert.equal(modes.size, 3)
+})
+
+test("vormGeneratePayload: A-naar-B zonder bestemming is een eerlijke fout", () => {
+  const leeg = vormGeneratePayload("a-naar-b")
+  assert.equal(leeg.ok, false)
+  const spaties = vormGeneratePayload("a-naar-b", "   ")
+  assert.equal(spaties.ok, false)
+  // Bestemming wordt getrimd doorgegeven.
+  const res = vormGeneratePayload("a-naar-b", "  Gent  ")
+  assert.ok(res.ok)
+  if (res.ok) assert.deepEqual(res.payload, { mode: "ptp", destinationText: "Gent" })
 })

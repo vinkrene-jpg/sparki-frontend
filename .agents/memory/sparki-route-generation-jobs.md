@@ -13,3 +13,14 @@ description: WP-1 routeplanner-herstel — waarom generatie niet als één lange
 - `x-dev-clerk-id` met onbekend id valt STIL terug op de standaard dev-user — een "vreemde eigenaar"-test met een niet-bestaand id bewijst niets (200 is dezelfde identiteit).
 
 **Bewijs:** e2e/tests/routeplanner-generatie.mjs (productiebuild, mobiel, echte route op scherm) + sanity-checks/SANITY_5B_2026-07-31_wp1-routegeneratie-herstel.yaml.
+
+## Out-and-back (heen-en-terug, 08-2026)
+- `mode: "out_and_back"` in POST /generate: deterministisch keerpunt uit seed
+  (gulden-hoek-bearing), straal 0,7× halve doelafstand, gerouteerd als
+  waypoints [start, keerpunt, start]; ÉÉN correctie-iteratie op de gemeten
+  wegafstand (>20% naast doel), nooit eindeloos itereren.
+- Deelt het volledige ptp/waypoints-pad: geometriecache (key: start+doel+seed),
+  blokkadepoort, naam "Heen en terug vanuit X".
+- Client-vormcontract: `vormGeneratePayload` in sparki lib/rijden-activiteiten
+  (rondje=loop, heen-terug=out_and_back, a-naar-b=ptp+destinationText; lege
+  bestemming = eerlijke fout) — contracttest in test:rijden-activiteiten.

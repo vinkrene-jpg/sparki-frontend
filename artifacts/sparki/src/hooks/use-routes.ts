@@ -75,7 +75,9 @@ export type BikeType = "racefiets" | "mtb" | "gravel";
 export type ElevationPreference = "flat" | "hilly" | "any";
 
 export type GenerateRouteInput = {
-  mode: "loop" | "ptp" | "waypoints";
+  // "out_and_back" = heen-en-terug: de motor plant start → keerpunt → start
+  // over dezelfde weg waar de wegen dat toelaten (RIJDEN_01 stap 3-Z).
+  mode: "loop" | "ptp" | "waypoints" | "out_and_back";
   startLat?: number;
   startLon?: number;
   sport: Sport;
@@ -136,7 +138,7 @@ export type RouteCandidate = {
   bikeType: BikeType | null;
   routingProfile: string;
   trainingType: string;
-  mode: "loop" | "ptp" | "waypoints";
+  mode: "loop" | "ptp" | "waypoints" | "out_and_back";
   distanceKm: number | null;
   durationSec: number | null;
   elevationGainM: number | null;

@@ -64,6 +64,8 @@ import {
   type HoogteKeuze,
   type OndergrondKeuze,
   type VormKeuze,
+  VORMEN,
+  vormGeneratePayload,
 } from "@/lib/rijden-activiteiten"
 import { isRouteSportActive } from "@workspace/feature-flags"
 
@@ -238,6 +240,9 @@ export default function RouteSchermPage() {
   const [afstandKm, setAfstandKm] = useState<number>(35)
   const [afstandUitTraining, setAfstandUitTraining] = useState(false)
   const [vorm, setVorm] = useState<VormKeuze>("rondje")
+  // A-naar-B: vrije bestemming — de server geocodeert en weigert eerlijk
+  // (422) als de plek niet gevonden wordt.
+  const [bestemming, setBestemming] = useState("")
   const [hoogte, setHoogte] = useState<HoogteKeuze | null>(null)
   const [ondergrond, setOndergrond] = useState<OndergrondKeuze>("geen")
   const [drukkeWegenVermijden, setDrukkeWegenVermijden] = useState(false)
@@ -682,6 +687,7 @@ export default function RouteSchermPage() {
     setAfstandKm(std.km)
     setAfstandUitTraining(std.uitTraining)
     setVorm("rondje")
+    setBestemming("")
     setHoogte(null)
     setOndergrond(a.factoren.ondergrond.vast ?? "geen")
     setDrukkeWegenVermijden(false)
@@ -702,6 +708,17 @@ export default function RouteSchermPage() {
       setGenFout("Geen startpunt — zoek een plaats of gebruik je locatie.")
       return
     }
+    // Vormkeuze → payload (3-Z, pure functie met contracttest): rondje = lus,
+    // heen-terug = out_and_back, A-naar-B = ptp met bestemming. "Sparki laat
+    // maken" (3-A) blijft altijd een rondje.
+    const vormRes =
+      bron === "zelf"
+        ? vormGeneratePayload(vorm, bestemming)
+        : vormGeneratePayload("rondje")
+    if (!vormRes.ok) {
+      setGenFout(vormRes.fout)
+      return
+    }
     setGenFout(null)
     setKandidaat(null)
     setFase(null)
@@ -715,7 +732,7 @@ export default function RouteSchermPage() {
     const hoogteKeuze = HOOGTES.find((h) => h.id === hoogte) ?? null
     generate.mutate(
       {
-        mode: "loop",
+        ...vormRes.payload,
         sport,
         ...(act.bikeType ? { bikeType: act.bikeType } : {}),
         startLat: center.lat,
@@ -1166,12 +1183,38 @@ export default function RouteSchermPage() {
         </div>
       </div>
       {act.factoren.vorm && (
-        <p className="mt-2 text-[12px] text-slate-500">
-          {/* Eerlijk: de routemotor bouwt nu alleen rondjes (lussen). Geen
-              dode knoppen voor vormen die hij nog niet kan leveren. */}
-          Vorm: rondje (lus). Heen-en-terug en A-naar-B volgen zodra de
-          routemotor ze kan maken.
-        </p>
+        <>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-[12px] text-slate-500">Vorm</span>
+            {VORMEN.map((v) => (
+              <KeuzeKnop
+                key={v.id}
+                label={v.label}
+                actief={vorm === v.id}
+                onClick={() => setVorm(v.id)}
+              />
+            ))}
+          </div>
+          {vorm === "a-naar-b" && (
+            <div className="mt-2">
+              <input
+                type="text"
+                value={bestemming}
+                onChange={(e) => setBestemming(e.target.value)}
+                placeholder="Bestemming (plaats of adres)"
+                className="min-h-12 w-full rounded-full border border-slate-300 px-4 text-[14px] text-slate-800 placeholder:text-slate-400"
+              />
+              <p className="mt-1 text-[12px] text-slate-500">
+                De afstand volgt uit de echte wegroute naar je bestemming.
+              </p>
+            </div>
+          )}
+          {vorm === "heen-terug" && (
+            <p className="mt-1 text-[12px] text-slate-500">
+              Heen en terug over dezelfde weg, keerpunt op ± de halve afstand.
+            </p>
+          )}
+        </>
       )}
       {act.factoren.hoogte && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
