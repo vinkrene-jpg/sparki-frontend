@@ -115,6 +115,9 @@ export default function RouteSchermPage() {
   const [fase, setFase] = useState<GeneratePhase | null>(null)
   const [genFout, setGenFout] = useState<string | null>(null)
   const [navigeren, setNavigeren] = useState(false)
+  // MUX-57: wachten op een routeaanvraag heeft altijd een uitweg. Annuleren
+  // laat het serverwerk gewoon aflopen, maar het resultaat wordt genegeerd.
+  const annuleerRef = useRef(false)
 
   // ── R7: route aanpassen ────────────────────────────────────────────────
   // Vier manieren: punt van de lijn verslepen · waypoint toevoegen ·
@@ -303,6 +306,7 @@ export default function RouteSchermPage() {
     // Verse kandidaat = verse bewaar-status; anders blijft "Bewaard" van een
     // vorige route op de knop staan.
     bewaar.reset()
+    annuleerRef.current = false
     generate.mutate(
       {
         mode: "loop",
@@ -314,11 +318,14 @@ export default function RouteSchermPage() {
       },
       {
         onSuccess: (res) => {
+          if (annuleerRef.current) return
           setKandidaat(res.candidate)
           setStand("half")
         },
-        onError: (e) =>
-          setGenFout(e instanceof Error ? e.message : "Route maken is niet gelukt."),
+        onError: (e) => {
+          if (annuleerRef.current) return
+          setGenFout(e instanceof Error ? e.message : "Route maken is niet gelukt.")
+        },
         onSettled: () => setFase(null),
       },
     )
@@ -550,7 +557,7 @@ export default function RouteSchermPage() {
           key={`${r.lat}-${r.lon}-${i}`}
           type="button"
           onClick={() => kiesPlaats(r)}
-          className="border-b border-slate-100 px-1 py-3 text-left text-[14px] text-slate-700"
+          className="flex min-h-12 items-center border-b border-slate-100 px-1 text-left text-[14px] text-slate-700"
         >
           {r.label}
         </button>
@@ -565,17 +572,39 @@ export default function RouteSchermPage() {
     <>
       {/* Generatievoortgang / fout */}
       {generate.isPending && (
-        <div className="mb-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5">
-          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-          <span className="text-[13px] text-slate-600">
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-500" />
+          <span className="min-w-0 flex-1 text-[13px] text-slate-600">
             {fase ? FASE_TEKST[fase] ?? "Bezig…" : "Route maken…"}
           </span>
+          {/* MUX-57: wachten heeft altijd een uitweg. */}
+          <button
+            type="button"
+            onClick={() => {
+              annuleerRef.current = true
+              generate.reset()
+              setFase(null)
+            }}
+            className="flex min-h-11 shrink-0 items-center rounded-full px-3 text-[13px] font-medium text-slate-600"
+          >
+            Annuleren
+          </button>
         </div>
       )}
       {genFout && (
-        <p className="mb-3 rounded-xl bg-red-50 px-3 py-2.5 text-[13px] text-red-700">
-          {genFout}
-        </p>
+        <div className="mb-3 rounded-xl bg-red-50 px-3 py-2.5">
+          <p className="text-[13px] text-red-700">{genFout}</p>
+          {/* MUX-48: fouttoestand met eerstvolgende actie. */}
+          {trainingType && center && (
+            <button
+              type="button"
+              onClick={() => kiesTrainingstype(trainingType)}
+              className="mt-1 flex min-h-11 items-center rounded-full text-[13px] font-medium text-red-800 underline underline-offset-2"
+            >
+              Probeer opnieuw
+            </button>
+          )}
+        </div>
       )}
 
       {/* Gegenereerde kandidaat — mét de reden erbij (R6 Go) */}
@@ -682,7 +711,7 @@ export default function RouteSchermPage() {
                     setAfstandKm(korter)
                     hergenereer({ reden: "inkorten", afstand: korter })
                   }}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-[13px] text-slate-700 disabled:opacity-50"
+                  className="flex min-h-12 items-center rounded-full border border-slate-300 px-4 text-[13px] text-slate-700 disabled:opacity-50"
                 >
                   Inkorten −25%
                 </button>
@@ -698,7 +727,7 @@ export default function RouteSchermPage() {
                     setAfstandKm(langer)
                     hergenereer({ reden: "uitkorten", afstand: langer })
                   }}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-[13px] text-slate-700 disabled:opacity-50"
+                  className="flex min-h-12 items-center rounded-full border border-slate-300 px-4 text-[13px] text-slate-700 disabled:opacity-50"
                 >
                   Uitkorten +25%
                 </button>
@@ -706,7 +735,7 @@ export default function RouteSchermPage() {
                   type="button"
                   onClick={() => setKlimOpen((v) => !v)}
                   aria-expanded={klimOpen}
-                  className={`rounded-full border px-4 py-2 text-[13px] ${
+                  className={`flex min-h-12 items-center rounded-full border px-4 text-[13px] ${
                     klim
                       ? "border-violet-500 text-violet-700"
                       : "border-slate-300 text-slate-700"
@@ -741,7 +770,7 @@ export default function RouteSchermPage() {
                       onClick={() => {
                         setKlim(c)
                       }}
-                      className={`block w-full rounded-lg px-2 py-2 text-left text-[13px] ${
+                      className={`flex min-h-12 w-full items-center rounded-lg px-2 text-left text-[13px] ${
                         klim?.osmId === c.osmId
                           ? "bg-violet-50 text-violet-800"
                           : "text-slate-700"
@@ -768,7 +797,7 @@ export default function RouteSchermPage() {
                             setKlimOpen(false)
                             hergenereer({ reden: "klim", klimKeuze: klim })
                           }}
-                          className="rounded-full bg-violet-600 px-4 py-2 text-[13px] font-medium text-white disabled:opacity-50"
+                          className="flex min-h-12 items-center rounded-full bg-violet-600 px-4 text-[13px] font-medium text-white disabled:opacity-50"
                         >
                           Leg {klim.name} in de route
                         </button>
@@ -781,7 +810,7 @@ export default function RouteSchermPage() {
                       <button
                         type="button"
                         onClick={() => setKlim(null)}
-                        className="rounded-full border border-slate-200 px-3 py-1.5 text-[12px] text-slate-500"
+                        className="flex min-h-12 items-center rounded-full border border-slate-200 px-3 text-[12px] text-slate-500"
                       >
                         Weg
                       </button>
@@ -833,9 +862,20 @@ export default function RouteSchermPage() {
           : `Routes in beeld (${routes.length})`}
       </p>
       {nearby.isError && (
-        <p className="mt-2 text-[13px] text-slate-500">
-          Routes in beeld konden niet worden geladen.
-        </p>
+        <div className="mt-2">
+          {/* MUX-48: fout benoemt oorzaak, verantwoordelijke en actie. */}
+          <p className="text-[13px] text-slate-600">
+            Routes in beeld konden niet worden geladen — het ophalen bij
+            Sparki mislukte. Routes maken werkt gewoon.
+          </p>
+          <button
+            type="button"
+            onClick={() => void nearby.refetch()}
+            className="mt-1 flex min-h-11 items-center rounded-full text-[13px] font-medium text-slate-700 underline underline-offset-2"
+          >
+            Opnieuw laden
+          </button>
+        </div>
       )}
       {/* MUX-48: lege toestand met uitleg + oorzaak + verantwoordelijke +
           DIRECTE eerstvolgende actie (geen "ga naar het menu"-verwijzing). */}
@@ -896,7 +936,7 @@ export default function RouteSchermPage() {
         <button
           type="button"
           onClick={() => setLocation(`/routes?view=bewaard&route=${gekozenRoute.id}`)}
-          className="mt-3 w-full rounded-full bg-slate-900 px-4 py-2.5 text-[13px] font-medium text-white"
+          className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[13px] font-medium text-white"
         >
           Openen en starten
         </button>
@@ -1235,7 +1275,7 @@ function KeuzeKnop({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3.5 py-2 text-[13px] transition-colors ${
+      className={`flex min-h-12 items-center rounded-full border px-4 text-[13px] transition-colors ${
         actief
           ? "border-slate-900 bg-slate-900 text-white"
           : "border-slate-200 text-slate-700"
