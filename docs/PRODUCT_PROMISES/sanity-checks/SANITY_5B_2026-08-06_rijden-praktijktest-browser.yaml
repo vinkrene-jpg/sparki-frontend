@@ -1,0 +1,38 @@
+# Poort 5b sanity-check — Praktijktest RIJDEN_01, eigen browser-reproductie
+# vóór de telefoon-fase: echte Chromium mét WebGL (SwiftShader) tegen de
+# dev-app, plus een échte productiebuild (SPARKI_ACCEPT_MODE=false) statisch
+# geserveerd voor de /routes-redirect en de SW-versiewissel.
+
+delivery: "Praktijktest-reproductie RIJDEN_01: (a) /route stappenmachine 1→5 in een echte browser mét werkende WebGL-kaart — stap 1 activiteiten, stap 2 kaart met routes in kleur/patroon + lijst, stap 2a routekaartje, stap 5 'Klaar om te gaan' met Start navigatie/Bewaren/Delen, stap 3 Zelf maken met afstand; (b) deep-link /route?view=bewaard&route=… rendert de bewaarde route; (c) productiebuild: oude /routes-bookmarks herschrijven aantoonbaar naar /route mét volledige query (history-rewrite gelogd); (d) sw.js uit de verse build registreert, cachet de app-shell (index/manifest/iconen/kaartstijl) in sparki-shell-v1, en een opgehoogde CACHE_VERSIE verruilt de oude cache aantoonbaar (v1 weg, v2 aanwezig). Bewijs: bewijsarchief/2026-08-06_rijden-praktijktest/ (screenshots + testscripts + SHA256SUMS)."
+date: "2026-08-06"
+checked_by: "replit"
+surfaces:
+  - "Web Sparki dev: /route stap 1→2→2a→5 en 1→2→3, echte Chromium 402×874 met SwiftShader-WebGL (screenshots rijden-stap1/2/2a/3/5.png) — kaart, kleuren en routekaartje zichtbaar"
+  - "Web Sparki dev: deep-link /route?view=bewaard&route=265 rendert de bewaarde route (rijden-deeplink.png)"
+  - "Productiebuild (SPARKI_ACCEPT_MODE=false) statisch geserveerd: /routes?view=bewaard&route=265 → history-rewrite /route?view=bewaard&route=265; kale /routes → /route (prod-serve-check.mjs)"
+  - "Productiebuild sw.js: registratie + app-shell-cache sparki-shell-v1 + CACHE_VERSIE-wissel (oude cache weg bij activate) — prod-serve-check.mjs alle PASS"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Elke stap-knop die in de browserrun is aangeraakt doet echt iets: activiteit 'Fietsen' → stap 2, route-item → routekaartje-popup, 'Deze gebruiken' → stap 5 met 'Start navigatie', 'Zelf maken' → stap 3 met afstandskeuze"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Oude /routes-bookmark met query landt in de productie-router op /route mét dezelfde query (view=bewaard&route=…) — de bookmark verliest zijn betekenis niet; in de dev-preview-router landt hij op hetzelfde scherm (startsWith-match) zonder URL-herschrijving, wat alleen dev-gedrag is"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "De kaart is in de testbrowser géén blijvend grijs vlak of foutscherm: met WebGL beschikbaar rendert de vectorkaart met plaatsnamen, eigen positie en routes in kleur/patroon (screenshots); zonder WebGL toont de app een leesbaar foutscherm i.p.v. een zwart gat (gecontroleerd vóór de SwiftShader-vlag)"
+        result: "pass"
+
+# Eerlijk beperkt:
+#   (1) Dit is de eigen reproductie op echte browser-hardware-emulatie; het
+#       telefoon-deel (PWA-installatie vanaf sparki-frontend.replit.app,
+#       beginscherm-icoon, openen naar /route) kan pas na PUBLICATIE — productie
+#       serveert op 06-08 nog de oude sw.js (alleen Web Push, geen
+#       app-shell-cache). Publish-klik ligt bij René.
+#   (2) De CACHE_VERSIE-wissel is bewezen met een lokaal geserveerde
+#       productiebuild (v1→v2-proef); dezelfde controle op productie kan pas
+#       na een release die CACHE_VERSIE ophoogt.
+verdict: "deliverable"

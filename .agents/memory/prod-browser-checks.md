@@ -13,4 +13,8 @@ description: Hoe je productie-URL's met een echte browser controleert; runTest-s
 3. Benodigde libs: nspr, nss, atk, at-spi2-atk/core, dbus, expat, mesa(gbm), libdrm, libxkbcommon, alsa-lib, systemd(libudev), libXcomposite/Xdamage/Xfixes/Xrandr.
 4. Let op: het draaiende dev-proces kan werkboombestanden aanraken (bv. public/opengraph.jpg-regeneratie); check `git status` na afloop en zet byte-exact terug via `git show HEAD:pad > pad` (geen destructief git-commando nodig).
 
+**WebGL in headless Chromium:** headless heeft standaard géén WebGL (MapLibre crasht → foutscherm); `--use-angle=swiftshader --enable-unsafe-swiftshader` geeft werkende software-WebGL (`--use-gl=angle` alléén is niet genoeg) — kaartschermen zijn dan wél screenshot-bewijsbaar.
+
+**Routergedrag alleen in échte prod-build toetsen:** een kale build in de workspace kan een acceptatiebuild zijn (DEV_PREVIEW aan → eigen dev-router zonder de prod-Switch-redirects). Bouw expliciet zonder accept-mode en grep dist op TESTCONTEXT (0 hits) vóór je prod-routergedrag als bewezen aanmerkt.
+
 **Dev-preview browsercheck met data:** kies de preview-atleet via localStorage `sparki.dev.previewAthlete` (bv. `dev_qa_athlete`, heeft routes rond 52.2755/6.7925) vóór page-load (`addInitScript`); geolocatie via Playwright `geolocation`+`permissions`. Workspace `playwright-core` importeer je op het volle `.pnpm`-pad + Nix-chromium `executablePath`.

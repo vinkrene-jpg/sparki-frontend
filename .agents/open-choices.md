@@ -30,6 +30,14 @@ Laatst bijgewerkt: 2026-08-06.
      compliance); lagenmenu meldt dat eerlijk.
   3. test:route-library-gate faalde al vóór RIJDEN_01 (wouter-mock mist
      Link) — pre-existing, apart herstellen.
+- **Praktijktest-stand 06-08 (browser-reproductie klaar):** eigen Chromium mét
+  WebGL (SwiftShader) bewijst /route stap 1→5 incl. kaart/kleuren/routekaartje,
+  deep-links en (in échte productiebuild) de /routes-redirect + de
+  CACHE_VERSIE-wissel van sw.js — rapport SANITY_5B_2026-08-06_rijden-
+  praktijktest-browser.yaml + bewijsarchief/2026-08-06_rijden-praktijktest/.
+  **Open bij René:** telefoon-deel (PWA installeren vanaf
+  sparki-frontend.replit.app) kan pas ná Publish — productie serveert nu nog de
+  oude sw.js zonder app-shell-cache.
 - **Fase-uitkomst PWA-domein (§7):** doc claimt blokkade wegens ontbrekend
   EXPO_PUBLIC_DOMAIN; feitelijk volstaat de bestaande prod-HTTPS op
   sparki-frontend.replit.app voor PWA-installatie. manifest.webmanifest + sw.js
