@@ -12,6 +12,7 @@
 //
 // Run: pnpm --filter @workspace/sparki run test:route-library-gate
 
+import React from "react"
 import { test, mock } from "node:test"
 import assert from "node:assert/strict"
 import { GlobalRegistrator } from "@happy-dom/global-registrator"
@@ -38,6 +39,8 @@ mock.module("wouter", {
   namedExports: {
     useLocation: () => ["/route", (to: string) => navCalls.push(to)],
     useSearch: () => "",
+    Link: ({ href, children, ...rest }: { href?: string; children?: unknown }) =>
+      React.createElement("a", { href, ...rest }, children as never),
   },
 })
 
@@ -98,6 +101,9 @@ mock.module("@/hooks/use-routes", {
     useUnshareRoute: noopMutation,
     useRouteVergelijk: noopQuery,
     useGeocode: noopMutation,
+    usePrivacyZones: noopQuery,
+    useCreatePrivacyZone: noopMutation,
+    useDeletePrivacyZone: noopMutation,
   },
 })
 mock.module("@/hooks/use-activity-imports", {
@@ -106,6 +112,13 @@ mock.module("@/hooks/use-activity-imports", {
 mock.module("@/components/ds", { namedExports: { IconCheck: () => null } })
 mock.module("@/components/sparki/ui", { namedExports: { ACCENT: "#22d3ee" } })
 mock.module("@/lib/api", { namedExports: { apiFetch: async () => ({}) } })
+// Rechtenlaag: UI faalt open, dus in de test volstaat "entitled".
+mock.module("@/hooks/use-feature-access", {
+  namedExports: {
+    useFeatureAccess: () => ({ isLoading: false, entitled: true, known: true }),
+    useEntitlements: () => ({ data: undefined, isLoading: false, isError: false }),
+  },
+})
 
 // Sparki-bibliotheek (route-library-section.tsx): de gemockte useQuery levert
 // de bibliotheekroutes; useMutation legt "Zet in mijn routes"-aanroepen vast.
@@ -213,7 +226,6 @@ const fakeL = {
 mock.module("leaflet", { defaultExport: fakeL, namedExports: fakeL })
 mock.module("leaflet/dist/leaflet.css", { defaultExport: {} })
 
-import React from "react"
 import { createRoot, type Root } from "react-dom/client"
 
 // Componenten gebruiken classic JSX — zonder globale React faalt de render.

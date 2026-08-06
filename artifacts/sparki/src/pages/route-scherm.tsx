@@ -107,7 +107,7 @@ const MENU_ITEMS: { label: string; flow?: FlowKeuze; to?: string }[] = [
 //   3  Zelf maken (3-Z) — alleen afstand verplicht, rest optioneel
 //   4  voorstel van Sparki (Gebruiken / Opnieuw / Aanpassen)
 //   5  Klaar (Start navigatie / Bewaren / Delen)
-// "Sparki laat maken" (3-A) slaat het formulier over: alles vooringevuld,
+// "Automatisch laten maken" (3-A) slaat het formulier over: alles vooringevuld,
 // direct één routeaanvraag (R16). Escapes (§6): "Direct een route" op stap 1
 // en "Klaar" op stap 3/4 — terug verliest nooit gemaakte keuzes.
 type Stap = 1 | 2 | 3 | 4 | 5
@@ -699,7 +699,7 @@ export default function RouteSchermPage() {
     setStand("half")
   }
 
-  // R16/R-T3: één routeaanvraag per keuze — "Sparki laat maken" (3-A) of het
+  // R16/R-T3: één routeaanvraag per keuze — "Automatisch laten maken" (3-A) of het
   // 3-Z-formulier start precies één generatie-job vanaf het kaartcentrum.
   const maakRoute = (bron: "zelf" | "sparki") => {
     // R16-poort: er loopt al een aanvraag → geen tweede job starten.
@@ -1091,7 +1091,7 @@ export default function RouteSchermPage() {
         onClick={() => maakRoute("sparki")}
         className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-slate-900 px-3 text-[13px] font-medium text-white disabled:opacity-50"
       >
-        Sparki laat maken
+        Automatisch laten maken
       </button>
       <button
         type="button"
@@ -1708,7 +1708,7 @@ export default function RouteSchermPage() {
             onClick={() => maakRoute("sparki")}
             className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
           >
-            Sparki laat maken
+            Automatisch laten maken
           </button>
           <div className="mt-2 flex gap-2">
             <button
