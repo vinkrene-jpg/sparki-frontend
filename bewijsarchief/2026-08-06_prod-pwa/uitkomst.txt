@@ -1,0 +1,4 @@
+PASS Prod /sw.js is de app-shell-variant — sparki-shell-v1
+PASS Prod manifest.webmanifest bereikbaar — http 200
+PASS SW registreert op productie — ["sparki-shell-v1"]
+PASS App-shell-cache gevuld (manifest/iconen/kaartstijl) — ["/","/manifest.webmanifest","/icon-192.png","/kaart/sparki-stijl.json","/icon-512.png"]

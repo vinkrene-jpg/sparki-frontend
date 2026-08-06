@@ -1,0 +1,32 @@
+# Poort 5b sanity-check — Task #627 stap 1: productie serveert de PWA echt.
+# Live controle tegen https://sparki-frontend.replit.app met echte Chromium
+# (geen simulatie): sw.js-variant, SW-registratie, app-shell-cache-inhoud.
+
+delivery: "Prod-PWA-servecontrole na Publish van 06-08: (a) live /sw.js is de app-shell-variant met CACHE_VERSIE sparki-shell-v1; (b) manifest.webmanifest bereikbaar (200); (c) service worker registreert op productie en vult de app-shell-cache met /, manifest, iconen en kaartstijl. CACHE_VERSIE in de repo staat nu op v2 zodat de eerstvolgende Publish de cachewissel op productie aantoonbaar maakt. Bewijs: bewijsarchief/2026-08-06_prod-pwa/ (script + uitkomst + SHA256SUMS)."
+date: "2026-08-06"
+checked_by: "replit"
+surfaces:
+  - "Productie sparki-frontend.replit.app: /sw.js (app-shell-variant, sparki-shell-v1) en /manifest.webmanifest (200) — curl/fetch"
+  - "Productie in echte Chromium: SW-registratie + cache sparki-shell-v1 gevuld met /, /manifest.webmanifest, /icon-192.png, /icon-512.png, /kaart/sparki-stijl.json"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "De SW-registratie is geen dode registratie: na register+ready bestaat de cache echt en bevat de vijf shell-bestanden (opgesomd uit caches.open, niet aangenomen)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "De cache-inhoud hoort bij de geleverde sw.js-versie (sparki-shell-v1, exact de versie die prod serveert) — geen mix van oude en nieuwe schil"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "PASS-regels komen uit een echte run tegen productie (uitkomst.txt is de directe scriptuitvoer), niet uit een lokaal geserveerde build"
+        result: "pass"
+
+# Eerlijk beperkt:
+#   (1) De telefoon-fase (installatie op beginscherm, standalone opening,
+#       kaart op het toestel) kan alleen René zelf bevestigen — protocol met
+#       controlepunten staat in bewijsarchief/2026-08-06_prod-pwa/telefoonprotocol.md.
+#   (2) De cachewissel op productie (v1 → v2) is pas bewijsbaar ná de
+#       eerstvolgende Publish; CACHE_VERSIE staat daarvoor al op v2.
+verdict: "deliverable"
