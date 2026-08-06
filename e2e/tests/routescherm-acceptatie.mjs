@@ -169,10 +169,10 @@ async function geenHorizontaleOverflow(page) {
   });
 }
 
-async function openRouteScherm(run, { userId, viewport }) {
+async function openRouteScherm(run, { userId, viewport, geo = SEED }) {
   await run.open();
   await run.context.grantPermissions(["geolocation"]);
-  await run.context.setGeolocation({ latitude: SEED.lat, longitude: SEED.lon });
+  await run.context.setGeolocation({ latitude: geo.lat, longitude: geo.lon });
   await run.loginWithTicket(await mintTicket(userId));
   await run.page.goto(`${run.baseUrl}/route`, { waitUntil: "networkidle" });
   await run.acceptConsentIfPresent();
@@ -234,15 +234,15 @@ try {
       !!kaartBox && kaartBox.width >= MOBIEL.width - 2 && kaartBox.height >= MOBIEL.height - 2,
       kaartBox ? `${Math.round(kaartBox.width)}x${Math.round(kaartBox.height)} op ${MOBIEL.width}x${MOBIEL.height}` : "geen kaart",
     );
-    log("R-T1: zoekveld bovenop de kaart", await page.getByText("Zoek een plaats…").isVisible());
-    log("R-T1: driepuntsmenu bovenop de kaart", await page.locator('[aria-label="Menu"]').isVisible());
+    log("R-T1: zoekveld bovenop de kaart", (await page.getByText("Zoek een plaats…").locator("visible=true").count()) >= 1);
+    log("R-T1: driepuntsmenu bovenop de kaart", (await page.locator('[aria-label="Menu"]:visible').count()) >= 1);
     const tabs = await page.locator('[role="tab"]').count();
     const wizardKop = await page.locator('[data-testid="mobiele-wizard-kop"]').count();
     log("R-T1: geen tabblad-paginakop of stappenwizard", tabs === 0 && wizardKop === 0, `tabs=${tabs} wizardkop=${wizardKop}`);
     await run.shot("rt1-routescherm");
 
     // Onderblad met de geseede routes.
-    await page.getByText("Routes in beeld (", { exact: false }).waitFor({ timeout: 20000 });
+    await page.getByText("Routes in beeld (", { exact: false }).locator("visible=true").first().waitFor({ timeout: 20000 });
 
     // R-T2: geen horizontale overflow / twee kolommen — in alle standen.
     let ov = await geenHorizontaleOverflow(page);
@@ -262,13 +262,31 @@ try {
     log("R-T2: routekaarten één kolom (schermbreed)", eenKolom, `${kaartjes.length} kaarten`);
     await run.shot("rt2-onderblad-vol");
     // Chip-paneel open.
-    await page.getByRole("button", { name: "Trainingstype" }).click();
+    await page.getByRole("button", { name: "Trainingstype" }).locator("visible=true").click();
     ov = await geenHorizontaleOverflow(page);
     log("R-T2: geen overflow (chip-paneel open)", ov.ok, `${ov.scroll}/${ov.client}`);
 
+    // Keuzepaneel dekt de kaartknoppen niet blijvend af (reviewbevinding R4):
+    // paneel open ⇒ knoppen bewust verborgen (niet half afgedekt); paneel
+    // dicht ⇒ knoppen direct terug.
+    const zoomKnop = page.locator('[aria-label="Zoom in"]:visible');
+    log(
+      "keuzepaneel open: kaartknoppen bewust verborgen, niet half afgedekt",
+      (await zoomKnop.count()) === 0,
+      `${await zoomKnop.count()} zichtbare zoomknoppen bij open paneel`,
+    );
+    await run.shot("keuzepaneel-open-knoppen-weg");
+
     // R-T6 (Go-stand toont alle rijen): openbare route van een ander.
-    await page.getByRole("button", { name: "Trainingstype" }).click(); // paneel dicht
-    const openbaarLabel = page.getByText("Openbaar gezet door een andere gebruiker").first();
+    await page.getByRole("button", { name: "Trainingstype" }).locator("visible=true").first().click(); // paneel dicht
+    await page.waitForTimeout(300);
+    log(
+      "keuzepaneel dicht: kaartknoppen (zoom + mijn locatie) direct terug",
+      (await page.locator('[aria-label="Zoom in"]:visible').count()) === 1 &&
+        (await page.locator('[aria-label="Mijn locatie"]:visible').count()) === 1,
+    );
+    await run.shot("keuzepaneel-dicht-knoppen-terug");
+    const openbaarLabel = page.getByText("Openbaar gezet door een andere gebruiker").locator("visible=true").first();
     log("R-T6: openbare route van een ander zichtbaar in het onderblad", await openbaarLabel.isVisible().catch(() => false));
     const bodyTekst = await page.locator("body").innerText();
     log("R-T6: naam van de maker nergens zichtbaar", !bodyTekst.includes(OWNER_NAAM) && !bodyTekst.includes("Roelof"));
@@ -299,13 +317,27 @@ try {
 
     // R-T3: precies één routeaanvraag per trainingstypekeuze (netwerk-log).
     const startCalls = [];
+    // Vang óók de kandidaat-payload op zodat we de wegdek-melding hard tegen
+    // de echte motormeting kunnen houden (R-T7): melding ⟺ knownPct < 100.
+    let engineSurface; // undefined = nog niets gezien
+    page.on("response", (res) => {
+      if (!res.url().includes("/api/routes/generate")) return;
+      res
+        .json()
+        .then((j) => {
+          const b = j?.body ?? j;
+          const kand = b?.route ?? b?.candidate ?? b?.result ?? b;
+          if (kand && typeof kand === "object" && "engineSurface" in kand) engineSurface = kand.engineSurface ?? null;
+        })
+        .catch(() => {});
+    });
     page.on("request", (req) => {
       if (req.url().includes("/api/routes/generate/") && req.method() === "POST") {
         startCalls.push({ url: req.url(), t: Date.now() });
       }
     });
-    await page.getByRole("button", { name: "Trainingstype" }).click();
-    const duurKnop = page.getByRole("button", { name: "Duurtraining" });
+    await page.getByRole("button", { name: "Trainingstype" }).locator("visible=true").click();
+    const duurKnop = page.getByRole("button", { name: "Duurtraining" }).locator("visible=true");
     await duurKnop.waitFor({ timeout: 5000 });
     // Dubbeltik — bewust twee snelle kliks op dezelfde keuze.
     await duurKnop.click();
@@ -313,9 +345,9 @@ try {
     await page.waitForTimeout(500);
     // Tijdens de berekening nóg een keuze proberen (Interval) — mag géén
     // tweede job starten (R16-poort).
-    const chipNu = page.getByRole("button", { name: /Duurtraining|Trainingstype/ }).first();
+    const chipNu = page.getByRole("button", { name: /Duurtraining|Trainingstype/ }).locator("visible=true").first();
     await chipNu.click().catch(() => {});
-    const intervalKnop = page.getByRole("button", { name: "Interval" });
+    const intervalKnop = page.getByRole("button", { name: "Interval" }).locator("visible=true");
     if (await intervalKnop.isVisible().catch(() => false)) {
       await intervalKnop.click().catch(() => {});
     }
@@ -324,7 +356,7 @@ try {
     await run.shot("rt3-berekenen");
 
     // Wachten op de kandidaat (echte generatie, kan even duren).
-    const startBtn = page.getByRole("button", { name: "Start", exact: true });
+    const startBtn = page.getByRole("button", { name: "Start", exact: true }).locator("visible=true").first();
     let kandidaatOk = true;
     try {
       await startBtn.waitFor({ timeout: 300000 });
@@ -344,15 +376,26 @@ try {
         (await page.getByText(/weet je zeker|zeker weten\?/i).count()) +
         (await page.getByRole("button", { name: /^bevestig/i }).count());
       log("R-T7: geen bevestigingsvraag na generatie in NL", dialogen === 0 && bevestigVraag === 0, `dialogen=${dialogen} bevestigvragen=${bevestigVraag}`);
-      const melding = page.locator('[data-testid="wegdek-melding"]');
+      const melding = page.locator('[data-testid="wegdek-melding"]:visible').first();
       const meldingZichtbaar = await melding.isVisible().catch(() => false);
       // Melding is verplicht zodra het wegdek niet 100% bekend is; bij een
       // volledig bekende meting hoort er juist géén melding te staan.
-      const kandidaatInfo = await page.evaluate(() => null); // meting zit server-side; we lezen de UI
-      if (meldingZichtbaar) {
-        log("R-T7: eerlijke wegdek-melding zichtbaar", true, await melding.innerText());
+      // Hard tegen de echte motormeting: melding ⟺ wegdek niet 100% bekend.
+      const knownPct = engineSurface?.knownPct ?? null;
+      const meldingHoort = engineSurface === undefined || knownPct == null || knownPct < 100;
+      if (meldingHoort) {
+        log(
+          "R-T7: eerlijke wegdek-melding zichtbaar (motor meldde wegdek niet 100% bekend)",
+          meldingZichtbaar,
+          meldingZichtbaar ? await melding.innerText() : `knownPct=${knownPct ?? "onbekend"} maar geen melding`,
+        );
       } else {
-        info("R-T7: geen wegdek-melding — motor meldde het wegdek 100% bekend (meldingstak niet van toepassing)");
+        log(
+          "R-T7: wegdek 100% bekend ⇒ terecht géén melding (consistent met motormeting)",
+          !meldingZichtbaar,
+          `knownPct=${knownPct}`,
+        );
+        info("R-T7: meldingstak niet gereproduceerd in dit gebied — consistentie melding⟺meting wél hard bewezen");
       }
       await run.shot("rt7-wegdek");
 
@@ -381,6 +424,8 @@ try {
       await page.getByRole("button", { name: /Zeker weten\?/ }).click();
       const terug = await page
         .getByText("Zoek een plaats…")
+        .locator("visible=true")
+        .first()
         .waitFor({ timeout: 15000 })
         .then(() => true)
         .catch(() => false);
@@ -388,6 +433,43 @@ try {
     } else {
       log("R-T4: navigatielaag (vereist kandidaat)", false, "geen kandidaat om te starten");
       log("R-T7: wegdek-melding (vereist kandidaat)", false, "geen kandidaat");
+    }
+    await run.context.close();
+  }
+
+  // ════ Lege toestand — gebied zonder routes: directe actieknoppen ════════
+  {
+    // Midden op de Noordzee: geen eigen, openbare of bekende routes in beeld.
+    const LEEG = { lat: 55.4, lon: 3.6 };
+    const run = new TestRun({ browser, baseUrl, viewport: MOBIEL, evidenceDir: EVIDENCE, runName: "lege-toestand" });
+    const page = await openRouteScherm(run, { userId, viewport: MOBIEL, geo: LEEG });
+    await page.getByText("Routes in beeld (", { exact: false }).locator("visible=true").first().waitFor({ timeout: 20000 });
+    await page.locator('[aria-label="Onderblad openen"]').click();
+    const maakKnop = page.getByRole("button", { name: "Maak een route voor mij" }).locator("visible=true").first();
+    const maakZichtbaar = await maakKnop
+      .waitFor({ timeout: 15000 })
+      .then(() => true)
+      .catch(() => false);
+    log("lege toestand: uitleg + directe actie 'Maak een route voor mij'", maakZichtbaar);
+    log(
+      "lege toestand: knoppen 'Zelf plannen' en 'Bewaarde routes' aanwezig",
+      (await page.getByRole("button", { name: "Zelf plannen" }).locator("visible=true").count()) >= 1 &&
+        (await page.getByRole("button", { name: "Bewaarde routes" }).locator("visible=true").count()) >= 1,
+    );
+    await run.shot("lege-toestand");
+    if (maakZichtbaar) {
+      // Directe actie: de knop opent hier meteen de trainingstype-keuze
+      // (geen "ga naar het menu"-verwijzing).
+      await maakKnop.click();
+      const duurZichtbaar = await page
+        .getByRole("button", { name: "Duurtraining" })
+        .locator("visible=true")
+        .first()
+        .waitFor({ timeout: 5000 })
+        .then(() => true)
+        .catch(() => false);
+      log("lege toestand: 'Maak een route voor mij' opent direct de trainingstype-keuze", duurZichtbaar);
+      await run.shot("lege-toestand-keuze-open");
     }
     await run.context.close();
   }
@@ -402,16 +484,16 @@ try {
     await zetPakket(userId, p.variant);
     const run = new TestRun({ browser, baseUrl, viewport: MOBIEL, evidenceDir: EVIDENCE, runName: `rt5-${p.label}` });
     const page = await openRouteScherm(run, { userId, viewport: MOBIEL });
-    await page.getByText("Routes in beeld (", { exact: false }).waitFor({ timeout: 20000 });
+    await page.getByText("Routes in beeld (", { exact: false }).locator("visible=true").first().waitFor({ timeout: 20000 });
     await page.locator('[aria-label="Onderblad openen"]').click();
     await page.waitForTimeout(400);
     const label = await page.evaluate(async () => {
       const r = await fetch("/api/entitlements", { credentials: "include" });
       return r.status === 200 ? (await r.json()).product_label : `status ${r.status}`;
     });
-    const rijen = await page.locator("button[aria-pressed]").count();
-    const gratisMelding = await page.getByText("Gratis toont drie routes").isVisible().catch(() => false);
-    const trainingBlok = await page.getByText("Training van vandaag").isVisible().catch(() => false);
+    const rijen = await page.locator("button[aria-pressed]:visible").count();
+    const gratisMelding = (await page.getByText("Gratis toont drie routes").locator("visible=true").count()) >= 1;
+    const trainingBlok = (await page.getByText("Training van vandaag").locator("visible=true").count()) >= 1;
     if (p.label === "gratis") {
       log("R-T5 Gratis: pakketlabel klopt", label === "Gratis", label);
       log("R-T5 Gratis: precies 3 routes + eerlijke melding", rijen === 3 && gratisMelding, `${rijen} rijen, melding=${gratisMelding}`);
@@ -422,7 +504,7 @@ try {
       log("R-T5 Go: geen Compleet-trainingblok", !trainingBlok);
     } else {
       log("R-T5 Compleet: pakketlabel klopt", label === "Sparki Compleet", label);
-      log("R-T5 Compleet: training van vandaag met route-uitnodiging eronder", trainingBlok && (await page.getByText("E2E-603 duurtraining vandaag").isVisible()));
+      log("R-T5 Compleet: training van vandaag met route-uitnodiging eronder", trainingBlok && (await page.getByText("E2E-603 duurtraining vandaag").locator("visible=true").count()) >= 1);
       log("R-T5 Compleet: alle routes zichtbaar", rijen >= 4, `${rijen} rijen`);
     }
     await run.shot(`rt5-${p.label}`);
@@ -434,7 +516,7 @@ try {
   {
     const run = new TestRun({ browser, baseUrl, viewport: DESKTOP, evidenceDir: EVIDENCE, runName: "rt8-desktop" });
     const page = await openRouteScherm(run, { userId, viewport: DESKTOP });
-    await page.getByText("Routes in beeld (", { exact: false }).waitFor({ timeout: 20000 });
+    await page.getByText("Routes in beeld (", { exact: false }).locator("visible=true").first().waitFor({ timeout: 20000 });
     const desktopData = await page.evaluate(async ({ lat, lon }) => {
       const r = await fetch(`/api/routes/nearby?lat=${lat}&lon=${lon}&sport=cycling&radiusKm=25`, { credentials: "include" });
       const j = await r.json();

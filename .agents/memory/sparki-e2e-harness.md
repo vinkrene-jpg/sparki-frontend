@@ -30,6 +30,8 @@ description: Blijvende e2e-harness in e2e/ — echte Clerk-login, echte kliks, r
 
 
 ## Routescherm-lessen (nieuwe mobiele planner)
+- R17-zijpaneel rendert paneelInhoud DUBBEL (aside verborgen op mobiel, onderblad verborgen op desktop): élke locator op paneeltekst/-knoppen eist `.locator("visible=true")` (of `:visible` css) vóór click/waitFor/isVisible, anders strict-mode violations of vals-negatieve isVisible.
+- Wegdek-melding (R-T7) hard bewijzen: vang de kandidaat uit de `GET /api/routes/generate-jobs/:id`-poll (kandidaat zit in `body`-veld van de jobstatus) en assert melding ⟺ engineSurface.knownPct<100 — nooit alleen "melding gezien/niet gezien" loggen.
 - Navigator-sluitknop opent bewust een rit-einde-blad; eerlijk afsluiten in tests = "Weggooien" → "Zeker weten?". Een statusbolletje zweeft boven de knop en vangt zelfs `click({force:true})` af (force dispatcht op het TOPMOST element) — gebruik `locator.evaluate(el => el.click())`.
 - Bevestigingsvraag-detectie: nooit greppen op /bevestig/ in body-tekst — de eerlijke wegdek-melding bevat "bevestigd". Match op vraagvormen ("weet je zeker") en knoppen (^Bevestig).
 - Pakketverschillen testen: snapshot + flip `user_profiles.entitlement_mode/product_variant` per subrun, altijd terugzetten in finally; Compleet-onderblad eist een geplande training van vandaag.

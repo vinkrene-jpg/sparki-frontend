@@ -865,8 +865,8 @@ export default function RouteSchermPage() {
         <div className="mt-2">
           {/* MUX-48: fout benoemt oorzaak, verantwoordelijke en actie. */}
           <p className="text-[13px] text-slate-600">
-            Routes in beeld konden niet worden geladen — het ophalen bij
-            Sparki mislukte. Routes maken werkt gewoon.
+            Routes in beeld konden niet worden geladen — het ophalen van de
+            lijst mislukte op de server. Routes maken werkt gewoon.
           </p>
           <button
             type="button"
