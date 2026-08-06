@@ -462,8 +462,9 @@ export default function RouteSchermPage() {
   const gekozenRoute = routes.find((r) => r.key === gekozenKey) ?? null
 
   // Onderblad-hoogte per stand — kaart houdt ~80% bij ingeklapt (R1).
+  // MUX-29: een onderblad beslaat maximaal 60% van de schermhoogte.
   const sheetHoogte =
-    stand === "vol" ? "75dvh" : stand === "half" ? "42dvh" : "9rem"
+    stand === "vol" ? "60dvh" : stand === "half" ? "42dvh" : "9rem"
 
   // ── Gedeelde bouwstenen (R17) — één keer opgebouwd, getoond in het
   // mobiele onderblad ÉN het desktop-zijpaneel. Zelfde state, zelfde hooks,
@@ -610,21 +611,38 @@ export default function RouteSchermPage() {
                 : "Het wegdek van deze route is niet volledig bekend. Controle volgt bij gebruik."}
             </p>
           )}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setNavigeren(true)}
-              className="rounded-full bg-slate-900 px-4 py-2 text-[13px] font-medium text-white"
-            >
-              Start
-            </button>
+          {/* MUX-12/13/22/24: één primaire actie (Start), vast bovenaan de
+              rij, daarnaast max. drie secundaire; tikvlakken min. 48 dp. */}
+          <button
+            type="button"
+            onClick={() => setNavigeren(true)}
+            className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white"
+          >
+            Start
+          </button>
+          <div className="mt-2 flex gap-2">
             <button
               type="button"
               onClick={() => bewaar.mutate({ candidate: kandidaat })}
               disabled={bewaar.isPending || bewaar.isSuccess}
-              className="rounded-full border border-slate-300 px-4 py-2 text-[13px] text-slate-700 disabled:opacity-50"
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700 disabled:opacity-50"
             >
               {bewaar.isSuccess ? "Bewaard" : bewaar.isPending ? "Bezig…" : "Bewaar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAanpassen((v) => !v)
+                setKlimOpen(false)
+              }}
+              aria-pressed={aanpassen}
+              className={`flex min-h-12 flex-1 items-center justify-center rounded-full border px-3 text-[13px] ${
+                aanpassen
+                  ? "border-violet-500 bg-violet-500 text-white"
+                  : "border-slate-300 text-slate-700"
+              }`}
+            >
+              Aanpassen
             </button>
             <button
               type="button"
@@ -636,24 +654,9 @@ export default function RouteSchermPage() {
                 setKlimOpen(false)
                 bewaar.reset()
               }}
-              className="rounded-full border border-slate-200 px-4 py-2 text-[13px] text-slate-500"
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-200 px-3 text-[13px] text-slate-500"
             >
               Weg
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAanpassen((v) => !v)
-                setKlimOpen(false)
-              }}
-              aria-pressed={aanpassen}
-              className={`rounded-full border px-4 py-2 text-[13px] ${
-                aanpassen
-                  ? "border-violet-500 bg-violet-500 text-white"
-                  : "border-slate-300 text-slate-700"
-              }`}
-            >
-              Aanpassen
             </button>
           </div>
 
@@ -834,11 +837,39 @@ export default function RouteSchermPage() {
           Routes in beeld konden niet worden geladen.
         </p>
       )}
-      {!nearby.isLoading && !nearby.isError && routes.length === 0 && (
-        <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
-          Geen bekende routes in dit gebied. Kies een trainingstype om er één
-          te laten maken, of plan zelf via het menu.
-        </p>
+      {/* MUX-48: lege toestand met uitleg + oorzaak + verantwoordelijke +
+          DIRECTE eerstvolgende actie (geen "ga naar het menu"-verwijzing). */}
+      {!nearby.isLoading && !nearby.isError && routes.length === 0 && !kandidaat && !generate.isPending && (
+        <div className="mt-2">
+          <p className="text-[13px] leading-relaxed text-slate-600">
+            Hier staan normaal de routes die op de kaart in beeld zijn. In dit
+            gebied is nog geen bekende route — er is er gewoon nog geen
+            gemaakt. Dat los je zelf in één tik op:
+          </p>
+          <button
+            type="button"
+            onClick={() => setOpenChip("training")}
+            className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white"
+          >
+            Maak een route voor mij
+          </button>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setLocation("/routes?view=maken")}
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+            >
+              Zelf plannen
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocation("/routes?view=bewaard")}
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+            >
+              Bewaarde routes
+            </button>
+          </div>
+        </div>
       )}
       <div className="mt-2 flex flex-col gap-2">
         {/* Fail-closed: zolang het pakket laadt (pkg null) tonen we de
@@ -1017,9 +1048,14 @@ export default function RouteSchermPage() {
         {chipRij}
       </div>
 
-      {/* Chip-keuzepanelen — alleen mobiel (desktop: in het zijpaneel) */}
+      {/* Chip-keuzepanelen — alleen mobiel (desktop: in het zijpaneel).
+          MUX-21/MUX-29: keuzes horen in de duimzone, dus onderin boven het
+          onderblad — niet als zwevende kaart bovenaan het scherm. */}
       {chipKeuzes && (
-        <div className="absolute inset-x-3 top-28 z-[510] mt-[max(0rem,env(safe-area-inset-top))] rounded-2xl bg-white p-3 shadow-xl lg:hidden">
+        <div
+          className="absolute inset-x-3 z-[510] rounded-2xl bg-white p-3 shadow-xl lg:hidden"
+          style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
+        >
           {chipKeuzes}
         </div>
       )}
