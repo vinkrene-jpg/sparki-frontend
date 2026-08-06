@@ -58,7 +58,16 @@ export type RouteResult = {
   busyRoadFraction?: number | null;
 };
 
-export type GeocodeResult = { lat: number; lon: number; label: string };
+export type GeocodeResult = {
+  lat: number;
+  lon: number;
+  label: string;
+  // Optioneel begrenzingsvak van de plaats zelf ([lonMin, latMin, lonMax,
+  // latMax], provider-extent): een dorp krijgt zo een andere kaartuitsnede
+  // dan een provincie. Ontbreekt het vak, dan valt de client eerlijk terug
+  // op een straal rond het punt.
+  bbox?: [number, number, number, number];
+};
 
 export type LoopRequest = {
   start: LatLon;

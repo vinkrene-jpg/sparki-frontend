@@ -206,6 +206,13 @@ export default function RouteSchermPage() {
     "makkelijk" | "gemiddeld" | "zwaar" | null
   >(null)
   const [filterGereden, setFilterGereden] = useState(false)
+  // Onderweg: klim is eerlijk afleidbaar (hm per km); koffie/eten niet — die
+  // gegevens dragen routes nog niet en worden dus ook niet als filter geveinsd.
+  const [filterKlim, setFilterKlim] = useState(false)
+  // §5.7 moment 2: het gebied van de laatst gekozen zoekplaats (geocoder-bbox,
+  // als [[lat,lon],[lat,lon]]) — een dorp krijgt zo een ander kader dan een
+  // provincie. Alleen gezet als de geocoder echt een vak leverde.
+  const [zoekGebied, setZoekGebied] = useState<[number, number][] | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [zoekOpen, setZoekOpen] = useState(false)
   const [zoekTekst, setZoekTekst] = useState("")
@@ -304,9 +311,39 @@ export default function RouteSchermPage() {
       // Buiten Vite (node-page-tests) bestaat import.meta.env niet — val dan
       // terug op "/" (de kaart wordt daar toch gemockt).
       style: `${import.meta.env?.BASE_URL ?? "/"}kaart/sparki-stijl.json`,
-      center: [5.3, 52.1],
-      zoom: 7,
+      // §5.7 moment 1: nooit koud op NL-zoom-7 openen als er een laatst
+      // bekende stand is — die is bewaard bij het vorige bezoek. De NL-stand
+      // is alleen de allereerste keer (of zonder opslag) de eerlijke start.
+      ...(() => {
+        try {
+          const bewaard = JSON.parse(localStorage.getItem("sparki:kaartstand") ?? "null") as
+            | { lng: number; lat: number; zoom: number }
+            | null
+          if (
+            bewaard &&
+            Number.isFinite(bewaard.lng) &&
+            Number.isFinite(bewaard.lat) &&
+            Number.isFinite(bewaard.zoom)
+          ) {
+            return { center: [bewaard.lng, bewaard.lat] as [number, number], zoom: bewaard.zoom }
+          }
+        } catch {
+          /* kapotte opslag = gewoon de NL-start */
+        }
+        return { center: [5.3, 52.1] as [number, number], zoom: 7 }
+      })(),
       attributionControl: { compact: true },
+    })
+    map.on("moveend", () => {
+      try {
+        const c = map.getCenter()
+        localStorage.setItem(
+          "sparki:kaartstand",
+          JSON.stringify({ lng: c.lng, lat: c.lat, zoom: map.getZoom() }),
+        )
+      } catch {
+        /* opslag vol/geblokkeerd = geen ramp, alleen geen herstel */
+      }
     })
     map.on("load", () => {
       // F3: één GeoJSON-bron voor het routecorpus + één voor de kandidaat.
@@ -367,7 +404,8 @@ export default function RouteSchermPage() {
     markerRef.current = new MapLibreMarker({ element: el })
       .setLngLat([center.lon, center.lat])
       .addTo(map)
-    map.easeTo({ center: [center.lon, center.lat], zoom: 12 })
+    // Geen easeTo/zoom-12 hier: de uitsnede loopt via de centrale §5.7-functie
+    // (een dorp en een provincie krijgen zo elk hun eigen passende kader).
   }, [center])
 
   // §5.4: filters gelden client-side op het nearby-corpus (zie use-routes:
@@ -385,7 +423,13 @@ export default function RouteSchermPage() {
           (filterTypeRoute == null ||
             (filterTypeRoute === "lus" ? r.isLus : !r.isLus)) &&
           (filterMoeilijkheid == null || r.moeilijkheid === filterMoeilijkheid) &&
-          (!filterGereden || r.keerGereden > 0),
+          (!filterGereden || r.keerGereden > 0) &&
+          // Klim onderweg = eerlijk afgeleid uit echte hoogtemeters: ≥8 hm/km.
+          (!filterKlim ||
+            (r.elevationGainM != null &&
+              r.distanceKm != null &&
+              r.distanceKm > 0 &&
+              r.elevationGainM / r.distanceKm >= 8)),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -396,6 +440,7 @@ export default function RouteSchermPage() {
       filterTypeRoute,
       filterMoeilijkheid,
       filterGereden,
+      filterKlim,
     ],
   )
   const filtersActief =
@@ -404,7 +449,8 @@ export default function RouteSchermPage() {
     filterOndergrond != null ||
     filterTypeRoute != null ||
     filterMoeilijkheid != null ||
-    filterGereden
+    filterGereden ||
+    filterKlim
 
   // Routes in beeld tekenen (gefilterd corpus) — F3: één setData op de bron.
   useEffect(() => {
@@ -478,6 +524,9 @@ export default function RouteSchermPage() {
         : (() => {
             const gekozen = gefilterdeRoutes.find((r) => r.key === gekozenKey)
             if (gekozen && gekozen.geometry.length >= 2) return gekozen.geometry
+            // Moment 2: het gebied van de gezochte plaats (geocoder-bbox) —
+            // een dorp krijgt een kleiner kader dan een provincie.
+            if (zoekGebied) return zoekGebied
             const alle = gefilterdeRoutes.flatMap((r) => r.geometry ?? [])
             if (alle.length >= 2) return alle
             if (center) {
@@ -493,7 +542,7 @@ export default function RouteSchermPage() {
             return []
           })()
     if (doel.length >= 2) fitOpGeometrie(map, doel, marges)
-  }, [kaartKlaar, kandidaat, gekozenKey, gefilterdeRoutes, center, straalKm, stand])
+  }, [kaartKlaar, kandidaat, gekozenKey, gefilterdeRoutes, center, straalKm, stand, zoekGebied])
 
   // R16/R-T3: één routeaanvraag per keuze — trainingstype kiezen start
   // precies één generatie-job vanaf het kaartcentrum.
@@ -690,6 +739,16 @@ export default function RouteSchermPage() {
 
   const kiesPlaats = (r: GeocodeResult) => {
     setCenter({ lat: r.lat, lon: r.lon })
+    // §5.7 moment 2: het echte geocoder-gebied als kader (bbox = [lonMin,
+    // latMin, lonMax, latMax]); zonder vak eerlijk terugvallen op de straal.
+    setZoekGebied(
+      r.bbox
+        ? [
+            [r.bbox[1], r.bbox[0]],
+            [r.bbox[3], r.bbox[2]],
+          ]
+        : null,
+    )
     setZoekOpen(false)
     setZoekResultaten([])
     setZoekTekst("")
@@ -712,6 +771,7 @@ export default function RouteSchermPage() {
     setFilterTypeRoute(null)
     setFilterMoeilijkheid(null)
     setFilterGereden(false)
+    setFilterKlim(false)
   }
 
   // §5.2: drie knoppen — [trainingstype ▾] [straal ▾] [Filters]. De uitklap
@@ -1589,8 +1649,23 @@ export default function RouteSchermPage() {
             <p className="text-[15px] font-semibold text-slate-800">Filters</p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {/* Sport bepaalt het corpus zelf (server-kant) */}
+            {/* §5.4 sectievolgorde: Trainingstype voorop — zelfde keuze als de
+                knop erboven; kiezen start (net als daar) één routeaanvraag. */}
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+              Trainingstype
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {TRAININGSTYPEN.map((t) => (
+                <KeuzeKnop
+                  key={t.id}
+                  label={t.label}
+                  actief={trainingType === t.id}
+                  onClick={() => kiesTrainingstype(t.id)}
+                />
+              ))}
+            </div>
+
+            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
               Sport
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -1705,6 +1780,22 @@ export default function RouteSchermPage() {
                 }
               />
             </div>
+
+            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+              Onderweg
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <KeuzeKnop
+                label="Klim onderweg"
+                actief={filterKlim}
+                onClick={() => setFilterKlim((v) => !v)}
+              />
+            </div>
+            <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
+              Klim is afgeleid uit echte hoogtemeters (≥ 8 hm per km). Koffie- en
+              eetpunten volgen zodra routes die gegevens dragen — daarop filteren
+              zou nu een lege belofte zijn.
+            </p>
 
             <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
               Routekenmerken

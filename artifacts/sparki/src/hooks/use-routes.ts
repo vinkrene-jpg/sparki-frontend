@@ -190,7 +190,14 @@ export type KnownRouteVerification =
       blockage: { forbidden: number; steps: number; blockedGates: number };
     }
   | { status: "niet_controleerbaar"; reden: string };
-export type GeocodeResult = { lat: number; lon: number; label: string };
+export type GeocodeResult = {
+  lat: number;
+  lon: number;
+  label: string;
+  // Begrenzingsvak van de gevonden plaats ([lonMin, latMin, lonMax, latMax]),
+  // alleen aanwezig als de geocoder er echt één levert.
+  bbox?: [number, number, number, number];
+};
 
 // Forward-geocode an address to coordinate candidates (best-first). Used by the
 // home-location picker. Triggered on demand (search button / debounce), never

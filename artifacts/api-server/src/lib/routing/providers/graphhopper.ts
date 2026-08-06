@@ -656,7 +656,17 @@ export class GraphHopperProvider implements RoutingProvider {
         const lat = h.point?.lat;
         const lon = h.point?.lng;
         if (typeof lat !== "number" || typeof lon !== "number") continue;
-        out.push({ lat, lon, label: this.hitLabel(h) || text });
+        // GraphHopper geeft per hit een `extent` [lonMin, latMin, lonMax,
+        // latMax] mee voor gebieden (plaats/provincie). Alleen doorgeven als
+        // alle vier de getallen echt zijn — geen verzonnen vak.
+        const ext = (h as { extent?: unknown }).extent;
+        const bbox =
+          Array.isArray(ext) &&
+          ext.length === 4 &&
+          ext.every((v) => typeof v === "number" && Number.isFinite(v))
+            ? (ext as [number, number, number, number])
+            : undefined;
+        out.push({ lat, lon, label: this.hitLabel(h) || text, ...(bbox ? { bbox } : {}) });
       }
       return out;
     } catch {

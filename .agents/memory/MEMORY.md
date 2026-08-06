@@ -154,3 +154,4 @@
 - [Praktijktest-APK + OTA](sparki-praktijktest-apk.md) — René test alleen APK+web; eas update --channel praktijktest hoort bij elke mobiele oplevering; babel-mix/intentFilter-valkuilen.
 - [Wedstrijddoel basis + volhoudbaarheid](sparki-wedstrijddoel-basis.md) — Laag 0 leeslaag; Strava-limiet gemeten 400/4000 (lees 200/2000) per app; koppeling haalt géén streams; historie-import pas na stream- of bestandsroute.
 - [Sparki marketingsite](sparki-marketingsite.md) — lib/pricing SSOT prijzen, prerender via ssrPath+meta-collector, rol-schermen via fixtures; git stash -u deregistreert ongecommit artifact.
+- [MapLibre vectorkaart](sparki-maplibre-vector.md) — maplibre-gl v6 laadt Shortbread-tilejson stil nooit (pin ^5); nieuwe routes óók in dev-preview.tsx registreren; stijl-SSOT public/kaart/sparki-stijl.json.
