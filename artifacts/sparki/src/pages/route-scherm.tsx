@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { RouteGenerator } from "@/components/sparki/route-panel"
+import { RouteExplorer } from "@/components/sparki/route-explorer"
+import { RouteLibrarySection } from "@/components/sparki/route-library-section"
+import { RouteDiscover } from "@/components/sparki/route-discover"
 import { useLocation } from "wouter"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -18,7 +22,10 @@ import {
 import { ACCENT } from "@/components/sparki/ui"
 import {
   useGeocode,
+  useRoutes,
+  useCreateRoute,
   useNearbyRoutes,
+  type SparkiRoute,
   useGenerateRoute,
   useSaveGeneratedRoute,
   type GeocodeResult,
@@ -54,11 +61,18 @@ import { localISODate } from "@/lib/commercial-shell"
 // R17 (taak 604): op ≥lg een twee-vlaks indeling — kaart naast een vast
 // zijpaneel met exact dezelfde functies (zelfde hooks/state, eigen indeling).
 
-const MENU_ITEMS = [
-  { label: "Zelf plannen", to: "/routes?view=maken" },
-  { label: "GPX importeren", to: "/routes?view=gpx" },
-  { label: "Bewaarde routes", to: "/routes?view=bewaard" },
-  { label: "Ontdekken", to: "/routes?view=ontdek" },
+// Taak 06-08: de rijke functies horen bínnen dit scherm te werken (MUX-81a:
+// een knop levert wat hij belooft, binnen dezelfde ervaring) — geen omweg
+// meer naar het oude paneel. Elke flow opent als eigen scherm/overlay over
+// dezelfde kaart (MUX-28 regel 4: taak met invoer → nieuw scherm), met
+// hergebruik van de bestaande componenten (één flowlogica, geen kopie).
+// Alleen Instellingen (privacyzones) blijft voorlopig een deep-link naar het
+// oude scherm, tot ook die verhuist.
+const MENU_ITEMS: { label: string; flow?: FlowKeuze; to?: string }[] = [
+  { label: "Zelf plannen", flow: "maken" },
+  { label: "GPX importeren", flow: "gpx" },
+  { label: "Bewaarde routes", flow: "bewaard" },
+  { label: "Ontdekken", flow: "ontdek" },
   { label: "Instellingen", to: "/routes?view=instellingen" },
 ]
 
@@ -115,6 +129,16 @@ export default function RouteSchermPage() {
   const [fase, setFase] = useState<GeneratePhase | null>(null)
   const [genFout, setGenFout] = useState<string | null>(null)
   const [navigeren, setNavigeren] = useState(false)
+  // Geopende flow uit het driepuntsmenu — als eigen scherm over de kaart.
+  const [flow, setFlow] = useState<FlowKeuze | null>(null)
+  // Navigatie van een BEWAARDE route (uit Bewaarde routes/GPX/Zelf plannen)
+  // over dezelfde kaartlaag als de gegenereerde kandidaat (R8).
+  const [navRoute, setNavRoute] = useState<SparkiRoute | null>(null)
+  // GPX-import: zelfde regels als het oude paneel (.gpx, max 11 MB), maar
+  // de bevestiging blijft binnen dit scherm.
+  const gpxInputRef = useRef<HTMLInputElement>(null)
+  const [gpxFout, setGpxFout] = useState<string | null>(null)
+  const [gpxRoute, setGpxRoute] = useState<SparkiRoute | null>(null)
   // MUX-57: wachten op een routeaanvraag heeft altijd een uitweg. Annuleren
   // laat het serverwerk gewoon aflopen, maar het resultaat wordt genegeerd.
   const annuleerRef = useRef(false)
@@ -151,6 +175,33 @@ export default function RouteSchermPage() {
   const nearby = useNearbyRoutes(center, sport)
   const generate = useGenerateRoute((p) => setFase(p))
   const bewaar = useSaveGeneratedRoute()
+  // Bewaarde routes (voor de verkenner) + GPX-import — gedeelde datalaag.
+  const mijnRoutes = useRoutes()
+  const gpxImport = useCreateRoute()
+
+  const onGpxBestand = async (file: File) => {
+    setGpxFout(null)
+    setGpxRoute(null)
+    if (!file.name.toLowerCase().endsWith(".gpx")) {
+      setGpxFout("Alleen GPX-bestanden worden ondersteund.")
+      return
+    }
+    if (file.size > 11 * 1024 * 1024) {
+      setGpxFout("Bestand te groot (max 11 MB).")
+      return
+    }
+    const content = await file.text()
+    gpxImport.mutate(
+      { content, name: file.name.replace(/\.gpx$/i, "") },
+      {
+        onSuccess: (data) => setGpxRoute(data.route),
+        onError: () =>
+          setGpxFout(
+            "Route kon niet worden verwerkt — het bestand is niet als route gelezen. Probeer een ander GPX-bestand.",
+          ),
+      },
+    )
+  }
 
   // Training van vandaag (Compleet-onderblad, R6).
   const today = localISODate()
@@ -896,14 +947,14 @@ export default function RouteSchermPage() {
           <div className="mt-2 flex gap-2">
             <button
               type="button"
-              onClick={() => setLocation("/routes?view=maken")}
+              onClick={() => setFlow("maken")}
               className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
             >
               Zelf plannen
             </button>
             <button
               type="button"
-              onClick={() => setLocation("/routes?view=bewaard")}
+              onClick={() => setFlow("bewaard")}
               className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
             >
               Bewaarde routes
@@ -943,6 +994,24 @@ export default function RouteSchermPage() {
       )}
     </>
   )
+
+  // Navigatie van een BEWAARDE route (uit Bewaarde routes / GPX / Zelf
+  // plannen) — zelfde navigatielaag (R8), met de echte routegegevens.
+  if (navRoute && (navRoute.geometry?.length ?? 0) >= 2) {
+    return (
+      <RouteNavigator
+        name={navRoute.name}
+        geometry={navRoute.geometry as [number, number][]}
+        nav={navRoute.nav ?? []}
+        distanceKm={navRoute.distanceKm}
+        climbs={navRoute.climbs}
+        elevationProfile={navRoute.profile}
+        sport={navRoute.sport ?? null}
+        routeId={navRoute.id}
+        onClose={() => setNavRoute(null)}
+      />
+    )
+  }
 
   // Navigatielaag over dezelfde kaart (R8) — alleen voor een gegenereerde
   // kandidaat met echte geometrie en navigatie-aanwijzingen.
@@ -1010,9 +1079,13 @@ export default function RouteSchermPage() {
               <div className="absolute right-0 top-12 z-[530] w-52 overflow-hidden rounded-2xl bg-white shadow-xl">
                 {MENU_ITEMS.map((m) => (
                   <button
-                    key={m.to}
+                    key={m.label}
                     type="button"
-                    onClick={() => setLocation(m.to)}
+                    onClick={() => {
+                      setMenuOpen(false)
+                      if (m.flow) setFlow(m.flow)
+                      else if (m.to) setLocation(m.to)
+                    }}
                     className="block w-full px-4 py-3 text-left text-[14px] text-slate-700 hover:bg-slate-50"
                   >
                     {m.label}
@@ -1039,7 +1112,10 @@ export default function RouteSchermPage() {
       <div ref={containerRef} className="absolute inset-0" />
 
       {/* Bovenop: terug + zoekveld + driepuntsmenu (R2) — alleen mobiel */}
-      <div className="absolute inset-x-0 top-0 z-[500] flex items-center gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
+      {/* z boven de filterbolletjes-rij (ook z-[500], later in de DOM):
+          anders ligt het uitgeklapte driepuntsmenu ónder de bolletjes en
+          vangt de bolletjes-rij de tikken op de menukeuzes af. */}
+      <div className="absolute inset-x-0 top-0 z-[520] flex items-center gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
         <button
           type="button"
           onClick={() => setLocation("/routes")}
@@ -1070,9 +1146,13 @@ export default function RouteSchermPage() {
             <div className="absolute right-0 top-12 w-52 overflow-hidden rounded-2xl bg-white shadow-xl">
               {MENU_ITEMS.map((m) => (
                 <button
-                  key={m.to}
+                  key={m.label}
                   type="button"
-                  onClick={() => setLocation(m.to)}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    if (m.flow) setFlow(m.flow)
+                    else if (m.to) setLocation(m.to)
+                  }}
                   className="block w-full px-4 py-3 text-left text-[14px] text-slate-700 hover:bg-slate-50"
                 >
                   {m.label}
@@ -1233,6 +1313,231 @@ export default function RouteSchermPage() {
         </div>
       </div>
       </div>
+
+      {/* ── Flows uit het driepuntsmenu — bínnen dit scherm (MUX-81a) ────── */}
+
+      {/* Zelf plannen (A→B/eigen route): de bestaande generator als eigen
+          scherm (MUX-28 regel 4) — zelfde flowlogica als het oude paneel. */}
+      {flow === "maken" && (
+        <div className="absolute inset-0 z-[540] flex flex-col bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button
+              type="button"
+              onClick={() => setFlow(null)}
+              aria-label="Terug"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <p className="text-[15px] font-semibold text-slate-800">Zelf plannen</p>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <RouteGenerator
+              onClose={() => setFlow(null)}
+              onSaved={(route, samen) => {
+                setFlow(null)
+                // Direct navigeren als daarom gevraagd is en de route een
+                // echte kaartlijn heeft — anders eerlijk terug op de kaart.
+                if (samen.navigeer && (route.geometry?.length ?? 0) >= 2) {
+                  setNavRoute(route)
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* GPX importeren: zelfde regels als het oude paneel, bevestiging en
+          vervolgstappen blijven binnen dit scherm. */}
+      {flow === "gpx" && (
+        <div className="absolute inset-0 z-[540] flex flex-col bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button
+              type="button"
+              onClick={() => setFlow(null)}
+              aria-label="Terug"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <p className="text-[15px] font-semibold text-slate-800">GPX importeren</p>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <p className="text-[13px] leading-relaxed text-slate-600">
+              Kies een GPX-bestand van je telefoon of computer. De route wordt
+              bij je bewaarde routes gezet en is daarna direct te navigeren.
+            </p>
+            <input
+              ref={gpxInputRef}
+              type="file"
+              accept=".gpx"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void onGpxBestand(f)
+                e.target.value = ""
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => gpxInputRef.current?.click()}
+              disabled={gpxImport.isPending}
+              className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
+            >
+              {gpxImport.isPending ? "Verwerken…" : "Kies een GPX-bestand"}
+            </button>
+            {gpxFout && (
+              <p className="mt-3 rounded-xl bg-red-50 px-3 py-2.5 text-[13px] text-red-700">
+                {gpxFout}
+              </p>
+            )}
+            {gpxRoute && (
+              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+                <p className="text-[14px] font-semibold text-slate-800">
+                  {gpxRoute.name}
+                </p>
+                <p className="mt-0.5 text-[12px] text-slate-600">
+                  {gpxRoute.distanceKm != null
+                    ? `${gpxRoute.distanceKm.toFixed(1)} km`
+                    : "—"}
+                  {gpxRoute.elevationGainM != null
+                    ? ` · ${Math.round(gpxRoute.elevationGainM)} hm`
+                    : ""}
+                  {" · bewaard bij je routes"}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  {(gpxRoute.geometry?.length ?? 0) >= 2 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const r = gpxRoute
+                        setFlow(null)
+                        setGpxRoute(null)
+                        setNavRoute(r)
+                      }}
+                      className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-slate-900 px-3 text-[13px] font-medium text-white"
+                    >
+                      Navigeer
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGpxRoute(null)
+                      setFlow("bewaard")
+                    }}
+                    className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+                  >
+                    Bewaarde routes
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bewaarde routes: de bestaande kaartverkenner (eigen volledig scherm).
+          Navigeren start hier direct de navigatielaag; "Alle details" opent
+          de volledige routekaart die nog op het oude scherm woont. */}
+      {flow === "bewaard" &&
+        (mijnRoutes.isLoading ? (
+          <div className="absolute inset-0 z-[540] flex flex-col items-center justify-center gap-2 bg-white">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+            <p className="text-[13px] text-slate-600">Bewaarde routes laden…</p>
+          </div>
+        ) : (mijnRoutes.data?.routes ?? []).some((r) => (r.geometry?.length ?? 0) >= 2) ? (
+          <RouteExplorer
+            routes={mijnRoutes.data?.routes ?? []}
+            onClose={() => setFlow(null)}
+            onOpenRoute={(id) => setLocation(`/routes?view=bewaard&route=${id}`)}
+            onNavigate={(id) => {
+              const r = (mijnRoutes.data?.routes ?? []).find((x) => x.id === id) ?? null
+              if (!r) return
+              setFlow(null)
+              setNavRoute(r)
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 z-[540] flex flex-col bg-white">
+            <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+              <button
+                type="button"
+                onClick={() => setFlow(null)}
+                aria-label="Terug"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+              >
+                <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+              </button>
+              <p className="text-[15px] font-semibold text-slate-800">Bewaarde routes</p>
+            </div>
+            <div className="flex-1 p-4">
+              {mijnRoutes.isError ? (
+                <>
+                  <p className="text-[13px] leading-relaxed text-slate-600">
+                    Je bewaarde routes konden niet worden geladen — het ophalen
+                    is mislukt.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void mijnRoutes.refetch()}
+                    className="mt-2 flex min-h-11 items-center rounded-full text-[13px] font-medium text-slate-700 underline underline-offset-2"
+                  >
+                    Opnieuw laden
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-[13px] leading-relaxed text-slate-600">
+                    Je hebt nog geen bewaarde route met een kaartlijn. Maak er
+                    één via een trainingstype op de kaart, plan zelf een route
+                    of importeer een GPX-bestand.
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFlow("maken")}
+                      className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+                    >
+                      Zelf plannen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFlow("gpx")}
+                      className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+                    >
+                      GPX importeren
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+
+      {/* Ontdekken: kant-en-klare routes per gebied + openbare routes van
+          anderen — dezelfde componenten als het oude scherm. */}
+      {flow === "ontdek" && (
+        <div className="absolute inset-0 z-[540] flex flex-col bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button
+              type="button"
+              onClick={() => setFlow(null)}
+              aria-label="Terug"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <p className="text-[15px] font-semibold text-slate-800">Ontdekken</p>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <RouteLibrarySection />
+            <div className="mt-6">
+              <RouteDiscover />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1371,3 +1676,5 @@ function RouteMiniatuur({
     </span>
   )
 }
+
+type FlowKeuze = "maken" | "gpx" | "bewaard" | "ontdek"

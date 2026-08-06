@@ -28,3 +28,8 @@ scroll safety.
 **How to apply:** Any time you build a custom overlay/modal by hand (not the
 shadcn primitives), assume it may be mounted inside a Sheet and ship it portaled
 to `document.body` with z-index above 50 from the start.
+
+## Zusterlagen met gelijke z-index (routescherm)
+Op het nieuwe routescherm zijn topbalk en filterbolletjes-rij zusters met z-[500]; de latere DOM-zuster wint, dus een dropdown ín de topbalk lag ónder de bolletjes en tikken op menukeuzes kwamen op de chips terecht (geen console-fout, "er gebeurt niets").
+**Why:** gelijke z-index tussen zusters = DOM-volgorde beslist; een genest menu erft het stacking-context-plafond van zijn ouder.
+**How to apply:** geef de laag die een dropdown/menu bevat een hogere z dan latere zusterlagen (topbalk nu z-[520]); bij "klik komt niet aan" eerst Playwright-interceptielog lezen — die noemt de afvangende laag letterlijk.
