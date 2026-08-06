@@ -1062,8 +1062,11 @@ export default function RouteSchermPage() {
 
       {/* Kaartbediening rechtsonder, duimbereik (R4) — mobiel boven het
           onderblad, desktop gewoon onderin (geen onderblad daar). */}
+      {/* Bewust verborgen zolang een keuzepaneel open is — dat paneel staat
+          op dezelfde plek in de duimzone en mag de knoppen niet half
+          afdekken (reviewbevinding). Paneel sluiten = knoppen terug. */}
       <div
-        className="absolute right-3 z-[500] flex flex-col gap-2 lg:hidden"
+        className={`absolute right-3 z-[500] flex-col gap-2 lg:hidden ${openChip ? "hidden" : "flex"}`}
         style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
       >
         <button
