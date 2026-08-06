@@ -57,3 +57,47 @@
 - Verwachting: 0 tegelverzoeken per knijpreeks binnen reeds geladen gebied
   (vectortegels zijn zoomonafhankelijk over meerdere niveaus), geen visuele
   tussenstappen, uitschieters < 33 ms ook met alle routes in beeld.
+
+---
+
+# F6 — nameting (MapLibre-vectormotor)
+
+**Datum:** 06-08-2026 · **Omgeving:** lokale acceptatiebuild (vite build + preview
+op de workspace), zelfde telefoonemulatie (390×844, dsf 3, touch, iPhone-UA,
+geolocatie 52.2755/6.7925), zelfde knijpreeks (×2,0 · ×0,5 · ×1,8). Script:
+`/tmp/pw/f6-nameting.mjs` (meetmap, niet gecommit); schermafdrukken
+`f6-route-alle.png` / `f6-route-zoom.png`.
+
+## Eerlijke beperkingen van deze nameting
+
+1. **Software-WebGL.** Deze omgeving heeft geen GPU; MapLibre draait hier op
+   SwiftShader (WebGL via de CPU). De fps-cijfers hieronder meten dus vooral de
+   emulator, niet de motor — op elk echt toestel rendert MapLibre op de GPU.
+   De fps-kolommen zijn daarom **niet vergelijkbaar** met de F0-tabellen; alleen
+   tegelverzoeken en gedrag (tussenstappen, fractioneel zoomen) zijn dat wel.
+2. **Ander account/gebied.** F0 draaide op productie met 83 routelijnen; de
+   nieuwe motor staat nog niet op productie, dus deze meting draaide lokaal op
+   het dev-preview-account met 0 routes in beeld. De routelaag-kant van
+   situatie (b) is hier dus niet belast; de echte (b)-vergelijking hoort bij de
+   praktijktest ná publicatie.
+
+## Resultaten (vergelijkbaar deel)
+
+| meetpunt | F0 Leaflet (prod, 6×) | F6 MapLibre (lokaal) |
+|---|---:|---:|
+| tegelverzoeken per knijpreeks, standaardstand | 23 | **0** |
+| tegelverzoeken per knijpreeks, ingezoomd | 18 | **3** |
+| visuele tussenstap (opgerekte bitmap) bij zoomen | ja, elke reeks | **nee** (vector hertekent) |
+| fractioneel/doorlopend zoomen | onmogelijk (hele niveaus) | **ja** |
+
+Ter volledigheid de ruwe SwiftShader-frametijden (niet-representatief, zie
+beperking 1): onvertraagd (b) 14,2 fps / (a) 15,5 fps; met 6× CPU-vertraging
+(b) 2,9 fps / (a) 11,5 fps — CPU-vertraging × software-GPU stapelt dubbel.
+
+## Conclusie
+
+De twee eigenschappen die de nulmeting als kern van het probleem aanwees —
+tegel-inwisselen tijdens knijpen en het ontbreken van doorlopend zoomen — zijn
+met de vectormotor aantoonbaar weg (0 verzoeken binnen geladen gebied,
+fractioneel zoomen werkt). Het fps-slotstuk op echte hardware volgt in de
+praktijktest op Renés toestel na publicatie.
