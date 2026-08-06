@@ -201,7 +201,7 @@ mock.module("@/components/sparki/route-navigator", {
 })
 // Flow-overlays uit het driepuntsmenu — zwaar importoppervlak, hier niet
 // onder test; gemockt zodat het testoppervlak de kaartgebaren blijft.
-mock.module("@/components/sparki/route-panel", {
+mock.module("@/components/sparki/route-generator", {
   namedExports: { RouteGenerator: () => h("div"), RoutePassport: () => h("div") },
 })
 mock.module("@/components/sparki/route-explorer", {
@@ -226,6 +226,7 @@ const icoon = () => h("i")
 mock.module("lucide-react", {
   namedExports: {
     ArrowLeft: icoon,
+    Layers: icoon,
     Bike: icoon,
     Crosshair: icoon,
     Footprints: icoon,
@@ -269,10 +270,12 @@ test("route aanpassen op /route: elk kaartgebaar = precies één routeaanvraag",
 
   render(h(Page))
 
-  // Kandidaat genereren via het trainingstype-bolletje (R-T3-basis).
-  fireEvent.click(screen.getAllByText("Trainingstype")[0])
-  fireEvent.click(screen.getAllByText("Duurtraining")[0])
-  assert.equal(generateCalls.length, 1, "trainingstype kiezen = één aanvraag")
+  // Kandidaat genereren via de stappenmachine (RIJDEN_01): activiteit kiezen
+  // (stap 1) → "Sparki laat maken" (stap 2, 3-A) = precies één aanvraag.
+  fireEvent.click(screen.getAllByText("Racefiets")[0])
+  assert.equal(generateCalls.length, 0, "activiteit kiezen start nog geen aanvraag")
+  fireEvent.click(screen.getAllByText("Sparki laat maken")[0])
+  assert.equal(generateCalls.length, 1, "Sparki laat maken = één aanvraag")
 
   // Kandidaat is als GeoJSON in de kandidaat-bron gezet (F3).
   const kandidaatBron = bronnen[KANDIDAAT_BRON]

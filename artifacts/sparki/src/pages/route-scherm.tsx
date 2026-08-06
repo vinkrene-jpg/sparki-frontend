@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { RouteGenerator, RoutePassport } from "@/components/sparki/route-panel"
+import { RouteGenerator, RoutePassport } from "@/components/sparki/route-generator"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { RouteDiscover } from "@/components/sparki/route-discover"
@@ -17,6 +17,7 @@ import {
   Bike,
   Crosshair,
   Footprints,
+  Layers,
   Loader2,
   Minus,
   MoreVertical,
@@ -53,6 +54,18 @@ import { MiniElevationProfile } from "@/components/sparki/elevation-profile"
 import { RouteNavigator } from "@/components/sparki/route-navigator"
 import { displayRouteName } from "@/lib/route-name"
 import { localISODate } from "@/lib/commercial-shell"
+import {
+  ACTIVITEITEN,
+  activiteit,
+  standaardAfstand,
+  HOOGTES,
+  VORMEN,
+  type ActiviteitId,
+  type HoogteKeuze,
+  type OndergrondKeuze,
+  type VormKeuze,
+} from "@/lib/rijden-activiteiten"
+import { isRouteSportActive } from "@workspace/feature-flags"
 
 // ROUTEPLANNER_MOBIEL_01 (05-08-2026) — nieuw schermvullend routescherm voor
 // de telefoon, gebouwd NAAST het bevroren route-panel.tsx. Regels:
@@ -81,27 +94,39 @@ const MENU_ITEMS: { label: string; flow?: FlowKeuze; to?: string }[] = [
   { label: "Bewaarde routes", flow: "bewaard" },
   { label: "Ontdekken", flow: "ontdek" },
   { label: "Route-paspoort", flow: "paspoort" },
-  { label: "Instellingen", to: "/routes?view=instellingen" },
+  { label: "Instellingen", flow: "instellingen" },
 ]
 
-type SportKeuze = "cycling" | "walking" | "hiking"
+// ── RIJDEN_01 §3: de stappenmachine ────────────────────────────────────────
+// Eén stap = één scherm (over dezelfde kaart). Stap 1 (activiteit) is de
+// enige verplichte stap; daarna:
+//   2  tot vijf routes op de kaart (5 kleuren, kleurenblind-veilig)
+//   2a routekaartje (popup) van één route
+//   3  Zelf maken (3-Z) — alleen afstand verplicht, rest optioneel
+//   4  voorstel van Sparki (Gebruiken / Opnieuw / Aanpassen)
+//   5  Klaar (Start navigatie / Bewaren / Delen)
+// "Sparki laat maken" (3-A) slaat het formulier over: alles vooringevuld,
+// direct één routeaanvraag (R16). Escapes (§6): "Direct een route" op stap 1
+// en "Klaar" op stap 3/4 — terug verliest nooit gemaakte keuzes.
+type Stap = 1 | 2 | 3 | 4 | 5
 
-const SPORTEN: { id: SportKeuze; label: string; icon: typeof Bike }[] = [
-  { id: "cycling", label: "Fietsen", icon: Bike },
-  { id: "walking", label: "Wandelen", icon: Footprints },
-  { id: "hiking", label: "Hiken", icon: Mountain },
+// §3 stap 2: vijf kleuren, kleurenblind-veilig — kleur is nooit het enige
+// verschil: elke route heeft óók een eigen lijnpatroon/dikte.
+const ROUTE_KLEUREN = [
+  "#2563eb", // blauw — doorgetrokken, dik
+  "#d97706", // oranje — streepjes
+  "#059669", // groen — stippellijn
+  "#7c3aed", // paars — streep-punt
+  "#db2777", // roze — doorgetrokken, dun
+] as const
+const ROUTE_PATRONEN: (number[] | null)[] = [
+  null,
+  [2, 1.4],
+  [0.4, 1.6],
+  [3, 1, 0.8, 1],
+  null,
 ]
-
-// Trainingstypen zoals de routemotor ze kent (zelfde waarden als het oude
-// paneel gebruikt — één gedeelde datalaag).
-const TRAININGSTYPEN: { id: string; label: string }[] = [
-  { id: "duurtraining", label: "Duurtraining" },
-  { id: "interval", label: "Interval" },
-  { id: "herstel", label: "Herstel" },
-  { id: "tempo", label: "Tempo" },
-]
-
-const AFSTANDEN = [20, 40, 60, 80, 100]
+const ROUTE_BASISDIKTE = [4.5, 4, 4, 4, 3] as const
 
 // §5.2: straalkeuzes — het zoekgebied rond het kaartcentrum.
 const STRAAL_KEUZES = [5, 10, 20, 30, 50, 100]
@@ -139,19 +164,25 @@ function lijnFeature(
 
 // Selectie via feature-property: één verfdefinitie, afhankelijk van de
 // gekozen sleutel (geen losse lijnobjecten meer).
-function routesVerf(gekozenKey: string | null) {
+// RIJDEN_01 §3 stap 2: vijf routes in vijf kleuren. Kleur is nooit het enige
+// verschil (kleurenblind-veilig): elke kleurpositie heeft ook een eigen
+// lijnpatroon/dikte (aparte lagen — line-dasharray kan niet per feature).
+// Gekozen route wordt dikker; de rest vervaagt maar verdwijnt NIET.
+function routeLaagVerf(i: number, gekozenKey: string | null) {
   const actief = ["==", ["get", "key"], gekozenKey ?? "\u0000"]
+  const basis = ROUTE_BASISDIKTE[i] ?? 4
   return {
-    "line-color": ["case", actief, "#f59e0b", LIJN_ACCENT] as unknown as string,
-    "line-width": ["case", actief, 5, 3] as unknown as number,
+    "line-color": ROUTE_KLEUREN[i] ?? LIJN_ACCENT,
+    "line-width": ["case", actief, basis + 2.5, basis] as unknown as number,
     "line-opacity": [
       "case",
       actief,
-      0.95,
-      gekozenKey ? 0.3 : 0.6,
+      1,
+      gekozenKey ? 0.35 : 0.85,
     ] as unknown as number,
   }
 }
+const ROUTES_LAGEN = [0, 1, 2, 3, 4].map((i) => `${ROUTES_LAAG}-${i}`)
 
 // §5.7 (voorbereid in F3): ÉÉN centrale fit-functie voor "breng deze route in
 // beeld" — alle aanroepen lopen hierlangs, straks met per-kant marges.
@@ -190,12 +221,32 @@ export default function RouteSchermPage() {
   const markerRef = useRef<MapLibreMarker | null>(null)
 
   const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null)
-  const [sport, setSport] = useState<SportKeuze>("cycling")
-  const [trainingType, setTrainingType] = useState<string | null>(null)
-  const [afstandKm, setAfstandKm] = useState<number>(40)
-  // §5.2: straalknop — het zoekgebied rond het kaartcentrum.
+  // U2: het scherm opent ALTIJD met een locatievraag; weigeren = laatst
+  // bekende plek + een eerlijke aanzet-rij (geen stille NL-fallback meer).
+  const [locatieGeweigerd, setLocatieGeweigerd] = useState(false)
+  // ── RIJDEN_01: de stappenmachine ─────────────────────────────────────────
+  const [stap, setStap] = useState<Stap>(1)
+  const [activiteitId, setActiviteitId] = useState<ActiviteitId | null>(null)
+  const act = activiteitId ? activiteit(activiteitId) : null
+  // Sport voor de gedeelde datalaag volgt de gekozen activiteit.
+  const sport = act?.sport ?? "cycling"
+  // 2a: routekaartje-popup van één route uit stap 2.
+  const [popupKey, setPopupKey] = useState<string | null>(null)
+  // 5: de gekozen bestaande route ("Deze gebruiken") — stap 5 zonder kandidaat.
+  const [klaarKey, setKlaarKey] = useState<string | null>(null)
+  // 3-Z formulier (alleen afstand verplicht; de rest is optioneel, tabel C).
+  const [afstandKm, setAfstandKm] = useState<number>(35)
+  const [afstandUitTraining, setAfstandUitTraining] = useState(false)
+  const [vorm, setVorm] = useState<VormKeuze>("rondje")
+  const [hoogte, setHoogte] = useState<HoogteKeuze | null>(null)
+  const [ondergrond, setOndergrond] = useState<OndergrondKeuze>("geen")
+  const [drukkeWegenVermijden, setDrukkeWegenVermijden] = useState(false)
+  const [onderwegWens, setOnderwegWens] = useState(false)
+  // §5.2: straalkeuze — het zoekgebied rond het kaartcentrum.
   const [straalKm, setStraalKm] = useState<number>(30)
-  const [openChip, setOpenChip] = useState<"training" | "straal" | null>(null)
+  // §2: het kaartlagenmenu (in de bedieningskolom rechts).
+  const [lagenOpen, setLagenOpen] = useState(false)
+  const [heatmap, setHeatmap] = useState<"geen" | "globaal" | "persoonlijk">("geen")
   // §5.4: filterblad over het hele scherm + de filterwaarden zelf.
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filterAfstandMax, setFilterAfstandMax] = useState<number | null>(null)
@@ -353,12 +404,25 @@ export default function RouteSchermPage() {
       // F3: één GeoJSON-bron voor het routecorpus + één voor de kandidaat.
       map.addSource(ROUTES_BRON, { type: "geojson", data: legeCollectie() })
       map.addSource(KANDIDAAT_BRON, { type: "geojson", data: legeCollectie() })
-      map.addLayer({
-        id: ROUTES_LAAG,
-        type: "line",
-        source: ROUTES_BRON,
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: routesVerf(null),
+      // RIJDEN_01 stap 2: vijf lagen (één per kleurpositie) op dezelfde bron;
+      // elke laag filtert op zijn idx en heeft eigen kleur + patroon + dikte.
+      ROUTES_LAGEN.forEach((laagId, i) => {
+        map.addLayer({
+          id: laagId,
+          type: "line",
+          source: ROUTES_BRON,
+          filter: ["==", ["get", "idx"], i],
+          layout: {
+            "line-cap": ROUTE_PATRONEN[i] ? "butt" : "round",
+            "line-join": "round",
+          },
+          paint: {
+            ...routeLaagVerf(i, null),
+            ...(ROUTE_PATRONEN[i]
+              ? { "line-dasharray": ROUTE_PATRONEN[i] as number[] }
+              : {}),
+          },
+        })
       })
       map.addLayer({
         id: KANDIDAAT_LAAG,
@@ -387,14 +451,26 @@ export default function RouteSchermPage() {
     }
   }, [])
 
-  // Locatie bij openen één keer vragen; weigeren = kaart blijft op NL-zicht.
-  useEffect(() => {
-    if (!("geolocation" in navigator)) return
+  // U2: locatie bij openen één keer vragen — de kaart opent gecentreerd op
+  // eigen locatie. Weigeren of mislukken = laatst bekende plek (bewaarde
+  // kaartstand) + een eerlijke aanzet-rij met een nieuwe kans.
+  const vraagLocatie = () => {
+    if (!("geolocation" in navigator)) {
+      setLocatieGeweigerd(true)
+      return
+    }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      () => undefined,
+      (pos) => {
+        setLocatieGeweigerd(false)
+        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+      },
+      () => setLocatieGeweigerd(true),
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
     )
+  }
+  useEffect(() => {
+    vraagLocatie()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Centrum-marker — via de Marker-API (F3), statisch element (XSS-regel).
@@ -464,6 +540,14 @@ export default function RouteSchermPage() {
     filterKoffie ||
     filterEten
 
+  // RIJDEN_01 §3 stap 2: tot vijf routes op de kaart. Gratis blijft op drie
+  // (pakketregel wint van de vijf uit de spec — eerlijk gemeld in de lijst).
+  const maxRoutes = pkg === "go" || pkg === "compleet" ? 5 : 3
+  const topRoutes = useMemo(
+    () => (stap >= 2 && !kandidaat ? gefilterdeRoutes.slice(0, maxRoutes) : []),
+    [stap, kandidaat, gefilterdeRoutes, maxRoutes],
+  )
+
   // Routes in beeld tekenen (gefilterd corpus) — F3: één setData op de bron.
   useEffect(() => {
     const map = mapRef.current
@@ -472,20 +556,29 @@ export default function RouteSchermPage() {
     if (!bron) return
     bron.setData({
       type: "FeatureCollection",
-      features: gefilterdeRoutes
+      features: topRoutes
         .filter((r) => r.geometry && r.geometry.length >= 2)
-        .map((r) => lijnFeature(r.geometry, { key: r.key })),
+        .map((r, i) =>
+          lijnFeature(r.geometry, { key: r.key, idx: i } as unknown as Record<
+            string,
+            string
+          >),
+        ),
     })
-  }, [gefilterdeRoutes, kaartKlaar])
+  }, [topRoutes, kaartKlaar])
 
-  // Selectie-uitlichting — verf-expressie op de laag (fit loopt centraal).
+  // Selectie-uitlichting — verf-expressie per kleurlaag (fit loopt centraal).
+  // Gekozen route wordt dikker; de andere vervagen maar verdwijnen niet (§3).
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !kaartKlaar || !map.getLayer(ROUTES_LAAG)) return
-    const verf = routesVerf(gekozenKey)
-    for (const [naam, waarde] of Object.entries(verf)) {
-      map.setPaintProperty(ROUTES_LAAG, naam, waarde)
-    }
+    if (!map || !kaartKlaar) return
+    ROUTES_LAGEN.forEach((laagId, i) => {
+      if (!map.getLayer(laagId)) return
+      const verf = routeLaagVerf(i, gekozenKey)
+      for (const [naam, waarde] of Object.entries(verf)) {
+        map.setPaintProperty(laagId, naam, waarde)
+      }
+    })
   }, [gekozenKey, kaartKlaar])
 
   // Gegenereerde kandidaat tekenen — eigen bron; de kandidaatlaag ligt boven
@@ -556,15 +649,37 @@ export default function RouteSchermPage() {
     if (doel.length >= 2) fitOpGeometrie(map, doel, marges)
   }, [kaartKlaar, kandidaat, gekozenKey, gefilterdeRoutes, center, straalKm, stand, zoekGebied])
 
-  // R16/R-T3: één routeaanvraag per keuze — trainingstype kiezen start
-  // precies één generatie-job vanaf het kaartcentrum.
-  const kiesTrainingstype = (type: string) => {
-    // R16-poort: er loopt al een aanvraag → geen tweede job starten. De
-    // keuze wordt dus óók niet gewisseld, anders liegt de chip over wat er
-    // berekend wordt.
-    if (generate.isPending) return
-    setTrainingType(type)
-    setOpenChip(null)
+  // ── RIJDEN_01: flowfuncties van de stappenmachine ──────────────────────
+  // Stap 1 → 2: activiteit kiezen. Zet meteen de eerlijke standaardafstand
+  // (training van vandaag wint, geklemd op tabel B) en de tabel C-defaults.
+  const kiesActiviteit = (id: ActiviteitId) => {
+    const a = activiteit(id)
+    setActiviteitId(id)
+    try {
+      localStorage.setItem("sparki:rijden-activiteit", id)
+    } catch {
+      /* geen opslag = geen onthouden voorkeur, verder niets */
+    }
+    const std = standaardAfstand(a, trainingVandaag?.planDetails?.targetDistanceKm ?? null)
+    setAfstandKm(std.km)
+    setAfstandUitTraining(std.uitTraining)
+    setVorm("rondje")
+    setHoogte(null)
+    setOndergrond(a.factoren.ondergrond.vast ?? "geen")
+    setDrukkeWegenVermijden(false)
+    setOnderwegWens(a.factoren.onderweg.standaardAan)
+    setPopupKey(null)
+    setKlaarKey(null)
+    setGekozenKey(null)
+    setStap(2)
+    setStand("half")
+  }
+
+  // R16/R-T3: één routeaanvraag per keuze — "Sparki laat maken" (3-A) of het
+  // 3-Z-formulier start precies één generatie-job vanaf het kaartcentrum.
+  const maakRoute = (bron: "zelf" | "sparki") => {
+    // R16-poort: er loopt al een aanvraag → geen tweede job starten.
+    if (generate.isPending || !act) return
     if (!center) {
       setGenFout("Geen startpunt — zoek een plaats of gebruik je locatie.")
       return
@@ -572,23 +687,86 @@ export default function RouteSchermPage() {
     setGenFout(null)
     setKandidaat(null)
     setFase(null)
-    // Vers trainingstype = verse route: aanpassingen van de vorige kandidaat
+    // Verse aanvraag = verse route: aanpassingen van de vorige kandidaat
     // (via-punten/klim) reizen niet stiekem mee.
     setViaPunten([])
     setKlim(null)
     setAanpassen(false)
-    // Verse kandidaat = verse bewaar-status; anders blijft "Bewaard" van een
-    // vorige route op de knop staan.
+    bewaar.reset()
+    annuleerRef.current = false
+    const hoogteKeuze = HOOGTES.find((h) => h.id === hoogte) ?? null
+    generate.mutate(
+      {
+        mode: "loop",
+        sport,
+        ...(act.bikeType ? { bikeType: act.bikeType } : {}),
+        startLat: center.lat,
+        startLon: center.lon,
+        trainingType: trainingVandaag?.type ?? "duurtraining",
+        targetDistanceKm: afstandKm,
+        ...(bron === "zelf" && hoogteKeuze
+          ? { elevationPreference: hoogteKeuze.engine }
+          : {}),
+        ...(bron === "zelf" &&
+        act.factoren.drukkeWegenVermijden &&
+        drukkeWegenVermijden
+          ? { avoidBusyRoads: true }
+          : {}),
+        ...(bron === "zelf" && act.factoren.onderweg.beschikbaar && onderwegWens
+          ? { wish: "graag koffie, eten of een bezienswaardigheid onderweg" }
+          : {}),
+      },
+      {
+        onSuccess: (res) => {
+          if (annuleerRef.current) return
+          setKandidaat(res.candidate)
+          setStap(4)
+          setStand("half")
+        },
+        onError: (e) => {
+          if (annuleerRef.current) return
+          setGenFout(e instanceof Error ? e.message : "Route maken is niet gelukt.")
+        },
+        onSettled: () => setFase(null),
+      },
+    )
+    setStap(4)
+  }
+
+  // §6-escape op stap 1: "Direct een route" — laatst gekozen activiteit (of
+  // Fietsen) + alles vooringevuld, meteen één routeaanvraag.
+  const directEenRoute = () => {
+    let vorige: ActiviteitId = "fietsen"
+    try {
+      const b = localStorage.getItem("sparki:rijden-activiteit")
+      if (b && ACTIVITEITEN.some((a) => a.id === b)) vorige = b as ActiviteitId
+    } catch {
+      /* geen opslag = Fietsen */
+    }
+    kiesActiviteit(vorige)
+    // kiesActiviteit zet state async — de aanvraag gebruikt de verse waarden.
+    const a = activiteit(vorige)
+    const std = standaardAfstand(a, trainingVandaag?.planDetails?.targetDistanceKm ?? null)
+    if (generate.isPending || !center) {
+      if (!center) setGenFout("Geen startpunt — zoek een plaats of gebruik je locatie.")
+      return
+    }
+    setGenFout(null)
+    setKandidaat(null)
+    setViaPunten([])
+    setKlim(null)
+    setAanpassen(false)
     bewaar.reset()
     annuleerRef.current = false
     generate.mutate(
       {
         mode: "loop",
-        sport,
+        sport: a.sport,
+        ...(a.bikeType ? { bikeType: a.bikeType } : {}),
         startLat: center.lat,
         startLon: center.lon,
-        trainingType: type,
-        targetDistanceKm: afstandKm,
+        trainingType: trainingVandaag?.type ?? "duurtraining",
+        targetDistanceKm: std.km,
       },
       {
         onSuccess: (res) => {
@@ -603,6 +781,7 @@ export default function RouteSchermPage() {
         onSettled: () => setFase(null),
       },
     )
+    setStap(4)
   }
 
   // ── R7/R16: één hergenereer-pad voor ALLE aanpassingen ────────────────
@@ -626,7 +805,7 @@ export default function RouteSchermPage() {
         bezig: generate.isPending,
         center,
         kandidaat,
-        fallbackTrainingType: trainingType,
+        fallbackTrainingType: trainingVandaag?.type ?? null,
         fallbackAfstandKm: afstandKm,
         viaPunten,
         klimDetail: klimCanoniek,
@@ -687,11 +866,17 @@ export default function RouteSchermPage() {
         })
         return
       }
-      // Buiten aanpasmodus: tik op een corpusroute = selectie.
-      if (!map.getLayer(ROUTES_LAAG)) return
-      const hits = map.queryRenderedFeatures(rondom, { layers: [ROUTES_LAAG] })
+      // Buiten aanpasmodus: tik op een corpusroute = selectie + het
+      // routekaartje (§3 stap 2a) — zelfde popup als een tik in de lijst.
+      const lagen = ROUTES_LAGEN.filter((id) => map.getLayer(id))
+      if (lagen.length === 0) return
+      const hits = map.queryRenderedFeatures(rondom, { layers: lagen })
       const key = hits[0]?.properties?.key
-      if (typeof key === "string" && key) setGekozenKey(key)
+      if (typeof key === "string" && key) {
+        setGekozenKey(key)
+        setPopupKey(key)
+        setStand("half")
+      }
     }
     map.on("click", onTik)
     return () => {
@@ -788,104 +973,8 @@ export default function RouteSchermPage() {
     setFilterEten(false)
   }
 
-  // §5.2: drie knoppen — [trainingstype ▾] [straal ▾] [Filters]. De uitklap
-  // is een eenvoudige witte lijst ónder de knop, geen blad van onderen.
-  const chipRij = (
-    <>
-      <Chip
-        label={
-          trainingType
-            ? TRAININGSTYPEN.find((t) => t.id === trainingType)?.label ?? trainingType
-            : "Trainingstype"
-        }
-        actief={trainingType != null}
-        open={openChip === "training"}
-        onClick={() => setOpenChip(openChip === "training" ? null : "training")}
-      />
-      <Chip
-        label={`Binnen ${straalKm} km`}
-        actief
-        open={openChip === "straal"}
-        onClick={() => setOpenChip(openChip === "straal" ? null : "straal")}
-      />
-      <Chip
-        label={filtersActief ? "Filters •" : "Filters"}
-        actief={filtersActief}
-        open={false}
-        onClick={() => {
-          setOpenChip(null)
-          setFiltersOpen(true)
-        }}
-      />
-    </>
-  )
-
-  const chipKeuzes = openChip && (
-    <>
-      {openChip === "training" && (
-        <div className="flex flex-col">
-          {TRAININGSTYPEN.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => kiesTrainingstype(t.id)}
-              className={`flex min-h-12 items-center justify-between px-1 text-left text-[14px] ${
-                trainingType === t.id ? "font-semibold text-slate-900" : "text-slate-700"
-              }`}
-            >
-              {t.label}
-              {trainingType === t.id && <span aria-hidden>✓</span>}
-            </button>
-          ))}
-          <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
-            <span className="text-[12px] text-slate-500">Lengte</span>
-            {AFSTANDEN.map((km) => (
-              <KeuzeKnop
-                key={km}
-                label={`± ${km} km`}
-                actief={afstandKm === km}
-                onClick={() => setAfstandKm(km)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      {openChip === "straal" && (
-        <div className="flex flex-col">
-          <button
-            type="button"
-            onClick={() => {
-              navigator.geolocation?.getCurrentPosition(
-                (pos) =>
-                  setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-                () => undefined,
-              )
-              setOpenChip(null)
-            }}
-            className="flex min-h-12 items-center px-1 text-left text-[14px] text-slate-700"
-          >
-            Huidige locatie
-          </button>
-          {STRAAL_KEUZES.map((km) => (
-            <button
-              key={km}
-              type="button"
-              onClick={() => {
-                setStraalKm(km)
-                setOpenChip(null)
-              }}
-              className={`flex min-h-12 items-center justify-between px-1 text-left text-[14px] ${
-                straalKm === km ? "font-semibold text-slate-900" : "text-slate-700"
-              }`}
-            >
-              Binnen {km} km
-              {straalKm === km && <span aria-hidden>✓</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </>
-  )
+  // RIJDEN_01: de chips-rij is vervangen door de stappenmachine; de straal
+  // verhuist naar het filterblad (stap 2).
 
   const zoekLijst = (
     <div className="flex flex-col">
@@ -903,6 +992,286 @@ export default function RouteSchermPage() {
         <p className="px-1 py-3 text-[13px] text-slate-500">Niets gevonden.</p>
       )}
     </div>
+  )
+
+  // ── RIJDEN_01: stap-inhoud in het onderblad / zijpaneel ─────────────────
+  const popupRoute = topRoutes.find((r) => r.key === popupKey) ?? null
+  const klaarRoute = topRoutes.find((r) => r.key === klaarKey) ?? gekozenRoute
+
+  // Stap 1 — activiteit kiezen (de enige verplichte stap).
+  const stap1 = (
+    <>
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+        Wat ga je doen?
+      </p>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        {ACTIVITEITEN.filter((a) => isRouteSportActive(a.sport)).map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => kiesActiviteit(a.id)}
+            className="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 px-3 text-left text-[14px] text-slate-800"
+          >
+            <span
+              aria-hidden
+              className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-400"
+            />
+            {a.label}
+          </button>
+        ))}
+      </div>
+      {/* §6-escape: meteen een route, zonder verdere keuzes. */}
+      <button
+        type="button"
+        disabled={generate.isPending}
+        onClick={directEenRoute}
+        className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
+      >
+        Direct een route
+      </button>
+    </>
+  )
+
+  // Stap 2b — de maak-rij, vanaf het begin van stap 2 zichtbaar.
+  const maakRij = (
+    <div className="mb-3 flex gap-2">
+      <button
+        type="button"
+        onClick={() => setStap(3)}
+        className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+      >
+        Zelf maken
+      </button>
+      <button
+        type="button"
+        disabled={generate.isPending}
+        onClick={() => maakRoute("sparki")}
+        className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-slate-900 px-3 text-[13px] font-medium text-white disabled:opacity-50"
+      >
+        Sparki laat maken
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          setGenFout(
+            "Vrij opnemen zonder route zit nog niet in de web-app — dat volgt met de telefoon-fase. Kies een route en start de navigatie: de rit wordt dan wél opgenomen.",
+          )
+        }
+        className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-200 px-3 text-[13px] text-slate-500"
+      >
+        Opnemen
+      </button>
+    </div>
+  )
+
+  // Stap 2a — routekaartje (popup) van één route uit de kaart of de lijst.
+  const routeKaartje = popupRoute && (
+    <div className="mb-3 rounded-2xl border border-slate-300 bg-white p-3">
+      <p className="text-[14px] font-semibold text-slate-800">
+        {displayRouteName(popupRoute.naam, popupRoute.distanceKm).display}
+      </p>
+      <p className="mt-0.5 text-[12px] text-slate-600">
+        {popupRoute.distanceKm != null ? `${popupRoute.distanceKm.toFixed(1)} km` : "—"}
+        {popupRoute.elevationGainM != null
+          ? ` · ${Math.round(popupRoute.elevationGainM)} hm`
+          : ""}
+        {popupRoute.durationSec != null
+          ? ` · ± ${Math.round(popupRoute.durationSec / 60)} min`
+          : ""}
+      </p>
+      <p className="mt-0.5 text-[12px] text-slate-500">
+        {popupRoute.surface} · {popupRoute.bronLabel}
+        {popupRoute.keerGereden > 0 ? ` · ${popupRoute.keerGereden}× gereden` : ""}
+      </p>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setKlaarKey(popupRoute.key)
+            setPopupKey(null)
+            setStap(5)
+            setStand("half")
+          }}
+          className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-slate-900 px-3 text-[13px] font-medium text-white"
+        >
+          Deze gebruiken
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setPopupKey(null)
+            setGekozenKey(null)
+          }}
+          className="flex min-h-12 items-center justify-center rounded-full border border-slate-200 px-4 text-[13px] text-slate-500"
+        >
+          Sluiten
+        </button>
+      </div>
+    </div>
+  )
+
+  // Stap 3 (3-Z) — zelf maken: alleen afstand verplicht, de rest optioneel
+  // en alleen de factoren die bij de activiteit horen (tabel C).
+  const stap3 = act && (
+    <>
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+        Zelf maken — {act.label}
+      </p>
+      <div className="mt-2">
+        <p className="text-[12px] text-slate-500">
+          Afstand{afstandUitTraining ? " (uit je training van vandaag)" : ""}
+        </p>
+        <div className="mt-1 flex items-center gap-3">
+          <input
+            type="range"
+            min={act.afstand.minKm}
+            max={act.afstand.maxKm}
+            step={1}
+            value={afstandKm}
+            onChange={(e) => {
+              setAfstandKm(Number(e.target.value))
+              setAfstandUitTraining(false)
+            }}
+            className="min-h-12 flex-1"
+          />
+          <span className="w-16 text-right text-[14px] font-semibold text-slate-800">
+            {afstandKm} km
+          </span>
+        </div>
+      </div>
+      {act.factoren.vorm && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[12px] text-slate-500">Vorm</span>
+          {VORMEN.map((v) => (
+            <KeuzeKnop
+              key={v.id}
+              label={v.label}
+              actief={vorm === v.id}
+              onClick={() => setVorm(v.id)}
+            />
+          ))}
+        </div>
+      )}
+      {act.factoren.hoogte && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[12px] text-slate-500">Hoogte</span>
+          {HOOGTES.map((h) => (
+            <KeuzeKnop
+              key={h.id}
+              label={h.label}
+              actief={hoogte === h.id}
+              onClick={() => setHoogte(hoogte === h.id ? null : h.id)}
+            />
+          ))}
+        </div>
+      )}
+      {act.factoren.drukkeWegenVermijden && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[12px] text-slate-500">Drukke wegen</span>
+          <KeuzeKnop
+            label="Vermijden"
+            actief={drukkeWegenVermijden}
+            onClick={() => setDrukkeWegenVermijden((v) => !v)}
+          />
+        </div>
+      )}
+      {act.factoren.onderweg.beschikbaar && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[12px] text-slate-500">Onderweg</span>
+          <KeuzeKnop
+            label="Koffie / eten / bezienswaardig"
+            actief={onderwegWens}
+            onClick={() => setOnderwegWens((v) => !v)}
+          />
+        </div>
+      )}
+      {act.factoren.ondergrond.vast && (
+        <p className="mt-2 text-[12px] text-slate-500">
+          Ondergrond ligt bij {act.label.toLowerCase()} vast:{" "}
+          {act.factoren.ondergrond.vast === "verhard" ? "verhard" : "onverhard"}.
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={generate.isPending}
+        onClick={() => maakRoute("zelf")}
+        className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
+      >
+        Maak deze route
+      </button>
+    </>
+  )
+
+  // Stap 5 — Klaar: starten, bewaren of delen.
+  const stap5Route = kandidaat ?? null
+  const stap5 = (
+    <>
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+        Klaar om te gaan
+      </p>
+      <p className="mt-1 text-[14px] font-semibold text-slate-800">
+        {stap5Route
+          ? stap5Route.name
+          : klaarRoute
+            ? displayRouteName(klaarRoute.naam, klaarRoute.distanceKm).display
+            : "Geen route gekozen"}
+      </p>
+      {(stap5Route || klaarRoute) && (
+        <p className="mt-0.5 text-[12px] text-slate-600">
+          {(stap5Route?.distanceKm ?? klaarRoute?.distanceKm) != null
+            ? `${(stap5Route?.distanceKm ?? klaarRoute!.distanceKm)!.toFixed(1)} km`
+            : "—"}
+          {(stap5Route?.elevationGainM ?? klaarRoute?.elevationGainM) != null
+            ? ` · ${Math.round((stap5Route?.elevationGainM ?? klaarRoute!.elevationGainM)!)} hm`
+            : ""}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          if (stap5Route) setNavigeren(true)
+          else if (klaarRoute && klaarRoute.soort === "route" && klaarRoute.bron === "bewaard")
+            setLocation(`/route?view=bewaard&route=${klaarRoute.id}`)
+          else if (klaarRoute) setGekozenKey(klaarRoute.key)
+        }}
+        className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white"
+      >
+        Start navigatie
+      </button>
+      <div className="mt-2 flex gap-2">
+        {stap5Route && (
+          <button
+            type="button"
+            onClick={() => bewaar.mutate({ candidate: stap5Route })}
+            disabled={bewaar.isPending || bewaar.isSuccess}
+            className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700 disabled:opacity-50"
+          >
+            {bewaar.isSuccess ? "Bewaard" : bewaar.isPending ? "Bezig…" : "Bewaren"}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            // Delen kan pas als er iets deelbaars is; eerlijk melden zolang
+            // de route alleen als kandidaat bestaat.
+            if (stap5Route && !bewaar.isSuccess) {
+              setGenFout("Bewaar de route eerst — dan is er een link om te delen.")
+              return
+            }
+            const url = window.location.href
+            if (navigator.share) {
+              void navigator.share({ title: "Route", url }).catch(() => undefined)
+            } else {
+              void navigator.clipboard?.writeText(url)
+              setGenFout(null)
+            }
+          }}
+          className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+        >
+          Delen
+        </button>
+      </div>
+    </>
   )
 
   const paneelInhoud = (
@@ -932,10 +1301,10 @@ export default function RouteSchermPage() {
         <div className="mb-3 rounded-xl bg-red-50 px-3 py-2.5">
           <p className="text-[13px] text-red-700">{genFout}</p>
           {/* MUX-48: fouttoestand met eerstvolgende actie. */}
-          {trainingType && center && (
+          {act && center && stap >= 3 && (
             <button
               type="button"
-              onClick={() => kiesTrainingstype(trainingType)}
+              onClick={() => maakRoute("sparki")}
               className="mt-1 flex min-h-11 items-center rounded-full text-[13px] font-medium text-red-800 underline underline-offset-2"
             >
               Probeer opnieuw
@@ -944,8 +1313,18 @@ export default function RouteSchermPage() {
         </div>
       )}
 
-      {/* Gegenereerde kandidaat — mét de reden erbij (R6 Go) */}
-      {kandidaat && (
+      {stap === 1 && stap1}
+      {stap === 2 && (
+        <>
+          {routeKaartje}
+          {maakRij}
+        </>
+      )}
+      {stap === 3 && stap3}
+      {stap === 5 && stap5}
+
+      {/* Stap 4: het voorstel — mét de reden erbij (R6 Go) */}
+      {stap === 4 && kandidaat && (
         <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-3">
           <p className="text-[14px] font-semibold text-slate-800">{kandidaat.name}</p>
           <p className="mt-0.5 text-[12px] text-slate-600">
@@ -979,21 +1358,25 @@ export default function RouteSchermPage() {
           )}
           {/* MUX-12/13/22/24: één primaire actie (Start), vast bovenaan de
               rij, daarnaast max. drie secundaire; tikvlakken min. 48 dp. */}
+          {/* §3 stap 4: Gebruiken / Opnieuw / Aanpassen. */}
           <button
             type="button"
-            onClick={() => setNavigeren(true)}
+            onClick={() => {
+              setStap(5)
+              setStand("half")
+            }}
             className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white"
           >
-            Start
+            Gebruiken
           </button>
           <div className="mt-2 flex gap-2">
             <button
               type="button"
-              onClick={() => bewaar.mutate({ candidate: kandidaat })}
-              disabled={bewaar.isPending || bewaar.isSuccess}
+              disabled={generate.isPending}
+              onClick={() => maakRoute("sparki")}
               className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700 disabled:opacity-50"
             >
-              {bewaar.isSuccess ? "Bewaard" : bewaar.isPending ? "Bezig…" : "Bewaar"}
+              Opnieuw
             </button>
             <button
               type="button"
@@ -1193,11 +1576,22 @@ export default function RouteSchermPage() {
       )}
 
       {/* Routes in beeld (R5): kaartlijn + gegevens, geen sfeerfoto */}
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-        {nearby.isLoading
-          ? "Routes in beeld laden…"
-          : `Routes in beeld (${gefilterdeRoutes.length})`}
-      </p>
+      {stap === 2 && (
+        <>
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+          {nearby.isLoading
+            ? "Routes in beeld laden…"
+            : `Routes in beeld (${Math.min(gefilterdeRoutes.length, maxRoutes)})`}
+        </p>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          className="flex min-h-11 items-center rounded-full px-2 text-[12px] font-medium text-slate-600 underline underline-offset-2"
+        >
+          {filtersActief ? "Filters •" : "Filters"}
+        </button>
+      </div>
       {nearby.isError && (
         <div className="mt-2">
           {/* MUX-48: fout benoemt oorzaak, verantwoordelijke en actie. */}
@@ -1225,18 +1619,19 @@ export default function RouteSchermPage() {
           </p>
           <button
             type="button"
-            onClick={() => setOpenChip("training")}
-            className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white"
+            disabled={generate.isPending}
+            onClick={() => maakRoute("sparki")}
+            className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
           >
-            Maak een route voor mij
+            Sparki laat maken
           </button>
           <div className="mt-2 flex gap-2">
             <button
               type="button"
-              onClick={() => setFlow("maken")}
+              onClick={() => setStap(3)}
               className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
             >
-              Zelf plannen
+              Zelf maken
             </button>
             <button
               type="button"
@@ -1266,35 +1661,27 @@ export default function RouteSchermPage() {
             </button>
           </div>
         )}
-        {(pkg === "go" || pkg === "compleet"
-          ? gefilterdeRoutes
-          : gefilterdeRoutes.slice(0, 3)
-        ).map((r) => (
+        {topRoutes.map((r, i) => (
           <RouteRegel
             key={r.key}
             route={r}
+            kleur={ROUTE_KLEUREN[i]}
             gekozen={r.key === gekozenKey}
             onKies={() => {
-              setGekozenKey(r.key === gekozenKey ? null : r.key)
+              // Tik in de lijst = zelfde 2a-popup als tik op de kaartlijn.
+              setGekozenKey(r.key)
+              setPopupKey(r.key)
               setStand("half")
             }}
           />
         ))}
         {pkg !== "go" && pkg !== "compleet" && gefilterdeRoutes.length > 3 && (
           <p className="mt-1 text-[12px] text-slate-500">
-            Gratis toont drie routes — met Go of Compleet zie je alles in beeld.
+            Gratis toont drie routes — met Go of Compleet zie je er tot vijf.
           </p>
         )}
       </div>
-
-      {gekozenRoute && gekozenRoute.soort === "route" && gekozenRoute.bron === "bewaard" && (
-        <button
-          type="button"
-          onClick={() => setLocation(`/routes?view=bewaard&route=${gekozenRoute.id}`)}
-          className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[13px] font-medium text-white"
-        >
-          Openen en starten
-        </button>
+        </>
       )}
     </>
   )
@@ -1342,7 +1729,12 @@ export default function RouteSchermPage() {
         <div className="flex items-center gap-2 border-b border-slate-100 p-3">
           <button
             type="button"
-            onClick={() => setLocation("/routes")}
+            onClick={() => {
+              // Terug binnen de stappen verliest niets (§6); pas op stap 1
+              // verlaat terug het scherm.
+              if (stap > 1) setStap((s) => Math.max(1, s - 1) as Stap)
+              else setLocation("/")
+            }}
             aria-label="Terug"
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
           >
@@ -1402,10 +1794,6 @@ export default function RouteSchermPage() {
         {(zoekResultaten.length > 0 || (geocode.isSuccess && zoekTekst.trim() !== "")) && (
           <div className="border-b border-slate-100 px-3">{zoekLijst}</div>
         )}
-        <div className="flex flex-wrap gap-2 px-3 pt-3">{chipRij}</div>
-        {chipKeuzes && (
-          <div className="mx-3 mt-3 rounded-2xl border border-slate-200 p-3">{chipKeuzes}</div>
-        )}
         <div className="mt-3 min-h-0 flex-1 overflow-y-auto border-t border-slate-100 p-4">
           {paneelInhoud}
         </div>
@@ -1424,12 +1812,31 @@ export default function RouteSchermPage() {
       <div className="absolute inset-x-0 top-0 z-[520] flex items-center gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
         <button
           type="button"
-          onClick={() => setLocation("/routes")}
+          onClick={() => {
+            // Terug binnen de stappen verliest niets (§6); pas op stap 1
+            // verlaat terug het scherm.
+            if (stap > 1) setStap((s) => Math.max(1, s - 1) as Stap)
+            else setLocation("/")
+          }}
           aria-label="Terug"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-md"
         >
           <ArrowLeft className="h-5 w-5" strokeWidth={2} />
         </button>
+        {/* §6-escape: op stap 3/4 altijd rechtsboven "Klaar" — terug naar de
+            kaart met routes, zonder verlies van keuzes. */}
+        {(stap === 3 || stap === 4) && (
+          <button
+            type="button"
+            onClick={() => {
+              setStap(2)
+              setStand("half")
+            }}
+            className="order-last flex h-11 shrink-0 items-center rounded-full bg-white/95 px-4 text-[13px] font-medium text-slate-700 shadow-md"
+          >
+            Klaar
+          </button>
+        )}
         {/* §5.1: één balk, twee taken — zoeken links, rechts erin (achter een
             scheidingslijn) de ingang naar zelf plannen. */}
         <div className="flex h-11 min-w-0 flex-1 items-center rounded-full bg-white/95 shadow-md">
@@ -1481,32 +1888,38 @@ export default function RouteSchermPage() {
         </div>
       </div>
 
-      {/* Filterbolletjes — trainingstype vooraan (R3) — alleen mobiel */}
-      <div className="absolute inset-x-0 top-16 z-[500] mt-[max(0rem,env(safe-area-inset-top))] flex gap-2 overflow-x-auto px-3 py-1 [scrollbar-width:none] lg:hidden">
-        {chipRij}
-      </div>
-
-      {/* Chip-keuzepanelen — alleen mobiel (desktop: in het zijpaneel).
-          MUX-21/MUX-29: keuzes horen in de duimzone, dus onderin boven het
-          onderblad — niet als zwevende kaart bovenaan het scherm. */}
-      {chipKeuzes && (
-        <div
-          className="absolute inset-x-3 z-[510] rounded-2xl bg-white p-3 shadow-xl lg:hidden"
-          style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
-        >
-          {chipKeuzes}
+      {/* U2: locatie geweigerd of niet beschikbaar — eerlijke aanzet-rij met
+          een nieuwe kans; de kaart staat intussen op de laatst bekende plek. */}
+      {locatieGeweigerd && (
+        <div className="absolute inset-x-3 top-16 z-[500] mt-[max(0rem,env(safe-area-inset-top))] flex items-center gap-2 rounded-2xl bg-white/95 px-3 py-2 shadow-md">
+          <p className="min-w-0 flex-1 text-[12px] text-slate-600">
+            Zonder locatie start de kaart op de laatst bekende plek.
+          </p>
+          <button
+            type="button"
+            onClick={vraagLocatie}
+            className="flex min-h-11 shrink-0 items-center rounded-full bg-slate-900 px-3 text-[12px] font-medium text-white"
+          >
+            Zet locatie aan
+          </button>
         </div>
       )}
 
-      {/* Kaartbediening rechtsonder, duimbereik (R4) — mobiel boven het
-          onderblad, desktop gewoon onderin (geen onderblad daar). */}
-      {/* Bewust verborgen zolang een keuzepaneel open is — dat paneel staat
-          op dezelfde plek in de duimzone en mag de knoppen niet half
-          afdekken (reviewbevinding). Paneel sluiten = knoppen terug. */}
+      {/* §4: kaartbediening rechts verticaal — lagen · zoeken · locatie ·
+          zoom (driepunt zit in de bovenbalk). Mobiel boven het onderblad. */}
       <div
-        className={`absolute right-3 z-[500] flex-col gap-2 lg:hidden ${openChip ? "hidden" : "flex"}`}
+        className="absolute right-3 z-[500] flex flex-col gap-2 lg:hidden"
         style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
       >
+        <button
+          type="button"
+          aria-label="Kaartlagen"
+          aria-expanded={lagenOpen}
+          onClick={() => setLagenOpen((v) => !v)}
+          className={`flex h-11 w-11 items-center justify-center rounded-full shadow-md ${lagenOpen ? "bg-slate-900 text-white" : "bg-white/95 text-slate-700"}`}
+        >
+          <Layers className="h-5 w-5" strokeWidth={2} />
+        </button>
         <button
           type="button"
           aria-label="Zoom in"
@@ -1526,17 +1939,61 @@ export default function RouteSchermPage() {
         <button
           type="button"
           aria-label="Mijn locatie"
-          onClick={() =>
-            navigator.geolocation?.getCurrentPosition(
-              (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-              () => undefined,
-            )
-          }
+          onClick={vraagLocatie}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-md"
         >
           <Crosshair className="h-5 w-5" strokeWidth={2} style={{ color: ACCENT }} />
         </button>
       </div>
+
+      {/* §2: het kaartlagenmenu — eerlijk over wat er wel en niet is. */}
+      {lagenOpen && (
+        <div
+          className="absolute right-16 z-[510] w-64 rounded-2xl bg-white p-3 shadow-xl"
+          style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+            Kaartstijl
+          </p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <KeuzeKnop label="Standaard" actief onClick={() => undefined} />
+          </div>
+          <p className="mt-1 text-[11px] text-slate-500">
+            Satelliet en terrein volgen — daar is nog geen bronlicentie voor.
+          </p>
+          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+            Heatmap
+          </p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {(["geen", "globaal", "persoonlijk"] as const).map((h) => (
+              <KeuzeKnop
+                key={h}
+                label={h === "geen" ? "Geen" : h === "globaal" ? "Globaal" : "Persoonlijk"}
+                actief={heatmap === h}
+                onClick={() => setHeatmap(h)}
+              />
+            ))}
+          </div>
+          {heatmap === "globaal" && (
+            <p className="mt-1 text-[11px] text-slate-500">
+              De globale heatmap is nog leeg — die vult zich pas als er genoeg
+              ritten van meerdere sporters zijn. Eerlijk is eerlijk.
+            </p>
+          )}
+          {heatmap === "persoonlijk" && (
+            <p className="mt-1 text-[11px] text-slate-500">
+              Jouw eigen routes en gereden lijnen staan al op de kaart; een
+              aparte dichtheidslaag volgt zodra ritsporen bewaard worden.
+            </p>
+          )}
+          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+            Offline-gebieden
+          </p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            Offline kaarten volgen met de telefoon-fase van de app.
+          </p>
+        </div>
+      )}
 
       {/* Kaartbediening desktop — rechtsonder op het kaartvlak (geen onderblad) */}
       <div className="absolute bottom-3 right-3 z-[500] hidden flex-col gap-2 lg:flex">
@@ -1663,32 +2120,18 @@ export default function RouteSchermPage() {
             <p className="text-[15px] font-semibold text-slate-800">Filters</p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {/* §5.4 sectievolgorde: Trainingstype voorop — zelfde keuze als de
-                knop erboven; kiezen start (net als daar) één routeaanvraag. */}
+            {/* RIJDEN_01: de sport volgt de gekozen activiteit (stap 1); hier
+                alleen nog het zoekgebied + de eigenschappen-filters. */}
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Trainingstype
+              Zoekgebied
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {TRAININGSTYPEN.map((t) => (
+              {STRAAL_KEUZES.map((km) => (
                 <KeuzeKnop
-                  key={t.id}
-                  label={t.label}
-                  actief={trainingType === t.id}
-                  onClick={() => kiesTrainingstype(t.id)}
-                />
-              ))}
-            </div>
-
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Sport
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {SPORTEN.map((s) => (
-                <KeuzeKnop
-                  key={s.id}
-                  label={s.label}
-                  actief={sport === s.id}
-                  onClick={() => setSport(s.id)}
+                  key={km}
+                  label={`${km} km`}
+                  actief={straalKm === km}
+                  onClick={() => setStraalKm(km)}
                 />
               ))}
             </div>
@@ -2001,7 +2444,7 @@ export default function RouteSchermPage() {
           <RouteExplorer
             routes={mijnRoutes.data?.routes ?? []}
             onClose={() => setFlow(null)}
-            onOpenRoute={(id) => setLocation(`/routes?view=bewaard&route=${id}`)}
+            onOpenRoute={(id) => setLocation(`/route?view=bewaard&route=${id}`)}
             onNavigate={(id) => {
               const r = (mijnRoutes.data?.routes ?? []).find((x) => x.id === id) ?? null
               if (!r) return
@@ -2251,10 +2694,14 @@ function KeuzeKnop({
 // Eén route in het onderblad: kaartuitsnede (eigen lijntje) + gegevens.
 function RouteRegel({
   route,
+  kleur,
   gekozen,
   onKies,
 }: {
   route: NearbyRoute
+  // RIJDEN_01 stap 2: de kaartkleur van deze route (kleurbolletje in de
+  // lijst = zelfde kleur als de lijn op de kaart).
+  kleur?: string
   gekozen: boolean
   onKies: () => void
 }) {
@@ -2267,6 +2714,13 @@ function RouteRegel({
         gekozen ? "border-amber-400 bg-amber-50/60" : "border-slate-200"
       }`}
     >
+      {kleur && (
+        <span
+          aria-hidden
+          className="h-3 w-3 shrink-0 rounded-full"
+          style={{ backgroundColor: kleur }}
+        />
+      )}
       <RouteMiniatuur geometry={route.geometry} gekozen={gekozen} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium text-slate-800">
@@ -2334,4 +2788,4 @@ function RouteMiniatuur({
   )
 }
 
-type FlowKeuze = "maken" | "gpx" | "bewaard" | "ontdek" | "paspoort"
+type FlowKeuze = "maken" | "gpx" | "bewaard" | "ontdek" | "paspoort" | "instellingen"

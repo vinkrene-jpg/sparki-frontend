@@ -7,6 +7,34 @@
 
 Laatst bijgewerkt: 2026-08-06.
 
+## Ontvangen 06-08-2026 — RIJDEN_01 (IN UITVOERING, vervangt KAART_VECTOR_01)
+
+- `attached_assets/RIJDEN_01_1786029021554.md`: hoofdstuk Rijden opnieuw — U1–U8
+  (Komoot-gelijkwaardige vectorkaart, altijd centreren op eigen locatie, 100%
+  schermvullend, positie in midden van zíchtbaar kaartdeel, géén tabbladen,
+  adaptieve stappenmachine, één verplichte stap + escapes, PWA). §9 sluitfase
+  verplicht: route-panel.tsx weg, /routes uitgeschreven, nul treffers.
+- **§10-keuzes uit het document (doorgebouwd, René kan bijsturen):**
+  1. Locatietoestemming: éénmalige vraag bij eerste opening; bij weigering
+     laatst bekende plek + rij om alsnog aan te zetten.
+  2. PWA wordt dé telefoon-app; sparki-mobile in de ijskast (niet weg).
+  3. Globale heatmap eerlijk leeg bij oplevering.
+  4. Tabel B-afstanden door Claude ingevuld; aanpassen = één tabel.
+- **Stand 06-08 (gebouwd):** F0 registry+flag, F1/F2/F4 stappenmachine op
+  /route, §9-sloop klaar (route-panel.tsx + routes.tsx weg, RouteGenerator/
+  RoutePassport → route-generator.tsx, alle links → /route), §7 PWA
+  app-shell-cache + versiecontrole in sw.js. Open meldingen voor René:
+  1. "Opnemen" (vrij rijden zonder route) kan op web niet — RouteNavigator
+     eist een route; eerlijk gemeld in de UI, komt met de telefoon-fase.
+  2. Satelliet/terrein-kaartstijlen wachten op een bronlicentie (provider-
+     compliance); lagenmenu meldt dat eerlijk.
+  3. test:route-library-gate faalde al vóór RIJDEN_01 (wouter-mock mist
+     Link) — pre-existing, apart herstellen.
+- **Fase-uitkomst PWA-domein (§7):** doc claimt blokkade wegens ontbrekend
+  EXPO_PUBLIC_DOMAIN; feitelijk volstaat de bestaande prod-HTTPS op
+  sparki-frontend.replit.app voor PWA-installatie. manifest.webmanifest + sw.js
+  bestaan al. Gemeld aan René 06-08.
+
 ## Beslist 06-08-2026 — §7 routeplanner oude filters (René: "Achter de puntjes")
 
 - De oude per-route kaartvragen (wind/temperatuur/verkeerslichten/rotondes/

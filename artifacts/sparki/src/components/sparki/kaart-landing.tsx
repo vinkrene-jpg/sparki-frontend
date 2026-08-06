@@ -47,7 +47,7 @@ function OnderbladGratis() {
       </div>
 
       {/* Zoeken → de routeplanner (Maken). Eén tik naar de volledige kaart. */}
-      <DsButton variant="primair" onClick={() => navigate("/routes?view=maken")}>
+      <DsButton variant="primair" onClick={() => navigate("/route?view=maken")}>
         Route zoeken op de kaart
       </DsButton>
 
@@ -56,7 +56,7 @@ function OnderbladGratis() {
         <div className="flex items-baseline justify-between">
           <h3 className="type-title-card text-foreground/90">Bewaarde routes</h3>
           {routes.length > 0 && (
-            <DsButton variant="tekst" onClick={() => navigate("/routes?view=bewaard")}>
+            <DsButton variant="tekst" onClick={() => navigate("/route?view=bewaard")}>
               Alle bekijken
               <IconChevron aria-hidden="true" />
             </DsButton>
@@ -80,7 +80,7 @@ function OnderbladGratis() {
             titel="Je hebt nog geen routes bewaard."
             actie={{
               label: "Maak je eerste route",
-              onClick: () => navigate("/routes?view=maken"),
+              onClick: () => navigate("/route?view=maken"),
             }}
           />
         ) : (
@@ -89,7 +89,7 @@ function OnderbladGratis() {
               <li key={r.id}>
                 <button
                   type="button"
-                  onClick={() => navigate(`/routes?view=bewaard&route=${r.id}`)}
+                  onClick={() => navigate(`/route?view=bewaard&route=${r.id}`)}
                   className="flex w-full items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
                 >
                   <span className="min-w-0">
@@ -150,7 +150,7 @@ function OnderbladGo({
         <DsState
           soort="leeg"
           titel="Geen training gepland voor vandaag."
-          actie={{ label: "Plan zelf een route", onClick: () => navigate("/routes?view=maken") }}
+          actie={{ label: "Plan zelf een route", onClick: () => navigate("/route?view=maken") }}
         />
       ) : (
         <DsCard>
@@ -176,8 +176,8 @@ function OnderbladGo({
               onClick={() =>
                 navigate(
                   linked
-                    ? `/routes?view=bewaard&route=${linked.id}`
-                    : "/routes?view=maken",
+                    ? `/route?view=bewaard&route=${linked.id}`
+                    : "/route?view=maken",
                 )
               }
             >
@@ -214,7 +214,7 @@ export function KaartLanding({ pkg }: { pkg: Package }) {
         : `Laatst bewaarde route: ${kaartRoute.name}`
 
   return (
-    <CommercialShell actief="/routes">
+    <CommercialShell actief="/route">
       <div className="relative">
         {/* Kaart als achtergrond van de landing — echte route-geometrie of een
             rustige lege kaart (nooit een verzonnen lijn). Vaste hoogte zodat de

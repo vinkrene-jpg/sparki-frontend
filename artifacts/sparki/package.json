@@ -46,7 +46,6 @@
     "test:admin-page-smoke": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/admin-page-smoke.test.tsx",
     "test:coach-messages-smoke": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/coach-messages-smoke.test.tsx",
     "test:sporter-coach": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/sporter-coach.test.tsx",
-    "test:routes-tabs": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/routes-tabs.test.tsx",
     "test:route-library-gate": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-library-verification-gate.test.tsx",
     "test:design-system": "node ../../scripts/run-tsx-test.mjs --test src/components/ds/design-system.test.tsx",
     "test:plan-wizard": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/plan-wizard.test.tsx",
@@ -62,10 +61,10 @@
     "test:plan-overview": "node ../../scripts/run-tsx-test.mjs src/lib/plan-overview.test.ts",
     "test:route-surface-states": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-surfaces-states.test.tsx",
     "test:route-map-startfinish": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-map-startfinish.test.tsx",
-    "test:route-verification-gate": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-verification-gate.test.tsx",
-    "test:route-volgauto-wijzig": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-panel-volgauto-wijzig.test.tsx",
+    "test:route-verification-gate": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-generator-verification-gate.test.tsx",
     "test:role-start": "node ../../scripts/run-tsx-test.mjs src/lib/role-start.test.ts",
-    "test:kalender-maandgrid": "TZ=Europe/Amsterdam node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/kalender-maandgrid.test.tsx"
+    "test:kalender-maandgrid": "TZ=Europe/Amsterdam node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/kalender-maandgrid.test.tsx",
+    "test:rijden-activiteiten": "node ../../scripts/run-tsx-test.mjs src/lib/rijden-activiteiten.test.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.11.1",

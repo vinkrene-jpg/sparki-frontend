@@ -43,7 +43,6 @@ import WedstrijdRoomPage from "@/pages/wedstrijd-room"
 import SamenPage from "@/pages/samen"
 import LichaamPage from "@/pages/lichaam"
 import MechaniekerPage from "@/pages/mechanieker"
-import RoutesPage from "@/pages/routes"
 import RouteSchermPage from "@/pages/route-scherm"
 import KaartProefPage from "@/pages/kaart-proef"
 import KalenderPage from "@/pages/kalender"
@@ -142,7 +141,7 @@ const VIEWS: DevView[] = [
   { label: "Geluid", path: "/geluid" },
   { label: "Lichaam", path: "/lichaam" },
   { label: "Mechanieker", path: "/mechanieker" },
-  { label: "Routes", path: "/routes" },
+  { label: "Routes", path: "/route" },
   { label: "Kalender", path: "/kalender" },
   { label: "Foto-lab", path: "/photo-lab" },
   { label: "Wedstrijd-room", path: "/wedstrijd-room" },
@@ -582,11 +581,9 @@ export function DevPreview() {
     page = <LichaamPage />
   } else if (location.startsWith("/mechanieker")) {
     page = <MechaniekerPage />
-  } else if (location.startsWith("/routes")) {
-    page = <RoutesPage />
   } else if (location.startsWith("/route")) {
-    // ROUTEPLANNER_MOBIEL_01 — nieuw schermvullend routescherm (ná /routes:
-    // dat prefix-match anders alles vangt). Eigen chrome, geen onderbalk.
+    // RIJDEN_01 — hét routescherm (stappenmachine). Eigen chrome, geen
+    // onderbalk; de oude /routes-tabbladen bestaan niet meer (§9).
     page = <RouteSchermPage />
     showNav = false
   } else if (location.startsWith("/kaart-proef")) {

@@ -1009,7 +1009,7 @@ export function RouteKaartStart() {
         </div>
         <button
           type="button"
-          onClick={() => setLocation("/routes?view=maken")}
+          onClick={() => setLocation("/route?view=maken")}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent-cyan px-4 py-2.5 text-[13px] font-semibold text-[color:var(--color-on-accent)] hover:brightness-110"
           data-testid="knop-zelf-plannen"
         >
@@ -1188,7 +1188,7 @@ export function RouteKaartStart() {
               <button
                 type="button"
                 onClick={() =>
-                  setLocation(`/routes?view=bewaard&route=${selected.id}`)
+                  setLocation(`/route?view=bewaard&route=${selected.id}`)
                 }
                 className="rounded-full bg-accent-cyan px-4 py-2 text-[13px] font-semibold text-[color:var(--color-on-accent)] hover:brightness-110"
               >
@@ -1197,7 +1197,7 @@ export function RouteKaartStart() {
             ) : selected.soort === "kandidaat" ? (
               <button
                 type="button"
-                onClick={() => setLocation("/routes?view=bewaard")}
+                onClick={() => setLocation("/route?view=bewaard")}
                 className="rounded-full bg-accent-cyan px-4 py-2 text-[13px] font-semibold text-[color:var(--color-on-accent)] hover:brightness-110"
               >
                 Bekijk bij je gereden routes
@@ -1272,7 +1272,7 @@ export function RouteKaartStart() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setLocation("/routes?view=maken")}
+                  onClick={() => setLocation("/route?view=maken")}
                   className="mt-3 rounded-full bg-accent-cyan px-4 py-2 text-[13px] font-semibold text-[color:var(--color-on-accent)] hover:brightness-110"
                 >
                   Zelf plannen

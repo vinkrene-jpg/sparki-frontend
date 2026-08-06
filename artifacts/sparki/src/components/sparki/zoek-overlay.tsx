@@ -24,7 +24,7 @@ type SearchGroup = {
 // nog niet via de URL, dus we sturen eerlijk naar het hoofdstuk zelf.
 const GROUP_HREF: Record<string, string> = {
   trainingen: "/activiteiten",
-  routes: "/routes?view=bewaard",
+  routes: "/route?view=bewaard",
   wedstrijden: "/races",
   kennis: "/kennis",
 }

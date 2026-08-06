@@ -33,7 +33,6 @@ import SamenPage from "@/pages/samen";
 import ProfielPage from "@/pages/profiel";
 import LichaamPage from "@/pages/lichaam";
 import MechaniekerPage from "@/pages/mechanieker";
-import RoutesPage from "@/pages/routes";
 import RouteSchermPage from "@/pages/route-scherm";
 import KaartProefPage from "@/pages/kaart-proef";
 import KalenderPage from "@/pages/kalender";
@@ -536,7 +535,7 @@ function DashboardPage() {
 function DashboardSporter() {
   const { isLoading, pkg } = usePackage();
   if (isLoading || pkg == null) return <div className="min-h-dvh bg-background" />;
-  if (pkg === "gratis") return <Redirect to="/routes" />;
+  if (pkg === "gratis") return <Redirect to="/route" />;
   return <CommercialToday />;
 }
 
@@ -850,11 +849,8 @@ function AppRouter() {
                 <Route path="/mechanieker">
                   <ProtectedPage component={MechaniekerPage} />
                 </Route>
-                <Route path="/routes">
-                  <ProtectedPage component={RoutesPage} />
-                </Route>
-                {/* ROUTEPLANNER_MOBIEL_01: nieuw schermvullend routescherm
-                    (telefoon), gebouwd NAAST het bevroren oude paneel. */}
+                {/* RIJDEN_01: hét routescherm — de oude /routes-tabbladen
+                    zijn gesloopt (§9); alles loopt via de stappenmachine. */}
                 <Route path="/route">
                   <ProtectedPage component={RouteSchermPage} />
                 </Route>

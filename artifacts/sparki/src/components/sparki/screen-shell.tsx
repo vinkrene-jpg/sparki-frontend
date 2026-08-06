@@ -88,7 +88,6 @@ const COACH_CARD_SECTIONS = new Set(["home"])
 const SHELL_MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
   "/dashboard": IconHome,
   "/train": IconPlan,
-  "/routes": IconRijden,
   "/route": IconRijden,
   "/activiteiten": IconActiviteiten,
   "/analyse": IconAnalyse,

@@ -32,11 +32,11 @@ const noopMutation = () => ({
 })
 
 // wouter: setLocation-aanroepen vastleggen — "Navigeer" navigeert via
-// setLocation(`/routes?view=bewaard&ritopties=<id>`).
+// setLocation(`/route?view=bewaard&ritopties=<id>`).
 const navCalls: string[] = []
 mock.module("wouter", {
   namedExports: {
-    useLocation: () => ["/routes", (to: string) => navCalls.push(to)],
+    useLocation: () => ["/route", (to: string) => navCalls.push(to)],
     useSearch: () => "",
   },
 })
@@ -330,7 +330,7 @@ test("routebibliotheek: Navigeer op niet-geverifieerde racefietsroute vraagt de 
   await click(tochNa)
   assert.deepEqual(
     navCalls,
-    ["/routes?view=bewaard&ritopties=1"],
+    ["/route?view=bewaard&ritopties=1"],
     "mét keuze hoort Navigeer door te gaan naar de ritopties",
   )
 
@@ -339,7 +339,7 @@ test("routebibliotheek: Navigeer op niet-geverifieerde racefietsroute vraagt de 
   await click(findButton(verified, "Navigeer"))
   assert.deepEqual(
     navCalls,
-    ["/routes?view=bewaard&ritopties=2"],
+    ["/route?view=bewaard&ritopties=2"],
     "knownPct=100 hoort direct te navigeren",
   )
   assert.ok(
@@ -352,7 +352,7 @@ test("routebibliotheek: Navigeer op niet-geverifieerde racefietsroute vraagt de 
   await click(findButton(unmeasured, "Navigeer"))
   assert.deepEqual(
     navCalls,
-    ["/routes?view=bewaard&ritopties=3"],
+    ["/route?view=bewaard&ritopties=3"],
     "route zonder meting hoort direct te navigeren (geen gate)",
   )
 

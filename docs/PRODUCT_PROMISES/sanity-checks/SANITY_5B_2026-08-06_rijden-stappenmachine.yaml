@@ -1,0 +1,46 @@
+# Poort 5b sanity-check — RIJDEN_01: hoofdstuk Rijden als adaptieve
+# stappenmachine op /route (één stap = één scherm, geen tabbladen), inclusief
+# §9-sloop van de oude /routes-tabbladen en PWA app-shell-cache (§7).
+
+delivery: "RIJDEN_01 op /route: stap 1 activiteitenkeuze (8 activiteiten via registry rijden-activiteiten.ts, gepoort door isRouteSportActive) → stap 2 kaart+routes in vijf kleurenblind-veilige kleuren/patronen (max 5 bij go/compleet, 3 bij gratis — eerlijk gemeld) met routekaartje-popup (2a) en maak-rij (2b) → stap 3-Z formulier (alleen afstand verplicht, per-activiteit geklemd via tabel B/C; vorm/hoogte/drukke wegen/onderweg alleen als de activiteitsfactoren dat dragen) → stap 4 voorstel (Gebruiken/Opnieuw/Aanpassen — R7-kaartgebaren intact, R16 één aanvraag per keuze) → stap 5 Klaar (Start navigatie/Bewaren/Delen, delen eist eerst bewaren). Escapes §6: 'Direct een route' op stap 1, 'Klaar' rechtsboven op stap 3/4, terug binnen stappen verliest niets. Locatieweigering = laatst bekende plek + aanzet-rij (§10-1). Lagenmenu §2 eerlijk: alleen Standaard-kaartstijl (satelliet/terrein wachten op bronlicentie), globale heatmap eerlijk leeg, persoonlijke heatmap eerlijk 'nog niet'. 'Opnemen' (vrij rijden) op web eerlijk gemeld als telefoon-fase i.p.v. een dode knop. §9: route-panel.tsx en routes.tsx verwijderd (RouteGenerator/RoutePassport verhuisd naar route-generator.tsx als flows achter het driepuntsmenu), alle verwijzers omgelegd naar /route. §7 PWA: sw.js kreeg versie-genummerde app-shell-cache met versiecontrole (oude caches weg bij activate), network-first, API nooit gecachet."
+date: "2026-08-06"
+checked_by: "replit"
+surfaces:
+  - "Web Sparki: /route stappenmachine (route-scherm.tsx) — test:route-scherm-aanpassen 1/1 (stap 1→2b→kandidaat; elk kaartgebaar precies één aanvraag)"
+  - "Web Sparki: activiteitenregistry (lib/rijden-activiteiten.ts) — test:rijden-activiteiten 7/7 (mapping, klem, training-van-vandaag wint geklemd)"
+  - "Web Sparki: flows uit driepuntsmenu (route-generator.tsx) — test:route-verification-gate 3/3 na verhuizing"
+  - "Web Sparki: navigatiecontract — test:navigation 13/13 (geen /routes meer in nav)"
+  - "Monorepo: sparki-typecheck groen na sloop (routes.tsx/route-panel.tsx weg, nul dubbele /route-registraties)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "'Opnemen' (vrij rijden zonder route) op web is geen dode knop: hij meldt eerlijk dat vrij rijden met de telefoon-fase meekomt (RouteNavigator eist een routegeometrie), i.p.v. niets te doen of te doen alsof"
+        result: "pass"
+      - case: "Lagenmenu: satelliet/terrein staan er NIET als klikbare smaken — er staat eerlijk dat die kaartstijlen op een bronlicentie wachten; heatmap 'globaal' meldt eerlijk leeg te zijn (§10-3), 'persoonlijk' meldt eerlijk dat de laag nog volgt"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Stap 3-Z toont alleen vragen die bij de activiteit horen: wandelen krijgt geen hoogtevraag als de factorenvlag dat niet draagt; vaste ondergrond wordt gemeld i.p.v. gevraagd; afstand klemt op de per-activiteit min/max uit tabel B"
+        result: "pass"
+      - case: "Gratis-account ziet 3 routes op de kaart met eerlijke melding (pakketregel wint van de 5-kleuren-max); go/compleet ziet er 5 — geen nep-schaarste en geen stille aftopping"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Locatieweigering levert geen verzonnen positie: laatst bekende plek + een 'Zet locatie aan'-rij (§10-1); zonder enige plek blijft de kaart eerlijk zonder routes i.p.v. routes 'ergens' te tonen"
+        result: "pass"
+      - case: "Routekaartje (2a) toont alleen echte velden van de route (afstand/hm/tijd/ondergrond/bron/keer gereden) — ontbrekende waarden blijven leeg ('—'), er wordt niets bijgeschat"
+        result: "pass"
+
+# Bewijs (2026-08-06 vers gedraaid):
+#   sparki: test:rijden-activiteiten 7/7, test:route-scherm-aanpassen 1/1,
+#           test:route-verification-gate 3/3, test:navigation 13/13,
+#           typecheck (tsc --noEmit) groen.
+# Eerlijk beperkt:
+#   (1) Screenshot-browser heeft geen WebGL ⇒ kaart valt daar in de
+#       foutgrens; schermbewijs volgt via praktijktest op echte telefoon/browser.
+#   (2) test:route-library-gate faalt ook op HEAD vóór deze wijziging
+#       (wouter-mock mist Link-export) — pre-existing, apart te herstellen.
+#   (3) Persoonlijke heatmap-laag en telefoon-opnemen zijn bewust volgende
+#       fase; in de UI eerlijk zo benoemd.
+verdict: "deliverable"

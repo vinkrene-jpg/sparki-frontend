@@ -251,7 +251,7 @@ async function renderWithCandidate(): Promise<{
   el: HTMLDivElement
   cleanup: () => Promise<void>
 }> {
-  const { RouteGenerator } = await import("./route-panel")
+  const { RouteGenerator } = await import("./route-generator")
   const el = document.createElement("div")
   document.body.appendChild(el)
   let root: Root

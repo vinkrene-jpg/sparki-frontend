@@ -48,7 +48,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "/activiteiten": Activity,
   "/lichaam": HeartPulse,
   "/mechanieker": Wrench,
-  "/routes": Map,
+  "/route": Map,
   "/samen": Users,
   "/you": User,
   "/kalender": CalendarDays,

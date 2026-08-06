@@ -112,7 +112,11 @@ export function isValidSubdiscipline(type: string, value: string): boolean {
 // terwijl "running" als trainingssport op coming_soon blijft.
 // Besluit René 01-08-2026: geen vrijgaveflags (walking_routes/hiking_routes);
 // dit register is de enige poort, net als bij de trainingssporten.
-export const ROUTE_SPORTS = ["cycling", "walking", "hiking"] as const;
+// RIJDEN_01 (06-08-2026): "running" toegevoegd als ROUTEsport — de
+// routemotor heeft er een echt voetprofiel voor (foot-walking/foot-hiking,
+// zie profile-selection), stap 1 van Rijden biedt Hardlopen aan. De
+// TRAININGSfamilie running blijft coming_soon; dit is uitsluitend routes.
+export const ROUTE_SPORTS = ["cycling", "walking", "hiking", "running"] as const;
 export type RouteSportFamily = (typeof ROUTE_SPORTS)[number];
 
 /** Is deze sport beschikbaar voor ROUTEplanning (niet per se voor training)? */

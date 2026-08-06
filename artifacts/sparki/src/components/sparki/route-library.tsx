@@ -247,9 +247,9 @@ export function RouteLibrary() {
   }
 
   const openRoute = (id: number) =>
-    setLocation(`/routes?view=bewaard&route=${id}`)
+    setLocation(`/route?view=bewaard&route=${id}`)
   const startNavigate = (id: number) =>
-    setLocation(`/routes?view=bewaard&ritopties=${id}`)
+    setLocation(`/route?view=bewaard&ritopties=${id}`)
   // Navigeer met verificatie-gate: een niet volledig geverifieerde
   // racefietsroute vraagt eerst een expliciete keuze (taak #492).
   const requestNavigate = (r: SparkiRoute) => {

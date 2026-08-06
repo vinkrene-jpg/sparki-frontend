@@ -279,7 +279,7 @@ export function LinkedRoutePreview({
             </p>
           </div>
           <Link
-            href="/routes"
+            href="/route"
             className="shrink-0 rounded-xl border border-accent-cyan/25 bg-accent-cyan/10 px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-accent-cyan transition-colors hover:border-accent-cyan/45"
           >
             STEL SAMEN

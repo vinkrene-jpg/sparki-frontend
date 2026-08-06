@@ -125,7 +125,7 @@ function DetailView({
       {/* Geen doodlopend klimdetail: vanaf hier direct door naar Route maken —
           de klim reist mee en wordt daar aantoonbaar in de route gelegd. */}
       <a
-        href={`/routes?view=maken&klim=${encodeURIComponent(climb.osmId)}&klimNaam=${encodeURIComponent(climb.name)}&klimLat=${climb.lat}&klimLon=${climb.lon}`}
+        href={`/route?view=maken&klim=${encodeURIComponent(climb.osmId)}&klimNaam=${encodeURIComponent(climb.name)}&klimLat=${climb.lat}&klimLon=${climb.lon}`}
         className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-accent-cyan px-4 py-3 font-sans text-[13px] font-semibold text-on-accent"
         data-testid="klim-naar-route"
       >
