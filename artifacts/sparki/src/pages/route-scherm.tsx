@@ -68,6 +68,7 @@ import {
   vormGeneratePayload,
 } from "@/lib/rijden-activiteiten"
 import { isRouteSportActive } from "@workspace/feature-flags"
+import { WOORD } from "@/lib/rijden-woorden"
 
 // ROUTEPLANNER_MOBIEL_01 (05-08-2026) — nieuw schermvullend routescherm voor
 // de telefoon, gebouwd NAAST het bevroren route-panel.tsx. Regels:
@@ -91,7 +92,7 @@ import { isRouteSportActive } from "@workspace/feature-flags"
 // Alleen Instellingen (privacyzones) blijft voorlopig een deep-link naar het
 // oude scherm, tot ook die verhuist.
 const MENU_ITEMS: { label: string; flow?: FlowKeuze; to?: string }[] = [
-  { label: "Zelf plannen", flow: "maken" },
+  { label: WOORD.zelfMaken, flow: "maken" },
   { label: "GPX importeren", flow: "gpx" },
   { label: "Bewaarde routes", flow: "bewaard" },
   { label: "Ontdekken", flow: "ontdek" },
@@ -107,28 +108,44 @@ const MENU_ITEMS: { label: string; flow?: FlowKeuze; to?: string }[] = [
 //   3  Zelf maken (3-Z) — alleen afstand verplicht, rest optioneel
 //   4  voorstel van Sparki (Gebruiken / Opnieuw / Aanpassen)
 //   5  Klaar (Start navigatie / Bewaren / Delen)
-// "Automatisch laten maken" (3-A) slaat het formulier over: alles vooringevuld,
-// direct één routeaanvraag (R16). Escapes (§6): "Direct een route" op stap 1
+// RIJDEN_02: de knoppenrij is de stappenmachine — verfijnen loopt via de
+// bolletjes; "Sparki maakt hem" (escape, altijd onderaan het blad) start
+// direct één routeaanvraag (R16). Escapes (§6): de escape zonder activiteit
 // en "Klaar" op stap 3/4 — terug verliest nooit gemaakte keuzes.
 type Stap = 1 | 2 | 3 | 4 | 5
 
+// RIJDEN_02 §2 (C1): het filterblad is weg — de knoppenrij ís de
+// stappenmachine. Elk bolletje toont een gemaakte keuze (de wáárde, niet de
+// vraag); "+ Verfijnen" opent de eerstvolgende onbeantwoorde tabel-C-vraag
+// als laag onderblad. Eén vraag per keer, elke keuze ververst de routes.
+type VerfijnVraag =
+  | "afstand"
+  | "vorm"
+  | "hoogte"
+  | "ondergrond"
+  | "drukteweg"
+  | "onderweg"
+type VraagId = "activiteit" | "straal" | VerfijnVraag
+
 // §3 stap 2: vijf kleuren, kleurenblind-veilig — kleur is nooit het enige
 // verschil: elke route heeft óók een eigen lijnpatroon/dikte.
+// RIJDEN_02 §5.5 (C8): rustige, gedempte kleuren die niet vloeken met de
+// kaartondergrond; kleur is nooit het enige verschil (patroon per positie).
 const ROUTE_KLEUREN = [
-  "#2563eb", // blauw — doorgetrokken, dik
-  "#d97706", // oranje — streepjes
-  "#059669", // groen — stippellijn
-  "#7c3aed", // paars — streep-punt
-  "#db2777", // roze — doorgetrokken, dun
+  "#0f766e", // teal — doorgetrokken
+  "#c2410c", // terracotta — doorgetrokken
+  "#4338ca", // indigo — lange streep
+  "#a16207", // oker — korte streep
+  "#be185d", // framboos — stip-streep
 ] as const
 const ROUTE_PATRONEN: (number[] | null)[] = [
   null,
-  [2, 1.4],
-  [0.4, 1.6],
-  [3, 1, 0.8, 1],
   null,
+  [3, 1.5],
+  [1.2, 1.2],
+  [0.2, 1.4, 2.4, 1.4],
 ]
-const ROUTE_BASISDIKTE = [4.5, 4, 4, 4, 3] as const
+const ROUTE_BASISDIKTE = [4, 4, 4, 4, 4] as const
 
 // §5.2: straalkeuzes — het zoekgebied rond het kaartcentrum.
 const STRAAL_KEUZES = [5, 10, 20, 30, 50, 100]
@@ -170,21 +187,35 @@ function lijnFeature(
 // verschil (kleurenblind-veilig): elke kleurpositie heeft ook een eigen
 // lijnpatroon/dikte (aparte lagen — line-dasharray kan niet per feature).
 // Gekozen route wordt dikker; de rest vervaagt maar verdwijnt NIET.
+// §5.5: de gekozen route wordt 1,5× dik met een witte omranding van 1 px;
+// de andere routes blijven staan op 45% dekking (verdwijnen nooit, C3).
 function routeLaagVerf(i: number, gekozenKey: string | null) {
   const actief = ["==", ["get", "key"], gekozenKey ?? "\u0000"]
   const basis = ROUTE_BASISDIKTE[i] ?? 4
   return {
     "line-color": ROUTE_KLEUREN[i] ?? LIJN_ACCENT,
-    "line-width": ["case", actief, basis + 2.5, basis] as unknown as number,
+    "line-width": ["case", actief, basis * 1.5, basis] as unknown as number,
     "line-opacity": [
       "case",
       actief,
       1,
-      gekozenKey ? 0.35 : 0.85,
+      gekozenKey ? 0.45 : 0.85,
     ] as unknown as number,
   }
 }
+// Witte omranding (1 px) alleen onder de gekozen route — aparte laag onder
+// de kleurlaag, want line-dasharray/casing kan niet in één laag.
+function routeRandVerf(i: number, gekozenKey: string | null) {
+  const actief = ["==", ["get", "key"], gekozenKey ?? "\u0000"]
+  const basis = ROUTE_BASISDIKTE[i] ?? 4
+  return {
+    "line-color": "#ffffff",
+    "line-width": basis * 1.5 + 2,
+    "line-opacity": ["case", actief, 1, 0] as unknown as number,
+  }
+}
 const ROUTES_LAGEN = [0, 1, 2, 3, 4].map((i) => `${ROUTES_LAAG}-${i}`)
+const ROUTES_RAND_LAGEN = [0, 1, 2, 3, 4].map((i) => `${ROUTES_LAAG}-${i}-rand`)
 
 // §5.7 (voorbereid in F3): ÉÉN centrale fit-functie voor "breng deze route in
 // beeld" — alle aanroepen lopen hierlangs, straks met per-kant marges.
@@ -252,23 +283,11 @@ export default function RouteSchermPage() {
   // §2: het kaartlagenmenu (in de bedieningskolom rechts).
   const [lagenOpen, setLagenOpen] = useState(false)
   const [heatmap, setHeatmap] = useState<"geen" | "globaal" | "persoonlijk">("geen")
-  // §5.4: filterblad over het hele scherm + de filterwaarden zelf.
-  const [filtersOpen, setFiltersOpen] = useState(false)
-  const [filterAfstandMax, setFilterAfstandMax] = useState<number | null>(null)
-  const [filterHoogteMax, setFilterHoogteMax] = useState<number | null>(null)
-  const [filterOndergrond, setFilterOndergrond] = useState<string | null>(null)
-  const [filterTypeRoute, setFilterTypeRoute] = useState<"lus" | "ab" | null>(null)
-  const [filterMoeilijkheid, setFilterMoeilijkheid] = useState<
-    "makkelijk" | "gemiddeld" | "zwaar" | null
-  >(null)
-  const [filterGereden, setFilterGereden] = useState(false)
-  // Onderweg: klim is eerlijk afleidbaar (hm per km); koffie/eten komen uit
-  // de POI-laag (OSM) als onderweg-velden op elke nearby-rij. Filteren op
-  // koffie/eten houdt alleen rijen met een aantoonbaar punt (true) over —
-  // onbekend (null) valt eerlijk af, dat wordt in het blad uitgelegd.
-  const [filterKlim, setFilterKlim] = useState(false)
-  const [filterKoffie, setFilterKoffie] = useState(false)
-  const [filterEten, setFilterEten] = useState(false)
+  // RIJDEN_02 §2: welke vraag van de stappenmachine staat open (laag
+  // onderblad) en welke verfijn-vragen zijn al beantwoord — in de volgorde
+  // waarin de gebruiker koos (zo staan de bolletjes ook in de rij, §2.2).
+  const [vraagOpen, setVraagOpen] = useState<VraagId | null>(null)
+  const [beantwoord, setBeantwoord] = useState<VerfijnVraag[]>([])
   // §5.7 moment 2: het gebied van de laatst gekozen zoekplaats (geocoder-bbox,
   // als [[lat,lon],[lat,lon]]) — een dorp krijgt zo een ander kader dan een
   // provincie. Alleen gezet als de geocoder echt een vak leverde.
@@ -430,6 +449,16 @@ export default function RouteSchermPage() {
       // RIJDEN_01 stap 2: vijf lagen (één per kleurpositie) op dezelfde bron;
       // elke laag filtert op zijn idx en heeft eigen kleur + patroon + dikte.
       ROUTES_LAGEN.forEach((laagId, i) => {
+        // §5.5: eerst de witte omranding (alleen zichtbaar bij selectie),
+        // daar bovenop de kleurlaag met het eigen patroon.
+        map.addLayer({
+          id: ROUTES_RAND_LAGEN[i],
+          type: "line",
+          source: ROUTES_BRON,
+          filter: ["==", ["get", "idx"], i],
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: routeRandVerf(i, null),
+        })
         map.addLayer({
           id: laagId,
           type: "line",
@@ -511,57 +540,58 @@ export default function RouteSchermPage() {
     // (een dorp en een provincie krijgen zo elk hun eigen passende kader).
   }, [center])
 
-  // §5.4: filters gelden client-side op het nearby-corpus (zie use-routes:
-  // de lijst is daarvoor bedoeld — live teller zonder server-bursts).
+  // RIJDEN_02 §2: elke keuze in de knoppenrij ververst meteen de routes op
+  // de kaart en de teller. Alleen béántwoorde vragen filteren mee; is een
+  // keuze gemaakt, dan vallen routes met onbekende waarden eerlijk af.
   const routes = nearby.data?.routes ?? []
   const gefilterdeRoutes = useMemo(
     () =>
-      routes.filter(
-        (r) =>
-          (filterAfstandMax == null ||
-            (r.distanceKm != null && r.distanceKm <= filterAfstandMax)) &&
-          (filterHoogteMax == null ||
-            (r.elevationGainM != null && r.elevationGainM <= filterHoogteMax)) &&
-          (filterOndergrond == null || r.surface === filterOndergrond) &&
-          (filterTypeRoute == null ||
-            (filterTypeRoute === "lus" ? r.isLus : !r.isLus)) &&
-          (filterMoeilijkheid == null || r.moeilijkheid === filterMoeilijkheid) &&
-          (!filterGereden || r.keerGereden > 0) &&
-          // Klim onderweg = eerlijk afgeleid uit echte hoogtemeters: ≥8 hm/km.
-          (!filterKlim ||
-            (r.elevationGainM != null &&
-              r.distanceKm != null &&
-              r.distanceKm > 0 &&
-              r.elevationGainM / r.distanceKm >= 8)) &&
-          // Koffie/eten: alleen rijen met een aantoonbaar punt ≤250 m van de
-          // lijn (true). Onbekend (null) valt eerlijk af — nooit stil doorlaten.
-          (!filterKoffie || r.onderweg?.koffie === true) &&
-          (!filterEten || r.onderweg?.eten === true),
-      ),
+      routes.filter((r) => {
+        if (beantwoord.includes("afstand")) {
+          // "Ongeveer deze afstand": band van −40% tot +40% rond de keuze.
+          if (r.distanceKm == null) return false
+          if (r.distanceKm < afstandKm * 0.6 || r.distanceKm > afstandKm * 1.4)
+            return false
+        }
+        if (beantwoord.includes("vorm") && vorm !== "heen-terug") {
+          // Rondje = lus; A naar B = geen lus. Heen-en-terug is uit de
+          // lusvorm alleen niet af te leiden — die filtert eerlijk niet.
+          if (vorm === "rondje" ? !r.isLus : r.isLus) return false
+        }
+        if (beantwoord.includes("hoogte") && hoogte != null) {
+          // Eerlijk afgeleid uit echte hoogtemeters per km: vlak <8,
+          // heuvelachtig 8–15, veel klim ≥15. Onbekend valt af.
+          if (
+            r.elevationGainM == null ||
+            r.distanceKm == null ||
+            r.distanceKm <= 0
+          )
+            return false
+          const hmPerKm = r.elevationGainM / r.distanceKm
+          if (hoogte === "vlak" && hmPerKm >= 8) return false
+          if (hoogte === "heuvelachtig" && (hmPerKm < 8 || hmPerKm >= 15))
+            return false
+          if (hoogte === "veel-klim" && hmPerKm < 15) return false
+        }
+        if (
+          beantwoord.includes("ondergrond") &&
+          ondergrond !== "geen" &&
+          r.surface !== ondergrond
+        )
+          return false
+        if (beantwoord.includes("onderweg") && onderwegWens) {
+          // Alleen routes met een aantoonbaar punt ≤250 m van de lijn (true);
+          // onbekend (null) valt eerlijk af — nooit stil doorlaten.
+          if (r.onderweg?.koffie !== true && r.onderweg?.eten !== true)
+            return false
+        }
+        // Drukke wegen stuurt alleen de generatie — op bestaande routes is
+        // drukte niet vastgelegd, dus daar filtert hij eerlijk niet.
+        return true
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      nearby.data,
-      filterAfstandMax,
-      filterHoogteMax,
-      filterOndergrond,
-      filterTypeRoute,
-      filterMoeilijkheid,
-      filterGereden,
-      filterKlim,
-      filterKoffie,
-      filterEten,
-    ],
+    [nearby.data, beantwoord, afstandKm, vorm, hoogte, ondergrond, onderwegWens],
   )
-  const filtersActief =
-    filterAfstandMax != null ||
-    filterHoogteMax != null ||
-    filterOndergrond != null ||
-    filterTypeRoute != null ||
-    filterMoeilijkheid != null ||
-    filterGereden ||
-    filterKlim ||
-    filterKoffie ||
-    filterEten
 
   // RIJDEN_01 §3 stap 2: tot vijf routes op de kaart. Gratis blijft op drie
   // (pakketregel wint van de vijf uit de spec — eerlijk gemeld in de lijst).
@@ -600,6 +630,13 @@ export default function RouteSchermPage() {
       const verf = routeLaagVerf(i, gekozenKey)
       for (const [naam, waarde] of Object.entries(verf)) {
         map.setPaintProperty(laagId, naam, waarde)
+      }
+      const randId = ROUTES_RAND_LAGEN[i]
+      if (map.getLayer(randId)) {
+        const rand = routeRandVerf(i, gekozenKey)
+        for (const [naam, waarde] of Object.entries(rand)) {
+          map.setPaintProperty(randId, naam, waarde)
+        }
       }
     })
   }, [gekozenKey, kaartKlaar])
@@ -695,26 +732,26 @@ export default function RouteSchermPage() {
     setPopupKey(null)
     setKlaarKey(null)
     setGekozenKey(null)
+    // §2: een nieuwe activiteit = een verse rij bolletjes.
+    setBeantwoord([])
+    setVraagOpen(null)
     setStap(2)
     setStand("half")
   }
 
-  // R16/R-T3: één routeaanvraag per keuze — "Automatisch laten maken" (3-A) of het
-  // 3-Z-formulier start precies één generatie-job vanaf het kaartcentrum.
-  const maakRoute = (bron: "zelf" | "sparki") => {
+  // R16/R-T3: één routeaanvraag per keuze — "Sparki maakt hem" start precies
+  // één generatie-job vanaf het kaartcentrum, met álle keuzes uit de
+  // knoppenrij (RIJDEN_02 §2: de bolletjes zíjn de aanvraag).
+  const maakRoute = () => {
     // R16-poort: er loopt al een aanvraag → geen tweede job starten.
     if (generate.isPending || !act) return
     if (!center) {
       setGenFout("Geen startpunt — zoek een plaats of gebruik je locatie.")
       return
     }
-    // Vormkeuze → payload (3-Z, pure functie met contracttest): rondje = lus,
-    // heen-terug = out_and_back, A-naar-B = ptp met bestemming. "Sparki laat
-    // maken" (3-A) blijft altijd een rondje.
-    const vormRes =
-      bron === "zelf"
-        ? vormGeneratePayload(vorm, bestemming)
-        : vormGeneratePayload("rondje")
+    // Vormkeuze → payload (pure functie met contracttest): rondje = lus,
+    // heen-terug = out_and_back, A-naar-B = ptp met bestemming.
+    const vormRes = vormGeneratePayload(vorm, bestemming)
     if (!vormRes.ok) {
       setGenFout(vormRes.fout)
       return
@@ -739,22 +776,17 @@ export default function RouteSchermPage() {
         startLon: center.lon,
         trainingType: trainingVandaag?.type ?? "duurtraining",
         targetDistanceKm: afstandKm,
-        ...(bron === "zelf" && hoogteKeuze
-          ? { elevationPreference: hoogteKeuze.engine }
-          : {}),
-        ...(bron === "zelf" &&
-        act.factoren.drukkeWegenVermijden &&
-        drukkeWegenVermijden
+        ...(hoogteKeuze ? { elevationPreference: hoogteKeuze.engine } : {}),
+        ...(act.factoren.drukkeWegenVermijden && drukkeWegenVermijden
           ? { avoidBusyRoads: true }
           : {}),
-        ...(bron === "zelf" && act.factoren.onderweg.beschikbaar && onderwegWens
+        ...(act.factoren.onderweg.beschikbaar && onderwegWens
           ? { wish: "graag koffie, eten of een bezienswaardigheid onderweg" }
           : {}),
         // Ondergrondvoorkeur: alleen gravel/MTB — de motor gebruikt hem daar
         // echt (voorkeur, geen garantie); elders zou meesturen een dode knop
         // maskeren omdat de server hem negeert.
-        ...(bron === "zelf" &&
-        (act.bikeType === "gravel" || act.bikeType === "mtb") &&
+        ...((act.bikeType === "gravel" || act.bikeType === "mtb") &&
         ondergrond !== "geen"
           ? { unpavedPreferencePct: ondergrond === "onverhard" ? 70 : 10 }
           : {}),
@@ -776,8 +808,8 @@ export default function RouteSchermPage() {
     setStap(4)
   }
 
-  // §6-escape op stap 1: "Direct een route" — laatst gekozen activiteit (of
-  // Fietsen) + alles vooringevuld, meteen één routeaanvraag.
+  // §6-escape zonder activiteit: "Sparki maakt hem" pakt de laatst gekozen
+  // activiteit (of Fietsen) + alles vooringevuld, meteen één routeaanvraag.
   const directEenRoute = () => {
     let vorige: ActiviteitId = "fietsen"
     try {
@@ -1004,21 +1036,6 @@ export default function RouteSchermPage() {
   // ── Gedeelde bouwstenen (R17) — één keer opgebouwd, getoond in het
   // mobiele onderblad ÉN het desktop-zijpaneel. Zelfde state, zelfde hooks,
   // alleen de plek verschilt.
-  const resetFilters = () => {
-    setFilterAfstandMax(null)
-    setFilterHoogteMax(null)
-    setFilterOndergrond(null)
-    setFilterTypeRoute(null)
-    setFilterMoeilijkheid(null)
-    setFilterGereden(false)
-    setFilterKlim(false)
-    setFilterKoffie(false)
-    setFilterEten(false)
-  }
-
-  // RIJDEN_01: de chips-rij is vervangen door de stappenmachine; de straal
-  // verhuist naar het filterblad (stap 2).
-
   const zoekLijst = (
     <div className="flex flex-col">
       {zoekResultaten.map((r, i) => (
@@ -1041,57 +1058,34 @@ export default function RouteSchermPage() {
   const popupRoute = topRoutes.find((r) => r.key === popupKey) ?? null
   const klaarRoute = topRoutes.find((r) => r.key === klaarKey) ?? gekozenRoute
 
-  // Stap 1 — activiteit kiezen (de enige verplichte stap).
+  // Stap 1 — de activiteit kies je in de knoppenrij (het bolletje
+  // "Activiteit"); het onderblad legt alleen rustig uit wat er gebeurt (C5:
+  // de keuzerij staat al in beeld, dus hier geen tweede knoppenset).
   const stap1 = (
-    <>
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-        Wat ga je doen?
-      </p>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        {ACTIVITEITEN.filter((a) => isRouteSportActive(a.sport)).map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            onClick={() => kiesActiviteit(a.id)}
-            className="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 px-3 text-left text-[14px] text-slate-800"
-          >
-            <span
-              aria-hidden
-              className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-400"
-            />
-            {a.label}
-          </button>
-        ))}
-      </div>
-      {/* §6-escape: meteen een route, zonder verdere keuzes. */}
-      <button
-        type="button"
-        disabled={generate.isPending}
-        onClick={directEenRoute}
-        className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
-      >
-        Direct een route
-      </button>
-    </>
+    <p className="text-[14px] leading-relaxed text-slate-600">
+      Tik bovenaan op <span className="font-medium text-slate-800">Activiteit</span>{" "}
+      en kies wat je gaat doen — daarna staan hier meteen routes uit de buurt.
+    </p>
   )
 
-  // Stap 2b — de maak-rij, vanaf het begin van stap 2 zichtbaar.
+  // Stap 2b — de drie manieren om aan een route te komen (§3), bij elkaar in
+  // het onderblad. De vierde weg — {WOORD.sparkiMaaktHem} — is de escape en
+  // staat altijd onderaan het blad (C6), dus niet nóg eens hier (C5).
   const maakRij = (
     <div className="mb-3 flex gap-2">
       <button
         type="button"
-        onClick={() => setStap(3)}
+        onClick={() => setFlow("maken")}
         className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
       >
-        Zelf maken
+        {WOORD.zelfMaken}
       </button>
       <button
         type="button"
-        disabled={generate.isPending}
-        onClick={() => maakRoute("sparki")}
-        className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-slate-900 px-3 text-[13px] font-medium text-white disabled:opacity-50"
+        onClick={() => setFlow("bewaard")}
+        className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
       >
-        Automatisch laten maken
+        {WOORD.bewaardeRoutes}
       </button>
       <button
         type="button"
@@ -1102,7 +1096,7 @@ export default function RouteSchermPage() {
         }
         className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-200 px-3 text-[13px] text-slate-500"
       >
-        Opnemen
+        {WOORD.opnemen}
       </button>
     </div>
   )
@@ -1153,139 +1147,9 @@ export default function RouteSchermPage() {
     </div>
   )
 
-  // Stap 3 (3-Z) — zelf maken: alleen afstand verplicht, de rest optioneel
-  // en alleen de factoren die bij de activiteit horen (tabel C).
-  const stap3 = act && (
-    <>
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-        Zelf maken — {act.label}
-      </p>
-      <div className="mt-2">
-        <p className="text-[12px] text-slate-500">
-          Afstand{afstandUitTraining ? " (uit je training van vandaag)" : ""}
-        </p>
-        <div className="mt-1 flex items-center gap-3">
-          <input
-            type="range"
-            min={act.afstand.minKm}
-            max={act.afstand.maxKm}
-            step={1}
-            value={afstandKm}
-            onChange={(e) => {
-              setAfstandKm(Number(e.target.value))
-              setAfstandUitTraining(false)
-            }}
-            className="min-h-12 flex-1"
-          />
-          <span className="w-16 text-right text-[14px] font-semibold text-slate-800">
-            {afstandKm} km
-          </span>
-        </div>
-      </div>
-      {act.factoren.vorm && (
-        <>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-[12px] text-slate-500">Vorm</span>
-            {VORMEN.map((v) => (
-              <KeuzeKnop
-                key={v.id}
-                label={v.label}
-                actief={vorm === v.id}
-                onClick={() => setVorm(v.id)}
-              />
-            ))}
-          </div>
-          {vorm === "a-naar-b" && (
-            <div className="mt-2">
-              <input
-                type="text"
-                value={bestemming}
-                onChange={(e) => setBestemming(e.target.value)}
-                placeholder="Bestemming (plaats of adres)"
-                className="min-h-12 w-full rounded-full border border-slate-300 px-4 text-[14px] text-slate-800 placeholder:text-slate-400"
-              />
-              <p className="mt-1 text-[12px] text-slate-500">
-                De afstand volgt uit de echte wegroute naar je bestemming.
-              </p>
-            </div>
-          )}
-          {vorm === "heen-terug" && (
-            <p className="mt-1 text-[12px] text-slate-500">
-              Heen en terug over dezelfde weg, keerpunt op ± de halve afstand.
-            </p>
-          )}
-        </>
-      )}
-      {act.factoren.hoogte && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-[12px] text-slate-500">Hoogte</span>
-          {HOOGTES.map((h) => (
-            <KeuzeKnop
-              key={h.id}
-              label={h.label}
-              actief={hoogte === h.id}
-              onClick={() => setHoogte(hoogte === h.id ? null : h.id)}
-            />
-          ))}
-        </div>
-      )}
-      {act.factoren.drukkeWegenVermijden && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-[12px] text-slate-500">Drukke wegen</span>
-          <KeuzeKnop
-            label="Vermijden"
-            actief={drukkeWegenVermijden}
-            onClick={() => setDrukkeWegenVermijden((v) => !v)}
-          />
-        </div>
-      )}
-      {act.factoren.onderweg.beschikbaar && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-[12px] text-slate-500">Onderweg</span>
-          <KeuzeKnop
-            label="Koffie / eten / bezienswaardig"
-            actief={onderwegWens}
-            onClick={() => setOnderwegWens((v) => !v)}
-          />
-        </div>
-      )}
-      {act.factoren.ondergrond.keuze &&
-        (act.bikeType === "gravel" || act.bikeType === "mtb") && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-[12px] text-slate-500">Ondergrond</span>
-            {(
-              [
-                { id: "verhard", label: "Vooral verhard" },
-                { id: "onverhard", label: "Vooral onverhard" },
-              ] as const
-            ).map((o) => (
-              <KeuzeKnop
-                key={o.id}
-                label={o.label}
-                actief={ondergrond === o.id}
-                onClick={() =>
-                  setOndergrond(ondergrond === o.id ? "geen" : o.id)
-                }
-              />
-            ))}
-          </div>
-        )}
-      {act.factoren.ondergrond.vast && (
-        <p className="mt-2 text-[12px] text-slate-500">
-          Ondergrond ligt bij {act.label.toLowerCase()} vast:{" "}
-          {act.factoren.ondergrond.vast === "verhard" ? "verhard" : "onverhard"}.
-        </p>
-      )}
-      <button
-        type="button"
-        disabled={generate.isPending}
-        onClick={() => maakRoute("zelf")}
-        className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
-      >
-        Maak deze route
-      </button>
-    </>
-  )
+  // RIJDEN_02 (C1/C5): het oude 3-Z-formulier is weg — afstand, vorm,
+  // hoogte, ondergrond, drukke wegen en onderweg kies je in de knoppenrij
+  // (één vraag per keer). Stap 3 bestaat niet meer als eigen scherm.
 
   // Stap 5 — Klaar: starten, bewaren of delen.
   const stap5Route = kandidaat ?? null
@@ -1359,6 +1223,113 @@ export default function RouteSchermPage() {
     </>
   )
 
+  // ── RIJDEN_02 §2: de knoppenrij (stappenmachine) ───────────────────────
+  // Welke tabel-C-vragen horen bij deze activiteit, in vaste volgorde.
+  const vragenVoorAct: VerfijnVraag[] = act
+    ? [
+        "afstand" as const,
+        ...(act.factoren.vorm ? ["vorm" as const] : []),
+        ...(act.factoren.hoogte ? ["hoogte" as const] : []),
+        ...(act.factoren.ondergrond.keuze &&
+        (act.bikeType === "gravel" || act.bikeType === "mtb")
+          ? ["ondergrond" as const]
+          : []),
+        ...(act.factoren.drukkeWegenVermijden ? ["drukteweg" as const] : []),
+        ...(act.factoren.onderweg.beschikbaar ? ["onderweg" as const] : []),
+      ]
+    : []
+  const volgendeVraag =
+    vragenVoorAct.find((v) => !beantwoord.includes(v)) ?? null
+  // C4: het bolletje toont de gemaakte kéúze (waarde), nooit de vraag.
+  const chipLabel = (v: VerfijnVraag): string => {
+    switch (v) {
+      case "afstand":
+        return `${afstandKm} km`
+      case "vorm":
+        return vorm === "a-naar-b"
+          ? bestemming.trim()
+            ? `Naar ${bestemming.trim()}`
+            : "A naar B"
+          : (VORMEN.find((x) => x.id === vorm)?.label ?? "Rondje")
+      case "hoogte":
+        return hoogte
+          ? (HOOGTES.find((h) => h.id === hoogte)?.label ?? "Hoogte vrij")
+          : "Hoogte vrij"
+      case "ondergrond":
+        return ondergrond === "onverhard"
+          ? "Vooral onverhard"
+          : ondergrond === "verhard"
+            ? "Vooral verhard"
+            : "Ondergrond vrij"
+      case "drukteweg":
+        return drukkeWegenVermijden ? "Rustige wegen" : "Alle wegen"
+      case "onderweg":
+        return onderwegWens ? "Koffie/eten onderweg" : "Niets onderweg"
+    }
+  }
+  const beantwoordVraag = (v: VerfijnVraag) => {
+    setBeantwoord((b) => (b.includes(v) ? b : [...b, v]))
+    setVraagOpen(null)
+  }
+  // C3: de knoppenrij verdwijnt nooit — horizontaal schuifbaar, bolletjes in
+  // keuzevolgorde, rechts altijd "+ Verfijnen" zolang er vragen over zijn.
+  const knoppenRij = (
+    <div
+      className="flex items-center gap-2 overflow-x-auto pb-1"
+      style={{ scrollbarWidth: "none" }}
+      data-testid="knoppenrij"
+    >
+      <Chip
+        label={act ? act.label : "Activiteit"}
+        actief={!act || vraagOpen === "activiteit"}
+        open={vraagOpen === "activiteit"}
+        onClick={() =>
+          setVraagOpen(vraagOpen === "activiteit" ? null : "activiteit")
+        }
+      />
+      {act && (
+        <Chip
+          label={`Binnen ${straalKm} km`}
+          actief={vraagOpen === "straal"}
+          open={vraagOpen === "straal"}
+          onClick={() => setVraagOpen(vraagOpen === "straal" ? null : "straal")}
+        />
+      )}
+      {act &&
+        beantwoord.map((v) => (
+          <Chip
+            key={v}
+            label={chipLabel(v)}
+            actief={vraagOpen === v}
+            open={vraagOpen === v}
+            onClick={() => setVraagOpen(vraagOpen === v ? null : v)}
+          />
+        ))}
+      {act && volgendeVraag && (
+        <Chip
+          label={`+ ${WOORD.verfijnen}`}
+          actief={false}
+          open={vraagOpen === volgendeVraag && !beantwoord.includes(volgendeVraag)}
+          onClick={() => setVraagOpen(volgendeVraag)}
+        />
+      )}
+    </div>
+  )
+
+  // C6: de escape — "Sparki maakt hem" — staat onderaan het blad, op elke
+  // diepte van de stappenmachine, en levert altijd meteen een route.
+  const escapeKnop = (
+    <button
+      type="button"
+      disabled={generate.isPending}
+      onClick={() => (act ? maakRoute() : directEenRoute())}
+      className="flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
+      data-testid="escape-sparki"
+    >
+      {WOORD.sparkiMaaktHem}
+    </button>
+  )
+
   const paneelInhoud = (
     <>
       {/* Generatievoortgang / fout */}
@@ -1389,7 +1360,7 @@ export default function RouteSchermPage() {
           {act && center && stap >= 3 && (
             <button
               type="button"
-              onClick={() => maakRoute("sparki")}
+              onClick={maakRoute}
               className="mt-1 flex min-h-11 items-center rounded-full text-[13px] font-medium text-red-800 underline underline-offset-2"
             >
               Probeer opnieuw
@@ -1405,7 +1376,6 @@ export default function RouteSchermPage() {
           {maakRij}
         </>
       )}
-      {stap === 3 && stap3}
       {stap === 5 && stap5}
 
       {/* Stap 4: het voorstel — mét de reden erbij (R6 Go) */}
@@ -1427,20 +1397,9 @@ export default function RouteSchermPage() {
               {kandidaat.rationale}
             </p>
           )}
-          {/* R13/R-T7: onbekend wegdek is in Nederland een MELDING, nooit
-              een bevestigingsvraag. Geen meting van de motor = ook eerlijk
-              melden; alleen 100% bekend wegdek toont niets. */}
-          {(kandidaat.engineSurface?.knownPct == null ||
-            kandidaat.engineSurface.knownPct < 100) && (
-            <p
-              data-testid="wegdek-melding"
-              className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[12px] text-amber-800"
-            >
-              {kandidaat.engineSurface?.knownPct != null
-                ? `Wegdek voor ${Math.round(kandidaat.engineSurface.knownPct)}% bekend — de rest is niet bevestigd. Controle volgt bij gebruik.`
-                : "Het wegdek van deze route is niet volledig bekend. Controle volgt bij gebruik."}
-            </p>
-          )}
+          {/* RIJDEN_02: de wegdekpercentage-melding is weg — techniekpraat
+              die de gebruiker niets laat besluiten; de veiligheids- en
+              wegdekcontrole zelf draait onverminderd op de server. */}
           {/* MUX-12/13/22/24: één primaire actie (Start), vast bovenaan de
               rij, daarnaast max. drie secundaire; tikvlakken min. 48 dp. */}
           {/* §3 stap 4: Gebruiken / Opnieuw / Aanpassen. */}
@@ -1458,7 +1417,7 @@ export default function RouteSchermPage() {
             <button
               type="button"
               disabled={generate.isPending}
-              onClick={() => maakRoute("sparki")}
+              onClick={maakRoute}
               className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700 disabled:opacity-50"
             >
               Opnieuw
@@ -1669,13 +1628,7 @@ export default function RouteSchermPage() {
             ? "Routes in beeld laden…"
             : `Routes in beeld (${Math.min(gefilterdeRoutes.length, maxRoutes)})`}
         </p>
-        <button
-          type="button"
-          onClick={() => setFiltersOpen(true)}
-          className="flex min-h-11 items-center rounded-full px-2 text-[12px] font-medium text-slate-600 underline underline-offset-2"
-        >
-          {filtersActief ? "Filters •" : "Filters"}
-        </button>
+        {/* C1: geen filterblad meer — verfijnen loopt via de knoppenrij. */}
       </div>
       {nearby.isError && (
         <div className="mt-2">
@@ -1695,54 +1648,31 @@ export default function RouteSchermPage() {
       )}
       {/* MUX-48: lege toestand met uitleg + oorzaak + verantwoordelijke +
           DIRECTE eerstvolgende actie (geen "ga naar het menu"-verwijzing). */}
+      {/* C5: de keuzerij (maakRij) staat hierboven al in beeld en de escape
+          staat onderaan het blad — de lege toestand is dus alleen tekst. */}
       {!nearby.isLoading && !nearby.isError && routes.length === 0 && !kandidaat && !generate.isPending && (
-        <div className="mt-2">
-          <p className="text-[13px] leading-relaxed text-slate-600">
-            Hier staan normaal de routes die op de kaart in beeld zijn. In dit
-            gebied is nog geen bekende route — er is er gewoon nog geen
-            gemaakt. Dat los je zelf in één tik op:
-          </p>
-          <button
-            type="button"
-            disabled={generate.isPending}
-            onClick={() => maakRoute("sparki")}
-            className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
-          >
-            Automatisch laten maken
-          </button>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setStap(3)}
-              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
-            >
-              Zelf maken
-            </button>
-            <button
-              type="button"
-              onClick={() => setFlow("bewaard")}
-              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
-            >
-              Bewaarde routes
-            </button>
-          </div>
-        </div>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-600">
+          Hier staan normaal de routes die op de kaart in beeld zijn. In dit
+          gebied is nog geen bekende route — er is er gewoon nog geen gemaakt.
+          Kies hierboven hoe je er een maakt, of gebruik de knop onderaan om
+          er meteen een te krijgen.
+        </p>
       )}
       <div className="mt-2 flex flex-col gap-2">
         {/* Fail-closed: zolang het pakket laadt (pkg null) tonen we de
             Gratis-weergave, nooit méér dan waar recht op is. */}
-        {filtersActief && routes.length > 0 && gefilterdeRoutes.length === 0 && (
+        {beantwoord.length > 0 && routes.length > 0 && gefilterdeRoutes.length === 0 && (
           <div>
             <p className="text-[13px] text-slate-600">
-              Geen routes binnen deze filters — er zijn wel {routes.length} routes
-              in dit gebied.
+              Geen routes die bij je keuzes passen — er zijn wel {routes.length}{" "}
+              routes in dit gebied.
             </p>
             <button
               type="button"
-              onClick={resetFilters}
+              onClick={() => setBeantwoord([])}
               className="mt-1 flex min-h-11 items-center rounded-full text-[13px] font-medium text-slate-700 underline underline-offset-2"
             >
-              Alles resetten
+              Keuzes wissen
             </button>
           </div>
         )}
@@ -1815,9 +1745,11 @@ export default function RouteSchermPage() {
           <button
             type="button"
             onClick={() => {
-              // Terug binnen de stappen verliest niets (§6); pas op stap 1
-              // verlaat terug het scherm.
-              if (stap > 1) setStap((s) => Math.max(1, s - 1) as Stap)
+              // Terug binnen de stappen verliest niets (§6); stap 3 bestaat
+              // niet meer als scherm, dus 4/5 → 2. Pas op stap 1 verlaat
+              // terug het scherm.
+              if (stap > 2) setStap(2)
+              else if (stap === 2) setStap(1)
               else setLocation("/")
             }}
             aria-label="Terug"
@@ -1879,9 +1811,13 @@ export default function RouteSchermPage() {
         {(zoekResultaten.length > 0 || (geocode.isSuccess && zoekTekst.trim() !== "")) && (
           <div className="border-b border-slate-100 px-3">{zoekLijst}</div>
         )}
-        <div className="mt-3 min-h-0 flex-1 overflow-y-auto border-t border-slate-100 p-4">
+        {/* C3: de knoppenrij — ook op desktop altijd in beeld. */}
+        <div className="border-b border-slate-100 p-3">{knoppenRij}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {paneelInhoud}
         </div>
+        {/* C6: de escape staat onderaan het paneel, op elke diepte. */}
+        <div className="border-t border-slate-100 p-3">{escapeKnop}</div>
       </aside>
 
       {/* Kaartvlak — mobiel beeldvullend (R1), desktop naast het zijpaneel */}
@@ -1898,9 +1834,11 @@ export default function RouteSchermPage() {
         <button
           type="button"
           onClick={() => {
-            // Terug binnen de stappen verliest niets (§6); pas op stap 1
-            // verlaat terug het scherm.
-            if (stap > 1) setStap((s) => Math.max(1, s - 1) as Stap)
+            // Terug binnen de stappen verliest niets (§6); stap 3 bestaat
+            // niet meer als scherm, dus 4/5 → 2. Pas op stap 1 verlaat
+            // terug het scherm.
+            if (stap > 2) setStap(2)
+            else if (stap === 2) setStap(1)
             else setLocation("/")
           }}
           aria-label="Terug"
@@ -1908,9 +1846,9 @@ export default function RouteSchermPage() {
         >
           <ArrowLeft className="h-5 w-5" strokeWidth={2} />
         </button>
-        {/* §6-escape: op stap 3/4 altijd rechtsboven "Klaar" — terug naar de
-            kaart met routes, zonder verlies van keuzes. */}
-        {(stap === 3 || stap === 4) && (
+        {/* C2: "Klaar" verschijnt alleen als er iets af te ronden valt —
+            terug naar de kaart met routes, zonder verlies van keuzes. */}
+        {(stap === 4 || stap === 5) && (
           <button
             type="button"
             onClick={() => {
@@ -1919,29 +1857,19 @@ export default function RouteSchermPage() {
             }}
             className="order-last flex h-11 shrink-0 items-center rounded-full bg-white/95 px-4 text-[13px] font-medium text-slate-700 shadow-md"
           >
-            Klaar
+            {WOORD.klaar}
           </button>
         )}
-        {/* §5.1: één balk, twee taken — zoeken links, rechts erin (achter een
-            scheidingslijn) de ingang naar zelf plannen. */}
-        <div className="flex h-11 min-w-0 flex-1 items-center rounded-full bg-white/95 shadow-md">
-          <button
-            type="button"
-            onClick={() => setZoekOpen(true)}
-            className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-l-full px-4 text-left"
-          >
-            <Search className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={2} />
-            <span className="truncate text-[14px] text-slate-500">Zoek een plaats…</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFlow("maken")}
-            className="flex h-11 shrink-0 items-center gap-1 rounded-r-full border-l border-slate-200 pl-3 pr-4 text-[13px] font-medium text-slate-700"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Zelf plannen
-          </button>
-        </div>
+        {/* C2: de bovenbalk doet drie dingen — terug, zoeken, menu. De
+            maak-ingangen zitten in het onderblad, niet hier. */}
+        <button
+          type="button"
+          onClick={() => setZoekOpen(true)}
+          className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/95 px-4 text-left shadow-md"
+        >
+          <Search className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={2} />
+          <span className="truncate text-[14px] text-slate-500">Zoek een plaats…</span>
+        </button>
         <div className="relative shrink-0">
           <button
             type="button"
@@ -1971,6 +1899,12 @@ export default function RouteSchermPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* C3: de knoppenrij — mobiel vast onder de bovenbalk, verdwijnt
+          nooit; bolletjes in keuzevolgorde, rechts "+ Verfijnen". */}
+      <div className="absolute inset-x-0 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] z-[505] px-3 lg:hidden">
+        {knoppenRij}
       </div>
 
       {/* U2: locatie geweigerd of niet beschikbaar — eerlijke aanzet-rij met
@@ -2174,7 +2108,7 @@ export default function RouteSchermPage() {
           <button
             type="button"
             onClick={() => setStand("half")}
-            className="flex min-h-12 w-full items-center justify-center pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="flex min-h-12 w-full items-center justify-center"
           >
             <span className="text-[14px] font-medium text-slate-800">
               {nearby.isLoading
@@ -2183,219 +2117,255 @@ export default function RouteSchermPage() {
             </span>
           </button>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
             {paneelInhoud}
           </div>
         )}
-      </div>
+        {/* C6: de escape staat onderaan het blad, op elke stand/diepte. */}
+        <div className="border-t border-slate-100 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+          {escapeKnop}
+        </div>
       </div>
 
-      {/* ── §5.4: filterblad over het hele scherm, met vaste voetbalk ────── */}
-      {filtersOpen && (
-        <div className="absolute inset-0 z-[545] flex flex-col bg-white">
-          <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      {/* §2: de open vraag van de stappenmachine — een laag blad met alleen
+          déze vraag; kiezen sluit het blad en ververst routes + teller. */}
+      {vraagOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-[535] rounded-t-3xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(15,23,42,0.3)] lg:left-[400px] lg:right-auto lg:w-[400px]">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+              {vraagOpen === "activiteit"
+                ? "Wat ga je doen?"
+                : vraagOpen === "straal"
+                  ? "Hoe ver van hier zoeken?"
+                  : vraagOpen === "afstand"
+                    ? "Hoe ver ongeveer?"
+                    : vraagOpen === "vorm"
+                      ? "Welke vorm?"
+                      : vraagOpen === "hoogte"
+                        ? "Hoeveel hoogte?"
+                        : vraagOpen === "ondergrond"
+                          ? "Welke ondergrond?"
+                          : vraagOpen === "drukteweg"
+                            ? "Drukke wegen?"
+                            : "Iets onderweg?"}
+            </p>
             <button
               type="button"
-              onClick={() => setFiltersOpen(false)}
+              onClick={() => setVraagOpen(null)}
               aria-label="Sluiten"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600"
             >
-              <X className="h-5 w-5" strokeWidth={2} />
+              <X className="h-4 w-4" strokeWidth={2} />
             </button>
-            <p className="text-[15px] font-semibold text-slate-800">Filters</p>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {/* RIJDEN_01: de sport volgt de gekozen activiteit (stap 1); hier
-                alleen nog het zoekgebied + de eigenschappen-filters. */}
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Zoekgebied
-            </p>
+          {vraagOpen === "activiteit" && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {ACTIVITEITEN.filter((a) => isRouteSportActive(a.sport)).map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => {
+                    kiesActiviteit(a.id)
+                    setVraagOpen(null)
+                  }}
+                  aria-pressed={act?.id === a.id}
+                  className={`flex min-h-12 items-center rounded-2xl border px-3 text-left text-[14px] ${
+                    act?.id === a.id
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 text-slate-800"
+                  }`}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {vraagOpen === "straal" && (
             <div className="mt-2 flex flex-wrap gap-2">
               {STRAAL_KEUZES.map((km) => (
                 <KeuzeKnop
                   key={km}
-                  label={`${km} km`}
+                  label={`Binnen ${km} km`}
                   actief={straalKm === km}
-                  onClick={() => setStraalKm(km)}
+                  onClick={() => {
+                    setStraalKm(km)
+                    setVraagOpen(null)
+                  }}
                 />
               ))}
             </div>
-
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Afstand
-            </p>
+          )}
+          {vraagOpen === "afstand" && act && (
             <div className="mt-2">
-              <Staafdiagram
-                waarden={routes
-                  .map((r) => r.distanceKm)
-                  .filter((v): v is number => v != null)}
-                grens={filterAfstandMax}
-              />
-              <input
-                type="range"
-                min={5}
-                max={200}
-                step={5}
-                value={filterAfstandMax ?? 200}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  setFilterAfstandMax(v >= 200 ? null : v)
-                }}
-                aria-label="Maximale afstand"
-                className="mt-1 w-full accent-accent-cyan"
-              />
-              <p className="text-[12px] text-slate-600">
-                {filterAfstandMax == null
-                  ? "Alle afstanden"
-                  : `Tot ${filterAfstandMax} km`}
-              </p>
-            </div>
-
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Hoogtemeters
-            </p>
-            <div className="mt-2">
-              <Staafdiagram
-                waarden={routes
-                  .map((r) => r.elevationGainM)
-                  .filter((v): v is number => v != null)}
-                grens={filterHoogteMax}
-              />
-              <input
-                type="range"
-                min={50}
-                max={2000}
-                step={50}
-                value={filterHoogteMax ?? 2000}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  setFilterHoogteMax(v >= 2000 ? null : v)
-                }}
-                aria-label="Maximale hoogtemeters"
-                className="mt-1 w-full accent-accent-cyan"
-              />
-              <p className="text-[12px] text-slate-600">
-                {filterHoogteMax == null
-                  ? "Alle hoogtemeters"
-                  : `Tot ${filterHoogteMax} hm`}
-              </p>
-            </div>
-
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Ondergrond
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {[...new Set(routes.map((r) => r.surface).filter(Boolean))].map((s) => (
-                <KeuzeKnop
-                  key={s}
-                  label={s}
-                  actief={filterOndergrond === s}
-                  onClick={() =>
-                    setFilterOndergrond(filterOndergrond === s ? null : s)
-                  }
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={act.afstand.minKm}
+                  max={act.afstand.maxKm}
+                  step={1}
+                  value={afstandKm}
+                  onChange={(e) => {
+                    setAfstandKm(Number(e.target.value))
+                    setAfstandUitTraining(false)
+                  }}
+                  aria-label="Afstand"
+                  className="min-h-12 flex-1"
                 />
-              ))}
-              {routes.length === 0 && (
+                <span className="w-16 text-right text-[14px] font-semibold text-slate-800">
+                  {afstandKm} km
+                </span>
+              </div>
+              {afstandUitTraining && (
                 <p className="text-[12px] text-slate-500">
-                  Geen routes in dit gebied — dus ook geen ondergronden om op te
-                  filteren.
+                  Voorstel uit je training van vandaag.
                 </p>
               )}
+              <button
+                type="button"
+                onClick={() => beantwoordVraag("afstand")}
+                className="mt-2 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white"
+              >
+                Kies {afstandKm} km
+              </button>
             </div>
-
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Type route
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <KeuzeKnop
-                label="Lus"
-                actief={filterTypeRoute === "lus"}
-                onClick={() =>
-                  setFilterTypeRoute(filterTypeRoute === "lus" ? null : "lus")
-                }
-              />
-              <KeuzeKnop
-                label="Van A naar B"
-                actief={filterTypeRoute === "ab"}
-                onClick={() =>
-                  setFilterTypeRoute(filterTypeRoute === "ab" ? null : "ab")
-                }
-              />
+          )}
+          {vraagOpen === "vorm" && (
+            <div className="mt-2">
+              <div className="flex flex-wrap gap-2">
+                {VORMEN.map((v) => (
+                  <KeuzeKnop
+                    key={v.id}
+                    label={v.label}
+                    actief={vorm === v.id}
+                    onClick={() => {
+                      setVorm(v.id)
+                      // A-naar-B heeft eerst een bestemming nodig — het blad
+                      // blijft open tot die er staat.
+                      if (v.id !== "a-naar-b") beantwoordVraag("vorm")
+                    }}
+                  />
+                ))}
+              </div>
+              {vorm === "a-naar-b" && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    value={bestemming}
+                    onChange={(e) => setBestemming(e.target.value)}
+                    placeholder="Bestemming (plaats of adres)"
+                    className="min-h-12 w-full rounded-full border border-slate-300 px-4 text-[14px] text-slate-800 placeholder:text-slate-400"
+                  />
+                  <button
+                    type="button"
+                    disabled={bestemming.trim() === ""}
+                    onClick={() => beantwoordVraag("vorm")}
+                    className="mt-2 flex min-h-12 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white disabled:opacity-50"
+                  >
+                    Kies bestemming
+                  </button>
+                </div>
+              )}
             </div>
-
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Onderweg
-            </p>
+          )}
+          {vraagOpen === "hoogte" && (
             <div className="mt-2 flex flex-wrap gap-2">
-              <KeuzeKnop
-                label="Klim onderweg"
-                actief={filterKlim}
-                onClick={() => setFilterKlim((v) => !v)}
-              />
-              <KeuzeKnop
-                label="Koffie onderweg"
-                actief={filterKoffie}
-                onClick={() => setFilterKoffie((v) => !v)}
-              />
-              <KeuzeKnop
-                label="Eten onderweg"
-                actief={filterEten}
-                onClick={() => setFilterEten((v) => !v)}
-              />
-            </div>
-            <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
-              Klim is afgeleid uit echte hoogtemeters (≥ 8 hm per km). Koffie en
-              eten komen uit OpenStreetMap: een benoemd café of restaurant binnen
-              250 m van de route. Is dat voor een route niet vast te stellen, dan
-              valt die bij deze filters eerlijk af.
-            </p>
-
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-              Routekenmerken
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(["makkelijk", "gemiddeld", "zwaar"] as const).map((m) => (
+              {HOOGTES.map((h) => (
                 <KeuzeKnop
-                  key={m}
-                  label={m[0].toUpperCase() + m.slice(1)}
-                  actief={filterMoeilijkheid === m}
-                  onClick={() =>
-                    setFilterMoeilijkheid(filterMoeilijkheid === m ? null : m)
-                  }
+                  key={h.id}
+                  label={h.label}
+                  actief={hoogte === h.id}
+                  onClick={() => {
+                    setHoogte(h.id)
+                    beantwoordVraag("hoogte")
+                  }}
                 />
               ))}
               <KeuzeKnop
-                label="Door jou gereden"
-                actief={filterGereden}
-                onClick={() => setFilterGereden((v) => !v)}
+                label="Geen voorkeur"
+                actief={hoogte === null}
+                onClick={() => {
+                  setHoogte(null)
+                  beantwoordVraag("hoogte")
+                }}
               />
             </div>
-          </div>
-          {/* Vaste voetbalk: links resetten, rechts het actuele aantal. */}
-          <div className="flex items-center gap-3 border-t border-slate-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="flex min-h-12 items-center rounded-full px-4 text-[14px] font-medium text-slate-600"
-            >
-              Alles resetten
-            </button>
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(false)}
-              className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-slate-900 px-4 text-[14px] font-medium text-white"
-            >
-              {gefilterdeRoutes.length === 1
-                ? "1 route tonen"
-                : `${gefilterdeRoutes.length} routes tonen`}
-            </button>
-          </div>
+          )}
+          {vraagOpen === "ondergrond" && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <KeuzeKnop
+                label="Vooral verhard"
+                actief={ondergrond === "verhard"}
+                onClick={() => {
+                  setOndergrond("verhard")
+                  beantwoordVraag("ondergrond")
+                }}
+              />
+              <KeuzeKnop
+                label="Vooral onverhard"
+                actief={ondergrond === "onverhard"}
+                onClick={() => {
+                  setOndergrond("onverhard")
+                  beantwoordVraag("ondergrond")
+                }}
+              />
+              <KeuzeKnop
+                label="Geen voorkeur"
+                actief={ondergrond === "geen"}
+                onClick={() => {
+                  setOndergrond("geen")
+                  beantwoordVraag("ondergrond")
+                }}
+              />
+            </div>
+          )}
+          {vraagOpen === "drukteweg" && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <KeuzeKnop
+                label="Vermijden"
+                actief={drukkeWegenVermijden}
+                onClick={() => {
+                  setDrukkeWegenVermijden(true)
+                  beantwoordVraag("drukteweg")
+                }}
+              />
+              <KeuzeKnop
+                label="Geen voorkeur"
+                actief={!drukkeWegenVermijden}
+                onClick={() => {
+                  setDrukkeWegenVermijden(false)
+                  beantwoordVraag("drukteweg")
+                }}
+              />
+            </div>
+          )}
+          {vraagOpen === "onderweg" && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <KeuzeKnop
+                label="Graag koffie of eten onderweg"
+                actief={onderwegWens}
+                onClick={() => {
+                  setOnderwegWens(true)
+                  beantwoordVraag("onderweg")
+                }}
+              />
+              <KeuzeKnop
+                label="Niet nodig"
+                actief={!onderwegWens}
+                onClick={() => {
+                  setOnderwegWens(false)
+                  beantwoordVraag("onderweg")
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
+      </div>
+
 
       {/* ── Flows uit het driepuntsmenu — bínnen dit scherm (MUX-81a) ────── */}
 
-      {/* Zelf plannen (A→B/eigen route): de bestaande generator als eigen
+      {/* Zelf maken (A→B/eigen route): de bestaande generator als eigen
           scherm (MUX-28 regel 4) — zelfde flowlogica als het oude paneel. */}
       {flow === "maken" && (
         <div className="absolute inset-0 z-[540] flex flex-col bg-white">
@@ -2408,7 +2378,7 @@ export default function RouteSchermPage() {
             >
               <ArrowLeft className="h-5 w-5" strokeWidth={2} />
             </button>
-            <p className="text-[15px] font-semibold text-slate-800">Zelf plannen</p>
+            <p className="text-[15px] font-semibold text-slate-800">{WOORD.zelfMaken}</p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <RouteGenerator
@@ -2710,41 +2680,6 @@ export default function RouteSchermPage() {
   )
 }
 
-// §5.4: staafdiagram van de verdeling boven een schuif — je ziet in één
-// oogopslag waar de routes zitten voordat je iets versleept. Alleen echte
-// waarden; geen waarden = geen diagram.
-function Staafdiagram({
-  waarden,
-  grens,
-}: {
-  waarden: number[]
-  grens: number | null
-}) {
-  if (waarden.length === 0) return null
-  const max = Math.max(...waarden)
-  if (max <= 0) return null
-  const BUCKETS = 12
-  const stap = max / BUCKETS
-  const tellingen = Array.from({ length: BUCKETS }, (_, i) =>
-    waarden.filter((w) => w >= i * stap && (i === BUCKETS - 1 ? w <= max : w < (i + 1) * stap))
-      .length,
-  )
-  const top = Math.max(...tellingen, 1)
-  return (
-    <div className="flex h-12 items-end gap-[2px]" aria-hidden>
-      {tellingen.map((t, i) => {
-        const binnenGrens = grens == null || i * stap <= grens
-        return (
-          <div
-            key={i}
-            className={`flex-1 rounded-t-sm ${binnenGrens ? "bg-accent-cyan/70" : "bg-slate-200"}`}
-            style={{ height: `${Math.max(6, (t / top) * 100)}%` }}
-          />
-        )
-      })}
-    </div>
-  )
-}
 
 function Chip({
   label,

@@ -1,0 +1,42 @@
+# Poort 5b sanity-check — RIJDEN_02: knoppenrij wordt de stappenmachine op
+# /route (C1–C8), incl. woordenlijst §3, routenaam/één-regel-beschrijving §4
+# (server-side, deterministisch) en kaartstijl §5 (warme kleurtabel).
+
+delivery: "RIJDEN_02 op /route: het filterblad is volledig weg (C1) — de knoppenrij ís de stappenmachine: bolletje 'Activiteit' bij openen, na keuze '<activiteit>' · 'Binnen X km' · '+ Verfijnen'; elke keuze wordt een bolletje met de wáárde (C4), tik = stap heropenen, één vraag per keer als laag onderblad (afstand→vorm→hoogte→ondergrond→drukte→onderweg per tabel C), elke keuze filtert direct de routes op de kaart + teller. Bovenbalk uitgekleed tot terug·zoeken·menu (C2, 'Klaar' pas vanaf voorstel), knoppenrij verdwijnt nooit (C3, ook met onderblad omhoog), escape 'Sparki maakt hem' altijd onderaan het blad/paneel (C6) en nergens dubbel (C5). Woordenlijst §3 bindend in lib/rijden-woorden.ts (Zelf maken/Opnemen/Bewaarde routes/Verfijnen/Klaar). §4: routenaam 'Rondje <plaats> · <km> km' + deterministische één-regel-beschrijving uit buildRationaleFallback (api-server), AI-volzin uit enrichment gehaald; reverse geocode geeft plaatsnaam-voorkeursvelden. §5: kaartstijl warm herkleurd (sparki-stijl.json via idempotent script, 279/324 lagen), routelijnen in vijf gedempte kleuren + patroon, gekozen route 1,5× dik met witte rand, rest 45%. Wegdekpercentage-melding weg (R5-voorschot). Bewijs: e2e/tests/rijden02-knoppenrij.mjs 13/13 tegen prod-build + screenshots in e2e/evidence/rijden02-knoppenrij/."
+date: "2026-08-06"
+checked_by: "replit"
+surfaces:
+  - "Web Sparki: /route knoppenrij-stappenmachine (route-scherm.tsx) — e2e rijden02-knoppenrij 13/13 (§6-1 t/m §6-7 en §6-11, echte browserkliks tegen prod-build)"
+  - "Web Sparki: kaartgebaren blijven één-aanvraag-per-keuze — test:route-scherm-aanpassen 1/1 (nieuwe flow: Activiteit-bolletje → Racefiets → escape)"
+  - "api-server: routenaam + één-regel-beschrijving (buildRationaleFallback, routeNaam) — typecheck groen; merkcopy-lint groen (allowlist-entry 'Sparki maakt hem' met reden)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "'+ Verfijnen' is geen dode knop: hij opent aantoonbaar de eerstvolgende onbeantwoorde vraag (afstand-schuif) en verdwijnt pas als alle tabel-C-vragen voor de activiteit beantwoord zijn"
+        result: "pass"
+      - case: "'Opnemen' in de drie-manieren-rij blijft de eerlijke telefoon-fase-melding (geen stille no-op)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Bolletjes tonen de gekozen wáárde ('Racefiets', '70 km'), nooit de vraag; drukke-wegen-keuze filtert bewust NIET op bestaande routes (drukte is daar niet vastgelegd) maar stuurt alleen generatie — geen nep-filter"
+        result: "pass"
+      - case: "Keuze-filters laten routes met onbekende waarden eerlijk afvallen (hoogte zonder hoogtemeters, onderweg zonder POI-bewijs) i.p.v. stil door te laten; 'Keuzes wissen' herstelt de volledige lijst"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "PASS-regels komen uit een echte browserrun tegen de productiebuild (e2e/evidence/rijden02-knoppenrij/rapport.json, exitcode 0), niet uit DEV Preview of aannames"
+        result: "pass"
+
+# Eerlijk beperkt:
+#   (1) §6-10 (warme kaart, verschil bos/weiland/strand) is in headless
+#       Chromium niet renderbaar (geen WebGL) — de stijl-JSON volgt de
+#       kleurtabel §5.1–5.4 aantoonbaar via het idempotente script; het
+#       visuele oordeel is aan René op een echt toestel.
+#   (2) Shortbread heeft géén waternamen-laag (§5.3-kleur staat klaar in het
+#       script); windrichting-fallback §4 is niet geïmplementeerd (geen
+#       windbron in de naamgevingslaag) — eerlijk gemeld als bevinding.
+#   (3) §6-8/9 zijn deterministisch server-side gebouwd; de exacte teksten op
+#       een echte gegenereerde route toetst René in de praktijktest (de
+#       AI-volzin is uit de keten, het wish-kanaal vervalt daarmee).
+verdict: "deliverable"

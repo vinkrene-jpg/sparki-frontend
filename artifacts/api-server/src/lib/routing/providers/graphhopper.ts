@@ -694,7 +694,8 @@ export class GraphHopperProvider implements RoutingProvider {
       const json = (await res.json()) as GhGeocodeResponse;
       const h = json.hits?.[0];
       if (!h) return null;
-      return h.name ?? this.hitLabel(h) ?? null;
+      // RIJDEN_02 §4: plaatsnaam boven punt-van-belang voor routenamen.
+      return h.city ?? h.name ?? this.hitLabel(h) ?? null;
     } catch {
       return null;
     }

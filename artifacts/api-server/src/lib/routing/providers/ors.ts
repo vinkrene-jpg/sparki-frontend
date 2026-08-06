@@ -71,7 +71,13 @@ type OrsGeoJson = {
 type PeliasResponse = {
   features?: {
     geometry?: { coordinates?: number[] };
-    properties?: { label?: string; name?: string };
+    properties?: {
+      label?: string;
+      name?: string;
+      locality?: string;
+      localadmin?: string;
+      county?: string;
+    };
   }[];
 };
 
@@ -397,7 +403,9 @@ export class OrsProvider implements RoutingProvider {
       if (!res.ok) return null;
       const json = (await res.json()) as PeliasResponse;
       const p = json.features?.[0]?.properties;
-      return p?.name ?? p?.label ?? null;
+      // RIJDEN_02 §4: de routenaam gebruikt de plaats (gemeente/dorp), niet
+      // het dichtstbijzijnde punt van belang. Pelias levert die velden mee.
+      return p?.locality ?? p?.localadmin ?? p?.county ?? p?.name ?? p?.label ?? null;
     } catch {
       return null;
     }

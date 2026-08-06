@@ -1,5 +1,10 @@
 [
   {
+    "file": "artifacts/sparki/src/lib/rijden-woorden.ts",
+    "contains": "Sparki maakt hem",
+    "reason": "RIJDEN_02 §3: bindende knopnaam voor de escape — Sparki als handelende coach is hier precies de bedoeling (besluit René)."
+  },
+  {
     "file": "artifacts/api-server/src/lib/legal-texts.ts",
     "reason": "Juridische documenten en voorwaarden: merknaam functioneel nodig."
   },

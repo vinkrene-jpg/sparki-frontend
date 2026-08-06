@@ -473,27 +473,70 @@ type RationaleInput = {
   } | null;
 };
 
-// Deterministic rationale — instant, no external calls. Used as the immediate
-// response until the AI-enrichment background job finishes.
+// RIJDEN_02 §4: de routebeschrijving is één regel in gewone taal, opgebouwd
+// uit alleen de gegevens die er echt zijn. Geen volzin, geen dubbele haakjes.
+// Voorbeeld: `94 km · 1359 hm · ±4 u 45 · 6 klimmen · racefiets, asfalt`.
+
+// Tijd in uren en minuten (`±4 u 45`), nooit in losse minuten (§4 regel 5).
+function duurLabel(durationSec: number): string {
+  const totMin = Math.round(durationSec / 60);
+  const u = Math.floor(totMin / 60);
+  const m = totMin % 60;
+  if (u === 0) return `±${m} min`;
+  return m === 0 ? `±${u} u` : `±${u} u ${String(m).padStart(2, "0")}`;
+}
+
+// `racefiets (asfalt)` → `racefiets, asfalt` (§4 regel 6: geen haakjes-nesting).
+function activiteitOndergrondLabel(profile: RoutingProfile): string {
+  return activityLabel(profile).replace(/\s*\(([^)]*)\)/, ", $1");
+}
+
+// §4 regel 1-2: alleen een leesbare plaatsnaam in Latijns schrift gebruiken;
+// anders liever géén naamdeel dan een onbruikbare naam.
+function bruikbarePlaatsnaam(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const kaal = name.trim();
+  if (!kaal || kaal.length > 40) return null;
+  if (!/^[\p{Script=Latin}\p{N}\s'’´\-–.,()/&]+$/u.test(kaal)) return null;
+  return kaal;
+}
+
+// §4 regel 1+3: naam = vorm-woord + plaatsnaam + afstand. Geen technische
+// woorden ("ride-lus" bestaat niet), geen punt-van-belang in vreemde taal.
+function routeNaam(
+  mode: "loop" | "ptp" | "waypoints" | "out_and_back",
+  startName: string | null,
+  endName: string | null,
+  distLabel: string,
+  suffix = "",
+): string {
+  const start = bruikbarePlaatsnaam(startName);
+  const eind = bruikbarePlaatsnaam(endName);
+  const basis =
+    mode === "loop"
+      ? `Rondje${suffix}${start ? ` ${start}` : ""}`
+      : mode === "out_and_back"
+        ? `Heen en terug${start ? ` vanuit ${start}` : ""}`
+        : mode === "waypoints"
+          ? `Eigen route${start ? ` vanuit ${start}` : ""}`
+          : `Van ${start ?? "start"} naar ${eind ?? "bestemming"}`;
+  return `${basis}${distLabel ? ` · ${distLabel}` : ""}`;
+}
+
+// Deterministic one-line description (RIJDEN_02 §4 regel 4) — instant, no
+// external calls, and the ONLY shape the beschrijving may have.
 function buildRationaleFallback(input: RationaleInput): string {
-  const label = activityLabel(input.profile);
-  const shape =
-    input.mode === "loop"
-      ? `een lus${input.startName ? ` vanuit ${input.startName}` : ""}`
-      : input.mode === "waypoints"
-        ? `een zelf uitgestippelde route${input.startName ? ` vanuit ${input.startName}` : ""}`
-        : input.mode === "out_and_back"
-          ? `een heen-en-terugroute over dezelfde weg${input.startName ? ` vanuit ${input.startName}` : ""}`
-          : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
   const parts: string[] = [];
   if (input.distanceKm != null) parts.push(`${Math.round(input.distanceKm)} km`);
-  if (input.durationSec != null)
-    parts.push(`±${Math.round(input.durationSec / 60)} min`);
   if (input.elevationGainM != null)
-    parts.push(`±${Math.round(input.elevationGainM)} hm`);
-  if (input.climbCount > 0) parts.push(`${input.climbCount} klim(men)`);
-  const facts = parts.join(", ");
-  return `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.trainingType} (${label}).`;
+    parts.push(`${Math.round(input.elevationGainM)} hm`);
+  if (input.durationSec != null) parts.push(duurLabel(input.durationSec));
+  if (input.climbCount > 0)
+    parts.push(
+      input.climbCount === 1 ? `1 klim` : `${input.climbCount} klimmen`,
+    );
+  parts.push(activiteitOndergrondLabel(input.profile));
+  return parts.join(" · ");
 }
 
 async function buildRationale(input: RationaleInput): Promise<string> {
@@ -725,9 +768,12 @@ function scheduleEnrichment(
               estimatedTimeLossSec: roadObjects?.estimatedTimeLossSec ?? null,
             }
           : null;
-      // Phase 2: AI rationale using real environment data
+      // RIJDEN_02 §4: de beschrijving blijft de deterministische één-regel —
+      // de AI-volzin (buildRationale) vervalt. Enrichment levert alleen nog
+      // wegobjecten; het rationale-veld wordt dus nooit een volzin.
+      void environment;
       return Promise.all([
-        buildRationale({ ...rationaleInput, environment }),
+        Promise.resolve(buildRationaleFallback(rationaleInput)),
         Promise.resolve(roadObjects),
       ]);
     })
@@ -3848,7 +3894,7 @@ async function buildLoopCandidate(
   const nav: RouteStep[] = routeResult.steps;
 
   const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
-  const name = `${ctx.workoutTrainingType}-lus${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
+  const name = routeNaam("loop", startName, null, distLabel);
 
   const rationaleInput: RationaleInput = {
     trainingType: ctx.linkedWorkoutTitle
@@ -3908,7 +3954,7 @@ async function buildLoopCandidate(
     const altDistLabel =
       altDistanceKm != null ? `${Math.round(altDistanceKm)} km` : "";
     const letter = String.fromCharCode(66 + i); // B, C
-    const altName = `${ctx.workoutTrainingType}-lus ${letter}${startName ? ` vanuit ${startName}` : ""}${altDistLabel ? ` · ${altDistLabel}` : ""}`;
+    const altName = routeNaam("loop", startName, null, altDistLabel, ` ${letter}`);
     const altRationaleInput: RationaleInput = {
       ...rationaleInput,
       distanceKm: altDistanceKm,
@@ -4881,13 +4927,7 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
       const name = hybrideBase
         ? `Variant op ${hybrideBase.name}${distLabel ? ` · ${distLabel}` : ""}`
-        : mode === "ptp"
-          ? `${resolvedStartName ?? "Start"} → ${resolvedEndName ?? "bestemming"}${distLabel ? ` · ${distLabel}` : ""}`
-          : mode === "out_and_back"
-            ? `Heen en terug${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
-          : mode === "waypoints"
-            ? `Eigen route${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
-            : `${workoutTrainingType}-lus${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
+        : routeNaam(mode, resolvedStartName, resolvedEndName, distLabel);
 
       const rationaleInput: RationaleInput = {
         trainingType: linkedWorkoutTitle

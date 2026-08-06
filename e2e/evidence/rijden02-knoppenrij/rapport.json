@@ -1,0 +1,84 @@
+{
+  "stappen": [
+    {
+      "stap": "voorbereiding: corpus geseed (3 eigen routes)",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:07:52.238Z"
+    },
+    {
+      "stap": "§6-1: scherm opent met één bolletje 'Activiteit'",
+      "status": "OK",
+      "detail": "\"Activiteit\"",
+      "t": "2026-08-06T17:08:21.796Z"
+    },
+    {
+      "stap": "§6-5: geen knop 'Filters'",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:08:21.835Z"
+    },
+    {
+      "stap": "§6-6: 'Sparki maakt hem' zichtbaar op stap 1",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:08:21.837Z"
+    },
+    {
+      "stap": "§6-7: 'Sparki maakt hem' staat één keer op het scherm",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:08:21.840Z"
+    },
+    {
+      "stap": "§6-2: rij toont 'Racefiets' · 'Binnen 30 km' · '+ Verfijnen'",
+      "status": "OK",
+      "detail": "Racefiets Binnen 30 km + Verfijnen",
+      "t": "2026-08-06T17:08:22.590Z"
+    },
+    {
+      "stap": "§6-3: Verfijnen opent één vraag (afstand-schuif), geen lijst",
+      "status": "OK",
+      "detail": "koppen=[\"Hoe ver ongeveer?\"]",
+      "t": "2026-08-06T17:08:23.114Z"
+    },
+    {
+      "stap": "§6-6: escape ook zichtbaar met open vraag",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:08:23.158Z"
+    },
+    {
+      "stap": "§6-4: gekozen afstand wordt een bolletje met de waarde",
+      "status": "OK",
+      "detail": "Racefiets Binnen 30 km 70 km + Verfijnen",
+      "t": "2026-08-06T17:08:23.815Z"
+    },
+    {
+      "stap": "§6-4: tik op bolletje opent de stap opnieuw",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:08:24.249Z"
+    },
+    {
+      "stap": "§6-11: knoppenrij blijft staan met onderblad omhoog",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:08:24.850Z"
+    },
+    {
+      "stap": "§6-6: escape blijft zichtbaar met onderblad omhoog",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-06T17:08:24.852Z"
+    },
+    {
+      "stap": "§6-10: kaartstijl alleen als screenshot-bewijs (visuele beoordeling René)",
+      "status": "INFO",
+      "detail": "",
+      "t": "2026-08-06T17:08:24.887Z"
+    }
+  ],
+  "exitCode": 0,
+  "t": "2026-08-06T17:08:25.210Z"
+}

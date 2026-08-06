@@ -273,12 +273,13 @@ test("route aanpassen op /route: elk kaartgebaar = precies één routeaanvraag",
 
   render(h(Page))
 
-  // Kandidaat genereren via de stappenmachine (RIJDEN_01): activiteit kiezen
-  // (stap 1) → "Sparki laat maken" (stap 2, 3-A) = precies één aanvraag.
+  // Kandidaat genereren via de knoppenrij (RIJDEN_02): bolletje "Activiteit"
+  // → activiteit kiezen → escape "Sparki maakt hem" = precies één aanvraag.
+  fireEvent.click(screen.getAllByText("Activiteit")[0])
   fireEvent.click(screen.getAllByText("Racefiets")[0])
   assert.equal(generateCalls.length, 0, "activiteit kiezen start nog geen aanvraag")
-  fireEvent.click(screen.getAllByText("Sparki laat maken")[0])
-  assert.equal(generateCalls.length, 1, "Sparki laat maken = één aanvraag")
+  fireEvent.click(screen.getAllByText("Sparki maakt hem")[0])
+  assert.equal(generateCalls.length, 1, "Sparki maakt hem = één aanvraag")
 
   // Kandidaat is als GeoJSON in de kandidaat-bron gezet (F3).
   const kandidaatBron = bronnen[KANDIDAAT_BRON]
