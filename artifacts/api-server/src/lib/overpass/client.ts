@@ -171,12 +171,18 @@ export function noteRoutingProviderCall(): void {
   if (s) s.orsCalls += 1;
 }
 
-export function noteObstacleProbe(ms: number): void {
+// De teller loopt op bij de STÁRT van een bevraging (niet pas bij settle):
+// een generate-respons kan via een budget-race eerder klaar zijn dan de
+// onderliggende probe, en dan zou de meting bevragingen missen die echt
+// gedraaid hebben. De duur wordt apart bijgeschreven zodra hij bekend is.
+export function noteObstacleProbeStart(): void {
   const s = stats();
-  if (s) {
-    s.obstacleProbes += 1;
-    s.obstacleMs += Math.max(0, Math.round(ms));
-  }
+  if (s) s.obstacleProbes += 1;
+}
+
+export function noteObstacleProbeMs(ms: number): void {
+  const s = stats();
+  if (s) s.obstacleMs += Math.max(0, Math.round(ms));
 }
 
 // Momentopname van de tellers van de lopende generatie (of null buiten een

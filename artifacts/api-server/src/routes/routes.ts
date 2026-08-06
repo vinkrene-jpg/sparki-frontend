@@ -4267,32 +4267,37 @@ function withOverpassAccounting(
   handler: import("express").RequestHandler,
 ): import("express").RequestHandler {
   return async (req, res, next) => {
-    // ROUTEMETING_01: alleen in dev en alleen op expliciete aanvraag
-    // (header x-routemeting: 1) reist een meetblok mee in de respons —
-    // tellers (M3/M4) van de lopende generatie. Nooit in productie.
-    if (
-      process.env.NODE_ENV !== "production" &&
-      req.headers["x-routemeting"] === "1"
-    ) {
-      const origJson = res.json.bind(res);
-      res.json = ((body: unknown) => {
-        if (body && typeof body === "object" && !Array.isArray(body)) {
-          const snap = overpassStatsSnapshot();
-          if (snap) {
-            (body as Record<string, unknown>).meting = {
-              overpassRequests: snap.requests,
-              overpassCacheHits: snap.cacheHits,
-              orsCalls: snap.orsCalls,
-              obstacleProbes: snap.obstacleProbes,
-              obstacleMs: snap.obstacleMs,
-              durationMs: Date.now() - snap.startedAt,
-            };
-          }
-        }
-        return origJson(body as never);
-      }) as typeof res.json;
-    }
     const { stats } = await withOverpassBudget(async () => {
+      // ROUTEMETING_01: alleen in dev en alleen op expliciete aanvraag
+      // (header x-routemeting: 1) reist een meetblok mee in de respons —
+      // tellers (M3/M4) van de lopende generatie. Nooit in productie.
+      // BEWUST BINNEN de budget-context geïnstalleerd: alleen dan bestaat de
+      // AsyncLocalStorage-teller, ook op vroege foutpaden. Zonder context zou
+      // het blok stil ontbreken en zou de meting M3/M4 als "onbekend" tellen
+      // voor aanvragen die wél echt gedraaid hebben.
+      if (
+        process.env.NODE_ENV !== "production" &&
+        req.headers["x-routemeting"] === "1"
+      ) {
+        const origJson = res.json.bind(res);
+        res.json = ((body: unknown) => {
+          if (body && typeof body === "object" && !Array.isArray(body)) {
+            const snap = overpassStatsSnapshot();
+            (body as Record<string, unknown>).meting = snap
+              ? {
+                  overpassRequests: snap.requests,
+                  overpassCacheHits: snap.cacheHits,
+                  orsCalls: snap.orsCalls,
+                  obstacleProbes: snap.obstacleProbes,
+                  obstacleMs: snap.obstacleMs,
+                  durationMs: Date.now() - snap.startedAt,
+                }
+              : // Eerlijk expliciet: geen context = tellers onbeschikbaar.
+                { beschikbaar: false };
+          }
+          return origJson(body as never);
+        }) as typeof res.json;
+      }
       await handler(req, res, next);
     });
     req.log.info(

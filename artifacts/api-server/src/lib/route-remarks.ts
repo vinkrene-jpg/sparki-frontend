@@ -16,7 +16,8 @@ import { bgtVerdictsForPoints, type BgtPointVerdict } from "./bgt-verharding";
 import {
   runOverpassQuery,
   normalizeBbox,
-  noteObstacleProbe,
+  noteObstacleProbeStart,
+  noteObstacleProbeMs,
 } from "./overpass/client";
 import { grbVerdictsForPoints, type GrbPointVerdict } from "./grb-verharding";
 
@@ -1227,10 +1228,11 @@ export function routeObstaclesOf(opts?: {
     // ROUTEMETING_01 M4: elke obstakelbevraging telt mee (ook budget-gekapte
     // selectiemetingen), met de werkelijk verstreken tijd van de meting.
     const _probe0 = Date.now();
+    noteObstacleProbeStart();
     const p = getRouteObstacles(path, {
       queryBbox: opts?.queryBbox,
       criticalRetry: opts?.criticalRetry,
-    }).finally(() => noteObstacleProbe(Date.now() - _probe0));
+    }).finally(() => noteObstacleProbeMs(Date.now() - _probe0));
     if (opts?.budgetMs == null) return p;
     return Promise.race([
       p,
