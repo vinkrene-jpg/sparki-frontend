@@ -6,7 +6,7 @@
 // gooit oude caches weg in activate — er blijft nooit een oude schil hangen.
 // Netwerk wint altijd (network-first): de cache is alleen het vangnet voor
 // offline/flaky verbindingen; API-verkeer wordt NOOIT gecachet.
-const CACHE_VERSIE = "sparki-shell-v1";
+const CACHE_VERSIE = "sparki-shell-v2";
 const SHELL_BESTANDEN = [
   "./",
   "manifest.webmanifest",
