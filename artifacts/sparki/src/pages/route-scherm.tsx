@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { RouteGenerator } from "@/components/sparki/route-panel"
+import { RouteGenerator, RoutePassport } from "@/components/sparki/route-panel"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { RouteDiscover } from "@/components/sparki/route-discover"
@@ -56,8 +56,9 @@ import { localISODate } from "@/lib/commercial-shell"
 // routes in beeld (geen sfeerfoto) · R6 onderblad verschilt per pakket ·
 // R8 navigatielaag schuift over dezelfde kaart. R16: één routeaanvraag per
 // keuze — de oude per-route kaartvragen (rotondes/verkeerslichten/weer)
-// draaien hier bewust NIET (§3 R11); of ze ooit achter het driepuntsmenu
-// terugkomen is een open keuze bij René (§7).
+// draaien NIET in de hoofdbediening (§3 R11). Besluit René 06-08-2026 (§7):
+// ze blijven bestaan, maar ACHTER het driepuntsmenu ("Route-paspoort") —
+// het bestaande RoutePassport op de bewaarde route, nooit in de hoofdflow.
 // R17 (taak 604): op ≥lg een twee-vlaks indeling — kaart naast een vast
 // zijpaneel met exact dezelfde functies (zelfde hooks/state, eigen indeling).
 
@@ -73,6 +74,7 @@ const MENU_ITEMS: { label: string; flow?: FlowKeuze; to?: string }[] = [
   { label: "GPX importeren", flow: "gpx" },
   { label: "Bewaarde routes", flow: "bewaard" },
   { label: "Ontdekken", flow: "ontdek" },
+  { label: "Route-paspoort", flow: "paspoort" },
   { label: "Instellingen", to: "/routes?view=instellingen" },
 ]
 
@@ -1538,6 +1540,64 @@ export default function RouteSchermPage() {
           </div>
         </div>
       )}
+
+      {/* Route-paspoort (besluit §7, 06-08-2026): de oude per-route kaartvragen
+          — wind, temperatuur, verkeerslichten, rotondes, drempels — bewust
+          achter het driepuntsmenu, nooit in de hoofdbediening. Werkt op de
+          zojuist bewaarde route; zonder bewaarde route een eerlijke uitleg. */}
+      {flow === "paspoort" && (
+        <div className="absolute inset-0 z-[540] flex flex-col bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button
+              type="button"
+              onClick={() => setFlow(null)}
+              aria-label="Terug"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <p className="text-[15px] font-semibold text-slate-800">Route-paspoort</p>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {bewaar.isSuccess && bewaar.data ? (
+              <>
+                <p className="text-[13px] leading-relaxed text-slate-600">
+                  Echte feiten over {displayRouteName(bewaar.data.route)}: wind
+                  en temperatuur op je vertrekmoment, verkeerslichten, rotondes
+                  en drempels op de route. Ontbreekt een bron, dan staat dat er
+                  eerlijk bij.
+                </p>
+                <RoutePassport route={bewaar.data.route} />
+              </>
+            ) : (
+              <>
+                <p className="text-[13px] leading-relaxed text-slate-600">
+                  Het route-paspoort toont echte feiten over een bewaarde route
+                  — wind, temperatuur, verkeerslichten, rotondes en drempels.
+                  Bewaar eerst een route (of open er één bij je bewaarde
+                  routes via Alle details).
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFlow("bewaard")}
+                    className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+                  >
+                    Bewaarde routes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFlow(null)}
+                    className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
+                  >
+                    Terug naar de kaart
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1677,4 +1737,4 @@ function RouteMiniatuur({
   )
 }
 
-type FlowKeuze = "maken" | "gpx" | "bewaard" | "ontdek"
+type FlowKeuze = "maken" | "gpx" | "bewaard" | "ontdek" | "paspoort"

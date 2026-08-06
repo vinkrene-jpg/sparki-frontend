@@ -800,7 +800,7 @@ function Climbs({ climbs }: { climbs: RouteClimb[] }) {
 // stored elevation profile, live weather at the chosen departure hour, and
 // environment (traffic lights, forest share) from OpenStreetMap. Blocks whose
 // source can't answer show a plain-Dutch gap; nothing is invented.
-function RoutePassport({
+export function RoutePassport({
   route,
   onAdjust,
 }: {

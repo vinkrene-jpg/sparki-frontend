@@ -5,7 +5,14 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-08-05.
+Laatst bijgewerkt: 2026-08-06.
+
+## Beslist 06-08-2026 — §7 routeplanner oude filters (René: "Achter de puntjes")
+
+- De oude per-route kaartvragen (wind/temperatuur/verkeerslichten/rotondes/
+  drempels) blijven bestaan maar zitten ACHTER het driepuntsmenu van /route
+  als "Route-paspoort" (bestaand RoutePassport, op de bewaarde route).
+  Nooit terug in de hoofdbediening. GEBOUWD 06-08.
 
 
 ## Beslist 05-08-2026 — CLUB_AFRONDING_01 C1/C2/C3 (René: "Eerst c2c3 daarna direct door")
