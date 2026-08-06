@@ -149,6 +149,11 @@
     "reason": "Admin-healthcheck: systeem als geheel."
   },
   {
+    "file": "artifacts/sparki/src/pages/route-scherm.tsx",
+    "contains": "Sparki laat maken",
+    "reason": "Spec-tekst RIJDEN_01 (keuze 3-A): knoplabel voor route automatisch laten samenstellen."
+  },
+  {
     "file": "artifacts/api-server/src/engines/meetniveau/compute.ts",
     "contains": "Sparki ziet van jou",
     "reason": "Profielregel MEETNIVEAU_EN_UITLEG_01 §7: voorgeschreven vorm 'Sparki ziet van jou ...' — beschrijft wat Sparki waarneemt, geen coachadvies."
