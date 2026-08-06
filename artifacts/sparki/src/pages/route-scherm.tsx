@@ -333,6 +333,9 @@ export default function RouteSchermPage() {
   // MUX-57: wachten op een routeaanvraag heeft altijd een uitweg. Annuleren
   // laat het serverwerk gewoon aflopen, maar het resultaat wordt genegeerd.
   const annuleerRef = useRef(false)
+  // R16 sýnchrone generatie-poort: React Query's isPending wordt pas bij de
+  // rerender waar — twee snelle tikken zouden anders twee jobs starten.
+  const genLockRef = useRef(false)
 
   // ── R7: route aanpassen ────────────────────────────────────────────────
   // Vier manieren: punt van de lijn verslepen · waypoint toevoegen ·
@@ -744,7 +747,9 @@ export default function RouteSchermPage() {
   // knoppenrij (RIJDEN_02 §2: de bolletjes zíjn de aanvraag).
   const maakRoute = () => {
     // R16-poort: er loopt al een aanvraag → geen tweede job starten.
-    if (generate.isPending || !act) return
+    // genLockRef is de sýnchrone poort: twee snelle tikken vóór de rerender
+    // zouden anders allebei langs generate.isPending komen.
+    if (genLockRef.current || generate.isPending || !act) return
     if (!center) {
       setGenFout("Geen startpunt — zoek een plaats of gebruik je locatie.")
       return
@@ -766,6 +771,7 @@ export default function RouteSchermPage() {
     setAanpassen(false)
     bewaar.reset()
     annuleerRef.current = false
+    genLockRef.current = true
     const hoogteKeuze = HOOGTES.find((h) => h.id === hoogte) ?? null
     generate.mutate(
       {
@@ -802,7 +808,10 @@ export default function RouteSchermPage() {
           if (annuleerRef.current) return
           setGenFout(e instanceof Error ? e.message : "Route maken is niet gelukt.")
         },
-        onSettled: () => setFase(null),
+        onSettled: () => {
+          genLockRef.current = false
+          setFase(null)
+        },
       },
     )
     setStap(4)
@@ -822,7 +831,7 @@ export default function RouteSchermPage() {
     // kiesActiviteit zet state async — de aanvraag gebruikt de verse waarden.
     const a = activiteit(vorige)
     const std = standaardAfstand(a, trainingVandaag?.planDetails?.targetDistanceKm ?? null)
-    if (generate.isPending || !center) {
+    if (genLockRef.current || generate.isPending || !center) {
       if (!center) setGenFout("Geen startpunt — zoek een plaats of gebruik je locatie.")
       return
     }
@@ -833,6 +842,7 @@ export default function RouteSchermPage() {
     setAanpassen(false)
     bewaar.reset()
     annuleerRef.current = false
+    genLockRef.current = true
     generate.mutate(
       {
         mode: "loop",
@@ -853,7 +863,10 @@ export default function RouteSchermPage() {
           if (annuleerRef.current) return
           setGenFout(e instanceof Error ? e.message : "Route maken is niet gelukt.")
         },
-        onSettled: () => setFase(null),
+        onSettled: () => {
+          genLockRef.current = false
+          setFase(null)
+        },
       },
     )
     setStap(4)
@@ -877,7 +890,7 @@ export default function RouteSchermPage() {
         : null
     voerAanpassingUit(
       {
-        bezig: generate.isPending,
+        bezig: genLockRef.current || generate.isPending,
         center,
         kandidaat,
         fallbackTrainingType: trainingVandaag?.type ?? null,
@@ -891,13 +904,17 @@ export default function RouteSchermPage() {
         setGenFout(null)
         setFase(null)
         bewaar.reset()
+        genLockRef.current = true
         generate.mutate(input, {
           onSuccess: (res) => setKandidaat(res.candidate),
           onError: (e) =>
             setGenFout(
               e instanceof Error ? e.message : "Route aanpassen is niet gelukt.",
             ),
-          onSettled: () => setFase(null),
+          onSettled: () => {
+            genLockRef.current = false
+            setFase(null)
+          },
         })
       },
       (regel) => console.info(regel),
@@ -1382,13 +1399,14 @@ export default function RouteSchermPage() {
       {stap === 4 && kandidaat && (
         <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-3">
           <p className="text-[14px] font-semibold text-slate-800">{kandidaat.name}</p>
-          <p className="mt-0.5 text-[12px] text-slate-600">
-            {kandidaat.distanceKm != null ? `${kandidaat.distanceKm.toFixed(1)} km` : "—"}
-            {kandidaat.elevationGainM != null ? ` · ${Math.round(kandidaat.elevationGainM)} hm` : ""}
-            {kandidaat.durationSec != null
-              ? ` · ± ${Math.round(kandidaat.durationSec / 60)} min`
-              : ""}
-          </p>
+          {/* RIJDEN_02 §4.5: de beschrijvingsregel van de server is DE regel —
+              alleen als die ontbreekt valt het scherm terug op eigen cijfers. */}
+          {!kandidaat.rationale && (
+            <p className="mt-0.5 text-[12px] text-slate-600">
+              {kandidaat.distanceKm != null ? `${kandidaat.distanceKm.toFixed(1)} km` : "—"}
+              {kandidaat.elevationGainM != null ? ` · ${Math.round(kandidaat.elevationGainM)} hm` : ""}
+            </p>
+          )}
           {kandidaat.profile.length > 1 && (
             <MiniElevationProfile profile={kandidaat.profile} className="mt-2 h-12 w-full" />
           )}
@@ -2548,7 +2566,7 @@ export default function RouteSchermPage() {
                       onClick={() => setFlow("maken")}
                       className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-slate-300 px-3 text-[13px] text-slate-700"
                     >
-                      Zelf plannen
+                      {WOORD.zelfMaken}
                     </button>
                     <button
                       type="button"

@@ -4945,8 +4945,10 @@ const generateHandler: import("express").RequestHandler = async (req, res) => {
       };
       // Hybride herkomst hoort onlosmakelijk bij de motivering — zo reist
       // "Gebaseerd op jouw eerdere route …" bij het opslaan automatisch mee.
+      // RIJDEN_02 §7: geen volzin — de herkomst reist mee als puntjes-fragment
+      // achter de deterministische beschrijvingsregel.
       const rationale = hybrideBase
-        ? `Gebaseerd op jouw eerdere route "${hybrideBase.name}": de heenweg volgt je bekende route, de terugweg is opnieuw gepland en gecontroleerd. ${buildRationaleFallback(rationaleInput)}`
+        ? `${buildRationaleFallback(rationaleInput)} · variant op jouw route "${hybrideBase.name}" (terugweg opnieuw gepland)`
         : buildRationaleFallback(rationaleInput);
 
       const candidateId = putCandidate({
