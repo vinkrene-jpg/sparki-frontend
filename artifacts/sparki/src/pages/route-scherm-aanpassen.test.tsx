@@ -1,9 +1,10 @@
 // R7/R16-integratietest voor het aanpassen van routes op /route
-// (route-scherm.tsx): de kaartgebaren zelf. Leaflet wordt gemockt, maar de
-// event-KETEN wordt nagespeeld zoals Leaflet hem echt aflevert: eerst de
-// laag-handler (lijn of marker), daarna lekt dezelfde DOM-event door naar de
-// kaart-handler. De afkeurregel onder test: één gebaar mag NOOIT een tweede
-// routeaanvraag starten via die doorlek (tik-identiteitspoort).
+// (route-scherm.tsx): de kaartgebaren zelf. MapLibre wordt gemockt, maar het
+// echte aflevergedrag wordt nagespeeld: er is ÉÉN centrale kaart-click-handler
+// (die via queryRenderedFeatures beslist wat een tik betekent) en de
+// via-punt-markers zijn DOM-overlays met eigen click-listeners waarvan de tik
+// kan doorlekken naar de kaart-handler. De afkeurregel onder test: één gebaar
+// mag NOOIT een tweede routeaanvraag starten (tik-identiteitspoort, R16).
 //
 // Run: pnpm --filter @workspace/sparki run test:route-scherm-aanpassen
 
@@ -28,48 +29,24 @@ Object.defineProperty(globalThis.navigator, "geolocation", {
   },
 })
 
-// ── Fake Leaflet met echte handler-registratie ──────────────────────────
-type Handler = (e: unknown) => void
-type FakeLayer = {
-  handlers: Record<string, Handler[]>
-  opts: Record<string, unknown>
-  latlng?: unknown
-  on: (name: string, fn: Handler) => FakeLayer
-  addTo: () => FakeLayer
-  remove: () => void
-  setStyle: () => FakeLayer
-  bringToFront: () => FakeLayer
-  getBounds: () => unknown
-  getLatLng: () => { lat: number; lng: number }
-}
-const polylines: FakeLayer[] = []
-const markers: FakeLayer[] = []
-const mapHandlers: Record<string, Handler[]> = {}
+// ── Fake MapLibre met echte handler-registratie ─────────────────────────
+// Laag-/bronnamen zoals route-scherm.tsx ze aanmaakt (F3).
+const KANDIDAAT_LAAG = "sparki-kandidaat-lijn"
+const KANDIDAAT_BRON = "sparki-kandidaat"
 
-function maakLaag(opts: Record<string, unknown>, latlng?: unknown): FakeLayer {
-  const laag: FakeLayer = {
-    handlers: {},
-    opts,
-    latlng,
-    on(name, fn) {
-      ;(laag.handlers[name] ??= []).push(fn)
-      return laag
-    },
-    addTo: () => laag,
-    remove: () => undefined,
-    setStyle: () => laag,
-    bringToFront: () => laag,
-    getBounds: () => ({}),
-    getLatLng: () => {
-      const p = laag.latlng as [number, number]
-      return { lat: p[0], lng: p[1] }
-    },
-  }
-  return laag
-}
+type Handler = (e: unknown) => void
+const mapHandlers: Record<string, Handler[]> = {}
+const bronnen: Record<string, { data: unknown; setData: (d: unknown) => void }> = {}
+const lagen = new Set<string>()
+// De test bepaalt per tik welke lagen "geraakt" worden (queryRenderedFeatures).
+let geraakteLagen: string[] = []
 
 const fakeMap = {
   on: (name: string, fn: Handler) => {
+    if (name === "load") {
+      fn({})
+      return fakeMap
+    }
     ;(mapHandlers[name] ??= []).push(fn)
     return fakeMap
   },
@@ -78,32 +55,70 @@ const fakeMap = {
     return fakeMap
   },
   remove: () => undefined,
-  setView: () => fakeMap,
+  resize: () => undefined,
+  easeTo: () => undefined,
   fitBounds: () => undefined,
   zoomIn: () => undefined,
   zoomOut: () => undefined,
+  addSource: (id: string, def: { data: unknown }) => {
+    bronnen[id] = {
+      data: def.data,
+      setData(d: unknown) {
+        bronnen[id].data = d
+      },
+    }
+  },
+  getSource: (id: string) => bronnen[id],
+  addLayer: (def: { id: string }) => lagen.add(def.id),
+  getLayer: (id: string) => (lagen.has(id) ? { id } : undefined),
+  setPaintProperty: () => undefined,
+  queryRenderedFeatures: (_bbox: unknown, opts: { layers: string[] }) =>
+    opts.layers.some((l) => geraakteLagen.includes(l))
+      ? [{ properties: {} }]
+      : [],
 }
 
-mock.module("leaflet", {
-  defaultExport: {
-    map: () => fakeMap,
-    tileLayer: () => ({ addTo: () => undefined }),
-    polyline: (_geom: unknown, opts: Record<string, unknown>) => {
-      const l = maakLaag(opts)
-      polylines.push(l)
-      return l
+class FakeMarker {
+  element: HTMLElement
+  handlers: Record<string, Handler[]> = {}
+  lngLat: [number, number] = [0, 0]
+  constructor(opts: { element?: HTMLElement } = {}) {
+    this.element = opts.element ?? document.createElement("span")
+    markers.push(this)
+  }
+  setLngLat(ll: [number, number]) {
+    this.lngLat = ll
+    return this
+  }
+  getLngLat() {
+    return { lng: this.lngLat[0], lat: this.lngLat[1] }
+  }
+  addTo() {
+    return this
+  }
+  on(name: string, fn: Handler) {
+    ;(this.handlers[name] ??= []).push(fn)
+    return this
+  }
+  remove() {
+    return this
+  }
+}
+const markers: FakeMarker[] = []
+
+mock.module("maplibre-gl", {
+  namedExports: {
+    Map: class {
+      constructor() {
+        // eslint-disable-next-line no-constructor-return
+        return fakeMap as unknown as object
+      }
     },
-    circleMarker: (_p: unknown, opts: Record<string, unknown>) => maakLaag(opts),
-    marker: (latlng: unknown, opts: Record<string, unknown>) => {
-      const m = maakLaag(opts, latlng)
-      markers.push(m)
-      return m
-    },
-    divIcon: (o: unknown) => o,
-    DomEvent: {
-      stopPropagation: (ev: Event & { _stopped?: boolean }) => {
-        ev._stopped = true
-      },
+    Marker: FakeMarker,
+    LngLatBounds: class {
+      extend() {
+        return this
+      }
     },
   },
 })
@@ -142,6 +157,8 @@ mock.module("@/hooks/use-routes", {
   namedExports: {
     useGeocode: () => ({ mutate: () => undefined, isPending: false, isSuccess: false }),
     useNearbyRoutes: () => ({ data: { routes: [] }, isLoading: false, isError: false }),
+    useRoutes: () => ({ data: { routes: [] }, isLoading: false, isError: false }),
+    useCreateRoute: () => ({ mutate: () => undefined, isPending: false }),
     useGenerateRoute: () => ({
       isPending: false,
       mutate: (
@@ -182,6 +199,20 @@ mock.module("@/components/sparki/elevation-profile", {
 mock.module("@/components/sparki/route-navigator", {
   namedExports: { RouteNavigator: () => h("div") },
 })
+// Flow-overlays uit het driepuntsmenu — zwaar importoppervlak, hier niet
+// onder test; gemockt zodat het testoppervlak de kaartgebaren blijft.
+mock.module("@/components/sparki/route-panel", {
+  namedExports: { RouteGenerator: () => h("div"), RoutePassport: () => h("div") },
+})
+mock.module("@/components/sparki/route-explorer", {
+  namedExports: { RouteExplorer: () => h("div") },
+})
+mock.module("@/components/sparki/route-library-section", {
+  namedExports: { RouteLibrarySection: () => h("div") },
+})
+mock.module("@/components/sparki/route-discover", {
+  namedExports: { RouteDiscover: () => h("div") },
+})
 mock.module("@/lib/route-name", {
   namedExports: { displayRouteName: (n: string) => ({ display: n }) },
 })
@@ -212,13 +243,22 @@ const reactPromise = import("react")
 const rtlPromise = import("@testing-library/react")
 const pagePromise = import("./route-scherm")
 
-// Leaflets echte aflevergedrag nagespeeld: eerst de laag-handler, daarna
-// dezelfde DOM-event door naar de kaart-handler (de doorlek onder test).
-function tikMetDoorlek(laag: FakeLayer | null, latlng: { lat: number; lng: number }) {
-  const domEv = new Event("click")
-  const leafletEv = { latlng, originalEvent: domEv }
-  for (const fn of laag?.handlers["click"] ?? []) fn(leafletEv)
-  for (const fn of mapHandlers["click"] ?? []) fn({ latlng, originalEvent: domEv })
+// Eén kaart-tik afleveren zoals MapLibre dat doet: één click-event op de
+// centrale handler; `opLagen` bepaalt wat queryRenderedFeatures raakt.
+function kaartTik(
+  opLagen: string[],
+  latlng: { lat: number; lng: number },
+  domEv: Event = new Event("click"),
+) {
+  geraakteLagen = opLagen
+  for (const fn of mapHandlers["click"] ?? []) {
+    fn({
+      lngLat: latlng,
+      point: { x: 100, y: 100 },
+      originalEvent: domEv,
+    })
+  }
+  geraakteLagen = []
 }
 
 test("route aanpassen op /route: elk kaartgebaar = precies één routeaanvraag", async () => {
@@ -234,21 +274,28 @@ test("route aanpassen op /route: elk kaartgebaar = precies één routeaanvraag",
   fireEvent.click(screen.getAllByText("Duurtraining")[0])
   assert.equal(generateCalls.length, 1, "trainingstype kiezen = één aanvraag")
 
+  // Kandidaat is als GeoJSON in de kandidaat-bron gezet (F3).
+  const kandidaatBron = bronnen[KANDIDAAT_BRON]
+  assert.ok(kandidaatBron, "kandidaat-bron bestaat")
+  assert.equal(
+    (kandidaatBron.data as { type?: string }).type,
+    "Feature",
+    "kandidaat-lijn is getekend",
+  )
+
   // Aanpasmodus aan.
   fireEvent.click(screen.getAllByText("Aanpassen")[0])
 
-  // 1) Punt op de lijn pinnen: laag-handler + kaart-doorlek van DEZELFDE tik.
-  const kandidaatLijn = polylines.findLast((p) => p.opts.color === "#8b5cf6") ?? null
-  assert.ok(kandidaatLijn, "kandidaat-lijn is getekend")
+  // 1) Punt op de lijn pinnen: tik die de kandidaatlaag raakt = één aanvraag.
   await act(async () => {
-    tikMetDoorlek(kandidaatLijn, { lat: 52.11, lng: 5.18 })
+    kaartTik([KANDIDAAT_LAAG], { lat: 52.11, lng: 5.18 })
   })
-  assert.equal(generateCalls.length, 2, "lijn-tik = precies één extra aanvraag (doorlek geblokkeerd)")
+  assert.equal(generateCalls.length, 2, "lijn-tik = precies één extra aanvraag")
   assert.deepEqual(generateCalls[1].viaPoints, [[52.11, 5.18]])
 
-  // 2) Waypoint toevoegen: kale kaart-tik (geen laag) = één aanvraag.
+  // 2) Waypoint toevoegen: kale kaart-tik (geen laag geraakt) = één aanvraag.
   await act(async () => {
-    tikMetDoorlek(null, { lat: 52.2, lng: 5.3 })
+    kaartTik([], { lat: 52.2, lng: 5.3 })
   })
   assert.equal(generateCalls.length, 3, "kaart-tik = precies één aanvraag")
   assert.deepEqual(generateCalls[2].viaPoints, [
@@ -258,10 +305,10 @@ test("route aanpassen op /route: elk kaartgebaar = precies één routeaanvraag",
 
   // 3) Punt verslepen: dragend op de eerste via-marker = één aanvraag.
   const viaMarker = markers.findLast(
-    (m) => Array.isArray(m.latlng) && (m.latlng as number[])[0] === 52.11,
+    (m) => m.lngLat[1] === 52.11 && m.lngLat[0] === 5.18,
   )
   assert.ok(viaMarker, "via-marker is getekend")
-  viaMarker!.latlng = [52.14, 5.22]
+  viaMarker!.setLngLat([5.22, 52.14])
   await act(async () => {
     for (const fn of viaMarker!.handlers["dragend"] ?? []) fn({})
   })
@@ -271,16 +318,22 @@ test("route aanpassen op /route: elk kaartgebaar = precies één routeaanvraag",
     [52.2, 5.3],
   ])
 
-  // 4) Punt verwijderen: marker-tik + kaart-doorlek van DEZELFDE tik — er
-  // mag géén vervangend waypoint met tweede aanvraag ontstaan.
-  const tweedeMarker = markers.findLast(
-    (m) => Array.isArray(m.latlng) && (m.latlng as number[])[0] === 52.2,
-  )
+  // 4) Punt verwijderen: klik op het marker-element + doorlek van DEZELFDE
+  // DOM-event naar de kaart-handler — er mag géén vervangend waypoint met
+  // tweede aanvraag ontstaan (tik-identiteitspoort).
+  const tweedeMarker = markers.findLast((m) => m.lngLat[1] === 52.2)
   assert.ok(tweedeMarker, "tweede via-marker is getekend")
   await act(async () => {
-    tikMetDoorlek(tweedeMarker!, { lat: 52.2, lng: 5.3 })
+    const domEv = new Event("click")
+    tweedeMarker!.element.dispatchEvent(domEv)
+    // Doorlek: dezelfde DOM-event bereikt daarna de kaart-handler.
+    kaartTik([], { lat: 52.2, lng: 5.3 }, domEv)
   })
-  assert.equal(generateCalls.length, 5, "punt verwijderen = precies één aanvraag (doorlek geblokkeerd)")
+  assert.equal(
+    generateCalls.length,
+    5,
+    "punt verwijderen = precies één aanvraag (doorlek geblokkeerd)",
+  )
   assert.deepEqual(generateCalls[4].viaPoints, [[52.14, 5.22]])
 
   // 5) Inkorten: één aanvraag met de nieuwe doelafstand.

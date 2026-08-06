@@ -4,8 +4,14 @@ import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { RouteDiscover } from "@/components/sparki/route-discover"
 import { useLocation } from "wouter"
-import L from "leaflet"
-import "leaflet/dist/leaflet.css"
+import {
+  Map as MapLibreMap,
+  Marker as MapLibreMarker,
+  LngLatBounds,
+  type MapMouseEvent,
+  type GeoJSONSource,
+} from "maplibre-gl"
+import "maplibre-gl/dist/maplibre-gl.css"
 import {
   ArrowLeft,
   Bike,
@@ -99,6 +105,69 @@ const AFSTANDEN = [20, 40, 60, 80, 100]
 
 type SheetStand = "ingeklapt" | "half" | "vol"
 
+// ── KAART_VECTOR_01 F3: kaartbron-/laagnamen + hulpjes ────────────────────
+// Geometrie in de datalaag is [lat, lon]; GeoJSON wil [lon, lat].
+// MapLibre parseert géén CSS-variabelen (Leaflet/SVG deed dat wel): de
+// corpuslijn krijgt daarom het merkaccent als letterlijke kleur —
+// zelfde waarde als --accent-cyan: oklch(0.50 0.13 205).
+const LIJN_ACCENT = "#00758a"
+const ROUTES_BRON = "sparki-routes"
+const ROUTES_LAAG = "sparki-routes-lijn"
+const KANDIDAAT_BRON = "sparki-kandidaat"
+const KANDIDAAT_LAAG = "sparki-kandidaat-lijn"
+
+function legeCollectie(): GeoJSON.FeatureCollection {
+  return { type: "FeatureCollection", features: [] }
+}
+
+function lijnFeature(
+  geometry: [number, number][],
+  properties: Record<string, string> = {},
+): GeoJSON.Feature {
+  return {
+    type: "Feature",
+    properties,
+    geometry: {
+      type: "LineString",
+      coordinates: geometry.map(([lat, lon]) => [lon, lat]),
+    },
+  }
+}
+
+// Selectie via feature-property: één verfdefinitie, afhankelijk van de
+// gekozen sleutel (geen losse lijnobjecten meer).
+function routesVerf(gekozenKey: string | null) {
+  const actief = ["==", ["get", "key"], gekozenKey ?? "\u0000"]
+  return {
+    "line-color": ["case", actief, "#f59e0b", LIJN_ACCENT] as unknown as string,
+    "line-width": ["case", actief, 5, 3] as unknown as number,
+    "line-opacity": [
+      "case",
+      actief,
+      0.95,
+      gekozenKey ? 0.3 : 0.6,
+    ] as unknown as number,
+  }
+}
+
+// §5.7 (voorbereid in F3): ÉÉN centrale fit-functie voor "breng deze route in
+// beeld" — alle aanroepen lopen hierlangs, straks met per-kant marges.
+function fitOpGeometrie(
+  map: MapLibreMap,
+  geometry: [number, number][],
+  padding: { top: number; bottom: number; left: number; right: number } = {
+    top: 40,
+    bottom: 40,
+    left: 40,
+    right: 40,
+  },
+) {
+  if (geometry.length < 2) return
+  const b = new LngLatBounds()
+  for (const [lat, lon] of geometry) b.extend([lon, lat])
+  map.fitBounds(b, { padding })
+}
+
 const FASE_TEKST: Record<GeneratePhase, string> = {
   wachten: "Routeaanvraag in de rij…",
   berekenen: "Route berekenen…",
@@ -111,10 +180,11 @@ export default function RouteSchermPage() {
 
   // ── Kaartkern ──────────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<L.Map | null>(null)
-  const linesRef = useRef<Map<string, L.Polyline>>(new Map())
-  const kandidaatLineRef = useRef<L.Polyline | null>(null)
-  const markerRef = useRef<L.CircleMarker | null>(null)
+  const mapRef = useRef<MapLibreMap | null>(null)
+  // KAART_VECTOR_01 F3: alle routes in ÉÉN GeoJSON-bron + line-layer;
+  // selectie loopt via een feature-property, niet via losse lijnobjecten.
+  const [kaartKlaar, setKaartKlaar] = useState(false)
+  const markerRef = useRef<MapLibreMarker | null>(null)
 
   const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null)
   const [sport, setSport] = useState<SportKeuze>("cycling")
@@ -155,7 +225,7 @@ export default function RouteSchermPage() {
   const [viaPunten, setViaPunten] = useState<[number, number][]>([])
   const [klim, setKlim] = useState<ClimbHit | null>(null)
   const [klimOpen, setKlimOpen] = useState(false)
-  const viaMarkersRef = useRef<L.Marker[]>([])
+  const viaMarkersRef = useRef<MapLibreMarker[]>([])
   // Handler-verse spiegels zodat kaart/lijn-handlers niet per render opnieuw
   // gebonden hoeven te worden.
   const aanpassenRef = useRef(false)
@@ -210,34 +280,54 @@ export default function RouteSchermPage() {
   const vandaagPlan = usePlanRange(today, today)
   const trainingVandaag = (vandaagPlan.data ?? []).find((w) => w.status !== "cancelled") ?? null
 
-  // Kaart opzetten — zoomknoppen uit (eigen bediening rechtsonder, R4).
+  // Kaart opzetten (KAART_VECTOR_01 F2) — MapLibre GL met de Sparki-vectorstijl
+  // (OSMF Shortbread-tegels). Geen zoomknoppen: eigen bediening rechtsonder (R4).
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
-    const map = L.map(containerRef.current, {
-      zoomControl: false,
-      attributionControl: true,
+    const map = new MapLibreMap({
+      container: containerRef.current,
+      // Buiten Vite (node-page-tests) bestaat import.meta.env niet — val dan
+      // terug op "/" (de kaart wordt daar toch gemockt).
+      style: `${import.meta.env?.BASE_URL ?? "/"}kaart/sparki-stijl.json`,
+      center: [5.3, 52.1],
+      zoom: 7,
+      attributionControl: { compact: true },
     })
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 19,
-      },
-    ).addTo(map)
-    map.setView([52.1, 5.3], 7)
+    map.on("load", () => {
+      // F3: één GeoJSON-bron voor het routecorpus + één voor de kandidaat.
+      map.addSource(ROUTES_BRON, { type: "geojson", data: legeCollectie() })
+      map.addSource(KANDIDAAT_BRON, { type: "geojson", data: legeCollectie() })
+      map.addLayer({
+        id: ROUTES_LAAG,
+        type: "line",
+        source: ROUTES_BRON,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: routesVerf(null),
+      })
+      map.addLayer({
+        id: KANDIDAAT_LAAG,
+        type: "line",
+        source: KANDIDAAT_BRON,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#8b5cf6",
+          "line-width": 5,
+          "line-opacity": 0.95,
+        },
+      })
+      setKaartKlaar(true)
+    })
     mapRef.current = map
     // R17: de kaartbreedte verandert bij de lg-grens (zijpaneel erbij/eraf) —
-    // Leaflet moet dan zijn maat herzien of tegels/klikken lopen scheef.
-    const observer = new ResizeObserver(() => map.invalidateSize())
+    // de kaart moet dan zijn maat herzien of tegels/klikken lopen scheef.
+    const observer = new ResizeObserver(() => map.resize())
     observer.observe(containerRef.current)
     return () => {
       observer.disconnect()
       map.remove()
       mapRef.current = null
-      linesRef.current.clear()
-      kandidaatLineRef.current = null
       markerRef.current = null
+      setKaartKlaar(false)
     }
   }, [])
 
@@ -251,89 +341,64 @@ export default function RouteSchermPage() {
     )
   }, [])
 
-  // Centrum-marker.
+  // Centrum-marker — via de Marker-API (F3), statisch element (XSS-regel).
   useEffect(() => {
     const map = mapRef.current
     if (!map || !center) return
     if (markerRef.current) markerRef.current.remove()
-    markerRef.current = L.circleMarker([center.lat, center.lon], {
-      radius: 7,
-      color: "#ffffff",
-      weight: 2,
-      fillColor: "#e63946",
-      fillOpacity: 1,
-    }).addTo(map)
-    map.setView([center.lat, center.lon], 12)
+    const el = document.createElement("span")
+    el.style.cssText =
+      "display:block;width:14px;height:14px;border-radius:9999px;background:#e63946;border:2px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,.4)"
+    markerRef.current = new MapLibreMarker({ element: el })
+      .setLngLat([center.lon, center.lat])
+      .addTo(map)
+    map.easeTo({ center: [center.lon, center.lat], zoom: 12 })
   }, [center])
 
-  // Routes in beeld tekenen (nearby-corpus).
+  // Routes in beeld tekenen (nearby-corpus) — F3: één setData op de bron.
   const routes = nearby.data?.routes ?? []
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
-    for (const line of linesRef.current.values()) line.remove()
-    linesRef.current.clear()
-    for (const r of routes) {
-      if (!r.geometry || r.geometry.length < 2) continue
-      const line = L.polyline(r.geometry, { color: ACCENT, weight: 3, opacity: 0.6 })
-      line.on("click", () => setGekozenKey(r.key))
-      line.addTo(map)
-      linesRef.current.set(r.key, line)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routes])
-
-  // Selectie-uitlichting.
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    for (const [key, line] of linesRef.current) {
-      const actief = key === gekozenKey
-      line.setStyle({
-        color: actief ? "#f59e0b" : ACCENT,
-        weight: actief ? 5 : 3,
-        opacity: actief ? 0.95 : gekozenKey ? 0.3 : 0.6,
-      })
-      if (actief) {
-        line.bringToFront()
-        map.fitBounds(line.getBounds(), { padding: [40, 40] })
-      }
-    }
-  }, [gekozenKey, routes])
-
-  // Gegenereerde kandidaat tekenen.
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    if (kandidaatLineRef.current) {
-      kandidaatLineRef.current.remove()
-      kandidaatLineRef.current = null
-    }
-    if (!kandidaat || kandidaat.geometry.length < 2) return
-    const line = L.polyline(kandidaat.geometry, {
-      color: "#8b5cf6",
-      weight: 5,
-      opacity: 0.95,
-    }).addTo(map)
-    // Punt van de lijn verslepen (R7): in aanpasmodus is een tik op de lijn
-    // een VOLLEDIGE aanpassing — het punt wordt daar vastgepind en er start
-    // meteen precies één routeaanvraag (R16). Daarna is het punt versleepbaar;
-    // elke sleep is opnieuw één aanvraag.
-    line.on("click", (e: L.LeafletMouseEvent) => {
-      if (!aanpassenRef.current) return
-      verwerkteTikRef.current = e.originalEvent
-      if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent)
-      const via: [number, number][] = [
-        ...viaPuntenRef.current,
-        [e.latlng.lat, e.latlng.lng],
-      ]
-      setViaPunten(via)
-      hergenereerRef.current({ reden: "punt-verslepen", via })
+    if (!map || !kaartKlaar) return
+    const bron = map.getSource(ROUTES_BRON) as GeoJSONSource | undefined
+    if (!bron) return
+    bron.setData({
+      type: "FeatureCollection",
+      features: routes
+        .filter((r) => r.geometry && r.geometry.length >= 2)
+        .map((r) => lijnFeature(r.geometry, { key: r.key })),
     })
-    line.bringToFront()
-    map.fitBounds(line.getBounds(), { padding: [40, 40] })
-    kandidaatLineRef.current = line
-  }, [kandidaat])
+  }, [routes, kaartKlaar])
+
+  // Selectie-uitlichting — verf-expressie op de laag + fit op de gekozen route.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !kaartKlaar || !map.getLayer(ROUTES_LAAG)) return
+    const verf = routesVerf(gekozenKey)
+    for (const [naam, waarde] of Object.entries(verf)) {
+      map.setPaintProperty(ROUTES_LAAG, naam, waarde)
+    }
+    const gekozen = routes.find((r) => r.key === gekozenKey)
+    if (gekozen?.geometry && gekozen.geometry.length >= 2) {
+      fitOpGeometrie(map, gekozen.geometry)
+    }
+  }, [gekozenKey, routes, kaartKlaar])
+
+  // Gegenereerde kandidaat tekenen — eigen bron; de kandidaatlaag ligt boven
+  // de corpuslaag (laagvolgorde bij aanmaak). Tik-gedrag loopt via de centrale
+  // kaart-tik-handler (queryRenderedFeatures), zie hieronder.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !kaartKlaar) return
+    const bron = map.getSource(KANDIDAAT_BRON) as GeoJSONSource | undefined
+    if (!bron) return
+    if (!kandidaat || kandidaat.geometry.length < 2) {
+      bron.setData(legeCollectie())
+      return
+    }
+    bron.setData(lijnFeature(kandidaat.geometry))
+    fitOpGeometrie(map, kandidaat.geometry)
+  }, [kandidaat, kaartKlaar])
 
   // R16/R-T3: één routeaanvraag per keuze — trainingstype kiezen start
   // precies één generatie-job vanaf het kaartcentrum.
@@ -436,22 +501,41 @@ export default function RouteSchermPage() {
   const viaPuntenRef = useRef(viaPunten)
   viaPuntenRef.current = viaPunten
 
-  // Waypoint toevoegen (R7): in aanpasmodus voegt een kaart-tik náást de lijn
-  // een via-punt toe → één routeaanvraag.
+  // Centrale kaart-tik (F3): één handler beslist wat een tik betekent, op
+  // volgorde van voorrang — kandidaatlijn (R7 punt vastpinnen) → corpusroute
+  // (selectie) → kale kaart (waypoint in aanpasmodus). Doordat er maar ÉÉN
+  // handler is, kan dezelfde tik nooit twee routeaanvragen starten (R16); de
+  // DOM-event-identiteitspoort blijft staan voor de via-punt-markers (dat
+  // zijn DOM-overlays met eigen click-listeners).
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    const onTik = (e: L.LeafletMouseEvent) => {
-      if (!aanpassenRef.current) return
-      // Al verwerkt door de lijn- of marker-handler? Dan is deze tik géén
-      // nieuw waypoint (anders: tweede aanvraag bij dezelfde tik — R16).
+    const onTik = (e: MapMouseEvent) => {
       if (e.originalEvent && e.originalEvent === verwerkteTikRef.current) return
-      const via: [number, number][] = [
-        ...viaPuntenRef.current,
-        [e.latlng.lat, e.latlng.lng],
+      const rondom: [[number, number], [number, number]] = [
+        [e.point.x - 6, e.point.y - 6],
+        [e.point.x + 6, e.point.y + 6],
       ]
-      setViaPunten(via)
-      hergenereerRef.current({ reden: "waypoint", via })
+      if (aanpassenRef.current) {
+        const opKandidaat = map.getLayer(KANDIDAAT_LAAG)
+          ? map.queryRenderedFeatures(rondom, { layers: [KANDIDAAT_LAAG] })
+          : []
+        const via: [number, number][] = [
+          ...viaPuntenRef.current,
+          [e.lngLat.lat, e.lngLat.lng],
+        ]
+        setViaPunten(via)
+        hergenereerRef.current({
+          reden: opKandidaat.length > 0 ? "punt-verslepen" : "waypoint",
+          via,
+        })
+        return
+      }
+      // Buiten aanpasmodus: tik op een corpusroute = selectie.
+      if (!map.getLayer(ROUTES_LAAG)) return
+      const hits = map.queryRenderedFeatures(rondom, { layers: [ROUTES_LAAG] })
+      const key = hits[0]?.properties?.key
+      if (typeof key === "string" && key) setGekozenKey(key)
     }
     map.on("click", onTik)
     return () => {
@@ -468,30 +552,27 @@ export default function RouteSchermPage() {
     viaMarkersRef.current = []
     if (!aanpassen || !kandidaat) return
     viaPunten.forEach((p, i) => {
-      const marker = L.marker(p, {
-        draggable: true,
-        // Statisch opgebouwde HTML — nooit gebruikersinvoer (XSS-regel).
-        icon: L.divIcon({
-          className: "",
-          html: '<span style="display:block;width:16px;height:16px;border-radius:9999px;background:#8b5cf6;border:3px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,.4)"></span>',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
-        }),
-      }).addTo(map)
+      // Statisch opgebouwd element — nooit gebruikersinvoer (XSS-regel).
+      const el = document.createElement("span")
+      el.style.cssText =
+        "display:block;width:16px;height:16px;border-radius:9999px;background:#8b5cf6;border:3px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,.4);cursor:pointer"
+      const marker = new MapLibreMarker({ element: el, draggable: true })
+        .setLngLat([p[1], p[0]])
+        .addTo(map)
       marker.on("dragend", () => {
-        const ll = marker.getLatLng()
+        const ll = marker.getLngLat()
         const via = viaPuntenRef.current.map((q, j) =>
           j === i ? ([ll.lat, ll.lng] as [number, number]) : q,
         )
         setViaPunten(via)
         hergenereerRef.current({ reden: "punt-verslepen", via })
       })
-      marker.on("click", (e: L.LeafletMouseEvent) => {
+      el.addEventListener("click", (ev) => {
         // Verwijderen = precies één aanvraag: de tik mag NIET doorlekken naar
         // de kaart-handler (die zou er anders meteen een nieuw waypoint mét
-        // tweede aanvraag naast zetten).
-        verwerkteTikRef.current = e.originalEvent
-        if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent)
+        // tweede aanvraag naast zetten). Markering + stopPropagation.
+        verwerkteTikRef.current = ev
+        ev.stopPropagation()
         const via = viaPuntenRef.current.filter((_, j) => j !== i)
         setViaPunten(via)
         hergenereerRef.current({ reden: "waypoint", via })
@@ -1111,7 +1192,9 @@ export default function RouteSchermPage() {
 
       {/* Kaartvlak — mobiel beeldvullend (R1), desktop naast het zijpaneel */}
       <div className="relative min-w-0 flex-1">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* Inline-stijl, niet Tailwind: maplibre-gl.css zet .maplibregl-map op
+          position:relative en wint dan van de absolute-klasse (hoogte 0). */}
+      <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
       {/* Bovenop: terug + zoekveld + driepuntsmenu (R2) — alleen mobiel */}
       {/* z boven de filterbolletjes-rij (ook z-[500], later in de DOM):
