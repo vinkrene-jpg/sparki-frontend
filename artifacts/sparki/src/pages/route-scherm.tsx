@@ -1042,7 +1042,7 @@ export default function RouteSchermPage() {
             type="button"
             onClick={() => setLocation("/routes")}
             aria-label="Terug"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
           >
             <ArrowLeft className="h-5 w-5" strokeWidth={2} />
           </button>
@@ -1088,7 +1088,7 @@ export default function RouteSchermPage() {
                       if (m.flow) setFlow(m.flow)
                       else if (m.to) setLocation(m.to)
                     }}
-                    className="block w-full px-4 py-3 text-left text-[14px] text-slate-700 hover:bg-slate-50"
+                    className="flex min-h-12 w-full items-center px-4 text-left text-[14px] text-slate-700 hover:bg-slate-50"
                   >
                     {m.label}
                   </button>
@@ -1155,7 +1155,7 @@ export default function RouteSchermPage() {
                     if (m.flow) setFlow(m.flow)
                     else if (m.to) setLocation(m.to)
                   }}
-                  className="block w-full px-4 py-3 text-left text-[14px] text-slate-700 hover:bg-slate-50"
+                  className="flex min-h-12 w-full items-center px-4 text-left text-[14px] text-slate-700 hover:bg-slate-50"
                 >
                   {m.label}
                 </button>
@@ -1327,7 +1327,7 @@ export default function RouteSchermPage() {
               type="button"
               onClick={() => setFlow(null)}
               aria-label="Terug"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
             >
               <ArrowLeft className="h-5 w-5" strokeWidth={2} />
             </button>
@@ -1358,7 +1358,7 @@ export default function RouteSchermPage() {
               type="button"
               onClick={() => setFlow(null)}
               aria-label="Terug"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
             >
               <ArrowLeft className="h-5 w-5" strokeWidth={2} />
             </button>
@@ -1467,7 +1467,7 @@ export default function RouteSchermPage() {
                 type="button"
                 onClick={() => setFlow(null)}
                 aria-label="Terug"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
               >
                 <ArrowLeft className="h-5 w-5" strokeWidth={2} />
               </button>
@@ -1526,7 +1526,7 @@ export default function RouteSchermPage() {
               type="button"
               onClick={() => setFlow(null)}
               aria-label="Terug"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
             >
               <ArrowLeft className="h-5 w-5" strokeWidth={2} />
             </button>
@@ -1552,17 +1552,29 @@ export default function RouteSchermPage() {
               type="button"
               onClick={() => setFlow(null)}
               aria-label="Terug"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
             >
               <ArrowLeft className="h-5 w-5" strokeWidth={2} />
             </button>
             <p className="text-[15px] font-semibold text-slate-800">Route-paspoort</p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            {bewaar.isSuccess && bewaar.data ? (
+            {bewaar.isSuccess &&
+            bewaar.data &&
+            // Alleen tonen als de bewaarde route bij de HUIDIGE kandidaat
+            // hoort — een laat binnengekomen save van een vorige kandidaat
+            // mag hier nooit als "jouw route" verschijnen.
+            bewaar.variables?.candidate.candidateId === kandidaat?.candidateId ? (
               <>
                 <p className="text-[13px] leading-relaxed text-slate-600">
-                  Echte feiten over {displayRouteName(bewaar.data.route)}: wind
+                  Echte feiten over{" "}
+                  {
+                    displayRouteName(
+                      bewaar.data.route.name,
+                      bewaar.data.route.distanceKm,
+                    ).display
+                  }
+                  : wind
                   en temperatuur op je vertrekmoment, verkeerslichten, rotondes
                   en drempels op de route. Ontbreekt een bron, dan staat dat er
                   eerlijk bij.
