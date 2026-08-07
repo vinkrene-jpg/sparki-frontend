@@ -4,81 +4,81 @@
       "stap": "voorbereiding: corpus geseed (3 eigen routes)",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:31.388Z"
+      "t": "2026-08-07T04:28:26.869Z"
     },
     {
       "stap": "§6-1: scherm opent met één bolletje 'Activiteit'",
       "status": "OK",
       "detail": "\"Activiteit\"",
-      "t": "2026-08-07T04:24:51.297Z"
+      "t": "2026-08-07T04:28:36.121Z"
     },
     {
       "stap": "§6-5: geen knop 'Filters'",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:51.341Z"
+      "t": "2026-08-07T04:28:36.314Z"
     },
     {
       "stap": "§6-6: 'Maak route' zichtbaar op stap 1",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:51.343Z"
+      "t": "2026-08-07T04:28:36.316Z"
     },
     {
       "stap": "§6-7: 'Maak route' staat één keer op het scherm",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:51.346Z"
+      "t": "2026-08-07T04:28:36.318Z"
     },
     {
       "stap": "§6-2: rij toont 'Racefiets' · 'Binnen 30 km' · '+ Verfijnen'",
       "status": "OK",
       "detail": "Racefiets Binnen 30 km + Verfijnen",
-      "t": "2026-08-07T04:24:52.080Z"
+      "t": "2026-08-07T04:28:37.056Z"
     },
     {
       "stap": "§6-3: Verfijnen opent één vraag (afstand-schuif), geen lijst",
       "status": "OK",
       "detail": "koppen=[\"Hoe ver ongeveer?\"]",
-      "t": "2026-08-07T04:24:52.587Z"
+      "t": "2026-08-07T04:28:37.563Z"
     },
     {
       "stap": "§6-6: escape ook zichtbaar met open vraag",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:52.620Z"
+      "t": "2026-08-07T04:28:37.607Z"
     },
     {
       "stap": "§6-4: gekozen afstand wordt een bolletje met de waarde",
       "status": "OK",
       "detail": "Racefiets Binnen 30 km 70 km + Verfijnen",
-      "t": "2026-08-07T04:24:53.279Z"
+      "t": "2026-08-07T04:28:38.248Z"
     },
     {
       "stap": "§6-4: tik op bolletje opent de stap opnieuw",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:53.732Z"
+      "t": "2026-08-07T04:28:38.680Z"
     },
     {
       "stap": "§6-11: knoppenrij blijft staan met onderblad omhoog",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:54.324Z"
+      "t": "2026-08-07T04:28:39.280Z"
     },
     {
       "stap": "§6-6: escape blijft zichtbaar met onderblad omhoog",
       "status": "OK",
       "detail": "",
-      "t": "2026-08-07T04:24:54.326Z"
+      "t": "2026-08-07T04:28:39.282Z"
     },
     {
       "stap": "§6-10: kaartstijl alleen als screenshot-bewijs (visuele beoordeling René)",
       "status": "INFO",
       "detail": "",
-      "t": "2026-08-07T04:24:54.367Z"
+      "t": "2026-08-07T04:28:39.321Z"
     }
   ],
   "exitCode": 0,
-  "t": "2026-08-07T04:24:54.808Z"
+  "t": "2026-08-07T04:28:39.687Z"
 }

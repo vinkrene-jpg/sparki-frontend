@@ -1,0 +1,30 @@
+{
+ "sha": "2ddd2ff0",
+ "base": "http://127.0.0.1:80",
+ "records": [
+  {
+   "key": "amsterdam|wandelen|min",
+   "punt": "amsterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "wandelen",
+   "soort": "min",
+   "wens": null,
+   "targetKm": 2,
+   "M1_geleverd": true,
+   "M2_ms": 10550,
+   "M3_orsCalls": 4,
+   "M4_obstakelBevragingen": 7,
+   "M4_obstakelMs": 20398,
+   "overpassAanvragen": 6,
+   "M5_overlap": 0,
+   "M6_herhaaldM": 0,
+   "M7_sublusM": 1174.2518013458684,
+   "M8_omkeringen": 0,
+   "M9_bebouwdPct": 64,
+   "distanceKm": 2.96,
+   "M10_afwijkingPct": 48,
+   "M11_bochtenPerKm": 7.77027027027027,
+   "M12_onbekendWegdekPct": 3.4737231292182646
+  }
+ ]
+}
