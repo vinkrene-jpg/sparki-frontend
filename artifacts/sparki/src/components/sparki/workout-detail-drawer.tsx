@@ -92,6 +92,41 @@ const routeNeedLabel: Record<WorkoutRouteNeed, { label: string; icon: typeof Hom
   none: { label: "Geen rit", icon: Home },
 }
 
+// REPARATIE_01 C8: workout.type is een interne (Engelse) waarde — de sporter
+// ziet een Nederlands label. Recovery is geen sport maar een type sessie.
+const TYPE_LABELS: Record<string, string> = {
+  recovery: "Herstel",
+  endurance: "Duurtraining",
+  interval: "Intervaltraining",
+  intervals: "Intervaltraining",
+  tempo: "Tempotraining",
+  threshold: "Drempeltraining",
+  sprint: "Sprinttraining",
+  strength: "Krachttraining",
+  race: "Wedstrijd",
+  rest: "Rust",
+  ride: "Fietstraining",
+  run: "Looptraining",
+}
+function typeLabel(t: string): string {
+  return TYPE_LABELS[t.toLowerCase()] ?? t
+}
+
+// REPARATIE_01 C5: de server geeft eerlijke foutredenen (bijv. consent uit) —
+// die tonen we, in plaats van een generiek "even niet bereikbaar".
+function serverFoutTekst(err: unknown): string {
+  if (err instanceof Error && err.message) {
+    try {
+      const j = JSON.parse(err.message) as { error?: string }
+      if (j.error) return j.error
+    } catch {
+      /* geen JSON — kale tekst tonen als hij kort en leesbaar is */
+      if (err.message.length < 200 && !err.message.startsWith("<")) return err.message
+    }
+  }
+  return "Even niet bereikbaar. Probeer het zo opnieuw."
+}
+
 const FEEDBACK_OPTIONS: {
   type: WorkoutFeedbackType
   label: string
@@ -349,8 +384,15 @@ export function WorkoutDetailDrawer({
     })
   }
 
-  const handleFeedback = async (type: WorkoutFeedbackType) => {
+  // REPARATIE_01 C3: de afronding (Gedaan/Gedeeltelijk/Gemist) reist expliciet
+  // mee — state-updates zijn asynchroon, dus een override voorkomt dat een
+  // klik met de vórige waarde wordt opgeslagen.
+  const handleFeedback = async (
+    type: WorkoutFeedbackType,
+    completionOverride?: WorkoutCompletion | null,
+  ) => {
     if (!workout) return
+    const afronding = completionOverride !== undefined ? completionOverride : completion
     setActiveFeedback(type)
     setProposal(null)
     // Persist the feedback first, then ask Sparki for a proposal so the two
@@ -361,7 +403,7 @@ export function WorkoutDetailDrawer({
         feedbackType: type,
         note,
         rpe,
-        completion,
+        completion: afronding,
         deviationReason,
       })
       const res = await adjust.mutateAsync({
@@ -369,7 +411,7 @@ export function WorkoutDetailDrawer({
         feedbackType: type,
         note,
         rpe,
-        completion,
+        completion: afronding,
       })
       setProposal(res.proposal)
     } catch {
@@ -478,13 +520,13 @@ export function WorkoutDetailDrawer({
                 <PracticalStat
                   icon={Gauge}
                   label="Belasting"
-                  value={workout.targetTSS ? `${workout.targetTSS} TSS` : "—"}
+                  value={workout.targetTSS ? `${workout.targetTSS} punten` : "—"}
                   accent
                 />
                 <PracticalStat
                   icon={Bike}
-                  label="Sport"
-                  value={workout.type}
+                  label="Type"
+                  value={typeLabel(workout.type)}
                 />
               </div>
 
@@ -610,9 +652,11 @@ export function WorkoutDetailDrawer({
               </section>
             )}
 
-            {/* 03 WAAROM? — Sparki philosophy layer */}
+            {/* 03 — Sparki philosophy layer. REPARATIE_01 C2: heet niet meer
+                "Waarom?" (botste met "02 Wat & waarom vandaag"); dit gaat over
+                de trainingsfilosofie in het algemeen. */}
             <section className="flex flex-col gap-3">
-              <SectionHead n="03" title="Waarom?" icon={HelpCircle} />
+              <SectionHead n="03" title="De filosofie erachter" icon={HelpCircle} />
               {explanation ? (
                 <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 backdrop-blur-md">
                   <div className="mb-3 flex items-center gap-2">
@@ -621,17 +665,19 @@ export function WorkoutDetailDrawer({
                       SPARKI
                     </span>
                   </div>
-                  <TieredExplanation
-                    short={explanation.short}
-                    hasExtended
-                    extendedPending={explainExtended.isPending}
-                    onExpand={loadExtended}
-                    extended={
-                      explanation.extended != null ? (
-                        <PlainTextParagraphs text={explanation.extended} />
-                      ) : undefined
-                    }
-                  />
+                  {/* REPARATIE_01 C1: de uitgebreide uitleg VERVANGT de korte —
+                      nooit twee versies van hetzelfde verhaal (met mogelijk
+                      afwijkende getallen) onder elkaar. */}
+                  {explanation.extended != null ? (
+                    <PlainTextParagraphs text={explanation.extended} />
+                  ) : (
+                    <TieredExplanation
+                      short={explanation.short}
+                      hasExtended
+                      extendedPending={explainExtended.isPending}
+                      onExpand={loadExtended}
+                    />
+                  )}
                 </div>
               ) : (
                 <button
@@ -655,7 +701,7 @@ export function WorkoutDetailDrawer({
               )}
               {(explain.isError || explainExtended.isError) && (
                 <p className="text-[12px] text-[color:var(--color-negative)]">
-                  Even niet bereikbaar. Probeer het zo opnieuw.
+                  {serverFoutTekst(explain.error ?? explainExtended.error)}
                 </p>
               )}
             </section>
@@ -703,28 +749,34 @@ export function WorkoutDetailDrawer({
                       ))}
                     </div>
                   </div>
+                  {/* REPARATIE_01 C3: één hoofdvraag — hoe is het gegaan?
+                      "Gedaan" is meteen klaar; alleen bij Gedeeltelijk/Gemist
+                      volgt de waarom-rij. Geen zeven bolletjes meer. */}
                   <div>
                     <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
-                      AFGEMAAKT? (OPTIONEEL)
+                      HOE IS HET GEGAAN?
                     </p>
                     <div className="flex gap-2">
                       {(
                         [
-                          { value: "volledig", label: "Volledig" },
+                          { value: "volledig", label: "Gedaan" },
                           { value: "gedeeltelijk", label: "Gedeeltelijk" },
-                          { value: "niet", label: "Niet" },
+                          { value: "niet", label: "Gemist" },
                         ] as { value: WorkoutCompletion; label: string }[]
                       ).map((opt) => (
                         <button
                           key={opt.value}
                           type="button"
-                          onClick={() =>
-                            setCompletion(
-                              completion === opt.value ? null : opt.value,
-                            )
-                          }
+                          onClick={() => {
+                            setCompletion(opt.value)
+                            if (opt.value === "volledig") {
+                              // Gedaan = klaar: meteen opslaan, geen waarom-rij.
+                              void handleFeedback("done", "volledig")
+                            }
+                          }}
+                          disabled={adjust.isPending}
                           aria-pressed={completion === opt.value}
-                          className="rounded-full border px-3 py-1 font-sans text-[12px] transition-colors"
+                          className="rounded-full border px-3.5 py-1.5 font-sans text-[12px] font-medium transition-colors disabled:opacity-50"
                           style={{
                             borderColor:
                               completion === opt.value
@@ -746,12 +798,53 @@ export function WorkoutDetailDrawer({
                     </div>
                   </div>
                   {(completion === "gedeeltelijk" || completion === "niet") && (
-                    <input
-                      value={deviationReason}
-                      onChange={(e) => setDeviationReason(e.target.value)}
-                      placeholder="Waarom anders dan gepland? (optioneel)…"
-                      className="w-full rounded-xl border border-border bg-muted px-3.5 py-2 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
-                    />
+                    <div>
+                      <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
+                        WAAROM?
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          [
+                            { type: "too_hard", label: "Te zwaar" },
+                            { type: "too_light", label: "Te licht" },
+                            { type: "tired", label: "Vermoeid" },
+                            { type: "pain", label: "Pijn / blessure" },
+                            { type: "move", label: "Verplaatsen" },
+                          ] as { type: WorkoutFeedbackType; label: string }[]
+                        ).map((opt) => {
+                          const active = activeFeedback === opt.type
+                          return (
+                            <button
+                              key={opt.type}
+                              type="button"
+                              onClick={() => handleFeedback(opt.type, completion)}
+                              disabled={adjust.isPending}
+                              aria-pressed={active}
+                              className="rounded-full border px-3.5 py-1.5 font-sans text-[12px] font-medium transition-colors disabled:opacity-50"
+                              style={{
+                                borderColor: active
+                                  ? "rgba(120,210,230,0.5)"
+                                  : "var(--color-border)",
+                                background: active
+                                  ? "rgba(120,210,230,0.12)"
+                                  : "transparent",
+                                color: active
+                                  ? ACCENT
+                                  : "var(--color-muted-foreground)",
+                              }}
+                            >
+                              {opt.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <input
+                        value={deviationReason}
+                        onChange={(e) => setDeviationReason(e.target.value)}
+                        placeholder="Waarom anders dan gepland? (optioneel)…"
+                        className="mt-2 w-full rounded-xl border border-border bg-muted px-3.5 py-2 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
+                      />
+                    </div>
                   )}
                 </div>
               )}
@@ -766,6 +859,9 @@ export function WorkoutDetailDrawer({
                 }
                 className="w-full resize-none rounded-xl border border-border bg-muted px-3.5 py-2.5 font-sans text-[13px] text-foreground/90 placeholder:text-muted-foreground focus:border-accent-cyan/40 focus:outline-none"
               />
+              {/* Losse feedback-bolletjes alleen nog vooruitkijkend (komende
+                  training); terugkijken loopt via de rij hierboven (C3). */}
+              {isUpcoming && (
               <div className="flex flex-wrap gap-2">
                 {feedbackOptions.map((opt) => {
                   const active = activeFeedback === opt.type
@@ -792,6 +888,7 @@ export function WorkoutDetailDrawer({
                   )
                 })}
               </div>
+              )}
 
               {adjust.isPending && (
                 <div className="flex items-center gap-2 text-[12px] text-muted-foreground">

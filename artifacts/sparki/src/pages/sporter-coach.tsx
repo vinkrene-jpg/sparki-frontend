@@ -110,6 +110,9 @@ function Kaart({ children }: { children: React.ReactNode }) {
   );
 }
 
+// REPARATIE_01 C6: kaarten leggen zichzelf niet meer uit in een grijze
+// ondertitel — uitleg is optioneel en alleen voor kaarten die zonder
+// toelichting onbegrijpelijk zouden zijn.
 function KaartKop({
   icon: Icon,
   titel,
@@ -117,7 +120,7 @@ function KaartKop({
 }: {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   titel: string;
-  uitleg: string;
+  uitleg?: string;
 }) {
   return (
     <div className="mb-3">
@@ -127,7 +130,7 @@ function KaartKop({
           {titel}
         </h2>
       </div>
-      <p className="mt-1 text-[12px] text-muted-foreground">{uitleg}</p>
+      {uitleg && <p className="mt-1 text-[12px] text-muted-foreground">{uitleg}</p>}
     </div>
   );
 }
@@ -141,22 +144,23 @@ function DoellijnKaart({ goal, raceNaam, raceDatum }: {
 }) {
   return (
     <Kaart>
-      <KaartKop
-        icon={Flag}
-        titel="Doellijn"
-        uitleg="Waar dit plan naartoe werkt. De zin komt rechtstreeks uit je seizoensdoel."
-      />
+      <KaartKop icon={Flag} titel="Doellijn" />
       {goal ? (
         <p className="text-[15px] font-medium text-foreground">{goal}</p>
       ) : (
-        <p className="text-[14px] text-muted-foreground">
-          Er is nog geen seizoensdoel gekoppeld. Zonder doel is er geen doellijn —
-          stel er één in via{" "}
-          <Link href="/train" className="text-primary underline underline-offset-2">
-            Trainen
+        // REPARATIE_01 C7: geen loze belofte over een zin die er niet is —
+        // alleen de eerlijke stand plus de knop om een doel te zetten.
+        <div className="flex flex-col items-start gap-2">
+          <p className="text-[14px] text-muted-foreground">
+            Geen wedstrijddoel vastgelegd.
+          </p>
+          <Link
+            href="/train"
+            className="rounded-full border border-border px-3.5 py-1.5 text-[13px] font-medium text-primary"
+          >
+            Doel instellen
           </Link>
-          .
-        </p>
+        </div>
       )}
       {raceNaam && raceDatum && (
         <p className="mt-2 text-[12px] text-muted-foreground">
@@ -170,11 +174,7 @@ function DoellijnKaart({ goal, raceNaam, raceDatum }: {
 function CoachBoodschapKaart({ decision }: { decision: CoachDecision | null }) {
   return (
     <Kaart>
-      <KaartKop
-        icon={MessageCircle}
-        titel="Coach-boodschap"
-        uitleg="Vandaag gelezen door de coach-engine: zelfde dag, gericht advies."
-      />
+      <KaartKop icon={MessageCircle} titel="Coach-boodschap" />
       {decision ? (
         <div className="space-y-2">
           <p className="text-[15px] font-medium text-foreground">{decision.hoofdonderwerp}</p>
@@ -208,20 +208,18 @@ function VoortgangKaart() {
 
   return (
     <Kaart>
-      <KaartKop
-        icon={TrendingUp}
-        titel="Voortgang"
-        uitleg="Fitheid (CTL), vermoeidheid (ATL) en vorm (TSB) uit het bestaande belastingsmodel."
-      />
+      {/* REPARATIE_01 C4: geen achterkantwoorden (CTL/ATL/TSB) in de
+          hoofdweergave — gewone taal volstaat. */}
+      <KaartKop icon={TrendingUp} titel="Voortgang" />
       {isLoading ? (
         <p className="text-[14px] text-muted-foreground">Belasting laden…</p>
       ) : load ? (
         <>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Fitheid (CTL)", waarde: load.ctl },
-              { label: "Vermoeidheid (ATL)", waarde: load.atl },
-              { label: "Vorm (TSB)", waarde: load.tsb },
+              { label: "Fitheid", waarde: load.ctl },
+              { label: "Vermoeidheid", waarde: load.atl },
+              { label: "Vorm", waarde: load.tsb },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-muted/50 p-3 text-center">
                 <div className="text-[20px] font-semibold tabular-nums text-foreground">
@@ -339,11 +337,7 @@ function WaarnemingenKaart() {
   const top = (data?.observations ?? []).slice(0, 3);
   return (
     <Kaart>
-      <KaartKop
-        icon={ChevronRight}
-        titel="Wat de coach opvalt"
-        uitleg="Patronen uit je eigen data — alleen wat echt is waargenomen."
-      />
+      <KaartKop icon={ChevronRight} titel="Wat de coach opvalt" />
       {isLoading ? (
         <p className="text-[14px] text-muted-foreground">Waarnemingen laden…</p>
       ) : top.length === 0 ? (
