@@ -108,7 +108,7 @@ const MENU_ITEMS: { label: string; flow?: FlowKeuze; to?: string }[] = [
 //   4  voorstel van Sparki (Gebruiken / Opnieuw / Aanpassen)
 //   5  Klaar (Start navigatie / Bewaren / Delen)
 // RIJDEN_02: de knoppenrij is de stappenmachine — verfijnen loopt via de
-// bolletjes; "Sparki maakt hem" (escape, altijd onderaan het blad) start
+// bolletjes; "Maak route" (escape, altijd onderaan het blad) start
 // direct één routeaanvraag (R16). Escapes (§6): de escape zonder activiteit
 // en "Klaar" op stap 3/4 — terug verliest nooit gemaakte keuzes.
 type Stap = 1 | 2 | 3 | 4 | 5
@@ -758,7 +758,7 @@ export default function RouteSchermPage() {
     setStand("half")
   }
 
-  // R16/R-T3: één routeaanvraag per keuze — "Sparki maakt hem" start precies
+  // R16/R-T3: één routeaanvraag per keuze — "Maak route" start precies
   // één generatie-job vanaf het kaartcentrum, met álle keuzes uit de
   // knoppenrij (RIJDEN_02 §2: de bolletjes zíjn de aanvraag).
   const maakRoute = () => {
@@ -833,7 +833,7 @@ export default function RouteSchermPage() {
     setStap(4)
   }
 
-  // §6-escape zonder activiteit: "Sparki maakt hem" pakt de laatst gekozen
+  // §6-escape zonder activiteit: "Maak route" pakt de laatst gekozen
   // activiteit (of Fietsen) + alles vooringevuld, meteen één routeaanvraag.
   const directEenRoute = () => {
     let vorige: ActiviteitId = "fietsen"
@@ -1363,7 +1363,7 @@ export default function RouteSchermPage() {
     </div>
   )
 
-  // C6: de escape — "Sparki maakt hem" — staat onderaan het blad, op elke
+  // C6: de escape — "Maak route" — staat onderaan het blad, op elke
   // diepte van de stappenmachine, en levert altijd meteen een route.
   const escapeKnop = (
     <button

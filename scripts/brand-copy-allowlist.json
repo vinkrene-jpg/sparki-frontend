@@ -150,8 +150,8 @@
   },
   {
     "file": "artifacts/sparki/src/pages/route-scherm.tsx",
-    "contains": "Sparki laat maken",
-    "reason": "Spec-tekst RIJDEN_01 (keuze 3-A): knoplabel voor route automatisch laten samenstellen."
+    "contains": "Maak route",
+    "reason": "Spec-tekst RIJDEN_01 (keuze 3-A): bijgewerkt knoplabel voor route automatisch laten samenstellen."
   },
   {
     "file": "artifacts/api-server/src/engines/meetniveau/compute.ts",
@@ -160,7 +160,7 @@
   },
   {
     "file": "artifacts/sparki/src/pages/route-scherm.tsx",
-    "contains": "Sparki laat maken",
-    "reason": "RIJDEN_01 3-A: documentnaam van de knop — de renner laat Sparki (het product) een route maken; geen derde-persoons coachzin."
+    "contains": "Maak route",
+    "reason": "RIJDEN_01 3-A: bijgewerkte documentnaam van de knop."
   }
 ]
