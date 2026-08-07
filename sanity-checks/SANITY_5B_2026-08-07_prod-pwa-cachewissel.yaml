@@ -16,3 +16,10 @@ eerlijkheid:
   - "Stap 1 (prod serveerde v1 vóór Publish) staat in bewijsarchief/2026-08-06_prod-pwa/ + SANITY_5B_2026-08-06_prod-pwa-serve.yaml."
   - "De daadwerkelijke verversing op René's toestel is door hemzelf visueel beoordeeld; server-side is de nieuwe versie byte-controleerbaar aanwezig."
 oordeel: GEHAALD
+aanvulling_na_review:
+  - stap: "C1 client-side activatiebewijs (echte browser tegen productie)"
+    commando: "Chromium 138 (headless) via playwright-core: navigator.serviceWorker.register('/sw.js') op https://sparki-frontend.replit.app/ + caches.keys()"
+    resultaat: "2026-08-07T03:46:33Z — caches = ['sparki-shell-v2'], serviceworker geactiveerd; log in bewijsarchief/2026-08-07_prod-pwa-v2/c1-browser-activatie.json.log"
+  - stap: "Redactie sw-headers.txt"
+    resultaat: "Set-Cookie-regel geredigeerd. Het was een Google Frontend GAESA load-balancer-cookie van een anonieme curl — géén Sparki-sessie of credential; rotatie niet van toepassing. Overige bewijsarchief-bestanden gescand op cookies: geen treffers."
+  - opmerking: "De route-/kaartwijzigingen (RIJDEN_02) zitten in eigen, aparte commits en maken geen deel uit van deze taakoplevering."

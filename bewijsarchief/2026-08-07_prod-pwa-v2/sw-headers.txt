@@ -7,7 +7,7 @@ date: Fri, 07 Aug 2026 03:43:45 GMT
 expires: Fri, 07 Aug 2026 03:43:45 GMT
 last-modified: Fri, 07 Aug 2026 03:13:36 GMT
 server: Google Frontend
-set-cookie: GAESA=Cp4BMDAxNTQ4ZjcyOTE1YjE0MjMzYTNmNWY0MmQ0M2U2YjViMWNkOTRmNDNkY2Y5MTVhMjhjYzQ5MTg3MjNiMTcxZWQwMGExMTE5NzE5MmI4ZWE0YTE1YzhiZDlhZTMwY2NhNzYyMzVhMWRhNmQ2YWIzNzhhNDI0MDFjYTA3OGM0Y2M5MDdhMWRiNmMwMWVjMTdkYWZjZGM5MDI0ZTQ2MzIQl7jH0v0z; expires=Sun, 06-Sep-2026 03:43:45 GMT; path=/
+set-cookie: [GEREDIGEERD — Google Frontend GAESA load-balancer-cookie, geen Sparki-sessie]
 strict-transport-security: max-age=63072000; includeSubDomains
 via: 1.1 google
 x-cloud-trace-context: 21099d3be8b5d2fe93b6682fa0772a0d;o=1
