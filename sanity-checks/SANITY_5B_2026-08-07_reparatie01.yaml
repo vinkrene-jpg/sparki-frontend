@@ -38,4 +38,9 @@ eerlijkheid:
   - "C9 (verwijderde punten uit de vergelijkingstabel) is expliciet buiten reikwijdte verklaard in de opdracht."
   - "C5: de knop werkt technisch; of René's eigen account consent aan heeft staan bepaalt of hij uitleg of de (nu eerlijke) consent-melding ziet."
   - "C1: de dubbeling kwam uit twee losse AI-generaties (kort + uitgebreid) die allebei zichtbaar bleven; de fix is deterministisch (vervangen) plus een promptregel. Nieuwe generaties kunnen pas in de praktijk worden beoordeeld met consent aan."
+aanvulling_na_review:
+  - bevinding: "Architect-review: 'Gemist' en 'Gedeeltelijk' zetten alleen state; zonder waarom-klik werd níets opgeslagen, en de waarom-typen (tired/too_hard/…) zetten de workoutstatus niet op skipped/partial."
+    fix: "Elke afrondingsknop slaat nu direct op: Gedaan→done/volledig, Gedeeltelijk→done/gedeeltelijk (server zet status 'partial'), Gemist→missed/niet (server zet status 'skipped'). De waarom-rij blijft een optionele aanvulling (feedbackrij zonder status-overschrijving)."
+    bewijs: "tsc sparki groen; test:sporter-coach 10/10; test:feedback-adjust 11/11; verse schone prod-build zonder TESTCONTEXT; ná-screenshots opnieuw gemaakt (e2e/evidence/reparatie01/na/)."
+  - eerlijk_open: "Reviewpunten 2/3 (drawer-integratietests voor de klikflow; bewijs-script hard laten falen op ontbrekende workouts) zijn niet in deze reparatie meegenomen — genoteerd als losse verbeterpunten, geen gedragsrisico voor de geleverde flow."
 oordeel: GEHAALD

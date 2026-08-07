@@ -769,9 +769,15 @@ export function WorkoutDetailDrawer({
                           type="button"
                           onClick={() => {
                             setCompletion(opt.value)
+                            // Elke keuze slaat direct op — de waarom-rij bij
+                            // Gedeeltelijk/Gemist is een optionele aanvulling,
+                            // geen voorwaarde om de afronding te bewaren.
                             if (opt.value === "volledig") {
-                              // Gedaan = klaar: meteen opslaan, geen waarom-rij.
                               void handleFeedback("done", "volledig")
+                            } else if (opt.value === "gedeeltelijk") {
+                              void handleFeedback("done", "gedeeltelijk")
+                            } else {
+                              void handleFeedback("missed", "niet")
                             }
                           }}
                           disabled={adjust.isPending}
