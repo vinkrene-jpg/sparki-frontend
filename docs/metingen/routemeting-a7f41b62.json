@@ -463,6 +463,144 @@
    "M10_afwijkingPct": 0.600000000000005,
    "M11_bochtenPerKm": 8.048289738430585,
    "M12_onbekendWegdekPct": 9.831691607621318
+  },
+  {
+   "key": "rotterdam|hiken|standaard",
+   "punt": "rotterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "hiken",
+   "soort": "standaard",
+   "wens": null,
+   "targetKm": 15,
+   "M1_geleverd": true,
+   "M2_ms": 134952,
+   "M3_orsCalls": 4,
+   "M4_obstakelBevragingen": 7,
+   "M4_obstakelMs": 326844,
+   "overpassAanvragen": 27,
+   "M5_overlap": 0.0024431194339511477,
+   "M6_herhaaldM": 52,
+   "M7_sublusM": 286.34303549170454,
+   "M8_omkeringen": 0,
+   "M9_bebouwdPct": 29,
+   "distanceKm": 14.72,
+   "M10_afwijkingPct": 1.8666666666666623,
+   "M11_bochtenPerKm": 5.230978260869565,
+   "M12_onbekendWegdekPct": 11.785686199692691
+  },
+  {
+   "key": "rotterdam|hardlopen|min",
+   "punt": "rotterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "hardlopen",
+   "soort": "min",
+   "wens": null,
+   "targetKm": 3,
+   "M1_geleverd": true,
+   "M2_ms": 31053,
+   "M3_orsCalls": 4,
+   "M4_obstakelBevragingen": 6,
+   "M4_obstakelMs": 31217,
+   "overpassAanvragen": 11,
+   "M5_overlap": 0,
+   "M6_herhaaldM": 0,
+   "M7_sublusM": 2693.081056036709,
+   "M8_omkeringen": 0,
+   "M9_bebouwdPct": null,
+   "distanceKm": 2.77,
+   "M10_afwijkingPct": 7.666666666666666,
+   "M11_bochtenPerKm": 7.581227436823105,
+   "M12_onbekendWegdekPct": 2.5119997629247437
+  },
+  {
+   "key": "rotterdam|hardlopen|standaard",
+   "punt": "rotterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "hardlopen",
+   "soort": "standaard",
+   "wens": null,
+   "targetKm": 10,
+   "M1_geleverd": false,
+   "M2_ms": 78009,
+   "M3_orsCalls": 4,
+   "M4_obstakelBevragingen": 5,
+   "M4_obstakelMs": 303511,
+   "overpassAanvragen": 10,
+   "fout": {
+    "categorie": "http-503",
+    "code": "ROUTE_UNVERIFIABLE",
+    "detail": "De route kon niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). We bieden een ongecontroleerde route niet aan — probeer het over een paar minuten opnieuw."
+   }
+  },
+  {
+   "key": "rotterdam|fietsen|min",
+   "punt": "rotterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "fietsen",
+   "soort": "min",
+   "wens": null,
+   "targetKm": 10,
+   "M1_geleverd": false,
+   "M2_ms": 129883,
+   "M3_orsCalls": 4,
+   "M4_obstakelBevragingen": 5,
+   "M4_obstakelMs": 510971,
+   "overpassAanvragen": 13,
+   "fout": {
+    "categorie": "http-503",
+    "code": "ROUTE_UNVERIFIABLE",
+    "detail": "De route kon niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). We bieden een ongecontroleerde route niet aan — probeer het over een paar minuten opnieuw."
+   }
+  },
+  {
+   "key": "rotterdam|fietsen|standaard",
+   "punt": "rotterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "fietsen",
+   "soort": "standaard",
+   "wens": null,
+   "targetKm": 35,
+   "M1_geleverd": false,
+   "M2_ms": 135485,
+   "M3_orsCalls": 4,
+   "M4_obstakelBevragingen": 5,
+   "M4_obstakelMs": 530466,
+   "overpassAanvragen": 11,
+   "fout": {
+    "categorie": "http-503",
+    "code": "ROUTE_UNVERIFIABLE",
+    "detail": "De route kon niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). We bieden een ongecontroleerde route niet aan — probeer het over een paar minuten opnieuw."
+   }
+  },
+  {
+   "key": "rotterdam|racefiets|min",
+   "punt": "rotterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "racefiets",
+   "soort": "min",
+   "wens": null,
+   "targetKm": 20,
+   "M1_geleverd": false,
+   "M2_ms": 180001,
+   "fout": {
+    "categorie": "netwerk/timeout",
+    "detail": "The operation was aborted due to timeout"
+   }
+  },
+  {
+   "key": "rotterdam|racefiets|standaard",
+   "punt": "rotterdam",
+   "gebiedstype": "grote-stad",
+   "activiteit": "racefiets",
+   "soort": "standaard",
+   "wens": null,
+   "targetKm": 70,
+   "M1_geleverd": false,
+   "M2_ms": 66055,
+   "fout": {
+    "categorie": "netwerk/timeout",
+    "detail": "fetch failed"
+   }
   }
  ]
 }
