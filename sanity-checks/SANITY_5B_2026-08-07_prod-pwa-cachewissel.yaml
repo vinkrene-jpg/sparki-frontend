@@ -1,0 +1,18 @@
+rapport: SANITY_5B
+datum: 2026-08-07
+onderwerp: "Taak #627 stap 2 — cachewissel-bewijs: productie serveert sw.js sparki-shell-v2 na Publish door René"
+belofte: "Na de Publish serveert productie de nieuwe service worker (CACHE_VERSIE sparki-shell-v2), zodat geïnstalleerde PWA's de nieuwe shell ophalen."
+bewijs:
+  - stap: "Telefoontest René (Android/Samsung, Chrome, 'Toevoegen aan beginscherm')"
+    resultaat: "A1 naam+icoon GEHAALD · A2 icoon beginscherm GEHAALD · B1 opent zonder adresbalk GEHAALD · B2 kaart rendert GEHAALD · B3 routes in kleur + routekaartje GEHAALD"
+    bron: "AskQuestion-antwoord René 2026-08-07 (queryId …HX4Yf)"
+  - stap: "Cachewissel-controle na Publish"
+    commando: "curl -s https://sparki-frontend.replit.app/sw.js | grep -o 'sparki-shell-v[0-9]*'"
+    resultaat: "sparki-shell-v2 (2026-08-07T03:43:45Z)"
+    artefacten:
+      - bewijsarchief/2026-08-07_prod-pwa-v2/sw.js
+      - bewijsarchief/2026-08-07_prod-pwa-v2/sw-headers.txt
+eerlijkheid:
+  - "Stap 1 (prod serveerde v1 vóór Publish) staat in bewijsarchief/2026-08-06_prod-pwa/ + SANITY_5B_2026-08-06_prod-pwa-serve.yaml."
+  - "De daadwerkelijke verversing op René's toestel is door hemzelf visueel beoordeeld; server-side is de nieuwe versie byte-controleerbaar aanwezig."
+oordeel: GEHAALD
