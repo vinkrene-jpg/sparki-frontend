@@ -18,7 +18,6 @@ import {
   Bike,
   Crosshair,
   Footprints,
-  Layers,
   Loader2,
   Minus,
   MoreVertical,
@@ -281,8 +280,6 @@ export default function RouteSchermPage() {
   // §5.2: straalkeuze — het zoekgebied rond het kaartcentrum.
   const [straalKm, setStraalKm] = useState<number>(30)
   // §2: het kaartlagenmenu (in de bedieningskolom rechts).
-  const [lagenOpen, setLagenOpen] = useState(false)
-  const [heatmap, setHeatmap] = useState<"geen" | "globaal" | "persoonlijk">("geen")
   // RIJDEN_02 §2: welke vraag van de stappenmachine staat open (laag
   // onderblad) en welke verfijn-vragen zijn al beantwoord — in de volgorde
   // waarin de gebruiker koos (zo staan de bolletjes ook in de rij, §2.2).
@@ -345,6 +342,12 @@ export default function RouteSchermPage() {
     if (aanpasMeldingTimer.current) clearTimeout(aanpasMeldingTimer.current)
     aanpasMeldingTimer.current = setTimeout(() => setAanpasMelding(null), 3000)
   }
+  useEffect(() => {
+    // Unmount-cleanup: geen setState op een ontkoppeld scherm.
+    return () => {
+      if (aanpasMeldingTimer.current) clearTimeout(aanpasMeldingTimer.current)
+    }
+  }, [])
 
   // ── R7: route aanpassen ────────────────────────────────────────────────
   // Vier manieren: punt van de lijn verslepen · waypoint toevoegen ·
@@ -1973,15 +1976,6 @@ export default function RouteSchermPage() {
       >
         <button
           type="button"
-          aria-label="Kaartlagen"
-          aria-expanded={lagenOpen}
-          onClick={() => setLagenOpen((v) => !v)}
-          className={`flex h-11 w-11 items-center justify-center rounded-full shadow-md ${lagenOpen ? "bg-slate-900 text-white" : "bg-white/95 text-slate-700"}`}
-        >
-          <Layers className="h-5 w-5" strokeWidth={2} />
-        </button>
-        <button
-          type="button"
           aria-label="Zoom in"
           onClick={() => mapRef.current?.zoomIn()}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-md"
@@ -2005,46 +1999,6 @@ export default function RouteSchermPage() {
           <Crosshair className="h-5 w-5" strokeWidth={2} style={{ color: ACCENT }} />
         </button>
       </div>
-
-      {/* §2: het kaartlagenmenu — eerlijk over wat er wel en niet is. */}
-      {lagenOpen && (
-        <div
-          className="absolute right-16 z-[510] w-64 rounded-2xl bg-white p-3 shadow-xl"
-          style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
-        >
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-            Kaartstijl
-          </p>
-          <div className="mt-1 flex flex-wrap gap-2">
-            <KeuzeKnop label="Standaard" actief onClick={() => undefined} />
-          </div>
-          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-            Heatmap
-          </p>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {(["geen", "globaal", "persoonlijk"] as const).map((h) => (
-              <KeuzeKnop
-                key={h}
-                label={h === "geen" ? "Geen" : h === "globaal" ? "Globaal" : "Persoonlijk"}
-                actief={heatmap === h}
-                onClick={() => setHeatmap(h)}
-              />
-            ))}
-          </div>
-          {heatmap === "persoonlijk" && (
-            <p className="mt-1 text-[11px] text-slate-500">
-              Jouw eigen routes en gereden lijnen staan al op de kaart; een
-              aparte dichtheidslaag volgt zodra ritsporen bewaard worden.
-            </p>
-          )}
-          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
-            Offline-gebieden
-          </p>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Offline kaarten volgen met de telefoon-fase van de app.
-          </p>
-        </div>
-      )}
 
       {/* Kaartbediening desktop — rechtsonder op het kaartvlak (geen onderblad) */}
       <div className="absolute bottom-3 right-3 z-[500] hidden flex-col gap-2 lg:flex">
