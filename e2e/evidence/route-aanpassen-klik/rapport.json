@@ -1,0 +1,96 @@
+{
+  "stappen": [
+    {
+      "stap": "A0: echte productieshell — geen TESTCONTEXT/DEV-Preview-banner",
+      "status": "OK",
+      "detail": "banner afwezig",
+      "t": "2026-08-07T07:33:20.192Z"
+    },
+    {
+      "stap": "afstand via schuif op 30 km gezet",
+      "status": "INFO",
+      "detail": "",
+      "t": "2026-08-07T07:33:29.329Z"
+    },
+    {
+      "stap": "routeaanvraag gestart via 'Maak route'",
+      "status": "INFO",
+      "detail": "",
+      "t": "2026-08-07T07:33:29.572Z"
+    },
+    {
+      "stap": "A1: kandidaat op het scherm (Gebruiken/Opnieuw/Aanpassen zichtbaar)",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-07T07:34:06.460Z"
+    },
+    {
+      "stap": "A1: eerste kandidaat kwam uit precies één start-aanvraag",
+      "status": "OK",
+      "detail": "starts=1",
+      "t": "2026-08-07T07:34:06.460Z"
+    },
+    {
+      "stap": "eerste kandidaat",
+      "status": "INFO",
+      "detail": "567 punten",
+      "t": "2026-08-07T07:34:06.460Z"
+    },
+    {
+      "stap": "A7: kandidaatlijn daadwerkelijk gerenderd op de kaart (queryRenderedFeatures)",
+      "status": "OK",
+      "detail": "gerenderde lijnfeatures=1",
+      "t": "2026-08-07T07:34:07.519Z"
+    },
+    {
+      "stap": "A2: aanpasmodus actief (uitleg zichtbaar)",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-07T07:34:08.285Z"
+    },
+    {
+      "stap": "A3: tweede tik tijdens lopende aanvraag zichtbaar geweigerd",
+      "status": "OK",
+      "detail": "Nog bezig met de vorige aanvraag — probeer zo opnieuw.",
+      "t": "2026-08-07T07:34:08.980Z"
+    },
+    {
+      "stap": "A4: aanpassing leverde een nieuwe kandidaat op",
+      "status": "OK",
+      "detail": "",
+      "t": "2026-08-07T07:34:47.016Z"
+    },
+    {
+      "stap": "A4: kaartlijn verandert (geometrie nieuwe kandidaat ≠ oude)",
+      "status": "OK",
+      "detail": "oud=567 punten, nieuw=254 punten",
+      "t": "2026-08-07T07:34:47.016Z"
+    },
+    {
+      "stap": "A7: nieuwe kandidaatlijn gerenderd én zichtbaar anders dan de oude",
+      "status": "OK",
+      "detail": "features na=1, gerenderd monster gewijzigd=true",
+      "t": "2026-08-07T07:34:48.023Z"
+    },
+    {
+      "stap": "A2: precies één nieuwe generate-aanvraag door de tik",
+      "status": "OK",
+      "detail": "starts vóór tik=1, na episode=2",
+      "t": "2026-08-07T07:34:48.078Z"
+    },
+    {
+      "stap": "A5: via-punt(en) zichtbaar als marker op de kaart",
+      "status": "OK",
+      "detail": "markers=2",
+      "t": "2026-08-07T07:34:48.082Z"
+    },
+    {
+      "stap": "A6: logregel per poging in de console (incl. weigering)",
+      "status": "OK",
+      "detail": "pogingen=2, geweigerd=1",
+      "t": "2026-08-07T07:34:48.082Z"
+    }
+  ],
+  "exitCode": 0,
+  "t": "2026-08-07T07:34:48.271Z"
+}

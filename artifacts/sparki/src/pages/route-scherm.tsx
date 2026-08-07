@@ -505,6 +505,10 @@ export default function RouteSchermPage() {
       setKaartKlaar(true)
     })
     mapRef.current = map
+    // WP-S1-testhaak: het e2e-harnas moet de ECHT gerenderde kandidaatlijn
+    // kunnen aantonen (queryRenderedFeatures), niet alleen de API-respons.
+    // Alleen-lezen verwijzing; heeft geen invloed op de app zelf.
+    ;(window as unknown as { __sparkiKaart?: unknown }).__sparkiKaart = map
     // R17: de kaartbreedte verandert bij de lg-grens (zijpaneel erbij/eraf) —
     // de kaart moet dan zijn maat herzien of tegels/klikken lopen scheef.
     const observer = new ResizeObserver(() => map.resize())

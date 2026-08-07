@@ -1,0 +1,33 @@
+delivery: "Route aanpassen (RIJDEN_02 R7/R16) — browserklik-bewijs dat een geplaatst via-punt precies één nieuwe routeaanvraag start en een nieuwe kandidaat oplevert (taak 628)"
+date: "2026-08-07"
+checked_by: "replit"
+surfaces:
+  - "/route (productiebuild, mobiel 402x874, echte Clerk-ticketlogin): Activiteit → Racefiets → Verfijnen 30 km → Maak route → kandidaat → Aanpassen → tik op kaart → nieuwe kandidaat"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Knop 'Aanpassen' op de kandidaatkaart: echte klik zet de aanpasmodus aan (uitleg zichtbaar, knop paars/aria-pressed)"
+        result: "pass"
+      - case: "Tik op de kaart in aanpasmodus: plaatst een zichtbaar via-punt (marker) en start PRECIES ÉÉN POST /api/routes/generate/start (netwerk geteld: 1 vóór, 2 ná de tik-episode)"
+        result: "pass"
+      - case: "Tweede snelle tik terwijl de aanvraag loopt: geen dode stilte — zichtbare melding 'Nog bezig met de vorige aanvraag — probeer zo opnieuw.' (data-testid aanpas-melding) én géén tweede start-aanvraag"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Harde productieshell-poort vooraf (A0): de test stopt hard zodra de TESTCONTEXT/DEV-Preview-banner zichtbaar is — bewijs kan alleen tegen een build zonder SPARKI_ACCEPT_MODE (env -u; de workspace-env zet die standaard op true)"
+        result: "pass"
+      - case: "De weigermelding verschijnt alleen tijdens een lopende aanvraag en verdwijnt vanzelf (3s); buiten die situatie leidt een tik gewoon tot één nieuwe aanvraag"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Na de aanpassing komt een ECHTE nieuwe kandidaat (geometrie ≠ oude: 567 → 254 punten) — geen blijvende laadstatus; logregel per poging ('[route-scherm] aanpassing … poging/GEWEIGERD') in de browserconsole"
+        result: "pass"
+      - case: "De kandidaatlijn staat DAADWERKELIJK GERENDERD op de kaart (MapLibre queryRenderedFeatures op de kandidaatlaag, vóór én na de tik, gerenderd geometrie-monster wijzigt) — niet alleen in de API-respons; zichtbaar op de screenshots. Onderweg gevonden en opgelost: drie fill-lagen in kaart/sparki-stijl.json met ongeldige line-color/line-width-paint blokkeerden de HELE stijl-load (zwarte kaart)"
+        result: "pass"
+
+# Bewijs: e2e/tests/route-aanpassen-klik.mjs (12 checks, exitcode 0) +
+# e2e/evidence/route-aanpassen-klik/ (7 screenshots + rapport.json).
+# Let op: build zonder SPARKI_ACCEPT_MODE (env -u) — de workspace-env zet die
+# op true en bakt anders de DEV-Preview-schil in (geen geldig bewijs).
+verdict: "deliverable"

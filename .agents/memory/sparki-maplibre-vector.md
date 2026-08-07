@@ -26,3 +26,15 @@ description: MapLibre GL + OSMF Shortbread-tegels in sparki-web — versieval, s
 - Tailwind-klasse `fixed inset-0` bleek op de proefpagina niet toegepast
   (computed position relative, hoogte 0 → 300px-canvas); inline style
   `{position:"fixed",inset:0}` is daar de betrouwbare vorm.
+
+## Ongeldige paint-props blokkeren de HELE stijl-load (07-08-2026)
+- Fill-lagen met `line-color`/`line-width` in paint geven niet alleen
+  validatiefouten: MapLibre (^5) blijft dan eeuwig in style-load hangen —
+  `load`/`styledata` vuren nooit, kaart blijft zwart, alle GeoJSON-lagen
+  (routes/kandidaat) ontbreken. Eén ongeldige laag is genoeg.
+- **Why:** zo gevonden: René's "route aanpassen reageert niet"-melding bleek
+  deels een zwarte kaart; drie pedestrian-zone-fill-lagen in de Sparki-stijl
+  droegen line-paint-props.
+- **How to apply:** bij een zwarte kaart eerst de MapLibre-consolefouten
+  "unknown property" bekijken en de stijl valideren; nooit line-props op
+  fill-lagen in sparki-stijl.json.

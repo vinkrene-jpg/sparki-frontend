@@ -38,3 +38,12 @@ description: Blijvende e2e-harness in e2e/ — echte Clerk-login, echte kliks, r
 ## Clubrol-doorlopen (task 588-les)
 - Het QA-account draagt leftover-clublidmaatschappen van eerdere e2e-runs; die maskeren rolgedrag (een achtergebleven admin-club liet /club/beheer "werken" voor een hoofdtrainer). Isoleer per test: actieve club_members-rijen tijdelijk `ended_at=now()` zetten en in finally exact terugzetten.
 - Mobiele onderbalk = `nav[aria-label="Hoofdnavigatie"]` (DsMobileNav, knoppen — geen links); labels case-insensitief lezen. De rolwisselaar-contexten zitten achter `button[title="Wissel van context"]` in het hoofdmenu.
+
+## SPARKI_ACCEPT_MODE-buildval
+- De workspace-omgeving zet `SPARKI_ACCEPT_MODE=true`; een gewone build bakt
+  daardoor de acceptatie-/DEV-Preview-schil in (TESTCONTEXT-banner) — geen
+  geldig WP-S1-bewijs. Bewijsbuild altijd met die variabele ge-unset (`env -u`);
+  controle: screenshot zonder TESTCONTEXT-banner.
+- Kaartbewijs: rendering aantonen via de window-testhaak op de kaartinstantie
+  (queryRenderedFeatures op de laag), niet alleen via API-responsen —
+  API-groen kan samengaan met een zwart/niet-geladen kaartvlak.
