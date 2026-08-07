@@ -336,6 +336,15 @@ export default function RouteSchermPage() {
   // R16 sýnchrone generatie-poort: React Query's isPending wordt pas bij de
   // rerender waar — twee snelle tikken zouden anders twee jobs starten.
   const genLockRef = useRef(false)
+  // Bevinding 07-08 (#4): een geweigerde aanpassing mag nooit stil zijn —
+  // korte zichtbare melding + logregel per poging.
+  const [aanpasMelding, setAanpasMelding] = useState<string | null>(null)
+  const aanpasMeldingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const meldAanpassing = (tekst: string) => {
+    setAanpasMelding(tekst)
+    if (aanpasMeldingTimer.current) clearTimeout(aanpasMeldingTimer.current)
+    aanpasMeldingTimer.current = setTimeout(() => setAanpasMelding(null), 3000)
+  }
 
   // ── R7: route aanpassen ────────────────────────────────────────────────
   // Vier manieren: punt van de lijn verslepen · waypoint toevoegen ·
@@ -888,7 +897,12 @@ export default function RouteSchermPage() {
       gekozenKlim && klimDetail.data?.osmId === gekozenKlim.osmId
         ? klimDetail.data
         : null
-    voerAanpassingUit(
+    // Logregel per poging (bevinding #4): zo is in de console te zien of een
+    // aanpassing echt start of wordt geweigerd — en waarom.
+    console.info(
+      `[route-scherm] aanpassing "${opts.reden}" poging — lock=${genLockRef.current} pending=${generate.isPending} kandidaat=${kandidaat != null} startpunt=${center != null} via=${(opts.via ?? viaPunten).length}`,
+    )
+    const gestart = voerAanpassingUit(
       {
         bezig: genLockRef.current || generate.isPending,
         center,
@@ -919,6 +933,16 @@ export default function RouteSchermPage() {
       },
       (regel) => console.info(regel),
     )
+    if (!gestart) {
+      const reden =
+        genLockRef.current || generate.isPending
+          ? "Nog bezig met de vorige aanvraag — probeer zo opnieuw."
+          : !kandidaat
+            ? "Eerst een route maken — dan kun je hem aanpassen."
+            : "Geen startpunt — zoek een plaats of gebruik je locatie."
+      console.info(`[route-scherm] aanpassing "${opts.reden}" GEWEIGERD: ${reden}`)
+      meldAanpassing(reden)
+    }
   }
 
   // Kaart-handlers leven lang; via deze ref roepen ze altijd de verse
@@ -1292,8 +1316,7 @@ export default function RouteSchermPage() {
   // keuzevolgorde, rechts altijd "+ Verfijnen" zolang er vragen over zijn.
   const knoppenRij = (
     <div
-      className="flex items-center gap-2 overflow-x-auto pb-1"
-      style={{ scrollbarWidth: "none" }}
+      className="flex flex-wrap items-center gap-2 pb-1"
       data-testid="knoppenrij"
     >
       <Chip
@@ -1833,9 +1856,9 @@ export default function RouteSchermPage() {
         <div className="border-b border-slate-100 p-3">{knoppenRij}</div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {paneelInhoud}
+          {/* C6 (bevinding 07-08): de escape schuift mee met de inhoud. */}
+          <div className="mt-2 border-t border-slate-100 pt-3">{escapeKnop}</div>
         </div>
-        {/* C6: de escape staat onderaan het paneel, op elke diepte. */}
-        <div className="border-t border-slate-100 p-3">{escapeKnop}</div>
       </aside>
 
       {/* Kaartvlak — mobiel beeldvullend (R1), desktop naast het zijpaneel */}
@@ -1995,9 +2018,6 @@ export default function RouteSchermPage() {
           <div className="mt-1 flex flex-wrap gap-2">
             <KeuzeKnop label="Standaard" actief onClick={() => undefined} />
           </div>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Satelliet en terrein volgen — daar is nog geen bronlicentie voor.
-          </p>
           <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
             Heatmap
           </p>
@@ -2011,12 +2031,6 @@ export default function RouteSchermPage() {
               />
             ))}
           </div>
-          {heatmap === "globaal" && (
-            <p className="mt-1 text-[11px] text-slate-500">
-              De globale heatmap is nog leeg — die vult zich pas als er genoeg
-              ritten van meerdere sporters zijn. Eerlijk is eerlijk.
-            </p>
-          )}
           {heatmap === "persoonlijk" && (
             <p className="mt-1 text-[11px] text-slate-500">
               Jouw eigen routes en gereden lijnen staan al op de kaart; een
@@ -2064,6 +2078,20 @@ export default function RouteSchermPage() {
           <Crosshair className="h-5 w-5" strokeWidth={2} style={{ color: ACCENT }} />
         </button>
       </div>
+
+      {/* Bevinding #4: zichtbare terugkoppeling bij een geweigerde aanpassing —
+          korte zwevende melding boven het onderblad, verdwijnt vanzelf. */}
+      {aanpasMelding && (
+        <div
+          className="pointer-events-none absolute inset-x-0 z-[540] flex justify-center px-4"
+          style={{ bottom: `calc(${sheetHoogte} + 0.75rem)` }}
+          data-testid="aanpas-melding"
+        >
+          <span className="rounded-full bg-slate-900/90 px-4 py-2 text-[13px] text-white shadow-lg">
+            {aanpasMelding}
+          </span>
+        </div>
+      )}
 
       {/* Zoek-overlay — alleen mobiel (desktop zoekt inline in het zijpaneel) */}
       {zoekOpen && (
@@ -2135,14 +2163,13 @@ export default function RouteSchermPage() {
             </span>
           </button>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {paneelInhoud}
+            {/* C6 (bevinding 07-08): de escape hoort ín het blad en schuift
+                mee met de inhoud — geen losse balk over de kaart. */}
+            <div className="mt-2 border-t border-slate-100 pt-2">{escapeKnop}</div>
           </div>
         )}
-        {/* C6: de escape staat onderaan het blad, op elke stand/diepte. */}
-        <div className="border-t border-slate-100 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
-          {escapeKnop}
-        </div>
       </div>
 
       {/* §2: de open vraag van de stappenmachine — een laag blad met alleen

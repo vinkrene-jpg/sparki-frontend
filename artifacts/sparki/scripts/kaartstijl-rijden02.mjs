@@ -94,13 +94,26 @@ function lighten(hex, t) {
 function widthStops(base) {
   return {
     stops: [
-      [10, +(base * 0.4).toFixed(3)],
+      // Bevinding 07-08 ("uitgezoomd erg bleek"): een zichtbare ondergrens op
+      // lage zooms, zodat hoofdwegen ver uitgezoomd niet tot haarlijnen
+      // verdampen. Vanaf z14 identiek aan de oorspronkelijke §5-curve.
+      [6, +Math.max(1, base * 0.35).toFixed(3)],
+      [10, +Math.max(1.2, base * 0.55).toFixed(3)],
       [14, base],
       [16, +(base * 2.2).toFixed(3)],
       [18, +(base * 6).toFixed(3)],
       [20, +(base * 18).toFixed(3)],
     ],
   };
+}
+
+/**
+ * Zoom-afhankelijke vulkleur: op lage zooms een vollere toon (anders is de
+ * uitgezoomde kaart één bleke vlakte), die naar z12 toe overgaat in de
+ * rustige §5-kleur voor ingezoomd rijden.
+ */
+function fillRamp(laag, hoog) {
+  return { stops: [[6, laag], [12, hoog]] };
 }
 
 let changed = 0;
@@ -212,7 +225,8 @@ for (const layer of style.layers) {
     id === "water-glacier" ||
     id === "land-glacier"
   ) {
-    mark(layer, (l) => setPaint(l, "fill-color", C.waterFill));
+    // Bevinding 07-08: uitgezoomd iets voller blauw, ingezoomd de rustige toon.
+    mark(layer, (l) => setPaint(l, "fill-color", fillRamp("#8ec2dd", C.waterFill)));
     continue;
   }
   if (
@@ -237,8 +251,10 @@ for (const layer of style.layers) {
   // Landgebruik-vlakken
   if (id === "land-forest") {
     mark(layer, (l) => {
-      setPaint(l, "fill-color", C.forest);
-      l.minzoom = 8; // §5.4: bos/groen op z8
+      // Bevinding 07-08: uitgezoomd voller groen tegen de bleke vlakte,
+      // vanaf z12 de rustige §5-kleur; bos al vanaf z7 zichtbaar.
+      setPaint(l, "fill-color", fillRamp("#b3d2a4", C.forest));
+      l.minzoom = 7;
     });
     continue;
   }
@@ -249,7 +265,7 @@ for (const layer of style.layers) {
     id === "land-leisure"
   ) {
     mark(layer, (l) => {
-      setPaint(l, "fill-color", C.grass);
+      setPaint(l, "fill-color", fillRamp("#cbdfb4", C.grass));
       l.minzoom = 8; // groen zichtbaar vanaf z8
     });
     continue;

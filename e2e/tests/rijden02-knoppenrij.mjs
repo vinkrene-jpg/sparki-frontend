@@ -6,8 +6,8 @@
 //  §6-3  Verfijnen opent één vraag, niet een lijst
 //  §6-4  elke keuze wordt een bolletje; tik erop = stap opnieuw openen
 //  §6-5  nergens een knop "Filters"
-//  §6-6  "Sparki maakt hem" staat altijd onderaan, op elke diepte
-//  §6-7  geen handeling twee keer op één scherm ("Sparki maakt hem" 1×
+//  §6-6  "Maak route" staat altijd onderaan, op elke diepte
+//  §6-7  geen handeling twee keer op één scherm ("Maak route" 1×
 //        zichtbaar per weergave)
 //  §6-11 knoppenrij blijft staan als het onderblad omhoog komt
 //  §6-10 kaartstijl: alleen screenshot-bewijs (visuele beoordeling René)
@@ -139,10 +139,10 @@ try {
 
   // §6-6: de escape staat onderaan, al vóór er iets gekozen is.
   const escape = page.getByTestId("escape-sparki").locator("visible=true").first();
-  log("§6-6: 'Sparki maakt hem' zichtbaar op stap 1", await escape.isVisible().catch(() => false));
+  log("§6-6: 'Maak route' zichtbaar op stap 1", await escape.isVisible().catch(() => false));
 
-  // §6-7 (C5): "Sparki maakt hem" precies één keer zichtbaar.
-  log("§6-7: 'Sparki maakt hem' staat één keer op het scherm", (await zichtbaarAantal(page, "Sparki maakt hem")) === 1);
+  // §6-7 (C5): "Maak route" precies één keer zichtbaar.
+  log("§6-7: 'Maak route' staat één keer op het scherm", (await zichtbaarAantal(page, "Maak route")) === 1);
 
   // §6-2: racefiets kiezen via het bolletje.
   await page.getByTestId("knoppenrij").locator("visible=true").first().getByText("Activiteit").click();
@@ -174,7 +174,7 @@ try {
   await run.shot("6-3-een-vraag");
 
   // §6-6 op diepte: escape blijft zichtbaar terwijl een vraag open staat.
-  log("§6-6: escape ook zichtbaar met open vraag", (await zichtbaarAantal(page, "Sparki maakt hem")) >= 1);
+  log("§6-6: escape ook zichtbaar met open vraag", (await zichtbaarAantal(page, "Maak route")) >= 1);
 
   // Afstand kiezen ⇒ bolletje met de wáárde.
   await page.getByRole("button", { name: /^Kies \d+ km$/ }).click();
@@ -194,7 +194,7 @@ try {
   await page.locator('[aria-label="Onderblad openen"]').click().catch(() => {});
   await page.waitForTimeout(500);
   log("§6-11: knoppenrij blijft staan met onderblad omhoog", await rij.isVisible().catch(() => false));
-  log("§6-6: escape blijft zichtbaar met onderblad omhoog", (await zichtbaarAantal(page, "Sparki maakt hem")) === 1);
+  log("§6-6: escape blijft zichtbaar met onderblad omhoog", (await zichtbaarAantal(page, "Maak route")) === 1);
   await run.shot("6-11-onderblad-omhoog");
 
   // §6-10: kaartstijl-bewijs — screenshot voor visuele beoordeling.

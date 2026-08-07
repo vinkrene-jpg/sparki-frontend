@@ -4,7 +4,7 @@
 // route", "Sparki laat maken", "Bewaard") mogen nergens meer voorkomen.
 export const WOORD = {
   /** Sparki kiest en maakt de route — de escape, altijd onderaan (C6). */
-  sparkiMaaktHem: "Sparki maakt hem",
+  sparkiMaaktHem: "Maak route",
   /** De gebruiker zet zelf punten uit. */
   zelfMaken: "Zelf maken",
   /** Een rit vastleggen zonder route vooraf. */
